@@ -387,13 +387,13 @@ func TestEvaluateV1(t *testing.T) {
 		{
 			name:          "CommonPipelineEnvironmentVariableExists - true",
 			config:        StepConfig{Config: map[string]interface{}{}},
-			stepCondition: StepCondition{IfCommonPipelineEnvironmentFilled: "custom/myCpeTrueFile"},
+			stepCondition: StepCondition{PipelineEnvironmentFilled: "custom/myCpeTrueFile"},
 			expected:      true,
 		},
 		{
 			name:          "CommonPipelineEnvironmentVariableExists - false",
 			config:        StepConfig{Config: map[string]interface{}{}},
-			stepCondition: StepCondition{IfCommonPipelineEnvironmentFilled: "custom/notMyCpeTrueFile"},
+			stepCondition: StepCondition{PipelineEnvironmentFilled: "custom/notMyCpeTrueFile"},
 			expected:      false,
 		},
 		{

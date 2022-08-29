@@ -172,10 +172,10 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 		return false, nil
 	}
 
-	if len(s.IfCommonPipelineEnvironmentFilled) > 0 {
+	if len(s.PipelineEnvironmentFilled) > 0 {
 
 		var metadata StepData
-		param := s.IfCommonPipelineEnvironmentFilled
+		param := s.PipelineEnvironmentFilled
 		// check CPE for both a string and non-string value
 		cpeEntry := getCPEEntry(param, "", &metadata, stepName, envRootPath)
 		if len(cpeEntry) == 0 {
