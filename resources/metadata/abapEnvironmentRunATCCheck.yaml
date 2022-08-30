@@ -147,7 +147,7 @@ spec:
         mandatory: false
       - name: failOnServerity
         type: string
-        description: Specifies the Severity Level, for which the ATC step should fail if at least one message with this severity (or "higher") level is returned by the ATC Check Run (possible values - error, warning, info)
+        description: Specifies the Severity Level, for which the ATC step should fail if at least one message with this severity (or "higher") level is returned by the ATC Check Run (possible values - error, warning, info). Initial value is default behavior and ATC findings of any severity do not fail the step 
         scope:
           - PARAMETERS
           - STAGES

@@ -145,7 +145,7 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
-	cmd.Flags().StringVar(&stepConfig.FailOnServerity, "failOnServerity", os.Getenv("PIPER_failOnServerity"), "Specifies the Severity Level, for which the ATC step should fail if at least one message with this severity (or \"higher\") level is returned by the ATC Check Run (possible values - error, warning, info)")
+	cmd.Flags().StringVar(&stepConfig.FailOnServerity, "failOnServerity", os.Getenv("PIPER_failOnServerity"), "Specifies the Severity Level, for which the ATC step should fail if at least one message with this severity (or \"higher\") level is returned by the ATC Check Run (possible values - error, warning, info). Initial value is default behavior and ATC findings of any severity do not fail the step")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
