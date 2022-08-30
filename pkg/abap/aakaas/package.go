@@ -69,7 +69,6 @@ func (p *Package) CopyFieldsToRepo(initialRepo *abaputils.Repository) {
 	initialRepo.PredecessorCommitID = p.PredecessorCommitID
 	initialRepo.Status = string(p.Status)
 	initialRepo.Namespace = p.Namespace
-	//log.Entry().Infof("Package name %s, type %s, status %s, namespace %s, predecessorCommitID %s", p.PackageName, p.Type, p.Status, p.Namespace, p.PredecessorCommitID)
 }
 
 // ReserveNext : reserve next delivery package for this software component version
