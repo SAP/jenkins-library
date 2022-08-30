@@ -63,7 +63,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		resp, err = triggerATCRun(options, details, &client)
 	}
 	if err == nil {
-		err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML, options.FailOnServerity)
+		err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML, options.FailOnSeverity)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
