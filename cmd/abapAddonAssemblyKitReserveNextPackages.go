@@ -87,13 +87,15 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 				addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
 				if len(pckgWR[i].Package.CommitID) < addonYAMLcommitIDLength {
 					checkFailure = errors.New("Provided CommitIDs have wrong length: " + pckgWR[i].Repo.CommitID + "(addon.yml) longer than the one from AAKaaS " + pckgWR[i].Package.CommitID)
+					log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
 				} else {
 					packageCommitIDsubsting := pckgWR[i].Package.CommitID[0:addonYAMLcommitIDLength]
 					if pckgWR[i].Repo.CommitID != packageCommitIDsubsting {
 						log.Entry().Error("package " + pckgWR[i].Package.PackageName + " was already build but with commit " + pckgWR[i].Package.CommitID + ", not with " + pckgWR[i].Repo.CommitID)
 						log.Entry().Error("If you want to build a new package make sure to increase the dotted-version-string in addon.yml - current value: " + pckgWR[i].Package.VersionYAML)
 						log.Entry().Error("If you do NOT want to build a new package enter the commitID " + pckgWR[i].Package.CommitID + " for software component " + pckgWR[i].Repo.Name + " in addon.yml")
-						checkFailure = errors.New("commit of released package does not match with addon.yml")
+						checkFailure = errors.New("commit of already released package does not match with addon.yml")
+						log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
 					}
 				}
 			} else if pckgWR[i].Package.PredecessorCommitID != "" {
@@ -101,10 +103,12 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 				addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
 				if len(pckgWR[i].Package.PredecessorCommitID) < addonYAMLcommitIDLength {
 					checkFailure = errors.New("Provided CommitIDs have wrong length: " + pckgWR[i].Repo.CommitID + "(addon.yml) longer than the one from AAKaaS " + pckgWR[i].Package.CommitID)
+					log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
 				} else {
 					packagePredecessorCommitIDsubsting := pckgWR[i].Package.PredecessorCommitID[0:addonYAMLcommitIDLength]
 					if pckgWR[i].Repo.CommitID == packagePredecessorCommitIDsubsting {
 						checkFailure = errors.New("CommitID of package " + pckgWR[i].Package.PackageName + " is the same as the one of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")
+						log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
 					}
 				}
 			}
