@@ -236,9 +236,6 @@ func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFi
 				}
 			}
 		}
-		if failStep {
-			return errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to configured failOnServerity Option - '" + failOnSeverityLevel + "'")
-		}
 		if generateHTML {
 			htmlString := generateHTMLDocument(parsedXML)
 			htmlStringByte := []byte(htmlString)
@@ -250,6 +247,9 @@ func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFi
 			}
 		}
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", utils, reports, nil)
+		if failStep {
+			return errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnServerity Option - '" + failOnSeverityLevel + "'")
+		}
 	}
 	if err != nil {
 		return fmt.Errorf("Writing results failed: %w", err)
