@@ -265,9 +265,32 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
     }
 
     @Test
-    void parallelE2eTestOnKubernetes() {
+    void parallelE2eTestOnKubernetes_setWith_POD_NAME_EnvVariable() {
         def appUrl = [url: "http://my-url.com", credentialId: 'testCred']
         binding.variables.env.POD_NAME = "name"
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [parallelExecution: true],
+            stages: [
+                myStage:[
+                    appUrls: [appUrl]
+                ]]]
+
+        stepRule.step.npmExecuteEndToEndTests(
+            script: nullScript,
+            stageName: "myStage",
+            runScript: "ci-e2e"
+        )
+
+        assertTrue(executedInParallel)
+        assertFalse(executedOnNode)
+        assertTrue(executedOnKubernetes)
+    }
+
+    @Test
+    void parallelE2eTestOnKubernetes_setWith_ON_K8S_EnvVariable() {
+        def appUrl = [url: "http://my-url.com", credentialId: 'testCred']
+        binding.variables.env.ON_K8S = "true"
 
         nullScript.commonPipelineEnvironment.configuration = [
             general: [parallelExecution: true],
