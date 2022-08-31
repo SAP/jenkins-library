@@ -247,7 +247,7 @@ func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFi
 		}
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", utils, reports, nil)
 		if failStep {
-			return errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnServerity Option - '" + failOnSeverityLevel + "'")
+			return errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + failOnSeverityLevel + "'")
 		}
 	}
 	if err != nil {
