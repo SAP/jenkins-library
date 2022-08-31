@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -41,6 +43,34 @@ type helmExecuteOptions struct {
 	Version                   string   `json:"version,omitempty"`
 }
 
+type helmExecuteCommonPipelineEnvironment struct {
+	custom struct {
+		remoteHelmChartPath string
+	}
+}
+
+func (p *helmExecuteCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "remoteHelmChartPath", value: p.custom.remoteHelmChartPath},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Piper environment")
+	}
+}
+
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
 func HelmExecuteCommand() *cobra.Command {
 	const STEP_NAME = "helmExecute"
@@ -48,6 +78,7 @@ func HelmExecuteCommand() *cobra.Command {
 	metadata := helmExecuteMetadata()
 	var stepConfig helmExecuteOptions
 	var startTime time.Time
+	var commonPipelineEnvironment helmExecuteCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -128,6 +159,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -148,7 +180,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			helmExecute(stepConfig, &stepTelemetryData)
+			helmExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -497,6 +529,17 @@ func helmExecuteMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Image: "dtzar/helm-kubectl:3.8.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"name": "custom/remoteHelmChartPath"},
+						},
+					},
+				},
 			},
 		},
 	}

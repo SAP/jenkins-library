@@ -7,7 +7,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -110,5 +110,4 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 		err := runGithubCheckBranchProtection(ctx, &config, &telemetryData, &ghRepo)
 		assert.Contains(t, fmt.Sprint(err), "not enough mandatory reviewers")
 	})
-
 }

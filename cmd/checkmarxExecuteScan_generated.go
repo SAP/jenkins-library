@@ -22,37 +22,39 @@ import (
 )
 
 type checkmarxExecuteScanOptions struct {
-	Assignees                     []string `json:"assignees,omitempty"`
-	AvoidDuplicateProjectScans    bool     `json:"avoidDuplicateProjectScans,omitempty"`
-	FilterPattern                 string   `json:"filterPattern,omitempty"`
-	FullScanCycle                 string   `json:"fullScanCycle,omitempty"`
-	FullScansScheduled            bool     `json:"fullScansScheduled,omitempty"`
-	GeneratePdfReport             bool     `json:"generatePdfReport,omitempty"`
-	GithubAPIURL                  string   `json:"githubApiUrl,omitempty"`
-	GithubToken                   string   `json:"githubToken,omitempty"`
-	Incremental                   bool     `json:"incremental,omitempty"`
-	MaxRetries                    int      `json:"maxRetries,omitempty"`
-	Owner                         string   `json:"owner,omitempty"`
-	Password                      string   `json:"password,omitempty"`
-	Preset                        string   `json:"preset,omitempty"`
-	ProjectName                   string   `json:"projectName,omitempty"`
-	PullRequestName               string   `json:"pullRequestName,omitempty"`
-	Repository                    string   `json:"repository,omitempty"`
-	ServerURL                     string   `json:"serverUrl,omitempty"`
-	SourceEncoding                string   `json:"sourceEncoding,omitempty"`
-	TeamID                        string   `json:"teamId,omitempty"`
-	TeamName                      string   `json:"teamName,omitempty"`
-	Username                      string   `json:"username,omitempty"`
-	VerifyOnly                    bool     `json:"verifyOnly,omitempty"`
-	VulnerabilityThresholdEnabled bool     `json:"vulnerabilityThresholdEnabled,omitempty"`
-	VulnerabilityThresholdHigh    int      `json:"vulnerabilityThresholdHigh,omitempty"`
-	VulnerabilityThresholdLow     int      `json:"vulnerabilityThresholdLow,omitempty"`
-	VulnerabilityThresholdMedium  int      `json:"vulnerabilityThresholdMedium,omitempty"`
-	VulnerabilityThresholdResult  string   `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
-	VulnerabilityThresholdUnit    string   `json:"vulnerabilityThresholdUnit,omitempty"`
-	IsOptimizedAndScheduled       bool     `json:"isOptimizedAndScheduled,omitempty"`
-	CreateResultIssue             bool     `json:"createResultIssue,omitempty"`
-	ConvertToSarif                bool     `json:"convertToSarif,omitempty"`
+	Assignees                            []string `json:"assignees,omitempty"`
+	AvoidDuplicateProjectScans           bool     `json:"avoidDuplicateProjectScans,omitempty"`
+	FilterPattern                        string   `json:"filterPattern,omitempty"`
+	FullScanCycle                        string   `json:"fullScanCycle,omitempty"`
+	FullScansScheduled                   bool     `json:"fullScansScheduled,omitempty"`
+	GeneratePdfReport                    bool     `json:"generatePdfReport,omitempty"`
+	GithubAPIURL                         string   `json:"githubApiUrl,omitempty"`
+	GithubToken                          string   `json:"githubToken,omitempty"`
+	Incremental                          bool     `json:"incremental,omitempty"`
+	MaxRetries                           int      `json:"maxRetries,omitempty"`
+	Owner                                string   `json:"owner,omitempty"`
+	Password                             string   `json:"password,omitempty"`
+	Preset                               string   `json:"preset,omitempty"`
+	ProjectName                          string   `json:"projectName,omitempty"`
+	PullRequestName                      string   `json:"pullRequestName,omitempty"`
+	Repository                           string   `json:"repository,omitempty"`
+	ServerURL                            string   `json:"serverUrl,omitempty"`
+	SourceEncoding                       string   `json:"sourceEncoding,omitempty"`
+	TeamID                               string   `json:"teamId,omitempty"`
+	TeamName                             string   `json:"teamName,omitempty"`
+	Username                             string   `json:"username,omitempty"`
+	VerifyOnly                           bool     `json:"verifyOnly,omitempty"`
+	VulnerabilityThresholdEnabled        bool     `json:"vulnerabilityThresholdEnabled,omitempty"`
+	VulnerabilityThresholdHigh           int      `json:"vulnerabilityThresholdHigh,omitempty"`
+	VulnerabilityThresholdMedium         int      `json:"vulnerabilityThresholdMedium,omitempty"`
+	VulnerabilityThresholdLow            int      `json:"vulnerabilityThresholdLow,omitempty"`
+	VulnerabilityThresholdLowPerQuery    bool     `json:"vulnerabilityThresholdLowPerQuery,omitempty"`
+	VulnerabilityThresholdLowPerQueryMax int      `json:"vulnerabilityThresholdLowPerQueryMax,omitempty"`
+	VulnerabilityThresholdResult         string   `json:"vulnerabilityThresholdResult,omitempty" validate:"possible-values=FAILURE"`
+	VulnerabilityThresholdUnit           string   `json:"vulnerabilityThresholdUnit,omitempty"`
+	IsOptimizedAndScheduled              bool     `json:"isOptimizedAndScheduled,omitempty"`
+	CreateResultIssue                    bool     `json:"createResultIssue,omitempty"`
+	ConvertToSarif                       bool     `json:"convertToSarif,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -355,8 +357,10 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdHigh, "vulnerabilityThresholdHigh", 100, "The specific threshold for high severity findings")
-	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdLow, "vulnerabilityThresholdLow", 10, "The specific threshold for low severity findings")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", 100, "The specific threshold for medium severity findings")
+	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdLow, "vulnerabilityThresholdLow", 10, "The specific threshold for low severity findings")
+	cmd.Flags().BoolVar(&stepConfig.VulnerabilityThresholdLowPerQuery, "vulnerabilityThresholdLowPerQuery", false, "Flag to activate/deactivate the threshold of low severity findings per query")
+	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdLowPerQueryMax, "vulnerabilityThresholdLowPerQueryMax", 10, "Upper threshold of low severity findings per query (in absolute number)")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", `FAILURE`, "The result of the build in case thresholds are enabled and exceeded")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", `percentage`, "The unit for the threshold to apply.")
 	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
@@ -381,6 +385,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "checkmarxCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.", Type: "jenkins"},
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "checkmarx", Type: "stash"},
@@ -648,6 +653,15 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Default:     100,
 					},
 					{
+						Name:        "vulnerabilityThresholdMedium",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     100,
+					},
+					{
 						Name:        "vulnerabilityThresholdLow",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -657,13 +671,22 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Default:     10,
 					},
 					{
-						Name:        "vulnerabilityThresholdMedium",
+						Name:        "vulnerabilityThresholdLowPerQuery",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "vulnerabilityThresholdLowPerQueryMax",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     100,
+						Default:     10,
 					},
 					{
 						Name:        "vulnerabilityThresholdResult",

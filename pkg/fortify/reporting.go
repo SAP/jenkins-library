@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -38,12 +39,13 @@ type FortifyReportData struct {
 	Exploitable                         int                     `json:"exploitable"`
 	Suppressed                          int                     `json:"suppressed"`
 	AtleastOneSpotChecksCategoryAudited bool                    `json:"atleastOneSpotChecksCategoryAudited"`
+	IsSpotChecksPerCategoryAudited      bool                    `json:"isSpotChecksPerCategoryAudited"`
 	URL                                 string                  `json:"url"`
 	SpotChecksCategories                *[]SpotChecksAuditCount `json:"spotChecksCategories"`
 }
 
 type SpotChecksAuditCount struct {
-	Audited int    `json:"spotChecksCategories"`
+	Audited int    `json:"audited"`
 	Total   int    `json:"total"`
 	Type    string `json:"type"`
 }
@@ -97,9 +99,18 @@ func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVer
 
 func CreateJSONReport(reportData FortifyReportData, spotChecksCountByCategory []SpotChecksAuditCount, serverURL string) FortifyReportData {
 	reportData.AtleastOneSpotChecksCategoryAudited = true
+	reportData.IsSpotChecksPerCategoryAudited = true
 	for _, spotChecksElement := range spotChecksCountByCategory {
 		if spotChecksElement.Total > 0 && spotChecksElement.Audited == 0 {
 			reportData.AtleastOneSpotChecksCategoryAudited = false
+		}
+
+		spotCheckMinimumPercentageValue := int(math.Ceil(float64(0.10 * float64(spotChecksElement.Total))))
+		if spotChecksElement.Audited < spotCheckMinimumPercentageValue && spotChecksElement.Audited < 10 {
+			reportData.IsSpotChecksPerCategoryAudited = false
+		}
+
+		if !reportData.IsSpotChecksPerCategoryAudited && !reportData.AtleastOneSpotChecksCategoryAudited {
 			break
 		}
 	}

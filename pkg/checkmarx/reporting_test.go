@@ -50,12 +50,29 @@ func TestCreateJSONReport(t *testing.T) {
 	submap = map[string]int{}
 	submap["Issues"] = 2
 	submap["NotFalsePositive"] = 2
+	submap["Confirmed"] = 1
+	submap["NotExploitable"] = 1
 	resultMap["Low"] = submap
 
 	submap = map[string]int{}
 	submap["Issues"] = 5
 	submap["NotFalsePositive"] = 5
 	resultMap["Information"] = submap
+
+	lowPerQuery := map[string]map[string]int{}
+	submap = map[string]int{}
+	submap["Issues"] = 4
+	submap["Confirmed"] = 0
+	submap["NotExploitable"] = 0
+	lowPerQuery["Low_Query_Name_1"] = submap
+
+	submap = map[string]int{}
+	submap["Issues"] = 5
+	submap["Confirmed"] = 2
+	submap["NotExploitable"] = 3
+	lowPerQuery["Low_Query_Name_2"] = submap
+
+	resultMap["LowPerQuery"] = lowPerQuery
 
 	reportingData := CreateJSONReport(resultMap)
 	assert.Equal(t, int64(1000005), reportingData.ScanID)
@@ -73,9 +90,65 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, 4, reportingData.MediumTotal)
 	assert.Equal(t, 4, reportingData.MediumAudited)
 	assert.Equal(t, 2, reportingData.LowTotal)
-	assert.Equal(t, 0, reportingData.LowAudited)
+	assert.Equal(t, 2, reportingData.LowAudited)
 	assert.Equal(t, 5, reportingData.InformationTotal)
 	assert.Equal(t, 0, reportingData.InformationAudited)
+	assert.Equal(t, false, reportingData.IsLowPerQueryAudited)
+	assert.Equal(t, 2, len(*reportingData.LowPerQuery))
+	if (*reportingData.LowPerQuery)[0].QueryName == "Low_Query_Name_1" {
+		assert.Equal(t, "Low_Query_Name_1", (*reportingData.LowPerQuery)[0].QueryName)
+		assert.Equal(t, 0, (*reportingData.LowPerQuery)[0].Audited)
+		assert.Equal(t, 4, (*reportingData.LowPerQuery)[0].Total)
+		assert.Equal(t, "Low_Query_Name_2", (*reportingData.LowPerQuery)[1].QueryName)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[1].Audited)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[1].Total)
+	} else {
+		assert.Equal(t, "Low_Query_Name_1", (*reportingData.LowPerQuery)[1].QueryName)
+		assert.Equal(t, 0, (*reportingData.LowPerQuery)[1].Audited)
+		assert.Equal(t, 4, (*reportingData.LowPerQuery)[1].Total)
+		assert.Equal(t, "Low_Query_Name_2", (*reportingData.LowPerQuery)[0].QueryName)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[0].Audited)
+		assert.Equal(t, 5, (*reportingData.LowPerQuery)[0].Total)
+	}
+
+	lowPerQuery = map[string]map[string]int{}
+	submap = map[string]int{}
+	submap["Issues"] = 100
+	submap["Confirmed"] = 10
+	submap["NotExploitable"] = 0
+	lowPerQuery["Low_Query_Name_1"] = submap
+
+	submap = map[string]int{}
+	submap["Issues"] = 5
+	submap["Confirmed"] = 2
+	submap["NotExploitable"] = 3
+	lowPerQuery["Low_Query_Name_2"] = submap
+
+	resultMap["LowPerQuery"] = lowPerQuery
+	reportingData = CreateJSONReport(resultMap)
+	assert.Equal(t, true, reportingData.IsLowPerQueryAudited)
+
+	lowPerQuery = map[string]map[string]int{}
+	submap = map[string]int{}
+	submap["Issues"] = 200
+	submap["Confirmed"] = 3
+	submap["NotExploitable"] = 2
+	lowPerQuery["Low_Query_Name_1"] = submap
+
+	resultMap["LowPerQuery"] = lowPerQuery
+	reportingData = CreateJSONReport(resultMap)
+	assert.Equal(t, false, reportingData.IsLowPerQueryAudited)
+
+	lowPerQuery = map[string]map[string]int{}
+	submap = map[string]int{}
+	submap["Issues"] = 200
+	submap["Confirmed"] = 5
+	submap["NotExploitable"] = 5
+	lowPerQuery["Low_Query_Name_1"] = submap
+
+	resultMap["LowPerQuery"] = lowPerQuery
+	reportingData = CreateJSONReport(resultMap)
+	assert.Equal(t, true, reportingData.IsLowPerQueryAudited)
 }
 
 func TestJsonReportWithNoLowVulnData(t *testing.T) {
@@ -119,11 +192,6 @@ func TestJsonReportWithNoLowVulnData(t *testing.T) {
 	resultMap["Medium"] = submap
 
 	submap = map[string]int{}
-	submap["Issues"] = 5
-	submap["NotFalsePositive"] = 5
-	resultMap["Information"] = submap
-
-	submap = map[string]int{}
 	submap["Issues"] = 2
 	submap["NotFalsePositive"] = 1
 	resultMap["Information"] = submap
@@ -146,5 +214,5 @@ func TestJsonReportWithNoLowVulnData(t *testing.T) {
 	assert.Equal(t, 0, reportingData.LowTotal)
 	assert.Equal(t, 0, reportingData.LowAudited)
 	assert.Equal(t, 2, reportingData.InformationTotal)
-	assert.Equal(t, 1, reportingData.InformationAudited)
+	assert.Equal(t, 0, reportingData.InformationAudited)
 }

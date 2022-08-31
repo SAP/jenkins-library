@@ -784,7 +784,7 @@ func (f filesMock) TempDir(dir string, pattern string) (name string, err error) 
 	if f.failOnCreation {
 		return "", errors.New("error appeared")
 	}
-	return piperutils.Files{}.TempDir(dir, pattern)
+	return piperutils.Files{}.TempDir("", pattern)
 }
 
 func (f *filesMock) RemoveAll(path string) error {
