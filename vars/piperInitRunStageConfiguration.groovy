@@ -66,9 +66,14 @@ void call(Map parameters = [:]) {
         throw new Exception("checkIfStepActive finished with error")
     }
 
-    script.commonPipelineEnvironment.configuration.runStage = script.readJSON file: ".pipeline/stage_out.json"
-    script.commonPipelineEnvironment.configuration.runStep = script.readJSON file: ".pipeline/step_out.json"
-
+    def stagesJSONObject = script.readJSON file: ".pipeline/stage_out.json"
+    def stepsJSONObject = script.readJSON file: ".pipeline/step_out.json"
+    if (stagesJSONObject) {
+        script.commonPipelineEnvironment.configuration.runStage = new LinkedHashMap(stagesJSONObject)
+    }
+    if (stepsJSONObject) {
+        script.commonPipelineEnvironment.configuration.runStep = new LinkedHashMap(stepsJSONObject)
+    }
     // Retaining this groovy code as some additional checks for activating-deactivating a stage seems to be done.
     script.commonPipelineEnvironment.configuration.runStage.each {stage ->
         String currentStage = stage.getKey()
