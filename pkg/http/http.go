@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
@@ -32,6 +33,7 @@ type Client struct {
 	maxRetries                int
 	transportTimeout          time.Duration
 	transportSkipVerification bool
+	transportProxy            *url.URL
 	username                  string
 	password                  string
 	token                     string
@@ -56,6 +58,7 @@ type ClientOptions struct {
 	// used for the transport layer and duration of handshakes and such.
 	TransportTimeout          time.Duration
 	TransportSkipVerification bool
+	TransportProxy            *url.URL
 	Username                  string
 	Password                  string
 	Token                     string
@@ -236,6 +239,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.useDefaultTransport = options.UseDefaultTransport
 	c.transportTimeout = options.TransportTimeout
 	c.transportSkipVerification = options.TransportSkipVerification
+	c.transportProxy = options.TransportProxy
 	c.maxRequestDuration = options.MaxRequestDuration
 	c.username = options.Username
 	c.password = options.Password
@@ -277,6 +281,7 @@ func (c *Client) initialize() *http.Client {
 			DialContext: (&net.Dialer{
 				Timeout: c.transportTimeout,
 			}).DialContext,
+			Proxy:                 http.ProxyURL(c.transportProxy),
 			ResponseHeaderTimeout: c.transportTimeout,
 			ExpectContinueTimeout: c.transportTimeout,
 			TLSHandshakeTimeout:   c.transportTimeout,
