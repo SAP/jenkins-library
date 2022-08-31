@@ -158,7 +158,6 @@ class PiperGoUtilsTest extends BasePiperTest {
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
         shellCallRule.setReturnValue('[ -x ./piper ]', 1)
-        helper.registerAllowedMethod('sh', [Map.class], {m -> throw new AbortException('download failed - ${m}')})
 
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
