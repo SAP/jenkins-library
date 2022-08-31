@@ -63,10 +63,9 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		resp, err = triggerATCRun(options, details, &client)
 	}
 	if err == nil {
-		err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML, options.FailOnSeverity)
-	}
-	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		if err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML, options.FailOnSeverity); err != nil {
+			log.Entry().WithError(err).Fatal("step execution failed")
+		}
 	}
 
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
