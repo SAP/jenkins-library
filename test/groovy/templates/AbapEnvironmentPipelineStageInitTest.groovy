@@ -69,7 +69,6 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
             stepsCalled('activateStage')
             activeStages.add(m)
         })
-        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
         nullScript.prepareDefaultValues(script: nullScript)
     }
