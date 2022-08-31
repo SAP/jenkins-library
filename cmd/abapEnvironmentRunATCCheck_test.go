@@ -270,7 +270,7 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "error"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
-		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
 		assert.Equal(t, expErr.Error(), err.Error())
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity warning", func(t *testing.T) {
@@ -297,7 +297,7 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "warning"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
-		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
 		assert.Equal(t, expErr.Error(), err.Error())
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity info", func(t *testing.T) {
@@ -324,7 +324,7 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
-		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
 		assert.Equal(t, expErr.Error(), err.Error())
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity warning - only errors", func(t *testing.T) {
@@ -351,7 +351,7 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "warning"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
-		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
 		assert.Equal(t, expErr.Error(), err.Error())
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity info - only errors", func(t *testing.T) {
@@ -378,7 +378,7 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
-		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
 		assert.Equal(t, expErr.Error(), err.Error())
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity warning - only warnings", func(t *testing.T) {
@@ -405,7 +405,7 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
 		err := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
-		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (and higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
+		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
 		assert.Equal(t, expErr.Error(), err.Error())
 	})
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
