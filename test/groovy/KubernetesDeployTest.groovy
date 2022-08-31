@@ -75,6 +75,7 @@ class KubernetesDeployTest extends BasePiperTest {
 
     @Test
     void testKubernetesDeployAllCreds() {
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/kubernetesDeploy.yaml\'', '{"kubeConfigFileCredentialsId":"kubeConfig", "kubeTokenCredentialsId":"kubeToken", "dockerCredentialsId":"dockerCredentials", "dockerImage":"my.Registry/K8S:latest"}')
 
         stepRule.step.kubernetesDeploy(
@@ -86,7 +87,7 @@ class KubernetesDeployTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/kubernetesDeploy.yaml'], containsString('name: kubernetesDeploy'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper kubernetesDeploy'))
+        assertThat(shellCallRule.shell[2], is('./piper kubernetesDeploy'))
         assertThat(credentials.size(), is(3))
 
         assertThat(dockerExecuteRule.dockerParams.dockerImage, is('my.Registry/K8S:latest'))
@@ -94,6 +95,7 @@ class KubernetesDeployTest extends BasePiperTest {
 
     @Test
     void testKubernetesDeploySomeCreds() {
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/kubernetesDeploy.yaml\'', '{"kubeTokenCredentialsId":"kubeToken", "dockerCredentialsId":"dockerCredentials"}')
         stepRule.step.kubernetesDeploy(
             juStabUtils: utils,
@@ -101,7 +103,7 @@ class KubernetesDeployTest extends BasePiperTest {
             script: nullScript
         )
         // asserts
-        assertThat(shellCallRule.shell[1], is('./piper kubernetesDeploy'))
+        assertThat(shellCallRule.shell[2], is('./piper kubernetesDeploy'))
         assertThat(credentials.size(), is(2))
     }
 }
