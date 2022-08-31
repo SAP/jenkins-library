@@ -26,7 +26,7 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
     private List activeStages = []
     private ExpectedException thrown = new ExpectedException()
     private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
-    private PiperGoUtils piperGoUtils = new PiperGoUtils(utils) { void unstashPiperBin() { }}
+    private PiperGoUtils piperGoUtils = new PiperGoUtils(nullScript, utils) { void unstashPiperBin() { }}
 
     @Rule
     public RuleChain rules = Rules
