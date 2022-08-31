@@ -55,7 +55,7 @@ func TestRunProtecodeScan(t *testing.T) {
 
 		} else if requestURI == "/api/product/4486/pdf-report" {
 
-		} else if requestURI == "/api/upload/t.tar" {
+		} else if requestURI == "/api/upload/t.tar" || requestURI == "/api/upload/custom.tar" {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4486, ReportURL: requestURI}}
 
 			var b bytes.Buffer
@@ -104,6 +104,20 @@ func TestRunProtecodeScan(t *testing.T) {
 			opts: protecodeExecuteScanOptions{
 				ServerURL:      server.URL,
 				ScanImage:      "t",
+				TimeoutMinutes: "1",
+				VerifyOnly:     false,
+				CleanupMode:    "none",
+				Group:          "13",
+				ExcludeCVEs:    "CVE-2018-1, CVE-2017-1000382",
+				ReportFileName: "./cache/report-file.txt",
+			},
+		},
+		{
+			name: "Without tar as scan image with custom filename",
+			opts: protecodeExecuteScanOptions{
+				ServerURL:      server.URL,
+				ScanImage:      "t",
+				CustomFilename: "custom.tar",
 				TimeoutMinutes: "1",
 				VerifyOnly:     false,
 				CleanupMode:    "none",
@@ -269,92 +283,6 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 			got := uploadScanOrDeclareFetch(utils, config, c.prID, pc, fileName)
 			// assert
 			assert.Equal(t, c.want, got)
-		})
-	}
-}
-
-func TestApplicationName(t *testing.T) {
-	// init
-	testFile, err := ioutil.TempFile("", "testFileUpload")
-	require.NoError(t, err)
-	defer os.RemoveAll(testFile.Name()) // clean up
-	fileName := filepath.Base(testFile.Name())
-	path := strings.ReplaceAll(testFile.Name(), fileName, "")
-
-	var passedHeaders = map[string][]string{}
-
-	requestURI := ""
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		requestURI = req.RequestURI
-
-		passedHeaders = map[string][]string{}
-		if req.Header != nil {
-			for name, headers := range req.Header {
-				passedHeaders[name] = headers
-			}
-		}
-
-		response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
-
-		var b bytes.Buffer
-		json.NewEncoder(&b).Encode(&response)
-		rw.Write([]byte(b.Bytes()))
-	}))
-
-	// Close the server when test finishes
-	defer server.Close()
-
-	po := protecode.Options{ServerURL: server.URL}
-	pc := protecode.Protecode{}
-	pc.SetOptions(po)
-
-	utils := protecodeTestUtilsBundle{
-		FilesMock:    &mock.FilesMock{},
-		DownloadMock: &mock.DownloadMock{},
-	}
-
-	cases := []struct {
-		group    	string
-		fetchURL 	string
-		filePath 	string
-		appName  	string
-		prName   	string
-		productID int
-		want     	string
-	}{
-		{"group1", "http://local/binary.tar", "", "", "", 4711, ""},
-		{"group1", "http://local/binary.tar", "", "", "PR_4444", 4711, ""},
-		{"group1", "http://local/binary.tar", "", "appName", "", 4711, "appName"},
-		{"group1", "http://local/binary.tar", "", "appName", "PR_4444", 4711, "appName"},
-
-		{"group1", "", path, "", "", 4711, fmt.Sprintf("/api/upload/%v", fileName)},
-		{"group1", "", path, "", "PR_4444", 4711, fmt.Sprintf("/api/upload/PR_4444_%v", fileName)},
-		{"group1", "", path, "appName", "", 4711, "/api/upload/appName"},
-		{"group1", "", path, "appName", "PR_4444", 4711, "/api/upload/PR_4444_appName"},
-	}
-
-	for i, c := range cases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			// test
-			config := protecodeExecuteScanOptions{Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath, ApplicationName: c.appName, PullRequestName: c.prName}
-			_ = uploadFile(utils, config, c.productID, pc, fileName, false)
-
-			// assert
-			if (len(c.fetchURL) > 0) {
-				assert.Equal(t, requestURI, "/api/fetch/")
-				assert.Equal(t, passedHeaders["Url"], []string{c.fetchURL})
-				if (len(c.appName) > 0) {
-					assert.Contains(t, passedHeaders, "Name")
-					assert.Equal(t, []string{c.want}, passedHeaders["Name"])
-				} else {
-					assert.NotContains(t, passedHeaders, "Name")
-				}
-			} else {
-				assert.Equal(t, c.want, requestURI)
-			}
-			assert.Contains(t, passedHeaders, "Group")
-			assert.Contains(t, passedHeaders, "Delete-Binary")
-
 		})
 	}
 }

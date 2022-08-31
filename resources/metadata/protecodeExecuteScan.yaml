@@ -99,9 +99,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: applicationName
+      - name: customFilename
         type: string
-        description: The Protecode application name, by default the uploaded filename will be use
+        description: Set a custom file name to use for the scan (docker image upload only).
         scope:
           - PARAMETERS
           - STAGES

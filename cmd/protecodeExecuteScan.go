@@ -129,9 +129,13 @@ func handleArtifactVersion(artifactVersion string) string {
 }
 
 func getDockerImage(utils protecodeUtils, config *protecodeExecuteScanOptions, cachePath string) (string, string, error) {
-	m := regexp.MustCompile(`[\\s@:/]`)
+	m := regexp.MustCompile(`[\s@:/]`)
 
 	tarFileName := fmt.Sprintf("%s.tar", m.ReplaceAllString(config.ScanImage, "-"))
+	if len(config.CustomFilename) > 0 {
+		tarFileName = fmt.Sprintf("%s", m.ReplaceAllString(config.CustomFilename, "-"))
+	}
+
 	tarFilePath, err := filepath.Abs(filepath.Join(cachePath, tarFileName))
 
 	if err != nil {
@@ -363,7 +367,7 @@ func uploadFile(utils protecodeUtils, config protecodeExecuteScanOptions, produc
 
 	if len(config.FetchURL) > 0 {
 		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, version, productID, replaceBinary, config.ApplicationName)
+		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
 	} else {
 		log.Entry().Debugf("Upload file path: %v", config.FilePath)
@@ -377,15 +381,9 @@ func uploadFile(utils protecodeUtils, config protecodeExecuteScanOptions, produc
 
 		combinedFileName := fileName
 
-		// set the application name instead of the filename
-		if len(config.ApplicationName) > 0 {
-			combinedFileName = config.ApplicationName
-		}
-
 		if len(config.PullRequestName) > 0 {
-			combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, combinedFileName)
+			combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
 		}
-
 
 		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
