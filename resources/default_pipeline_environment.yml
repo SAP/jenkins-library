@@ -236,6 +236,7 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
+      stashBack: '**/node_modules/**,nohup.out'
   dubExecute:
     dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
@@ -367,7 +368,7 @@ steps:
     stepMessage: 'Do you want to restart?'
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original'
+      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/**'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'

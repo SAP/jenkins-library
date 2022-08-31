@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"syscall"
 
@@ -16,14 +15,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	RelaxedURLRegEx = `(?:\b)((http(s?):\/\/)?(((www\.)?[a-zA-Z0-9\.\-\_]+(\.[a-zA-Z]{2,3})+)|((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(\/[a-zA-Z0-9\_\-\.\/\?\%\#\&\=]*)?)(?:\s|\b)`
-)
-
 // Command defines the information required for executing a call to any executable
 type Command struct {
 	ErrorCategoryMapping map[string][]string
-	URLReportFileName    string
+	StepName             string
 	dir                  string
 	stdin                io.Reader
 	stdout               io.Writer
@@ -235,7 +230,7 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		return nil, errors.Wrap(err, "starting command failed")
 	}
 
-	execution := execution{cmd: cmd}
+	execution := execution{cmd: cmd, ul: log.NewURLLogger(c.StepName)}
 	execution.wg.Add(2)
 
 	srcOut := stdout
@@ -266,12 +261,12 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}
 
 	go func() {
-		if c.URLReportFileName != "" {
+		if c.StepName != "" {
 			var buf bytes.Buffer
 			br := bufio.NewWriter(&buf)
 			_, execution.errCopyStdout = piperutils.CopyData(io.MultiWriter(c.stdout, br), srcOut)
 			br.Flush()
-			handleURLs(buf.String(), c.URLReportFileName)
+			execution.ul.Parse(buf)
 		} else {
 			_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
 		}
@@ -279,12 +274,12 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}()
 
 	go func() {
-		if c.URLReportFileName != "" {
+		if c.StepName != "" {
 			var buf bytes.Buffer
 			bw := bufio.NewWriter(&buf)
 			_, execution.errCopyStderr = piperutils.CopyData(io.MultiWriter(c.stderr, bw), srcErr)
 			bw.Flush()
-			handleURLs(buf.String(), c.URLReportFileName)
+			execution.ul.Parse(buf)
 		} else {
 			_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
 		}
@@ -292,22 +287,6 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}()
 
 	return &execution, nil
-}
-
-func handleURLs(s, file string) {
-	reg := regexp.MustCompile(RelaxedURLRegEx)
-	matches := reg.FindAllStringSubmatch(s, -1)
-	f, err := os.Create(file)
-	if err != nil {
-		log.Entry().WithError(err).Info("failed to create url report file")
-	}
-	defer f.Close()
-	for _, match := range matches {
-		_, err = f.WriteString(match[1] + "\n")
-		if err != nil {
-			log.Entry().WithError(err).Info("failed to write record to url report")
-		}
-	}
 }
 
 func (c *Command) scanLog(in io.Reader) {

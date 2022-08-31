@@ -86,7 +86,7 @@ The step always performs a check first, if an ATC System Configuration with the 
 This file contains an JSON Representation of an ATC System Configuration. Some json file examples can be found below.
 
 In case an ATC System Configuration with this name already exists, by default, the step would perform an update of this ATC System Configuration with the ATC System Configuration information provided in file `atcSystemConfig.json`.
-If this is not desired, an update could be supressed by using the parameter patchIfExisting in the configuration yaml the follwoing way:
+If this is not desired, an update could be supressed by using the parameter patchIfExisting in the configuration yaml the following way:
 
 ```yaml
 steps:
@@ -111,8 +111,6 @@ See below an example for an `atcSystemConfig.json` file for creating/updating an
   "checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
   "block_findings": "0",
   "inform_findings": "1",
-  "is_default": false,
-  "is_proxy_variant": false,
   "_priorities": [
     {
       "test": "CL_CI_TEST_AMDP_HDB_MIGRATION",
@@ -130,8 +128,6 @@ See below an example for an `atcSystemConfig.json` file for creating/updating an
   "conf_name": "myATCSystemConfigurationName",
   "checkvariant": "SAP_CLOUD_PLATFORM_ATC_DEFAULT",
   "block_findings": "0",
-  "inform_findings": "1",
-  "is_default": false,
-  "is_proxy_variant": false
+  "inform_findings": "1"
 }
 ```

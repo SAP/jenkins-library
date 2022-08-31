@@ -68,7 +68,7 @@ If you want to configure these tools yourself, you can create a tool specific co
 Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which packages or software components shall be checked. Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) for more details. You have to pass the filename `atcConfig.yml` to the `atcConfig` parameter in the [5. Technical Pipeline Configuration](#5-technical-pipeline-configuration). Here is an example of the configuration:
 
 ```yml
-atcobjects:
+objectSet:
   softwarecomponent:
     - name: "/DMO/REPO"
 ```

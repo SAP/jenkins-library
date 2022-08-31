@@ -12,6 +12,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+const (
+	gradleBomFilename = "bom-gradle"
+)
+
 var (
 	bomGradleTaskName = "cyclonedxBom"
 	publishTaskName   = "publish"
@@ -67,7 +71,7 @@ initscript {
     }
   }
   dependencies {
-    classpath "com.cyclonedx:cyclonedx-gradle-plugin:1.5.0"
+    classpath "org.cyclonedx:cyclonedx-gradle-plugin:1.7.0"
   }
 }
 
@@ -75,6 +79,12 @@ rootProject {
     apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
+
+    cyclonedxBom {
+	outputName = "` + gradleBomFilename + `"
+	outputFormat = "xml"
+	schemaVersion = "1.2"
+    }
 }
 `
 
@@ -90,8 +100,10 @@ type gradleExecuteBuildUtilsBundle struct {
 
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
 	utils := gradleExecuteBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
+		Command: &command.Command{
+			StepName: "gradleExecuteBuild",
+		},
+		Files: &piperutils.Files{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())

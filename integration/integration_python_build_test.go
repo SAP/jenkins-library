@@ -64,7 +64,7 @@ func TestBuildPythonProject(t *testing.T) {
 
 	assert.Contains(t, output, "info  pythonBuild - running command: python setup.py sdist bdist_wheel")
 	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade cyclonedx-bom")
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-bom --e --output bom.xml")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-bom --e --output bom-pip.xml")
 	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
 
 	//workaround to use test script util it is possible to set workdir for Exec call
@@ -82,7 +82,7 @@ func TestBuildPythonProject(t *testing.T) {
 		t.Fatal("Could not read files-list.txt.", err)
 	}
 	output = string(content)
-	assert.Contains(t, output, "bom.xml")
+	assert.Contains(t, output, "bom-pip.xml")
 	assert.Contains(t, output, "example-pkg-0.0.1.tar.gz")
 	assert.Contains(t, output, "example_pkg-0.0.1-py3-none-any.whl")
 }

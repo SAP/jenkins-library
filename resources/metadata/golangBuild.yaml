@@ -155,6 +155,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: runLint
+        type: bool
+        description: Configures the build to run linters with [golangci-lint](https://golangci-lint.run/).
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: runTests
         type: bool
         description: Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).
@@ -245,7 +252,7 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "**/bom.xml"
+          - filePattern: "**/bom-golang.xml"
             type: sbom
           - filePattern: "**/TEST-*.xml"
             type: junit

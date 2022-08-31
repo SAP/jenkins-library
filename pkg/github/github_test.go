@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,7 +47,6 @@ type ghSearchIssuesMock struct {
 }
 
 func (g *ghSearchIssuesMock) Issues(ctx context.Context, query string, opts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
-
 	regex := regexp.MustCompile(`.*in:title (?P<Title>(.*))`)
 	matches := regex.FindStringSubmatch(query)
 
