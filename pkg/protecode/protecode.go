@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/sirupsen/logrus"
 )
 
 // ReportsDirectory defines the subfolder for the Protecode reports which are generated
