@@ -2,6 +2,8 @@ module github.com/SAP/jenkins-library
 
 go 1.18
 
+replace golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d => golang.org/x/crypto v0.0.0-20220314234716-a5774263c1e0
+
 require (
 	cloud.google.com/go/storage v1.22.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.0
