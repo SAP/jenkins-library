@@ -306,6 +306,8 @@ static boolean checkIfStepActive(Map parameters = [:], Script script, String pip
         step = "_"
     }
     flags += " --stage ${stage} --step ${step}"
+    flags += getCustomDefaultConfigsArg()
+    flags += getCustomConfigArg(script)
     piperGoUtils.unstashPiperBin()
     def returnCode = script.sh(returnStatus: true, script: "${piperGoPath} checkIfStepActive ${flags}")
     return (returnCode == 0)
