@@ -1,0 +1,80 @@
+#customDefaults: ["https://github.tools.sap/api/v3/repos/farming/pipeline-shared-config/contents/prototype.yml"]
+customDefaults: ["https://raw.github.tools.sap/farming/pipeline-shared-config/main/prototype.yml"]
+general:
+  #customDefaults: ["https://raw.github.tools.sap/farming/pipeline-shared-config/main/prototype.yml"]
+  customDefaultsCredentialsId: 'Piper_GitHubTools'
+  buildTool: 'golang'
+  containerImageName: 'azure-demo-k8s-go'
+  createResultIssue: true
+  githubApiUrl: 'https://github.tools.sap/api/v3'
+  pipelineOptimization: false
+  productiveBranch: 'Jenkins-master'
+  owner: project-piper
+  repository: azure-demo-k8s-go
+  vaultBasePath: 'piper/PIPELINE-GROUP-882'
+  vaultPipelineName: 'PIPELINE-9791'
+  vaultNamespace: 'ies/hyperspace/pipelines'
+  whitesourceProductName: 'SHC - Piper'
+  verbose: true
+  
+  # Jenkins-only
+  nativeBuild: true
+  # for jenkins testing
+  vaultAppRoleTokenCredentialsId: vault-approle-role-id-882-9791
+  vaultAppRoleSecretTokenCredentialsId: vault-approle-secret-id-882-9791
+stages:
+  "Central Build":
+    kanikoExecute: true
+    helmExecute: true
+    hadolintExecute: false
+    chartPath: helm/azure-demo-k8s-go
+  Acceptance:
+    namespace: 'go-acceptance'
+    chartPath: helm/azure-demo-k8s-go
+    deployTool: helm3
+    deploymentName: azure-demo-k8s-go
+    helmValues: 
+      - helm/azure-demo-k8s-go/values_acceptance.yaml
+    # this secret will be created in the above namespace with the staging credentials
+    containerRegistrySecret: 'regsecretgo'
+  Release:
+    namespace: 'go-release'
+    chartPath: helm/azure-demo-k8s-go
+    deployTool: helm3
+    deploymentName: azure-demo-k8s-go
+    helmValues:
+      - helm/azure-demo-k8s-go/values_release.yaml
+    # this secret should be already present in the above namespace
+    containerRegistrySecret: 'regsecretgo'
+    # hardocode url for release . 
+    containerRegistryUrl: 'https://deploy-releases-hyperspace-docker.common.repositories.cloud.sap'
+steps:
+  artifactPrepareVersion:
+    versioningType: cloud_noTag
+    additionalTargetTools:
+    - helm
+  executeBuild:
+    buildType: stage
+  golangBuild:
+    createBOM: true
+    runLint: false
+  checkmarxExecuteScan:
+    projectName: 'azure-demo-k8s-go'
+    preset: '100099'
+    teamId: 'b75c657f-55c7-483c-ac76-9589f378fa75'
+    vulnerabilityThresholdLow: 0
+  sapCallStagingService:
+    url: 'https://staging.repositories.cloud.sap/stage/api'
+    profile: 'group-882-default'
+#   sapCheckPPMSCompliance:
+#     createBuildVersion: true
+#     uploadChangeRequest: true
+#     ppmsID: '73555000100200012682'
+  sapCumulusUpload:
+    pipelineId: '1e3816b1-99a5-4b19-8a0d-0deeb4b924c8'
+  sonarExecuteScan:
+    serverUrl: 'https://sonar.tools.sap'
+  whitesourceExecuteScan:
+    buildDescriptorFile: go.mod
+    cvssSeverityLimit: 10
+  
