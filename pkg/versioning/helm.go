@@ -2,6 +2,7 @@ package versioning
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"helm.sh/helm/v3/pkg/chart"
@@ -65,7 +66,8 @@ func (h *HelmChart) SetVersion(version string) error {
 
 	h.metadata.Version = version
 	if h.updateAppVersion {
-		h.metadata.AppVersion = version
+		// k8s does not allow a plus sign in labels
+		h.metadata.AppVersion = strings.ReplaceAll(version, "+", "_")
 	}
 
 	content, err := yaml.Marshal(h.metadata)

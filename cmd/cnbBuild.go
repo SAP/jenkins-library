@@ -584,7 +584,7 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
-	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
+	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.9"})
 
 	creatorArgs := []string{
 		"-no-color",
