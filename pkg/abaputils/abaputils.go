@@ -176,40 +176,39 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 
 		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 
-		errorDetails, parsingError := getErrorDetailsFromResponse(resp)
+		errorText, errorCode, parsingError := GetErrorDetailsFromResponse(resp)
 		if parsingError != nil {
 			return err
 		}
-		abapError := errors.New(errorDetails)
+		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
 		err = errors.Wrap(abapError, err.Error())
 
 	}
 	return err
 }
 
-func getErrorDetailsFromResponse(resp *http.Response) (errorString string, err error) {
+func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, errorCode string, err error) {
 
 	// Include the error message of the ABAP Environment system, if available
 	var abapErrorResponse AbapError
 	bodyText, readError := ioutil.ReadAll(resp.Body)
 	if readError != nil {
-		return errorString, readError
+		return "", "", readError
 	}
 	var abapResp map[string]*json.RawMessage
 	errUnmarshal := json.Unmarshal(bodyText, &abapResp)
 	if errUnmarshal != nil {
-		return errorString, errUnmarshal
+		return "", "", errUnmarshal
 	}
 	if _, ok := abapResp["error"]; ok {
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
 		if (AbapError{}) != abapErrorResponse {
-			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
-			errorString = fmt.Sprintf("%s - %s", abapErrorResponse.Code, abapErrorResponse.Message.Value)
-			return errorString, nil
+			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Debug(abapErrorResponse.Message.Value)
+			return abapErrorResponse.Message.Value, abapErrorResponse.Code, nil
 		}
 	}
 
-	return errorString, errors.New("Could not parse the JSON error response")
+	return "", "", errors.New("Could not parse the JSON error response")
 
 }
 
@@ -323,11 +322,13 @@ type AbapBinding struct {
 
 // ClientMock contains information about the client mock
 type ClientMock struct {
-	Token      string
-	Body       string
-	BodyList   []string
-	StatusCode int
-	Error      error
+	Token              string
+	Body               string
+	BodyList           []string
+	StatusCode         int
+	Error              error
+	NilResponse        bool
+	ErrorInsteadOfDump bool
 }
 
 // SetOptions sets clientOptions for a client mock
@@ -336,10 +337,17 @@ func (c *ClientMock) SetOptions(opts piperhttp.ClientOptions) {}
 // SendRequest sets a HTTP response for a client mock
 func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
 
+	if c.NilResponse {
+		return nil, c.Error
+	}
+
 	var body []byte
 	if c.Body != "" {
 		body = []byte(c.Body)
 	} else {
+		if c.ErrorInsteadOfDump && len(c.BodyList) == 0 {
+			return nil, errors.New("No more bodies in the list")
+		}
 		bodyString := c.BodyList[len(c.BodyList)-1]
 		c.BodyList = c.BodyList[:len(c.BodyList)-1]
 		body = []byte(bodyString)

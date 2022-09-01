@@ -67,6 +67,7 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	projectConfig, err := initializeConfig(&pConfig)
 	if err != nil {
 		log.Entry().Errorf("Failed to load project config: %v", err)
+		return errors.Wrapf(err, "Failed to load project config failed")
 	}
 
 	stageConfigFile, err := checkStepActiveOptions.openFile(checkStepActiveOptions.stageConfigFile, GeneralConfig.GitHubAccessTokens)
@@ -75,8 +76,8 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	}
 	defer stageConfigFile.Close()
 
-	runSteps := map[string]map[string]bool{}
-	runStages := map[string]bool{}
+	var runSteps map[string]map[string]bool
+	var runStages map[string]bool
 
 	// load and evaluate step conditions
 	if checkStepActiveOptions.v1Active {
@@ -146,7 +147,7 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
-	cmd.MarkFlagRequired("step")
+	_ = cmd.MarkFlagRequired("step")
 }
 
 func initializeConfig(pConfig *config.Config) (*config.Config, error) {

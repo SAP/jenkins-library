@@ -1,13 +1,14 @@
 package orchestrator
 
 import (
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type AzureDevOpsConfigProvider struct {
@@ -57,6 +58,11 @@ func (a *AzureDevOpsConfigProvider) fetchAPIInformation() {
 	} else {
 		log.Entry().Debugf("apiInformation already set")
 	}
+}
+
+func (a *AzureDevOpsConfigProvider) GetChangeSet() []ChangeSet {
+	log.Entry().Warn("GetChangeSet for AzureDevOps not yet implemented")
+	return []ChangeSet{}
 }
 
 // getSystemCollectionURI returns the URI of the TFS collection or Azure DevOps organization e.g. https://dev.azure.com/fabrikamfiber/
@@ -190,6 +196,11 @@ func (a *AzureDevOpsConfigProvider) GetStageName() string {
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
 	tmp := getEnv("BUILD_SOURCEBRANCH", "n/a")
 	return strings.TrimPrefix(tmp, "refs/heads/")
+}
+
+// GetReference return the git reference
+func (a *AzureDevOpsConfigProvider) GetReference() string {
+	return getEnv("BUILD_SOURCEBRANCH", "n/a")
 }
 
 // GetBuildURL returns the builds URL e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build/results?buildId=1234

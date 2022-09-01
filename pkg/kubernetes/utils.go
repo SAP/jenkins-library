@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -20,17 +19,17 @@ type DeployUtils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(e string, p ...string) error
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	piperutils.FileUtils
 	piperhttp.Uploader
+	piperhttp.Downloader
 }
 
 // deployUtilsBundle struct  for utils
 type deployUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
-	piperhttp.Uploader
+	*piperhttp.Client
 }
 
 // NewDeployUtilsBundle initialize using deployUtilsBundle struct
@@ -63,9 +62,10 @@ func NewDeployUtilsBundle(customTLSCertificateLinks []string) DeployUtils {
 					"Error: release * failed, * timed out waiting for the condition",
 				},
 			},
+			StepName: "helmExecute",
 		},
-		Files:    &piperutils.Files{},
-		Uploader: &httpClient,
+		Files:  &piperutils.Files{},
+		Client: &piperhttp.Client{},
 	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	utils.Stderr(log.Writer())
@@ -96,8 +96,4 @@ func GetChartInfo(chartYamlFile string, utils DeployUtils) (string, string, erro
 	}
 
 	return name, version, nil
-}
-
-func (d *deployUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("not implemented")
 }

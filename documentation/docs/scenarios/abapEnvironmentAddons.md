@@ -128,14 +128,7 @@ Later, during the pipeline configuration, you will specify the service plan, whi
 
 #### Register Add-on Product for a Global Account
 
-The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems within your global accounts. Therefore, the add-on product name and global accounts need to be registered with SAP:
-
-Create an incident using component BC-CP-ABA, and provide the following information:
-
-- Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
-- Global production account ID = *Account ID* in section *Global Account Info* on the overview page of your global account, e.g. `151b5fdc-58c1-4a55-95e1-467df2134c5f` (Feature Set A) or *Global Account Info* on the *Usage Analytics* page of your global account (Feature Set B).
-
-This step can be triggered by you or by SAP partner management (governance process to be negotiated). As a response to the service request, SAP creates a configuration for the requested add-on product so that the add-on product can be installed in systems provisioned in the global account.
+The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems in your global accounts for development and production. Therefore, the product needs to be created and global accounts need to be registered with SAP using Landscape Portal. See [Register Product](https://help.sap.com/docs/BTP/65de2977205c403bbc107264b8eccf4b/dc15fb4ebab5453fa4641b98190b1f85.html).
 
 ### Configuration
 
@@ -145,9 +138,9 @@ Please refer to the [configuration page](../pipelines/abapEnvironment/configurat
 #### ATC
 
 !!! caution ""
-    We recommend to configure the add-on build pipeline with a __quality gate to block any priority 1 ATC findings__.
+    We recommend to configure the add-on build pipeline with a __quality gate to block any error and warning ATC findings__.
 
-    This can be configured with a quality gate configuration `[threshold: 1, type: 'TOTAL_ERROR', unstable: false]` in the `recordIssues` pipeline step shown in [Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
+    This can be configured with a quality gate configuration `[threshold: 1, type: 'TOTAL_ERROR', unstable: false]` and `[threshold: 1, type: 'TOTAL_NORMAL', unstable: false]` in the `recordIssues` pipeline step shown in [Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
 
     Created delivery packages for an add-on product version are final, so to fix any errors in these packages, another add-on product version would have to be built.
     ATC findings should be resolved during development as early as possible, e.g. [during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html) and by using an additional pipeline configured for the [Continuous Testing on SAP BTP, ABAP Environment scenario](abapEnvironmentTest.md).

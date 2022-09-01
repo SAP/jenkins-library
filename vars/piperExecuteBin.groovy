@@ -48,6 +48,11 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 echo "Context Config: ${config}"
             }
 
+            //Add ANS credential information to the config
+            ansHookServiceKeyCredentialsId =
+                DefaultValueCache.getInstance().getDefaultValues().hooks?.ans?.serviceKeyCredentialsId
+            config += ["ansHookServiceKeyCredentialsId": ansHookServiceKeyCredentialsId]
+
             // prepare stashes
             // first eliminate empty stashes
             config.stashContent = utils.unstashAll(config.stashContent)
@@ -168,7 +173,7 @@ void dockerWrapper(script, stepName, config, body) {
 // reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
     credentialInfo = handleVaultCredentials(config, credentialInfo)
-
+    credentialInfo = handleANSCredentials(config, credentialInfo)
     if (credentialInfo.size() > 0) {
         def creds = []
         def sshCreds = []
@@ -256,6 +261,14 @@ List handleVaultCredentials(config, List credentialInfo) {
     return credentialInfo
 }
 
+List handleANSCredentials(config, List credentialInfo){
+    if (config.containsKey('ansHookServiceKeyCredentialsId')) {
+        credentialInfo += [[type: 'token', id: 'ansHookServiceKeyCredentialsId', env: ['PIPER_ansHookServiceKey']]]
+    }
+
+    return credentialInfo
+}
+
 // reused in sonarExecuteScan
 void handleErrorDetails(String stepName, Closure body) {
     try {
@@ -273,4 +286,29 @@ void handleErrorDetails(String stepName, Closure body) {
         }
         error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
+}
+// it can be used in 2 ways:
+// 1. use stage, step arguments and leave stepOutputFile "" and stageOutputFile "" empty to check if this step is active in this stage (true means step is active, false - not active or something went wrong)
+// 2. use stageOutputFile and/or stepOutputFile and leave step "" and stage "" to write the whole map of steps in all stages into a file[s] (true means no errors, false - something went wrong)
+// if both presented - priority is option 2
+static boolean checkIfStepActive(Map parameters = [:], Script script, String piperGoPath, String stageConfig = "", String stepOutputFile = "", String stageOutputFile = "", String stage = "", String step = "") {
+    def utils = parameters.juStabUtils ?: new Utils()
+    def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
+    def flags = "--stageConfig ${stageConfig} --useV1"
+    if (stageOutputFile) {
+        flags += " --stageOutputFile ${stageOutputFile}"
+    }
+    if (stepOutputFile) {
+        flags += " --stepOutputFile ${stepOutputFile}"
+    }
+    if (!stage || !step) {
+        stage = "_"
+        step = "_"
+    }
+    flags += " --stage ${stage} --step ${step}"
+    flags += getCustomDefaultConfigsArg()
+    flags += getCustomConfigArg(script)
+    piperGoUtils.unstashPiperBin()
+    def returnCode = script.sh(returnStatus: true, script: "${piperGoPath} checkIfStepActive ${flags}")
+    return (returnCode == 0)
 }

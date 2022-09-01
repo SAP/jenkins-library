@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/Jeffail/gabs/v2"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -17,34 +16,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
-
-type integrationArtifactUploadUtils interface {
-	command.ExecRunner
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The integrationArtifactUploadUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
-
-type integrationArtifactUploadUtilsBundle struct {
-	*command.Command
-
-	// Embed more structs as necessary to implement methods or interfaces you add to integrationArtifactUploadUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// integrationArtifactUploadUtilsBundle and forward to the implementation of the dependency.
-}
-
-func newIntegrationArtifactUploadUtils() integrationArtifactUploadUtils {
-	utils := integrationArtifactUploadUtilsBundle{
-		Command: &command.Command{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
 
 func integrationArtifactUpload(config integrationArtifactUploadOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.

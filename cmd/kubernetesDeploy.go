@@ -15,6 +15,7 @@ import (
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/docker"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -38,7 +39,20 @@ func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetr
 	telemetryData.Custom1 = config.DeployTool
 
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-		return runHelmDeploy(config, utils, stdout)
+		err := runHelmDeploy(config, utils, stdout)
+		// download and execute teardown script
+		if len(config.TeardownScript) > 0 {
+			log.Entry().Debugf("start running teardownScript script %v", config.TeardownScript)
+			if scriptErr := downloadAndExecuteExtensionScript(config.TeardownScript, config.GithubToken, utils); scriptErr != nil {
+				if err != nil {
+					err = fmt.Errorf("failed to download/run teardownScript script: %v: %w", fmt.Sprint(scriptErr), err)
+				} else {
+					err = scriptErr
+				}
+			}
+			log.Entry().Debugf("finished running teardownScript script %v", config.TeardownScript)
+		}
+		return err
 	} else if config.DeployTool == "kubectl" {
 		return runKubectlDeploy(config, utils, stdout)
 	}
@@ -52,6 +66,16 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	if len(config.DeploymentName) <= 0 {
 		return fmt.Errorf("deployment name has not been set, please configure deploymentName parameter")
 	}
+
+	// download and execute setup script
+	if len(config.SetupScript) > 0 {
+		log.Entry().Debugf("start running setup script %v", config.SetupScript)
+		if err := downloadAndExecuteExtensionScript(config.SetupScript, config.GithubToken, utils); err != nil {
+			return fmt.Errorf("failed to download/run setup setup script: %w", err)
+		}
+		log.Entry().Debugf("finished running setup script %v", config.SetupScript)
+	}
+
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -187,6 +211,15 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
 
+	// download and execute verification script
+	if len(config.VerificationScript) > 0 {
+		log.Entry().Debugf("start running verification script %v", config.VerificationScript)
+		if err := downloadAndExecuteExtensionScript(config.VerificationScript, config.GithubToken, utils); err != nil {
+			return fmt.Errorf("failed to download/run verification script: %w", err)
+		}
+		log.Entry().Debugf("finished running verification script %v", config.VerificationScript)
+	}
+
 	testParams := []string{
 		"test",
 		config.DeploymentName,
@@ -262,7 +295,9 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		tmpFolder := getTempDirForKubeCtlJSON()
 		defer os.RemoveAll(tmpFolder) // clean up
 		jsonData, _ := json.Marshal(dockerRegistrySecretData)
-		ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777)
+		if err := ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777); err != nil {
+			log.Entry().WithError(err).Warning("failed to write secret")
+		}
 
 		kubeSecretApplyParams := []string{"apply", "-f", filepath.Join(tmpFolder, "secret.json")}
 		if err := utils.RunExecutable("kubectl", kubeSecretApplyParams...); err != nil {
@@ -531,4 +566,16 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 	}
 
 	return dv, nil
+}
+
+func downloadAndExecuteExtensionScript(script, githubToken string, utils kubernetes.DeployUtils) error {
+	setupScript, err := piperhttp.DownloadExecutable(githubToken, utils, utils, script)
+	if err != nil {
+		return fmt.Errorf("failed to download script %v: %w", script, err)
+	}
+	err = utils.RunExecutable(setupScript)
+	if err != nil {
+		return fmt.Errorf("failed to execute script %v: %w", script, err)
+	}
+	return nil
 }

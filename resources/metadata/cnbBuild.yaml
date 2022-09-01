@@ -13,11 +13,11 @@ spec:
 
           ```json
           {
-              "auths": {
-                      "$server": {
-                              "auth": "base64($username + ':' + $password)"
-                      }
+            "auths": {
+              "$server": {
+                "auth": "base64($username + ':' + $password)"
               }
+            }
           }
           ```
 
@@ -25,11 +25,11 @@ spec:
 
           ```json
           {
-              "auths": {
-                      "example.com": {
-                              "auth": "dXNlcm5hbWU6cGFzc3dvcmQ="
-                      }
+            "auths": {
+              "example.com": {
+                "auth": "dXNlcm5hbWU6cGFzc3dvcmQ="
               }
+            }
           }
           ```
         type: jenkins
@@ -41,11 +41,22 @@ spec:
         description: |
           Name of the container which will be built
           `cnbBuild` step will try to identify a containerImageName using the following precedence:
+
             1. `containerImageName` parameter.
             2. `project.id` field of a `project.toml` file.
             3. `git/repository` parameter of the `commonPipelineEnvironment`.
             4. `github/repository` parameter of the `commonPipelineEnvironment`.
+
           If none of the above was found - an error will be raised.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageAlias
+        type: string
+        description: |
+          Logical name used for this image.
         scope:
           - GENERAL
           - PARAMETERS
@@ -83,7 +94,7 @@ spec:
             param: container/registryUrl
       - name: buildpacks
         type: "[]string"
-        description: List of custom buildpacks to use in the form of '$HOSTNAME/$REPO[:$TAG]'.
+        description: List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`.
         scope:
           - PARAMETERS
           - STAGES
@@ -210,13 +221,15 @@ spec:
           dockerConfigJsonCredentialsId: CREDENTIALS
           multipleImages:
           - containerImageName: java-app
+            alias: java
             buildpacks:
-            - "java"
+            - "gcr.io/paketo-buildpacks/java"
             path: "source/java"
           - containerImageName: nodejs-app
+            alias: nodejs
             containerImageTag: v1.0.0
             buildpacks:
-            - "nodejs"
+            - "gcr.io/paketo-buildpacks/nodejs"
             path: "source/nodejs"
           ```
         scope:
@@ -233,6 +246,24 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: buildSettingsInfo
+        type: string
+        description: Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+      - name: createBOM
+        type: bool
+        description: "**EXPERIMENTAL:** Creates the bill of materials (BOM) using CycloneDX plugin."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -247,5 +278,11 @@ spec:
             type: "[]string"
           - name: container/imageDigests
             type: "[]string"
+          - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom-*.xml"
+            type: sbom
   containers:
     - image: "paketobuildpacks/builder:base"

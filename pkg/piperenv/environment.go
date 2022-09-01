@@ -2,6 +2,7 @@ package piperenv
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -56,7 +57,10 @@ func writeToDisk(filename string, data []byte) error {
 
 	if _, err := os.Stat(filepath.Dir(filename)); os.IsNotExist(err) {
 		log.Entry().Debugf("Creating directory: %v", filepath.Dir(filename))
-		os.MkdirAll(filepath.Dir(filename), 0777)
+		cErr := os.MkdirAll(filepath.Dir(filename), 0777)
+		if cErr != nil {
+			return fmt.Errorf("failed to create directory %v, %w", filepath.Dir(filename), cErr)
+		}
 	}
 
 	//ToDo: make sure to not overwrite file but rather add another file? Create error if already existing?

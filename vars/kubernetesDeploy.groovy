@@ -9,6 +9,7 @@ void call(Map parameters = [:]) {
         [type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']],
         [type: 'token', id: 'kubeTokenCredentialsId', env: ['PIPER_kubeToken']],
         [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_containerRegistryUser', 'PIPER_containerRegistryPassword']],
+        [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
