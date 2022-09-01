@@ -377,8 +377,16 @@ func (h *HelmExecute) RunHelmDependency() error {
 		log.Entry().WithError(err).Fatal("Helm dependency call failed")
 	}
 
-	if err := h.utils.Chmod(filepath.Join(h.config.ChartPath, "charts"), 0777); err != nil {
-		return fmt.Errorf("failed to change permissions: %v", err)
+	dependencyDir := filepath.Join(h.config.ChartPath, "charts")
+	exists, err := h.utils.DirExists(dependencyDir)
+	if err != nil {
+		return fmt.Errorf("failed to get directory information: %v", err)
+	}
+
+	if exists {
+		if err := h.utils.Chmod(dependencyDir, 0777); err != nil {
+			return fmt.Errorf("failed to change permissions: %v", err)
+		}
 	}
 
 	return nil
