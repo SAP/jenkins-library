@@ -152,11 +152,20 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 
 func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
-	customConfig, err := checkStepActiveOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
-	if err != nil {
-		return nil, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+	var customConfig io.ReadCloser
+	var err error
+	//accept that config file cannot be loaded as its not mandatory here
+	if exists, err := piperutils.FileExists(projectConfigFile); exists {
+		log.Entry().Infof("Project config: '%s'", projectConfigFile)
+		customConfig, err = checkStepActiveOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
+		if err != nil {
+			return nil, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+		}
+		defer customConfig.Close()
+	} else {
+		log.Entry().Infof("Project config: NONE ('%s' does not exist)", projectConfigFile)
+		customConfig = nil
 	}
-	defer customConfig.Close()
 
 	defaultConfig := []io.ReadCloser{}
 	for _, f := range GeneralConfig.DefaultConfig {
