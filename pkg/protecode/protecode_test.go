@@ -187,6 +187,8 @@ func TestPollForResultSuccess(t *testing.T) {
 	requestURI := ""
 	var response ResultData = ResultData{}
 
+	protecodePollInterval = time.Nanosecond
+
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
 		productID := 111

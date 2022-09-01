@@ -93,6 +93,9 @@ type Protecode struct {
 	logger    *logrus.Entry
 }
 
+// Used to reduce wait time during tests
+var protecodePollInterval = 10 * time.Second
+
 // Just calls SetOptions which makes sure logger is set.
 // Added to make test code more resilient
 func makeProtecode(opts Options) Protecode {
@@ -436,7 +439,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 	var response ResultData
 	var err error
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(protecodePollInterval)
 	defer ticker.Stop()
 
 	var ticks int64 = 6
