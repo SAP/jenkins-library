@@ -302,4 +302,4 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: custom/remoteHelmChartPath
+          - name: custom/helmChartUrl
