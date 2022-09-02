@@ -77,8 +77,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
     }
 
@@ -95,8 +94,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
     }
 
@@ -113,8 +111,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
     }
 
@@ -131,8 +128,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
     }
 
@@ -146,8 +142,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
 
         assertFalse(executedInParallel)
@@ -168,8 +163,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
 
         assert npmExecuteScriptsRule.hasParameter('script', nullScript)
@@ -190,8 +184,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
 
         assert npmExecuteScriptsRule.hasParameter('script', nullScript)
@@ -214,7 +207,6 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
             script: nullScript,
             stageName: "myStage",
             buildDescriptorExcludeList: ["path/to/package.json"],
-            runScript: "ci-e2e"
         )
 
         assert npmExecuteScriptsRule.hasParameter('script', nullScript)
@@ -238,8 +230,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
 
         assertTrue(executedInParallel)
@@ -261,8 +252,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stageName: "myStage",
-            runScript: "ci-e2e"
+            stageName: "myStage"
         )
 
         assertTrue(executedInParallel)
