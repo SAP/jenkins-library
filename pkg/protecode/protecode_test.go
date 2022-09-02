@@ -1,19 +1,18 @@
 package protecode
 
 import (
-	"io"
-	"strconv"
-	"testing"
-
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -41,6 +40,7 @@ func TestMapResponse(t *testing.T) {
 		assert.Equal(t, c.want, c.input)
 	}
 }
+
 func TestParseResultSuccess(t *testing.T) {
 
 	var result Result = Result{
@@ -186,6 +186,8 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 func TestPollForResultSuccess(t *testing.T) {
 	requestURI := ""
 	var response ResultData = ResultData{}
+
+	protecodePollInterval = time.Nanosecond
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
