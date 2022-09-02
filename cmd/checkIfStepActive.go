@@ -16,6 +16,7 @@ import (
 
 type checkStepActiveCommandOptions struct {
 	openFile        func(s string, t map[string]string) (io.ReadCloser, error)
+	fileExists      func(filename string) (bool, error)
 	stageConfigFile string
 	stepName        string
 	stageName       string
@@ -29,6 +30,7 @@ var checkStepActiveOptions checkStepActiveCommandOptions
 // CheckStepActiveCommand is the entry command for checking if a step is active in a defined stage
 func CheckStepActiveCommand() *cobra.Command {
 	checkStepActiveOptions.openFile = config.OpenPiperFile
+	checkStepActiveOptions.fileExists = piperutils.FileExists
 	var checkStepActiveCmd = &cobra.Command{
 		Use:   "checkIfStepActive",
 		Short: "Checks if a step is active in a defined stage.",
@@ -155,7 +157,7 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 	var customConfig io.ReadCloser
 	var err error
 	//accept that config file cannot be loaded as its not mandatory here
-	if exists, err := piperutils.FileExists(projectConfigFile); exists {
+	if exists, err := checkStepActiveOptions.fileExists(projectConfigFile); exists {
 		log.Entry().Infof("Project config: '%s'", projectConfigFile)
 		customConfig, err = checkStepActiveOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
