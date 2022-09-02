@@ -100,7 +100,7 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 		if err != nil {
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
-		commonPipelineEnvironment.custom.remoteHelmChartPath = targetURL
+		commonPipelineEnvironment.custom.helmChartURL = targetURL
 	default:
 		if err := runHelmExecuteDefault(config, helmExecutor, commonPipelineEnvironment); err != nil {
 			return err
@@ -126,7 +126,7 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 		if err != nil {
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
-		commonPipelineEnvironment.custom.remoteHelmChartPath = targetURL
+		commonPipelineEnvironment.custom.helmChartURL = targetURL
 	}
 
 	return nil
