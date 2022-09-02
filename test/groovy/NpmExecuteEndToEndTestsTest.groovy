@@ -83,23 +83,6 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
     }
 
     @Test
-    void noRunScript() {
-        def appUrl = [url: "http://my-url.com"]
-
-        nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
-            appUrls: [appUrl]
-        ]]]
-
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[npmExecuteEndToEndTests] No runScript was defined.')
-
-        stepRule.step.npmExecuteEndToEndTests(
-            script: nullScript,
-            stageName: "myStage"
-        )
-    }
-
-    @Test
     void appUrlsNoList() {
         def appUrl = "http://my-url.com"
 
