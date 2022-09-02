@@ -164,7 +164,6 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 		defer customConfig.Close()
 	} else {
 		log.Entry().Infof("Project config: NONE ('%s' does not exist)", projectConfigFile)
-		customConfig = nil
 	}
 
 	defaultConfig := []io.ReadCloser{}
