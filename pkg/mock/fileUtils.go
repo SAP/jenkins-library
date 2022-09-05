@@ -4,6 +4,7 @@
 package mock
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -547,19 +548,12 @@ type FileMock struct {
 	absPath string
 	files   *FilesMock
 	content []byte
+	buf     io.Reader
 }
 
 // Reads the content of the mock
 func (f *FileMock) Read(b []byte) (n int, err error) {
-	if len(b) == 0 {
-		return 0, nil
-	}
-
-	for i, p := range f.content {
-		b[i] = p
-	}
-
-	return len(f.content), io.EOF
+	return f.buf.Read(b)
 }
 
 // Close mocks freeing the associated OS resources.
@@ -610,20 +604,21 @@ func (f *FilesMock) OpenFile(path string, flag int, perm os.FileMode) (*FileMock
 	}
 	if !exists && flag&os.O_CREATE != 0 {
 		f.associateContentAbs(absPath, &[]byte{}, perm)
-		properties, _ = f.files[absPath]
+		properties = f.files[absPath]
 	}
 
 	file := FileMock{
 		absPath: absPath,
 		files:   f,
-		content: []byte{},
+		content: *properties.content,
 	}
 
-	if flag&os.O_APPEND != 0 {
-		file.content = *properties.content
-	} else if flag&os.O_TRUNC != 0 {
+	if flag&os.O_TRUNC != 0 || flag&os.O_CREATE != 0 {
+		file.content = []byte{}
 		properties.content = &file.content
 	}
+
+	file.buf = bytes.NewBuffer(file.content)
 
 	return &file, nil
 }

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 func TestWriteReport(t *testing.T) {
