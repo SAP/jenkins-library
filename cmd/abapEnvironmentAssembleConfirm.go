@@ -75,6 +75,7 @@ func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOpt
 
 func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, delayBetweenPosts time.Duration) ([]buildWithRepository, error) {
 	var confirmedBuilds []buildWithRepository
+	var releasePackagesFailed error = nil
 	for _, repo := range repos {
 		assemblyBuild := abapbuild.Build{
 			Connector: conn,
@@ -83,12 +84,19 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 			build: assemblyBuild,
 			repo:  repo,
 		}
-		if repo.InBuildScope {
+		if repo.InBuildScope && repo.Status == "R" {
 			err := buildRepo.startConfirm()
 			if err != nil {
 				return confirmedBuilds, err
 			}
 			confirmedBuilds = append(confirmedBuilds, buildRepo)
+		} else if repo.InBuildScope && repo.Status != "R" {
+			errormessage := "Release of package '" + repo.PackageName + "' must have failed as still in status: '" + repo.Status + "'"
+			if releasePackagesFailed == nil {
+				releasePackagesFailed = errors.New(errormessage)
+			} else {
+				releasePackagesFailed = errors.Wrapf(releasePackagesFailed, errormessage)
+			}
 		} else {
 			log.Entry().Infof("Packages %s was not assembled in this pipeline run, thus no need to confirm", repo.PackageName)
 		}
@@ -96,7 +104,7 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 		//as batch events in the ABAP Backend need a little time
 		time.Sleep(delayBetweenPosts)
 	}
-	return confirmedBuilds, nil
+	return confirmedBuilds, releasePackagesFailed
 }
 
 func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollInterval time.Duration) error {

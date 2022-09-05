@@ -273,7 +273,6 @@ func TestWriteSarifFile(t *testing.T) {
 }
 
 func TestCountSecurityVulnerabilities(t *testing.T) {
-	t.Parallel()
 
 	alerts := []Alert{
 		{Vulnerability: Vulnerability{CVSS3Score: 7.1}},
