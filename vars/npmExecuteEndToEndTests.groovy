@@ -33,7 +33,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'buildDescriptorExcludeList',
     /**
-     * Script to be executed from package.json.
+     * Script to be executed from package.json. Defaults to `ci-e2e`.
      */
     'runScript',
     /**

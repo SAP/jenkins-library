@@ -354,6 +354,8 @@ steps:
     dockerImage: 'node:lts-stretch'
   npmExecuteScripts:
     install: true
+  npmExecuteEndToEndTests:
+    runScript: 'ci-e2e'
   whitesourceExecuteScan:
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
     stashExcludes:
