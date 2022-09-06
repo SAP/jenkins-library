@@ -3,6 +3,8 @@ package cmd
 import (
 	"io"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -37,6 +39,15 @@ steps:
 	return ioutil.NopCloser(strings.NewReader(fileContent)), nil
 }
 
+func checkStepActiveFileExistsMock(filename string) (bool, error) {
+	switch filename {
+	case ".pipeline/config.yml":
+		return true, nil
+	default:
+		return false, nil
+	}
+}
+
 func TestCheckStepActiveCommand(t *testing.T) {
 	cmd := CheckStepActiveCommand()
 
@@ -65,6 +76,7 @@ func TestCheckStepActiveCommand(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case - set stage and stageName parameters", func(t *testing.T) {
 			checkStepActiveOptions.openFile = checkStepActiveOpenFileMock
+			checkStepActiveOptions.fileExists = checkStepActiveFileExistsMock
 			checkStepActiveOptions.stageName = "testStage"
 			checkStepActiveOptions.stepName = "testStep"
 			checkStepActiveOptions.stageConfigFile = "stage-config.yml"
@@ -75,6 +87,7 @@ func TestCheckStepActiveCommand(t *testing.T) {
 		})
 		t.Run("Success case - set only stage parameter", func(t *testing.T) {
 			checkStepActiveOptions.openFile = checkStepActiveOpenFileMock
+			checkStepActiveOptions.fileExists = checkStepActiveFileExistsMock
 			checkStepActiveOptions.stageName = "testStage"
 			checkStepActiveOptions.stepName = "testStep"
 			checkStepActiveOptions.stageConfigFile = "stage-config.yml"
@@ -84,6 +97,7 @@ func TestCheckStepActiveCommand(t *testing.T) {
 		})
 		t.Run("Success case - set only stageName parameter", func(t *testing.T) {
 			checkStepActiveOptions.openFile = checkStepActiveOpenFileMock
+			checkStepActiveOptions.fileExists = checkStepActiveFileExistsMock
 			checkStepActiveOptions.stepName = "testStep"
 			checkStepActiveOptions.stageConfigFile = "stage-config.yml"
 			GeneralConfig.CustomConfig = ".pipeline/config.yml"
@@ -92,4 +106,40 @@ func TestCheckStepActiveCommand(t *testing.T) {
 			cmd.Run(cmd, []string{})
 		})
 	})
+}
+func TestFailIfNoConfigFound(t *testing.T) {
+	if os.Getenv("TEST_FAIL_IF_NO_CONFIG_FOUND") == "1" {
+		cmd := CheckStepActiveCommand()
+
+		gotReq := []string{}
+		gotOpt := []string{}
+
+		cmd.Flags().VisitAll(func(pflag *flag.Flag) {
+			annotations, found := pflag.Annotations[cobra.BashCompOneRequiredFlag]
+			if found && annotations[0] == "true" {
+				gotReq = append(gotReq, pflag.Name)
+			} else {
+				gotOpt = append(gotOpt, pflag.Name)
+			}
+		})
+		checkStepActiveOptions.openFile = checkStepActiveOpenFileMock
+		checkStepActiveOptions.fileExists = checkStepActiveFileExistsMock
+		checkStepActiveOptions.stageName = "testStage"
+		checkStepActiveOptions.stepName = "testStep"
+		checkStepActiveOptions.stageConfigFile = "stage-config.yml"
+		GeneralConfig.CustomConfig = ".pipeline/unknown.yml"
+		GeneralConfig.DefaultConfig = []string{".pipeline/defaults.yaml"}
+		GeneralConfig.StageName = "testStage1"
+		cmd.Run(cmd, []string{})
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestFailIfNoConfigFound")
+	cmd.Env = append(os.Environ(), "TEST_FAIL_IF_NO_CONFIG_FOUND=1")
+	err := cmd.Run()
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		t.Log(e.Error())
+		t.Log("Stderr: ", string(e.Stderr))
+		return
+	}
+	t.Fatalf("process ran with err %v, want exit status 1", err)
 }
