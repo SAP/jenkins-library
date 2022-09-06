@@ -466,6 +466,9 @@ func TestRunHelmDependency(t *testing.T) {
 		t.Run(fmt.Sprintf("test case: %d", i), func(t *testing.T) {
 			utils := helmMockUtilsBundle{
 				ExecMockRunner: &mock.ExecMockRunner{},
+				FilesMock: &mock.FilesMock{
+					Separator: "/",
+				},
 			}
 			helmExecute := HelmExecute{
 				utils:   utils,
