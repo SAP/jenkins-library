@@ -1,0 +1,8 @@
+nekottyo/kustomize-kubeval:kustomizev4
+maven:3-openjdk-8-slim
+golang:1
+paketobuildpacks/builder:0.3.26-base
+nginx:latest
+paketobuildpacks/builder:buildpackless-full
+sonatype/nexus3:3.25.1
+devxci/mbtci-java11-node14:latest
