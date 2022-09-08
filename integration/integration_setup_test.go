@@ -5,12 +5,19 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-	f, err := os.OpenFile("images.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	pwd = filepath.Dir(pwd)
+	f, err := os.OpenFile(filepath.Join(pwd, "integration", "images.txt"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
