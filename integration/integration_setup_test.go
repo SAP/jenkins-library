@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 	pwd = filepath.Dir(pwd)
-	f, err := os.OpenFile(filepath.Join(pwd, "integration", "images.txt"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(filepath.Join(pwd, "integration", "images.txt"), os.O_RDONLY, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
