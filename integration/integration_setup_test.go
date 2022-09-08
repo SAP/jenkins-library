@@ -10,7 +10,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	f, err := os.OpenFile("./integration/images.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile("images.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
