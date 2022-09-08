@@ -8,10 +8,9 @@ TEST_NAME=$1
 pushd ..
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags release -o piper
 
-while read p; do
-  docker pull "$p"
-done <./integration/images.txt
-
+#for f in ./integration/images/*.tar; do
+#    cat $f | docker load
+#done
 if [[ "$TEST_NAME" ]]
 then
     go test -tags=integration -timeout 25m -run "$TEST_NAME" ./integration/...
