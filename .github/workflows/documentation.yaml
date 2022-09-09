@@ -42,8 +42,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - run: docker pull ppiper/jenkinsfile-runner:latest
-
       - name: Generate Groovy Docs
         env:
           MAVEN_OPTS: -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn

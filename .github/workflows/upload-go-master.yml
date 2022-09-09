@@ -13,48 +13,27 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: '1.18.x'
-      - env:
-          CGO_ENABLED: 0
-        run: |
-          # See https://golang.org/cmd/link/ for info on -w (omit the DWARF symbol table) and -s (omit the symbol table and debug information)
-          # We use those flags to get a smaller compiled binary for faster downloads.
-          go build -ldflags "-w -s -X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
-                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
-                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=https://github.com/${GITHUB_REPOSITORY}.git" \
-            -o piper_master .
-          stat --printf="File size of piper_master in bytes: %s\n" piper_master
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: master
+          command: golangBuild
+          # ToDo: also perform testing (unit & integration) as well as coverage
+          # this also allows to exclude coverage for generated files
+          flags: --runTests=false --output piper_master --targetArchitectures "linux,amd64","darwin,amd64", "windows,amd64" --ldflagsTemplate "-w -s -X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=https://github.com/${GITHUB_REPOSITORY}.git"
+      - run: |
+          sh "mv piper_master-linux.amd64 piper_master"
+          sh "mv piper_master-darwin.amd64 piper_master-darwin.x86_64"
+          sh "mv piper_master-windows.amd64.exe piper_master-win.x86_64.exe"
       - uses: SAP/project-piper-action@master
         with:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master
-      - env:
-          CGO_ENABLED: 0
-          GOOS: darwin
-          GOARCH: amd64
-        run: |
-          # See https://golang.org/cmd/link/ for info on -w (omit the DWARF symbol table) and -s (omit the symbol table and debug information)
-          # We use those flags to get a smaller compiled binary for faster downloads.
-          go build -ldflags "-w -s -X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
-                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
-                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=https://github.com/${GITHUB_REPOSITORY}.git" \
-            -o piper_master-darwin.x86_64 .
       - uses: SAP/project-piper-action@master
         with:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master-darwin.x86_64
-      - env:
-          CGO_ENABLED: 0
-          GOOS: windows
-          GOARCH: amd64
-        run: |
-          # See https://golang.org/cmd/link/ for info on -w (omit the DWARF symbol table) and -s (omit the symbol table and debug information)
-          # We use those flags to get a smaller compiled binary for faster downloads.
-          go build -ldflags "-w -s -X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
-                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
-                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=https://github.com/${GITHUB_REPOSITORY}.git" \
-            -o piper_master-win.x86_64.exe .
       - uses: SAP/project-piper-action@master
         with:
           piper-version: master

@@ -343,26 +343,6 @@ func {{ .StepName }}Metadata() config.StepData {
 }
 `
 
-// StepTestGoTemplate ...
-const stepTestGoTemplate = `package cmd
-
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func Test{{.CobraCmdFuncName}}(t *testing.T) {
-	t.Parallel()
-
-	testCmd := {{.CobraCmdFuncName}}()
-
-	// only high level testing performed - details are tested in step generation procedure
-	assert.Equal(t, {{ .StepName | quote }}, testCmd.Use, "command name incorrect")
-
-}
-`
-
 const stepGoImplementationTemplate = `package cmd
 import (
 	"fmt"
@@ -557,10 +537,6 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		step := stepTemplate(myStepInfo, "step", stepGoTemplate)
 		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644)
-		checkError(err)
-
-		test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
-		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName)), test, 0644)
 		checkError(err)
 
 		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)))
