@@ -606,6 +606,7 @@ Finally, set your breakpoints and use the `Launch` button in the VS code UI to s
 
 Releases are performed using [Project "Piper" Action](https://github.com/SAP/project-piper-action).
 We have two different releases, which are available for Linux, Windows, and Darwin:
+
 - A scheduled weekly release ([workflow](.github/workflows/release-go.yml)), every Monday at 09:00 UTC.
 - A "master release" with `_master` added in the asset name ([workflow](.github/workflows/upload-go-master.yml)), which gets updated after every new commit to the main branch.
 
