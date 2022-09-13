@@ -368,7 +368,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	if config.MinScanInterval > 0 {
-		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--no-signature-generation'"))
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%v'", config.MinScanInterval))
 	}
 
