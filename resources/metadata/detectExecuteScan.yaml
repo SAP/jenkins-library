@@ -312,7 +312,7 @@ spec:
           - STEPS
       - name: minScanInterval
         description:
-          "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a 
+          "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
           value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan."
         type: int
         scope:
