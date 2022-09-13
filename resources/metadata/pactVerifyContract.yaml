@@ -1,0 +1,175 @@
+metadata:
+  name: pactVerifyContract
+  description: Step to execute PACT tests
+  longDescription: |
+    Based on Eureka PACT step:
+
+    Docs
+    https://docs.eurekacloud.io/how-to/work-with-pact/?h=pact#verification-step
+
+    CI step code (in Golang)
+    https://github.wdf.sap.corp/Eureka/dev-pact
+
+    External tool used in CI
+    https://www.npmjs.com/package/swagger-mock-validator
+
+
+    The procedure looks like below, assuming service A depends service B at runtime,
+    Service A publishes pact test cases during CI run
+    Service B does,
+    Download pact tests
+    Generate swagger API doc (JSON)
+    Run swagger-mock-validator to validate whether swagger fits pact test cases
+spec:
+  inputs:
+    params:
+      - name: asynchApiFilePath
+        type: string
+        description: Defines path to async api specification.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: api/build/swagger.json
+      - name: buildId
+        type: string
+        description: TBD
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: commitId
+        aliases:
+          - name: gitCommit
+        type: string
+        description: Git commitId for triggering the step.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/commitId
+      - name: enforcement
+        type: string
+        description: TBD
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: enforcementConfig
+        type: string
+        description: TBD
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: gitProvider
+        type: string
+        description: TBD
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: gitPullId
+        type: string
+        description: TBD
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: orgAlias
+        type: string
+        description: TBD
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: orgOrigin
+        type: string
+        description: TBD
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: pactBrokerBaseURL
+        type: string
+        description: Defines the URL to the PACT broker.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: username
+        aliases:
+          - name: pactBrokerUsername
+        type: string
+        description: Defines the username for the PACT broker.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: password
+        aliases:
+          - name: pactBrokerPassword
+        type: string
+        description: Defines the password for the PACT broker.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: token
+        aliases:
+          - name: pactBrokerToken
+        type: string
+        description: Defines the token for the PACT broker.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: provider
+        type: string
+        description: Provider calling PACT verification
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: repository
+        aliases:
+          - name: githubRepo
+          - name: gitRepo
+        type: string
+        description: "Set the GitHub repository."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
+      - name: sourceBranchName
+        aliases:
+          - name: branchName
+          - name: gitSourceBranch
+        type: string
+        description: Branch/Tag of consumer contract location.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: systemNamespace
+        type: string
+        description: TBD
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: swaggerFilePath
+        type: string
+        description: Defines path to the swagger specification file (swagger.json).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 
+          - api/build/swagger.json
+      - name: targetBranchName
+        aliases:
+          - name: gitTargetBranch
+        type: string
+        description: "ToDo: update description - Participant version."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS

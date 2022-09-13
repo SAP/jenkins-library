@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -43,6 +44,7 @@ type FileUtils interface {
 	CurrentTime(format string) string
 	Open(name string) (io.ReadWriteCloser, error)
 	Create(name string) (io.ReadWriteCloser, error)
+	LookPath(file string) (string, error)
 }
 
 // Files ...
@@ -501,4 +503,9 @@ func (f Files) Open(name string) (io.ReadWriteCloser, error) {
 // Create is a wrapper for os.Create
 func (f Files) Create(name string) (io.ReadWriteCloser, error) {
 	return os.Create(name)
+}
+
+// LookPath is a wrapper for exec.LookPath
+func (f Files) LookPath(file string) (string, error) {
+	return exec.LookPath(file)
 }
