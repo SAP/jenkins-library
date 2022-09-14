@@ -14,6 +14,8 @@ import (
 // In this test the piper command golangBuild performs testing, BOM file creation and building a project with entry point in the cmd/server/server.go
 // The configuration for golangBuild can be found in testdata/TestGolangIntegration/golang-project1/.pipeline/config.yml
 func TestGolangBuild_Project1(t *testing.T) {
+	defer testTimer("TestGolangBuild_Project1", time.Now())
+
 	t.Parallel()
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -44,6 +46,8 @@ func TestGolangBuild_Project1(t *testing.T) {
 
 // This test extends TestGolangBuild_Project1 with multi-package build
 func TestGolangBuild_Project1_Multipackage(t *testing.T) {
+	defer testTimer("TestGolangBuild_Project1_Multipackage", time.Now())
+
 	t.Parallel()
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -76,6 +80,8 @@ func TestGolangBuild_Project1_Multipackage(t *testing.T) {
 // In this test, the piper golangBuild command only builds the project with the entry point at the project root.
 // The configuration for golangBuild can be found in testdata/TestGolangIntegration/golang-project2/.pipeline/config.yml
 func TestGolangBuild_Project2(t *testing.T) {
+	defer testTimer("TestGolangBuild_Project2", time.Now())
+
 	t.Parallel()
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{

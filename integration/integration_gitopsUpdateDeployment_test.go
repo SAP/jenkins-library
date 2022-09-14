@@ -10,6 +10,8 @@ import (
 )
 
 func TestGitopsUpdateDeploymentIT(t *testing.T) {
+	defer testTimer("TestGitopsUpdateDeploymentIT", time.Now())
+
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "nekottyo/kustomize-kubeval:kustomizev4",
 		TestDir: []string{"testdata", "TestGitopsUpdateIntegration", "kustomize", "workdir"},

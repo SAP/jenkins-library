@@ -16,6 +16,7 @@ import (
 )
 
 func TestDummy(t *testing.T) {
+	defer testTimer("TestDummy", time.Now())
 
 	t.Skip("Skipping testing - this is just to show how it can be done")
 	ctx := context.Background()

@@ -26,6 +26,8 @@ import (
 )
 
 func Test_gcsClient(t *testing.T) {
+	defer testTimer("Test_gcsClient", time.Now())
+
 	t.Parallel()
 	ctx := context.Background()
 	testdataPath, err := filepath.Abs("testdata/TestGCSIntegration")

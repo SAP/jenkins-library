@@ -81,11 +81,15 @@ cd /test
 }
 
 func TestGaugeJava(t *testing.T) {
+	defer testTimer("TestGaugeJava", time.Now())
+
 	t.Parallel()
 	runTest(t, "java")
 }
 
 func TestGaugeJS(t *testing.T) {
+	defer testTimer("TestGaugeJS", time.Now())
+
 	t.Parallel()
 	runTest(t, "js")
 }

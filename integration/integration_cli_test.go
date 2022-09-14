@@ -18,6 +18,7 @@ import (
 )
 
 func TestKarmaIntegration(t *testing.T) {
+	defer testTimer("TestKarmaIntegration", time.Now())
 
 	t.Parallel()
 	ctx := context.Background()
