@@ -21,6 +21,8 @@ import (
 )
 
 func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExecRunner, url string) {
+	defer testTimer("assertFileCanBeDownloaded", timeNow())
+
 	err := container.runScriptInsideContainer("curl -O " + url)
 	if err != nil {
 		t.Fatalf("Attempting to download file %s failed: %s", url, err)
@@ -29,6 +31,8 @@ func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExec
 }
 
 func TestNexus3UploadMta(t *testing.T) {
+	defer testTimer("TestNexus3UploadMta", timeNow())
+
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -55,6 +59,8 @@ func TestNexus3UploadMta(t *testing.T) {
 }
 
 func TestNexus3UploadMaven(t *testing.T) {
+	defer testTimer("TestNexus3UploadMaven", timeNow())
+
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -81,6 +87,8 @@ func TestNexus3UploadMaven(t *testing.T) {
 }
 
 func TestNexus3UploadNpm(t *testing.T) {
+	defer testTimer("TestNexus3UploadNpm", timeNow())
+
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -108,6 +116,8 @@ func TestNexus3UploadNpm(t *testing.T) {
 }
 
 func TestNexus2Upload(t *testing.T) {
+	defer testTimer("TestNexus2Upload", timeNow())
+
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "sonatype/nexus:2.14.18-01",

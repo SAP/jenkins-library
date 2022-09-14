@@ -17,6 +17,8 @@ import (
 )
 
 func TestSonarIssueSearch(t *testing.T) {
+	defer testTimer("TestSonarIssueSearch", timeNow())
+
 	t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
@@ -51,6 +53,8 @@ func TestSonarIssueSearch(t *testing.T) {
 }
 
 func TestSonarMeasuresComponentSearch(t *testing.T) {
+	defer testTimer("TestSonarMeasuresComponentSearch", timeNow())
+
 	t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
@@ -76,6 +80,8 @@ func TestSonarMeasuresComponentSearch(t *testing.T) {
 }
 
 func TestSonarGetLinesOfCode(t *testing.T) {
+	defer testTimer("TestSonarGetLinesOfCode", timeNow())
+
 	t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")

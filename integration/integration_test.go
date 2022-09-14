@@ -22,6 +22,8 @@ import (
 )
 
 func TestPiperHelp(t *testing.T) {
+	defer testTimer("TestPiperHelp", timeNow())
+
 	t.Parallel()
 	piperHelpCmd := command.Command{}
 
@@ -118,6 +120,8 @@ func copyFile(source, target string) error {
 // On Docker for Mac, t.TempDir() returns e.g.
 // /var/folders/bl/wbxjgtzx7j5_mjsmfr3ynlc00000gp/T/<the-test-name>/001
 func createTmpDir(t *testing.T) (string, error) {
+	defer testTimer("createTmpDir", timeNow())
+
 	tmpDir, err := filepath.EvalSymlinks(t.TempDir())
 	if err != nil {
 		return "", err
