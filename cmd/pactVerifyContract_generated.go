@@ -51,15 +51,7 @@ func PactVerifyContractCommand() *cobra.Command {
 	var createPactVerifyContractCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Step to execute PACT tests",
-		Long: `Based on Eureka PACT step:
-
-Docs
-https://docs.eurekacloud.io/how-to/work-with-pact/?h=pact#verification-step
-
-CI step code (in Golang)
-https://github.wdf.sap.corp/Eureka/dev-pact
-
-External tool used in CI
+		Long: `External tool used in CI
 https://www.npmjs.com/package/swagger-mock-validator
 
 

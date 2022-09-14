@@ -17,8 +17,8 @@ func pactVerifyContract(config pactVerifyContractOptions, telemetryData *telemet
 
 func runPactVerifyContract(config *pactVerifyContractOptions, telemetryData *telemetry.CustomData, utils pact.Utils) error {
 	verifyConfig := pact.VerifyConfig{
-		PathToAsyncFile: config.AsynchAPIFilePath,
-		PathToSwaggerFile:   config.SwaggerFilePath,
+		PathToAsyncFile:    config.AsynchAPIFilePath,
+		PathToSwaggerFile:  config.SwaggerFilePath,
 		PactBrokerBaseURL:  config.PactBrokerBaseURL,
 		PactBrokerUsername: config.Username,
 		PactBrokerPassword: config.Password,

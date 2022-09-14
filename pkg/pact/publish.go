@@ -1,6 +1,7 @@
 package pact
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strconv"
@@ -86,7 +87,7 @@ func (p *PublishConfig) ExecPactPublish() error {
 
 		// Publish pact to brokeer
 		if err := pactClient.PublishPact(p, pactFile, p.Utils, p.StdOut); err != nil {
-			return fmt.Errorf("failed to upload results to server: %w", err)
+			return fmt.Errorf("failed publishing to server: %w", err)
 		}
 
 	}
@@ -107,6 +108,48 @@ func (p *PublishConfig) ExecPactPublish() error {
 	}
 	*/
 
+	return nil
+}
+
+// PublishPact executes the pact publish cli tool to upload contract to pact broker
+// It returns an error if any are encountered.
+func (pc *PactBrokerClient) PublishPact(cfg *PublishConfig, pactContract string, utils Utils, stdout io.Writer) error {
+	log.Entry().Infof("Consumer pact version: %s", cfg.GitCommit)
+	log.Entry().Infof("Tag: %s", cfg.GitSourceBranch)
+	log.Entry().Infof("Pact file: %s", pactContract)
+
+	// Find executable for pact cli tool
+	pactPublishExecutable, err := utils.LookPath("pact")
+	if err != nil {
+		return fmt.Errorf("failed to find pact executable: %w", err)
+	}
+
+	// Parameters for pact cli tool
+	args := []string{
+		pactPublish,
+		fmt.Sprintf("--broker-username=%s", pc.brokerUser),
+		fmt.Sprintf("--broker-password=%s", pc.brokerPass),
+		fmt.Sprintf("--broker-base-url=https://%s", pc.hostname),
+		fmt.Sprintf("--consumer-app-version=%s", cfg.GitCommit),
+		pactContract,
+		fmt.Sprintf("--tag=%s", cfg.GitSourceBranch),
+	}
+
+	var pactLog bytes.Buffer
+	utils.Stdout(&pactLog)
+	err = utils.RunExecutable(pactPublishExecutable, args...)
+	utils.Stdout(stdout)
+	log.Entry().Print(pactLog)
+	if err != nil {
+		log.Entry().WithError(err).Error("Error running command %v", pactPublishExecutable)
+		if strings.Contains(pactLog.String(), "Each pact must be published with a unique consumer version number.") {
+			log.Entry().Warning("Consumer version already published to broker. No change will be made. This could result from re-triggering a pipeline on the same commit ID.")
+			return nil
+		}
+		return err
+	}
+
+	// Contract succesfully published to pact broker
 	return nil
 }
 

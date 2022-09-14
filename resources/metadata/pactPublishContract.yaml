@@ -2,14 +2,6 @@ metadata:
   name: pactPublishContract
   description: Step to publish PACT contracts
   longDescription: |
-    Based on Eureka PACT step:
-
-    Docs
-    https://docs.eurekacloud.io/how-to/work-with-pact/?h=pact#verification-step
-
-    CI step code (in Golang)
-    https://github.wdf.sap.corp/Eureka/dev-pact
-
     External tool used in CI
     https://www.npmjs.com/package/swagger-mock-validator
 
