@@ -26,7 +26,7 @@ import (
 )
 
 func Test_gcsClient(t *testing.T) {
-	defer testTimer("Test_gcsClient", time.Now())
+	defer testTimer("Test_gcsClient", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()

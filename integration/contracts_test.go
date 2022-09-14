@@ -1,26 +1,24 @@
 package main
 
 import (
+	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
-
-	"github.com/SAP/jenkins-library/pkg/generator/helper"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCommandContract(t *testing.T) {
-	defer testTimer("TestCommandContract", time.Now())
+	defer testTimer("TestCommandContract", timeNow())
 	assert.Equal(t, "", "")
 }
 
 // Test provided by consumer: SAP InnerSource project
 // Changes to the test require peer review by core-team members involved in the project.
 func TestGenerator(t *testing.T) {
-	defer testTimer("TestGenerator", time.Now())
+	defer testTimer("TestGenerator", timeNow())
 	dir := t.TempDir()
 
 	metadata := `metadata:

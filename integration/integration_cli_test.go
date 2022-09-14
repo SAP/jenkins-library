@@ -7,18 +7,16 @@ package main
 
 import (
 	"context"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestKarmaIntegration(t *testing.T) {
-	defer testTimer("TestKarmaIntegration", time.Now())
+	defer testTimer("TestKarmaIntegration", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()

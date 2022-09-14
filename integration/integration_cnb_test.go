@@ -20,7 +20,7 @@ const (
 )
 
 func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Container {
-	defer testTimer("setupDockerRegistry", time.Now())
+	defer testTimer("setupDockerRegistry", timeNow())
 
 	reqRegistry := testcontainers.ContainerRequest{
 		Image:      "registry:2",
@@ -37,7 +37,7 @@ func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Conta
 }
 
 func TestNpmProject(t *testing.T) {
-	defer testTimer("TestNpmProject", time.Now())
+	defer testTimer("TestNpmProject", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -80,7 +80,7 @@ func TestNpmProject(t *testing.T) {
 }
 
 func TestProjectDescriptor(t *testing.T) {
-	defer testTimer("TestProjectDescriptor", time.Now())
+	defer testTimer("TestProjectDescriptor", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -111,7 +111,7 @@ func TestProjectDescriptor(t *testing.T) {
 }
 
 func TestZipPath(t *testing.T) {
-	defer testTimer("TestZipPath", time.Now())
+	defer testTimer("TestZipPath", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -137,7 +137,7 @@ func TestZipPath(t *testing.T) {
 }
 
 func TestNonZipPath(t *testing.T) {
-	defer testTimer("TestNonZipPath", time.Now())
+	defer testTimer("TestNonZipPath", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -158,7 +158,7 @@ func TestNonZipPath(t *testing.T) {
 }
 
 func TestNpmCustomBuildpacksFullProject(t *testing.T) {
-	defer testTimer("TestNpmCustomBuildpacksFullProject", time.Now())
+	defer testTimer("TestNpmCustomBuildpacksFullProject", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -185,7 +185,7 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 }
 
 func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
-	defer testTimer("TestNpmCustomBuildpacksBuildpacklessProject", time.Now())
+	defer testTimer("TestNpmCustomBuildpacksBuildpacklessProject", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -212,7 +212,7 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 }
 
 func TestWrongBuilderProject(t *testing.T) {
-	defer testTimer("TestWrongBuilderProject", time.Now())
+	defer testTimer("TestWrongBuilderProject", timeNow())
 
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -227,7 +227,7 @@ func TestWrongBuilderProject(t *testing.T) {
 }
 
 func TestBindings(t *testing.T) {
-	defer testTimer("TestBindings", time.Now())
+	defer testTimer("TestBindings", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -250,7 +250,7 @@ func TestBindings(t *testing.T) {
 }
 
 func TestMultiImage(t *testing.T) {
-	defer testTimer("TestMultiImage", time.Now())
+	defer testTimer("TestMultiImage", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -276,7 +276,7 @@ func TestMultiImage(t *testing.T) {
 }
 
 func TestPreserveFiles(t *testing.T) {
-	defer testTimer("TestPreserveFiles", time.Now())
+	defer testTimer("TestPreserveFiles", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
@@ -297,7 +297,7 @@ func TestPreserveFiles(t *testing.T) {
 }
 
 func TestPreserveFilesIgnored(t *testing.T) {
-	defer testTimer("TestPreserveFilesIgnored", time.Now())
+	defer testTimer("TestPreserveFilesIgnored", timeNow())
 
 	t.Parallel()
 	ctx := context.Background()
