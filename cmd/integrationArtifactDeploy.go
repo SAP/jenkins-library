@@ -101,7 +101,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 			Info("successfully deployed into CPI runtime")
 		taskId, readErr := ioutil.ReadAll(deployResp.Body)
 		if readErr != nil {
-			return errors.Wrap(readErr, "Task Id not found: HTTP response body could not be read")
+			return errors.Wrap(readErr, "Task Id not found. HTTP response body could not be read.")
 		}
 		deploymentError := pollIFlowDeploymentStatus(string(taskId), retryCount, config, httpClient, serviceKey.OAuth.Host)
 		return deploymentError
