@@ -20,6 +20,8 @@ const (
 )
 
 func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Container {
+	defer testTimer("setupDockerRegistry", timeNow())
+
 	reqRegistry := testcontainers.ContainerRequest{
 		Image:      "registry:2",
 		SkipReaper: true,
@@ -35,6 +37,8 @@ func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Conta
 }
 
 func TestNpmProject(t *testing.T) {
+	defer testTimer("TestNpmProject", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -76,6 +80,8 @@ func TestNpmProject(t *testing.T) {
 }
 
 func TestProjectDescriptor(t *testing.T) {
+	defer testTimer("TestProjectDescriptor", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -105,6 +111,8 @@ func TestProjectDescriptor(t *testing.T) {
 }
 
 func TestZipPath(t *testing.T) {
+	defer testTimer("TestZipPath", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -129,6 +137,8 @@ func TestZipPath(t *testing.T) {
 }
 
 func TestNonZipPath(t *testing.T) {
+	defer testTimer("TestNonZipPath", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -148,6 +158,8 @@ func TestNonZipPath(t *testing.T) {
 }
 
 func TestNpmCustomBuildpacksFullProject(t *testing.T) {
+	defer testTimer("TestNpmCustomBuildpacksFullProject", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -173,6 +185,8 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 }
 
 func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
+	defer testTimer("TestNpmCustomBuildpacksBuildpacklessProject", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -198,6 +212,8 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 }
 
 func TestWrongBuilderProject(t *testing.T) {
+	defer testTimer("TestWrongBuilderProject", timeNow())
+
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "nginx:latest",
@@ -211,6 +227,8 @@ func TestWrongBuilderProject(t *testing.T) {
 }
 
 func TestBindings(t *testing.T) {
+	defer testTimer("TestBindings", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -232,6 +250,8 @@ func TestBindings(t *testing.T) {
 }
 
 func TestMultiImage(t *testing.T) {
+	defer testTimer("TestMultiImage", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -256,6 +276,8 @@ func TestMultiImage(t *testing.T) {
 }
 
 func TestPreserveFiles(t *testing.T) {
+	defer testTimer("TestPreserveFiles", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -275,6 +297,8 @@ func TestPreserveFiles(t *testing.T) {
 }
 
 func TestPreserveFilesIgnored(t *testing.T) {
+	defer testTimer("TestPreserveFilesIgnored", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)

@@ -10,6 +10,8 @@ import (
 )
 
 func TestMavenProject(t *testing.T) {
+	defer testTimer("TestMavenProject", timeNow())
+
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -29,6 +31,8 @@ func TestMavenProject(t *testing.T) {
 }
 
 func TestMavenSpringProject(t *testing.T) {
+	defer testTimer("TestMavenSpringProject", timeNow())
+
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -49,6 +53,8 @@ func TestMavenSpringProject(t *testing.T) {
 }
 
 func TestNPMProject(t *testing.T) {
+	defer testTimer("TestNPMProject", timeNow())
+
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -65,6 +71,8 @@ func TestNPMProject(t *testing.T) {
 }
 
 func TestNPMProjectInstallsDevDependencies(t *testing.T) {
+	defer testTimer("TestNPMProjectInstallsDevDependencies", timeNow())
+
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",

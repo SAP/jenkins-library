@@ -22,6 +22,8 @@ const (
 )
 
 func runTest(t *testing.T, languageRunner string) {
+	defer testTimer("runTest", timeNow())
+
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
@@ -81,11 +83,15 @@ cd /test
 }
 
 func TestGaugeJava(t *testing.T) {
+	defer testTimer("TestGaugeJava", timeNow())
+
 	t.Parallel()
 	runTest(t, "java")
 }
 
 func TestGaugeJS(t *testing.T) {
+	defer testTimer("TestGaugeJS", timeNow())
+
 	t.Parallel()
 	runTest(t, "js")
 }

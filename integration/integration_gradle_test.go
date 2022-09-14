@@ -18,6 +18,8 @@ import (
 )
 
 func TestGradleExecuteBuild_JavaProject_BOMCreation_UsingWrapper(t *testing.T) {
+	defer testTimer("TestGradleExecuteBuild_JavaProject_BOMCreation_UsingWrapper", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 
@@ -90,6 +92,8 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 }
 
 func TestGradleExecuteBuild_JavaProjectWithBomPlugin(t *testing.T) {
+	defer testTimer("TestGradleExecuteBuild_JavaProjectWithBomPlugin", timeNow())
+
 	t.Parallel()
 	ctx := context.Background()
 
