@@ -49,7 +49,7 @@ func TestNpmProject(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		
+
 		container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 			Image:   baseBuilder,
 			User:    "cnb",
@@ -66,7 +66,7 @@ func TestNpmProject(t *testing.T) {
 			"*** Images (sha256:",
 			"SUCCESS",
 		)
-	}
+	}()
 
 	go func() {
 		defer wg.Done()
@@ -87,7 +87,7 @@ func TestNpmProject(t *testing.T) {
 			"*** Images (sha256:",
 			"SUCCESS",
 		)
-	}
+	}()
 
 	wg.Wait()
 
