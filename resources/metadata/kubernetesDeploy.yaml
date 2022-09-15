@@ -138,6 +138,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/localHelmChartPath
       - name: containerRegistryPassword
         description: Password for container registry access - typically provided by the CI/CD environment.
         type: string

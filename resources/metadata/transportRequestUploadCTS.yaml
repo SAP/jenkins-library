@@ -116,6 +116,9 @@ spec:
         description: "ID of the transport request to which the UI5 application is uploaded"
         scope:
           - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: deployToolDependencies
         type: "[]string"
         default: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs']

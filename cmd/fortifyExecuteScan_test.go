@@ -62,6 +62,31 @@ func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
 	}
 	return utilsBundle
 }
+func mockExecinPath(exec string) (string, error) {
+	executable_list := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executable_list {
+		if exec == "fortifyupdate" || exec == "sourceanalyzer" {
+			return "/" + exec, nil
+		} else {
+			err_string := fmt.Sprintf("ERROR , command not found: %s. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+			return "", errors.New(err_string)
+		}
+	}
+	return "", nil
+}
+
+func failMockExecinPathfortifyupdate(exec string) (string, error) {
+	if exec == "fortifyupdate" {
+		return "", errors.New("Command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+	}
+	return "/fortifyupdate", nil
+}
+func failMockExecinPathsourceanalyzer(exec string) (string, error) {
+	if exec == "sourceanalyzer" {
+		return "", errors.New("Command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+	}
+	return "/sourceanalyzer", nil
+}
 
 type artifactMock struct {
 	Coordinates versioning.Coordinates
@@ -429,6 +454,33 @@ func TestDetermineArtifact(t *testing.T) {
 	})
 }
 
+func TestFailFortifyexecinPath(t *testing.T) {
+	t.Run("Testing if fortifyupdate in $PATH or not", func(t *testing.T) {
+		ff := fortifyMock{}
+		ctx := context.Background()
+		utils := newFortifyTestUtilsBundle()
+		influx := fortifyExecuteScanInflux{}
+		auditStatus := map[string]string{}
+		execInPath = failMockExecinPathfortifyupdate
+		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
+		assert.EqualError(t, err, "Command not found: fortifyupdate. Please configure a supported docker image or install Fortify SCA on the system.")
+
+	})
+	t.Run("Testing if sourceanalyzer in $PATH or not", func(t *testing.T) {
+		ff := fortifyMock{}
+		ctx := context.Background()
+		utils := newFortifyTestUtilsBundle()
+		influx := fortifyExecuteScanInflux{}
+		auditStatus := map[string]string{}
+		execInPath = failMockExecinPathsourceanalyzer
+		config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+		_, err := runFortifyScan(ctx, config, &ff, &utils, nil, &influx, auditStatus)
+		assert.EqualError(t, err, "Command not found: sourceanalyzer. Please configure a supported docker image or install Fortify SCA on the system.")
+
+	})
+}
+
 func TestExecutions(t *testing.T) {
 	type parameterTestData struct {
 		nameOfRun             string
@@ -464,6 +516,7 @@ func TestExecutions(t *testing.T) {
 			utils := newFortifyTestUtilsBundle()
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
+			execInPath = mockExecinPath
 			reports, _ := runFortifyScan(ctx, data.config, &ff, &utils, nil, &influx, auditStatus)
 			if len(data.expectedReports) != data.expectedReportsLength {
 				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
@@ -648,7 +701,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, []string{"install", "--user"}, utils.executions[2].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[3].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, utils.executions[3].parameters)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-python-version", "2", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, utils.executions[3].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[4].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[4].parameters)
@@ -689,11 +742,13 @@ func TestGetMinSpotChecksPerCategory(t *testing.T) {
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 3, 1)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 8, 1)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 10, 1)
-	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 24, 2)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 24, 3)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 26, 3)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 100, 10)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 10, 200, 10)
 	testExpectedGetMinSpotChecksPerCategory("percentage", 10, 50, 10, 5)
+	testExpectedGetMinSpotChecksPerCategory("percentage", 0, 50, 100, 50)
+	testExpectedGetMinSpotChecksPerCategory("percentage", -10, 50, 100, 50)
 
 	testExpectedGetMinSpotChecksPerCategory("number", 0, 1, 10, 1)
 	testExpectedGetMinSpotChecksPerCategory("number", 5, 10, 100, 5)
@@ -978,7 +1033,7 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Exclude: []string{"./**/*"}}
 		translate, err := populateMavenGradleTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/src/gen/java/cds/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
 	})
 
 	t.Run("with translate", func(t *testing.T) {
@@ -991,32 +1046,38 @@ func TestPopulateMavenTranslate(t *testing.T) {
 
 func TestPopulatePipTranslate(t *testing.T) {
 	t.Run("PythonAdditionalPath without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{PythonAdditionalPath: []string{"./lib", "."}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python2", PythonAdditionalPath: []string{"./lib", "."}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
-		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","src":"./**/*"}]`,
+		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","pythonVersion":"2","src":"./**/*"}]`,
 			separator, separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
 	})
 
+	t.Run("Invalid python version", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonVersion: "python4", PythonAdditionalPath: []string{"./lib", "."}}
+		_, err := populatePipTranslate(&config, "")
+		assert.Error(t, err)
+	})
+
 	t.Run("Src without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{Src: []string{"./**/*.py"}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python3", Src: []string{"./**/*.py"}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","src":"./**/*.py"}]`,
+			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","pythonVersion":"3","src":"./**/*.py"}]`,
 			separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
 	})
 
 	t.Run("Exclude without translate", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{Exclude: []string{"./**/tests/**/*"}}
+		config := fortifyExecuteScanOptions{PythonVersion: "python3", Exclude: []string{"./**/tests/**/*"}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","src":"./**/*"}]`,
+			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","pythonVersion":"3","src":"./**/*"}]`,
 			separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)

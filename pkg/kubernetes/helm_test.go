@@ -466,6 +466,9 @@ func TestRunHelmDependency(t *testing.T) {
 		t.Run(fmt.Sprintf("test case: %d", i), func(t *testing.T) {
 			utils := helmMockUtilsBundle{
 				ExecMockRunner: &mock.ExecMockRunner{},
+				FilesMock: &mock.FilesMock{
+					Separator: "/",
+				},
 			}
 			helmExecute := HelmExecute{
 				utils:   utils,
@@ -506,9 +509,10 @@ func TestRunHelmPublish(t *testing.T) {
 			stdout:  log.Writer(),
 		}
 
-		err := helmExecute.RunHelmPublish()
+		targetURL, err := helmExecute.RunHelmPublish()
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, len(utils.FileUploads))
+			assert.Equal(t, "https://my.target.repository.local/test_helm_chart/test_helm_chart-1.2.3.tgz", targetURL)
 			assert.Equal(t, "https://my.target.repository.local/test_helm_chart/test_helm_chart-1.2.3.tgz", utils.FileUploads["test_helm_chart-1.2.3.tgz"])
 		}
 	})

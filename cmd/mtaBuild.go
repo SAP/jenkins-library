@@ -120,9 +120,11 @@ func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFi
 
 func newMtaBuildUtilsBundle() mtaBuildUtils {
 	utils := mtaBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-		Client:  &piperhttp.Client{},
+		Command: &command.Command{
+			StepName: "mtaBuild",
+		},
+		Files:  &piperutils.Files{},
+		Client: &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -182,7 +184,7 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	mtarName, err := getMtarName(config, mtaYamlFile, utils)
+	mtarName, isMtarNativelySuffixed, err := getMtarName(config, mtaYamlFile, utils)
 
 	if err != nil {
 		return err
@@ -280,7 +282,10 @@ func runMtaBuild(config mtaBuildOptions,
 
 				mtarArtifactName := mtarName
 
-				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".mtar", "")
+				// only trim the .mtar suffix from the mtarName
+				if !isMtarNativelySuffixed {
+					mtarArtifactName = strings.TrimSuffix(mtarArtifactName, ".mtar")
+				}
 
 				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
 
@@ -343,9 +348,10 @@ func addNpmBinToPath(utils mtaBuildUtils) error {
 	return nil
 }
 
-func getMtarName(config mtaBuildOptions, mtaYamlFile string, utils mtaBuildUtils) (string, error) {
+func getMtarName(config mtaBuildOptions, mtaYamlFile string, utils mtaBuildUtils) (string, bool, error) {
 
 	mtarName := config.MtarName
+	isMtarNativelySuffixed := false
 	if len(mtarName) == 0 {
 
 		log.Entry().Debugf("mtar name not provided via config. Extracting from file \"%s\"", mtaYamlFile)
@@ -354,20 +360,27 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, utils mtaBuildUtils
 
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return "", err
+			return "", isMtarNativelySuffixed, err
 		}
 
 		if len(mtaID) == 0 {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return "", fmt.Errorf("Invalid mtar ID. Was empty")
+			return "", isMtarNativelySuffixed, fmt.Errorf("Invalid mtar ID. Was empty")
 		}
 
 		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
 
-		mtarName = mtaID + ".mtar"
+		// there can be cases where the mtaId itself has the value com.myComapany.mtar , adding an extra .mtar causes .mtar.mtar
+		if !strings.HasSuffix(mtaID, ".mtar") {
+			mtarName = mtaID + ".mtar"
+		} else {
+			isMtarNativelySuffixed = true
+			mtarName = mtaID
+		}
+
 	}
 
-	return mtarName, nil
+	return mtarName, isMtarNativelySuffixed, nil
 
 }
 

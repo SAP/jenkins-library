@@ -16,7 +16,7 @@ import (
 type codeqlExecuteScanUtils interface {
 	command.ExecRunner
 
-	FileExists(filename string) (bool, error)
+	piperutils.FileUtils
 }
 
 type RepoInfo struct {
@@ -226,7 +226,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/codeqlReport.csv", config.ModulePath)})
 
-	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", reports, nil)
+	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
 
 	err = uploadResults(config, utils)
 	if err != nil {
