@@ -42,10 +42,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'onlyRunInProductiveBranch',
      /**
-     * Docker image on which end to end tests should be performed
+     * Docker image on which end to end tests should be executed
      */
     'dockerImage'
-    
+
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -147,9 +147,7 @@ void call(Map parameters = [:]) {
             }
             e2ETests["E2E Tests ${index > 1 ? index : ''}"] = {
                 if (env.POD_NAME || env.ON_K8S) {
-                    dockerExecuteOnKubernetes(script: script, dockerImage: config.dockerImage, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
-                        echo "xxxxx: ${ContainerMap}"
-                        echo "yyyy: ${config.dockerImage}"
+                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
                         e2eTest.call()
                     }
                 } else {

@@ -11,14 +11,11 @@ import static groovy.json.JsonOutput.toJson
 //Metadata maintained in file project://resources/metadata/npmExecuteScripts.yaml
 
 void call(Map parameters = [:]) {
-    echo "xxxxx: Entering npmexecutescripts ${parameters}"
     final script = checkScript(this, parameters) ?: this
 
     // No credentials required/supported as of now
     List credentials = []
     parameters.dockerOptions = ['--cap-add=SYS_ADMIN'].plus(parameters.dockerOptions?:[])
-    echo "xxxxyyyyyx: docker option are ${parameters.dockerOptions}"
-    
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.NPM)
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
