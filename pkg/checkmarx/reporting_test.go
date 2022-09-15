@@ -3,6 +3,7 @@ package checkmarx
 import (
 	"encoding/xml"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -215,4 +216,60 @@ func TestJsonReportWithNoLowVulnData(t *testing.T) {
 	assert.Equal(t, 0, reportingData.LowAudited)
 	assert.Equal(t, 2, reportingData.InformationTotal)
 	assert.Equal(t, 0, reportingData.InformationAudited)
+}
+
+func TestCreateCustomReportBad(t *testing.T) {
+
+	testStartTime := time.Now()
+
+	resultData := map[string]interface{}{}
+	resultData["ProjectName"] = "test project"
+	submap := map[string]int{}
+	submap["Issues"] = 1
+	submap["ToVerify"] = 1
+	submap["NotFalsePositive"] = 1
+	resultData["High"] = submap
+	resultData["Medium"] = map[string]int{}
+	resultData["Low"] = map[string]int{}
+	resultData["Information"] = map[string]int{}
+
+	insecure := []string{"bad issue"}
+	neutral := []string{"not so bad issue"}
+
+	reportingData := CreateCustomReport(resultData, true, insecure, neutral)
+
+	assert.Equal(t, "Checkmarx SAST Report", reportingData.ReportTitle)
+	assert.Len(t, reportingData.Overview, 2) // insecure + neutral
+	assert.Equal(t, false, reportingData.SuccessfulScan)
+	assert.True(t, reportingData.ReportTime.Add(time.Nanosecond).After(testStartTime))
+	assert.True(t, reportingData.ReportTime.Before(time.Now().Add(time.Nanosecond)))
+
+}
+
+func TestCreateCustomReportGood(t *testing.T) {
+
+	testStartTime := time.Now()
+
+	resultData := map[string]interface{}{}
+	resultData["ProjectName"] = "test project"
+	submap := map[string]int{}
+	submap["Issues"] = 1
+	submap["ToVerify"] = 1
+	submap["NotFalsePositive"] = 1
+	resultData["High"] = submap
+	resultData["Medium"] = map[string]int{}
+	resultData["Low"] = map[string]int{}
+	resultData["Information"] = map[string]int{}
+
+	insecure := []string{}
+	neutral := []string{"not so bad issue"}
+
+	reportingData := CreateCustomReport(resultData, false, insecure, neutral)
+
+	assert.Equal(t, "Checkmarx SAST Report", reportingData.ReportTitle)
+	assert.Len(t, reportingData.Overview, 1) // insecure + neutral
+	assert.Equal(t, true, reportingData.SuccessfulScan)
+	assert.True(t, reportingData.ReportTime.Add(time.Nanosecond).After(testStartTime))
+	assert.True(t, reportingData.ReportTime.Before(time.Now().Add(time.Nanosecond)))
+
 }
