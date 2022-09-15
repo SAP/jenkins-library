@@ -27,7 +27,7 @@ func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExec
 	if err != nil {
 		t.Fatalf("Attempting to download file %s failed: %s", url, err)
 	}
-	container.assertHasFile(t, "/project/"+path.Base(url))
+	container.assertHasFiles(t, "/project/"+path.Base(url))
 }
 
 func TestNexus3UploadMta(t *testing.T) {
@@ -46,6 +46,7 @@ func TestNexus3UploadMta(t *testing.T) {
 			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
 		},
 	})
+	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("nexusUpload", "--groupId=mygroup", "--artifactId=mymta",
 		"--username=admin", "--password=admin123", "--mavenRepository=maven-releases", "--url=http://localhost:8081")
@@ -74,6 +75,7 @@ func TestNexus3UploadMaven(t *testing.T) {
 			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
 		},
 	})
+	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("nexusUpload", "--username=admin", "--password=admin123",
 		"--mavenRepository=maven-releases", "--url=http://localhost:8081")
@@ -104,6 +106,7 @@ func TestNexus3UploadNpm(t *testing.T) {
 			"curl -u admin:admin123 -d '{\"name\": \"npm-repo\", \"online\": true, \"storage\": {\"blobStoreName\": \"default\", \"strictContentTypeValidation\": true, \"writePolicy\": \"ALLOW_ONCE\"}}' --header \"Content-Type: application/json\" -X POST http://localhost:8081/service/rest/beta/repositories/npm/hosted",
 		},
 	})
+	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("nexusUpload", "--username=admin", "--password=admin123",
 		"--npmRepository=npm-repo", "--url=http://localhost:8081")

@@ -16,7 +16,7 @@ const fileName = "integration_test_time_report.xlsx"
 func main() {
 	f := excelize.NewFile()
 	defer f.SaveAs(fileName)
-	logFile, _ := os.Open("test.log")
+	logFile, _ := os.Open("integration/test.log")
 	defer logFile.Close()
 	scanner := bufio.NewScanner(logFile)
 	iterator := 0

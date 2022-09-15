@@ -54,14 +54,16 @@ func TestNpmProject(t *testing.T) {
 			TestDir: []string{"testdata"},
 			Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		})
+		defer container.terminate(t)
 		assert.NoError(t, container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL))
-		container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
-		container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
-		container.assertHasOutput(t, "Paketo NPM Start Buildpack")
-		container.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
-		container.assertHasOutput(t, "*** Images (sha256:")
-		container.assertHasOutput(t, "SUCCESS")
-		container.terminate(t)
+		container.assertHasOutput(t,
+			"running command: /cnb/lifecycle/creator",
+			"Selected Node Engine version (using BP_NODE_VERSION): 16",
+			"Paketo NPM Start Buildpack",
+			fmt.Sprintf("Saving %s/node:0.0.1", registryURL),
+			"*** Images (sha256:",
+			"SUCCESS",
+		)
 		return nil
 	})
 
@@ -72,14 +74,16 @@ func TestNpmProject(t *testing.T) {
 			TestDir: []string{"testdata"},
 			Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		})
+		defer container.terminate(t)
 		assert.NoError(t, container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--projectDescriptor", "project-with-id.toml"))
-		container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
-		container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
-		container.assertHasOutput(t, "Paketo NPM Start Buildpack")
-		container.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
-		container.assertHasOutput(t, "*** Images (sha256:")
-		container.assertHasOutput(t, "SUCCESS")
-		container.terminate(t)
+		container.assertHasOutput(t,
+			"running command: /cnb/lifecycle/creator",
+			"Selected Node Engine version (using BP_NODE_VERSION): 16",
+			"Paketo NPM Start Buildpack",
+			fmt.Sprintf("Saving %s/node:0.0.1", registryURL),
+			"*** Images (sha256:",
+			"SUCCESS",
+		)
 		return nil
 	})
 
@@ -101,21 +105,22 @@ func TestProjectDescriptor(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
-	container.assertHasOutput(t, "Dockerfile doesn't match include pattern, ignoring")
-	container.assertHasOutput(t, "srv/hello.js matches include pattern")
-	container.assertHasOutput(t, "package.json matches include pattern")
-	container.assertHasOutput(t, "Downloading buildpack")
-	container.assertHasOutput(t, "Setting custom environment variables: 'map[BP_NODE_VERSION:16 TMPDIR:/tmp/cnbBuild-")
-	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
-	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
-	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
-	container.assertHasOutput(t, "*** Images (sha256:")
-	container.assertHasOutput(t, "SUCCESS")
-	container.terminate(t)
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator",
+		"Dockerfile doesn't match include pattern, ignoring",
+		"srv/hello.js matches include pattern",
+		"package.json matches include pattern",
+		"Downloading buildpack",
+		"Setting custom environment variables: 'map[BP_NODE_VERSION:16 TMPDIR:/tmp/cnbBuild-",
+		"Selected Node Engine version (using BP_NODE_VERSION): 16",
+		"Paketo NPM Start Buildpack",
+		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
+		"*** Images (sha256:",
+		"SUCCESS",
+	)
 }
 
 func TestZipPath(t *testing.T) {
@@ -132,16 +137,18 @@ func TestZipPath(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "go.zip")
 
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
-	container.assertHasOutput(t, "Installing Go")
-	container.assertHasOutput(t, "Paketo Go Build Buildpack")
-	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
-	container.assertHasOutput(t, "*** Images (sha256:")
-	container.assertHasOutput(t, "SUCCESS")
-	container.terminate(t)
+	container.assertHasOutput(t,
+		"running command: /cnb/lifecycle/creator",
+		"Installing Go",
+		"Paketo Go Build Buildpack",
+		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
+		"*** Images (sha256:",
+		"SUCCESS",
+	)
 }
 
 func TestNonZipPath(t *testing.T) {
@@ -158,11 +165,11 @@ func TestNonZipPath(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "mta.yaml")
 
 	container.assertHasOutput(t, "Copying  '/project/mta.yaml' into '/workspace' failed: application path must be a directory or zip")
-	container.terminate(t)
 }
 
 func TestNpmCustomBuildpacksFullProject(t *testing.T) {
@@ -179,17 +186,19 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
-	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.19.0]'")
-	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.19.0' to /tmp/buildpacks_cache/sha256:")
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
-	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
-	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
-	container.assertHasOutput(t, "*** Images (sha256:")
-	container.assertHasOutput(t, "SUCCESS")
-	container.terminate(t)
+	container.assertHasOutput(t,
+		"Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.19.0]'",
+		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.19.0' to /tmp/buildpacks_cache/sha256:",
+		"running command: /cnb/lifecycle/creator",
+		"Paketo NPM Start Buildpack",
+		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
+		"*** Images (sha256:",
+		"SUCCESS",
+	)
 }
 
 func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
@@ -206,17 +215,18 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 
-	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.19.0]'")
-	container.assertHasOutput(t, "Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.19.0' to /tmp/buildpacks_cache/sha256:")
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
-	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
-	container.assertHasOutput(t, fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL))
-	container.assertHasOutput(t, "*** Images (sha256:")
-	container.assertHasOutput(t, "SUCCESS")
-	container.terminate(t)
+	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.19.0]'",
+		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.19.0' to /tmp/buildpacks_cache/sha256:",
+		"running command: /cnb/lifecycle/creator",
+		"Paketo NPM Start Buildpack",
+		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
+		"*** Images (sha256:",
+		"SUCCESS",
+	)
 }
 
 func TestWrongBuilderProject(t *testing.T) {
@@ -227,11 +237,11 @@ func TestWrongBuilderProject(t *testing.T) {
 		Image:   "nginx:latest",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
 
 	container.assertHasOutput(t, "the provided dockerImage is not a valid builder")
-	container.terminate(t)
 }
 
 func TestBindings(t *testing.T) {
@@ -248,13 +258,15 @@ func TestBindings(t *testing.T) {
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "TestMtaIntegration/maven")
 
 	container.assertHasOutput(t, "bindings/maven-settings/settings.xml: only whitespace content allowed before start tag")
-	container.assertHasFile(t, "/tmp/platform/bindings/dummy-binding/type")
-	container.assertHasFile(t, "/tmp/platform/bindings/dummy-binding/dummy.yml")
-	container.terminate(t)
+	container.assertHasFiles(t,
+		"/tmp/platform/bindings/dummy-binding/type",
+		"/tmp/platform/bindings/dummy-binding/dummy.yml",
+	)
 }
 
 func TestMultiImage(t *testing.T) {
@@ -271,16 +283,18 @@ func TestMultiImage(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_multi_image.yml")
 
-	container.assertHasOutput(t, "Previous image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found")
-	container.assertHasOutput(t, "Saving localhost:5000/io-buildpacks-my-app:latest...")
-	container.assertHasOutput(t, "Previous image with name \"localhost:5000/go-app:v1.0.0\" not found")
-	container.assertHasOutput(t, "Saving localhost:5000/go-app:v1.0.0...")
-	container.assertHasOutput(t, "Using cached buildpack")
-	container.assertHasOutput(t, "Saving localhost:5000/my-app2:latest...")
-	container.terminate(t)
+	container.assertHasOutput(t,
+		"Previous image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found",
+		"Saving localhost:5000/io-buildpacks-my-app:latest...",
+		"Previous image with name \"localhost:5000/go-app:v1.0.0\" not found",
+		"Saving localhost:5000/go-app:v1.0.0...",
+		"Using cached buildpack",
+		"Saving localhost:5000/my-app2:latest...",
+	)
 }
 
 func TestPreserveFiles(t *testing.T) {
@@ -297,11 +311,10 @@ func TestPreserveFiles(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml")
-	container.assertHasFile(t, "/project/project/node_modules/base/README.md")
-	container.assertHasFile(t, "/project/project/package-lock.json")
-	container.terminate(t)
+	container.assertHasFiles(t, "/project/project/node_modules/base/README.md", "/project/project/package-lock.json")
 }
 
 func TestPreserveFilesIgnored(t *testing.T) {
@@ -318,8 +331,8 @@ func TestPreserveFilesIgnored(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
+	defer container.terminate(t)
 
 	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml", "--path", "zip/go.zip", "--containerImageName", "go-zip")
 	container.assertHasOutput(t, "skipping preserving files because the source")
-	container.terminate(t)
 }

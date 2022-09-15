@@ -29,8 +29,7 @@ func TestGitopsUpdateDeploymentIT(t *testing.T) {
 		t.Fatalf("Cloing of bare repo failed")
 	}
 
-	container.assertHasOutput(t, "SUCCESS")
-	container.assertHasOutput(t, "[kustomize] updating")
+	container.assertHasOutput(t, "SUCCESS", "[kustomize] updating")
 	container.assertFileContentEquals(t, "/tmp/repo/kustomization.yaml", `images:
 - name: test-project
   newName: image
