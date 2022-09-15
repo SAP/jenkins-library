@@ -396,7 +396,7 @@ func verifyCxProjectCompliance(ctx context.Context, config checkmarxExecuteScanO
 
 	if config.VulnerabilityThresholdEnabled {
 		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
-		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
+		scanReport := checkmarx.CreateCustomReport(results, insecure, insecureResults, neutralResults)
 
 		if insecure && config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")

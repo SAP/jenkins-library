@@ -48,7 +48,7 @@ type LowPerQuery struct {
 	Total     int    `json:"total"`
 }
 
-func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
+func CreateCustomReport(data map[string]interface{}, isInsecure bool, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
 
 	scanReport := reporting.ScanReport{
@@ -70,8 +70,9 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 			{Description: "Checkmarx version", Details: fmt.Sprint(data["CheckmarxVersion"])},
 			{Description: "Deep link", Details: deepLink},
 		},
-		Overview:   []reporting.OverviewRow{},
-		ReportTime: time.Now(),
+		Overview:       []reporting.OverviewRow{},
+		ReportTime:     time.Now(),
+		SuccessfulScan: !isInsecure,
 	}
 
 	for _, issue := range insecure {
