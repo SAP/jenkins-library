@@ -298,6 +298,8 @@ func (d *IntegrationTestDockerExecRunner) assertFileContentEquals(t *testing.T, 
 }
 
 func (d *IntegrationTestDockerExecRunner) terminate(t *testing.T) {
+	defer testTimer("terminate", timeNow())
+
 	err := d.Runner.RunExecutable("docker", "rm", "-f", d.ContainerName)
 	if err != nil {
 		t.Fatalf("Failed to terminate container '%s'", d.ContainerName)
