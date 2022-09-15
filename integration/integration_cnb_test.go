@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,39 +45,46 @@ func TestNpmProject(t *testing.T) {
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
 
-	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
-		User:    "cnb",
-		TestDir: []string{"testdata"},
-		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+	wg, _ := errgroup.WithContext(context.TODO())
+
+	wg.Go(func() error {
+		container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+			Image:   baseBuilder,
+			User:    "cnb",
+			TestDir: []string{"testdata"},
+			Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+		})
+		assert.NoError(t, container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL))
+		container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
+		container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
+		container.assertHasOutput(t, "Paketo NPM Start Buildpack")
+		container.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
+		container.assertHasOutput(t, "*** Images (sha256:")
+		container.assertHasOutput(t, "SUCCESS")
+		container.terminate(t)
+		return nil
 	})
 
-	container2 := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
-		User:    "cnb",
-		TestDir: []string{"testdata"},
-		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+	wg.Go(func() error {
+		container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+			Image:   baseBuilder,
+			User:    "cnb",
+			TestDir: []string{"testdata"},
+			Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+		})
+		assert.NoError(t, container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--projectDescriptor", "project-with-id.toml"))
+		container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
+		container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
+		container.assertHasOutput(t, "Paketo NPM Start Buildpack")
+		container.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
+		container.assertHasOutput(t, "*** Images (sha256:")
+		container.assertHasOutput(t, "SUCCESS")
+		container.terminate(t)
+		return nil
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
-	assert.NoError(t, err)
-	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
-	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
-	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
-	container.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
-	container.assertHasOutput(t, "*** Images (sha256:")
-	container.assertHasOutput(t, "SUCCESS")
-	container.terminate(t)
+	wg.Wait()
 
-	err = container2.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--projectDescriptor", "project-with-id.toml")
-	assert.NoError(t, err)
-	container2.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
-	container2.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
-	container2.assertHasOutput(t, "Paketo NPM Start Buildpack")
-	container2.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
-	container2.assertHasOutput(t, "*** Images (sha256:")
-	container2.assertHasOutput(t, "SUCCESS")
-	container2.terminate(t)
 }
 
 func TestProjectDescriptor(t *testing.T) {
