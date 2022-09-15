@@ -40,7 +40,12 @@ import static com.sap.piper.Prerequisites.checkScript
      * Boolean to indicate whether the step should only be executed in the productive branch or not.
      * @possibleValues `true`, `false`
      */
-    'onlyRunInProductiveBranch'
+    'onlyRunInProductiveBranch',
+     /**
+     * Docker image on which end to end tests should be executed
+     */
+    'dockerImage'
+
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -120,7 +125,7 @@ void call(Map parameters = [:]) {
                                 error "[${STEP_NAME}] The parameters property is not of type list. Please provide parameters as a list of strings."
                             }
                         }
-                        npmExecuteScripts(script: script, parameters: npmParameters, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: scriptOptions, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
+                        npmExecuteScripts(script: script, parameters: npmParameters, virtualFrameBuffer: true, runScripts: [config.runScript], dockerImage: config.dockerImage, scriptOptions: scriptOptions, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
                     }
 
                 } catch (Exception e) {
