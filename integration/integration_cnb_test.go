@@ -8,7 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,9 +45,11 @@ func TestNpmProject(t *testing.T) {
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
 
-	wg, _ := errgroup.WithContext(ctx)
-
-	wg.Go(func() error {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		
 		container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 			Image:   baseBuilder,
 			User:    "cnb",
@@ -64,10 +66,11 @@ func TestNpmProject(t *testing.T) {
 			"*** Images (sha256:",
 			"SUCCESS",
 		)
-		return nil
-	})
+	}
 
-	wg.Go(func() error {
+	go func() {
+		defer wg.Done()
+
 		container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 			Image:   baseBuilder,
 			User:    "cnb",
@@ -84,8 +87,7 @@ func TestNpmProject(t *testing.T) {
 			"*** Images (sha256:",
 			"SUCCESS",
 		)
-		return nil
-	})
+	}
 
 	wg.Wait()
 
