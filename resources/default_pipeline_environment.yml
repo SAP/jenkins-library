@@ -356,6 +356,7 @@ steps:
     install: true
   npmExecuteEndToEndTests:
     runScript: 'ci-e2e'
+    dockerImage: 'ppiper/node-browsers:18-bullseye'
   whitesourceExecuteScan:
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
     stashExcludes:
