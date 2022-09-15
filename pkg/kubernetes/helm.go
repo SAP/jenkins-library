@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -17,7 +18,7 @@ type HelmExecutor interface {
 	RunHelmInstall() error
 	RunHelmUninstall() error
 	RunHelmTest() error
-	RunHelmPublish() error
+	RunHelmPublish() (string, error)
 	RunHelmDependency() error
 }
 
@@ -376,23 +377,35 @@ func (h *HelmExecute) RunHelmDependency() error {
 		log.Entry().WithError(err).Fatal("Helm dependency call failed")
 	}
 
+	dependencyDir := filepath.Join(h.config.ChartPath, "charts")
+	exists, err := h.utils.DirExists(dependencyDir)
+	if err != nil {
+		return fmt.Errorf("failed to get directory information: %v", err)
+	}
+
+	if exists {
+		if err := h.utils.Chmod(dependencyDir, 0777); err != nil {
+			return fmt.Errorf("failed to change permissions: %v", err)
+		}
+	}
+
 	return nil
 }
 
 //RunHelmPublish is used to upload a chart to a registry
-func (h *HelmExecute) RunHelmPublish() error {
+func (h *HelmExecute) RunHelmPublish() (string, error) {
 	err := h.runHelmInit()
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
+		return "", fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	err = h.runHelmPackage()
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
+		return "", fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	if len(h.config.TargetRepositoryURL) == 0 {
-		return fmt.Errorf("there's no target repository for helm chart publishing configured")
+		return "", fmt.Errorf("there's no target repository for helm chart publishing configured")
 	}
 
 	repoClientOptions := piperhttp.ClientOptions{
@@ -419,14 +432,14 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	response, err := h.utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
 	if err != nil {
-		return fmt.Errorf("couldn't upload artifact: %w", err)
+		return "", fmt.Errorf("couldn't upload artifact: %w", err)
 	}
 
 	if !(response.StatusCode == 200 || response.StatusCode == 201) {
-		return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
+		return "", fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
 	}
 
-	return nil
+	return targetURL, nil
 }
 
 func (h *HelmExecute) runHelmCommand(helmParams []string) error {

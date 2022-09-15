@@ -22,6 +22,7 @@ const hadolintCommand = "hadolint"
 type HadolintPiperFileUtils interface {
 	FileExists(filename string) (bool, error)
 	FileWrite(filename string, data []byte, perm os.FileMode) error
+	WriteFile(filename string, data []byte, perm os.FileMode) error
 }
 
 // HadolintClient abstracts http.Client
@@ -114,7 +115,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	}
 	//TODO: mock away in tests
 	// persist report information
-	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
+	piperutils.PersistReportsAndLinks("hadolintExecute", "./", utils, []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
 	return nil
 }
 

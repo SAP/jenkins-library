@@ -222,7 +222,10 @@ func generateConfig(utils getConfigUtils) error {
 		return err
 	}
 
-	myConfigJSON, _ := config.GetJSON(stepConfig.Config)
+	myConfigJSON, err := config.GetJSON(stepConfig.Config)
+	if err != nil {
+		return fmt.Errorf("failed to get JSON from config: %w", err)
+	}
 
 	if len(configOptions.outputFile) > 0 {
 		err := utils.FileWrite(configOptions.outputFile, []byte(myConfigJSON), 0666)

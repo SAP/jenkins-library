@@ -11,7 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
-func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
+func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) {
 	helmConfig := kubernetes.HelmExecuteOptions{
 		AdditionalParameters:      config.AdditionalParameters,
 		ChartPath:                 config.ChartPath,
@@ -64,12 +64,12 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmExecute(config, helmExecutor); err != nil {
+	if err := runHelmExecute(config, helmExecutor, commonPipelineEnvironment); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
+func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
 	switch config.HelmCommand {
 	case "upgrade":
 		if err := helmExecutor.RunHelmUpgrade(); err != nil {
@@ -96,11 +96,13 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 			return fmt.Errorf("failed to execute helm dependency: %v", err)
 		}
 	case "publish":
-		if err := helmExecutor.RunHelmPublish(); err != nil {
+		targetURL, err := helmExecutor.RunHelmPublish()
+		if err != nil {
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
+		commonPipelineEnvironment.custom.helmChartURL = targetURL
 	default:
-		if err := runHelmExecuteDefault(config, helmExecutor); err != nil {
+		if err := runHelmExecuteDefault(config, helmExecutor, commonPipelineEnvironment); err != nil {
 			return err
 		}
 	}
@@ -108,7 +110,7 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 	return nil
 }
 
-func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
+func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
 	if err := helmExecutor.RunHelmLint(); err != nil {
 		return fmt.Errorf("failed to execute helm lint: %v", err)
 	}
@@ -120,9 +122,11 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 	}
 
 	if config.Publish {
-		if err := helmExecutor.RunHelmPublish(); err != nil {
+		targetURL, err := helmExecutor.RunHelmPublish()
+		if err != nil {
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
+		commonPipelineEnvironment.custom.helmChartURL = targetURL
 	}
 
 	return nil
