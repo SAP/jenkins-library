@@ -212,20 +212,29 @@ func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string
 	return d.Runner.RunExecutable("docker", args...)
 }
 
-func (d *IntegrationTestDockerExecRunner) assertHasNoOutput(t *testing.T, want string) {
+func (d *IntegrationTestDockerExecRunner) assertHasNoOutput(t *testing.T, inconsistencies ...string) {
 	defer testTimer("assertHasNoOutput", timeNow())
 
+	count := len(inconsistencies)
 	buffer, err := d.getPiperOutput()
 	if err != nil {
 		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
 	}
-
-	if strings.Contains(buffer.String(), want) {
-		assert.Equal(t, buffer.String(), want, "Unexpected command output")
+	scanner := bufio.NewScanner(buffer)
+	for scanner.Scan() && (len(inconsistencies) != 0) {
+		for i, str := range inconsistencies {
+			if strings.Contains(scanner.Text(), str) {
+				inconsistencies = append(inconsistencies[:i], inconsistencies[i+1:]...)
+				break
+			}
+		}
 	}
+	assert.Equal(t, len(inconsistencies), count, fmt.Sprintf(
+		"[assertHasNoOutput] Unexpected command output:\n%s\n%s\n", buffer.String(), strings.Join(inconsistencies, "\n")),
+	)
 }
 
-func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, stringsToMatch ...string) {
+func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, consistencies ...string) {
 	defer testTimer("assertHasOutput", timeNow())
 
 	buffer, err := d.getPiperOutput()
@@ -233,16 +242,16 @@ func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, stringsT
 		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
 	}
 	scanner := bufio.NewScanner(buffer)
-	for scanner.Scan() && (len(stringsToMatch) != 0) {
-		for i, str := range stringsToMatch {
+	for scanner.Scan() && (len(consistencies) != 0) {
+		for i, str := range consistencies {
 			if strings.Contains(scanner.Text(), str) {
-				stringsToMatch = append(stringsToMatch[:i], stringsToMatch[i+1:]...)
+				consistencies = append(consistencies[:i], consistencies[i+1:]...)
 				break
 			}
 		}
 	}
-	assert.Equal(t, len(stringsToMatch), 0, fmt.Sprintf(
-		"Unexpected command output:\n%s\n%s\n", buffer.String(), strings.Join(stringsToMatch, "\n")),
+	assert.Equal(t, len(consistencies), 0, fmt.Sprintf(
+		"[assertHasOutput] Unexpected command output:\n%s\n%s\n", buffer.String(), strings.Join(consistencies, "\n")),
 	)
 }
 
@@ -256,13 +265,13 @@ func (d *IntegrationTestDockerExecRunner) getPiperOutput() (*bytes.Buffer, error
 	return buffer, err
 }
 
-func (d *IntegrationTestDockerExecRunner) assertHasFiles(t *testing.T, filesToMatch ...string) {
+func (d *IntegrationTestDockerExecRunner) assertHasFiles(t *testing.T, consistencies ...string) {
 	defer testTimer("assertHasFiles", timeNow())
 
 	buffer := new(bytes.Buffer)
 	d.Runner.Stdout(buffer)
-	if d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", strings.Join(filesToMatch, " ")) != nil {
-		t.Fatalf("Assertion has failed expected: %s instead of result: %s", strings.Join(filesToMatch, " "), buffer.String())
+	if d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", strings.Join(consistencies, " ")) != nil {
+		t.Fatalf("Assertion has failed expected: %s instead of result: %s", strings.Join(consistencies, " "), buffer.String())
 	}
 }
 

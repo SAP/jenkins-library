@@ -105,12 +105,14 @@ func TestGolangBuild_Project2(t *testing.T) {
 	err := container.whenRunningPiperCommand("golangBuild")
 	assert.NoError(t, err)
 
-	container.assertHasNoOutput(t, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
-	container.assertHasNoOutput(t, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest")
-	container.assertHasNoOutput(t, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml -- -coverprofile=cover.out ./...")
-	container.assertHasNoOutput(t, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
-	container.assertHasNoOutput(t, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml -- -tags=integration ./...")
-	container.assertHasNoOutput(t, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -test -output bom-golang.xml")
+	container.assertHasNoOutput(t,
+		"info  golangBuild - running command: go install gotest.tools/gotestsum@latest",
+		"info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest",
+		"info  golangBuild - running command: gotestsum --junitfile TEST-go.xml -- -coverprofile=cover.out ./...",
+		"info  golangBuild - running command: go tool cover -html cover.out -o coverage.html",
+		"info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml -- -tags=integration ./...",
+		"info  golangBuild - running command: cyclonedx-gomod mod -licenses -test -output bom-golang.xml",
+	)
 
 	container.assertHasOutput(t,
 		"info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64",
