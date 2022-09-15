@@ -40,7 +40,12 @@ import static com.sap.piper.Prerequisites.checkScript
      * Boolean to indicate whether the step should only be executed in the productive branch or not.
      * @possibleValues `true`, `false`
      */
-    'onlyRunInProductiveBranch'
+    'onlyRunInProductiveBranch',
+     /**
+     * Docker image on which end to end tests should be performed
+     */
+    'dockerImage'
+    
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -142,7 +147,7 @@ void call(Map parameters = [:]) {
             }
             e2ETests["E2E Tests ${index > 1 ? index : ''}"] = {
                 if (env.POD_NAME || env.ON_K8S) {
-                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
+                    dockerExecuteOnKubernetes(script: script, dockerImage: config.dockerImage, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
                         e2eTest.call()
                     }
                 } else {
