@@ -6,7 +6,9 @@ package main
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -136,11 +138,14 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		}
 	}
 
+	wg, _ := errgroup.WithContext(context.TODO())
 	for _, scriptLine := range testRunner.Setup {
-		err := testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/sh", "-c", scriptLine)
-		if err != nil {
-			t.Fatalf("Running setup script in test container has failed %s", err)
-		}
+		wg.Go(func() error {
+			return testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/sh", "-c", scriptLine)
+		})
+	}
+	if err = wg.Wait(); err != nil {
+		t.Fatalf("Running setup script in test container has failed %s", err)
 	}
 
 	setupPiperBinary(t, testRunner, localPiper)
