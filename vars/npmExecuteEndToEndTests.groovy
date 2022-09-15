@@ -149,7 +149,7 @@ void call(Map parameters = [:]) {
                 if (env.POD_NAME || env.ON_K8S) {
                     dockerExecuteOnKubernetes(script: script, dockerImage: config.dockerImage, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
                         echo "xxxxx: ${ContainerMap}"
-                        echo "yyyy: ${dockerImage}"
+                        echo "yyyy: ${config.dockerImage}"
                         e2eTest.call()
                     }
                 } else {
