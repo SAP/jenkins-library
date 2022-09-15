@@ -45,7 +45,7 @@ func TestNpmProject(t *testing.T) {
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
 
-	wg, _ := errgroup.WithContext(context.TODO())
+	wg, _ := errgroup.WithContext(ctx)
 
 	wg.Go(func() error {
 		container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
