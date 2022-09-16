@@ -32,8 +32,6 @@ import static com.sap.piper.Prerequisites.checkScript
     'testsPublishResults',
     /** Performs end-to-end UI testing using UIVeri5 test framework against the deployed application/service. */
     'uiVeri5ExecuteTests',
-    /** Executes npm scripts to run frontend unit tests. */
-    'npmExecuteScripts',
     /** Executes end to end tests by running the npm script 'ci-e2e' defined in the project's package.json file. */
     'npmExecuteEndToEndTests'
 ]
@@ -68,7 +66,6 @@ void call(Map parameters = [:]) {
         .addIfEmpty('neoDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.neoDeploy)
         .addIfEmpty('newmanExecute', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.newmanExecute)
         .addIfEmpty('uiVeri5ExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.uiVeri5ExecuteTests)
-        .addIfEmpty('npmExecuteScripts', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteScripts)
         .addIfEmpty('npmExecuteEndToEndTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteEndToEndTests)
         .use()
 
@@ -129,13 +126,6 @@ void call(Map parameters = [:]) {
             durationMeasure(script: script, measurementName: 'uiveri5_duration') {
                 publishResults = true
                 uiVeri5ExecuteTests script: script
-            }
-        }
-
-        if (config.npmExecuteScripts) {
-            durationMeasure(script: script, measurementName: 'npmExecuteScripts_duration') {
-                publishResults = true
-                npmExecuteScripts script: script
             }
         }
 

@@ -76,11 +76,6 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             stepParameters.uiVeri5ExecuteTests = m
         })
 
-        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
-            stepsCalled.add('npmExecuteScripts')
-            stepParameters.npmExecuteScripts = m
-        })
-
         helper.registerAllowedMethod('npmExecuteEndToEndTests', [Map.class], {m ->
             stepsCalled.add('npmExecuteEndToEndTests')
             stepParameters.npmExecuteEndToEndTests = m
@@ -99,7 +94,7 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils
         )
-        assertThat(stepsCalled,  not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('kubernetesDeploy'), hasItem('healthExecuteCheck'), hasItem('newmanExecute'), hasItem('uiVeri5ExecuteTests'), hasItem('npmExecuteScripts'), hasItem('gaugeExecuteTests'))))
+        assertThat(stepsCalled,  not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('kubernetesDeploy'), hasItem('healthExecuteCheck'), hasItem('newmanExecute'), hasItem('uiVeri5ExecuteTests'), hasItem('gaugeExecuteTests'))))
 
     }
 
@@ -187,18 +182,6 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             uiVeri5ExecuteTests: true
         )
         assertThat(stepsCalled, hasItems('uiVeri5ExecuteTests', 'testsPublishResults'))
-    }
-
-    @Test
-    void testAcceptanceStageNpmExecuteScripts() {
-
-        jsr.step.piperPipelineStageAcceptance(
-            script: nullScript,
-            juStabUtils: utils,
-            npmExecuteScripts: true
-        )
-
-        assertThat(stepsCalled, hasItem('npmExecuteScripts'))
     }
 
     @Test
