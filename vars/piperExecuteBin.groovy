@@ -287,3 +287,28 @@ void handleErrorDetails(String stepName, Closure body) {
         error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
 }
+// it can be used in 2 ways:
+// 1. use stage, step arguments and leave stepOutputFile "" and stageOutputFile "" empty to check if this step is active in this stage (true means step is active, false - not active or something went wrong)
+// 2. use stageOutputFile and/or stepOutputFile and leave step "" and stage "" to write the whole map of steps in all stages into a file[s] (true means no errors, false - something went wrong)
+// if both presented - priority is option 2
+static boolean checkIfStepActive(Map parameters = [:], Script script, String piperGoPath, String stageConfig = "", String stepOutputFile = "", String stageOutputFile = "", String stage = "", String step = "") {
+    def utils = parameters.juStabUtils ?: new Utils()
+    def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
+    def flags = "--stageConfig ${stageConfig} --useV1"
+    if (stageOutputFile) {
+        flags += " --stageOutputFile ${stageOutputFile}"
+    }
+    if (stepOutputFile) {
+        flags += " --stepOutputFile ${stepOutputFile}"
+    }
+    if (!stage || !step) {
+        stage = "_"
+        step = "_"
+    }
+    flags += " --stage ${stage} --step ${step}"
+    flags += getCustomDefaultConfigsArg()
+    flags += getCustomConfigArg(script)
+    piperGoUtils.unstashPiperBin()
+    def returnCode = script.sh(returnStatus: true, script: "${piperGoPath} checkIfStepActive ${flags}")
+    return (returnCode == 0)
+}

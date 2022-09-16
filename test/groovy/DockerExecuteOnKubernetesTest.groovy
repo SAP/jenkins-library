@@ -800,11 +800,11 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             bodyExecuted = true
         }
         assertThat(stashList, hasItem(allOf(
-            not(hasEntry('allowEmpty', true)),
+            hasEntry('allowEmpty', true),
             hasEntry('includes', 'workspace/include.test'),
             hasEntry('excludes', 'workspace/exclude.test'))))
         assertThat(stashList, hasItem(allOf(
-            not(hasEntry('allowEmpty', true)),
+            hasEntry('allowEmpty', true),
             hasEntry('includes', 'container/include.test'),
             hasEntry('excludes', 'container/exclude.test'))))
     }

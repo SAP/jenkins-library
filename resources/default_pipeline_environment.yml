@@ -236,6 +236,7 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
+      stashBack: '**/node_modules/**,nohup.out'
   dubExecute:
     dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
@@ -353,6 +354,8 @@ steps:
     dockerImage: 'node:lts-stretch'
   npmExecuteScripts:
     install: true
+  npmExecuteEndToEndTests:
+    runScript: 'ci-e2e'
   whitesourceExecuteScan:
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
     stashExcludes:

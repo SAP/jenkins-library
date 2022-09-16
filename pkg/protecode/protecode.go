@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/sirupsen/logrus"
 )
 
 // ReportsDirectory defines the subfolder for the Protecode reports which are generated
@@ -92,6 +93,9 @@ type Protecode struct {
 	duration  time.Duration
 	logger    *logrus.Entry
 }
+
+// Used to reduce wait time during tests
+var protecodePollInterval = 10 * time.Second
 
 // Just calls SetOptions which makes sure logger is set.
 // Added to make test code more resilient
@@ -436,7 +440,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 	var response ResultData
 	var err error
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(protecodePollInterval)
 	defer ticker.Stop()
 
 	var ticks int64 = 6

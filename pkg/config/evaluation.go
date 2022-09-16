@@ -125,10 +125,8 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	}
 
 	if len(s.ConfigKey) > 0 {
-		if configValue := config.Config[s.ConfigKey]; configValue != nil {
-			return true, nil
-		}
-		return false, nil
+		configKey := strings.Split(s.ConfigKey, "/")
+		return checkConfigKeyV1(config.Config, configKey)
 	}
 
 	if len(s.FilePattern) > 0 {
@@ -166,22 +164,28 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 
 		var metadata StepData
 		for param, value := range s.CommonPipelineEnvironment {
-			dataType := "interface"
-			_, ok := value.(string)
-			if ok {
-				dataType = "string"
-			}
-			metadata.Spec.Inputs.Parameters = []StepParameters{
-				{Name: stepName,
-					Type:        dataType,
-					ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: param}},
-				},
-			}
-			resourceParams := metadata.GetResourceParameters(envRootPath, "commonPipelineEnvironment")
-			if resourceParams[stepName] == value {
+			cpeEntry := getCPEEntry(param, value, &metadata, stepName, envRootPath)
+			if cpeEntry[stepName] == value {
 				return true, nil
 			}
 		}
+		return false, nil
+	}
+
+	if len(s.PipelineEnvironmentFilled) > 0 {
+
+		var metadata StepData
+		param := s.PipelineEnvironmentFilled
+		// check CPE for both a string and non-string value
+		cpeEntry := getCPEEntry(param, "", &metadata, stepName, envRootPath)
+		if len(cpeEntry) == 0 {
+			cpeEntry = getCPEEntry(param, nil, &metadata, stepName, envRootPath)
+		}
+
+		if _, ok := cpeEntry[stepName]; ok {
+			return true, nil
+		}
+
 		return false, nil
 	}
 
@@ -192,6 +196,33 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 	} else {
 		return true, nil
 	}
+}
+
+func getCPEEntry(param string, value interface{}, metadata *StepData, stepName string, envRootPath string) map[string]interface{} {
+	dataType := "interface"
+	_, ok := value.(string)
+	if ok {
+		dataType = "string"
+	}
+	metadata.Spec.Inputs.Parameters = []StepParameters{
+		{Name: stepName,
+			Type:        dataType,
+			ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: param}},
+		},
+	}
+	return metadata.GetResourceParameters(envRootPath, "commonPipelineEnvironment")
+}
+
+func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, error) {
+	value, ok := config[configKey[0]]
+	if len(configKey) == 1 {
+		return ok, nil
+	}
+	castedValue, ok := value.(map[string]interface{})
+	if !ok {
+		return false, nil
+	}
+	return checkConfigKeyV1(castedValue, configKey[1:])
 }
 
 // EvaluateConditions validates stage conditions and updates runSteps in runConfig
