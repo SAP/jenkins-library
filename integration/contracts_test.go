@@ -18,8 +18,6 @@ func TestCommandContract(t *testing.T) {
 // Test provided by consumer: SAP InnerSource project
 // Changes to the test require peer review by core-team members involved in the project.
 func TestGenerator(t *testing.T) {
-	defer testTimer("TestGenerator", timeNow())
-
 	dir := t.TempDir()
 
 	metadata := `metadata:

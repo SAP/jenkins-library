@@ -63,7 +63,6 @@ type IntegrationTestDockerExecRunner struct {
 }
 
 func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBundle) IntegrationTestDockerExecRunner {
-	defer testTimer("givenThisContainer", timeNow())
 
 	runner := command.Command{}
 	containerName := generateContainerName()
@@ -164,8 +163,6 @@ func generateContainerName() string {
 // The purpose of this is to capture piper's stdout/stderr in order to assert on the output
 // This is not possible via "docker logs", cf https://github.com/moby/moby/issues/8662
 func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, localPiper string) {
-	defer testTimer("setupPiperBinary", timeNow())
-
 	err := testRunner.Runner.RunExecutable("docker", "cp", "piper-command-wrapper.sh", testRunner.ContainerName+":/piper-wrapper")
 	if err != nil {
 		t.Fatalf("Copying command wrapper to container has failed %s", err)
@@ -182,8 +179,6 @@ func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, 
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
-	defer testTimer("whenRunningPiperCommand", timeNow())
-
 	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh"}
 
 	if !d.ExecNoLogin {
@@ -200,8 +195,6 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 }
 
 func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string) error {
-	defer testTimer("runScriptInsideContainer", timeNow())
-
 	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/sh"}
 
 	if !d.ExecNoLogin {
@@ -213,8 +206,6 @@ func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasNoOutput(t *testing.T, inconsistencies ...string) {
-	defer testTimer("assertHasNoOutput", timeNow())
-
 	count := len(inconsistencies)
 	buffer, err := d.getPiperOutput()
 	if err != nil {
@@ -235,8 +226,6 @@ func (d *IntegrationTestDockerExecRunner) assertHasNoOutput(t *testing.T, incons
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, consistencies ...string) {
-	defer testTimer("assertHasOutput", timeNow())
-
 	buffer, err := d.getPiperOutput()
 	if err != nil {
 		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
@@ -256,8 +245,6 @@ func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, consiste
 }
 
 func (d *IntegrationTestDockerExecRunner) getPiperOutput() (*bytes.Buffer, error) {
-	defer testTimer("getPiperOutput", timeNow())
-
 	buffer := new(bytes.Buffer)
 	d.Runner.Stdout(buffer)
 	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "cat", "/tmp/test-log.txt")
@@ -266,8 +253,6 @@ func (d *IntegrationTestDockerExecRunner) getPiperOutput() (*bytes.Buffer, error
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasFiles(t *testing.T, consistencies ...string) {
-	defer testTimer("assertHasFiles", timeNow())
-
 	for _, c := range consistencies {
 		buffer := new(bytes.Buffer)
 		d.Runner.Stderr(buffer)
@@ -310,8 +295,6 @@ func (d *IntegrationTestDockerExecRunner) assertFileContentEquals(t *testing.T, 
 }
 
 func (d *IntegrationTestDockerExecRunner) terminate(t *testing.T) {
-	defer testTimer("terminate", timeNow())
-
 	err := d.Runner.RunExecutable("docker", "rm", "-f", d.ContainerName)
 	if err != nil {
 		t.Fatalf("Failed to terminate container '%s'", d.ContainerName)

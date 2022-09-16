@@ -15,8 +15,6 @@ import (
 )
 
 func TestTriggerJob(t *testing.T) {
-	defer testTimer("TestTriggerJob", timeNow())
-
 	t.Skip("no Jenkins instance for testing available yet")
 	//TODO: check if testcontainers can be used
 	// init

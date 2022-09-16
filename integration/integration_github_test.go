@@ -20,8 +20,6 @@ import (
 )
 
 func TestPiperGithubPublishRelease(t *testing.T) {
-	defer testTimer("TestPiperGithubPublishRelease", timeNow())
-
 	t.Parallel()
 	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
 	if len(token) == 0 {
@@ -97,8 +95,6 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 }
 
 func TestGithubFetchCommitStatistics(t *testing.T) {
-	defer testTimer("TestGithubFetchCommitStatistics", timeNow())
-
 	t.Parallel()
 	// prepare
 	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")

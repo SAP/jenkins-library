@@ -18,8 +18,6 @@ import (
 )
 
 func TestWriteMetrics(t *testing.T) {
-	defer testTimer("TestWriteMetrics", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 	const authToken = "influx-token"

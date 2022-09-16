@@ -10,8 +10,6 @@ import (
 )
 
 func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
-	defer testTimer("TestMavenBuildCloudSdkSpringProject", timeNow())
-
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
@@ -47,8 +45,6 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 }
 
 func TestMavenBuildCloudSdkTomeeProject(t *testing.T) {
-	defer testTimer("TestMavenBuildCloudSdkTomeeProject", timeNow())
-
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",

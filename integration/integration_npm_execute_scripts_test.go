@@ -17,8 +17,6 @@ import (
 )
 
 func TestRunScriptsWithOptions(t *testing.T) {
-	defer testTimer("TestRunScriptsWithOptions", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 
@@ -70,8 +68,6 @@ cd /test
 }
 
 func TestRegistrySetInFlags(t *testing.T) {
-	defer testTimer("TestRegistrySetInFlags", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 
@@ -122,8 +118,6 @@ cd /test
 }
 
 func TestRegistrySetInNpmrc(t *testing.T) {
-	defer testTimer("TestRegistrySetInNpmrc", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 
@@ -174,8 +168,6 @@ cd /test
 }
 
 func TestRegistryWithTwoModules(t *testing.T) {
-	defer testTimer("TestRegistryWithTwoModules", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 

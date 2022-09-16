@@ -22,8 +22,6 @@ import (
 type SecretData = map[string]interface{}
 
 func TestGetVaultSecret(t *testing.T) {
-	defer testTimer("TestGetVaultSecret", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
@@ -70,8 +68,6 @@ func TestGetVaultSecret(t *testing.T) {
 }
 
 func TestWriteVaultSecret(t *testing.T) {
-	defer testTimer("TestWriteVaultSecret", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
@@ -136,8 +132,6 @@ func TestWriteVaultSecret(t *testing.T) {
 }
 
 func TestVaultAppRole(t *testing.T) {
-	defer testTimer("TestVaultAppRole", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
@@ -217,8 +211,6 @@ func TestVaultAppRole(t *testing.T) {
 }
 
 func TestTokenRevocation(t *testing.T) {
-	defer testTimer("TestTokenRevocation", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
@@ -270,8 +262,6 @@ func TestTokenRevocation(t *testing.T) {
 }
 
 func setupVaultAppRole(t *testing.T, config *vault.Config, token, appRolePath string, metadata map[string]interface{}) (string, string) {
-	defer testTimer("setupVaultAppRole", timeNow())
-
 	t.Helper()
 	client, err := api.NewClient(config.Config)
 	assert.NoError(t, err)
@@ -311,8 +301,6 @@ func setupVaultAppRole(t *testing.T, config *vault.Config, token, appRolePath st
 }
 
 func setupVault(t *testing.T, config *vault.Config, token string, secret SecretData) {
-	defer testTimer("setupVault", timeNow())
-
 	t.Helper()
 	client, err := api.NewClient(config.Config)
 	assert.NoError(t, err)

@@ -18,8 +18,6 @@ import (
 )
 
 func TestBuildPythonProject(t *testing.T) {
-	defer testTimer("TestBuildPythonProject", timeNow())
-
 	t.Parallel()
 	ctx := context.Background()
 	pwd, err := os.Getwd()
