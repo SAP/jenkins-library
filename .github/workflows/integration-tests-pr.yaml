@@ -892,27 +892,27 @@ jobs:
 
     runs-on: ubuntu-latest
     needs:
-    - contracts_test
-    - docker_integration_test_executor
-    - integration_api_cli_test
-    - integration_cli_test
-    - integration_cnb_test
-    - integration_gauge_test
-    - integration_gcs_test
-    - integration_github_test
-    - integration_gitops_update_deployment_test
-    - integration_golang_test
-    - integration_gradle_test
-    - integration_influx_test
-    - integration_jenkins_test
-    - integration_maven_test
-    - integration_mta_build_test
-    - integration_nexus_upload_test
-    - integration_npm_execute_scripts_test
-    - integration_python_build_test
-    - integration_sonar_test
-    - integration_piper_help_test
-    - integration_vault_test
+      - contracts_test
+      - docker_integration_test_executor
+      - integration_api_cli_test
+      - integration_cli_test
+      - integration_cnb_test
+      - integration_gauge_test
+      - integration_gcs_test
+      - integration_github_test
+      - integration_gitops_update_deployment_test
+      - integration_golang_test
+      - integration_gradle_test
+      - integration_influx_test
+      - integration_jenkins_test
+      - integration_maven_test
+      - integration_mta_build_test
+      - integration_nexus_upload_test
+      - integration_npm_execute_scripts_test
+      - integration_python_build_test
+      - integration_sonar_test
+      - integration_piper_help_test
+      - integration_vault_test
 
     steps:
       - name: update status
