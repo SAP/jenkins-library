@@ -49,6 +49,8 @@ spec:
     resources:
       - name: deployDescriptor
         type: stash
+      - name: downloadedArtifact
+        type: stash
     params:
       - name: additionalParameters
         aliases:
