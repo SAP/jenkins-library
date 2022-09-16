@@ -50,7 +50,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'baseUrl',
     /**
-     * credentials to access the application to be tested
+     * Credentials to access the application to be tested
      */
     'credentialsId'
 
