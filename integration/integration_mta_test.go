@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestMTAIntegration ./integration/...
 
 package main
 
@@ -9,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestMavenProject(t *testing.T) {
+func TestMTAIntegrationMavenProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -31,7 +32,7 @@ func TestMavenProject(t *testing.T) {
 	)
 }
 
-func TestMavenSpringProject(t *testing.T) {
+func TestMTAIntegrationMavenSpringProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -52,7 +53,7 @@ func TestMavenSpringProject(t *testing.T) {
 	container.assertHasOutput(t, "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
 }
 
-func TestNPMProject(t *testing.T) {
+func TestMTAIntegrationNPMProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -69,7 +70,7 @@ func TestNPMProject(t *testing.T) {
 	container.assertHasOutput(t, "INFO the MTA archive generated at: /project/test-mta-js.mtar")
 }
 
-func TestNPMProjectInstallsDevDependencies(t *testing.T) {
+func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",

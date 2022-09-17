@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestNexusIntegration ./integration/...
 
 package main
 
@@ -28,7 +29,7 @@ func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExec
 	container.assertHasFiles(t, "/project/"+path.Base(url))
 }
 
-func TestNexus3UploadMta(t *testing.T) {
+func TestNexusIntegrationV3UploadMta(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -55,7 +56,7 @@ func TestNexus3UploadMta(t *testing.T) {
 	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 }
 
-func TestNexus3UploadMaven(t *testing.T) {
+func TestNexusIntegrationV3UploadMaven(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -82,7 +83,7 @@ func TestNexus3UploadMaven(t *testing.T) {
 	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
 }
 
-func TestNexus3UploadNpm(t *testing.T) {
+func TestNexusIntegrationV3UploadNpm(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -110,7 +111,7 @@ func TestNexus3UploadNpm(t *testing.T) {
 	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/npm-repo/npm-nexus-upload-test/-/npm-nexus-upload-test-1.0.0.tgz")
 }
 
-func TestNexus2Upload(t *testing.T) {
+func TestNexusIntegrationV2Upload(t *testing.T) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "sonatype/nexus:2.14.18-01",

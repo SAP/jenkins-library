@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestMavenIntegration ./integration/...
 
 package main
 
@@ -9,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
+func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
@@ -44,7 +45,7 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 	container.assertHasFiles(t, "/project/integration-tests/target/coverage-reports/jacoco.exec")
 }
 
-func TestMavenBuildCloudSdkTomeeProject(t *testing.T) {
+func TestMavenIntegrationBuildCloudSdkTomeeProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",

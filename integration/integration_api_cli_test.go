@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestAPICLIIntegration ./integration/...
 
 package main
 
@@ -15,7 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestDummy(t *testing.T) {
+func TestAPICLIIntegrationDummy(t *testing.T) {
 	t.Skip("Skipping testing - this is just to show how it can be done")
 	ctx := context.Background()
 

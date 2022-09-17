@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be executed with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestCNBIntegration ./integration/...
 
 package main
 
@@ -34,7 +35,7 @@ func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Conta
 	return regContainer
 }
 
-func TestNpmProject(t *testing.T) {
+func TestCNBIntegrationNPMProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -77,7 +78,7 @@ func TestNpmProject(t *testing.T) {
 	container2.terminate(t)
 }
 
-func TestProjectDescriptor(t *testing.T) {
+func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -107,7 +108,7 @@ func TestProjectDescriptor(t *testing.T) {
 	)
 }
 
-func TestZipPath(t *testing.T) {
+func TestCNBIntegrationZipPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -133,7 +134,7 @@ func TestZipPath(t *testing.T) {
 	)
 }
 
-func TestNonZipPath(t *testing.T) {
+func TestCNBIntegrationNonZipPath(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -152,7 +153,7 @@ func TestNonZipPath(t *testing.T) {
 	container.assertHasOutput(t, "Copying  '/project/mta.yaml' into '/workspace' failed: application path must be a directory or zip")
 }
 
-func TestNpmCustomBuildpacksFullProject(t *testing.T) {
+func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -179,7 +180,7 @@ func TestNpmCustomBuildpacksFullProject(t *testing.T) {
 	)
 }
 
-func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
+func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -205,7 +206,7 @@ func TestNpmCustomBuildpacksBuildpacklessProject(t *testing.T) {
 	)
 }
 
-func TestWrongBuilderProject(t *testing.T) {
+func TestCNBIntegrationWrongBuilderProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "nginx:latest",
@@ -218,7 +219,7 @@ func TestWrongBuilderProject(t *testing.T) {
 	container.assertHasOutput(t, "the provided dockerImage is not a valid builder")
 }
 
-func TestBindings(t *testing.T) {
+func TestCNBIntegrationBindings(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -241,7 +242,7 @@ func TestBindings(t *testing.T) {
 	)
 }
 
-func TestMultiImage(t *testing.T) {
+func TestCNBIntegrationMultiImage(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -267,7 +268,7 @@ func TestMultiImage(t *testing.T) {
 	)
 }
 
-func TestPreserveFiles(t *testing.T) {
+func TestCNBIntegrationPreserveFiles(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
@@ -285,7 +286,7 @@ func TestPreserveFiles(t *testing.T) {
 	container.assertHasFiles(t, "/project/project/node_modules/base/README.md", "/project/project/package-lock.json")
 }
 
-func TestPreserveFilesIgnored(t *testing.T) {
+func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
