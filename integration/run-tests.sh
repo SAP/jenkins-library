@@ -6,7 +6,7 @@
 pushd ..
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags release -o piper
 
-if [[ -z "$*" ]]
+if [[ "$*" ]]
 then
     for testName in "$@"
     do
