@@ -18,7 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestCLIIntegrationKarma(t *testing.T) {
+func TestKarmaIntegration(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 

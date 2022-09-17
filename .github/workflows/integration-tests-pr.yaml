@@ -99,66 +99,6 @@ jobs:
         with:
           path: piper
 
-  TestAPICLIIntegration:
-    name: Test API CLI integration
-    needs:
-      - BuildPiper
-    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: ${{ env.GHA_CHECKOUT_VERSION }}
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: download Piper binary
-        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
-        with:
-          name: piper
-      - name: run test
-        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
-
-  TestCLIIntegration:
-    name: Test CLI integration
-    needs:
-      - BuildPiper
-    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: ${{ env.GHA_CHECKOUT_VERSION }}
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: download Piper binary
-        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
-        with:
-          name: piper
-      - name: run test
-        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
-
   TestCNBIntegration:
     name: Test CNB integration
     needs:
@@ -401,6 +341,36 @@ jobs:
 
   TestJenkinsIntegration:
     name: Test Jenkins integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestKarmaIntegration:
+    name: Test Karma integration
     needs:
       - BuildPiper
     runs-on: ${{ env.GHA_UBUNTU_VERSION }}

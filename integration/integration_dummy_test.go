@@ -16,7 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestAPICLIIntegrationDummy(t *testing.T) {
+func TestDummyIntegration(t *testing.T) {
 	t.Skip("Skipping testing - this is just to show how it can be done")
 	ctx := context.Background()
 
