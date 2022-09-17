@@ -1,15 +1,31 @@
 name: Integration Tests (Pull Request)
 
+env:
+  GHA_UBUNTU_VERSION: ubuntu-latest
+
+  GHA_CHECKOUT_VERSION: actions/checkout@v2
+  GHA_SETUP_GO_VERSION: actions/setup-go@v1
+  GHA_UPLOAD_ARTIFACT_VERSION: actions/upload-artifact@v3
+  GHA_DOWNLOAD_ARTIFACT_VERSION: actions/download-artifact@v3
+
+  GHA_GO_VERSION: 1.18.x
+  CGO_ENABLED: 0
+  TIMEOUT: 10m
+
+  PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
+  PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
+  COMMIT_ID: ""
+
 on:
   issue_comment:
     types: [created]
 
 jobs:
 
-  consumer_tests:
+  ConsumerTests:
     name: Consumer tests
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
     if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
 
     steps:
@@ -47,12 +63,10 @@ jobs:
           NEO_DEPLOY_PASSWORD: ${{ secrets.NEO_DEPLOY_PASSWORD }}
           CX_INFRA_IT_TMS_UPLOAD: ${{ secrets.CX_INFRA_IT_TMS_UPLOAD }}
 
-  contracts_test:
-    name: Contracts test
-
-    runs-on: ubuntu-latest
+  BuildPiper:
+    name: Build Piper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
     if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
     steps:
       - name: get pull request url
         id: pullrequest
@@ -64,862 +78,607 @@ jobs:
         id: repository
         run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
       - name: checkout
-        uses: actions/checkout@v2
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
         with:
           repository: ${{ steps.repository.outputs.repository }}
           ref: ${{ steps.branchname.outputs.branchname }}
       - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
+        run: echo "$(git log --format=%H -n 1)" >> COMMIT_ID
       - name: update status
         run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
+          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ env.COMMIT_ID }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
         with:
-          go-version: '1.18.x'
+          go-version: ${{ env.GHA_GO_VERSION }}
       - name: build
-        env:
-          CGO_ENABLED: 0
         # with `-tags release` we ensure that shared test utilities won't end up in the binary
         run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/contracts_test.go
-
-  integration_api_cli_test:
-    name: Integration API CLI test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_api_cli_test.go
-
-  integration_cli_test:
-    name: Integration CLI test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_cli_test.go
-
-  integration_cnb_test:
-    name: Integration CNB test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_cnb_test.go
-
-  integration_gauge_test:
-    name: Integration Gauge test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_gauge_test.go
-
-  integration_gcs_test:
-    name: Integration GCS test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_gcs_test.go
-
-  integration_github_test:
-    name: Integration GitHub test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_github_test.go
-
-  integration_gitops_update_deployment_test:
-    name: Integration GitOps update deployment test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_gitopsUpdateDeployment_test.go
-
-  integration_golang_test:
-    name: Integration Golang test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_golang_test.go
-
-  integration_gradle_test:
-    name: Integration Gradle test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_gradle_test.go
-
-  integration_influx_test:
-    name: Integration Influx test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_influx_test.go
-
-  integration_jenkins_test:
-    name: Integration Jenkins test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_jenkins_test.go
-
-  integration_maven_test:
-    name: Integration Maven test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_maven_test.go
-
-  integration_mta_build_test:
-    name: Integration MTA build test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_mta_build_test.go
-
-  integration_nexus_upload_test:
-    name: Integration Nexus upload test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_nexus_upload_test.go
-
-  integration_npm_execute_scripts_test:
-    name: Integration NPM execute scripts test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_npm_execute_scripts_test.go
-
-  integration_python_build_test:
-    name: Integration Python build test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_npm_execute_scripts_test.go
-
-  integration_sonar_test:
-    name: Integration Sonar test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_sonar_test.go
-
-  integration_piper_help_test:
-    name: Integration Piper help test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_test.go
-
-  integration_vault_test:
-    name: Integration Vault test
-
-    runs-on: ubuntu-latest
-    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
-
-    steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
-      - name: get commit id
-        id: commitId
-        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
-      - name: update status
-        run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.18.x'
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: setup credentials
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-      - name: run test
-        run: go test -tags=integration -timeout 10m ./integration/integration_vault_test.go
-
-  update_status:
-    name: Update status
-
-    runs-on: ubuntu-latest
-    needs:
-      - contracts_test
-      - docker_integration_test_executor
-      - integration_api_cli_test
-      - integration_cli_test
-      - integration_cnb_test
-      - integration_gauge_test
-      - integration_gcs_test
-      - integration_github_test
-      - integration_gitops_update_deployment_test
-      - integration_golang_test
-      - integration_gradle_test
-      - integration_influx_test
-      - integration_jenkins_test
-      - integration_maven_test
-      - integration_mta_build_test
-      - integration_nexus_upload_test
-      - integration_npm_execute_scripts_test
-      - integration_python_build_test
-      - integration_sonar_test
-      - integration_piper_help_test
-      - integration_vault_test
-
-    steps:
-      - name: update status
+      - name: upload Piper binary
         if: success()
+        uses: ${{ env.GHA_UPLOAD_ARTIFACT_VERSION }}
+        with:
+          path: piper
+
+  TestAPICLIIntegration:
+    name: Test API CLI integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestCLIIntegration:
+    name: Test CLI integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestCNBIntegration:
+    name: Test CNB integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestGaugeIntegration:
+    name: Test Gauge integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestGCSIntegration:
+    name: Test GCS integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestGitHubIntegration:
+    name: Test GitHub integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestGitOpsIntegration:
+    name: Test GitOps integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestGolangIntegration:
+    name: Test Golang integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestGradleIntegration:
+    name: Test Gradle integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestInfluxIntegration:
+    name: Test Influx integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestJenkinsIntegration:
+    name: Test Jenkins integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestMavenIntegration:
+    name: Test Maven integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestMTAIntegration:
+    name: Test MTA integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestNexusIntegration:
+    name: Test Nexus integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestNPMIntegration:
+    name: Test NPM integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestPiperIntegration:
+    name: Test Piper integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestPythonIntegration:
+    name: Test Python integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestSonarIntegration:
+    name: Test Sonar integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  TestVaultIntegration:
+    name: Test Vault integration
+    needs:
+      - BuildPiper
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ github.job }} ./integration/...
+
+  StatusUpdate:
+    name: Status update
+    if: always() && jobs.Test**Integration.result != ""
+    runs-on: ubuntu-latest
+    steps:
+      - name: update status
+        if: jobs.Test**Integration.result == 'success'
         run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "success", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ env.COMMIT_ID }}' -H 'Content-Type: application/json' --data '{"state": "success", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
       - name: update status
         if: cancelled() || failure()
         run: |
-          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "failure", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ env.COMMIT_ID }}' -H 'Content-Type: application/json' --data '{"state": "failure", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
