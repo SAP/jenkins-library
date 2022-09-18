@@ -43,9 +43,6 @@ jobs:
         run: |
           curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ env.COMMIT_ID }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
 
-
-
-
   ConsumerTests:
     name: Consumer tests
     needs:
