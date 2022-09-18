@@ -253,12 +253,13 @@ func (d *IntegrationTestDockerExecRunner) getPiperOutput() (*bytes.Buffer, error
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasFiles(t *testing.T, consistencies ...string) {
-	for _, c := range consistencies {
-		buffer := new(bytes.Buffer)
-		d.Runner.Stderr(buffer)
-		if d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", c) != nil {
-			t.Fatalf("[assertHasFiles] Assertion has failed: %v", errors.New(buffer.String()))
-		}
+	buffer := new(bytes.Buffer)
+	d.Runner.Stderr(buffer)
+	if d.Runner.RunExecutable(
+		"docker",
+		append(append(make([]string, 0), "exec", d.ContainerName, "stat"), consistencies...)...,
+	) != nil {
+		t.Fatalf("[assertHasFiles] Assertion has failed: %v", errors.New(buffer.String()))
 	}
 }
 
