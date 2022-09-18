@@ -500,7 +500,7 @@ jobs:
     runs-on: ${{ env.GHA_UBUNTU_VERSION }}
     steps:
       - name: Update status
-        if: ${{ !contains(jobs.Test**Integration.result, "cancelled") || !contains(jobs.Test**Integration.result, "failure") || !contains(jobs.Test**Integration.result, "skipped") }}
+        if: ${{ !contains(jobs.Test**Integration.result, "cancelled") && !contains(jobs.Test**Integration.result, "failure") &&contains(jobs.Test**Integration.result, "skipped") }}
         run: |
           curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ env.COMMIT_ID }}' -H 'Content-Type: application/json' --data '{"state": "success", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
       - name: Update status
