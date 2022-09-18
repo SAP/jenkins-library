@@ -136,11 +136,11 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		}
 	}
 
-	for _, scriptLine := range testRunner.Setup {
-		err := testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/sh", "-c", scriptLine)
-		if err != nil {
-			t.Fatalf("Running setup script in test container has failed %s", err)
-		}
+	if err = testRunner.Runner.RunExecutable(
+		"docker", "exec", testRunner.ContainerName, "sh", "-c",
+		strings.Join(testRunner.Setup, "\n"),
+	); err != nil {
+		t.Fatalf("Running setup script in test container has failed %s", err)
 	}
 
 	setupPiperBinary(t, testRunner, localPiper)
