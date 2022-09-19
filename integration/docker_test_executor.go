@@ -5,6 +5,7 @@ package main
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -62,6 +63,7 @@ type IntegrationTestDockerExecRunner struct {
 }
 
 func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBundle) IntegrationTestDockerExecRunner {
+
 	runner := command.Command{}
 	containerName := generateContainerName()
 
@@ -134,11 +136,11 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		}
 	}
 
-	for _, scriptLine := range testRunner.Setup {
-		err := testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/sh", "-c", scriptLine)
-		if err != nil {
-			t.Fatalf("Running setup script in test container has failed %s", err)
-		}
+	if err = testRunner.Runner.RunExecutable(
+		"docker", "exec", testRunner.ContainerName, "sh", "-c",
+		strings.Join(testRunner.Setup, "\n"),
+	); err != nil {
+		t.Fatalf("Running setup script in test container has failed %s", err)
 	}
 
 	setupPiperBinary(t, testRunner, localPiper)
@@ -146,7 +148,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	return testRunner
 }
 
-// generateContainerName creates a name with a common prefix and a random number so we can start a new container for each test method
+// generateContainerName creates a name with a common prefix and a random number, so we can start a new container for each test method
 // We don't rely on docker's random name generator for two reasons
 // First, it is easier to save the name here compared to getting it from stdout
 // Second, the common prefix allows batch stopping/deleting of containers if so desired
@@ -184,8 +186,7 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 	}
 
 	args = append(args, "/piper-wrapper", "/piper", command)
-	args = append(args, parameters...)
-	err := d.Runner.RunExecutable("docker", args...)
+	err := d.Runner.RunExecutable("docker", append(args, parameters...)...)
 	if err != nil {
 		stdOut, err := d.getPiperOutput()
 		return errors.Wrapf(err, "piper output: \n%s", stdOut.String())
@@ -204,26 +205,43 @@ func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string
 	return d.Runner.RunExecutable("docker", args...)
 }
 
-func (d *IntegrationTestDockerExecRunner) assertHasNoOutput(t *testing.T, want string) {
+func (d *IntegrationTestDockerExecRunner) assertHasNoOutput(t *testing.T, inconsistencies ...string) {
+	count := len(inconsistencies)
 	buffer, err := d.getPiperOutput()
 	if err != nil {
 		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
 	}
-
-	if strings.Contains(buffer.String(), want) {
-		assert.Equal(t, buffer.String(), want, "Unexpected command output")
+	scanner := bufio.NewScanner(buffer)
+	for scanner.Scan() && (len(inconsistencies) != 0) {
+		for i, str := range inconsistencies {
+			if strings.Contains(scanner.Text(), str) {
+				inconsistencies = append(inconsistencies[:i], inconsistencies[i+1:]...)
+				break
+			}
+		}
 	}
+	assert.Equal(t, len(inconsistencies), count, fmt.Sprintf(
+		"[assertHasNoOutput] Unexpected command output:\n%s\n%s\n", buffer.String(), strings.Join(inconsistencies, "\n")),
+	)
 }
 
-func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, want string) {
+func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, consistencies ...string) {
 	buffer, err := d.getPiperOutput()
 	if err != nil {
 		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
 	}
-
-	if !strings.Contains(buffer.String(), want) {
-		assert.Equal(t, buffer.String(), want, "Unexpected command output")
+	scanner := bufio.NewScanner(buffer)
+	for scanner.Scan() && (len(consistencies) != 0) {
+		for i, str := range consistencies {
+			if strings.Contains(scanner.Text(), str) {
+				consistencies = append(consistencies[:i], consistencies[i+1:]...)
+				break
+			}
+		}
 	}
+	assert.Equal(t, len(consistencies), 0, fmt.Sprintf(
+		"[assertHasOutput] Unexpected command output:\n%s\n%s\n", buffer.String(), strings.Join(consistencies, "\n")),
+	)
 }
 
 func (d *IntegrationTestDockerExecRunner) getPiperOutput() (*bytes.Buffer, error) {
@@ -234,15 +252,19 @@ func (d *IntegrationTestDockerExecRunner) getPiperOutput() (*bytes.Buffer, error
 	return buffer, err
 }
 
-func (d *IntegrationTestDockerExecRunner) assertHasFile(t *testing.T, want string) {
-	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", want)
-	if err != nil {
-		t.Fatalf("Assertion has failed. Expected file %s to exist in container. %s", want, err)
+func (d *IntegrationTestDockerExecRunner) assertHasFiles(t *testing.T, consistencies ...string) {
+	buffer := new(bytes.Buffer)
+	d.Runner.Stderr(buffer)
+	if d.Runner.RunExecutable(
+		"docker",
+		append(append(make([]string, 0), "exec", d.ContainerName, "stat"), consistencies...)...,
+	) != nil {
+		t.Fatalf("[assertHasFiles] Assertion has failed: %v", errors.New(buffer.String()))
 	}
 }
 
 func (d *IntegrationTestDockerExecRunner) assertFileContentEquals(t *testing.T, fileWant string, contentWant string) {
-	d.assertHasFile(t, fileWant)
+	d.assertHasFiles(t, fileWant)
 
 	buffer := new(bytes.Buffer)
 	d.Runner.Stdout(buffer)

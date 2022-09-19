@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestVaultIntegration ./integration/...
 
 package main
 
@@ -21,7 +22,7 @@ import (
 
 type SecretData = map[string]interface{}
 
-func TestGetVaultSecret(t *testing.T) {
+func TestVaultIntegrationGetSecret(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
@@ -67,7 +68,7 @@ func TestGetVaultSecret(t *testing.T) {
 
 }
 
-func TestWriteVaultSecret(t *testing.T) {
+func TestVaultIntegrationWriteSecret(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
@@ -131,7 +132,7 @@ func TestWriteVaultSecret(t *testing.T) {
 	assert.Equal(t, "value2", secret["key2"])
 }
 
-func TestVaultAppRole(t *testing.T) {
+func TestVaultIntegrationAppRole(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
@@ -210,7 +211,7 @@ func TestVaultAppRole(t *testing.T) {
 	})
 }
 
-func TestTokenRevocation(t *testing.T) {
+func TestVaultIntegrationTokenRevocation(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
