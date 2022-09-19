@@ -13,7 +13,7 @@ env:
   JAVA_VERSION: 11
 
   GHA_GO_VERSION: 1.18.x
-  TIMEOUT: 10m
+  TIMEOUT: 25m
 
   PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
   PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
@@ -61,30 +61,6 @@ jobs:
       repository: ${{ steps.repository.outputs.repository }}
       commit_id: ${{ steps.commit_id.outputs.commit_id }}
 
-  build_piper:
-    name: Build Piper
-    needs:
-      - start
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ needs.start.outputs.repository }}
-          ref: ${{ needs.start.outputs.branch_name }}
-      - uses: actions/setup-go@v3
-        with:
-          go-version: ${{ env.GHA_GO_VERSION }}
-      - name: Build
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
-      - name: Upload Piper binary
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: piper
-          path: piper
-
   consumer_tests:
     name: Consumer tests
     needs:
@@ -118,6 +94,53 @@ jobs:
           CX_INFRA_IT_TMS_UPLOAD: ${{ secrets.CX_INFRA_IT_TMS_UPLOAD }}
         run: |
           cd consumer-test && groovy consumerTestController.groovy
+
+  build_piper:
+    name: Build Piper
+    needs:
+      - start
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GHA_GO_VERSION }}
+      - name: Build
+        # with `-tags release` we ensure that shared test utilities won't end up in the binary
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
+      - name: Upload Piper binary
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: piper
+          path: piper
+
+  build_integration_tests:
+    name: Build integration tests
+    needs:
+      - start
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GHA_GO_VERSION }}
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration/...
+      - name: Upload Piper binary
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration_tests
+          path: integration_tests
 
   integration_tests:
     name: Integration tests
@@ -161,12 +184,18 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: piper
-      - name: Run test
         run: |
           chmod +x piper
-          pwd
-          ls -la
-          go test -v -tags integration -timeout ${TIMEOUT} -run ${{ matrix.version }} ./integration/...
+      - name: Download integration tests binary
+        uses: actions/download-artifact@v3
+        with:
+          name: integration_tests
+          path: integration/
+        run: |
+          chmod +x integration_tests
+      - name: Run test
+        run: |
+          ./integration_tests -test.v -test.timeout ${TIMEOUT} -test.run ${{ matrix.version }}
 
   Finis:
     name: Finis
