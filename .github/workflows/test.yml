@@ -13,7 +13,7 @@ env:
   JAVA_VERSION: 11
 
   CGO_ENABLED: 0
-  GHA_GO_VERSION: 1.18.x
+  GHA_GO_VERSION: 1.19.x
   TIMEOUT: 10m
 
   PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
@@ -128,23 +128,23 @@ jobs:
           - ubuntu-latest
         version:
           - 'TestCNBIntegration'
-#          - 'TestGaugeIntegration'
-#          - 'TestGCSIntegration'
-#          - 'TestGitHubIntegration'
-#          - 'TestGitOpsIntegration'
-#          - 'TestGolangIntegration'
-#          - 'TestGradleIntegration'
-#          - 'TestInfluxIntegration'
-##          - 'TestJenkinsIntegration'
-#          - 'TestKarmaIntegration'
-#          - 'TestMavenIntegration'
-#          - 'TestMTAIntegration'
-#          - 'TestNexusIntegration'
-#          - 'TestNPMIntegration'
-#          - 'TestPiperIntegration'
-#          - 'TestPythonIntegration'
-#          - 'TestSonarIntegration'
-#          - 'TestVaultIntegration'
+          - 'TestGaugeIntegration'
+          - 'TestGCSIntegration'
+          - 'TestGitHubIntegration'
+          - 'TestGitOpsIntegration'
+          - 'TestGolangIntegration'
+          - 'TestGradleIntegration'
+          - 'TestInfluxIntegration'
+#          - 'TestJenkinsIntegration'
+          - 'TestKarmaIntegration'
+          - 'TestMavenIntegration'
+          - 'TestMTAIntegration'
+          - 'TestNexusIntegration'
+          - 'TestNPMIntegration'
+          - 'TestPiperIntegration'
+          - 'TestPythonIntegration'
+          - 'TestSonarIntegration'
+          - 'TestVaultIntegration'
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
