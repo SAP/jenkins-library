@@ -8,6 +8,13 @@ on:
   issue_comment:
     types:
       - created
+    if: |
+      github.event.comment.body == '/it' &&
+      (
+      github.event.comment.author_association == 'COLLABORATOR' ||
+      github.event.comment.author_association == 'OWNER' ||
+      github.event.comment.author_association == 'MEMBER'
+      )
 
 env:
   JAVA_VERSION: 11
@@ -71,7 +78,7 @@ jobs:
           go-version: ${{ env.GHA_GO_VERSION }}
       - name: Build
         # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
       - name: Upload Piper binary
         if: success()
         uses: actions/upload-artifact@v3
@@ -82,7 +89,7 @@ jobs:
   consumer_tests:
     name: Consumer tests
     needs:
-      - build_piper
+      - start
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -99,10 +106,6 @@ jobs:
       - name: Setup Git
         run: |
           git config --global user.email "piper-testing-bot@example.com" &&git config --global user.name "piper-testing-bot"
-#      - name: Download Piper binary
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: piper
       - name: Run tests
         env:
           REPOSITORY_UNDER_TEST: ${{ needs.start.outputs.repository }}
