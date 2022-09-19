@@ -55,10 +55,33 @@ jobs:
       repository: ${{ steps.repository.outputs.repository }}
       commit_id: ${{ steps.commit_id.outputs.commit_id }}
 
+  build_piper:
+    name: Build Piper
+    needs:
+      - start
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GHA_GO_VERSION }}
+      - name: Build
+        # with `-tags release` we ensure that shared test utilities won't end up in the binary
+        run: go build -o piper -tags release
+      - name: Upload Piper binary
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: piper
+
   consumer_tests:
     name: Consumer tests
     needs:
-      - start
+      - build_piper
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -88,29 +111,6 @@ jobs:
           CX_INFRA_IT_TMS_UPLOAD: ${{ secrets.CX_INFRA_IT_TMS_UPLOAD }}
         run: |
           cd consumer-test && groovy consumerTestController.groovy
-
-  build_piper:
-    name: Build Piper
-    needs:
-      - start
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ needs.start.outputs.repository }}
-          ref: ${{ needs.start.outputs.branch_name }}
-      - uses: actions/setup-go@v3
-        with:
-          go-version: ${{ env.GHA_GO_VERSION }}
-      - name: Build
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
-        run: go build -o piper -tags release
-      - name: Upload Piper binary
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          path: piper
 
   integration_tests:
     name: Integration tests
@@ -169,21 +169,21 @@ jobs:
         run: |
           if [[ ${{ needs.integration_tests.result }}=="success' ]]
           then
-            curl
-              --location
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}'
-              -H 'Content-Type: application/json'
+            curl \
+              --location \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}' \
+              -H 'Content-Type: application/json' \
               --data '{"state": "success",
                       "context": "Go / integration-tests",
-                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}'
+                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
           else
-            curl
-              --location
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}'
-              -H 'Content-Type: application/json'
+            curl \
+              --location \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}' \
+              -H 'Content-Type: application/json' \
               --data '{"state": "failure",
                       "context": "Go / integration-tests",
-                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}'
+                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
           fi
