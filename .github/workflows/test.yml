@@ -222,7 +222,7 @@ jobs:
               --data '{"state": "success",
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
-              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' \
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' |
             exit 0
           else
             curl \
@@ -232,6 +232,6 @@ jobs:
               --data '{"state": "failure",
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
-              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' \
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' |
             exit 1
           fi
