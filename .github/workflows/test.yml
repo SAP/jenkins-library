@@ -2,9 +2,9 @@ name: Integration tests (TEST)
 
 on:
   push:
-      branches:
-        - master
-        - it/**
+    branches:
+      - master
+      - it/**
   issue_comment:
     types:
       - created
