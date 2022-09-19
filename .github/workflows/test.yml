@@ -163,10 +163,10 @@ jobs:
           name: piper
       - name: Run test
         run: |
-        chmod +x piper
-        pwd
-        ls -la
-        go test -v -tags integration -timeout ${TIMEOUT} -run ${{ matrix.version }} ./integration/...
+          chmod +x piper
+          pwd
+          ls -la
+          go test -v -tags integration -timeout ${TIMEOUT} -run ${{ matrix.version }} ./integration/...
 
   Finis:
     name: Finis
