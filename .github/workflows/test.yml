@@ -221,7 +221,7 @@ jobs:
 
   Finish:
     name: Finish
-    if: always() && needs.start.result != 'skipped'
+    if: always() && needs.start.result == 'success'
     needs:
       - start
       - build_piper
