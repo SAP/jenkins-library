@@ -31,14 +31,7 @@ jobs:
         )
       ) ||
       github.ref_name == 'master' ||
-      (
-        startsWith(github.ref_name, 'it/') &&
-        (
-          github.event.push.author_association == 'COLLABORATOR' ||
-          github.event.push.author_association == 'OWNER' ||
-          github.event.push.author_association == 'MEMBER'
-        )
-      )
+      startsWith(github.ref_name, 'it/')
     runs-on: ubuntu-latest
     steps:
       - name: Get PR's URL
