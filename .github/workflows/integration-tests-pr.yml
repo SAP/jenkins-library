@@ -1,10 +1,9 @@
-name: Integration tests
+name: Integration tests (Pull Request)
 
 on:
-  push:
-    branches:
-      - master
-      - it/**
+  issue_comment:
+    types:
+      - created
 
 env:
   GHA_GO_VERSION: 1.18.x
@@ -16,6 +15,13 @@ env:
 jobs:
   start:
     name: Start
+    if: |
+      github.event.comment.body == '/it' &&
+      (
+        github.event.comment.author_association == 'COLLABORATOR' ||
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER'
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Update status
@@ -87,7 +93,7 @@ jobs:
         os:
           - ubuntu-latest
         version:
-          #         tough CNB tests are decomposed to reduce pipeline execution time
+#         tough CNB tests are decomposed to reduce pipeline execution time
           - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
           - '"TestCNBIntegrationPreserveFiles\b"'
           - '"TestCNBIntegrationNPMProject"'
@@ -99,14 +105,14 @@ jobs:
           - '"TestGolangIntegration"'
           - '"TestGradleIntegration"'
 
-          #          Jenkins tests are still not implemented(skipped) yet
-          #          - '"TestJenkinsIntegration"'
+#          Jenkins tests are still not implemented(skipped) yet
+#          - '"TestJenkinsIntegration"'
 
           - '"TestMavenIntegration"'
           - '"TestMTAIntegration"'
           - '"TestNexusIntegration"'
 
-          #         these are light-weighed tests, so we can use only one pod to reduce resource consumption
+#         these are light-weighed tests, so we can use only one pod to reduce resource consumption
           - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
 
     runs-on: ${{ matrix.os }}
