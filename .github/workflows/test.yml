@@ -231,7 +231,7 @@ jobs:
     steps:
       - name: Update status
         run: |
-          if [[ ${{ needs.run_integration_tests.result }}=='success' ]]
+          if [[ '${{ needs.run_integration_tests.result }}'=='success' ]]
           then
             curl \
               --location \
