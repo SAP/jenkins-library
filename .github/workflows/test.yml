@@ -221,7 +221,7 @@ jobs:
 
   Finish:
     name: Finish
-    if: always()
+    if: always() && needs.start.result != 'skipped'
     needs:
       - start
       - build_piper
@@ -233,7 +233,6 @@ jobs:
         run: |
           if [[ "${{ needs.run_integration_tests.result }}" == "success" ]]
           then
-            echo "Success" |
             curl \
               --location \
               --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}' \
@@ -244,7 +243,6 @@ jobs:
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' |
             exit 0
           else
-            echo "Fail" |
             curl \
               --location \
               --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}' \
