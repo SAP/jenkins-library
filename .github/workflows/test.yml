@@ -146,6 +146,7 @@ jobs:
     name: Integration tests
     needs:
       - build_piper
+      - build_integration_tests
     strategy:
       fail-fast: true
       matrix:
