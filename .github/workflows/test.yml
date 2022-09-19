@@ -21,13 +21,13 @@ env:
 jobs:
   start:
     name: Start
-#    if: |
-#      github.event.comment.body == '/it' &&
-#      (
-#      github.event.comment.author_association == 'COLLABORATOR' ||
-#      github.event.comment.author_association == 'OWNER' ||
-#      github.event.comment.author_association == 'MEMBER'
-#      )
+    if: |
+      github.event.comment.body == '/it' &&
+      (
+        github.event.comment.author_association == 'COLLABORATOR' ||
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER'
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Get PR's URL
@@ -154,7 +154,13 @@ jobs:
           - ubuntu-latest
         version:
 #         tough CNB tests are decomposed to reduce pipeline execution time
-          - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
+          - '`(
+          TestCNBIntegrationBindings|
+          TestCNBIntegrationWrongBuilderProject|
+          TestCNBIntegrationNonZipPath|
+          TestCNBIntegrationZipPath|
+          TestCNBIntegrationPreserveFilesIgnored
+          )"'
           - '"TestCNBIntegrationPreserveFiles\b"'
           - '"TestCNBIntegrationNPMProject"'
           - '"TestCNBIntegrationMultiImage"'
@@ -173,7 +179,19 @@ jobs:
           - '"TestNexusIntegration"'
 
 #         these are light-weighed tests, so we can use only one pod to reduce resource consumption
-          - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
+          - '`Test(
+          Gauge|
+          GCS|
+          GitHub|
+          GitOps|
+          Influx|
+          NPM|
+          Piper|
+          Python|
+          Sonar|
+          Vault|
+          Karma
+          )Integration`'
 
     runs-on: ${{ matrix.os }}
     steps:
