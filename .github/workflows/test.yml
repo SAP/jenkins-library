@@ -1,8 +1,6 @@
 name: Integration tests (TEST)
 
 on:
-  - push
-  - issue_comment
   push:
       branches:
         - master
