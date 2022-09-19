@@ -10,11 +10,11 @@ on:
       - created
 
 env:
-  JAVA_VERSION: '11'
+  JAVA_VERSION: 11
 
   CGO_ENABLED: 0
-  GHA_GO_VERSION: '1.18.x'
-  TIMEOUT: '10m'
+  GHA_GO_VERSION: 1.18.x
+  TIMEOUT: 10m
 
   PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
   PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
@@ -98,7 +98,11 @@ jobs:
           sudo apt-get update && sudo apt-get install groovy -y
       - name: Setup Git
         run: |
-          git config --global user.email "piper-testing-bot@example.com" && git config --global user.name "piper-testing-bot"
+          git config --global user.email "piper-testing-bot@example.com" &&git config --global user.name "piper-testing-bot"
+      - name: Download Piper binary
+        uses: actions/download-artifact@v3
+        with:
+          name: piper
       - name: Run tests
         env:
           REPOSITORY_UNDER_TEST: ${{ needs.start.outputs.repository }}
