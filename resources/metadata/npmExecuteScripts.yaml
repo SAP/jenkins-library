@@ -164,7 +164,7 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "**/bom.xml"
+          - filePattern: "**/bom-npm.xml"
             type: sbom
           - filePattern: "**/TEST-*.xml"
             type: junit

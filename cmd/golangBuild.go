@@ -34,9 +34,9 @@ const (
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
-	sbomFilename                = "bom.xml"
+	sbomFilename                = "bom-golang.xml"
 	golangciLintURL             = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
-	golangciLintVersion         = "v1.46.2"
+	golangciLintVersion         = "latest"
 )
 
 type golangBuildUtils interface {
@@ -90,7 +90,9 @@ func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
 	httpClient.SetOptions(httpClientOptions)
 
 	utils := golangBuildUtilsBundle{
-		Command:  &command.Command{},
+		Command: &command.Command{
+			StepName: "golangBuild",
+		},
 		Files:    &piperutils.Files{},
 		Uploader: &httpClient,
 		Client: &goget.ClientImpl{

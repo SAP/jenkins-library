@@ -32,13 +32,14 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 	}
 
 	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
+	utils := piperutils.Files{}
+	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &utils, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, utils piperutils.FileUtils, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	connBuild := new(abapbuild.Connector)
 	if errConBuild := initAssemblePackagesConnection(connBuild, config, com, client); errConBuild != nil {
 		return errConBuild
@@ -71,7 +72,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	}
 
 	log.Entry().Infof("Publishing %v files", len(filesToPublish))
-	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
+	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", utils, filesToPublish, nil)
 
 	var reposBackToCPE []abaputils.Repository
 	for _, b := range builds {
