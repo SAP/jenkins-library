@@ -153,25 +153,25 @@ jobs:
         os:
           - ubuntu-latest
         version:
-          - '(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|)'
-          - 'TestCNBIntegrationPreserveFilesIgnored'
-          - 'TestCNBIntegrationPreserveFiles\b'
-          - 'TestCNBIntegrationNPMProject'
-          - 'TestCNBIntegrationMultiImage'
-          - 'TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject'
-          - 'TestCNBIntegrationNPMCustomBuildpacksFullProject'
-          - 'TestCNBIntegrationProjectDescriptor'
+          - "(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|)"
+          - "TestCNBIntegrationPreserveFilesIgnored"
+          - "TestCNBIntegrationPreserveFiles\b"
+          - "TestCNBIntegrationNPMProject"
+          - "TestCNBIntegrationMultiImage"
+          - "TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"
+          - "TestCNBIntegrationNPMCustomBuildpacksFullProject"
+          - "TestCNBIntegrationProjectDescriptor"
 
-          - 'TestGolangIntegration'
-          - 'TestGradleIntegration'
-#          - 'TestJenkinsIntegration'
+          - "TestGolangIntegration"
+          - "TestGradleIntegration"
+#          - "TestJenkinsIntegration"
 
-          - 'TestKarmaIntegration'
-          - 'TestMavenIntegration'
-          - 'TestMTAIntegration'
-          - 'TestNexusIntegration'
+          - "TestKarmaIntegration"
+          - "TestMavenIntegration"
+          - "TestMTAIntegration"
+          - "TestNexusIntegration"
 
-          - 'Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault)Integration'
+          - "Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault)Integration"
 
     runs-on: ${{ matrix.os }}
     steps:
