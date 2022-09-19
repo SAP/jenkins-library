@@ -164,7 +164,7 @@ jobs:
           TestCNBIntegrationNonZipPath|
           TestCNBIntegrationZipPath|
           TestCNBIntegrationPreserveFilesIgnored
-          )"'
+          )`'
           - '"TestCNBIntegrationPreserveFiles\b"'
           - '"TestCNBIntegrationNPMProject"'
           - '"TestCNBIntegrationMultiImage"'
