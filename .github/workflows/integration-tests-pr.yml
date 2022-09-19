@@ -15,6 +15,7 @@ env:
 jobs:
   start:
     name: Start
+    runs-on: ubuntu-latest
     if: |
       github.event.comment.body == '/it' &&
       (
@@ -22,7 +23,6 @@ jobs:
         github.event.comment.author_association == 'OWNER' ||
         github.event.comment.author_association == 'MEMBER'
       )
-    runs-on: ubuntu-latest
     steps:
       - name: Update status
         run: |
