@@ -135,7 +135,7 @@ jobs:
           go-version: ${{ env.GHA_GO_VERSION }}
       - name: Build
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration/...
-      - name: Upload Piper binary
+      - name: Upload integration tests binary
         if: success()
         uses: actions/upload-artifact@v3
         with:
@@ -189,10 +189,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: integration_tests
-          path: integration/
+          path: ./integration/
       - name: Run test
         run: |
           chmod +x piper
+          cd ./integration
           chmod +x integration_tests
           ./integration_tests -test.v -test.timeout ${TIMEOUT} -test.run ${{ matrix.version }}
 
