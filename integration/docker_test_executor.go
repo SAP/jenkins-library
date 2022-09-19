@@ -80,7 +80,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	}
 
 	wd, _ := os.Getwd()
-	localPiper := path.Join(wd, "piper")
+	localPiper := path.Join(wd, "..", "piper")
 	if localPiper == "" {
 		t.Fatal("Could not locate piper binary to test")
 	}
