@@ -154,28 +154,28 @@ jobs:
           - ubuntu-latest
         version:
 #         tough CNB tests are decomposed to reduce pipeline execution time
-          - "(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath)"
-          - "TestCNBIntegrationPreserveFilesIgnored"
-          - "TestCNBIntegrationPreserveFiles\b"
-          - "TestCNBIntegrationNPMProject"
-          - "TestCNBIntegrationMultiImage"
-          - "TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"
-          - "TestCNBIntegrationNPMCustomBuildpacksFullProject"
-          - "TestCNBIntegrationProjectDescriptor"
+          - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath)"'
+          - '"TestCNBIntegrationPreserveFilesIgnored"'
+          - '"TestCNBIntegrationPreserveFiles\b"'
+          - '"TestCNBIntegrationNPMProject"'
+          - '"TestCNBIntegrationMultiImage"'
+          - '"TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"'
+          - '"TestCNBIntegrationNPMCustomBuildpacksFullProject"'
+          - '"TestCNBIntegrationProjectDescriptor"'
 
-          - "TestGolangIntegration"
-          - "TestGradleIntegration"
+          - '"TestGolangIntegration"'
+          - '"TestGradleIntegration"'
 
 #          Jenkins tests are still not implemented(skipped) yet
-#          - "TestJenkinsIntegration"
+#          - '"TestJenkinsIntegration"'
 
-          - "TestKarmaIntegration"
-          - "TestMavenIntegration"
-          - "TestMTAIntegration"
-          - "TestNexusIntegration"
+          - '"TestKarmaIntegration"'
+          - '"TestMavenIntegration"'
+          - '"TestMTAIntegration"'
+          - '"TestNexusIntegration"'
 
 #         these are light-weighed tests, so we can use only one pod to reduce resource consumption
-          - "Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault)Integration"
+          - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault)Integration"'
 
     runs-on: ${{ matrix.os }}
     steps:
