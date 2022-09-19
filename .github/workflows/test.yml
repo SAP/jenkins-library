@@ -22,13 +22,6 @@ jobs:
   start:
     name: Start
     runs-on: ubuntu-latest
-    if: |
-      github.event.comment.body == '/itit' &&
-      (
-      github.event.comment.author_association == 'COLLABORATOR' ||
-      github.event.comment.author_association == 'OWNER' ||
-      github.event.comment.author_association == 'MEMBER'
-      )
     steps:
       - name: Get PR's URL
         id: pull_request
