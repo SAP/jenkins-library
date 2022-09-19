@@ -153,24 +153,26 @@ jobs:
         os:
           - ubuntu-latest
         version:
-          - 'TestCNBIntegration'
-          - 'TestGaugeIntegration'
-          - 'TestGCSIntegration'
-          - 'TestGitHubIntegration'
-          - 'TestGitOpsIntegration'
+          - '(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|)'
+          - 'TestCNBIntegrationPreserveFilesIgnored'
+          - 'TestCNBIntegrationPreserveFiles\b'
+          - 'TestCNBIntegrationNPMProject'
+          - 'TestCNBIntegrationMultiImage'
+          - 'TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject'
+          - 'TestCNBIntegrationNPMCustomBuildpacksFullProject'
+          - 'TestCNBIntegrationProjectDescriptor'
+
           - 'TestGolangIntegration'
           - 'TestGradleIntegration'
-          - 'TestInfluxIntegration'
 #          - 'TestJenkinsIntegration'
+
           - 'TestKarmaIntegration'
           - 'TestMavenIntegration'
           - 'TestMTAIntegration'
           - 'TestNexusIntegration'
-          - 'TestNPMIntegration'
-          - 'TestPiperIntegration'
-          - 'TestPythonIntegration'
-          - 'TestSonarIntegration'
-          - 'TestVaultIntegration'
+
+          - 'Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault)Integration'
+
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
