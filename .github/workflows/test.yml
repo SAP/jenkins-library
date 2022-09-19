@@ -27,7 +27,7 @@ jobs:
         github.event.comment.author_association == 'COLLABORATOR' ||
         github.event.comment.author_association == 'OWNER' ||
         github.event.comment.author_association == 'MEMBER'
-      ) || github.ref_name == master || github.ref_name == it/**
+      ) || github.ref_name == "master" || github.ref_name == "it/**"
     runs-on: ubuntu-latest
     steps:
       - name: Get PR's URL
