@@ -57,8 +57,8 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
                                             'abapAddonAssemblyKitReleasePackages',
                                             'abapEnvironmentAssembleConfirm',
                                             'abapAddonAssemblyKitCreateTargetVector',
-                                            'abapAddonAssemblyKitPublishTargetVector',
-                                            'abapEnvironmentCreateTag'))
+                                            'abapAddonAssemblyKitPublishTargetVector'))
+        assertThat(stepsCalled, not(hasItems('abapEnvironmentCreateTag')))
     }
 
     @Test
