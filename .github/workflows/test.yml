@@ -142,8 +142,8 @@ jobs:
           name: integration_tests
           path: integration_tests
 
-  integration_tests:
-    name: Integration tests
+  run_integration_tests:
+    name: Run integration tests
     needs:
       - build_piper
       - build_integration_tests
@@ -202,12 +202,13 @@ jobs:
     if: always()
     needs:
       - build_piper
-      - integration_tests
+      - build_integration_tests
+      - run_integration_tests
     runs-on: ubuntu-latest
     steps:
       - name: Update status
         run: |
-          if [[ ${{ needs.integration_tests.result }}=='success' ]]
+          if [[ ${{ needs.run_integration_tests.result }}=='success' ]]
           then
             curl \
               --location \
