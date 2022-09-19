@@ -23,7 +23,7 @@ jobs:
     name: Start
     if: |
       (
-        github.event.comment.body == '/it' &&
+        github.event.comment.body == '/RUN' &&
         (
           github.event.comment.author_association == 'COLLABORATOR' ||
           github.event.comment.author_association == 'OWNER' ||
