@@ -8,13 +8,6 @@ on:
   issue_comment:
     types:
       - created
-    if: |
-      github.event.comment.body == '/it' &&
-      (
-      github.event.comment.author_association == 'COLLABORATOR' ||
-      github.event.comment.author_association == 'OWNER' ||
-      github.event.comment.author_association == 'MEMBER'
-      )
 
 env:
   JAVA_VERSION: 11
@@ -29,6 +22,13 @@ env:
 jobs:
   start:
     name: Start
+#    if: |
+#      github.event.comment.body == '/it' &&
+#      (
+#      github.event.comment.author_association == 'COLLABORATOR' ||
+#      github.event.comment.author_association == 'OWNER' ||
+#      github.event.comment.author_association == 'MEMBER'
+#      )
     runs-on: ubuntu-latest
     steps:
       - name: Get PR's URL
