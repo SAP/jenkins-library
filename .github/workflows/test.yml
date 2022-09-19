@@ -12,7 +12,6 @@ on:
 env:
   JAVA_VERSION: 11
 
-  CGO_ENABLED: 0
   GHA_GO_VERSION: 1.18.x
   TIMEOUT: 10m
 
@@ -131,23 +130,23 @@ jobs:
           - ubuntu-latest
         version:
           - 'TestCNBIntegration'
-          - 'TestGaugeIntegration'
-          - 'TestGCSIntegration'
-          - 'TestGitHubIntegration'
-          - 'TestGitOpsIntegration'
-          - 'TestGolangIntegration'
-          - 'TestGradleIntegration'
-          - 'TestInfluxIntegration'
-#          - 'TestJenkinsIntegration'
-          - 'TestKarmaIntegration'
-          - 'TestMavenIntegration'
-          - 'TestMTAIntegration'
-          - 'TestNexusIntegration'
-          - 'TestNPMIntegration'
-          - 'TestPiperIntegration'
-          - 'TestPythonIntegration'
-          - 'TestSonarIntegration'
-          - 'TestVaultIntegration'
+#          - 'TestGaugeIntegration'
+#          - 'TestGCSIntegration'
+#          - 'TestGitHubIntegration'
+#          - 'TestGitOpsIntegration'
+#          - 'TestGolangIntegration'
+#          - 'TestGradleIntegration'
+#          - 'TestInfluxIntegration'
+##          - 'TestJenkinsIntegration'
+#          - 'TestKarmaIntegration'
+#          - 'TestMavenIntegration'
+#          - 'TestMTAIntegration'
+#          - 'TestNexusIntegration'
+#          - 'TestNPMIntegration'
+#          - 'TestPiperIntegration'
+#          - 'TestPythonIntegration'
+#          - 'TestSonarIntegration'
+#          - 'TestVaultIntegration'
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
