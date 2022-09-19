@@ -74,8 +74,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          repository: ${{ needs.start.outputs.repository }}
-          ref: ${{ needs.start.outputs.branch_name }}
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref }}
       - uses: actions/setup-java@v1
         with:
           java-version: ${{ env.JAVA_VERSION }}
@@ -87,8 +87,8 @@ jobs:
           git config --global user.email "piper-testing-bot@example.com" &&git config --global user.name "piper-testing-bot"
       - name: Run tests
         env:
-          REPOSITORY_UNDER_TEST: ${{ needs.start.outputs.repository }}
-          BRANCH_NAME: ${{ needs.start.outputs.branch_name }}
+          REPOSITORY_UNDER_TEST: ${{ github.repository }}
+          BRANCH_NAME: ${{ github.ref_name }}
           BUILD_WEB_URL: https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}
           INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
           CX_INFRA_IT_CF_USERNAME: ${{ secrets.CX_INFRA_IT_CF_USERNAME }}
