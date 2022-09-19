@@ -1,10 +1,12 @@
 name: Integration tests (TEST)
 
 on:
+  - push
+  - issue_comment
   push:
-    branches:
-      - master
-      - it/**
+      branches:
+        - master
+        - it/**
   issue_comment:
     types:
       - created
@@ -128,23 +130,23 @@ jobs:
           - ubuntu-latest
         version:
           - 'TestCNBIntegration'
-          - 'TestGaugeIntegration'
-          - 'TestGCSIntegration'
-          - 'TestGitHubIntegration'
-          - 'TestGitOpsIntegration'
-          - 'TestGolangIntegration'
-          - 'TestGradleIntegration'
-          - 'TestInfluxIntegration'
-#          - 'TestJenkinsIntegration'
-          - 'TestKarmaIntegration'
-          - 'TestMavenIntegration'
-          - 'TestMTAIntegration'
-          - 'TestNexusIntegration'
-          - 'TestNPMIntegration'
-          - 'TestPiperIntegration'
-          - 'TestPythonIntegration'
-          - 'TestSonarIntegration'
-          - 'TestVaultIntegration'
+#          - 'TestGaugeIntegration'
+#          - 'TestGCSIntegration'
+#          - 'TestGitHubIntegration'
+#          - 'TestGitOpsIntegration'
+#          - 'TestGolangIntegration'
+#          - 'TestGradleIntegration'
+#          - 'TestInfluxIntegration'
+##          - 'TestJenkinsIntegration'
+#          - 'TestKarmaIntegration'
+#          - 'TestMavenIntegration'
+#          - 'TestMTAIntegration'
+#          - 'TestNexusIntegration'
+#          - 'TestNPMIntegration'
+#          - 'TestPiperIntegration'
+#          - 'TestPythonIntegration'
+#          - 'TestSonarIntegration'
+#          - 'TestVaultIntegration'
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
