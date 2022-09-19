@@ -62,6 +62,9 @@ jobs:
       - name: Install Groovy
         run: |
           sudo apt-get update && sudo apt-get install groovy -y
+      - name: Setup Git
+        run: |
+          git config --global user.email "piper-testing-bot@example.com" && git config --global user.name "piper-testing-bot"
       - name: Run tests
         env:
           REPOSITORY_UNDER_TEST: ${{ github.repository }}
