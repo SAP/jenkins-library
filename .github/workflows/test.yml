@@ -135,13 +135,7 @@ jobs:
           - ubuntu-latest
         version:
 #         tough CNB tests are decomposed to reduce pipeline execution time
-          - '"(`
-          TestCNBIntegrationBindings|
-          TestCNBIntegrationWrongBuilderProject|
-          TestCNBIntegrationNonZipPath|
-          TestCNBIntegrationZipPath|
-          TestCNBIntegrationPreserveFilesIgnored
-          `)"'
+          - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
           - '"TestCNBIntegrationPreserveFiles\b"'
           - '"TestCNBIntegrationNPMProject"'
           - '"TestCNBIntegrationMultiImage"'
@@ -160,19 +154,7 @@ jobs:
           - '"TestNexusIntegration"'
 
 #         these are light-weighed tests, so we can use only one pod to reduce resource consumption
-          - '"Test(`
-          Gauge|
-          GCS|
-          GitHub|
-          GitOps|
-          Influx|
-          NPM|
-          Piper|
-          Python|
-          Sonar|
-          Vault|
-          Karma
-          `)Integration"'
+          - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
 
     runs-on: ${{ matrix.os }}
     steps:
