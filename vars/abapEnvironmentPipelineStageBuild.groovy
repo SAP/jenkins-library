@@ -20,7 +20,9 @@ import static com.sap.piper.Prerequisites.checkScript
     'abapAddonAssemblyKitCreateTargetVector',
     'abapAddonAssemblyKitPublishTargetVector',
     /** Parameter for host config */
-    'host'
+    'host',
+    'generateTagForAddonProductVersion',
+    'generateTagForAddonComponentVersion'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -52,10 +54,12 @@ void call(Map parameters = [:]) {
         abapEnvironmentAssembleConfirm script: parameters.script
         abapAddonAssemblyKitCreateTargetVector script: parameters.script
         abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
-        try {
-            abapEnvironmentCreateTag script: parameters.script
-        } catch (e) {
-            echo 'Tag creation failed: ' + e.message
+        if (config.generateTagForAddonComponentVersion || config.generateTagForAddonProductVersion) {
+            try {
+                abapEnvironmentCreateTag script: parameters.script
+            } catch (e) {
+                echo 'Tag creation failed: ' + e.message
+            }
         }
     }
 }

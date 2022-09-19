@@ -46,7 +46,7 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
     @Test
     void testAbapEnvironmentRunTestsWithoutHost() {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
-            'Build': true
+            'Build': true,
         ]
         jsr.step.abapEnvironmentPipelineStageBuild(script: nullScript)
 
@@ -66,7 +66,7 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Build': true
         ]
-        jsr.step.abapEnvironmentPipelineStageBuild(script: nullScript,  host: 'abc.com')
+        jsr.step.abapEnvironmentPipelineStageBuild(script: nullScript,  host: 'abc.com', generateTagForAddonComponentVersion: true)
 
         assertThat(stepsCalled, hasItems('abapEnvironmentAssemblePackages',
                                             'abapEnvironmentBuild',
