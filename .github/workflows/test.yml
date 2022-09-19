@@ -154,23 +154,23 @@ jobs:
           - ubuntu-latest
         version:
           - 'TestCNBIntegration'
-#          - 'TestGaugeIntegration'
-#          - 'TestGCSIntegration'
-#          - 'TestGitHubIntegration'
-#          - 'TestGitOpsIntegration'
-#          - 'TestGolangIntegration'
-#          - 'TestGradleIntegration'
-#          - 'TestInfluxIntegration'
-##          - 'TestJenkinsIntegration'
-#          - 'TestKarmaIntegration'
-#          - 'TestMavenIntegration'
-#          - 'TestMTAIntegration'
-#          - 'TestNexusIntegration'
-#          - 'TestNPMIntegration'
-#          - 'TestPiperIntegration'
-#          - 'TestPythonIntegration'
-#          - 'TestSonarIntegration'
-#          - 'TestVaultIntegration'
+          - 'TestGaugeIntegration'
+          - 'TestGCSIntegration'
+          - 'TestGitHubIntegration'
+          - 'TestGitOpsIntegration'
+          - 'TestGolangIntegration'
+          - 'TestGradleIntegration'
+          - 'TestInfluxIntegration'
+#          - 'TestJenkinsIntegration'
+          - 'TestKarmaIntegration'
+          - 'TestMavenIntegration'
+          - 'TestMTAIntegration'
+          - 'TestNexusIntegration'
+          - 'TestNPMIntegration'
+          - 'TestPiperIntegration'
+          - 'TestPythonIntegration'
+          - 'TestSonarIntegration'
+          - 'TestVaultIntegration'
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -207,7 +207,7 @@ jobs:
     steps:
       - name: Update status
         run: |
-          if [[ ${{ needs.integration_tests.result }}=="success' ]]
+          if [[ ${{ needs.integration_tests.result }}=='success' ]]
           then
             curl \
               --location \
@@ -216,7 +216,8 @@ jobs:
               --data '{"state": "success",
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
-              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' \
+            exit 0
           else
             curl \
               --location \
@@ -225,5 +226,6 @@ jobs:
               --data '{"state": "failure",
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
-              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' \
+            exit 1
           fi
