@@ -1,6 +1,6 @@
 module github.com/SAP/jenkins-library
 
-go 1.19
+go 1.18
 
 //downgraded for :https://cs.opensource.google/go/x/crypto/+/5d542ad81a58c89581d596f49d0ba5d435481bcf : or else will break for some github instances
 // not downgraded using go get since it breaks other dependencies.
