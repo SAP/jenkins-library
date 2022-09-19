@@ -1,0 +1,204 @@
+name: Integration tests
+
+on:
+  push:
+    branches:
+      - master
+      - it/**
+  issue_comment:
+    types:
+      - created
+
+env:
+  GHA_UBUNTU_VERSION: ubuntu-latest
+
+  GHA_CHECKOUT_VERSION: actions/checkout@v3
+  GHA_SETUP_GO_VERSION: actions/setup-go@v3
+  GHA_SETUP_JAVA_VERSION: actions/setup-java@v3
+  GHA_UPLOAD_ARTIFACT_VERSION: actions/upload-artifact@v3
+  GHA_DOWNLOAD_ARTIFACT_VERSION: actions/download-artifact@v3
+
+  JAVA_VERSION: '11'
+
+  CGO_ENABLED: 0
+  GHA_GO_VERSION: '1.18.x'
+  TIMEOUT: '10m'
+
+  PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
+  PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
+
+jobs:
+  start:
+    name: Start
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    if: |
+      github.event.comment.body == '/it' &&
+      (
+      github.event.comment.author_association == 'COLLABORATOR' ||
+      github.event.comment.author_association == 'OWNER' ||
+      github.event.comment.author_association == 'MEMBER'
+      )
+    steps:
+      - name: Get PR's URL
+        id: pull_request
+        run: |
+          echo "::set-output name=pull_request::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: Get branch name
+        id: branch_name
+        run: |
+          echo "::set-output name=branch_name::$(curl ${{ steps.pull_request.outputs.pull_request }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: Get repository
+        id: repository
+        run: |
+          echo "::set-output name=repository::$(curl ${{ steps.pull_request.outputs.pull_request }} | jq '.head.repo.full_name' | sed 's/\"//g')"
+      - name: Get commit id
+        id: commit_it
+        run: |
+          echo "::set-output name=commit_it::$(git log --format=%H -n 1)"
+      - name: Update status
+        run: |
+          curl
+            --location
+            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commit_id.outputs.commit_id }}'
+            -H 'Content-Type: application/json'
+            --data '{"state": "pending",
+                    "context": "Go / integration-tests",
+                    "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}'
+            -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+    outputs:
+      branch_name: ${{ steps.branch_name.outputs.branch_name }}
+      repository: ${{ steps.repository.outputs.repository }}
+      commit_id: ${{ steps.commit_id.outputs.commit_id }}
+
+  consumer_tests:
+    name: Consumer tests
+    needs:
+      - start
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: Checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
+      - uses: ${{ env.GHA_SETUP_JAVA_VERSION }}
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Install Groovy
+        run: |
+          sudo apt-get update && sudo apt-get install groovy -y
+      - name: Setup Git
+        run: |
+          git config --global user.email "piper-testing-bot@example.com" && git config --global user.name "piper-testing-bot"
+      - name: Run tests
+        env:
+          REPOSITORY_UNDER_TEST: ${{ needs.start.outputs.repository }}
+          BRANCH_NAME: ${{ needs.start.outputs.branch_name }}
+          BUILD_WEB_URL: https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}
+          INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
+          CX_INFRA_IT_CF_USERNAME: ${{ secrets.CX_INFRA_IT_CF_USERNAME }}
+          CX_INFRA_IT_CF_PASSWORD: ${{ secrets.CX_INFRA_IT_CF_PASSWORD }}
+          NEO_DEPLOY_USERNAME: ${{ secrets.NEO_DEPLOY_USERNAME }}
+          NEO_DEPLOY_PASSWORD: ${{ secrets.NEO_DEPLOY_PASSWORD }}
+          CX_INFRA_IT_TMS_UPLOAD: ${{ secrets.CX_INFRA_IT_TMS_UPLOAD }}
+        run: |
+          cd consumer-test && groovy consumerTestController.groovy
+
+  build_piper:
+    name: Build Piper
+    needs:
+      - start
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: Checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GHA_GO_VERSION }}
+      - name: Build
+        # with `-tags release` we ensure that shared test utilities won't end up in the binary
+        run: go build -o piper -tags release
+      - name: Upload Piper binary
+        if: success()
+        uses: ${{ env.GHA_UPLOAD_ARTIFACT_VERSION }}
+        with:
+          path: piper
+
+  integration_tests:
+    name: Integration tests
+    needs:
+      - build_piper
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ${{ env.GHA_UBUNTU_VERSION }}
+        version:
+          - 'TestCNBIntegration'
+          - 'TestGaugeIntegration'
+          - 'TestGCSIntegration'
+          - 'TestGitHubIntegration'
+          - 'TestGitOpsIntegration'
+          - 'TestGolangIntegration'
+          - 'TestGradleIntegration'
+          - 'TestInfluxIntegration'
+#          - 'TestJenkinsIntegration'
+          - 'TestKarmaIntegration'
+          - 'TestMavenIntegration'
+          - 'TestMTAIntegration'
+          - 'TestNexusIntegration'
+          - 'TestNPMIntegration'
+          - 'TestPiperIntegration'
+          - 'TestPythonIntegration'
+          - 'TestSonarIntegration'
+          - 'TestVaultIntegration'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        with:
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
+      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Download Piper binary
+        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        with:
+          name: piper
+      - name: Run test
+        run: go test -v -tags integration -timeout ${ env.TIMEOUT }} -run ${{ matrix.version }} ./integration/...
+
+  Finis:
+    name: Finis
+    if: always()
+    needs:
+      - build_piper
+      - integration_tests
+    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    steps:
+      - name: Update status
+        run: |
+          if [[ ${{ contains(jobs.IntegrationTests.result, "success") }} ]]
+          then
+            curl
+              --location
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}'
+              -H 'Content-Type: application/json'
+              --data '{"state": "success",
+                      "context": "Go / integration-tests",
+                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}'
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+          else
+            curl
+              --location
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}'
+              -H 'Content-Type: application/json'
+              --data '{"state": "failure",
+                      "context": "Go / integration-tests",
+                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}'
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+          fi
