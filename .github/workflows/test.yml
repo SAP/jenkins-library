@@ -185,17 +185,15 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: piper
-        run: |
-          chmod +x piper
       - name: Download integration tests binary
         uses: actions/download-artifact@v3
         with:
           name: integration_tests
           path: integration/
-        run: |
-          chmod +x integration_tests
       - name: Run test
         run: |
+          chmod +x piper
+          chmod +x integration_tests
           ./integration_tests -test.v -test.timeout ${TIMEOUT} -test.run ${{ matrix.version }}
 
   Finis:
