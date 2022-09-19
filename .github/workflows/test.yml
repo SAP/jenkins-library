@@ -10,14 +10,6 @@ on:
       - created
 
 env:
-  GHA_UBUNTU_VERSION: 'ubuntu-latest'
-
-  GHA_CHECKOUT_VERSION: 'actions/checkout@v3'
-  GHA_SETUP_GO_VERSION: 'actions/setup-go@v3'
-  GHA_SETUP_JAVA_VERSION: 'actions/setup-java@v3'
-  GHA_UPLOAD_ARTIFACT_VERSION: 'actions/upload-artifact@v3'
-  GHA_DOWNLOAD_ARTIFACT_VERSION: 'actions/download-artifact@v3'
-
   JAVA_VERSION: '11'
 
   CGO_ENABLED: 0
@@ -30,7 +22,7 @@ env:
 jobs:
   start:
     name: Start
-    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    runs-on: ubuntu-latest
     if: |
       github.event.comment.body == '/it' &&
       (
@@ -74,14 +66,14 @@ jobs:
     name: Consumer tests
     needs:
       - start
-    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        uses: actions/checkout@v3
         with:
           repository: ${{ needs.start.outputs.repository }}
           ref: ${{ needs.start.outputs.branch_name }}
-      - uses: ${{ env.GHA_SETUP_JAVA_VERSION }}
+      - uses: actions/setup-java@v3
         with:
           java-version: ${{ env.JAVA_VERSION }}
       - name: Install Groovy
@@ -108,14 +100,14 @@ jobs:
     name: Build Piper
     needs:
       - start
-    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        uses: actions/checkout@v3
         with:
           repository: ${{ needs.start.outputs.repository }}
           ref: ${{ needs.start.outputs.branch_name }}
-      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
       - name: Build
@@ -123,7 +115,7 @@ jobs:
         run: go build -o piper -tags release
       - name: Upload Piper binary
         if: success()
-        uses: ${{ env.GHA_UPLOAD_ARTIFACT_VERSION }}
+        uses: actions/upload-artifact@v3
         with:
           path: piper
 
@@ -135,7 +127,7 @@ jobs:
       fail-fast: true
       matrix:
         os:
-          - ${{ env.GHA_UBUNTU_VERSION }}
+          - ubuntu-latest
         version:
           - 'TestCNBIntegration'
           - 'TestGaugeIntegration'
@@ -158,15 +150,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: ${{ env.GHA_CHECKOUT_VERSION }}
+        uses: actions/checkout@v3
         with:
           repository: ${{ needs.start.outputs.repository }}
           ref: ${{ needs.start.outputs.branch_name }}
-      - uses: ${{ env.GHA_SETUP_GO_VERSION }}
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Download Piper binary
-        uses: ${{ env.GHA_DOWNLOAD_ARTIFACT_VERSION }}
+        uses: actions/download-artifact@v3
         with:
           name: piper
       - name: Run test
@@ -178,7 +170,7 @@ jobs:
     needs:
       - build_piper
       - integration_tests
-    runs-on: ${{ env.GHA_UBUNTU_VERSION }}
+    runs-on: ubuntu-latest
     steps:
       - name: Update status
         run: |
