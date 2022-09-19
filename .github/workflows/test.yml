@@ -162,7 +162,11 @@ jobs:
         with:
           name: piper
       - name: Run test
-        run: go test -v -tags integration -timeout ${TIMEOUT} -run ${{ matrix.version }} ./integration/...
+        run: |
+        chmod +x piper
+        pwd
+        ls -la
+        go test -v -tags integration -timeout ${TIMEOUT} -run ${{ matrix.version }} ./integration/...
 
   Finis:
     name: Finis
