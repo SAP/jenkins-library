@@ -18,14 +18,12 @@ jobs:
   start:
     name: Start
     if: |
-      (
         github.event.comment.body == '/it' &&
         (
           github.event.comment.author_association == 'COLLABORATOR' ||
           github.event.comment.author_association == 'OWNER' ||
           github.event.comment.author_association == 'MEMBER'
         )
-      )
     runs-on: ubuntu-latest
     steps:
       - name: Update status
