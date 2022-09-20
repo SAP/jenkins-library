@@ -16,20 +16,29 @@ env:
 jobs:
   start:
     name: Start
-    runs-on: ubuntu-latest
     if: |
       (
-        github.event.comment.body == '/it' ) && (
+        github.event.comment.body == '/it' ||
+        github.event.comment.body == '/it-go'
+      ) && (
         github.event.comment.author_association == 'COLLABORATOR' ||
         github.event.comment.author_association == 'OWNER' ||
         github.event.comment.author_association == 'MEMBER'
       )
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - name: Get commit SHA
+        id: sha
+        run: |
+          echo "::set-output name=sha::$(git log --format=%H -n 1)"
       - name: Update status
         run: |
           curl \
             --location \
-            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.sha.outputs.sha }}' \
             -H 'Content-Type: application/json' \
             --data '{"state": "pending",
                     "context": "Go / integration-tests",
@@ -42,11 +51,9 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+          ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -66,11 +73,9 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+          ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -94,7 +99,7 @@ jobs:
         os:
           - ubuntu-latest
         version:
-#         tough CNB tests are decomposed to reduce pipeline execution time
+          # tough CNB tests are decomposed to reduce pipeline execution time
           - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
           - '"TestCNBIntegrationPreserveFiles\b"'
           - '"TestCNBIntegrationNPMProject"'
@@ -106,23 +111,21 @@ jobs:
           - '"TestGolangIntegration"'
           - '"TestGradleIntegration"'
 
-#          Jenkins tests are still not implemented(skipped) yet
-#          - '"TestJenkinsIntegration"'
+          # Jenkins tests are still not implemented(skipped) yet
+          #- '"TestJenkinsIntegration"'
 
           - '"TestMavenIntegration"'
           - '"TestMTAIntegration"'
           - '"TestNexusIntegration"'
 
-#         these are light-weighed tests, so we can use only one pod to reduce resource consumption
+          # these are light-weighted tests, so we can use only one pod to reduce resource consumption
           - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+          ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -158,7 +161,7 @@ jobs:
           then
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.sha }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "success",
                       "context": "Go / integration-tests",
@@ -168,7 +171,7 @@ jobs:
           else
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.sha }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "failure",
                       "context": "Go / integration-tests",
