@@ -18,16 +18,23 @@ jobs:
     name: Start
     runs-on: ubuntu-latest
     steps:
+      - name: Get commit id
+        id: commit_it
+        run: |
+          echo "::set-output name=commit_it::$(git log --format=%H -n 1)"
       - name: Update status
         run: |
           curl \
             --location \
-            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commit_id.outputs.commit_id }}' \
             -H 'Content-Type: application/json' \
             --data '{"state": "pending",
                     "context": "Go / integration-tests",
                     "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
             -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+    outputs:
+      commit_id: ${{ steps.commit_id.outputs.commit_id }}
+
 
   build_piper:
     name: Build Piper
@@ -35,11 +42,7 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -59,11 +62,7 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -79,6 +78,7 @@ jobs:
   run_integration_tests:
     name: Run integration tests
     needs:
+      - start
       - build_piper
       - build_integration_tests
     strategy:
@@ -111,11 +111,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -137,7 +133,7 @@ jobs:
 
   Finish:
     name: Finish
-    if: always() && needs.start.result == 'success'
+    if: always() && ( needs.start.result == 'success' )
     needs:
       - start
       - build_piper
@@ -151,7 +147,7 @@ jobs:
           then
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "success",
                       "context": "Go / integration-tests",
@@ -161,7 +157,7 @@ jobs:
           else
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "failure",
                       "context": "Go / integration-tests",

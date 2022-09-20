@@ -4,7 +4,6 @@ on:
   issue_comment:
     types:
       - created
-      - edited
 
 env:
   GHA_GO_VERSION: 1.18.x
@@ -19,22 +18,52 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (
-        github.event.comment.body == '/it' ) && (
+        github.event.comment.body == '/it' ||
+        github.event.comment.body == '/it-go'
+      ) && (
         github.event.comment.author_association == 'COLLABORATOR' ||
         github.event.comment.author_association == 'OWNER' ||
         github.event.comment.author_association == 'MEMBER'
       )
+
     steps:
+      - name: Get PR's URL
+        id: pull_request
+        run: |
+          echo "::set-output name=pull_request::$(curl ${{ github.event.comment.issue_url }} |
+          jq '.pull_request.url' |
+          sed 's/\"//g')"
+      - name: Get branch name
+        id: branch_name
+        run: |
+          echo "::set-output name=branch_name::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          jq '.head.ref' |
+          sed 's/\"//g')"
+      - name: Get repository
+        id: repository
+        run: |
+          echo "::set-output name=repository::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          jq '.head.repo.full_name' |
+          sed 's/\"//g')"
+      - name: Get commit id
+        id: commit_it
+        run: |
+          echo "::set-output name=commit_it::$(git log --format=%H -n 1)"
       - name: Update status
         run: |
           curl \
             --location \
-            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commit_id.outputs.commit_id }}' \
             -H 'Content-Type: application/json' \
             --data '{"state": "pending",
                     "context": "Go / integration-tests",
                     "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
             -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+    outputs:
+      branch_name: ${{ steps.branch_name.outputs.branch_name }}
+      repository: ${{ steps.repository.outputs.repository }}
+      commit_id: ${{ steps.commit_id.outputs.commit_id }}
+
 
   build_piper:
     name: Build Piper
@@ -42,11 +71,10 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -66,11 +94,10 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -86,6 +113,7 @@ jobs:
   run_integration_tests:
     name: Run integration tests
     needs:
+      - start
       - build_piper
       - build_integration_tests
     strategy:
@@ -94,7 +122,7 @@ jobs:
         os:
           - ubuntu-latest
         version:
-#         tough CNB tests are decomposed to reduce pipeline execution time
+          #         tough CNB tests are decomposed to reduce pipeline execution time
           - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
           - '"TestCNBIntegrationPreserveFiles\b"'
           - '"TestCNBIntegrationNPMProject"'
@@ -106,23 +134,22 @@ jobs:
           - '"TestGolangIntegration"'
           - '"TestGradleIntegration"'
 
-#          Jenkins tests are still not implemented(skipped) yet
-#          - '"TestJenkinsIntegration"'
+          #          Jenkins tests are still not implemented(skipped) yet
+          #          - '"TestJenkinsIntegration"'
 
           - '"TestMavenIntegration"'
           - '"TestMTAIntegration"'
           - '"TestNexusIntegration"'
 
-#         these are light-weighed tests, so we can use only one pod to reduce resource consumption
+          #         these are light-weighed tests, so we can use only one pod to reduce resource consumption
           - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+          repository: ${{ needs.start.outputs.repository }}
+          ref: ${{ needs.start.outputs.branch_name }}
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
@@ -144,7 +171,7 @@ jobs:
 
   Finish:
     name: Finish
-    if: always() && needs.start.result == 'success'
+    if: always() && ( needs.start.result == 'success' )
     needs:
       - start
       - build_piper
@@ -158,7 +185,7 @@ jobs:
           then
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "success",
                       "context": "Go / integration-tests",
@@ -168,7 +195,7 @@ jobs:
           else
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.commit_id }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "failure",
                       "context": "Go / integration-tests",
