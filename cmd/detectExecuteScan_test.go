@@ -612,6 +612,7 @@ func TestAddDetectArgs(t *testing.T) {
 				"--testProp1=1",
 				"--scan1=1",
 				"--scan2=2",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
@@ -619,7 +620,6 @@ func TestAddDetectArgs(t *testing.T) {
 				"\"--detect.code.location.name='testName/1.0'\"",
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 				"--detect.source.path='.'",
-				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
 			},
 		},
 	}
