@@ -598,7 +598,6 @@ func TestAddDetectArgs(t *testing.T) {
 		{
 			args: []string{"--testProp1=1"},
 			options: detectExecuteScanOptions{
-				ScanProperties:  []string{"--scan1=1", "--scan2=2"},
 				ServerURL:       "https://server.url",
 				Token:           "apiToken",
 				ProjectName:     "testName",
@@ -610,8 +609,6 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--scan1=1",
-				"--scan2=2",
 				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
