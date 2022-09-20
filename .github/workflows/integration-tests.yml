@@ -22,7 +22,7 @@ jobs:
         run: |
           curl \
             --location \
-            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${GITHUB_SHA}' \
             -H 'Content-Type: application/json' \
             --data '{"state": "pending",
                     "context": "Go / integration-tests",
@@ -151,7 +151,7 @@ jobs:
           then
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${GITHUB_SHA}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "success",
                       "context": "Go / integration-tests",
@@ -161,7 +161,7 @@ jobs:
           else
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ github.sha }}' \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${GITHUB_SHA}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "failure",
                       "context": "Go / integration-tests",
