@@ -111,14 +111,14 @@ jobs:
                )
           for image in ${arr}
           do
-            docker pull '${image}'
-            docker save '${image}' -o '${image}.tar.gz'
+            docker pull "${image}"
+            docker save "`echo ${image}" -o "${image} | tr \\ _`.img"
           done
       - uses: actions/upload-artifact@v3
         if: success()
         with:
           name: |
-            **.tar.gz
+            **.img
 
   run_integration_tests:
     name: Run integration tests
@@ -165,9 +165,9 @@ jobs:
       - uses: actions/download-artifact@v3
       - name: Run test
         run: |
-          for image in 'ls -1 | grep .tar.gz'
+          for image in 'ls -1 | grep .img'
           do
-            docker load -i '${image}'
+            docker load -i "${image}"
           done
           chmod +x piper integration_tests
           mv integration_tests ./integration
