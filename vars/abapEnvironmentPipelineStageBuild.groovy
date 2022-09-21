@@ -58,12 +58,12 @@ void call(Map parameters = [:]) {
             try {
                 Set keys = [ 'cfServiceKeyName' ]
                 Map configClone = ConfigurationHelper.newInstance(this)
-                    .loadStepDefaults([:], 'Clone Repositories')
+                    // .loadStepDefaults([:], 'Clone Repositories')
                     .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
                     // .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
                     // .mixinStepConfig(script.commonPipelineEnvironment, keys)
-                    .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
-                    .mixin(parameters, keys)
+                    // .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
+                    // .mixin(parameters, keys)
                     .use()
                 abapEnvironmentCreateTag(script: parameters.script, cfServiceKeyName: configClone.cfServiceKeyName)
             } catch (e) {
