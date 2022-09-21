@@ -56,7 +56,15 @@ void call(Map parameters = [:]) {
         abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
         if (config.generateTagForAddonComponentVersion || config.generateTagForAddonProductVersion) {
             try {
-                abapEnvironmentCreateTag script: parameters.script
+                Map configClone = ConfigurationHelper.newInstance(this)
+                    .loadStepDefaults([:], 'Clone Repositories')
+                    .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
+                    .mixinGeneralConfig(script.commonPipelineEnvironment, ['cfServiceKeyName'])
+                    .mixinStepConfig(script.commonPipelineEnvironment, ['cfServiceKeyName'])
+                    .mixinStageConfig(script.commonPipelineEnvironment, stageName, ['cfServiceKeyName'])
+                    .mixin(parameters, ['cfServiceKeyName'])
+                    .use()
+                abapEnvironmentCreateTag script: parameters.script cfServiceKeyName: configClone.cfServiceKeyName
             } catch (e) {
                 echo 'Tag creation failed: ' + e.message
             }
