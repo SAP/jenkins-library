@@ -127,7 +127,7 @@ func readAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
 	return &ignore.Assessments, nil
 }
 
-// read assessments from file and expose them to match alerts and filter them before processing
+// ReadAssessmentsFromFile reads the file and exposes the assessments to match alerts and filter them before processing
 func ReadAssessmentsFromFile(assessmentFilePath string, utils piperutils.FileUtils) *[]Assessment {
 	exists, err := utils.FileExists(assessmentFilePath)
 	if err != nil {
