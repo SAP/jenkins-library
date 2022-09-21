@@ -109,6 +109,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	detectParametersFromCI(&config)
 
 	if len(config.ServerURL) > 0 {
+		log.Entry().Debugf("setting env variable SONAR_HOST_URL to %v", config.ServerURL)
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
 	if len(config.Token) == 0 {
@@ -121,6 +122,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		}
 	}
 	if len(config.Token) > 0 {
+		log.Entry().Debugf("setting env variable SONAR_TOKEN to %v", config.Token)
 		sonar.addEnvironment("SONAR_TOKEN=" + config.Token)
 	}
 	if len(config.Organization) > 0 {
