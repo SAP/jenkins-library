@@ -34,7 +34,7 @@ func TestGCSIntegrationClient(t *testing.T) {
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			AlwaysPullImage: true,
+			AlwaysPullImage: false,
 			Image:           "fsouza/fake-gcs-server:1.30.2",
 			ExposedPorts:    []string{"4443/tcp"},
 			WaitingFor:      wait.ForListeningPort("4443/tcp"),

@@ -29,7 +29,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			AlwaysPullImage: true,
+			AlwaysPullImage: false,
 			Image:           "influxdb:2.0",
 			ExposedPorts:    []string{"8086/tcp"},
 			Env: map[string]string{
