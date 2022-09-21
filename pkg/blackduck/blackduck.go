@@ -10,7 +10,9 @@ import (
 	"path"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/package-url/packageurl-go"
 	"github.com/pkg/errors"
@@ -101,6 +103,27 @@ type VulnerabilityWithRemediation struct {
 	CweID                  string  `json:"cweId,omitempty"`
 	ExploitabilitySubscore float32 `json:"exploitabilitySubscore,omitempty"`
 	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
+}
+
+func (v Vulnerability) ContainedIn(relatedComponent *Component, assessments *[]format.Assessment) (bool, error) {
+	localPurl := relatedComponent.ToPackageUrl().ToString()
+	for _, assessment := range *assessments {
+		if assessment.Vulnerability == v.CweID {
+			for _, purl := range assessment.Purls {
+				assessmentPurl, err := purl.ToPackageUrl()
+				assessmentPurlStr := assessmentPurl.ToString()
+				if err != nil {
+					log.SetErrorCategory(log.ErrorConfiguration)
+					log.Entry().WithError(err).Errorf("assessment from file ignored due to invalid packageUrl '%s'", purl)
+					return false, err
+				}
+				if assessmentPurlStr == localPurl {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
 }
 
 // Title returns the issue title representation of the contents

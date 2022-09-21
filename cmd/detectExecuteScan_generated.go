@@ -22,6 +22,7 @@ import (
 )
 
 type detectExecuteScanOptions struct {
+	AssessmentFile              string   `json:"assessmentFile,omitempty"`
 	Token                       string   `json:"token,omitempty"`
 	CodeLocation                string   `json:"codeLocation,omitempty"`
 	ProjectName                 string   `json:"projectName,omitempty"`
@@ -248,6 +249,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 }
 
 func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScanOptions) {
+	cmd.Flags().StringVar(&stepConfig.AssessmentFile, "assessmentFile", `hs-assessments.yaml`, "Explicit path to the assessment YAML file.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Api token to be used for connectivity with Synopsis Detect server.")
 	cmd.Flags().StringVar(&stepConfig.CodeLocation, "codeLocation", os.Getenv("PIPER_codeLocation"), "An override for the name Detect will use for the scan file it creates.")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "Name of the Synopsis Detect (formerly BlackDuck) project.")
@@ -305,6 +307,15 @@ func detectExecuteScanMetadata() config.StepData {
 					{Name: "checkmarx", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name:        "assessmentFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `hs-assessments.yaml`,
+					},
 					{
 						Name: "token",
 						ResourceRef: []config.ResourceReference{

@@ -22,6 +22,14 @@ spec:
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
     params:
+      - name: assessmentFile
+        type: string
+        description: "Explicit path to the assessment YAML file."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "hs-assessments.yaml"
       - name: token
         aliases:
           - name: blackduckToken

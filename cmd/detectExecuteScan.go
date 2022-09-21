@@ -14,6 +14,7 @@ import (
 	"time"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	"github.com/SAP/jenkins-library/pkg/format"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -493,7 +494,11 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
 	errorsOccured := []string{}
-	vulns, components, err := getVulnsAndComponents(config, influx, sys)
+
+	// inhale assessments from file system
+	assessments := format.ReadAssessmentsFromFile(config.AssessmentFile, utils)
+
+	vulns, components, err := getVulnsAndComponents(config, assessments, influx, sys)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch vulnerabilities")
 	}
@@ -560,12 +565,19 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	return nil
 }
 
-func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
+func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]format.Assessment, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
 	detectVersionName := getVersionName(config)
 	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
+	if err != nil {
+		return vulns, nil, err
+	}
+
+	vulns = filterAssessedVulnerabilities(vulns, components, assessments)
 
 	majorVulns := 0
 	activeVulns := 0
@@ -580,14 +592,34 @@ func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecut
 	influx.detect_data.fields.vulnerabilities = activeVulns
 	influx.detect_data.fields.major_vulnerabilities = majorVulns
 	influx.detect_data.fields.minor_vulnerabilities = activeVulns - majorVulns
-
-	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
-	if err != nil {
-		return vulns, nil, err
-	}
 	influx.detect_data.fields.components = components.TotalCount
 
 	return vulns, components, nil
+}
+
+func filterAssessedVulnerabilities(vulnerabilities *bd.Vulnerabilities, components *bd.Components, assessments *[]format.Assessment) *bd.Vulnerabilities {
+	// create component lookup map
+	componentLookup := map[string]bd.Component{}
+	for _, comp := range components.Items {
+		componentLookup[fmt.Sprintf("%v/%v", comp.Name, comp.Version)] = comp
+	}
+
+	// filter alerts related to existing assessments
+	if len(*assessments) > 0 {
+		result := bd.Vulnerabilities{}
+		items := []bd.Vulnerability{}
+		for _, alert := range vulnerabilities.Items {
+			relatedComponent := componentLookup[fmt.Sprintf("%v/%v", alert.Name, alert.Version)]
+			if result, err := alert.ContainedIn(&relatedComponent, assessments); err == nil && result == false {
+				items = append(items, alert)
+			}
+		}
+		result.Items = items
+		result.TotalCount = len(items)
+		return &result
+	}
+
+	return vulnerabilities
 }
 
 func getPolicyStatus(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.PolicyStatus, error) {

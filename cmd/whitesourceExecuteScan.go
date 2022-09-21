@@ -569,7 +569,7 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 	}
 
 	// inhale assessments from file system
-	assessments := readAssessmentsFromFile(config.AssessmentFile, utils)
+	assessments := format.ReadAssessmentsFromFile(config.AssessmentFile, utils)
 
 	if config.ProjectToken != "" {
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
@@ -650,30 +650,6 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		}
 	}
 	return reportPaths, nil
-}
-
-// read assessments from file and expose them to match alerts and filter them before processing
-func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) *[]format.Assessment {
-	exists, err := utils.FileExists(assessmentFilePath)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		log.Entry().Errorf("unable to check existence of assessment file at '%s'", assessmentFilePath)
-	}
-	assessmentFile, err := utils.Open(assessmentFilePath)
-	if exists && err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		log.Entry().Errorf("unable to open assessment file at '%s'", assessmentFilePath)
-	}
-	assessments := &[]format.Assessment{}
-	if exists {
-		defer assessmentFile.Close()
-		assessments, err = format.ReadAssessments(assessmentFile)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			log.Entry().Errorf("unable to parse assessment file at '%s'", assessmentFilePath)
-		}
-	}
-	return assessments
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.

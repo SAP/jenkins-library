@@ -5,6 +5,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 	"github.com/package-url/packageurl-go"
 	"github.com/pkg/errors"
@@ -54,8 +56,8 @@ func (p Purl) ToPackageUrl() (packageurl.PackageURL, error) {
 	return packageurl.FromString(p.Purl)
 }
 
-// ReadAssessment loads the assessments and returns their contents
-func ReadAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
+// readAssessment loads the assessments and returns their contents
+func readAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
 	defer assessmentFile.Close()
 	assessments := &[]Assessment{}
 
@@ -69,4 +71,28 @@ func ReadAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
 		return nil, NewParseError(fmt.Sprintf("format of assessment file is invalid %q: %v", content, err))
 	}
 	return assessments, nil
+}
+
+// ReadAssessmentsFromFile reads the file and exposes the assessments to match alerts and filter them before processing
+func ReadAssessmentsFromFile(assessmentFilePath string, utils piperutils.FileUtils) *[]Assessment {
+	exists, err := utils.FileExists(assessmentFilePath)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		log.Entry().Errorf("unable to check existence of assessment file at '%s'", assessmentFilePath)
+	}
+	assessmentFile, err := utils.Open(assessmentFilePath)
+	if exists && err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		log.Entry().Errorf("unable to open assessment file at '%s'", assessmentFilePath)
+	}
+	assessments := &[]Assessment{}
+	if exists {
+		defer assessmentFile.Close()
+		assessments, err = readAssessments(assessmentFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			log.Entry().Errorf("unable to parse assessment file at '%s'", assessmentFilePath)
+		}
+	}
+	return assessments
 }
