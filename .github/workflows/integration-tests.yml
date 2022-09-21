@@ -87,7 +87,7 @@ jobs:
     steps:
       - name: Download images
         run: |
-          for image in ${(
+          for image in ${"(
                devxci/mbtci-java11-node14
                golang:1
                adoptopenjdk/openjdk11:jdk-11.0.11_9-alpine
@@ -108,7 +108,7 @@ jobs:
                registry:2
                nekottyo/kustomize-kubeval:kustomizev4
                node:lts-stretch
-               )}
+               )"}
           do
             docker pull ${image} | gzip > ${image}.tar.gz
           done
