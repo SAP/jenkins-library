@@ -62,7 +62,7 @@ void call(Map parameters = [:]) {
                     .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
                     .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
                     .mixinStepConfig(script.commonPipelineEnvironment, keys)
-                    .mixinStageConfig(script.commonPipelineEnvironment, stageName, keys)
+                    .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
                     .mixin(parameters, keys)
                     .use()
                 abapEnvironmentCreateTag(script: parameters.script, cfServiceKeyName: configClone.cfServiceKeyName)
