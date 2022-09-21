@@ -330,26 +330,8 @@ func transformToCdxSeverity(severity string) cdx.Severity {
 	return cdx.SeverityUnknown
 }
 
-func transformBuildToPurlType(buildType string) string {
-	switch buildType {
-	case "maven":
-		return packageurl.TypeMaven
-	case "npm":
-		return packageurl.TypeNPM
-	case "docker":
-		return packageurl.TypeDocker
-	case "kaniko":
-		return packageurl.TypeDocker
-	case "golang":
-		return packageurl.TypeGolang
-	case "mta":
-		return packageurl.TypeComposer
-	}
-	return packageurl.TypeGeneric
-}
-
 func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byte, error) {
-	ppurl := packageurl.NewPackageURL(transformBuildToPurlType(scan.BuildTool), scan.Coordinates.GroupID, scan.Coordinates.ArtifactID, scan.Coordinates.Version, nil, "")
+	ppurl := packageurl.NewPackageURL(format.TransformBuildToPurlType(scan.BuildTool), scan.Coordinates.GroupID, scan.Coordinates.ArtifactID, scan.Coordinates.Version, nil, "")
 	metadata := cdx.Metadata{
 		// Define metadata about the main component
 		// (the component which the BOM will describe)

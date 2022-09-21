@@ -1,11 +1,17 @@
 package blackduck
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strings"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
+	"github.com/package-url/packageurl-go"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -130,7 +136,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 }
 
 func transformToLevel(severity string) string {
-	switch severity {
+	switch strings.ToUpper(severity) {
 	case "LOW":
 		return "warning"
 	case "MEDIUM":
@@ -141,6 +147,195 @@ func transformToLevel(severity string) string {
 		return "error"
 	}
 	return "none"
+}
+
+func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, projectVersion string, libraries *Components, alerts *Vulnerabilities) ([]byte, error) {
+	componentLookup := map[string]Component{}
+	for _, comp := range libraries.Items {
+		componentLookup[fmt.Sprintf("%v/%v", comp.Name, comp.Version)] = comp
+	}
+
+	ppurl := packageurl.NewPackageURL(format.TransformBuildToPurlType(buildTool), groupID, artifactID, version, nil, "")
+	metadata := cdx.Metadata{
+		// Define metadata about the main component
+		// (the component which the BOM will describe)
+
+		// TODO check whether we can identify library vs. application
+		Component: &cdx.Component{
+			BOMRef:     ppurl.ToString(),
+			Type:       cdx.ComponentTypeLibrary,
+			Name:       artifactID,
+			Group:      groupID,
+			Version:    version,
+			PackageURL: ppurl.ToString(),
+		},
+		// Use properties to include an internal identifier for this BOM
+		// https://cyclonedx.org/use-cases/#properties--name-value-store
+		Properties: &[]cdx.Property{
+			{
+				Name:  "internal:bd-project-identifier",
+				Value: projectName,
+			},
+			{
+				Name:  "internal:bd-project-version-identifier",
+				Value: projectVersion,
+			},
+		},
+	}
+
+	components := []cdx.Component{}
+	uniqueComponents := []Component{}
+	transformToUniqueFlatList(&uniqueComponents, &componentLookup)
+	log.Entry().Debugf("Got %v unique libraries in condensed flat list", len(uniqueComponents))
+	sort.Slice(uniqueComponents, func(i, j int) bool {
+		return uniqueComponents[i].ToPackageUrl().ToString() < uniqueComponents[j].ToPackageUrl().ToString()
+	})
+	for _, lib := range uniqueComponents {
+		purl := lib.ToPackageUrl()
+		// Define the components that the product ships with
+		// https://cyclonedx.org/use-cases/#inventory
+		component := cdx.Component{
+			BOMRef:     purl.ToString(),
+			Type:       cdx.ComponentTypeLibrary,
+			Author:     lib.ComponentOriginName,
+			Name:       lib.Name,
+			Version:    lib.Version,
+			PackageURL: purl.ToString(),
+		}
+		components = append(components, component)
+	}
+
+	dependencies := []cdx.Dependency{}
+	declareDependency(ppurl, &libraries.Items, &dependencies)
+
+	vulnerabilities := []cdx.Vulnerability{}
+	for _, alert := range *&alerts.Items {
+		// Define the vulnerabilities in VEX
+		// https://cyclonedx.org/use-cases/#vulnerability-exploitability
+		relatedComponent := componentLookup[fmt.Sprintf("%v/%v", alert.Name, alert.Version)]
+		purl := relatedComponent.ToPackageUrl()
+		cvss3Score := float64(alert.OverallScore)
+		vuln := cdx.Vulnerability{
+			BOMRef: purl.ToString(),
+			ID:     alert.CweID,
+			Source: &cdx.Source{URL: relatedComponent.Href},
+			Tools: &[]cdx.Tool{
+				{
+					Name:    "Blackduck Hub Detect",
+					Version: "Unknown",
+					Vendor:  "Mend",
+					ExternalReferences: &[]cdx.ExternalReference{
+						{
+							URL:  "https://www.mend.io/",
+							Type: cdx.ERTypeBuildMeta,
+						},
+					},
+				},
+			},
+			Recommendation: alert.Description,
+			Ratings: &[]cdx.VulnerabilityRating{
+				{
+					Score:    &cvss3Score,
+					Severity: transformToCdxSeverity(alert.Severity),
+					Method:   cdx.ScoringMethodCVSSv3,
+				},
+			},
+			Description: alert.Description,
+			Affects: &[]cdx.Affects{
+				{
+					Ref: purl.ToString(),
+					Range: &[]cdx.AffectedVersions{
+						{
+							Version: relatedComponent.Version,
+							Status:  cdx.VulnerabilityStatus(alert.RemediationStatus),
+						},
+					},
+				},
+			},
+		}
+		vulnerabilities = append(vulnerabilities, vuln)
+	}
+
+	// Assemble the BOM
+	bom := cdx.NewBOM()
+	bom.Vulnerabilities = &vulnerabilities
+	bom.Metadata = &metadata
+	bom.Components = &components
+	bom.Dependencies = &dependencies
+
+	// Encode the BOM
+	var outputBytes []byte
+	buffer := bytes.NewBuffer(outputBytes)
+	encoder := cdx.NewBOMEncoder(buffer, cdx.BOMFileFormatXML)
+	encoder.SetPretty(true)
+	if err := encoder.Encode(bom); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func transformToCdxSeverity(severity string) cdx.Severity {
+	switch strings.ToLower(severity) {
+	case "info":
+		return cdx.SeverityInfo
+	case "low":
+		return cdx.SeverityLow
+	case "medium":
+		return cdx.SeverityMedium
+	case "high":
+		return cdx.SeverityHigh
+	case "critical":
+		return cdx.SeverityCritical
+	case "":
+		return cdx.SeverityNone
+	}
+	return cdx.SeverityUnknown
+}
+
+func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Path, error) {
+	paths := []piperutils.Path{}
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return paths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	sbomPath := filepath.Join(ReportsDirectory, "piper_whitesource_sbom.xml")
+
+	// Write file
+	if err := utils.FileWrite(sbomPath, sbom, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return paths, errors.Wrapf(err, "failed to write SARIF file")
+	}
+	paths = append(paths, piperutils.Path{Name: "WhiteSource SBOM file", Target: sbomPath})
+
+	return paths, nil
+}
+
+func transformToUniqueFlatList(libraries *[]Component, flatMapRef *map[string]Component) {
+	log.Entry().Debugf("Got %v libraries reported", len(*libraries))
+	for _, lib := range *libraries {
+		key := lib.ToPackageUrl().ToString()
+		flatMap := *flatMapRef
+		lookup := flatMap[key]
+		if lookup.ToPackageUrl() != lib.ToPackageUrl() {
+			flatMap[key] = lib
+		}
+	}
+}
+
+func declareDependency(parentPurl *packageurl.PackageURL, dependents *[]Component, collection *[]cdx.Dependency) {
+	localDependencies := []cdx.Dependency{}
+	for _, lib := range *dependents {
+		purl := lib.ToPackageUrl()
+		// Define the dependency graph
+		// https://cyclonedx.org/use-cases/#dependency-graph
+		localDependency := cdx.Dependency{Ref: purl.ToString()}
+		localDependencies = append(localDependencies, localDependency)
+	}
+	dependency := cdx.Dependency{
+		Ref:          parentPurl.ToString(),
+		Dependencies: &localDependencies,
+	}
+	*collection = append(*collection, dependency)
 }
 
 // WriteVulnerabilityReports writes vulnerability information from ScanReport into dedicated outputs e.g. HTML
