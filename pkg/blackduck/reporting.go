@@ -298,14 +298,14 @@ func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Pat
 		return paths, errors.Wrapf(err, "failed to create report directory")
 	}
 
-	sbomPath := filepath.Join(ReportsDirectory, "piper_whitesource_sbom.xml")
+	sbomPath := filepath.Join(ReportsDirectory, "piper_hub_detect_sbom.xml")
 
 	// Write file
 	if err := utils.FileWrite(sbomPath, sbom, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return paths, errors.Wrapf(err, "failed to write SARIF file")
+		return paths, errors.Wrapf(err, "failed to write BlackDuck SBOM file")
 	}
-	paths = append(paths, piperutils.Path{Name: "WhiteSource SBOM file", Target: sbomPath})
+	paths = append(paths, piperutils.Path{Name: "BlackDuck Hub Detect SBOM file", Target: sbomPath})
 
 	return paths, nil
 }

@@ -490,7 +490,7 @@ func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Pat
 	// Write file
 	if err := utils.FileWrite(sbomPath, sbom, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return paths, errors.Wrapf(err, "failed to write SARIF file")
+		return paths, errors.Wrapf(err, "failed to write WhiteSource SBOM file")
 	}
 	paths = append(paths, piperutils.Path{Name: "WhiteSource SBOM file", Target: sbomPath})
 

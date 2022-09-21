@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
@@ -77,10 +78,6 @@ type Component struct {
 	Metadata            `json:"_meta,omitempty"`
 }
 
-func (c Component) ToPackageUrl() *packageurl.PackageURL {
-	return packageurl.NewPackageURL(transformComponentToPurlType(c.PrimaryLanguage), "", c.Name, c.Version, nil, "")
-}
-
 type Vulnerabilities struct {
 	TotalCount int             `json:"totalCount,omitempty"`
 	Items      []Vulnerability `json:"items,omitempty"`
@@ -105,10 +102,16 @@ type VulnerabilityWithRemediation struct {
 	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
 }
 
+// ToPackageUrl creates the package URL for the component
+// TODO we need t improve/validate primaryLanguage, componentOriginName, name and version
+func (c Component) ToPackageUrl() *packageurl.PackageURL {
+	return packageurl.NewPackageURL(transformComponentToPurlType(c.PrimaryLanguage), "", c.Name, c.Version, nil, "")
+}
+
 func (v Vulnerability) ContainedIn(relatedComponent *Component, assessments *[]format.Assessment) (bool, error) {
 	localPurl := relatedComponent.ToPackageUrl().ToString()
 	for _, assessment := range *assessments {
-		if assessment.Vulnerability == v.CweID {
+		if assessment.Vulnerability == v.VulnerabilityWithRemediation.VulnerabilityName {
 			for _, purl := range assessment.Purls {
 				assessmentPurl, err := purl.ToPackageUrl()
 				assessmentPurlStr := assessmentPurl.ToString()
@@ -527,14 +530,14 @@ func urlPath(fullUrl string) string {
 
 func transformComponentToPurlType(primaryLanguage string) string {
 	// TODO verify possible relevant values
-	switch primaryLanguage {
-	case "Java":
+	switch strings.ToLower(primaryLanguage) {
+	case "java":
 		return packageurl.TypeMaven
-	case "Javascript":
+	case "javascript":
 		return packageurl.TypeNPM
-	case "Golang":
+	case "golang":
 		return packageurl.TypeGolang
-	case "Docker":
+	case "docker":
 		return packageurl.TypeDocker
 	}
 	return packageurl.TypeGeneric

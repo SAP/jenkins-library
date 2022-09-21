@@ -30,6 +30,18 @@ spec:
           - STAGES
           - STEPS
         default: "hs-assessments.yaml"
+      - name: buildTool
+        type: string
+        description: "Defines the tool which is used for building the artifact."
+        mandatory: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: buildTool
       - name: token
         aliases:
           - name: blackduckToken

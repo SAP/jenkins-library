@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	"github.com/SAP/jenkins-library/pkg/format"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -135,10 +136,12 @@ const (
 			{
 				"componentName": "Spring Framework",
 				"componentVersionName": "5.3.9",
+				"primaryLanguage": "JAVA",
 				"policyStatus": "IN_VIOLATION"
 			}, {
 				"componentName": "Apache Tomcat",
 				"componentVersionName": "9.0.52",
+				"primaryLanguage": "JAVA",
 				"policyStatus": "IN_VIOLATION"
 			}
 		]
@@ -148,7 +151,7 @@ const (
 		"items": [
 			{
 				"componentName": "Spring Framework",
-				"componentVersionName": "5.3.2",
+				"componentVersionName": "5.3.9",
 				"vulnerabilityWithRemediation" : {
 					"vulnerabilityName" : "BDSA-2019-2021",
 					"baseScore" : 7.5,
@@ -729,5 +732,34 @@ func TestGetActivePolicyViolations(t *testing.T) {
 		components, err := sys.Client.GetComponents("SHC-PiperTest", "1.0")
 		assert.NoError(t, err)
 		assert.Equal(t, getActivePolicyViolations(components), 2)
+	})
+}
+
+func TestFilterAssessedVulnerabilities(t *testing.T) {
+	t.Run("success case", func(t *testing.T) {
+		config := detectExecuteScanOptions{BuildTool: "mven", Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
+		sys := newBlackduckMockSystem(config)
+
+		vulnerabilities, err := sys.Client.GetVulnerabilities(config.ProjectName, getVersionName(config))
+		assert.NoError(t, err, "unexpected error when loading vulnerabilities")
+		components, err := sys.Client.GetComponents(config.ProjectName, getVersionName(config))
+		assert.NoError(t, err, "unexpected error when loading components")
+
+		assert.Equal(t, 1, vulnerabilities.TotalCount)
+		assert.Equal(t, 1, len(vulnerabilities.Items))
+
+		assessments := []format.Assessment{}
+		assessment := format.Assessment{}
+		assessment.Analysis = format.RiskAccepted
+		assessment.Vulnerability = "BDSA-2019-2021"
+		assessment.Purls = []format.Purl{
+			{
+				Purl: "pkg:maven/Spring Framework@5.3.9",
+			},
+		}
+		assessments = append(assessments, assessment)
+		result := filterAssessedVulnerabilities(vulnerabilities, components, &assessments)
+		assert.Equal(t, 0, result.TotalCount)
+		assert.Equal(t, 0, len(result.Items))
 	})
 }

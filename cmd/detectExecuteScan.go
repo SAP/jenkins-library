@@ -525,6 +525,18 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
 
+	versionName := getVersionName(config)
+	//TODO figure out how we can identify the local component properly
+	sbom, err := bd.CreateCycloneSBOM(config.BuildTool, "", "", "", config.ProjectName, versionName, components, vulns)
+	if err != nil {
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+	}
+	sbomReportPaths, err := bd.WriteCycloneSBOM(sbom, utils)
+	if err != nil {
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+	}
+	paths = append(paths, sbomReportPaths...)
+
 	scanReport := createVulnerabilityReport(config, vulns, influx, sys)
 	vulnerabilityReportPaths, err := bd.WriteVulnerabilityReports(scanReport, utils)
 	if err != nil {
