@@ -111,7 +111,8 @@ jobs:
                )
           for image in ${arr}
           do
-            docker pull ${image} | gzip > ${image}.tar.gz
+            docker pull ${image} |
+            docker save ${image} -o ${image}.tar.gz
           done
       - uses: actions/upload-artifact@v3
         if: success()
