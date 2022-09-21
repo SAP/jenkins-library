@@ -112,7 +112,7 @@ jobs:
           for image in ${arr}
           do
             docker pull "${image}"
-            docker save ${image} -o "${image//\//\\/}.img"
+            docker save ${image} -o `echo "${image}.img" | sed 's/\//_/'`
           done
       - uses: actions/upload-artifact@v3
         if: success()
