@@ -167,7 +167,7 @@ jobs:
         run: |
           for image in 'ls -1 | grep .tar.gz'
           do
-            docker load -i ${image}
+            docker load -i '${image}'
           done
           chmod +x piper integration_tests
           mv integration_tests ./integration
