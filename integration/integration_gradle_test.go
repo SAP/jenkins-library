@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestGradleIntegration ./integration/...
 
 package main
 
@@ -17,7 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestGradleExecuteBuild_JavaProject_BOMCreation_UsingWrapper(t *testing.T) {
+func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -89,7 +90,7 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 	assert.Contains(t, output, "bom-gradle.xml")
 }
 
-func TestGradleExecuteBuild_JavaProjectWithBomPlugin(t *testing.T) {
+func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
