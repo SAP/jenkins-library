@@ -56,13 +56,14 @@ void call(Map parameters = [:]) {
         abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
         if (config.generateTagForAddonComponentVersion || config.generateTagForAddonProductVersion) {
             try {
+                Set keys = [ 'cfServiceKeyName' ]
                 Map configClone = ConfigurationHelper.newInstance(this)
                     .loadStepDefaults([:], 'Clone Repositories')
                     .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
-                    .mixinGeneralConfig(script.commonPipelineEnvironment, ['cfServiceKeyName'])
-                    .mixinStepConfig(script.commonPipelineEnvironment, ['cfServiceKeyName'])
-                    .mixinStageConfig(script.commonPipelineEnvironment, stageName, ['cfServiceKeyName'])
-                    .mixin(parameters, ['cfServiceKeyName'])
+                    .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
+                    .mixinStepConfig(script.commonPipelineEnvironment, keys)
+                    .mixinStageConfig(script.commonPipelineEnvironment, stageName, keys)
+                    .mixin(parameters, keys)
                     .use()
                 abapEnvironmentCreateTag(script: parameters.script, cfServiceKeyName: configClone.cfServiceKeyName)
             } catch (e) {
