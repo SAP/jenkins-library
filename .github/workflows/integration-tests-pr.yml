@@ -29,7 +29,21 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     steps:
+      - name: Get pull request URL
+        id: pull_request
+        run: |
+          echo "::set-output name=pull_request::$(curl ${{ github.event.comment.issue_url }} |
+          jq '.pull_request.url' |
+          sed 's/\"//g')"
+      - name: Get branch name
+        id: branch_name
+        run: |
+          echo "::set-output name=branch_name::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          jq '.head.ref' |
+          sed 's/\"//g')"
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ steps.branch_name.outputs.branch_name }}
       - name: Get commit SHA
         id: sha
         run: |
