@@ -127,17 +127,17 @@ func readAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
 	return &ignore.Assessments, nil
 }
 
-// ReadAssessmentsFromFile reads the file and exposes the assessments to match alerts and filter them before processing
+// read assessments from file and expose them to match alerts and filter them before processing
 func ReadAssessmentsFromFile(assessmentFilePath string, utils piperutils.FileUtils) *[]Assessment {
 	exists, err := utils.FileExists(assessmentFilePath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		log.Entry().Errorf("unable to check existence of assessment file at '%s'", assessmentFilePath)
+		log.Entry().WithError(err).Errorf("unable to check existence of assessment file at '%s'", assessmentFilePath)
 	}
 	assessmentFile, err := utils.Open(assessmentFilePath)
 	if exists && err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		log.Entry().Errorf("unable to open assessment file at '%s'", assessmentFilePath)
+		log.Entry().WithError(err).Errorf("unable to open assessment file at '%s'", assessmentFilePath)
 	}
 	assessments := &[]Assessment{}
 	if exists {
@@ -145,7 +145,7 @@ func ReadAssessmentsFromFile(assessmentFilePath string, utils piperutils.FileUti
 		assessments, err = readAssessments(assessmentFile)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			log.Entry().Errorf("unable to parse assessment file at '%s'", assessmentFilePath)
+			log.Entry().WithError(err).Errorf("unable to parse assessment file at '%s'", assessmentFilePath)
 		}
 	}
 	return assessments
