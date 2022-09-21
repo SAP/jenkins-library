@@ -120,6 +120,7 @@ jobs:
         with:
           name: |
             **.img
+          path: .
 
   run_integration_tests:
     name: Run integration tests
