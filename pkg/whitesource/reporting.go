@@ -349,7 +349,7 @@ func transformBuildToPurlType(buildType string) string {
 }
 
 func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts, assessedAlerts *[]Alert) ([]byte, error) {
-	ppurl := packageurl.NewPackageURL(transformBuildToPurlType(scan.BuildTool), scan.Coordinates.GroupID, scan.Coordinates.ArtifactID, scan.Coordinates.Version, nil, "")
+	ppurl := packageurl.NewPackageURL(format.TransformBuildToPurlType(scan.BuildTool), scan.Coordinates.GroupID, scan.Coordinates.ArtifactID, scan.Coordinates.Version, nil, "")
 	metadata := cdx.Metadata{
 		// Define metadata about the main component
 		// (the component which the BOM will describe)
