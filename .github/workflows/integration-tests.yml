@@ -35,7 +35,6 @@ jobs:
     outputs:
       commit_id: ${{ steps.commit_id.outputs.commit_id }}
 
-
   build_piper:
     name: Build Piper
     needs:
@@ -75,12 +74,52 @@ jobs:
           name: integration_tests
           path: integration_tests
 
+  docker_image_buffering:
+    name: Docker image buffering
+    needs:
+      - start
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download images
+        run: |
+          for image in (
+            devxci/mbtci-java11-node14
+            golang:1
+            adoptopenjdk/openjdk11:jdk-11.0.11_9-alpine
+            selenium/standalone-chrome:3.141.59-20210713
+            paketobuildpacks/builder:0.3.26-base
+            node:12-slim
+            nginx:latest
+            gradle:6-jdk11-alpine
+            maven:3-openjdk-8-slim
+            python:3.9
+            vault:1.4.3
+            sonatype/nexus:2.14.18-01
+            getgauge/gocd-jdk-mvn-node
+            sonatype/nexus3:3.25.1
+            paketobuildpacks/builder:buildpackless-full
+            influxdb:2.0
+            fsouza/fake-gcs-server:1.30.2
+            registry:2
+            nekottyo/kustomize-kubeval:kustomizev4
+            node:lts-stretch
+          )
+          do
+            docker save ${image} | gzip > ${image}.tar.gz
+          done
+      - uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: |
+            **.tar.gz
+
   run_integration_tests:
     name: Run integration tests
     needs:
       - start
       - build_piper
       - build_integration_tests
+      - docker_image_buffering
     strategy:
       fail-fast: true
       matrix:
@@ -115,20 +154,21 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GHA_GO_VERSION }}
-      - name: Download Piper binary
-        uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v3
         with:
-          name: piper
-      - name: Download integration tests binary
-        uses: actions/download-artifact@v3
-        with:
-          name: integration_tests
-          path: ./integration/
+          name: |
+            piper
+            integration_tests
+            **.tar.gz
       - name: Run test
         run: |
-          chmod +x piper
+          for image in `ls -1 | grep .tar.gz`
+          do
+            docker load -i image
+          done
+          chmod +x piper integration_tests
+          mv integration_tests ./integration/
           cd ./integration
-          chmod +x integration_tests
           ./integration_tests -test.v -test.timeout ${TIMEOUT} -test.run ${{ matrix.version }}
 
   Finish:
@@ -138,6 +178,7 @@ jobs:
       - start
       - build_piper
       - build_integration_tests
+      - docker_image_buffering
       - run_integration_tests
     runs-on: ubuntu-latest
     steps:
