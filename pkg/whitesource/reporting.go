@@ -3,9 +3,11 @@ package whitesource
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -189,17 +191,15 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = scan.AgentName
 	tool.Driver.Version = scan.AgentVersion
-	tool.Driver.InformationUri = "https://whitesource.atlassian.net/wiki/spaces/WD/pages/804814917/Unified+Agent+Overview"
+	tool.Driver.InformationUri = "https://mend.io"
 
 	// Handle results/vulnerabilities
-	for i := 0; i < len(*alerts); i++ {
-		alert := (*alerts)[i]
+	collectedRules := []string{}
+	for _, alert := range *alerts {
 		result := *new(format.Results)
-		id := fmt.Sprintf("%v/%v/%v", alert.Type, alert.Vulnerability.Name, alert.Library.ArtifactID)
-		log.Entry().Debugf("Transforming alert %v into SARIF format", id)
-		result.RuleID = id
-		result.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
-		result.RuleIndex = i //Seems very abstract
+		ruleId := alert.Vulnerability.Name
+		log.Entry().Debugf("Transforming alert %v into SARIF format", ruleId)
+		result.RuleID = ruleId
 		result.Message = new(format.Message)
 		result.Message.Text = alert.Vulnerability.Description
 		artLoc := new(format.ArtifactLocation)
@@ -208,63 +208,86 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		result.AnalysisTarget = artLoc
 		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}}}
 		result.Locations = append(result.Locations, location)
-		//TODO add audit and tool related information, maybe fortifyCategory needs to become more general
-		//result.Properties = new(format.SarifProperties)
-		//result.Properties.ToolSeverity
-		//result.Properties.ToolAuditMessage
-
-		sarifRule := *new(format.SarifRule)
-		sarifRule.ID = id
-		sd := new(format.Message)
-		sd.Text = fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)
-		sarifRule.ShortDescription = sd
-		fd := new(format.Message)
-		fd.Text = alert.Vulnerability.Description
-		sarifRule.FullDescription = fd
-		defaultConfig := new(format.DefaultConfiguration)
-		defaultConfig.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
-		sarifRule.DefaultConfiguration = defaultConfig
-		sarifRule.HelpURI = alert.Vulnerability.URL
-		markdown, _ := alert.ToMarkdown()
-		sarifRule.Help = new(format.Help)
-		sarifRule.Help.Text = alert.ToTxt()
-		sarifRule.Help.Markdown = string(markdown)
-
-		ruleProp := *new(format.SarifRuleProperties)
-		ruleProp.Tags = append(ruleProp.Tags, alert.Type)
-		ruleProp.Tags = append(ruleProp.Tags, alert.Description)
-		ruleProp.Tags = append(ruleProp.Tags, alert.Library.ArtifactID)
-		ruleProp.Precision = "very-high"
-		sarifRule.Properties = &ruleProp
-
-		//Finalize: append the result and the rule
+		partialFingerprints := new(format.PartialFingerprints)
+		partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", alert.Library.ToPackageUrl().ToString(), alert.Vulnerability.Name)))
+		result.PartialFingerprints = *partialFingerprints
+		//append the result
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
-		tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+
+		// only create rule on new CVE
+		if !piperutils.ContainsString(collectedRules, ruleId) {
+			collectedRules = append(collectedRules, ruleId)
+
+			sarifRule := *new(format.SarifRule)
+			sarifRule.ID = ruleId
+			sarifRule.Name = alert.Vulnerability.Name
+			sd := new(format.Message)
+			sd.Text = fmt.Sprintf("%v Package %v", alert.Vulnerability.Name, alert.Library.ArtifactID)
+			sarifRule.ShortDescription = sd
+			fd := new(format.Message)
+			fd.Text = alert.Vulnerability.Description
+			sarifRule.FullDescription = fd
+			defaultConfig := new(format.DefaultConfiguration)
+			defaultConfig.Level = transformToLevel(alert.Vulnerability.Severity, alert.Vulnerability.CVSS3Severity)
+			sarifRule.DefaultConfiguration = defaultConfig
+			sarifRule.HelpURI = alert.Vulnerability.URL
+			markdown, _ := alert.ToMarkdown()
+			sarifRule.Help = new(format.Help)
+			sarifRule.Help.Text = alert.ToTxt()
+			sarifRule.Help.Markdown = string(markdown)
+
+			ruleProp := *new(format.SarifRuleProperties)
+			ruleProp.Tags = append(ruleProp.Tags, alert.Type)
+			ruleProp.Tags = append(ruleProp.Tags, alert.Library.ToPackageUrl().ToString())
+			ruleProp.Tags = append(ruleProp.Tags, alert.Vulnerability.URL)
+			ruleProp.SecuritySeverity = fmt.Sprint(consolidateScores(alert.Vulnerability.Score, alert.Vulnerability.CVSS3Score))
+			ruleProp.Precision = "very-high"
+
+			sarifRule.Properties = &ruleProp
+
+			// append the rule
+			tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+		}
 	}
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
+
+	// Threadflowlocations is no loger useful: voiding it will make for smaller reports
+	sarif.Runs[0].ThreadFlowLocations = []format.Locations{}
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper FPR to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	convInvocProp := new(format.InvocationProperties)
+	convInvocProp.Platform = runtime.GOOS
+	conversion.Invocation.Properties = convInvocProp
+	sarif.Runs[0].Conversion = conversion
 
 	return &sarif
 }
 
 func transformToLevel(cvss2severity, cvss3severity string) string {
-	switch cvss3severity {
+	cvssseverity := consolidateSeverities(cvss2severity, cvss3severity)
+	switch cvssseverity {
 	case "low":
 		return "warning"
 	case "medium":
 		return "warning"
 	case "high":
 		return "error"
-	}
-	switch cvss2severity {
-	case "low":
-		return "warning"
-	case "medium":
-		return "warning"
-	case "high":
+	case "critical":
 		return "error"
 	}
 	return "none"
+}
+
+func consolidateSeverities(cvss2severity, cvss3severity string) string {
+	if len(cvss3severity) > 0 {
+		return cvss3severity
+	}
+	return cvss2severity
 }
 
 // WriteSarifFile write a JSON sarif format file for upload into e.g. GCP
@@ -333,26 +356,32 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 
 		// TODO check whether we can identify library vs. application
 		Component: &cdx.Component{
-			BOMRef:  ppurl.ToString(),
-			Type:    cdx.ComponentTypeLibrary,
-			Name:    scan.Coordinates.ArtifactID,
-			Group:   scan.Coordinates.GroupID,
-			Version: scan.Coordinates.Version,
+			BOMRef:     ppurl.ToString(),
+			Type:       cdx.ComponentTypeLibrary,
+			Name:       scan.Coordinates.ArtifactID,
+			Group:      scan.Coordinates.GroupID,
+			Version:    scan.Coordinates.Version,
+			PackageURL: ppurl.ToString(),
 		},
 		// Use properties to include an internal identifier for this BOM
 		// https://cyclonedx.org/use-cases/#properties--name-value-store
 		Properties: &[]cdx.Property{
 			{
-				Name:  "internal:bom-identifier",
-				Value: strings.Join(scan.ScannedProjectNames(), ", "),
+				Name:  "internal:ws-product-identifier",
+				Value: scan.ProductToken,
+			},
+			{
+				Name:  "internal:ws-project-identifier",
+				Value: strings.Join(scan.ScannedProjectTokens(), ", "),
 			},
 		},
 	}
 
 	components := []cdx.Component{}
 	flatUniqueLibrariesMap := map[string]Library{}
-	transformToUniqueFlatList(libraries, &flatUniqueLibrariesMap)
+	transformToUniqueFlatList(libraries, &flatUniqueLibrariesMap, 1)
 	flatUniqueLibraries := piperutils.Values(flatUniqueLibrariesMap)
+	log.Entry().Debugf("Got %v unique libraries in condensed flat list", len(flatUniqueLibraries))
 	sort.Slice(flatUniqueLibraries, func(i, j int) bool {
 		return flatUniqueLibraries[i].ToPackageUrl().ToString() < flatUniqueLibraries[j].ToPackageUrl().ToString()
 	})
@@ -367,6 +396,7 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 			Name:       lib.ArtifactID,
 			Version:    lib.Version,
 			PackageURL: purl.ToString(),
+			Hashes:     &[]cdx.Hash{{Algorithm: cdx.HashAlgoSHA1, Value: lib.Sha1}},
 		}
 		components = append(components, component)
 	}
@@ -379,6 +409,16 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 		// Define the vulnerabilities in VEX
 		// https://cyclonedx.org/use-cases/#vulnerability-exploitability
 		purl := alert.Library.ToPackageUrl()
+		advisories := []cdx.Advisory{}
+		for _, fix := range alert.Vulnerability.AllFixes {
+			advisory := cdx.Advisory{
+				Title: fix.Message,
+				URL:   alert.Vulnerability.TopFix.URL,
+			}
+			advisories = append(advisories, advisory)
+		}
+		cvss3Score := alert.Vulnerability.CVSS3Score
+		cvssScore := alert.Vulnerability.Score
 		vuln := cdx.Vulnerability{
 			BOMRef: purl.ToString(),
 			ID:     alert.Vulnerability.Name,
@@ -397,26 +437,21 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 				},
 			},
 			Recommendation: alert.Vulnerability.FixResolutionText,
-			Detail:         alert.Vulnerability.Description,
+			Detail:         alert.Vulnerability.URL,
 			Ratings: &[]cdx.VulnerabilityRating{
 				{
-					Score:    &alert.Vulnerability.CVSS3Score,
-					Severity: transformToCdxSeverity(alert.Vulnerability.Severity),
+					Score:    &cvss3Score,
+					Severity: transformToCdxSeverity(alert.Vulnerability.CVSS3Severity),
 					Method:   cdx.ScoringMethodCVSSv3,
 				},
 				{
-					Score:    &alert.Vulnerability.Score,
+					Score:    &cvssScore,
 					Severity: transformToCdxSeverity(alert.Vulnerability.Severity),
 					Method:   cdx.ScoringMethodCVSSv2,
 				},
 			},
-			Advisories: &[]cdx.Advisory{
-				{
-					Title: alert.Vulnerability.TopFix.Vulnerability,
-					URL:   alert.Vulnerability.TopFix.Origin,
-				},
-			},
-			Description: alert.Description,
+			Advisories:  &advisories,
+			Description: alert.Vulnerability.Description,
 			Created:     alert.CreationDate,
 			Published:   alert.Vulnerability.PublishDate,
 			Updated:     alert.ModifiedDate,
@@ -480,7 +515,8 @@ func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Pat
 	return paths, nil
 }
 
-func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[string]Library) {
+func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[string]Library, level int) {
+	log.Entry().Debugf("Got %v libraries reported on level %v", len(*libraries), level)
 	for _, lib := range *libraries {
 		key := lib.ToPackageUrl().ToString()
 		flatMap := *flatMapRef
@@ -488,7 +524,7 @@ func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[string]Libr
 		if lookup.KeyID != lib.KeyID {
 			flatMap[key] = lib
 			if len(lib.Dependencies) > 0 {
-				transformToUniqueFlatList(&lib.Dependencies, flatMapRef)
+				transformToUniqueFlatList(&lib.Dependencies, flatMapRef, level+1)
 			}
 
 		}

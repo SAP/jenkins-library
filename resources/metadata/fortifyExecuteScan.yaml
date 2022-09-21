@@ -175,6 +175,9 @@ spec:
           - STAGES
           - STEPS
         default: python3
+        possibleValues:
+          - python3
+          - python2
       - name: uploadResults
         type: bool
         description: "Whether results shall be uploaded or not"
@@ -509,7 +512,7 @@ spec:
         possibleValues:
           - number
           - percentage
-      - name: SpotCheckMaximum
+      - name: spotCheckMaximum
         type: int
         description:
           "The maximum number of issues that must be audited per category in the `Spot Checks of each
@@ -517,7 +520,7 @@ spec:
           Note that this flag depends on the result of spotCheckMinimum.
           For example if spotCheckMinimum percentage value exceeds spotCheckMaximum then
           spotCheckMaximum will be considerd else spotCheckMinimum is considered.
-          If zero, this flag will be ignored."
+          If value is less than one, this flag will be ignored."
         scope:
           - PARAMETERS
           - STAGES

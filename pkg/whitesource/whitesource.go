@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
@@ -88,41 +89,49 @@ func (a Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
 }
 
 func transformLibToPurlType(libType string) string {
-	// TODO verify and complete, only maven is proven so far
-	switch libType {
-	case "MAVEN_ARTIFACT":
+	log.Entry().Debugf("LibType reported as %v", libType)
+	switch strings.ToLower(libType) {
+	case "java":
+		fallthrough
+	case "maven_artifact":
 		return packageurl.TypeMaven
-	case "NODE_ARTIFACT":
+	case "javascript/node.js":
+		fallthrough
+	case "node_packaged_module":
 		return packageurl.TypeNPM
-	case "GOLANG_ARTIFACT":
+	case "javascript/bower":
+		return "bower"
+	case "go":
+		fallthrough
+	case "go_package":
 		return packageurl.TypeGolang
-	case "DOCKER_ARTIFACT":
-		return packageurl.TypeGolang
-	case "UNKNOWN_ARTIFACT":
-		return packageurl.TypeGeneric
+	case "python":
+		fallthrough
+	case "python_package":
+		return packageurl.TypePyPi
+	case "debian":
+		fallthrough
+	case "debian_package":
+		return packageurl.TypeDebian
+	case "docker":
+		return packageurl.TypeDocker
+	case ".net":
+		fallthrough
+	case "dot_net_resource":
+		return packageurl.TypeNuget
 	}
 	return packageurl.TypeGeneric
 }
 
 func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score float64) string {
-	switch cvss3severity {
+	cvssseverity := consolidateSeverities(cvss2severity, cvss3severity)
+	switch cvssseverity {
 	case "low":
 		return "LOW"
 	case "medium":
 		return "MEDIUM"
 	case "high":
-		if cvss3score >= 9 {
-			return "CRITICAL"
-		}
-		return "HIGH"
-	}
-	switch cvss2severity {
-	case "low":
-		return "LOW"
-	case "medium":
-		return "MEDIUM"
-	case "high":
-		if cvss2score >= 9 {
+		if cvss3score >= 9 || cvss2score >= 9 {
 			return "CRITICAL"
 		}
 		return "HIGH"
@@ -132,10 +141,7 @@ func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score flo
 
 // ToMarkdown returns the markdown representation of the contents
 func (a Alert) ToMarkdown() ([]byte, error) {
-	score := a.Vulnerability.CVSS3Score
-	if score == 0 {
-		score = a.Vulnerability.Score
-	}
+	score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 
 	vul := reporting.VulnerabilityReport{
 		ArtifactID: a.Library.ArtifactID,
@@ -155,6 +161,7 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 		Score:             score,
 		Severity:          consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score),
 		Version:           a.Library.Version,
+		PackageURL:        a.Library.ToPackageUrl().ToString(),
 		VulnerabilityLink: a.Vulnerability.URL,
 		VulnerabilityName: a.Vulnerability.Name,
 	}
@@ -164,30 +171,35 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 
 // ToTxt returns the textual representation of the contents
 func (a Alert) ToTxt() string {
-	score := a.Vulnerability.CVSS3Score
-	if score == 0 {
-		score = a.Vulnerability.Score
-	}
+	score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v
 Base (NVD) Score: %v
-Temporal Score: %v
 Package: %v
 Installed Version: %v
+Package URL: %v
 Description: %v
 Fix Resolution: %v
 Link: [%v](%v)`,
 		a.Vulnerability.Name,
 		a.Vulnerability.Severity,
 		score,
-		score,
 		a.Library.ArtifactID,
 		a.Library.Version,
+		a.Library.ToPackageUrl().ToString(),
 		a.Vulnerability.Description,
 		a.Vulnerability.TopFix.FixResolution,
 		a.Vulnerability.Name,
 		a.Vulnerability.URL,
 	)
+}
+
+func consolidateScores(cvss2score, cvss3score float64) float64 {
+	score := cvss3score
+	if score == 0 {
+		score = cvss2score
+	}
+	return score
 }
 
 // Library
@@ -408,7 +420,7 @@ func (s *System) GetProjectHierarchy(projectToken string, includeInHouse bool) (
 
 	req := Request{
 		RequestType:        "getProjectHierarchy",
-		ProductToken:       projectToken,
+		ProjectToken:       projectToken,
 		IncludeInHouseData: includeInHouse,
 	}
 

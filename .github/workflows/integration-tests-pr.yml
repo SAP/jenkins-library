@@ -1,0 +1,195 @@
+name: Integration tests (Pull Request)
+
+on:
+  issue_comment:
+    types:
+      - created
+      - edited
+
+env:
+  GHA_GO_VERSION: 1.18.x
+  TIMEOUT: 10m
+
+  PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
+  PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
+
+jobs:
+  start:
+    name: Start
+    if: |
+      (
+        github.event.comment.body == '/it' ||
+        github.event.comment.body == '/it-go'
+      ) && (
+        github.event.comment.author_association == 'COLLABORATOR' ||
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER'
+      )
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get pull request URL
+        id: pull_request
+        run: |
+          echo "::set-output name=pull_request::$(curl ${{ github.event.comment.issue_url }} |
+          jq '.pull_request.url' |
+          sed 's/\"//g')"
+      - name: Get branch name
+        id: branch_name
+        run: |
+          echo "::set-output name=branch_name::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          jq '.head.ref' |
+          sed 's/\"//g')"
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ steps.branch_name.outputs.branch_name }}
+      - name: Get commit SHA
+        id: sha
+        run: |
+          echo "::set-output name=sha::$(git log --format=%H -n 1)"
+      - name: Update status
+        run: |
+          curl \
+            --location \
+            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.sha.outputs.sha }}' \
+            -H 'Content-Type: application/json' \
+            --data '{"state": "pending",
+                    "context": "Go / integration-tests",
+                    "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+            -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+
+  build_piper:
+    name: Build Piper
+    needs:
+      - start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.start.outputs.sha }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GHA_GO_VERSION }}
+      - name: Build
+        # with `-tags release` we ensure that shared test utilities won't end up in the binary
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
+      - name: Upload Piper binary
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: piper
+          path: piper
+
+  build_integration_tests:
+    name: Build integration tests
+    needs:
+      - start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.start.outputs.sha }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GHA_GO_VERSION }}
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration/...
+      - name: Upload integration tests binary
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration_tests
+          path: integration_tests
+
+  run_integration_tests:
+    name: Run integration tests
+    needs:
+      - build_piper
+      - build_integration_tests
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+        version:
+          # tough CNB tests are decomposed to reduce pipeline execution time
+          - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
+          - '"TestCNBIntegrationPreserveFiles\b"'
+          - '"TestCNBIntegrationNPMProject"'
+          - '"TestCNBIntegrationMultiImage"'
+          - '"TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"'
+          - '"TestCNBIntegrationNPMCustomBuildpacksFullProject"'
+          - '"TestCNBIntegrationProjectDescriptor"'
+
+          - '"TestGolangIntegration"'
+          - '"TestGradleIntegration"'
+
+          # Jenkins tests are still not implemented(skipped) yet
+          #- '"TestJenkinsIntegration"'
+
+          - '"TestMavenIntegration"'
+          - '"TestMTAIntegration"'
+          - '"TestNexusIntegration"'
+
+          # these are light-weighted tests, so we can use only one pod to reduce resource consumption
+          - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.start.outputs.sha }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GHA_GO_VERSION }}
+      - name: Download Piper binary
+        uses: actions/download-artifact@v3
+        with:
+          name: piper
+      - name: Download integration tests binary
+        uses: actions/download-artifact@v3
+        with:
+          name: integration_tests
+          path: ./integration/
+      - name: Run test
+        run: |
+          chmod +x piper
+          cd ./integration
+          chmod +x integration_tests
+          ./integration_tests -test.v -test.timeout ${TIMEOUT} -test.run ${{ matrix.version }}
+
+  Finish:
+    name: Finish
+    if: always() && needs.start.result == 'success'
+    needs:
+      - start
+      - build_piper
+      - build_integration_tests
+      - run_integration_tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update status
+        run: |
+          if [[ "${{ needs.run_integration_tests.result }}" == "success" ]]
+          then
+            curl \
+              --location \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.sha }}' \
+              -H 'Content-Type: application/json' \
+              --data '{"state": "success",
+                      "context": "Go / integration-tests",
+                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+            exit 0
+          else
+            curl \
+              --location \
+              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.sha }}' \
+              -H 'Content-Type: application/json' \
+              --data '{"state": "failure",
+                      "context": "Go / integration-tests",
+                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+            exit 1
+          fi
