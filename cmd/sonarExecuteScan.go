@@ -111,6 +111,8 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.ServerURL) > 0 {
 		log.Entry().Debugf("setting env variable SONAR_HOST_URL to %v", config.ServerURL)
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
+	} else if len(os.Getenv("SONAR_HOST_URL")) > 0 {
+		log.Entry().Debugf("using existing env variable SONAR_HOST_URL with value %v", os.Getenv("SONAR_HOST_URL"))
 	}
 	if len(config.Token) == 0 {
 		log.Entry().Warn("sonar token not set")
