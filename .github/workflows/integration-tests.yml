@@ -117,6 +117,9 @@ jobs:
           done
       - uses: actions/upload-artifact@v3
         if: success()
+        with:
+          name: images
+          path: ./**.img
 
   run_integration_tests:
     name: Run integration tests
