@@ -64,7 +64,7 @@ void call(Map parameters = [:]) {
                     .mixinStageConfig(script.commonPipelineEnvironment, stageName, ['cfServiceKeyName'])
                     .mixin(parameters, ['cfServiceKeyName'])
                     .use()
-                abapEnvironmentCreateTag script: parameters.script cfServiceKeyName: configClone.cfServiceKeyName
+                abapEnvironmentCreateTag(script: parameters.script, cfServiceKeyName: configClone.cfServiceKeyName)
             } catch (e) {
                 echo 'Tag creation failed: ' + e.message
             }
