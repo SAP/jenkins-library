@@ -13,9 +13,9 @@ func main() {
 	flag.Parse()
 	f, _ := os.ReadFile(*fileName)
 	var Config struct {
-		Version interface{} `json:"version,omitempty" yaml:"version"`
+		Include interface{} `json:"include,omitempty" yaml:"include"`
 	}
 	yaml.Unmarshal(f, &Config)
 	output, _ := json.Marshal(Config)
-	fmt.Println(string(output))
+	fmt.Println(string(output)[1 : len(output)-1])
 }
