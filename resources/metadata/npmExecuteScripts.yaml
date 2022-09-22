@@ -150,7 +150,7 @@ spec:
       - name: packBeforePublish
         type: bool
         default: false
-        description: used for executing npm pack first, followed by npm publish. This two step maybe required when you are building a scoped packages and have npm dependencies from the same scope
+        description: used for executing npm pack first, followed by npm publish. This two step maybe required when you are building a scoped packages and have npm dependencies from the same scope. In case you are have multiple packages to be published then can set this flag to `true`.
         scope:
           - STEPS
           - STAGES
