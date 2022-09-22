@@ -9,13 +9,13 @@ import (
 )
 
 func main() {
-	fileName := flag.String("file-name", "../../integration/github_actions_integration_test_list.yml", "Tests to be executed")
+	file := flag.String("file", "../../integration/github_actions_integration_test_list.yml", "Tests to be executed")
 	flag.Parse()
-	f, _ := os.ReadFile(*fileName)
-	var Config struct {
-		Version interface{} `json:"version,omitempty" yaml:"version"`
+	f, _ := os.ReadFile(*file)
+	var Matrix struct {
+		Run interface{} `json:"run,omitempty" yaml:"run"`
 	}
-	yaml.Unmarshal(f, &Config)
-	output, _ := json.Marshal(Config)
+	yaml.Unmarshal(f, &Matrix)
+	output, _ := json.Marshal(Matrix)
 	fmt.Println(string(output))
 }

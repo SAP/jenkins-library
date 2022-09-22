@@ -85,7 +85,7 @@ jobs:
       - name: Form integration tests matrix
         id: matrix
         run: |
-          echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file-name ./integration/github_actions_integration_test_list.yml)"
+          echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)"
 
   run_integration_tests:
     name: Run integration tests
@@ -120,7 +120,7 @@ jobs:
           chmod +x piper
           cd ./integration
           chmod +x integration_tests
-          ./integration_tests -test.v -test.timeout ${TIMEOUT} -test.run ${{ matrix.version }}
+          ./integration_tests -test.v -test.timeout ${TIMEOUT} -test.run ${{ matrix.run }}
 
   Finish:
     name: Finish
