@@ -65,6 +65,25 @@ void call(Map parameters = [:]) {
                     .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
                     // .mixin(parameters, keys)
                     .use()
+                    echo configClone
+                Map configClone2 = ConfigurationHelper.newInstance(this)
+                    // .loadStepDefaults([:], 'Clone Repositories')
+                    .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
+                    .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
+                    // .mixinStepConfig(script.commonPipelineEnvironment, keys)
+                    // .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
+                    // .mixin(parameters, keys)
+                    .use()
+                    echo configClone2
+                Map configClone3 = ConfigurationHelper.newInstance(this)
+                    // .loadStepDefaults([:], 'Clone Repositories')
+                    .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
+                    // .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
+                    // .mixinStepConfig(script.commonPipelineEnvironment, keys)
+                    // .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
+                    // .mixin(parameters, keys)
+                    .use()
+                    echo configClone3
                 abapEnvironmentCreateTag(script: parameters.script, cfServiceKeyName: configClone.cfServiceKeyName)
             } catch (e) {
                 echo 'Tag creation failed: ' + e.message
