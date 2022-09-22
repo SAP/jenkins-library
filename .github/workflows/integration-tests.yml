@@ -93,10 +93,7 @@ jobs:
       - build_integration_tests
     strategy:
       fail-fast: true
-      matrix:
-        os:
-          - ubuntu-latest
-        version: ${{ fromJson(needs.build_integration_tests.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.build_integration_tests.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3

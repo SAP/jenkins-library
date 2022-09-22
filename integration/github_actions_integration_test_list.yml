@@ -1,22 +1,25 @@
-version:
-  # tough CNB tests are decomposed to reduce pipeline execution time
-  - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
-  - '"TestCNBIntegrationPreserveFiles\b"'
-  - '"TestCNBIntegrationNPMProject"'
-  - '"TestCNBIntegrationMultiImage"'
-  - '"TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"'
-  - '"TestCNBIntegrationNPMCustomBuildpacksFullProject"'
-  - '"TestCNBIntegrationProjectDescriptor"'
+include:
+  os:
+    - ubuntu-latest
+  version:
+    # tough CNB tests are decomposed to reduce pipeline execution time
+    - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
+    - '"TestCNBIntegrationPreserveFiles\b"'
+    - '"TestCNBIntegrationNPMProject"'
+    - '"TestCNBIntegrationMultiImage"'
+    - '"TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"'
+    - '"TestCNBIntegrationNPMCustomBuildpacksFullProject"'
+    - '"TestCNBIntegrationProjectDescriptor"'
 
-  - '"TestGolangIntegration"'
-  - '"TestGradleIntegration"'
+    - '"TestGolangIntegration"'
+    - '"TestGradleIntegration"'
 
-  # Jenkins tests are still not implemented(skipped) yet
-  #- '"TestJenkinsIntegration"'
+    # Jenkins tests are still not implemented(skipped) yet
+    #- '"TestJenkinsIntegration"'
 
-  - '"TestMavenIntegration"'
-  - '"TestMTAIntegration"'
-  - '"TestNexusIntegration"'
+    - '"TestMavenIntegration"'
+    - '"TestMTAIntegration"'
+    - '"TestNexusIntegration"'
 
-  # these are light-weighted tests, so we can use only one pod to reduce resource consumption
-  - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
+    # these are light-weighted tests, so we can use only one pod to reduce resource consumption
+    - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
