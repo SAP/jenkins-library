@@ -18,10 +18,15 @@ jobs:
     name: Start
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
+      go_version: ${{ steps.go_version.outputs.go_version }}
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.10.0
       - uses: actions/checkout@v3
+      - name: Get GO version
+        id: go_version
+        run: |
+          echo "::set-output name=sha::$(cat go.mod | grep 'go' | head -1 | cut -c 4-)"
       - name: Get commit SHA
         id: sha
         run: |
@@ -48,7 +53,7 @@ jobs:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ env.GHA_GO_VERSION }}
+          go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
         # with `-tags release` we ensure that shared test utilities won't end up in the binary
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
@@ -72,7 +77,7 @@ jobs:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ env.GHA_GO_VERSION }}
+          go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration/...
       - name: Upload integration tests binary
@@ -101,7 +106,7 @@ jobs:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ env.GHA_GO_VERSION }}
+          go-version: ${{ needs.start.outputs.go_version }}
       - name: Download Piper binary
         uses: actions/download-artifact@v3
         with:
