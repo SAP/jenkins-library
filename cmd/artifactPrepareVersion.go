@@ -497,10 +497,10 @@ func propagateVersion(config *artifactPrepareVersionOptions, utils artifactPrepa
 	}
 
 	for i, targetTool := range config.AdditionalTargetTools {
-		if targetTool == config.BuildTool {
-			// ignore configured build tool
-			continue
-		}
+		// if targetTool == config.BuildTool {
+		// 	// ignore configured build tool
+		// 	continue
+		// }
 
 		var buildDescriptors []string
 		if len(config.AdditionalTargetDescriptors) > 0 {
