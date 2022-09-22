@@ -61,6 +61,8 @@ jobs:
 
   build_integration_tests:
     name: Build integration tests
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
     needs:
       - start
     runs-on: ubuntu-latest
@@ -79,6 +81,10 @@ jobs:
         with:
           name: integration_tests
           path: integration_tests
+      - name: Form integration tests matrix
+        id: matrix
+        run: |
+          echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file-name ./integration/github_actions_integration_test_list.yml)"
 
   run_integration_tests:
     name: Run integration tests
@@ -90,29 +96,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-        version:
-          # tough CNB tests are decomposed to reduce pipeline execution time
-          - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
-          - '"TestCNBIntegrationPreserveFiles\b"'
-          - '"TestCNBIntegrationNPMProject"'
-          - '"TestCNBIntegrationMultiImage"'
-          - '"TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"'
-          - '"TestCNBIntegrationNPMCustomBuildpacksFullProject"'
-          - '"TestCNBIntegrationProjectDescriptor"'
-
-          - '"TestGolangIntegration"'
-          - '"TestGradleIntegration"'
-
-          # Jenkins tests are still not implemented(skipped) yet
-          # - '"TestJenkinsIntegration"'
-
-          - '"TestMavenIntegration"'
-          - '"TestMTAIntegration"'
-          - '"TestNexusIntegration"'
-
-          # these are light-weighted tests, so we can use only one pod to reduce resource consumption
-          - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
-
+        version: ${{ fromJson(needs.build_integration_tests.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
