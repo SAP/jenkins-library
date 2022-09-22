@@ -13,7 +13,7 @@ func main() {
 	flag.Parse()
 	f, _ := os.ReadFile(*fileName)
 	var Config struct {
-		Include interface{} `json:"include,omitempty" yaml:"include"`
+		Version interface{} `json:"version,omitempty" yaml:"version"`
 	}
 	yaml.Unmarshal(f, &Config)
 	output, _ := json.Marshal(Config)

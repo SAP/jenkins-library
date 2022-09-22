@@ -86,9 +86,6 @@ jobs:
         id: matrix
         run: |
           echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file-name ./integration/github_actions_integration_test_list.yml)"
-      - name: Show matrix
-        run: |
-          echo ${{ fromJson(steps.matrix.outputs.matrix) }}
 
   run_integration_tests:
     name: Run integration tests
@@ -98,7 +95,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.build_integration_tests.outputs.matrix) }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:

@@ -1,6 +1,3 @@
-include:
-  os:
-    - ubuntu-latest
   version:
     # tough CNB tests are decomposed to reduce pipeline execution time
     - '"(TestCNBIntegrationBindings|TestCNBIntegrationWrongBuilderProject|TestCNBIntegrationNonZipPath|TestCNBIntegrationZipPath|TestCNBIntegrationPreserveFilesIgnored)"'
