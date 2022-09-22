@@ -20,11 +20,18 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
+      - uses: styfle/cancel-workflow-action@0.10.0
       - name: Get pull request URL
         id: pull_request
         run: |
           echo "::set-output name=pull_request::$(curl ${{ github.event.comment.issue_url }} |
           jq '.pull_request.url' |
+          sed 's/\"//g')"
+      - name: Get repository
+        id: repository
+        run: |
+          echo "::set-output name=repository::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          jq '.head.repo.full_name' |
           sed 's/\"//g')"
       - name: Get branch name
         id: branch_name
@@ -34,6 +41,7 @@ jobs:
           sed 's/\"//g')"
       - uses: actions/checkout@v3
         with:
+          repository: ${{ steps.repository.outputs.repository }}
           ref: ${{ steps.branch_name.outputs.branch_name }}
       - uses: actions/setup-java@v1
         with:
