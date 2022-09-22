@@ -22,5 +22,5 @@ jobs:
     needs:
       - get_dummy_steps
     runs-on: ubuntu-latest
-    steps: [ ${{ fromJson(needs.get_dummy_steps.outputs.my_steps) }} ]
+    ${{ fromJson(needs.get_dummy_steps.outputs.my_steps) }}
 
