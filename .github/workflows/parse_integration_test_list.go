@@ -17,5 +17,5 @@ func main() {
 	}
 	yaml.Unmarshal(f, &Config)
 	output, _ := json.Marshal(Config)
-	fmt.Println(string(output)[1 : len(output)-1])
+	fmt.Println(string(output))
 }
