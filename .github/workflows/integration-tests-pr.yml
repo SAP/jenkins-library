@@ -134,7 +134,7 @@ jobs:
           - '"TestGradleIntegration"'
 
           # Jenkins tests are still not implemented(skipped) yet
-          #- '"TestJenkinsIntegration"'
+          # - '"TestJenkinsIntegration"'
 
           - '"TestMavenIntegration"'
           - '"TestMTAIntegration"'
