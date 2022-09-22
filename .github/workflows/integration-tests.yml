@@ -40,7 +40,7 @@ jobs:
     needs:
       - start
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
         with:
@@ -60,41 +60,8 @@ jobs:
 
   build_integration_tests:
     name: Build integration tests
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
     needs:
       - start
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v3
-        with:
-          go-version: ${{ needs.start.outputs.go_version }}
-      - name: Build
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration/...
-      - name: Form integration tests run matrix
-        if: success()
-        id: matrix
-        run: |
-          echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)"
-      - name: Upload integration tests binary
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: integration_tests
-          path: integration_tests
-
-  run_integration_tests:
-    name: Run integration tests
-    needs:
-      - build_piper
-      - build_integration_tests
-    strategy:
-      fail-fast: true
-      matrix: ${{ fromJson(needs.build_integration_tests.outputs.matrix) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -104,15 +71,77 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ needs.start.outputs.go_version }}
-      - name: Download Piper binary
-        uses: actions/download-artifact@v3
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration/...
+      - name: Upload integration tests binary
+        if: success()
+        uses: actions/upload-artifact@v3
         with:
-          name: piper
+          name: integration_tests
+          path: integration_tests
+      - name: Get artifacts list
+        if: success()
+        run: |
+          curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}" \
+            https://api.github.com/repos/SAP/jenkins-library/actions/artifacts
+
+  get_integration_test_matrix:
+    name: Get integration test matrix
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    needs:
+      - start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.start.outputs.sha }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ needs.start.outputs.go_version }}
+      - name: Form integration tests run matrix
+        id: matrix
+        run: |
+          echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)"
+
+  run_integration_tests:
+    name: Run integration tests
+    needs:
+      - start
+      - get_integration_test_matrix
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJson(needs.get_integration_test_matrix.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.start.outputs.sha }}
+#      - uses: actions/setup-go@v3
+#        with:
+#          go-version: ${{ needs.start.outputs.go_version }}
+      - name: Wait for tests
+        uses: lewagon/wait-on-check-action@v1.1.2
+        with:
+          ref: ${{ needs.start.outputs.sha }}
+          check-name: build_integration_tests
       - name: Download integration tests binary
         uses: actions/download-artifact@v3
         with:
           name: integration_tests
           path: ./integration/
+      - name: Wait for Piper
+        uses: lewagon/wait-on-check-action@v1.1.2
+        with:
+          ref: ${{ needs.start.outputs.sha }}
+          check-name: build_piper
+      - name: Download Piper binary
+        uses: actions/download-artifact@v3
+        with:
+          name: piper
       - name: Run test
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
@@ -122,14 +151,13 @@ jobs:
           cd ./integration
           chmod +x integration_tests
           ./integration_tests -test.v -test.run ${{ matrix.run }}
+#                    go run .github/workflows/artifact_downloader.go -workflow ${{ github.run_id }} -token ${PIPER_INTEGRATION_GITHUB_TOKEN}
 
   finish:
     name: Finish
     if: always() && needs.start.result == 'success'
     needs:
       - start
-      - build_piper
-      - build_integration_tests
       - run_integration_tests
     runs-on: ubuntu-latest
     steps:

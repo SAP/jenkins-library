@@ -17,7 +17,6 @@ import (
 
 const (
 	registryURL = "localhost:5000"
-	baseBuilder = "paketobuildpacks/builder:0.3.26-base"
 )
 
 func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Container {
@@ -42,7 +41,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -50,7 +49,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	defer container.terminate(t)
 
 	container2 := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -85,7 +84,7 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -115,7 +114,7 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -141,7 +140,7 @@ func TestCNBIntegrationNonZipPath(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -160,7 +159,7 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -226,7 +225,7 @@ func TestCNBIntegrationBindings(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -249,7 +248,7 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -275,7 +274,7 @@ func TestCNBIntegrationPreserveFiles(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
@@ -293,7 +292,7 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   baseBuilder,
+		Image:   "paketobuildpacks/builder:0.3.26-base",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),

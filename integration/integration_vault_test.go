@@ -29,7 +29,7 @@ func TestVaultIntegrationGetSecret(t *testing.T) {
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			AlwaysPullImage: true,
+			AlwaysPullImage: false,
 			Image:           "vault:1.4.3",
 			ExposedPorts:    []string{"8200/tcp"},
 			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
@@ -75,7 +75,7 @@ func TestVaultIntegrationWriteSecret(t *testing.T) {
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			AlwaysPullImage: true,
+			AlwaysPullImage: false,
 			Image:           "vault:1.4.3",
 			ExposedPorts:    []string{"8200/tcp"},
 			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
@@ -141,7 +141,7 @@ func TestVaultIntegrationAppRole(t *testing.T) {
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			AlwaysPullImage: true,
+			AlwaysPullImage: false,
 			Image:           "vault:1.4.3",
 			ExposedPorts:    []string{"8200/tcp"},
 			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
@@ -220,7 +220,7 @@ func TestVaultIntegrationTokenRevocation(t *testing.T) {
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			AlwaysPullImage: true,
+			AlwaysPullImage: false,
 			Image:           "vault:1.4.3",
 			ExposedPorts:    []string{"8200/tcp"},
 			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
