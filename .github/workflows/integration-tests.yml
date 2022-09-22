@@ -26,7 +26,6 @@ jobs:
         id: go_version
         run: |
           echo "::set-output name=go_version::$(echo "`cat go.mod | grep go | head -1 | cut -c 4-`.x")"
-          echo ${{ steps.go_version.outputs.go_version }}
       - name: Get commit SHA
         id: sha
         run: |
