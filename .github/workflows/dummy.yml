@@ -1,0 +1,26 @@
+name: Dummy
+
+on:
+  push:
+    branches:
+      - master
+      - it/**
+
+jobs:
+  get_dummy_steps:
+    name: Get dummy steps
+    outputs:
+      steps: ${{ steps.my_steps.outputs.my_steps }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: My steps
+        id: my_steps
+        run: |
+          echo "::set-output name=my_steps::{"steps":[{"name":"Echo Hello","run":"echo \"Hello\""},{"name":"Echo World","run":"echo \"World\""}]}"
+  dummy:
+    name: dummy
+    needs:
+      - get_dummy_steps
+    runs-on: ubuntu-latest
+    steps: [ {{ fromJson(needs.get_dummy_steps.outputs.my_steps) }} ]
+
