@@ -16,11 +16,15 @@ jobs:
       - name: My steps
         id: my_steps
         run: |
-          echo "::set-output name=my_steps::{"steps":[{"name":"Echo Hello","run":"echo \"Hello\""},{"name":"Echo World","run":"echo \"World\""}]}"
+          echo "::set-output name=my_steps::$(echo "{"steps":[{"name":"Echo Hello","run":"echo \"Hello\""},{"name":"Echo World","run":"echo \"World\""}]}")"
+      - name: Echo
+        run: |
+          echo ${{ steps.my_steps.outputs.my_steps }}
+
   dummy:
     name: dummy
     needs:
       - get_dummy_steps
     runs-on: ubuntu-latest
-    steps: [ { fromJson(needs.get_dummy_steps.outputs.my_steps) } ]
+    steps: [ {{ fromJson(needs.get_dummy_steps.outputs.my_steps) }} ]
 
