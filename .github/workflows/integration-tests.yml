@@ -9,9 +9,6 @@ on:
 env:
   TIMEOUT: 10m
 
-  PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-  PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-
 jobs:
   start:
     name: Start
@@ -116,6 +113,9 @@ jobs:
           name: integration_tests
           path: ./integration/
       - name: Run test
+        env:
+          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
+          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
         run: |
           chmod +x piper
           cd ./integration
