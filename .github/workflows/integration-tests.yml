@@ -123,7 +123,7 @@ jobs:
           chmod +x integration_tests
           ./integration_tests -test.v -test.run ${{ matrix.run }}
 
-  Finish:
+  finish:
     name: Finish
     if: always() && needs.start.result == 'success'
     needs:
