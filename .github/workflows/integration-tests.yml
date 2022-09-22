@@ -6,9 +6,6 @@ on:
       - master
       - it/**
 
-env:
-  TIMEOUT: 10m
-
 jobs:
   start:
     name: Start
@@ -43,6 +40,7 @@ jobs:
     needs:
       - start
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v3
         with:
@@ -67,6 +65,7 @@ jobs:
     needs:
       - start
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v3
         with:
@@ -97,6 +96,7 @@ jobs:
       fail-fast: true
       matrix: ${{ fromJson(needs.build_integration_tests.outputs.matrix) }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
         with:
@@ -121,7 +121,7 @@ jobs:
           chmod +x piper
           cd ./integration
           chmod +x integration_tests
-          ./integration_tests -test.v -test.timeout ${TIMEOUT} -test.run ${{ matrix.run }}
+          ./integration_tests -test.v -test.run ${{ matrix.run }}
 
   Finish:
     name: Finish
