@@ -65,7 +65,7 @@ void call(Map parameters = [:]) {
                     .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
                     // .mixin(parameters, keys)
                     .use()
-                    configClone2.each{ k, v -> println "${k}:${v}" }
+                    configClone.each{ k, v -> println "${k}:${v}" }
                 Map configClone2 = ConfigurationHelper.newInstance(this)
                     // .loadStepDefaults([:], 'Clone Repositories')
                     .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
