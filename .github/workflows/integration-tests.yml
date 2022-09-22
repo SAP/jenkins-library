@@ -7,7 +7,6 @@ on:
       - it/**
 
 env:
-  GHA_GO_VERSION: 1.18.x
   TIMEOUT: 10m
 
   PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
