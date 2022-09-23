@@ -127,7 +127,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.1.2
         with:
           ref: ${{ needs.start.outputs.sha }}
-          check-name: build_integration_tests
+          check-name: 'Build Piper'
       - name: Download integration tests binary
         uses: actions/download-artifact@v3
         with:
@@ -137,7 +137,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.1.2
         with:
           ref: ${{ needs.start.outputs.sha }}
-          check-name: build_piper
+          check-name: 'Build integration tests'
       - name: Download Piper binary
         uses: actions/download-artifact@v3
         with:
