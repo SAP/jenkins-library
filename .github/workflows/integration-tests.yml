@@ -106,11 +106,31 @@ jobs:
         run: |
           echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)"
 
+  get_image_list:
+    name: Get integration test matrix
+    outputs:
+      image-list: ${{ steps.image-list.outputs.image-list }}
+    needs:
+      - start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.start.outputs.sha }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ needs.start.outputs.go_version }}
+      - name: Get image list
+        id: image-list
+        run: |
+          echo ""
+
   run_integration_tests:
     name: Run integration tests
     needs:
       - start
       - get_integration_test_matrix
+      - get_image_list
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.get_integration_test_matrix.outputs.matrix) }}
@@ -155,6 +175,7 @@ jobs:
     needs:
       - start
       - get_integration_test_matrix
+      - get_image_list
       - run_integration_tests
       - build_piper
       - build_integration_tests
