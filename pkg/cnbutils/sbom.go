@@ -93,7 +93,6 @@ func MergeSBOMFiles(pattern, output, img, dockerConfigFile string, utils BuildUt
 	}
 	defer out.Close()
 
-	fmt.Printf("*** saving %q ***", outFile)
 	log.Entry().Debugf("saving CycloneDX SBOM file to %q", outFile)
 	err = cycloneDxXML.Encode(out, *bom)
 	if err != nil {
