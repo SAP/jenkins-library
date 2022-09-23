@@ -132,7 +132,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		defer exec.Utils.RemoveAll(tmpDirectory)
 
 		log.Entry().Infof("packaging package at %s", filepath.Dir(packageJSON))
-		err = execRunner.RunExecutable("npm", "pack", filepath.Dir(packageJSON), "--pack-destination", tmpDirectory)
+		err = execRunner.RunExecutable("npm", "pack", "/"+filepath.Dir(packageJSON), "--pack-destination", tmpDirectory)
 		if err != nil {
 			return err
 		}
