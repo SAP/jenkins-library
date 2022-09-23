@@ -124,7 +124,7 @@ jobs:
 #        with:
 #          go-version: ${{ needs.start.outputs.go_version }}
       - name: Wait for tests
-        uses: lewagon/wait-on-check-action@v1.1.2
+        uses: lewagon/wait-on-check-action@v1
         with:
           ref: ${{ needs.start.outputs.sha }}
           check-name: 'Build integration tests'
@@ -134,7 +134,7 @@ jobs:
           name: integration_tests
           path: ./integration/
       - name: Wait for Piper
-        uses: lewagon/wait-on-check-action@v1.1.2
+        uses: lewagon/wait-on-check-action@v1
         with:
           ref: ${{ needs.start.outputs.sha }}
           check-name: 'Build Piper'
