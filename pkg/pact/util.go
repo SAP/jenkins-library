@@ -2,10 +2,13 @@ package pact
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 // EnsureDir ensures the specified directory does not already exist before creating it.
@@ -56,18 +59,16 @@ func ReadAndUnmarshalFile(file string, spec interface{}, utils Utils) error {
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'spec' which we defined above
 	if err := json.Unmarshal(byteValue, spec); err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal %v: %w", file, err)
 	}
 
 	return nil
 }
 
 // sendRequest is a wrapper for sending http request
-func sendRequest(method, url string, body io.Reader, utils Utils) ([]byte, error) {
+func sendRequest(method, url, username, password string, body io.Reader, utils Utils) ([]byte, error) {
+	utils.SetOptions(piperhttp.ClientOptions{Username: username, Password: password})
 	resp, err := utils.SendRequest(http.MethodGet, url, body, nil, nil)
-	if err != nil {
-		return nil, err
-	}
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, ErrNotFound

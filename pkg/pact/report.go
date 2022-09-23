@@ -1,10 +1,7 @@
 package pact
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"net/http"
 )
 
 // Metrics represents ci report metrics which will makes up part of the report sent to the ci report server
@@ -40,46 +37,33 @@ type ReportData struct {
 	GitBranch   string `json:"git_branch"`
 }
 
-// ReportClient represents a connection to the ci report server
-type ReportClient struct {
-	host string
-}
-
-// NewReportClient accepts in as an argument systemNamespace. It initializes and returns a ReportClient.
-func NewReportClient(systemNamespace string) *ReportClient {
-	return &ReportClient{host: fmt.Sprintf("http://dev-ci-report.%s", systemNamespace)}
-}
-
-// SendReport sends report to ci report server.
+// SaveReport stores a report in the workspace.
 // It returns any errors if encountered.
-func (rc *ReportClient) SendReport(reportData *ReportData, text, name, value string, utils Utils) error {
-	// Create report and send to CI report server
-	report := &Report{
-		Data:    reportData,
-		Metrics: []Metrics{},
-	}
-	metrics := Metrics{
-		Type:  "contract_tests",
-		Title: "",
-		Metrics: []Metric{
-			{
-				Text:  text,
-				Name:  name,
-				Value: value,
+func (r *Report) SaveReport(reportData *ReportData, filePath, text, name, value string, utils Utils) error {
+	r.Data =    reportData
+	r.Metrics = []Metrics{
+		{
+			Type:  "contract_tests",
+			Title: "",
+			Metrics: []Metric{
+				{
+					Text:  text,
+					Name:  name,
+					Value: value,
+				},
 			},
 		},
 	}
-	report.Metrics = append(report.Metrics, metrics)
+	
+	reportBytes, err := json.Marshal(r)
+	if err != nil {
+		return err
+	}
 
-	url := fmt.Sprintf("%s/api/report", rc.host)
-	reportBytes, err := json.Marshal(report)
+	err = utils.WriteFile(filePath, reportBytes, 0666)
 	if err != nil {
 		return err
 	}
-	resp, err := sendRequest(http.MethodPost, url, bytes.NewReader(reportBytes), utils)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("upload contract tests metric response: %s", string(resp))
+
 	return nil
 }

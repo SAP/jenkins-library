@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -96,14 +95,7 @@ func NewPactBrokerClient(hostname, user, pass string) *PactBrokerClient {
 // LatestPactsForProviderByTag retrieves and returns links to pact contracts associated with provider and tag passed in as arguments.
 func (pc *PactBrokerClient) LatestPactsForProviderByTag(provider, tag string, utils Utils) (*LatestPactsForProviderTagResp, error) {
 
-	url := fmt.Sprintf("https://%s:%s@%s/pacts/provider/%s/latest/%s",
-		pc.brokerUser,
-		pc.brokerPass,
-		pc.hostname,
-		provider,
-		tag)
-	
-	resp, err := sendRequest(http.MethodGet, url, nil, utils)
+	resp, err := sendRequest(http.MethodGet, fmt.Sprintf("https://%s/pacts/provider/%s/latest/%s", pc.hostname,	provider,tag), pc.brokerUser, pc.brokerPass, nil, utils)
 	if err != nil {
 		if err == ErrNotFound {
 			log.Entry().Infof("No consumer tests found for provider: %s", provider)
@@ -122,7 +114,5 @@ func (pc *PactBrokerClient) LatestPactsForProviderByTag(provider, tag string, ut
 // DownloadPactContract will send a GET request to the pact broker for a specific pact contract using the url passed in as an argument.
 // It return the response and any http error if encountered.
 func (pc *PactBrokerClient) DownloadPactContract(url string, utils Utils) ([]byte, error) {
-	s := strings.Split(url, "https://")
-	formattedURL := fmt.Sprintf("https://%s:%s@%s", pc.brokerUser, pc.brokerPass, s[1])
-	return sendRequest(http.MethodGet, formattedURL, nil, utils)
+	return sendRequest(http.MethodGet, url, pc.brokerUser, pc.brokerPass, nil, utils)
 }

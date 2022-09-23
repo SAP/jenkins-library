@@ -38,17 +38,19 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: git/commitId
-      - name: enforcement
-        type: string
+      - name: enforceAsyncApiValidation
+        type: bool
         description: TBD
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: enforcementConfig
-        type: string
+      - name: enforceOpenApiValidation
+        type: bool
         description: TBD
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS

@@ -63,6 +63,7 @@ type FilesMock struct {
 	FileReadErrors   map[string]error
 	FileWriteError   error
 	FileWriteErrors  map[string]error
+	DirCreateErrors map[string]error
 	LookPathError error
 }
 
@@ -399,9 +400,9 @@ func (f *FilesMock) TempDir(baseDir string, pattern string) (string, error) {
 
 // MkdirAll creates a directory in the in-memory file system, so that this path is established to exist.
 func (f *FilesMock) MkdirAll(path string, mode os.FileMode) error {
-	// NOTE: FilesMock could be extended to have a set of paths for which MkdirAll should fail.
-	// This is why AddDirWithMode() exists separately, to differentiate the notion of setting up
-	// the mocking versus implementing the methods from Files.
+	if f.DirCreateErrors[path] != nil {
+		return f.DirCreateErrors[path]
+	}
 	f.AddDirWithMode(path, mode)
 	return nil
 }

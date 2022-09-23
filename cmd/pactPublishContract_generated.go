@@ -16,23 +16,24 @@ import (
 )
 
 type pactPublishContractOptions struct {
-	BuildID           string `json:"buildId,omitempty"`
-	CommitID          string `json:"commitId,omitempty"`
-	Enforcement       string `json:"enforcement,omitempty"`
-	EnforcementConfig string `json:"enforcementConfig,omitempty"`
-	GitProvider       string `json:"gitProvider,omitempty"`
-	GitPullID         string `json:"gitPullId,omitempty"`
-	OrgAlias          string `json:"orgAlias,omitempty"`
-	OrgOrigin         string `json:"orgOrigin,omitempty"`
-	PactBrokerBaseURL string `json:"pactBrokerBaseURL,omitempty"`
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	Token             string `json:"token,omitempty"`
-	PactsFolderPath   string `json:"pactsFolderPath,omitempty"`
-	Repository        string `json:"repository,omitempty"`
-	SourceBranchName  string `json:"sourceBranchName,omitempty"`
-	SystemNamespace   string `json:"systemNamespace,omitempty"`
-	TargetBranchName  string `json:"targetBranchName,omitempty"`
+	BuildID                   string `json:"buildId,omitempty"`
+	CommitID                  string `json:"commitId,omitempty"`
+	EnforceAsyncAPIValidation bool   `json:"enforceAsyncApiValidation,omitempty"`
+	EnforceOpenAPIValidation  bool   `json:"enforceOpenApiValidation,omitempty"`
+	EnforcementConfig         string `json:"enforcementConfig,omitempty"`
+	GitProvider               string `json:"gitProvider,omitempty"`
+	GitPullID                 string `json:"gitPullId,omitempty"`
+	OrgAlias                  string `json:"orgAlias,omitempty"`
+	OrgOrigin                 string `json:"orgOrigin,omitempty"`
+	PactBrokerBaseURL         string `json:"pactBrokerBaseURL,omitempty"`
+	Username                  string `json:"username,omitempty"`
+	Password                  string `json:"password,omitempty"`
+	Token                     string `json:"token,omitempty"`
+	PactsFolderPath           string `json:"pactsFolderPath,omitempty"`
+	Repository                string `json:"repository,omitempty"`
+	SourceBranchName          string `json:"sourceBranchName,omitempty"`
+	SystemNamespace           string `json:"systemNamespace,omitempty"`
+	TargetBranchName          string `json:"targetBranchName,omitempty"`
 }
 
 // PactPublishContractCommand Step to publish PACT contracts
@@ -139,7 +140,8 @@ Run swagger-mock-validator to validate whether swagger fits pact test cases`,
 func addPactPublishContractFlags(cmd *cobra.Command, stepConfig *pactPublishContractOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildID, "buildId", os.Getenv("PIPER_buildId"), "TBD")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Git commitId for triggering the step.")
-	cmd.Flags().StringVar(&stepConfig.Enforcement, "enforcement", os.Getenv("PIPER_enforcement"), "TBD")
+	cmd.Flags().BoolVar(&stepConfig.EnforceAsyncAPIValidation, "enforceAsyncApiValidation", false, "TBD")
+	cmd.Flags().BoolVar(&stepConfig.EnforceOpenAPIValidation, "enforceOpenApiValidation", false, "TBD")
 	cmd.Flags().StringVar(&stepConfig.EnforcementConfig, "enforcementConfig", os.Getenv("PIPER_enforcementConfig"), "TBD")
 	cmd.Flags().StringVar(&stepConfig.GitProvider, "gitProvider", os.Getenv("PIPER_gitProvider"), "TBD")
 	cmd.Flags().StringVar(&stepConfig.GitPullID, "gitPullId", os.Getenv("PIPER_gitPullId"), "TBD")
@@ -192,13 +194,22 @@ func pactPublishContractMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_commitId"),
 					},
 					{
-						Name:        "enforcement",
+						Name:        "enforceAsyncApiValidation",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_enforcement"),
+						Default:     false,
+					},
+					{
+						Name:        "enforceOpenApiValidation",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "enforcementConfig",

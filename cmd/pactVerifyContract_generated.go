@@ -16,25 +16,25 @@ import (
 )
 
 type pactVerifyContractOptions struct {
-	AsynchAPIFilePath string `json:"asynchApiFilePath,omitempty"`
-	BuildID           string `json:"buildId,omitempty"`
-	CommitID          string `json:"commitId,omitempty"`
-	Enforcement       string `json:"enforcement,omitempty"`
-	EnforcementConfig string `json:"enforcementConfig,omitempty"`
-	GitProvider       string `json:"gitProvider,omitempty"`
-	GitPullID         string `json:"gitPullId,omitempty"`
-	OrgAlias          string `json:"orgAlias,omitempty"`
-	OrgOrigin         string `json:"orgOrigin,omitempty"`
-	PactBrokerBaseURL string `json:"pactBrokerBaseURL,omitempty"`
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	Token             string `json:"token,omitempty"`
-	Provider          string `json:"provider,omitempty"`
-	Repository        string `json:"repository,omitempty"`
-	SourceBranchName  string `json:"sourceBranchName,omitempty"`
-	SystemNamespace   string `json:"systemNamespace,omitempty"`
-	SwaggerFilePath   string `json:"swaggerFilePath,omitempty"`
-	TargetBranchName  string `json:"targetBranchName,omitempty"`
+	AsynchAPIFilePath         string `json:"asynchApiFilePath,omitempty"`
+	BuildID                   string `json:"buildId,omitempty"`
+	CommitID                  string `json:"commitId,omitempty"`
+	EnforceAsyncAPIValidation bool   `json:"enforceAsyncApiValidation,omitempty"`
+	EnforceOpenAPIValidation  bool   `json:"enforceOpenApiValidation,omitempty"`
+	GitProvider               string `json:"gitProvider,omitempty"`
+	GitPullID                 string `json:"gitPullId,omitempty"`
+	OrgAlias                  string `json:"orgAlias,omitempty"`
+	OrgOrigin                 string `json:"orgOrigin,omitempty"`
+	PactBrokerBaseURL         string `json:"pactBrokerBaseURL,omitempty"`
+	Username                  string `json:"username,omitempty"`
+	Password                  string `json:"password,omitempty"`
+	Token                     string `json:"token,omitempty"`
+	Provider                  string `json:"provider,omitempty"`
+	Repository                string `json:"repository,omitempty"`
+	SourceBranchName          string `json:"sourceBranchName,omitempty"`
+	SystemNamespace           string `json:"systemNamespace,omitempty"`
+	SwaggerFilePath           string `json:"swaggerFilePath,omitempty"`
+	TargetBranchName          string `json:"targetBranchName,omitempty"`
 }
 
 // PactVerifyContractCommand Step to execute PACT tests
@@ -142,8 +142,8 @@ func addPactVerifyContractFlags(cmd *cobra.Command, stepConfig *pactVerifyContra
 	cmd.Flags().StringVar(&stepConfig.AsynchAPIFilePath, "asynchApiFilePath", `api/build/swagger.json`, "Defines path to async api specification.")
 	cmd.Flags().StringVar(&stepConfig.BuildID, "buildId", os.Getenv("PIPER_buildId"), "TBD")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Git commitId for triggering the step.")
-	cmd.Flags().StringVar(&stepConfig.Enforcement, "enforcement", os.Getenv("PIPER_enforcement"), "TBD")
-	cmd.Flags().StringVar(&stepConfig.EnforcementConfig, "enforcementConfig", os.Getenv("PIPER_enforcementConfig"), "TBD")
+	cmd.Flags().BoolVar(&stepConfig.EnforceAsyncAPIValidation, "enforceAsyncApiValidation", false, "TBD")
+	cmd.Flags().BoolVar(&stepConfig.EnforceOpenAPIValidation, "enforceOpenApiValidation", false, "TBD")
 	cmd.Flags().StringVar(&stepConfig.GitProvider, "gitProvider", os.Getenv("PIPER_gitProvider"), "TBD")
 	cmd.Flags().StringVar(&stepConfig.GitPullID, "gitPullId", os.Getenv("PIPER_gitPullId"), "TBD")
 	cmd.Flags().StringVar(&stepConfig.OrgAlias, "orgAlias", os.Getenv("PIPER_orgAlias"), "TBD")
@@ -205,22 +205,22 @@ func pactVerifyContractMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_commitId"),
 					},
 					{
-						Name:        "enforcement",
+						Name:        "enforceAsyncApiValidation",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_enforcement"),
+						Default:     false,
 					},
 					{
-						Name:        "enforcementConfig",
+						Name:        "enforceOpenApiValidation",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_enforcementConfig"),
+						Default:     false,
 					},
 					{
 						Name:        "gitProvider",
