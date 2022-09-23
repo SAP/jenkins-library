@@ -107,7 +107,7 @@ jobs:
           echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)"
 
   get_image_list:
-    name: Get integration test matrix
+    name: Get image list
     outputs:
       image-list: ${{ steps.image-list.outputs.image-list }}
     needs:
