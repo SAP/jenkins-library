@@ -142,9 +142,8 @@ jobs:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
           PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
         run: |
-          chmod +x piper
+          chmod +x piper ./integration/integration_tests
           cd ./integration
-          chmod +x integration_tests
           ./integration_tests -test.v -test.run ${{ matrix.run }}
 #                    go run .github/workflows/artifact_downloader.go -workflow ${{ github.run_id }} -token ${PIPER_INTEGRATION_GITHUB_TOKEN}
 
@@ -153,7 +152,10 @@ jobs:
     if: always() && needs.start.result == 'success'
     needs:
       - start
+      - get_integration_test_matrix
       - run_integration_tests
+      - build_piper
+      - build_integration_tests
     runs-on: ubuntu-latest
     steps:
       - name: Update status
