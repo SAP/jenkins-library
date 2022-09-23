@@ -145,7 +145,7 @@ jobs:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Load images
         run: |
-          go run .github/workflows/image_loader.go -tags release
+          go run .github/workflows/image_loader.go
       - name: Wait for Piper binary
         uses: lewagon/wait-on-check-action@v1.1.2
         with:
