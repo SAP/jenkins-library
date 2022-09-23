@@ -123,18 +123,8 @@ jobs:
 #      - uses: actions/setup-go@v3
 #        with:
 #          go-version: ${{ needs.start.outputs.go_version }}
-      - name: Wait for tests
-        uses: lewagon/wait-on-check-action@v1
-        with:
-          ref: ${{ needs.start.outputs.sha }}
-          check-name: 'Build integration tests'
-      - name: Download integration tests binary
-        uses: actions/download-artifact@v3
-        with:
-          name: integration_tests
-          path: ./integration/
       - name: Wait for Piper
-        uses: lewagon/wait-on-check-action@v1
+        uses: lewagon/wait-on-check-action@v1.1.2
         with:
           ref: ${{ needs.start.outputs.sha }}
           check-name: 'Build Piper'
@@ -142,6 +132,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: piper
+      - name: Download integration tests binary
+        uses: actions/download-artifact@v3
+        with:
+          name: integration_tests
+          path: ./integration/
       - name: Run test
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
