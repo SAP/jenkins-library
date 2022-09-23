@@ -146,16 +146,6 @@ jobs:
       - name: Load images
         run: |
           go run .github/workflows/image_loader.go
-      - name: Wait for integration tests binary
-        uses: lewagon/wait-on-check-action@v1.1.2
-        with:
-          ref: ${{ needs.start.outputs.sha }}
-          check-name: 'Build integration tests'
-      - name: Download integration tests binary
-        uses: actions/download-artifact@v3
-        with:
-          name: integration_tests
-          path: ./integration/
       - name: Wait for Piper binary
         uses: lewagon/wait-on-check-action@v1.1.2
         with:
@@ -165,6 +155,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: piper
+      - name: Download integration tests binary
+        uses: actions/download-artifact@v3
+        with:
+          name: integration_tests
+          path: ./integration/
       - name: Run test
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
