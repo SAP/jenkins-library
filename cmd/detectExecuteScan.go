@@ -309,7 +309,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	if config.MinScanInterval > 0 {
 		//Unmap doesnt work well with min-scan-interval and should be removed
 		config.Unmap = false
-		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%v'", config.MinScanInterval))
+		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%d'", config.MinScanInterval))
 	}
 
 	if config.Unmap {
