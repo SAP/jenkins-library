@@ -307,6 +307,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		config.Unmap = false
 	}
 
+	if config.MinScanInterval > 0 {
+		//Unmap doesnt work well with min-scan-interval and should be removed
+		config.Unmap = false
+		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%d'", config.MinScanInterval))
+	}
+
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
 			args = append(args, "--detect.project.codelocation.unmap=true")
