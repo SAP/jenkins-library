@@ -231,6 +231,7 @@ func kubernetesDeployMetadata() config.StepData {
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
+					{Name: "downloadedArtifact", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
