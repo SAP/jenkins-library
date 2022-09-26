@@ -9,29 +9,52 @@ on:
 jobs:
   consumer_tests:
     name: Consumer tests
-    runs-on: ubuntu-latest
     if: |
       (
-        github.event.comment.body == '/it' ) && (
+        github.event.comment.body == '/it' ||
+        github.event.comment.body == '/it-consumer'
+      ) && (
         github.event.comment.author_association == 'COLLABORATOR' ||
         github.event.comment.author_association == 'OWNER' ||
         github.event.comment.author_association == 'MEMBER'
       )
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: styfle/cancel-workflow-action@0.10.0
+      - name: Get pull request URL
+        id: pull_request
+        run: |
+          echo "::set-output name=pull_request::$(curl ${{ github.event.comment.issue_url }} |
+          jq '.pull_request.url' |
+          sed 's/\"//g')"
+      - name: Get repository
+        id: repository
+        run: |
+          echo "::set-output name=repository::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          jq '.head.repo.full_name' |
+          sed 's/\"//g')"
+      - name: Get branch name
+        id: branch_name
+        run: |
+          echo "::set-output name=branch_name::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          jq '.head.ref' |
+          sed 's/\"//g')"
+      - uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branch_name.outputs.branch_name }}
       - uses: actions/setup-java@v1
         with:
           java-version: 11
       - name: Install Groovy
         run: |
-          sudo apt-get update && sudo apt-get install groovy -y
+          sudo apt-get update
+          sudo apt-get install groovy -y
       - name: Setup Git
         run: |
-          git config --global user.email "piper-testing-bot@example.com" && git config --global user.name "piper-testing-bot"
+          git config --global user.email "piper-testing-bot@example.com"
+          git config --global user.name "piper-testing-bot"
       - name: Run tests
         env:
           REPOSITORY_UNDER_TEST: ${{ github.repository }}
@@ -44,4 +67,5 @@ jobs:
           NEO_DEPLOY_PASSWORD: ${{ secrets.NEO_DEPLOY_PASSWORD }}
           CX_INFRA_IT_TMS_UPLOAD: ${{ secrets.CX_INFRA_IT_TMS_UPLOAD }}
         run: |
-          cd consumer-test && groovy consumerTestController.groovy
+          cd ./consumer-test
+          groovy consumerTestController.groovy
