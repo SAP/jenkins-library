@@ -612,6 +612,7 @@ There are two different workflows:
 - [commit-based workflow](.github/workflows/upload-go-master.yml) which releases the binary as `piper_master` on the [latest release](https://github.com/SAP/jenkins-library/releases/latest).
 
 It is also possible to release on demand using the `contrib/perform-release.sh` script with a personal access token (`repo` scope).
+
 ```
 PIPER_RELEASE_TOKEN=<token> contrib/perform-release.sh
 ```
