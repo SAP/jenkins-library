@@ -142,6 +142,13 @@ spec:
         aliases:
           - name: sonarProperties
             deprecated: true
+      - name: waitForQualityGate
+        type: bool
+        description: "Whether the scan should wait for and consider the result of the quality gate."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       # Parameters for non-PR scans
       - name: branchName
         type: string
