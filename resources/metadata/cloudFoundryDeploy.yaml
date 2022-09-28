@@ -200,6 +200,7 @@ spec:
         mandatory: false
       - name: manifest
         type: string
+        default: "manifest.yml"
         description: "Defines the manifest to be used for deployment to Cloud Foundry."
         scope:
           - PARAMETERS
