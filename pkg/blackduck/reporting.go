@@ -16,13 +16,6 @@ import (
 
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
 func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *format.SARIF {
-	// create component lookup map
-	componentLookup := map[string]Component{}
-	for _, comp := range components.Items {
-		componentLookup[fmt.Sprintf("%v/%v", comp.Name, comp.Version)] = comp
-	}
-
-	//Now, we handle the sarif
 	log.Entry().Debug("Creating SARIF file for data transfer")
 	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
@@ -42,7 +35,6 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	cweIdsForTaxonomies := []string{}
 	if vulns != nil && vulns.Items != nil {
 		for _, v := range vulns.Items {
-			component := componentLookup[fmt.Sprintf("%v/%v", v.Name, v.Version)]
 			result := *new(format.Results)
 			ruleId := v.Title()
 			log.Entry().Debugf("Transforming alert %v into SARIF format", ruleId)
@@ -56,7 +48,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}
 			result.Locations = append(result.Locations, location)
 			partialFingerprints := new(format.PartialFingerprints)
-			partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", component.ToPackageUrl().ToString(), v.Title())))
+			partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID)))
 			result.PartialFingerprints = *partialFingerprints
 			cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 
@@ -70,20 +62,20 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 				sarifRule := *new(format.SarifRule)
 				sarifRule.ID = ruleId
 				sarifRule.ShortDescription = new(format.Message)
-				sarifRule.ShortDescription.Text = fmt.Sprintf("%v Package %v", v.VulnerabilityName, component.Name)
+				sarifRule.ShortDescription.Text = fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Component.Name)
 				sarifRule.FullDescription = new(format.Message)
 				sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
 				sarifRule.DefaultConfiguration = new(format.DefaultConfiguration)
 				sarifRule.DefaultConfiguration.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
 				sarifRule.HelpURI = ""
-				markdown, _ := v.ToMarkdown(&component)
+				markdown, _ := v.ToMarkdown()
 				sarifRule.Help = new(format.Help)
-				sarifRule.Help.Text = v.ToTxt(&component)
+				sarifRule.Help.Text = v.ToTxt()
 				sarifRule.Help.Markdown = string(markdown)
 
 				ruleProp := *new(format.SarifRuleProperties)
 				ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
-				ruleProp.Tags = append(ruleProp.Tags, component.ToPackageUrl().ToString())
+				ruleProp.Tags = append(ruleProp.Tags, v.Component.ToPackageUrl().ToString())
 				ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.CweID)
 				ruleProp.Precision = "very-high"
 				ruleProp.Impact = fmt.Sprint(v.VulnerabilityWithRemediation.ImpactSubscore)

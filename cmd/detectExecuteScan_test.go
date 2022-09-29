@@ -148,7 +148,7 @@ const (
 		"items": [
 			{
 				"componentName": "Spring Framework",
-				"componentVersionName": "5.3.2",
+				"componentVersionName": "5.3.9",
 				"vulnerabilityWithRemediation" : {
 					"vulnerabilityName" : "BDSA-2019-2021",
 					"baseScore" : 7.5,
