@@ -234,9 +234,6 @@ type deployConfig struct {
 }
 
 func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command.ExecRunner) error {
-	if len(config.Manifest) == 0 {
-		config.Manifest = "manifest.yml"
-	}
 
 	deployType, err := checkAndUpdateDeployTypeForNotSupportedManifest(config)
 
@@ -379,6 +376,9 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	}
 	if config.DeployType == "blue-green" {
 		return "", fmt.Errorf("Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)")
+	}
+	if len(config.Manifest) == 0 {
+		return "", fmt.Errorf("Manifest file not provided in configuration. Cannot retrieve app name")
 	}
 	fileExists, err := fileUtils.FileExists(config.Manifest)
 	if err != nil {
@@ -613,6 +613,9 @@ func toStringInterfaceMap(in *orderedmap.OrderedMap, err error) (map[string]inte
 func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployOptions) (string, error) {
 
 	manifestFile := config.Manifest
+	if len(manifestFile) == 0 {
+		manifestFile = "manifest.yml"
+	}
 
 	manifestFileExists, err := fileUtils.FileExists(manifestFile)
 	if err != nil {
