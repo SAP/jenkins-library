@@ -213,7 +213,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.DockerUsername, "dockerUsername", os.Getenv("PIPER_dockerUsername"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the username to be used.")
 	cmd.Flags().BoolVar(&stepConfig.KeepOldInstance, "keepOldInstance", false, "In case of a `blue-green` deployment the old instance will be deleted by default. If this option is set to true the old instance will remain stopped in the Cloud Foundry space.")
 	cmd.Flags().StringVar(&stepConfig.LoginParameters, "loginParameters", os.Getenv("PIPER_loginParameters"), "Addition command line options for cf login command. No escaping/quoting is performed. Not recommended for productive environments.")
-	cmd.Flags().StringVar(&stepConfig.Manifest, "manifest", `manifest.yml`, "Defines the manifest to be used for deployment to Cloud Foundry.")
+	cmd.Flags().StringVar(&stepConfig.Manifest, "manifest", os.Getenv("PIPER_manifest"), "Defines the manifest to be used for deployment to Cloud Foundry.")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariables, "manifestVariables", []string{}, "Defines a list of variables in the form `key=value` which are used for variable substitution within the file given by manifest.")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariablesFiles, "manifestVariablesFiles", []string{`manifest-variables.yml`}, "path(s) of the Yaml file(s) containing the variable values to use as a replacement in the manifest file. The order of the files is relevant in case there are conflicting variable names and values within variable files. In such a case, the values of the last file win.")
 	cmd.Flags().StringVar(&stepConfig.MtaDeployParameters, "mtaDeployParameters", `-f`, "Additional parameters passed to mta deployment command")
@@ -418,7 +418,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfManifest"}, {Name: "cloudFoundry/manifest", Deprecated: true}},
-						Default:     `manifest.yml`,
+						Default:     os.Getenv("PIPER_manifest"),
 					},
 					{
 						Name:        "manifestVariables",
