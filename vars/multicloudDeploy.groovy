@@ -148,7 +148,7 @@ void call(parameters = [:]) {
                         }
                     }
                 } else {
-                    deployments.put("Deployment ${index}", deployment)
+                    deployments.put("Deployment ${index}-${target.org}", deployment)
                 }
                 index++
             }
