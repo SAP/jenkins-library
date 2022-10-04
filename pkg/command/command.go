@@ -90,7 +90,7 @@ func (c *Command) GetStdout() io.Writer {
 	return c.stdout
 }
 
-//GetStderr Retursn the writer for stderr
+// GetStderr Retursn the writer for stderr
 func (c *Command) GetStderr() io.Writer {
 	return c.stderr
 }
@@ -125,24 +125,12 @@ func (c *Command) RunShell(shell, script string) error {
 
 // RunExecutable runs the specified executable with parameters
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
-//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+//
+//	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
-
-	c.prepareOut()
-
-	cmd := ExecCommand(executable, params...)
-
-	if len(c.dir) > 0 {
-		cmd.Dir = c.dir
-	}
-
 	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
 
-	appendEnvironment(cmd, c.env)
-
-	if c.stdin != nil {
-		cmd.Stdin = c.stdin
-	}
+	cmd := c.prepareCommand(executable, params...)
 
 	if err := c.runCmd(cmd); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
@@ -152,24 +140,12 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 
 // RunExecutableInBackground runs the specified executable with parameters in the background non blocking
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
-//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+//
+//	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutableInBackground(executable string, params ...string) (Execution, error) {
-
-	c.prepareOut()
-
-	cmd := ExecCommand(executable, params...)
-
-	if len(c.dir) > 0 {
-		cmd.Dir = c.dir
-	}
-
 	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
 
-	appendEnvironment(cmd, c.env)
-
-	if c.stdin != nil {
-		cmd.Stdin = c.stdin
-	}
+	cmd := c.prepareCommand(executable, params...)
 
 	execution, err := c.startCmd(cmd)
 
@@ -178,6 +154,52 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 	}
 
 	return execution, nil
+}
+
+func (c *Command) prepareCommand(executable string, params ...string) *exec.Cmd {
+	c.prepareOut()
+
+	cmd := ExecCommand(executable, c.expandEnv(params)...)
+
+	if len(c.dir) > 0 {
+		cmd.Dir = c.dir
+	}
+
+	appendEnvironment(cmd, c.env)
+
+	if c.stdin != nil {
+		cmd.Stdin = c.stdin
+	}
+
+	return cmd
+}
+
+func (c *Command) expandEnv(params []string) []string {
+	interpolatedParams := []string{}
+
+	activeEnv := map[string]string{}
+
+	for _, e := range append(os.Environ(), c.env...) {
+		if i := strings.Index(e, "="); i >= 0 {
+			activeEnv[e[:i]] = e[i+1:]
+		}
+	}
+
+	lookupFunc := func(key string) string {
+		if val, exists := activeEnv[key]; exists {
+			return val
+		} else {
+			return ""
+		}
+	}
+
+	for _, param := range params {
+		interpolatedParam := os.Expand(param, lookupFunc)
+
+		interpolatedParams = append(interpolatedParams, interpolatedParam)
+	}
+
+	return interpolatedParams
 }
 
 // GetExitCode allows to retrieve the exit code of a command execution

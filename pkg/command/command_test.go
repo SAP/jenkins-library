@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//based on https://golang.org/src/os/exec/exec_test.go
+// based on https://golang.org/src/os/exec/exec_test.go
 func helperCommand(command string, s ...string) (cmd *exec.Cmd) {
 	cs := []string{"-test.run=TestHelperProcess", "--", command}
 	cs = append(cs, s...)
@@ -118,6 +118,37 @@ func TestEnvironmentVariables(t *testing.T) {
 	if !strings.Contains(oStr, "DEBUG=true") {
 		t.Errorf("expected Environment variable not found")
 	}
+}
+
+func TestEnvironmentVariablesInterpolation(t *testing.T) {
+	defer func() { ExecCommand = exec.Command }()
+
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+
+	ex := Command{stdout: stdout, stderr: stderr}
+
+	args := []string{}
+
+	ExecCommand = func(command string, arguments ...string) *exec.Cmd {
+		args = arguments
+		return helperCommand(command, arguments...)
+	}
+
+	t.Run("Interpolates one", func(t *testing.T) {
+		ex.SetEnv([]string{"TEST=ThisCanBeAnything123"})
+		ex.RunExecutable("a", "--some-arg", "$TEST")
+
+		assert.Contains(t, args, "ThisCanBeAnything123")
+	})
+
+	t.Run("Interpolates multiple", func(t *testing.T) {
+		ex.SetEnv([]string{"TEST1=FirstOne", "TEST2=SecondOne"})
+		ex.RunExecutable("b", "--some-arg", "$TEST1", "--another-arg", "${TEST2}")
+
+		assert.Contains(t, args, "FirstOne")
+		assert.Contains(t, args, "SecondOne")
+	})
 }
 
 func TestPrepareOut(t *testing.T) {
@@ -232,8 +263,8 @@ func TestCmdPipes(t *testing.T) {
 	})
 }
 
-//based on https://golang.org/src/os/exec/exec_test.go
-//this is not directly executed
+// based on https://golang.org/src/os/exec/exec_test.go
+// this is not directly executed
 func TestHelperProcess(*testing.T) {
 
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
