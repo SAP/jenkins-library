@@ -111,7 +111,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
 	for key := range cweIdsForTaxonomies {
-		taxa :=format.Taxa{}
+		taxa := format.Taxa{}
 		taxa.Id = fmt.Sprint(key)
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}
