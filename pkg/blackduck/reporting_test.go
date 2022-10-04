@@ -13,16 +13,17 @@ import (
 )
 
 func TestCreateSarifResultFile(t *testing.T) {
+	affectedComponent := Component{Name: "test1", Version: "1.2.3", ComponentOriginName: "Maven", PrimaryLanguage: "Java"}
 	alerts := []Vulnerability{
-		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456543", Severity: "Critical", Description: "Some vulnerability that can be exploited by peeling the glue off.", BaseScore: 9.8, OverallScore: 10}},
-		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456542", Severity: "Critical", Description: "Some other vulnerability that can be exploited by filling the glass.", BaseScore: 9, OverallScore: 9}},
-		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456541", Severity: "Medium", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
+		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456543", VulnerabilityName: "CVE-45456543", Severity: "Critical", Description: "Some vulnerability that can be exploited by peeling the glue off.", BaseScore: 9.8, OverallScore: 10}},
+		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456542", VulnerabilityName: "CVE-45456542", Severity: "Critical", Description: "Some other vulnerability that can be exploited by filling the glass.", BaseScore: 9, OverallScore: 9}},
+		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456541", VulnerabilityName: "CVE-45456541", Severity: "Medium", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
 	}
 	vulns := Vulnerabilities{
 		Items: alerts,
 	}
 	components := []Component{
-		{Name: "test1", Version: "1.2.3", ComponentOriginName: "Maven"},
+		affectedComponent,
 	}
 	componentList := Components{
 		Items: components,
