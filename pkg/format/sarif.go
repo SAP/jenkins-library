@@ -31,7 +31,7 @@ type Runs struct {
 // Results these structs are relevant to the Results object
 type Results struct {
 	RuleID              string              `json:"ruleId"`
-	RuleIndex           int                 `json:"ruleIndex"`
+	RuleIndex           int                 `json:"ruleIndex,omitempty"`
 	Kind                string              `json:"kind,omitempty"`
 	Level               string              `json:"level,omitempty"`
 	Message             *Message            `json:"message,omitempty"`
