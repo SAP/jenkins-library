@@ -372,6 +372,7 @@ func getManifest(name string) (cloudfoundry.Manifest, error) {
 }
 
 func getManifestFileName(config *cloudFoundryDeployOptions) (string, error) {
+
 	manifestFileName := config.Manifest
 	if len(manifestFileName) == 0 {
 		manifestFileName = "manifest.yml"
