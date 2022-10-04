@@ -1056,6 +1056,7 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 	}
 
 	//handle automationDetails
+	sarif.Runs[0].AutomationDetails = new(format.AutomationDetails)
 	sarif.Runs[0].AutomationDetails.Id = fvdl.Build.BuildID
 
 	//handle threadFlowLocations
