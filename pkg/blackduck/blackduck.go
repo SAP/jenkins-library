@@ -106,7 +106,7 @@ type VulnerabilityWithRemediation struct {
 
 // Title returns the issue title representation of the contents
 func (v Vulnerability) Title() string {
-	return fmt.Sprintf(v.Name)
+	return fmt.Sprintf(v.VulnerabilityWithRemediation.VulnerabilityName)
 }
 
 // ToMarkdown returns the markdown representation of the contents

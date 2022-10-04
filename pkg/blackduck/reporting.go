@@ -36,7 +36,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	if vulns != nil && vulns.Items != nil {
 		for _, v := range vulns.Items {
 			result := *new(format.Results)
-			ruleId := v.VulnerabilityWithRemediation.VulnerabilityName
+			ruleId := v.Title()
 			log.Entry().Debugf("Transforming alert %v into SARIF format", ruleId)
 			result.RuleID = ruleId
 			result.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
@@ -62,7 +62,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 				sarifRule := *new(format.SarifRule)
 				sarifRule.ID = ruleId
 				sarifRule.ShortDescription = new(format.Message)
-				sarifRule.ShortDescription.Text = fmt.Sprintf("%v Package %v", v.VulnerabilityName, v.Component.Name)
+				sarifRule.ShortDescription.Text = fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)
 				sarifRule.FullDescription = new(format.Message)
 				sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
 				sarifRule.DefaultConfiguration = new(format.DefaultConfiguration)
