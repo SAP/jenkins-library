@@ -48,7 +48,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			partialFingerprints := format.PartialFingerprints{}
 			partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID)))
 			result.PartialFingerprints = partialFingerprints
-			if len(v.VulnerabilityWithRemediation.CweID) > 0 {
+			if len(v.VulnerabilityWithRemediation.CweID) > 0 && !piperutils.ContainsString(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID) {
 				cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 			}
 
