@@ -21,7 +21,7 @@ type Runs struct {
 	Invocations         []Invocation        `json:"invocations,omitempty"`
 	OriginalUriBaseIds  *OriginalUriBaseIds `json:"originalUriBaseIds,omitempty"`
 	Artifacts           []Artifact          `json:"artifacts,omitempty"`
-	AutomationDetails   AutomationDetails   `json:"automationDetails,omitempty"`
+	AutomationDetails   *AutomationDetails  `json:"automationDetails,omitempty"`
 	ColumnKind          string              `json:"columnKind,omitempty" default:"utf16CodeUnits"`
 	ThreadFlowLocations []Locations         `json:"threadFlowLocations,omitempty"`
 	Taxonomies          []Taxonomies        `json:"taxonomies,omitempty"`
