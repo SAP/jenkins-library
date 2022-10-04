@@ -23,8 +23,8 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	var wsRun format.Runs
 
 	//handle the tool object
-	tool := *new(format.Tool)
-	tool.Driver = *new(format.Driver)
+	tool := format.Tool{}
+	tool.Driver = format.Driver{}
 	tool.Driver.Name = "Blackduck Hub Detect"
 	tool.Driver.Version = "unknown"
 	tool.Driver.InformationUri = "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus"
@@ -34,21 +34,21 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	cweIdsForTaxonomies := []string{}
 	if vulns != nil && vulns.Items != nil {
 		for _, v := range vulns.Items {
-			result := *new(format.Results)
+			result := format.Results{}
 			ruleId := v.Title()
 			log.Entry().Debugf("Transforming alert %v into SARIF format", ruleId)
 			result.RuleID = ruleId
 			result.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
-			result.Message = new(format.Message)
+			result.Message = &format.Message{}
 			result.Message.Text = v.VulnerabilityWithRemediation.Description
-			result.AnalysisTarget = new(format.ArtifactLocation)
+			result.AnalysisTarget = &format.ArtifactLocation{}
 			result.AnalysisTarget.URI = v.Component.ToPackageUrl().ToString()
 			result.AnalysisTarget.Index = 0
 			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}
 			result.Locations = append(result.Locations, location)
-			partialFingerprints := new(format.PartialFingerprints)
+			partialFingerprints := format.PartialFingerprints{}
 			partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID)))
-			result.PartialFingerprints = *partialFingerprints
+			result.PartialFingerprints = partialFingerprints
 			cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 
 			// append the result
@@ -58,21 +58,21 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			if !piperutils.ContainsString(collectedRules, ruleId) {
 				collectedRules = append(collectedRules, ruleId)
 
-				sarifRule := *new(format.SarifRule)
+				sarifRule := format.SarifRule{}
 				sarifRule.ID = ruleId
-				sarifRule.ShortDescription = new(format.Message)
+				sarifRule.ShortDescription = &format.Message{}
 				sarifRule.ShortDescription.Text = fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)
-				sarifRule.FullDescription = new(format.Message)
+				sarifRule.FullDescription = &format.Message{}
 				sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
-				sarifRule.DefaultConfiguration = new(format.DefaultConfiguration)
+				sarifRule.DefaultConfiguration = &format.DefaultConfiguration{}
 				sarifRule.DefaultConfiguration.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
 				sarifRule.HelpURI = ""
 				markdown, _ := v.ToMarkdown()
-				sarifRule.Help = new(format.Help)
+				sarifRule.Help = &format.Help{}
 				sarifRule.Help.Text = v.ToTxt()
 				sarifRule.Help.Markdown = string(markdown)
 
-				ruleProp := *new(format.SarifRuleProperties)
+				ruleProp := format.SarifRuleProperties{}
 				ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
 				ruleProp.Tags = append(ruleProp.Tags, v.Component.ToPackageUrl().ToString())
 				ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.CweID)
@@ -94,24 +94,24 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	wsRun.ThreadFlowLocations = []format.Locations{}
 
 	// Add a conversion object to highlight this isn't native SARIF
-	conversion := new(format.Conversion)
+	conversion := &format.Conversion{}
 	conversion.Tool.Driver.Name = "Piper FPR to SARIF converter"
 	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
 	conversion.Invocation.ExecutionSuccessful = true
-	convInvocProp := new(format.InvocationProperties)
+	convInvocProp := &format.InvocationProperties{}
 	convInvocProp.Platform = runtime.GOOS
 	conversion.Invocation.Properties = convInvocProp
 	wsRun.Conversion = conversion
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
-	taxonomy := *new(format.Taxonomies)
+	taxonomy := format.Taxonomies{}
 	taxonomy.GUID = "25F72D7E-8A92-459D-AD67-64853F788765"
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
 	for key := range cweIdsForTaxonomies {
-		taxa := *new(format.Taxa)
+		taxa :=format.Taxa{}
 		taxa.Id = fmt.Sprint(key)
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}
