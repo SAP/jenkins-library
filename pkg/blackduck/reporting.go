@@ -53,7 +53,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 
 			// append the result
-			sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
+			wsRun.Results = append(wsRun.Results, result)
 
 			// only create rule on new CVE
 			if !piperutils.ContainsString(collectedRules, ruleId) {
