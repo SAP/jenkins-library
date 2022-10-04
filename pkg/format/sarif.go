@@ -39,8 +39,8 @@ type Results struct {
 	Locations           []Location          `json:"locations,omitempty"`
 	CodeFlows           []CodeFlow          `json:"codeFlows,omitempty"`
 	RelatedLocations    []RelatedLocation   `json:"relatedLocations,omitempty"`
-	PartialFingerprints PartialFingerprints `json:"partialFingerprints"`
-	Properties          *SarifProperties    `json:"properties"`
+	PartialFingerprints PartialFingerprints `json:"partialFingerprints,omitempty"`
+	Properties          *SarifProperties    `json:"properties,omitempty"`
 }
 
 // Message to detail the finding

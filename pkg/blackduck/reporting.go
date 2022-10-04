@@ -36,7 +36,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 		for _, v := range vulns.Items {
 			result := format.Results{}
 			result.RuleID = v.VulnerabilityWithRemediation.VulnerabilityName
-			log.Entry().Debugf("Transforming alert %v into SARIF format", result.RuleID)
+			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", result.RuleID, v.Component.Name, v.Component.Version)
 			result.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
 			result.Message = &format.Message{}
 			result.Message.Text = v.VulnerabilityWithRemediation.Description
@@ -48,7 +48,9 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			partialFingerprints := format.PartialFingerprints{}
 			partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID)))
 			result.PartialFingerprints = partialFingerprints
-			cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
+			if len(v.VulnerabilityWithRemediation.CweID) > 0 {
+				cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
+			}
 
 			// append the result
 			wsRun.Results = append(wsRun.Results, result)
@@ -59,6 +61,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 
 				sarifRule := format.SarifRule{}
 				sarifRule.ID = result.RuleID
+				sarifRule.Name = result.RuleID
 				sarifRule.ShortDescription = &format.Message{}
 				sarifRule.ShortDescription.Text = fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)
 				sarifRule.FullDescription = &format.Message{}
@@ -109,9 +112,9 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
-	for key := range cweIdsForTaxonomies {
+	for _, value := range cweIdsForTaxonomies {
 		taxa := format.Taxa{}
-		taxa.Id = fmt.Sprint(key)
+		taxa.Id = value
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}
 	wsRun.Taxonomies = append(wsRun.Taxonomies, taxonomy)
