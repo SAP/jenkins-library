@@ -35,9 +35,8 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	if vulns != nil && vulns.Items != nil {
 		for _, v := range vulns.Items {
 			result := format.Results{}
-			ruleId := v.Title()
-			log.Entry().Debugf("Transforming alert %v into SARIF format", ruleId)
-			result.RuleID = ruleId
+			result.RuleID = v.VulnerabilityWithRemediation.VulnerabilityName
+			log.Entry().Debugf("Transforming alert %v into SARIF format", result.RuleID)
 			result.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
 			result.Message = &format.Message{}
 			result.Message.Text = v.VulnerabilityWithRemediation.Description
@@ -55,11 +54,11 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			wsRun.Results = append(wsRun.Results, result)
 
 			// only create rule on new CVE
-			if !piperutils.ContainsString(collectedRules, ruleId) {
-				collectedRules = append(collectedRules, ruleId)
+			if !piperutils.ContainsString(collectedRules, result.RuleID) {
+				collectedRules = append(collectedRules, result.RuleID)
 
 				sarifRule := format.SarifRule{}
-				sarifRule.ID = ruleId
+				sarifRule.ID = result.RuleID
 				sarifRule.ShortDescription = &format.Message{}
 				sarifRule.ShortDescription.Text = fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)
 				sarifRule.FullDescription = &format.Message{}
