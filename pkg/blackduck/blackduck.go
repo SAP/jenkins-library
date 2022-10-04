@@ -112,7 +112,7 @@ func (v Vulnerability) Title() string {
 // ToMarkdown returns the markdown representation of the contents
 func (v Vulnerability) ToMarkdown() ([]byte, error) {
 	vul := reporting.VulnerabilityReport{
-		ArtifactID: v.Name,
+		ArtifactID: v.Component.Name,
 
 		// no information available about branch and commit, yet
 		Branch:   "",

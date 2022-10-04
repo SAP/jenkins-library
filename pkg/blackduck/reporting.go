@@ -21,7 +21,6 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	var wsRun format.Runs
-	sarif.Runs = append(sarif.Runs, wsRun)
 
 	//handle the tool object
 	tool := *new(format.Tool)
@@ -43,7 +42,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			result.Message = new(format.Message)
 			result.Message.Text = v.VulnerabilityWithRemediation.Description
 			result.AnalysisTarget = new(format.ArtifactLocation)
-			result.AnalysisTarget.URI = v.Name
+			result.AnalysisTarget.URI = v.Component.ToPackageUrl().ToString()
 			result.AnalysisTarget.Index = 0
 			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}
 			result.Locations = append(result.Locations, location)
@@ -89,10 +88,10 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 		}
 	}
 	//Finalize: tool
-	sarif.Runs[0].Tool = tool
+	wsRun.Tool = tool
 
 	// Threadflowlocations is no loger useful: voiding it will make for smaller reports
-	sarif.Runs[0].ThreadFlowLocations = []format.Locations{}
+	wsRun.ThreadFlowLocations = []format.Locations{}
 
 	// Add a conversion object to highlight this isn't native SARIF
 	conversion := new(format.Conversion)
@@ -102,7 +101,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	convInvocProp := new(format.InvocationProperties)
 	convInvocProp.Platform = runtime.GOOS
 	conversion.Invocation.Properties = convInvocProp
-	sarif.Runs[0].Conversion = conversion
+	wsRun.Conversion = conversion
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
@@ -116,7 +115,8 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 		taxa.Id = fmt.Sprint(key)
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}
-	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
+	wsRun.Taxonomies = append(wsRun.Taxonomies, taxonomy)
+	sarif.Runs = append(sarif.Runs, wsRun)
 
 	return &sarif
 }
