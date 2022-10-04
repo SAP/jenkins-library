@@ -61,7 +61,6 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 
 				sarifRule := format.SarifRule{}
 				sarifRule.ID = result.RuleID
-				sarifRule.Name = result.RuleID
 				sarifRule.ShortDescription = &format.Message{}
 				sarifRule.ShortDescription.Text = fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)
 				sarifRule.FullDescription = &format.Message{}
