@@ -11,6 +11,7 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
+      - uses: styfle/cancel-workflow-action@0.10.0
       - uses: actions/checkout@v1
       # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
       - uses: actions/setup-java@v1

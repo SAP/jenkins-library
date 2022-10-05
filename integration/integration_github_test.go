@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestGitHubIntegration ./integration/...
 
 package main
 
@@ -19,7 +20,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 )
 
-func TestPiperGithubPublishRelease(t *testing.T) {
+func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 	t.Parallel()
 	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
 	if len(token) == 0 {
@@ -94,7 +95,7 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	})
 }
 
-func TestGithubFetchCommitStatistics(t *testing.T) {
+func TestGitHubIntegrationFetchCommitStatistics(t *testing.T) {
 	t.Parallel()
 	// prepare
 	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")

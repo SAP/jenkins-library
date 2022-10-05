@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestCLIIntegration ./integration/...
 
 package main
 
@@ -18,7 +19,6 @@ import (
 )
 
 func TestKarmaIntegration(t *testing.T) {
-
 	t.Parallel()
 	ctx := context.Background()
 
@@ -45,7 +45,7 @@ cd /test
 	networkName := "sidecar-" + uuid.New().String()
 
 	reqNode := testcontainers.ContainerRequest{
-		Image: "node:lts-stretch",
+		Image: "node:lts-buster",
 		Cmd:   []string{"tail", "-f"},
 		BindMounts: map[string]string{
 			pwd:     "/piperbin",
