@@ -148,6 +148,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: containerMultiImageBuildImages
+        type: 'map[string]interface{}'
+        description: KeyValue pairs to configure the docker images to be build. Please Specify the target image name as key and the path to the Dockerfile as value.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: containerMultiImageBuildExcludes
         type: '[]string'
         description: Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).

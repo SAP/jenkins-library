@@ -426,6 +426,58 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub2:myTag")
 	})
 
+	t.Run("success case - multi image build with given list of images", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			ContainerImageName:       "test",
+			ContainerImageTag:        "myTag",
+			ContainerRegistryURL:     "https://my.registry.com:50000",
+			ContainerMultiImageBuild: true,
+			ContainerMultiImageBuildImages: map[string]interface{}{
+				"first-docker-image": "sub1/Dockerfile",
+				"scnd-docker-image":  "sub2/Dockerfile",
+			},
+		}
+
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
+
+		fileUtils := &mock.FilesMock{}
+		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
+		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+
+		assert.NoError(t, err)
+
+		assert.Equal(t, 2, len(runner.Calls))
+		assert.Equal(t, "/kaniko/executor", runner.Calls[0].Exec)
+		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
+
+		cwd, _ := fileUtils.Getwd()
+		expectedParams := [][]string{
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/first-docker-image:myTag"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/scnd-docker-image:myTag"},
+		}
+		// need to go this way since we cannot count on the correct order
+		for _, call := range runner.Calls {
+			found := false
+			for _, expected := range expectedParams {
+				if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, fmt.Sprintf("%v not found", call.Params))
+		}
+
+		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, "", commonPipelineEnvironment.container.imageNameTag)
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "first-docker-image")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "scnd-docker-image")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "first-docker-image:myTag")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "scnd-docker-image:myTag")
+	})
+
 	t.Run("success case - updating an existing docker config json with addtional credentials", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
