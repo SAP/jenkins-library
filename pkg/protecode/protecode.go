@@ -326,32 +326,26 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, fileP
 		customDataHeaders := map[string]string{}
 		if err := json.Unmarshal([]byte(customDataJSONMap), &customDataHeaders); err != nil {
 			log.Entry().Warn("[WARN] ===> customDataJSONMap flag must be a valid JSON map. Check the value of --customDataJSONMap and try again.")
-		}
-		for k, v := range customDataHeaders {
-			headers["META-"+strings.ToUpper(k)] = []string{v}
+		} else {
+			for k, v := range customDataHeaders {
+				headers["META-"+strings.ToUpper(k)] = []string{v}
+			}
 		}
 	}
 
+	headers["Group"] = []string{group}
+	headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
+
 	if (replaceBinary) && (version != "") {
 		log.Entry().Debugf("[DEBUG] ===> replaceBinary && version != empty ")
-		headers["Group"] = []string{group}
-		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
 		headers["Replace"] = []string{fmt.Sprintf("%v", productID)}
 		headers["Version"] = []string{version}
 	} else if replaceBinary {
-		headers["Group"] = []string{group}
-		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
 		headers["Replace"] = []string{fmt.Sprintf("%v", productID)}
 		log.Entry().Debugf("[DEBUG] ===> replaceBinary")
 	} else if version != "" {
 		log.Entry().Debugf("[DEBUG] ===> version != empty ")
-		headers["Group"] = []string{group}
-		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
 		headers["Version"] = []string{version}
-	} else {
-		log.Entry().Debugf("[DEBUG] ===> replaceBinary is false and version == empty")
-		headers["Group"] = []string{group}
-		headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
 	}
 
 	// log.Entry().Debugf("[DEBUG] ===> Headers for UploadScanFile upload: %v", headers)
@@ -388,23 +382,35 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, fileP
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL, version string, productID int, replaceBinary bool) *ResultData {
+func (pc *Protecode) DeclareFetchURL(cleanupMode, group, customDataJSONMap, fetchURL, version string, productID int, replaceBinary bool) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 
 	var headers = make(map[string][]string)
+	if len(customDataJSONMap) > 0 {
+		customDataHeaders := map[string]string{}
+		if err := json.Unmarshal([]byte(customDataJSONMap), &customDataHeaders); err != nil {
+			log.Entry().Warn("[WARN] ===> customDataJSONMap flag must be a valid JSON map. Check the value of --customDataJSONMap and try again.")
+		} else {
+			for k, v := range customDataHeaders {
+				headers["META-"+strings.ToUpper(k)] = []string{v}
+			}
+		}
+	}
 
+	headers["Group"] = []string{group}
+	headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
+	headers["Url"] = []string{fetchURL}
+	headers["Content-Type"] = []string{"application/json"}
 	if (replaceBinary) && (version != "") {
 		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary && version != empty ")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Version": {version}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+		headers["Replace"] = []string{fmt.Sprintf("%v", productID)}
+		headers["Version"] = []string{version}
 	} else if replaceBinary {
 		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+		headers["Replace"] = []string{fmt.Sprintf("%v", productID)}
 	} else if version != "" {
 		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> version != empty ")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Version": {version}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
-	} else {
-		log.Entry().Debugf("[DEBUG][FETCH_URL] ===> replaceBinary is false and version == empty")
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+		headers["Version"] = []string{version}
 	}
 
 	// log.Entry().Debugf("[DEBUG] ===> Headers for fetch upload: %v", headers)

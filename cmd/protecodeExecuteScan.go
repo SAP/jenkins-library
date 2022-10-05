@@ -359,7 +359,7 @@ func uploadFile(utils protecodeUtils, config protecodeExecuteScanOptions, produc
 
 	if len(config.FetchURL) > 0 {
 		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, version, productID, replaceBinary)
+		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.CustomDataJSONMap, config.FetchURL, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
 	} else {
 		log.Entry().Debugf("Upload file path: %v", config.FilePath)
