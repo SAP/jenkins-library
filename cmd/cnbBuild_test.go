@@ -11,6 +11,8 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/fake"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +24,20 @@ func newCnbBuildTestsUtils() cnbutils.MockUtils {
 	utils := cnbutils.MockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
+		DownloadMock:   &mock.DownloadMock{},
 	}
+
+	fakeImage := &fake.FakeImage{}
+	fakeImage.ConfigFileReturns(&v1.ConfigFile{
+		Config: v1.Config{
+			Labels: map[string]string{
+				"io.buildpacks.buildpackage.metadata": "{\"id\": \"testbuildpack\", \"version\": \"0.0.1\"}",
+			},
+		},
+	}, nil)
+
+	utils.RemoteImageInfo = fakeImage
+	utils.ReturnImage = fakeImage
 	utils.AddFile("/layers/report.toml", []byte(`[build]
 [image]
 tags = ["localhost:5000/not-found:0.0.1"]

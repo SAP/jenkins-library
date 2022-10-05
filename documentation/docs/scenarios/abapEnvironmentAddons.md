@@ -138,9 +138,9 @@ Please refer to the [configuration page](../pipelines/abapEnvironment/configurat
 #### ATC
 
 !!! caution ""
-    We recommend to configure the add-on build pipeline with a __quality gate to block any priority 1 ATC findings__.
+    We recommend to configure the add-on build pipeline with a __quality gate to block any error and warning ATC findings__.
 
-    This can be configured with a quality gate configuration `[threshold: 1, type: 'TOTAL_ERROR', unstable: false]` in the `recordIssues` pipeline step shown in [Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
+    This can be configured with a quality gate configuration `[threshold: 1, type: 'TOTAL_ERROR', unstable: false]` and `[threshold: 1, type: 'TOTAL_NORMAL', unstable: false]` in the `recordIssues` pipeline step shown in [Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin](https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin).
 
     Created delivery packages for an add-on product version are final, so to fix any errors in these packages, another add-on product version would have to be built.
     ATC findings should be resolved during development as early as possible, e.g. [during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html) and by using an additional pipeline configured for the [Continuous Testing on SAP BTP, ABAP Environment scenario](abapEnvironmentTest.md).
@@ -192,7 +192,7 @@ As a rule of thumb, the `addonVersion` should be increased analogous to the `ver
 An exception can be the patch level in the `addonVersion` string: In case of an add-on product with a reuse software component, the patch level of the `addonVersion` might be higher than the patch level of the leading software component `version`.
 
 The leading software component is the software component that is, as opposed to a reuse software component, exclusively used as part of one add-on product.
-In the `repositories` section of the add-on descriptor file the leading software component should be the first, whereas a reuse software component would be the last in order.
+In the `repositories` section of the add-on descriptor file the reuse software component should be the first, whereas a leading software component would be the last in order.
 This is to make sure that that the software components are imported in the correct order, making sure to adhere to dependencies.
 
 The `version` of a software component influcences two aspects:

@@ -306,6 +306,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		config.Unmap = false
 	}
 
+	if config.MinScanInterval > 0 {
+		//Unmap doesnt work well with min-scan-interval and should be removed
+		config.Unmap = false
+		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%d'", config.MinScanInterval))
+	}
+
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
 			args = append(args, "--detect.project.codelocation.unmap=true")
@@ -493,7 +499,7 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
 	errorsOccured := []string{}
-	vulns, _, err := getVulnsAndComponents(config, influx, sys)
+	vulns, components, err := getVulnsAndComponents(config, influx, sys)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch vulnerabilities")
 	}
@@ -514,7 +520,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 		}
 	}
 
-	sarif := bd.CreateSarifResultFile(vulns)
+	sarif := bd.CreateSarifResultFile(vulns, components)
 	paths, err := bd.WriteSarifFile(sarif, utils)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))

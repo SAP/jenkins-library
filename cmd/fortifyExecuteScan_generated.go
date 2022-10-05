@@ -35,7 +35,7 @@ type fortifyExecuteScanOptions struct {
 	MustAuditIssueGroups            string   `json:"mustAuditIssueGroups,omitempty"`
 	SpotAuditIssueGroups            string   `json:"spotAuditIssueGroups,omitempty"`
 	PythonRequirementsInstallSuffix string   `json:"pythonRequirementsInstallSuffix,omitempty"`
-	PythonVersion                   string   `json:"pythonVersion,omitempty"`
+	PythonVersion                   string   `json:"pythonVersion,omitempty" validate:"possible-values=python3 python2"`
 	UploadResults                   bool     `json:"uploadResults,omitempty"`
 	Version                         string   `json:"version,omitempty"`
 	BuildDescriptorFile             string   `json:"buildDescriptorFile,omitempty"`

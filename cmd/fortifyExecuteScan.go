@@ -550,10 +550,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 
 func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount int) int {
 	if config.SpotCheckMinimumUnit == "percentage" {
-		spotCheckMinimumPercentageValue := int(math.Round(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
-		if spotCheckMinimumPercentageValue == 0 {
-			return 1
-		}
+		spotCheckMinimumPercentageValue := int(math.Ceil(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
 		return getSpotChecksMinAsPerMaximum(config.SpotCheckMaximum, spotCheckMinimumPercentageValue)
 	}
 
@@ -974,6 +971,18 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
 
+func appendPythonVersionToTranslate(translateOptions map[string]interface{}, pythonVersion string) error {
+	if pythonVersion == "python2" {
+		translateOptions["pythonVersion"] = "2"
+	} else if pythonVersion == "python3" {
+		translateOptions["pythonVersion"] = "3"
+	} else {
+		return fmt.Errorf("Invalid pythonVersion '%s'. Possible values for pythonVersion are 'python2' and 'python3'. ", pythonVersion)
+	}
+
+	return nil
+}
+
 func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
 	if len(config.Translate) > 0 {
 		return config.Translate, nil
@@ -981,8 +990,12 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 
 	var translateList []map[string]interface{}
 	translateList = append(translateList, make(map[string]interface{}))
-
 	separator := getSeparator()
+
+	err := appendPythonVersionToTranslate(translateList[0], config.PythonVersion)
+	if err != nil {
+		return "", err
+	}
 
 	translateList[0]["pythonPath"] = classpath + separator +
 		getSuppliedOrDefaultListAsString(config.PythonAdditionalPath, []string{}, separator)
@@ -1169,6 +1182,9 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		}
 		if len(t["djangoTemplatDirs"]) > 0 {
 			options = append(options, "-django-template-dirs", t["djangoTemplatDirs"])
+		}
+		if len(t["pythonVersion"]) > 0 {
+			options = append(options, "-python-version", t["pythonVersion"])
 		}
 
 	default:

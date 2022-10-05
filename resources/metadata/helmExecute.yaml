@@ -297,3 +297,9 @@ spec:
       options:
         - name: -u
           value: "0"
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/helmChartUrl

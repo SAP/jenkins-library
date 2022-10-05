@@ -623,8 +623,8 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 	t.Run("error - some vulnerabilities", func(t *testing.T) {
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{
-			{Vulnerability: ws.Vulnerability{CVSS3Score: 7, Name: "CVE-2025-001"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "MAVEN_ARTIFACT"}},
-			{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Name: "CVE-2025-002"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "MAVEN_ARTIFACT"}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 7, Name: "CVE-2025-001"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "Java"}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Name: "CVE-2025-002"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "Java"}},
 		}
 		influx := whitesourceExecuteScanInflux{}
 
@@ -637,8 +637,8 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 	t.Run("success - assessed vulnerabilities", func(t *testing.T) {
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{
-			{Vulnerability: ws.Vulnerability{CVSS3Score: 7, Name: "CVE-2025-001"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "MAVEN_ARTIFACT"}},
-			{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Name: "CVE-2025-002"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "MAVEN_ARTIFACT"}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 7.8, Name: "CVE-2025-001"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "Java"}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Name: "CVE-2025-002"}, Library: ws.Library{KeyID: 42, Name: "test", GroupID: "com.sap", ArtifactID: "test", Version: "1.2.3", LibType: "Java"}},
 		}
 		influx := whitesourceExecuteScanInflux{}
 
