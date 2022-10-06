@@ -36,11 +36,9 @@ type AssessmentAnalysis string
 const (
 	WaitingForFix AssessmentAnalysis = "waitingForFix" //"Waiting for OSS community fix"
 	RiskAccepted  AssessmentAnalysis = "riskAccepted"  //"Risk Accepted"
-	//Others AssessmentAnalysis = "others" //"Others"
 	NotPresent            AssessmentAnalysis = "notPresent"            //"Affected parts of the OSS library are not present"
 	NotUsed               AssessmentAnalysis = "notUsed"               //"Affected parts of the OSS library are not used"
 	AssessmentPropagation AssessmentAnalysis = "assessmentPropagation" //"Assessment Propagation"
-	//BuildVersionOutdated AssessmentAnalysis = "buildVersionOutdated" //"Build Version is outdated"
 	FixedByDevTeam  AssessmentAnalysis = "fixedByDevTeam"  //"OSS Component fixed by development team"
 	Mitigated       AssessmentAnalysis = "mitigated"       //"Mitigated by the Application"
 	WronglyReported AssessmentAnalysis = "wronglyReported" //"Wrongly reported CVE"

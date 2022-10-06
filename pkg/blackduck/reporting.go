@@ -17,108 +17,114 @@ import (
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
 func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *format.SARIF {
 	log.Entry().Debug("Creating SARIF file for data transfer")
-	var sarif format.SARIF
-	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
-	sarif.Version = "2.1.0"
-	var wsRun format.Runs
-
-	//handle the tool object
-	tool := format.Tool{}
-	tool.Driver = format.Driver{}
-	tool.Driver.Name = "Blackduck Hub Detect"
-	tool.Driver.Version = "unknown"
-	tool.Driver.InformationUri = "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus"
 
 	// Handle results/vulnerabilities
+	rules := []format.SarifRule{}
 	collectedRules := []string{}
 	cweIdsForTaxonomies := []string{}
+	results := []format.Results{}
 	if vulns != nil && vulns.Items != nil {
 		for _, v := range vulns.Items {
-			result := format.Results{}
-			result.RuleID = v.VulnerabilityWithRemediation.VulnerabilityName
-			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", result.RuleID, v.Component.Name, v.Component.Version)
-			result.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
-			result.Message = &format.Message{}
-			result.Message.Text = v.VulnerabilityWithRemediation.Description
-			result.AnalysisTarget = &format.ArtifactLocation{}
-			result.AnalysisTarget.URI = v.Component.ToPackageUrl().ToString()
-			result.AnalysisTarget.Index = 0
-			location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}
-			result.Locations = append(result.Locations, location)
-			partialFingerprints := format.PartialFingerprints{}
-			partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID)))
-			result.PartialFingerprints = partialFingerprints
+			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", v.VulnerabilityWithRemediation.VulnerabilityName, v.Component.Name, v.Component.Version)
+			result := format.Results{
+				RuleID: v.VulnerabilityWithRemediation.VulnerabilityName,
+				Level: transformToLevel(v.VulnerabilityWithRemediation.Severity),
+				Message: &format.Message{Text: v.VulnerabilityWithRemediation.Description},
+				AnalysisTarget: &format.ArtifactLocation{
+					URI: v.Component.ToPackageUrl().ToString(),
+					Index: 0,
+				},
+				Locations: []format.Location{{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}},
+				PartialFingerprints: format.PartialFingerprints{
+					PackageURLPlusCVEHash: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID))),
+				},
+			}
+			// append the result
+			results = append(results, result)
+
+			// append taxonomies
 			if len(v.VulnerabilityWithRemediation.CweID) > 0 && !piperutils.ContainsString(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID) {
 				cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 			}
-
-			// append the result
-			wsRun.Results = append(wsRun.Results, result)
 
 			// only create rule on new CVE
 			if !piperutils.ContainsString(collectedRules, result.RuleID) {
 				collectedRules = append(collectedRules, result.RuleID)
 
-				sarifRule := format.SarifRule{}
-				sarifRule.ID = result.RuleID
-				sarifRule.ShortDescription = &format.Message{}
-				sarifRule.ShortDescription.Text = fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)
-				sarifRule.FullDescription = &format.Message{}
-				sarifRule.FullDescription.Text = v.VulnerabilityWithRemediation.Description
-				sarifRule.DefaultConfiguration = &format.DefaultConfiguration{}
-				sarifRule.DefaultConfiguration.Level = transformToLevel(v.VulnerabilityWithRemediation.Severity)
-				sarifRule.HelpURI = ""
 				markdown, _ := v.ToMarkdown()
-				sarifRule.Help = &format.Help{}
-				sarifRule.Help.Text = v.ToTxt()
-				sarifRule.Help.Markdown = string(markdown)
-
-				ruleProp := format.SarifRuleProperties{}
-				ruleProp.Tags = append(ruleProp.Tags, "SECURITY_VULNERABILITY")
-				ruleProp.Tags = append(ruleProp.Tags, v.Component.ToPackageUrl().ToString())
-				ruleProp.Tags = append(ruleProp.Tags, v.VulnerabilityWithRemediation.CweID)
-				ruleProp.Precision = "very-high"
-				ruleProp.Impact = fmt.Sprint(v.VulnerabilityWithRemediation.ImpactSubscore)
-				ruleProp.Probability = fmt.Sprint(v.VulnerabilityWithRemediation.ExploitabilitySubscore)
-				ruleProp.SecuritySeverity = fmt.Sprint(v.OverallScore)
-				sarifRule.Properties = &ruleProp
-
+				tags := []string{
+					"SECURITY_VULNERABILITY",
+					v.Component.ToPackageUrl().ToString(),
+					v.VulnerabilityWithRemediation.CweID,
+				}
+				ruleProp := format.SarifRuleProperties{
+					Tags:	tags, 
+					Precision: "very-high",
+					Impact: fmt.Sprint(v.VulnerabilityWithRemediation.ImpactSubscore),
+					Probability: fmt.Sprint(v.VulnerabilityWithRemediation.ExploitabilitySubscore),
+					SecuritySeverity: fmt.Sprint(v.OverallScore),
+				}
+				sarifRule := format.SarifRule{
+					ID: result.RuleID,
+					ShortDescription: &format.Message{Text: fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)},
+					FullDescription: &format.Message{Text: v.VulnerabilityWithRemediation.Description},
+					DefaultConfiguration: &format.DefaultConfiguration{Level: transformToLevel(v.VulnerabilityWithRemediation.Severity)},
+					HelpURI: "",
+					Help: &format.Help{Text: v.ToTxt(), Markdown: string(markdown)},
+					Properties: &ruleProp,
+				}
 				// append the rule
-				tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
+				rules = append(rules, sarifRule)
 			}
 		}
 	}
-	//Finalize: tool
-	wsRun.Tool = tool
-
-	// Threadflowlocations is no loger useful: voiding it will make for smaller reports
-	wsRun.ThreadFlowLocations = []format.Locations{}
-
-	// Add a conversion object to highlight this isn't native SARIF
-	conversion := &format.Conversion{}
-	conversion.Tool.Driver.Name = "Piper FPR to SARIF converter"
-	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
-	conversion.Invocation.ExecutionSuccessful = true
-	convInvocProp := &format.InvocationProperties{}
-	convInvocProp.Platform = runtime.GOOS
-	conversion.Invocation.Properties = convInvocProp
-	wsRun.Conversion = conversion
-
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
-	taxonomy := format.Taxonomies{}
-	taxonomy.GUID = "25F72D7E-8A92-459D-AD67-64853F788765"
-	taxonomy.Name = "CWE"
-	taxonomy.Organization = "MITRE"
-	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
+	taxas := []format.Taxa{}
 	for _, value := range cweIdsForTaxonomies {
-		taxa := format.Taxa{}
-		taxa.Id = value
-		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
+		taxa := format.Taxa{Id: value}
+		taxas = append(taxas, taxa)
 	}
-	wsRun.Taxonomies = append(wsRun.Taxonomies, taxonomy)
-	sarif.Runs = append(sarif.Runs, wsRun)
-
+	taxonomy := format.Taxonomies{
+		GUID: "25F72D7E-8A92-459D-AD67-64853F788765",
+		Name: "CWE",
+		Organization: "MITRE",
+		ShortDescription: format.Message{Text: "The MITRE Common Weakness Enumeration"},
+		Taxa: taxas,
+	}
+	//handle the tool object
+	tool := format.Tool{
+		Driver: format.Driver{
+			Name: "Blackduck Hub Detect",
+			Version: "unknown",
+			InformationUri: "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus",
+			Rules: rules,
+		},
+	}
+	sarif := format.SARIF{
+		Schema: "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json",
+		Version: "2.1.0",
+		Runs: []format.Runs{
+			{
+				Results: results,
+				Tool: tool,
+				ThreadFlowLocations: []format.Locations{},
+				Conversion: &format.Conversion{
+					Tool: format.Tool{
+						Driver: format.Driver{
+							Name: "Piper FPR to SARIF converter",
+							InformationUri: "https://github.com/SAP/jenkins-library",
+						},
+					},
+					Invocation: format.Invocation{
+						ExecutionSuccessful: true, 
+						Properties: &format.InvocationProperties{Platform: runtime.GOOS},
+					},
+				},
+				Taxonomies: []format.Taxonomies{taxonomy},
+			},
+		},
+	}
 	return &sarif
 }
 

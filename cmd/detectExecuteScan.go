@@ -594,7 +594,7 @@ func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecut
 			}
 		}
 		component := componentLookup[fmt.Sprintf(keyFormat, vuln.Name, vuln.Version)]
-		if len(component.Name) > 0 {
+		if component != nil && len(component.Name) > 0 {
 			vulns.Items[index].Component = component
 		} else {
 			vulns.Items[index].Component = &bd.Component{Name: vuln.Name, Version: vuln.Version}
