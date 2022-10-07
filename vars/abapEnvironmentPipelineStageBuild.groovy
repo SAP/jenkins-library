@@ -58,12 +58,11 @@ void call(Map parameters = [:]) {
             try {
                 Set keys = [ 'cfServiceKeyName' ]
                 Map configClone = ConfigurationHelper.newInstance(this)
-                    // .loadStepDefaults([:], 'Clone Repositories')
                     .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
                     .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
-                    // .mixinStepConfig(script.commonPipelineEnvironment, keys)
+                    .mixinStepConfig(script.commonPipelineEnvironment, keys)
                     .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
-                    // .mixin(parameters, keys)
+                    .mixin(parameters, keys)
                     .use()
                     configClone.each{ k, v -> println "${k}:${v}" }
                 // Map configClone2 = ConfigurationHelper.newInstance(this)
