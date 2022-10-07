@@ -27,11 +27,11 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 		for _, v := range vulns.Items {
 			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", v.VulnerabilityWithRemediation.VulnerabilityName, v.Component.Name, v.Component.Version)
 			result := format.Results{
-				RuleID: v.VulnerabilityWithRemediation.VulnerabilityName,
-				Level: transformToLevel(v.VulnerabilityWithRemediation.Severity),
+				RuleID:  v.VulnerabilityWithRemediation.VulnerabilityName,
+				Level:   transformToLevel(v.VulnerabilityWithRemediation.Severity),
 				Message: &format.Message{Text: v.VulnerabilityWithRemediation.Description},
 				AnalysisTarget: &format.ArtifactLocation{
-					URI: v.Component.ToPackageUrl().ToString(),
+					URI:   v.Component.ToPackageUrl().ToString(),
 					Index: 0,
 				},
 				Locations: []format.Location{{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}},
@@ -58,20 +58,20 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 					v.VulnerabilityWithRemediation.CweID,
 				}
 				ruleProp := format.SarifRuleProperties{
-					Tags:	tags, 
-					Precision: "very-high",
-					Impact: fmt.Sprint(v.VulnerabilityWithRemediation.ImpactSubscore),
-					Probability: fmt.Sprint(v.VulnerabilityWithRemediation.ExploitabilitySubscore),
+					Tags:             tags,
+					Precision:        "very-high",
+					Impact:           fmt.Sprint(v.VulnerabilityWithRemediation.ImpactSubscore),
+					Probability:      fmt.Sprint(v.VulnerabilityWithRemediation.ExploitabilitySubscore),
 					SecuritySeverity: fmt.Sprint(v.OverallScore),
 				}
 				sarifRule := format.SarifRule{
-					ID: result.RuleID,
-					ShortDescription: &format.Message{Text: fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)},
-					FullDescription: &format.Message{Text: v.VulnerabilityWithRemediation.Description},
+					ID:                   result.RuleID,
+					ShortDescription:     &format.Message{Text: fmt.Sprintf("%v in Package %v", v.VulnerabilityName, v.Component.Name)},
+					FullDescription:      &format.Message{Text: v.VulnerabilityWithRemediation.Description},
 					DefaultConfiguration: &format.DefaultConfiguration{Level: transformToLevel(v.VulnerabilityWithRemediation.Severity)},
-					HelpURI: "",
-					Help: &format.Help{Text: v.ToTxt(), Markdown: string(markdown)},
-					Properties: &ruleProp,
+					HelpURI:              "",
+					Help:                 &format.Help{Text: v.ToTxt(), Markdown: string(markdown)},
+					Properties:           &ruleProp,
 				}
 				// append the rule
 				rules = append(rules, sarifRule)
@@ -86,39 +86,39 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 		taxas = append(taxas, taxa)
 	}
 	taxonomy := format.Taxonomies{
-		GUID: "25F72D7E-8A92-459D-AD67-64853F788765",
-		Name: "CWE",
-		Organization: "MITRE",
+		GUID:             "25F72D7E-8A92-459D-AD67-64853F788765",
+		Name:             "CWE",
+		Organization:     "MITRE",
 		ShortDescription: format.Message{Text: "The MITRE Common Weakness Enumeration"},
-		Taxa: taxas,
+		Taxa:             taxas,
 	}
 	//handle the tool object
 	tool := format.Tool{
 		Driver: format.Driver{
-			Name: "Blackduck Hub Detect",
-			Version: "unknown",
+			Name:           "Blackduck Hub Detect",
+			Version:        "unknown",
 			InformationUri: "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus",
-			Rules: rules,
+			Rules:          rules,
 		},
 	}
 	sarif := format.SARIF{
-		Schema: "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json",
+		Schema:  "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json",
 		Version: "2.1.0",
 		Runs: []format.Runs{
 			{
-				Results: results,
-				Tool: tool,
+				Results:             results,
+				Tool:                tool,
 				ThreadFlowLocations: []format.Locations{},
 				Conversion: &format.Conversion{
 					Tool: format.Tool{
 						Driver: format.Driver{
-							Name: "Piper FPR to SARIF converter",
+							Name:           "Piper FPR to SARIF converter",
 							InformationUri: "https://github.com/SAP/jenkins-library",
 						},
 					},
 					Invocation: format.Invocation{
-						ExecutionSuccessful: true, 
-						Properties: &format.InvocationProperties{Platform: runtime.GOOS},
+						ExecutionSuccessful: true,
+						Properties:          &format.InvocationProperties{Platform: runtime.GOOS},
 					},
 				},
 				Taxonomies: []format.Taxonomies{taxonomy},
