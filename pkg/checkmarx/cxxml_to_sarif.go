@@ -381,8 +381,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	sarif.Runs[0].Tool = tool
 
 	//handle automationDetails
-	sarif.Runs[0].AutomationDetails = new(format.AutomationDetails)
-	sarif.Runs[0].AutomationDetails.Id = cxxml.DeepLink // Use deeplink to pass a maximum of information
+	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: cxxml.DeepLink} // Use deeplink to pass a maximum of information
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
