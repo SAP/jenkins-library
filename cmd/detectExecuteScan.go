@@ -601,11 +601,6 @@ func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]forma
 		return nil, components, err
 	}
 
-	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
-	if err != nil {
-		return vulns, nil, err
-	}
-
 	vulns = filterAssessedVulnerabilities(vulns, components, assessments)
 
 	majorVulns := 0
