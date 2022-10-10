@@ -686,7 +686,7 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 
 	// filter alerts related to existing assessments
 	filteredAlerts := []ws.Alert{}
-	if len(*assessments) > 0 {
+	if assessments != nil && len(*assessments) > 0 {
 		for _, alert := range alerts {
 			if result, err := alert.ContainedIn(assessments); err == nil && result == false {
 				filteredAlerts = append(filteredAlerts, alert)
