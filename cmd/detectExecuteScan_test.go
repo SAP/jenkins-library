@@ -595,6 +595,30 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.tools=DETECTOR",
 			},
 		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:       "https://server.url",
+				Token:           "apiToken",
+				ProjectName:     "testName",
+				Version:         "1.0",
+				VersioningModel: "major-minor",
+				CodeLocation:    "",
+				ScanPaths:       []string{"path1", "path2"},
+				MinScanInterval: 4,
+			},
+			expected: []string{
+				"--testProp1=1",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"\"--detect.project.name='testName'\"",
+				"\"--detect.project.version.name='1.0'\"",
+				"\"--detect.code.location.name='testName/1.0'\"",
+				"--detect.blackduck.signature.scanner.paths=path1,path2",
+				"--detect.source.path='.'",
+			},
+		},
 	}
 
 	for k, v := range testData {
