@@ -585,9 +585,20 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 
 func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]format.Assessment, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
 	detectVersionName := getVersionName(config)
-	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
+	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
 	if err != nil {
 		return nil, nil, err
+	}
+	// create component lookup map to interconnect vulnerability and component
+	keyFormat := "%v/%v"
+	componentLookup := map[string]*bd.Component{}
+	for _, comp := range components.Items {
+		componentLookup[fmt.Sprintf(keyFormat, comp.Name, comp.Version)] = &comp
+	}
+
+	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
+	if err != nil {
+		return nil, components, err
 	}
 
 	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
@@ -599,12 +610,18 @@ func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]forma
 
 	majorVulns := 0
 	activeVulns := 0
-	for _, vuln := range vulns.Items {
+	for index, vuln := range vulns.Items {
 		if isActiveVulnerability(vuln) {
 			activeVulns++
 			if isMajorVulnerability(vuln) {
 				majorVulns++
 			}
+		}
+		component := componentLookup[fmt.Sprintf(keyFormat, vuln.Name, vuln.Version)]
+		if component != nil && len(component.Name) > 0 {
+			vulns.Items[index].Component = component
+		} else {
+			vulns.Items[index].Component = &bd.Component{Name: vuln.Name, Version: vuln.Version}
 		}
 	}
 	influx.detect_data.fields.vulnerabilities = activeVulns
