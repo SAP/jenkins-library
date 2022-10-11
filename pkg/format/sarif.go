@@ -45,8 +45,8 @@ type Results struct {
 
 // Message to detail the finding
 type Message struct {
-	Text 		string `json:"text,omitempty"`
-	Markdown 	string `json:"markdown,omitempty"`
+	Text     string `json:"text,omitempty"`
+	Markdown string `json:"markdown,omitempty"`
 }
 
 // Location of the finding
