@@ -77,7 +77,7 @@ initscript {
 
 rootProject {
     apply plugin: 'java'
-    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
     apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
 
     cyclonedxBom {
