@@ -47,6 +47,7 @@ type GroupAssignment struct {
 
 // Alert
 type Alert struct {
+	*format.Assessment
 	Vulnerability    Vulnerability `json:"vulnerability"`
 	Type             string        `json:"type,omitempty"`
 	Level            string        `json:"level,omitempty"`
@@ -80,6 +81,7 @@ func (a Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
 					return false, err
 				}
 				if assessmentPurlStr == localPurl {
+					a.Assessment = &assessment
 					return true, nil
 				}
 			}

@@ -330,8 +330,26 @@ func transformToCdxSeverity(severity string) cdx.Severity {
 	return cdx.SeverityUnknown
 }
 
-func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byte, error) {
-	ppurl := packageurl.NewPackageURL(format.TransformBuildToPurlType(scan.BuildTool), scan.Coordinates.GroupID, scan.Coordinates.ArtifactID, scan.Coordinates.Version, nil, "")
+func transformBuildToPurlType(buildType string) string {
+	switch buildType {
+	case "maven":
+		return packageurl.TypeMaven
+	case "npm":
+		return packageurl.TypeNPM
+	case "docker":
+		return packageurl.TypeDocker
+	case "kaniko":
+		return packageurl.TypeDocker
+	case "golang":
+		return packageurl.TypeGolang
+	case "mta":
+		return packageurl.TypeComposer
+	}
+	return packageurl.TypeGeneric
+}
+
+func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts, assessedAlerts *[]Alert) ([]byte, error) {
+	ppurl := packageurl.NewPackageURL(transformBuildToPurlType(scan.BuildTool), scan.Coordinates.GroupID, scan.Coordinates.ArtifactID, scan.Coordinates.Version, nil, "")
 	metadata := cdx.Metadata{
 		// Define metadata about the main component
 		// (the component which the BOM will describe)
@@ -386,6 +404,29 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 	dependencies := []cdx.Dependency{}
 	declareDependency(ppurl, libraries, &dependencies)
 
+	vulnerabilities := []cdx.Vulnerability{}
+	vulnerabilities = append(vulnerabilities, handleAlerts(scan, alerts)...)
+	vulnerabilities = append(vulnerabilities, handleAlerts(scan, assessedAlerts)...)
+
+	// Assemble the BOM
+	bom := cdx.NewBOM()
+	bom.Vulnerabilities = &vulnerabilities
+	bom.Metadata = &metadata
+	bom.Components = &components
+	bom.Dependencies = &dependencies
+
+	// Encode the BOM
+	var outputBytes []byte
+	buffer := bytes.NewBuffer(outputBytes)
+	encoder := cdx.NewBOMEncoder(buffer, cdx.BOMFileFormatXML)
+	encoder.SetPretty(true)
+	if err := encoder.Encode(bom); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func handleAlerts(scan *Scan, alerts *[]Alert) []cdx.Vulnerability {
 	vulnerabilities := []cdx.Vulnerability{}
 	for _, alert := range *alerts {
 		// Define the vulnerabilities in VEX
@@ -458,25 +499,17 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts *[]Alert) ([]byt
 			references = append(references, reference)
 		}
 		vuln.References = &references
+		if alert.Assessment != nil {
+			vuln.Analysis = &cdx.VulnerabilityAnalysis{
+				State:         alert.Assessment.ToImpactAnalysisState(),
+				Justification: alert.Assessment.ToImpactJustification(),
+				Response:      alert.Assessment.ToImpactAnalysisResponse(),
+			}
+		}
+
 		vulnerabilities = append(vulnerabilities, vuln)
 	}
-
-	// Assemble the BOM
-	bom := cdx.NewBOM()
-	bom.Vulnerabilities = &vulnerabilities
-	bom.Metadata = &metadata
-	bom.Components = &components
-	bom.Dependencies = &dependencies
-
-	// Encode the BOM
-	var outputBytes []byte
-	buffer := bytes.NewBuffer(outputBytes)
-	encoder := cdx.NewBOMEncoder(buffer, cdx.BOMFileFormatXML)
-	encoder.SetPretty(true)
-	if err := encoder.Encode(bom); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
+	return vulnerabilities
 }
 
 func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Path, error) {

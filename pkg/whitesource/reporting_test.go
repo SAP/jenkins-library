@@ -81,12 +81,16 @@ func TestCreateCycloneSBOM(t *testing.T) {
 			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"}, Vulnerability: Vulnerability{Score: 6}},
 		}
 
+		assessedAlerts := []Alert{
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul4"}, Vulnerability: Vulnerability{Name: "CVE-23456", CVSS3Score: 7.0, Score: 6}, Assessment: &format.Assessment{Vulnerability: "CVE-23456", Status: format.Relevant, Analysis: format.Mitigated}},
+		}
+
 		libraries := []Library{
 			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1", Dependencies: []Library{{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Filename: "vul2"}}},
 			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"},
 		}
 
-		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts)
+		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts, &assessedAlerts)
 		assert.NoError(t, err, "unexpected error")
 		buffer := bytes.NewBuffer(contents)
 		decoder := cdx.NewBOMDecoder(buffer, cdx.BOMFileFormatXML)
@@ -97,10 +101,14 @@ func TestCreateCycloneSBOM(t *testing.T) {
 		assert.NotEmpty(t, bom.SpecVersion)
 
 		components := *bom.Components
+		vulnerabilities := *bom.Vulnerabilities
 		assert.Equal(t, 2, len(components))
 		assert.Equal(t, true, components[0].Name == "log4j" || components[0].Name == "commons-lang")
 		assert.Equal(t, true, components[1].Name == "log4j" || components[1].Name == "commons-lang")
 		assert.Equal(t, true, components[0].Name != components[1].Name)
+		assert.Equal(t, 4, len(vulnerabilities))
+		assert.NotNil(t, vulnerabilities[3].Analysis)
+		assert.Equal(t, cdx.IAJProtectedByMitigatingControl, vulnerabilities[3].Analysis.Justification)
 	})
 
 	t.Run("success - golden", func(t *testing.T) {
@@ -128,12 +136,14 @@ func TestCreateCycloneSBOM(t *testing.T) {
 			{Library: lib2, Vulnerability: Vulnerability{Name: "CVE-2022-003", Score: 6, Severity: "medium", PublishDate: "03.01.2022"}},
 		}
 
+		assessedAlerts := []Alert{}
+
 		libraries := []Library{
 			lib1,
 			lib2,
 		}
 
-		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts)
+		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts, &assessedAlerts)
 		assert.NoError(t, err, "unexpected error")
 
 		goldenFilePath := filepath.Join("testdata", "sbom.golden")
