@@ -693,8 +693,8 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 		for _, alert := range alerts {
 			if result, err := alert.ContainedIn(assessments); err == nil && result == false {
 				filteredAlerts = append(filteredAlerts, alert)
-			} else if len(alert.Vulnerability.Name) > 0 {
-				log.Entry().Debugf("Matched assessment with status %v and analysis %v to vulnerability %v affecting packages %v", alert.Status, alert.Analysis, alert.Vulnerability.Name, alert.Purls)
+			} else if alert.Assessment != nil {
+				log.Entry().Debugf("Matched assessment with status %v and analysis %v to vulnerability %v affecting packages %v", alert.Assessment.Status, alert.Assessment.Analysis, alert.Assessment.Vulnerability, alert.Assessment.Purls)
 				assessedAlerts = append(assessedAlerts, alert)
 			}
 		}
