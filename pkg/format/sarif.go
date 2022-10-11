@@ -21,7 +21,7 @@ type Runs struct {
 	Invocations         []Invocation        `json:"invocations,omitempty"`
 	OriginalUriBaseIds  *OriginalUriBaseIds `json:"originalUriBaseIds,omitempty"`
 	Artifacts           []Artifact          `json:"artifacts,omitempty"`
-	AutomationDetails   AutomationDetails   `json:"automationDetails,omitempty"`
+	AutomationDetails   *AutomationDetails  `json:"automationDetails,omitempty"`
 	ColumnKind          string              `json:"columnKind,omitempty" default:"utf16CodeUnits"`
 	ThreadFlowLocations []Locations         `json:"threadFlowLocations,omitempty"`
 	Taxonomies          []Taxonomies        `json:"taxonomies,omitempty"`
@@ -31,7 +31,7 @@ type Runs struct {
 // Results these structs are relevant to the Results object
 type Results struct {
 	RuleID              string              `json:"ruleId"`
-	RuleIndex           int                 `json:"ruleIndex"`
+	RuleIndex           int                 `json:"ruleIndex,omitempty"`
 	Kind                string              `json:"kind,omitempty"`
 	Level               string              `json:"level,omitempty"`
 	Message             *Message            `json:"message,omitempty"`
@@ -39,8 +39,8 @@ type Results struct {
 	Locations           []Location          `json:"locations,omitempty"`
 	CodeFlows           []CodeFlow          `json:"codeFlows,omitempty"`
 	RelatedLocations    []RelatedLocation   `json:"relatedLocations,omitempty"`
-	PartialFingerprints PartialFingerprints `json:"partialFingerprints"`
-	Properties          *SarifProperties    `json:"properties"`
+	PartialFingerprints PartialFingerprints `json:"partialFingerprints,omitempty"`
+	Properties          *SarifProperties    `json:"properties,omitempty"`
 }
 
 // Message to detail the finding
