@@ -13,11 +13,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Assessment format related JSON structs
-type Assessments struct {
-	List []Assessment `json:"ignore"`
-}
-
 type Assessment struct {
 	Vulnerability string             `json:"vulnerability"`
 	Status        AssessmentStatus   `json:"status"`
