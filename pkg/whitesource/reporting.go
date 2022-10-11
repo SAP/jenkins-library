@@ -404,9 +404,10 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts, assessedAlerts 
 	dependencies := []cdx.Dependency{}
 	declareDependency(ppurl, libraries, &dependencies)
 
+	// Encode vulnerabilities
 	vulnerabilities := []cdx.Vulnerability{}
-	vulnerabilities = append(vulnerabilities, handleAlerts(scan, alerts)...)
-	vulnerabilities = append(vulnerabilities, handleAlerts(scan, assessedAlerts)...)
+	vulnerabilities = append(vulnerabilities, transformAlertsToVulnerabilities(scan, alerts)...)
+	vulnerabilities = append(vulnerabilities, transformAlertsToVulnerabilities(scan, assessedAlerts)...)
 
 	// Assemble the BOM
 	bom := cdx.NewBOM()
@@ -426,7 +427,7 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts, assessedAlerts 
 	return buffer.Bytes(), nil
 }
 
-func handleAlerts(scan *Scan, alerts *[]Alert) []cdx.Vulnerability {
+func transformAlertsToVulnerabilities(scan *Scan, alerts *[]Alert) []cdx.Vulnerability {
 	vulnerabilities := []cdx.Vulnerability{}
 	for _, alert := range *alerts {
 		// Define the vulnerabilities in VEX
