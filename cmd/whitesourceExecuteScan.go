@@ -659,12 +659,12 @@ func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) 
 	exists, err := utils.FileExists(assessmentFilePath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		log.Entry().Errorf("unable to check existence of assessment file at '%s'", assessmentFilePath)
+		log.Entry().WithError(err).Errorf("unable to check existence of assessment file at '%s'", assessmentFilePath)
 	}
 	assessmentFile, err := utils.Open(assessmentFilePath)
 	if exists && err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		log.Entry().Errorf("unable to open assessment file at '%s'", assessmentFilePath)
+		log.Entry().WithError(err).Errorf("unable to open assessment file at '%s'", assessmentFilePath)
 	}
 	assessments := &[]format.Assessment{}
 	if exists {
@@ -672,7 +672,7 @@ func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) 
 		assessments, err = format.ReadAssessments(assessmentFile)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			log.Entry().Errorf("unable to parse assessment file at '%s'", assessmentFilePath)
+			log.Entry().WithError(err).Errorf("unable to parse assessment file at '%s'", assessmentFilePath)
 		}
 	}
 	return assessments
