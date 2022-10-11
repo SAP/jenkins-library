@@ -18,6 +18,8 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	md "github.com/JohannesKaufmann/html-to-markdown"
 )
 
 // FVDL This struct encapsulates everyting in the FVDL document
@@ -611,7 +613,10 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 					rawMessage = strings.ReplaceAll(rawMessage, "<Replace key=\""+fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefKey+"\"/>", fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.ReplacementDefinitions.Def[l].DefValue)
 				}
 				msg := new(format.Message)
+				// message in text
 				msg.Text = rawMessage
+				// message in markdown (converted from HTML, although in the case of FPR, simply HTML tags are removed)
+				msg.Markdown = htmlToMarkdown(rawMessage)
 				result.Message = msg
 				break
 			}
@@ -882,9 +887,11 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 								}
 								sd := new(format.Message)
 								sd.Text = rawAbstract
+								sd.Markdown = htmlToMarkdown(rawAbstract)
 								sarifRule.ShortDescription = sd
 								fd := new(format.Message)
 								fd.Text = rawExplanation
+								fd.Markdown = htmlToMarkdown(rawExplanation)
 								sarifRule.FullDescription = fd
 								break
 							}
@@ -1357,4 +1364,15 @@ func computeLocationPath(fvdl FVDL, input int) []int {
 	}
 	log.Entry().Debug("Finishing computing for ID ", input)
 	return result
+}
+
+// Convert HTML to Markdown
+func htmlToMarkdown(input string) string {
+	converter := md.NewConverter("", true, nil)
+	markdown, err := converter.ConvertString(input)
+	if err != nil {
+		log.Entry().Debug("Cannot convert to markdown", err)
+		return input // return the original input to avoid showing an empty content (like in GHAS)
+	}
+	return markdown
 }
