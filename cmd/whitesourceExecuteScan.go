@@ -575,21 +575,23 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
-		if _, _, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx); err != nil {
+		if _, _, _, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx); err != nil {
 			return reportPaths, err
 		}
 	} else {
 		vulnerabilitiesCount := 0
 		var errorsOccured []string
 		allAlerts := []ws.Alert{}
+		allAssessedAlerts := []ws.Alert{}
 		allLibraries := []ws.Library{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			vulCount, alerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx)
+			vulCount, alerts, assessedAlerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx)
 			if err != nil {
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
 			allAlerts = append(allAlerts, alerts...)
+			allAssessedAlerts = append(allAssessedAlerts, assessedAlerts...)
 			vulnerabilitiesCount += vulCount
 
 			// collect all libraries detected in all related projects and errors
@@ -632,7 +634,7 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		}
 		reportPaths = append(reportPaths, paths...)
 
-		sbom, err := ws.CreateCycloneSBOM(scan, &allLibraries, &allAlerts)
+		sbom, err := ws.CreateCycloneSBOM(scan, &allLibraries, &allAlerts, &allAssessedAlerts)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
@@ -677,11 +679,12 @@ func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) 
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, assessments *[]format.Assessment, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
+func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, assessments *[]format.Assessment, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
+	assessedAlerts := []ws.Alert{}
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
-		return 0, alerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
+		return 0, alerts, assessedAlerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
 	}
 
 	// filter alerts related to existing assessments
@@ -690,6 +693,8 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 		for _, alert := range alerts {
 			if result, err := alert.ContainedIn(assessments); err == nil && result == false {
 				filteredAlerts = append(filteredAlerts, alert)
+			} else {
+				assessedAlerts = append(assessedAlerts, alert)
 			}
 		}
 		alerts = filteredAlerts
@@ -711,13 +716,13 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 	if severeVulnerabilities > 0 {
 		if config.FailOnSevereVulnerabilities {
 			log.SetErrorCategory(log.ErrorCompliance)
-			return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
+			return severeVulnerabilities, alerts, assessedAlerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
 		}
 		log.Entry().Infof("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
 		log.Entry().Info("Step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
-		return severeVulnerabilities, alerts, nil
+		return severeVulnerabilities, alerts, assessedAlerts, nil
 	}
-	return 0, alerts, nil
+	return 0, alerts, assessedAlerts, nil
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
