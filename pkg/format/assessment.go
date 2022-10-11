@@ -114,18 +114,22 @@ func (a Assessment) ToImpactAnalysisResponse() *[]cdx.ImpactAnalysisResponse {
 // readAssessment loads the assessments and returns their contents
 func readAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
 	defer assessmentFile.Close()
-	assessments := &[]Assessment{}
+	ignore := struct {
+		Assessments []Assessment `json:"ignore"`
+	}{
+		Assessments: []Assessment{},
+	}
 
 	content, err := ioutil.ReadAll(assessmentFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading %v", assessmentFile)
 	}
 
-	err = yaml.Unmarshal(content, assessments)
+	err = yaml.Unmarshal(content, &ignore)
 	if err != nil {
 		return nil, NewParseError(fmt.Sprintf("format of assessment file is invalid %q: %v", content, err))
 	}
-	return assessments, nil
+	return &ignore.Assessments, nil
 }
 
 // ReadAssessmentsFromFile reads the file and exposes the assessments to match alerts and filter them before processing
