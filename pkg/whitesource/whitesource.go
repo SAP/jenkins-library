@@ -61,14 +61,14 @@ type Alert struct {
 }
 
 // Title returns the issue title representation of the contents
-func (a Alert) Title() string {
+func (a *Alert) Title() string {
 	if a.Type == "SECURITY_VULNERABILITY" {
 		return fmt.Sprintf("Security Vulnerability %v %v", a.Vulnerability.Name, a.Library.ArtifactID)
 	}
 	return fmt.Sprintf("%v %v %v ", a.Type, a.Vulnerability.Name, a.Library.ArtifactID)
 }
 
-func (a Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
+func (a *Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
 	localPurl := a.Library.ToPackageUrl().ToString()
 	for _, assessment := range *assessments {
 		if assessment.Vulnerability == a.Vulnerability.Name {
@@ -81,6 +81,7 @@ func (a Alert) ContainedIn(assessments *[]format.Assessment) (bool, error) {
 					return false, err
 				}
 				if assessmentPurlStr == localPurl {
+					log.Entry().Debugf("matching assessment %v on package %v detected for alert %v", assessment.Vulnerability, assessmentPurlStr, a.Vulnerability.Name)
 					a.Assessment = &assessment
 					return true, nil
 				}
@@ -142,7 +143,7 @@ func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score flo
 }
 
 // ToMarkdown returns the markdown representation of the contents
-func (a Alert) ToMarkdown() ([]byte, error) {
+func (a *Alert) ToMarkdown() ([]byte, error) {
 	score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 
 	vul := reporting.VulnerabilityReport{
