@@ -15,7 +15,7 @@ stages:
     cfServiceKeyName: 'sap_com_0510'
 
   'Clone Repositories':
-    cfServiceKeyName: 'sap_com_0510_clone_stage_default'
+    cfServiceKeyName: 'sap_com_0510'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0510","type":"basic"}'
     ordinal: 30
 
