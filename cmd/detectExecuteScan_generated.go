@@ -46,6 +46,7 @@ type detectExecuteScanOptions struct {
 	DetectTools                 []string `json:"detectTools,omitempty"`
 	ScanOnChanges               bool     `json:"scanOnChanges,omitempty"`
 	CustomEnvironmentVariables  []string `json:"customEnvironmentVariables,omitempty"`
+	MinScanInterval             int      `json:"minScanInterval,omitempty"`
 	GithubToken                 string   `json:"githubToken,omitempty"`
 	CreateResultIssue           bool     `json:"createResultIssue,omitempty"`
 	GithubAPIURL                string   `json:"githubApiUrl,omitempty"`
@@ -272,6 +273,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.DetectTools, "detectTools", []string{}, "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included. For the complete list of possible values, Please refer [Synopsys detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#Detect-tools-included)")
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", false, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by Synopsys. The full list can be found [here](https://synopsys.atlassian.net/wiki/spaces/IA/pages/1562214619/Shell+Script+Reference+6.9.0) This list affects the detect script downloaded while running the scan. By default detect7.sh will be used. To continue using different versions of detect, please use DETECT_LATEST_RELEASE_VERSION and set it to a valid value defined [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=releasenotes.html&_LANG=enus) Additionally, please note, depending on the Project certain versions of detect will be required. For example: For Swift version 5.5 and lower, Detect 7.13.0 is the minimum required version. For Swift version 5.6 and higher, Detect 7.14.0 is required ")
+	cmd.Flags().IntVar(&stepConfig.MinScanInterval, "minScanInterval", 0, "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
@@ -536,6 +538,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "minScanInterval",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
 					},
 					{
 						Name: "githubToken",
