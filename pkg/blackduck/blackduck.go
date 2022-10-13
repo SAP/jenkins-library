@@ -89,6 +89,7 @@ type Vulnerability struct {
 	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
 	Component                    *Component
+	*format.Assessment
 }
 
 type VulnerabilityWithRemediation struct {
@@ -105,11 +106,11 @@ type VulnerabilityWithRemediation struct {
 
 // ToPackageUrl creates the package URL for the component
 // TODO we need t improve/validate primaryLanguage, componentOriginName, name and version
-func (c Component) ToPackageUrl() *packageurl.PackageURL {
+func (c *Component) ToPackageUrl() *packageurl.PackageURL {
 	return packageurl.NewPackageURL(transformComponentToPurlType(c.PrimaryLanguage), "", c.Name, c.Version, nil, "")
 }
 
-func (v Vulnerability) ContainedIn(relatedComponent *Component, assessments *[]format.Assessment) (bool, error) {
+func (v *Vulnerability) ContainedIn(relatedComponent *Component, assessments *[]format.Assessment) (bool, error) {
 	localPurl := relatedComponent.ToPackageUrl().ToString()
 	for _, assessment := range *assessments {
 		if assessment.Vulnerability == v.VulnerabilityWithRemediation.VulnerabilityName {
@@ -122,6 +123,8 @@ func (v Vulnerability) ContainedIn(relatedComponent *Component, assessments *[]f
 					return false, err
 				}
 				if assessmentPurlStr == localPurl {
+					log.Entry().Debugf("matching assessment %v on package %v detected for alert %v", assessment.Vulnerability, assessmentPurlStr, v.VulnerabilityWithRemediation.VulnerabilityName)
+					v.Assessment = &assessment
 					return true, nil
 				}
 			}
@@ -131,12 +134,12 @@ func (v Vulnerability) ContainedIn(relatedComponent *Component, assessments *[]f
 }
 
 // Title returns the issue title representation of the contents
-func (v Vulnerability) Title() string {
+func (v *Vulnerability) Title() string {
 	return v.VulnerabilityWithRemediation.VulnerabilityName
 }
 
 // ToMarkdown returns the markdown representation of the contents
-func (v Vulnerability) ToMarkdown() ([]byte, error) {
+func (v *Vulnerability) ToMarkdown() ([]byte, error) {
 	vul := reporting.VulnerabilityReport{
 		ArtifactID: v.Component.Name,
 
@@ -175,7 +178,7 @@ func (v Vulnerability) ToMarkdown() ([]byte, error) {
 }
 
 // ToTxt returns the textual representation of the contents
-func (v Vulnerability) ToTxt() string {
+func (v *Vulnerability) ToTxt() string {
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v
 Base (NVD) Score: %v

@@ -791,10 +791,12 @@ func TestGetVulnsAndComponents(t *testing.T) {
 		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
 		sys := newBlackduckMockSystem(config)
 
-		vulns, components, err := getVulnsAndComponents(config, &[]format.Assessment{}, &detectExecuteScanInflux{}, &sys)
+		vulns, assessedVulns, components, err := getVulnsAndComponents(config, &[]format.Assessment{}, &detectExecuteScanInflux{}, &sys)
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(vulns.Items))
 		assert.Equal(t, 3, len(components.Items))
+		assert.Equal(t, 0, len(assessedVulns.Items))
+		assert.Equal(t, 0, assessedVulns.TotalCount)
 		vulnerabilitySpring := bd.Vulnerability{}
 		vulnerabilityLog4j1 := bd.Vulnerability{}
 		vulnerabilityLog4j2 := bd.Vulnerability{}
@@ -848,8 +850,11 @@ func TestFilterAssessedVulnerabilities(t *testing.T) {
 			},
 		}
 		assessments = append(assessments, assessment)
-		result := filterAssessedVulnerabilities(vulnerabilities, components, &assessments)
-		assert.Equal(t, 2, result.TotalCount)
-		assert.Equal(t, 2, len(result.Items))
+		unassessedVulns, assessedVulns := filterAssessedVulnerabilities(vulnerabilities, components, &assessments)
+		assert.Equal(t, 2, unassessedVulns.TotalCount)
+		assert.Equal(t, 2, len(unassessedVulns.Items))
+		assert.Equal(t, 1, assessedVulns.TotalCount)
+		assert.Equal(t, 1, len(assessedVulns.Items))
+		assert.Equal(t, "BDSA-2019-2021", assessedVulns.Items[0].VulnerabilityWithRemediation.VulnerabilityName)
 	})
 }

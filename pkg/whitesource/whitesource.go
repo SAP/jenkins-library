@@ -173,7 +173,7 @@ func (a *Alert) ToMarkdown() ([]byte, error) {
 }
 
 // ToTxt returns the textual representation of the contents
-func (a Alert) ToTxt() string {
+func (a *Alert) ToTxt() string {
 	score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v

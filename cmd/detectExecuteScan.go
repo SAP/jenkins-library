@@ -504,7 +504,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	// inhale assessments from file system
 	assessments := format.ReadAssessmentsFromFile(config.AssessmentFile, utils)
 
-	vulns, components, err := getVulnsAndComponents(config, assessments, influx, sys)
+	vulns, assessedVulns, components, err := getVulnsAndComponents(config, assessments, influx, sys)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch vulnerabilities")
 	}
@@ -533,7 +533,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 
 	versionName := getVersionName(config)
 	//TODO figure out how we can identify the local component properly
-	sbom, err := bd.CreateCycloneSBOM(config.BuildTool, "", "", "", config.ProjectName, versionName, components, vulns)
+	sbom, err := bd.CreateCycloneSBOM(config.BuildTool, "", "", "", config.ProjectName, versionName, components, vulns, assessedVulns)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
@@ -583,11 +583,11 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	return nil
 }
 
-func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]format.Assessment, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
+func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]format.Assessment, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Vulnerabilities, *bd.Components, error) {
 	detectVersionName := getVersionName(config)
 	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	// create component lookup map to interconnect vulnerability and component
 	keyFormat := "%v/%v"
@@ -598,10 +598,10 @@ func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]forma
 
 	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
 	if err != nil {
-		return nil, components, err
+		return nil, nil, components, err
 	}
 
-	vulns = filterAssessedVulnerabilities(vulns, components, assessments)
+	vulns, assessedVulns := filterAssessedVulnerabilities(vulns, components, assessments)
 
 	majorVulns := 0
 	activeVulns := 0
@@ -612,22 +612,32 @@ func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]forma
 				majorVulns++
 			}
 		}
-		component := componentLookup[fmt.Sprintf(keyFormat, vuln.Name, vuln.Version)]
-		if component != nil && len(component.Name) > 0 {
-			vulns.Items[index].Component = component
-		} else {
-			vulns.Items[index].Component = &bd.Component{Name: vuln.Name, Version: vuln.Version}
-		}
+		matchComponentToVulnerability(index, vulns.Items, keyFormat, componentLookup)
+	}
+	for index, _ := range assessedVulns.Items {
+		matchComponentToVulnerability(index, assessedVulns.Items, keyFormat, componentLookup)
 	}
 	influx.detect_data.fields.vulnerabilities = activeVulns
 	influx.detect_data.fields.major_vulnerabilities = majorVulns
 	influx.detect_data.fields.minor_vulnerabilities = activeVulns - majorVulns
 	influx.detect_data.fields.components = components.TotalCount
 
-	return vulns, components, nil
+	return vulns, assessedVulns, components, nil
 }
 
-func filterAssessedVulnerabilities(vulnerabilities *bd.Vulnerabilities, components *bd.Components, assessments *[]format.Assessment) *bd.Vulnerabilities {
+func matchComponentToVulnerability(index int, items []bd.Vulnerability, keyFormat string, componentLookup map[string]*bd.Component) {
+	v := items[index]
+	component := componentLookup[fmt.Sprintf(keyFormat, v.Name, v.Version)]
+	if component != nil && len(component.Name) > 0 {
+		items[index].Component = component
+	} else {
+		items[index].Component = &bd.Component{Name: v.Name, Version: v.Version}
+	}
+}
+
+// filterAssessedVulnerabilities filters any vulnerabilities with matching assessment from the list and returns them in the second list together with their assessment
+func filterAssessedVulnerabilities(vulnerabilities *bd.Vulnerabilities, components *bd.Components, assessments *[]format.Assessment) (*bd.Vulnerabilities, *bd.Vulnerabilities) {
+	assessedAlerts := &bd.Vulnerabilities{TotalCount: 0, Items: []bd.Vulnerability{}}
 	// create component lookup map
 	componentLookup := map[string]bd.Component{}
 	for _, comp := range components.Items {
@@ -642,14 +652,18 @@ func filterAssessedVulnerabilities(vulnerabilities *bd.Vulnerabilities, componen
 			relatedComponent := componentLookup[fmt.Sprintf("%v/%v", alert.Name, alert.Version)]
 			if result, err := alert.ContainedIn(&relatedComponent, assessments); err == nil && result == false {
 				items = append(items, alert)
+			} else if alert.Assessment != nil {
+				log.Entry().Debugf("Matched assessment with status %v and analysis %v to vulnerability %v affecting packages %v", alert.Assessment.Status, alert.Assessment.Analysis, alert.Assessment.Vulnerability, alert.Assessment.Purls)
+				assessedAlerts.Items = append(assessedAlerts.Items, alert)
 			}
 		}
 		result.Items = items
 		result.TotalCount = len(items)
-		return &result
+		assessedAlerts.TotalCount = len(assessedAlerts.Items)
+		return &result, assessedAlerts
 	}
 
-	return vulnerabilities
+	return vulnerabilities, assessedAlerts
 }
 
 func getPolicyStatus(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.PolicyStatus, error) {

@@ -148,7 +148,7 @@ func transformToLevel(severity string) string {
 	return "none"
 }
 
-func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, projectVersion string, libraries *Components, alerts *Vulnerabilities) ([]byte, error) {
+func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, projectVersion string, libraries *Components, alerts, assessedAlerts *Vulnerabilities) ([]byte, error) {
 	componentLookup := map[string]Component{}
 	for _, comp := range libraries.Items {
 		componentLookup[fmt.Sprintf("%v/%v", comp.Name, comp.Version)] = comp
@@ -208,10 +208,33 @@ func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, pro
 	declareDependency(ppurl, &libraries.Items, &dependencies)
 
 	vulnerabilities := []cdx.Vulnerability{}
-	for _, alert := range *&alerts.Items {
+	transformAlertsToCdxVulnerabilities(alerts.Items)
+	transformAlertsToCdxVulnerabilities(assessedAlerts.Items)
+
+	// Assemble the BOM
+	bom := cdx.NewBOM()
+	bom.Vulnerabilities = &vulnerabilities
+	bom.Metadata = &metadata
+	bom.Components = &components
+	bom.Dependencies = &dependencies
+
+	// Encode the BOM
+	var outputBytes []byte
+	buffer := bytes.NewBuffer(outputBytes)
+	encoder := cdx.NewBOMEncoder(buffer, cdx.BOMFileFormatXML)
+	encoder.SetPretty(true)
+	if err := encoder.Encode(bom); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func transformAlertsToCdxVulnerabilities(items []Vulnerability) []cdx.Vulnerability {
+	vulnerabilities := []cdx.Vulnerability{}
+	for _, alert := range items {
 		// Define the vulnerabilities in VEX
 		// https://cyclonedx.org/use-cases/#vulnerability-exploitability
-		relatedComponent := componentLookup[fmt.Sprintf("%v/%v", alert.Name, alert.Version)]
+		relatedComponent := alert.Component
 		purl := relatedComponent.ToPackageUrl()
 		cvss3Score := float64(alert.OverallScore)
 		vuln := cdx.Vulnerability{
@@ -222,10 +245,10 @@ func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, pro
 				{
 					Name:    "Blackduck Hub Detect",
 					Version: "Unknown",
-					Vendor:  "Mend",
+					Vendor:  "Synopsis Inc.",
 					ExternalReferences: &[]cdx.ExternalReference{
 						{
-							URL:  "https://www.mend.io/",
+							URL:  "https://www.blackducksoftware.com/",
 							Type: cdx.ERTypeBuildMeta,
 						},
 					},
@@ -251,26 +274,15 @@ func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, pro
 					},
 				},
 			},
+			Analysis: &cdx.VulnerabilityAnalysis{
+				State:         alert.Assessment.ToImpactAnalysisState(),
+				Justification: alert.Assessment.ToImpactJustification(),
+				Response:      alert.Assessment.ToImpactAnalysisResponse(),
+			},
 		}
 		vulnerabilities = append(vulnerabilities, vuln)
 	}
-
-	// Assemble the BOM
-	bom := cdx.NewBOM()
-	bom.Vulnerabilities = &vulnerabilities
-	bom.Metadata = &metadata
-	bom.Components = &components
-	bom.Dependencies = &dependencies
-
-	// Encode the BOM
-	var outputBytes []byte
-	buffer := bytes.NewBuffer(outputBytes)
-	encoder := cdx.NewBOMEncoder(buffer, cdx.BOMFileFormatXML)
-	encoder.SetPretty(true)
-	if err := encoder.Encode(bom); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
+	return vulnerabilities
 }
 
 func transformToCdxSeverity(severity string) cdx.Severity {
