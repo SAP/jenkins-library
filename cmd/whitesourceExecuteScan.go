@@ -674,7 +674,7 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 				assessedAlerts = append(assessedAlerts, alert)
 			}
 		}
-		// intentionally overwriting original list of alerts with those remaining unassessed after processing of assessments 
+		// intentionally overwriting original list of alerts with those remaining unassessed after processing of assessments
 		alerts = filteredAlerts
 	}
 
