@@ -203,9 +203,9 @@ func (a *AzureDevOpsConfigProvider) GetReference() string {
 	return getEnv("BUILD_SOURCEBRANCH", "n/a")
 }
 
-// GetBuildURL returns the builds URL e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build/results?buildId=1234
+// GetBuildURL returns the builds URL e.g. https://dev.azure.com/fabrikamfiber/_build/results?buildId=1234
 func (a *AzureDevOpsConfigProvider) GetBuildURL() string {
-	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/" + os.Getenv("SYSTEM_DEFINITIONNAME") + "/_build/results?buildId=" + a.getAzureBuildID()
+	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/_build/results?buildId=" + a.getAzureBuildID()
 }
 
 // GetJobURL returns tje current job url e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build?definitionId=1234
