@@ -678,7 +678,7 @@ func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) 
 	return assessments
 }
 
-// checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
+// checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed. Besides the potential error the list of unassessed and assessed alerts are being returned to allow generating reports and issues from the data.
 func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, assessments *[]format.Assessment, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
 	assessedAlerts := []ws.Alert{}
