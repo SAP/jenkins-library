@@ -429,29 +429,6 @@ func CreateCycloneSBOM(scan *Scan, libraries *[]Library, alerts, assessedAlerts 
 
 func transformAlertsToVulnerabilities(scan *Scan, alerts *[]Alert) []cdx.Vulnerability {
 	vulnerabilities := []cdx.Vulnerability{}
-	vulnerabilities = append(vulnerabilities, handleAlerts(scan, alerts)...)
-	vulnerabilities = append(vulnerabilities, handleAlerts(scan, assessedAlerts)...)
-
-	// Assemble the BOM
-	bom := cdx.NewBOM()
-	bom.Vulnerabilities = &vulnerabilities
-	bom.Metadata = &metadata
-	bom.Components = &components
-	bom.Dependencies = &dependencies
-
-	// Encode the BOM
-	var outputBytes []byte
-	buffer := bytes.NewBuffer(outputBytes)
-	encoder := cdx.NewBOMEncoder(buffer, cdx.BOMFileFormatXML)
-	encoder.SetPretty(true)
-	if err := encoder.Encode(bom); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
-}
-
-func handleAlerts(scan *Scan, alerts *[]Alert) []cdx.Vulnerability {
-	vulnerabilities := []cdx.Vulnerability{}
 	for _, alert := range *alerts {
 		// Define the vulnerabilities in VEX
 		// https://cyclonedx.org/use-cases/#vulnerability-exploitability

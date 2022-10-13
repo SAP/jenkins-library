@@ -791,7 +791,7 @@ func TestGetVulnsAndComponents(t *testing.T) {
 		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
 		sys := newBlackduckMockSystem(config)
 
-		vulns, components, err := getVulnsAndComponents(config, &detectExecuteScanInflux{}, &sys)
+		vulns, components, err := getVulnsAndComponents(config, &[]format.Assessment{}, &detectExecuteScanInflux{}, &sys)
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(vulns.Items))
 		assert.Equal(t, 3, len(components.Items))
@@ -835,8 +835,8 @@ func TestFilterAssessedVulnerabilities(t *testing.T) {
 		components, err := sys.Client.GetComponents(config.ProjectName, getVersionName(config))
 		assert.NoError(t, err, "unexpected error when loading components")
 
-		assert.Equal(t, 1, vulnerabilities.TotalCount)
-		assert.Equal(t, 1, len(vulnerabilities.Items))
+		assert.Equal(t, 3, vulnerabilities.TotalCount)
+		assert.Equal(t, 3, len(vulnerabilities.Items))
 
 		assessments := []format.Assessment{}
 		assessment := format.Assessment{}
@@ -849,7 +849,7 @@ func TestFilterAssessedVulnerabilities(t *testing.T) {
 		}
 		assessments = append(assessments, assessment)
 		result := filterAssessedVulnerabilities(vulnerabilities, components, &assessments)
-		assert.Equal(t, 0, result.TotalCount)
-		assert.Equal(t, 0, len(result.Items))
+		assert.Equal(t, 2, result.TotalCount)
+		assert.Equal(t, 2, len(result.Items))
 	})
 }
