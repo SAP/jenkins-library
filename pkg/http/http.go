@@ -380,7 +380,12 @@ func handleAuthentication(req *http.Request, username, password, token string) {
 	// Handle authentication if not done already
 	if (len(username) > 0 || len(password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.SetBasicAuth(username, password)
-		log.Entry().Debug("Using Basic Authentication ****/****")
+		log.Entry().Debug("Using Basic Authentication ****/****\n")
+		log.Entry().Warning("------------------")
+		log.Entry().Warning("*** [WARNING] *** : Basic authentication is used, recommended method is API key/token authentication")
+		log.Entry().Warning("*** [WARNING] *** : Basic authentication will be deprecated in the near future, please use API key/token authentication.")
+		log.Entry().Warning("*** [WARNING] *** : For more details, please refer to BDBA documentation.")
+		log.Entry().Warning("------------------\n")
 	}
 	if len(token) > 0 && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.Header.Add(authHeaderKey, token)
