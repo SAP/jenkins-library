@@ -68,28 +68,28 @@ type checkmarxExecuteScanInflux struct {
 	checkmarx_data struct {
 		fields struct {
 			high_issues                          int
-			high_not_false_positive               int
+			high_not_false_positive              int
 			high_not_exploitable                 int
 			high_confirmed                       int
 			high_urgent                          int
 			high_proposed_not_exploitable        int
 			high_to_verify                       int
 			medium_issues                        int
-			medium_not_false_positive             int
+			medium_not_false_positive            int
 			medium_not_exploitable               int
 			medium_confirmed                     int
 			medium_urgent                        int
 			medium_proposed_not_exploitable      int
 			medium_to_verify                     int
 			low_issues                           int
-			low_not_false_positive                int
+			low_not_false_positive               int
 			low_not_exploitable                  int
 			low_confirmed                        int
 			low_urgent                           int
 			low_proposed_not_exploitable         int
 			low_to_verify                        int
 			information_issues                   int
-			information_not_false_positive        int
+			information_not_false_positive       int
 			information_not_exploitable          int
 			information_confirmed                int
 			information_urgent                   int
