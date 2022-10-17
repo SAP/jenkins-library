@@ -329,13 +329,9 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 }
 
 // UploadScanFile upload the scan file to the protecode server
-<<<<<<< HEAD
 func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, filePath, fileName, version string, productID int, replaceBinary bool) *ResultData {
 	log.Entry().Debugf("[DEBUG] ===> UploadScanFile started.....")
 
-=======
-func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName, version string, productID int, replaceBinary bool) *ResultData {
->>>>>>> master
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 
 	var headers = make(map[string][]string)
@@ -354,7 +350,6 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName, vers
 	headers["Delete-Binary"] = []string{fmt.Sprintf("%v", deleteBinary)}
 
 	if (replaceBinary) && (version != "") {
-<<<<<<< HEAD
 		log.Entry().Debugf("[DEBUG] ===> replaceBinary && version != empty ")
 		headers["Replace"] = []string{fmt.Sprintf("%v", productID)}
 		headers["Version"] = []string{version}
@@ -364,15 +359,6 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName, vers
 	} else if version != "" {
 		log.Entry().Debugf("[DEBUG] ===> version != empty ")
 		headers["Version"] = []string{version}
-=======
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}, "Version": {version}}
-	} else if replaceBinary {
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Replace": {fmt.Sprintf("%v", productID)}}
-	} else if version != "" {
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Version": {version}}
-	} else {
-		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
->>>>>>> master
 	}
 
 	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
