@@ -274,12 +274,12 @@ func transformAlertsToCdxVulnerabilities(items []Vulnerability) []cdx.Vulnerabil
 					},
 				},
 			},
-			if alert.Assessment != nil {
-				vuln.Analysis = &cdx.VulnerabilityAnalysis{
-					State:         alert.Assessment.ToImpactAnalysisState(),
-					Justification: alert.Assessment.ToImpactJustification(),
-					Response:      alert.Assessment.ToImpactAnalysisResponse(),
-				}
+		}
+		if alert.Assessment != nil {
+			vuln.Analysis = &cdx.VulnerabilityAnalysis{
+				State:         alert.Assessment.ToImpactAnalysisState(),
+				Justification: alert.Assessment.ToImpactJustification(),
+				Response:      alert.Assessment.ToImpactAnalysisResponse(),
 			}
 		}
 		vulnerabilities = append(vulnerabilities, vuln)
