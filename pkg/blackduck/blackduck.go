@@ -134,12 +134,12 @@ func (v *Vulnerability) ContainedIn(relatedComponent *Component, assessments *[]
 }
 
 // Title returns the issue title representation of the contents
-func (v *Vulnerability) Title() string {
+func (v Vulnerability) Title() string {
 	return v.VulnerabilityWithRemediation.VulnerabilityName
 }
 
 // ToMarkdown returns the markdown representation of the contents
-func (v *Vulnerability) ToMarkdown() ([]byte, error) {
+func (v Vulnerability) ToMarkdown() ([]byte, error) {
 	vul := reporting.VulnerabilityReport{
 		ArtifactID: v.Component.Name,
 
@@ -178,7 +178,7 @@ func (v *Vulnerability) ToMarkdown() ([]byte, error) {
 }
 
 // ToTxt returns the textual representation of the contents
-func (v *Vulnerability) ToTxt() string {
+func (v Vulnerability) ToTxt() string {
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v
 Base (NVD) Score: %v
