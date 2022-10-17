@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -18,7 +19,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/google/uuid"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -56,16 +57,20 @@ type pullRequestService interface {
 type fortifyUtils interface {
 	maven.Utils
 	gradle.Utils
+	piperutils.FileUtils
 
 	SetDir(d string)
 	GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error)
-	CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error
+	GetIssueService() *github.IssuesService
+	GetSearchService() *github.SearchService
 }
 
 type fortifyUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
+	issues *github.IssuesService
+	search *github.SearchService
 }
 
 func (f *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
@@ -76,28 +81,49 @@ func (f *fortifyUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.Creat
 	return piperGithub.CreateIssue(ghCreateIssueOptions)
 }
 
-func newFortifyUtilsBundle() fortifyUtils {
+func (f *fortifyUtilsBundle) GetIssueService() *github.IssuesService {
+	return f.issues
+}
+
+func (f *fortifyUtilsBundle) GetSearchService() *github.SearchService {
+	return f.search
+}
+
+func newFortifyUtilsBundle(client *github.Client) fortifyUtils {
 	utils := fortifyUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
+	}
+	if client != nil {
+		utils.issues = client.Issues
+		utils.search = client.Search
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
 }
 
-const checkString = "<---CHECK FORTIFY---"
-const classpathFileName = "fortify-execute-scan-cp.txt"
+const (
+	checkString       = "<---CHECK FORTIFY---"
+	classpathFileName = "fortify-execute-scan-cp.txt"
+)
+
+var execInPath = exec.LookPath
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
+	// TODO provide parameter for trusted certs
+	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	if err != nil {
+		log.Entry().WithError(err).Warning("Failed to get GitHub client")
+	}
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
-	utils := newFortifyUtilsBundle()
+	utils := newFortifyUtilsBundle(client)
 
 	influx.step_data.fields.fortify = false
-	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
-	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
+	reports, err := runFortifyScan(ctx, config, sys, utils, telemetryData, influx, auditStatus)
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, utils, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
@@ -120,9 +146,16 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 	return artifact, nil
 }
 
-func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
+func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
+	executableList := []string{"fortifyupdate", "sourceanalyzer"}
+	for _, exec := range executableList {
+		_, err := execInPath(exec)
+		if err != nil {
+			return reports, fmt.Errorf("Command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
+		}
+	}
 
 	if config.BuildTool == "maven" && config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
@@ -197,7 +230,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordFortify("./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
+	toolRecordFileName, err := createToolRecordFortify(utils, "./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_FORTIFY: Failed to create toolrecord file ...", err)
@@ -207,7 +240,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 
 	if config.VerifyOnly {
 		log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-		err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
+		paths, err := verifyFFProjectCompliance(ctx, config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 		reports = append(reports, paths...)
 		return reports, err
 	}
@@ -218,7 +251,9 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	// Create sourceanalyzer command based on configuration
 	buildID := uuid.New().String()
 	utils.SetDir(config.ModulePath)
-	os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm)
+	if err := os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm); err != nil {
+		log.Entry().WithError(err).Error("failed to create directory")
+	}
 
 	if config.UpdateRulePack {
 		err := utils.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
@@ -269,7 +304,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	if config.ConvertToSarif {
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
 		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := fortify.ConvertFprToSarif(sys, project, projectVersion, resultFilePath, filterSet)
+		sarif, err := fortify.ConvertFprToSarif(sys, projectVersion, resultFilePath, filterSet)
 		if err != nil {
 			return reports, fmt.Errorf("failed to generate SARIF")
 		}
@@ -282,7 +317,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	}
 
 	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-	err, paths := verifyFFProjectCompliance(config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
+	paths, err := verifyFFProjectCompliance(ctx, config, utils, sys, project, projectVersion, filterSet, influx, auditStatus)
 	reports = append(reports, paths...)
 	return reports, err
 }
@@ -293,31 +328,35 @@ func classifyErrorOnLookup(err error) {
 	}
 }
 
-func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUtils, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (error, []piperutils.Path) {
+func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOptions, utils fortifyUtils, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	reports := []piperutils.Path{}
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID))
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0700)
+		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700); err != nil {
+			log.Entry().WithError(err).Error("failed to write file")
+		}
 
 		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
 		if err != nil {
-			return err, reports
+			return reports, err
 		}
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0700)
+		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700); err != nil {
+			log.Entry().WithError(err).Warning("failed to write file")
+		}
 	}
 
 	// Perform audit compliance checks
 	issueFilterSelectorSet, err := sys.GetIssueFilterSelectorOfProjectVersionByName(projectVersion.ID, []string{"Analysis", "Folder", "Category"}, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to fetch project version issue filter selector for project version ID %v", projectVersion.ID), reports
+		return reports, errors.Wrapf(err, "failed to fetch project version issue filter selector for project version ID %v", projectVersion.ID)
 	}
 	log.Entry().Debugf("initial filter selector set: %v", issueFilterSelectorSet)
 
 	spotChecksCountByCategory := []fortify.SpotChecksAuditCount{}
 	numberOfViolations, issueGroups, err := analyseUnauditedIssues(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus, &spotChecksCountByCategory)
 	if err != nil {
-		return errors.Wrap(err, "failed to analyze unaudited issues"), reports
+		return reports, errors.Wrap(err, "failed to analyze unaudited issues")
 	}
 	numberOfSuspiciousExploitable, issueGroupsSuspiciousExploitable := analyseSuspiciousExploitable(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
 	numberOfViolations += numberOfSuspiciousExploitable
@@ -335,7 +374,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 	scanReport := fortify.CreateCustomReport(fortifyReportingData, issueGroups)
 	paths, err := fortify.WriteCustomReports(scanReport)
 	if err != nil {
-		return errors.Wrap(err, "failed to write custom reports"), reports
+		return reports, errors.Wrap(err, "failed to write custom reports")
 	}
 	reports = append(reports, paths...)
 
@@ -343,24 +382,30 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, utils fortifyUt
 	log.Entry().Debugf("%v, %v, %v, %v, %v, %v", config.CreateResultIssue, numberOfViolations > 0, len(config.GithubToken) > 0, len(config.GithubAPIURL) > 0, len(config.Owner) > 0, len(config.Repository) > 0)
 	if config.CreateResultIssue && numberOfViolations > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 		log.Entry().Debug("Creating/updating GitHub issue with scan results")
-		err = reporting.UploadSingleReportToGithub(scanReport, config.GithubToken, config.GithubAPIURL, config.Owner, config.Repository, config.Assignees, utils)
-		if err != nil {
-			return errors.Wrap(err, "failed to upload scan results into GitHub"), reports
+		gh := reporting.GitHub{
+			Owner:         &config.Owner,
+			Repository:    &config.Repository,
+			Assignees:     &config.Assignees,
+			IssueService:  utils.GetIssueService(),
+			SearchService: utils.GetSearchService(),
+		}
+		if err := gh.UploadSingleReport(ctx, scanReport); err != nil {
+			return reports, fmt.Errorf("failed to upload scan results into GitHub: %w", err)
 		}
 	}
 
 	jsonReport := fortify.CreateJSONReport(fortifyReportingData, spotChecksCountByCategory, config.ServerURL)
 	paths, err = fortify.WriteJSONReport(jsonReport)
 	if err != nil {
-		return errors.Wrap(err, "failed to write json report"), reports
+		return reports, errors.Wrap(err, "failed to write json report")
 	}
 	reports = append(reports, paths...)
 
 	if numberOfViolations > 0 {
 		log.SetErrorCategory(log.ErrorCompliance)
-		return errors.New("fortify scan failed, the project is not compliant. For details check the archived report"), reports
+		return reports, errors.New("fortify scan failed, the project is not compliant. For details check the archived report")
 	}
-	return nil, reports
+	return reports, nil
 }
 
 func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportData {
@@ -386,6 +431,11 @@ func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportDa
 
 func analyseUnauditedIssues(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string, spotChecksCountByCategory *[]fortify.SpotChecksAuditCount) (int, []*models.ProjectVersionIssueGroup, error) {
 	log.Entry().Info("Analyzing unaudited issues")
+
+	if config.SpotCheckMinimumUnit != "percentage" && config.SpotCheckMinimumUnit != "number" {
+		return 0, nil, fmt.Errorf("Invalid spotCheckMinimumUnit. Please set it as 'percentage' or 'number'.")
+	}
+
 	reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder"}, nil)
 	fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersion.ID, "", filterSet.GUID, reducedFilterSelectorSet)
 	if err != nil {
@@ -454,6 +504,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 	overallDelta := 0
 	overallIssues := 0
 	overallIssuesAudited := 0
+
 	for _, issueGroup := range spotCheckCategories {
 		group := ""
 		total := 0
@@ -465,9 +516,12 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 		}
 		flagOutput := ""
 
-		if ((total <= config.SpotCheckMinimum || config.SpotCheckMinimum < 0) && audited != total) || (total > config.SpotCheckMinimum && audited < config.SpotCheckMinimum) {
-			currentDelta := config.SpotCheckMinimum - audited
-			if config.SpotCheckMinimum < 0 || config.SpotCheckMinimum > total {
+		minSpotChecksPerCategory := getMinSpotChecksPerCategory(config, total)
+		log.Entry().Debugf("Minimum spot checks for group %v is %v with audit count %v and total issue count %v", group, minSpotChecksPerCategory, audited, total)
+
+		if ((total <= minSpotChecksPerCategory || minSpotChecksPerCategory < 0) && audited != total) || (total > minSpotChecksPerCategory && audited < minSpotChecksPerCategory) {
+			currentDelta := minSpotChecksPerCategory - audited
+			if minSpotChecksPerCategory < 0 || minSpotChecksPerCategory > total {
 				currentDelta = total - audited
 			}
 			if currentDelta > 0 {
@@ -494,10 +548,34 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 	return overallDelta
 }
 
+func getMinSpotChecksPerCategory(config fortifyExecuteScanOptions, totalCount int) int {
+	if config.SpotCheckMinimumUnit == "percentage" {
+		spotCheckMinimumPercentageValue := int(math.Ceil(float64(config.SpotCheckMinimum) / 100.0 * float64(totalCount)))
+		return getSpotChecksMinAsPerMaximum(config.SpotCheckMaximum, spotCheckMinimumPercentageValue)
+	}
+
+	return getSpotChecksMinAsPerMaximum(config.SpotCheckMaximum, config.SpotCheckMinimum)
+}
+
+func getSpotChecksMinAsPerMaximum(spotCheckMax int, spotCheckMin int) int {
+	if spotCheckMax < 1 {
+		return spotCheckMin
+	}
+
+	if spotCheckMin > spotCheckMax {
+		return spotCheckMax
+	}
+
+	return spotCheckMin
+}
+
 func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (int, []*models.ProjectVersionIssueGroup) {
 	log.Entry().Info("Analyzing suspicious and exploitable issues")
 	reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Analysis"}, []string{})
 	fetchedGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersion.ID, "", filterSet.GUID, reducedFilterSelectorSet)
+	if err != nil {
+		log.Entry().WithError(err).Errorf("failed to get project issues")
+	}
 
 	suspiciousCount := 0
 	exploitableCount := 0
@@ -743,7 +821,8 @@ func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string)
 		"-DincludeScope=compile",
 		"-DskipTests",
 		"-Dmaven.javadoc.skip=true",
-		"--fail-at-end"}
+		"--fail-at-end",
+	}
 
 	if len(config.BuildDescriptorExcludeList) > 0 {
 		// From the documentation, these are file paths to a module's pom.xml.
@@ -822,7 +901,7 @@ func removeDuplicates(contents, separator string) string {
 }
 
 func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, buildID, buildLabel, buildProject string) error {
-	var err error = nil
+	var err error
 	// Do special Python related prep
 	pipVersion := "pip3"
 	if config.PythonVersion != "python3" {
@@ -866,10 +945,14 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 			context := map[string]string{}
 			cmdTemplate := []string{pipVersion, "install", "--user", "-r", config.PythonRequirementsFile}
 			cmdTemplate = append(cmdTemplate, tokenize(config.PythonRequirementsInstallSuffix)...)
-			executeTemplatedCommand(utils, cmdTemplate, context)
+			if err := executeTemplatedCommand(utils, cmdTemplate, context); err != nil {
+				log.Entry().WithError(err).Error("failed to execute template command")
+			}
 		}
 
-		executeTemplatedCommand(utils, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
+		if err := executeTemplatedCommand(utils, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion}); err != nil {
+			log.Entry().WithError(err).Error("failed to execute template command")
+		}
 
 		config.Translate, err = populatePipTranslate(&config, classpath)
 		if err != nil {
@@ -888,6 +971,18 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
 
+func appendPythonVersionToTranslate(translateOptions map[string]interface{}, pythonVersion string) error {
+	if pythonVersion == "python2" {
+		translateOptions["pythonVersion"] = "2"
+	} else if pythonVersion == "python3" {
+		translateOptions["pythonVersion"] = "3"
+	} else {
+		return fmt.Errorf("Invalid pythonVersion '%s'. Possible values for pythonVersion are 'python2' and 'python3'. ", pythonVersion)
+	}
+
+	return nil
+}
+
 func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
 	if len(config.Translate) > 0 {
 		return config.Translate, nil
@@ -895,8 +990,12 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 
 	var translateList []map[string]interface{}
 	translateList = append(translateList, make(map[string]interface{}))
-
 	separator := getSeparator()
+
+	err := appendPythonVersionToTranslate(translateList[0], config.PythonVersion)
+	if err != nil {
+		return "", err
+	}
 
 	translateList[0]["pythonPath"] = classpath + separator +
 		getSuppliedOrDefaultListAsString(config.PythonAdditionalPath, []string{}, separator)
@@ -920,7 +1019,7 @@ func populateMavenGradleTranslate(config *fortifyExecuteScanOptions, classpath s
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
-		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
+		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/src/gen/java/cds/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
 
 	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/src/test/**/*"})
 
@@ -968,7 +1067,7 @@ func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyUti
 }
 
 func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildID, buildLabel, buildProject string) error {
-	var scanOptions = []string{
+	scanOptions := []string{
 		"-verbose",
 		"-64",
 		"-b",
@@ -980,9 +1079,7 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 		scanOptions = append(scanOptions, "-quick")
 	}
 	if len(config.AdditionalScanParameters) > 0 {
-		for _, scanParameter := range config.AdditionalScanParameters {
-			scanOptions = append(scanOptions, scanParameter)
-		}
+		scanOptions = append(scanOptions, config.AdditionalScanParameters...)
 	}
 	if len(buildLabel) > 0 {
 		scanOptions = append(scanOptions, "-build-label", buildLabel)
@@ -1001,7 +1098,7 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 
 func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
 	author := ""
-	//TODO provide parameter for trusted certs
+	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err == nil && ctx != nil && client != nil {
 		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
@@ -1034,9 +1131,9 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 			author = prList[0].GetUser().GetLogin()
 		}
 		return number, author, nil
-	} else {
-		log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	}
+
+	log.Entry().Infof("Unable to resolve PR via commit ID: %v", config.CommitID)
 	return number, author, err
 }
 
@@ -1086,6 +1183,9 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		if len(t["djangoTemplatDirs"]) > 0 {
 			options = append(options, "-django-template-dirs", t["djangoTemplatDirs"])
 		}
+		if len(t["pythonVersion"]) > 0 {
+			options = append(options, "-python-version", t["pythonVersion"])
+		}
 
 	default:
 		return options
@@ -1128,8 +1228,8 @@ func getSeparator() string {
 	return ":"
 }
 
-func createToolRecordFortify(workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
-	record := toolrecord.New(workspace, "fortify", config.ServerURL)
+func createToolRecordFortify(utils fortifyUtils, workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
+	record := toolrecord.New(utils, workspace, "fortify", config.ServerURL)
 	// Project
 	err := record.AddKeyData("project",
 		strconv.FormatInt(projectID, 10),

@@ -43,7 +43,7 @@ func AbapEnvironmentCloneGitRepoCommand() *cobra.Command {
 	var createAbapEnvironmentCloneGitRepoCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Clones a git repository to a SAP BTP ABAP Environment system",
-		Long: `Clones a git repository (Software Component) to a SAP BTP ABAP Environment system.
+		Long: `Clones a git repository (Software Component) to a SAP BTP ABAP Environment system. If the repository is already cloned, the step will checkout the configured branch and pull the specified commit, instead.
 Please provide either of the following options:
 
 * The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
@@ -77,6 +77,10 @@ Please provide either of the following options:
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())

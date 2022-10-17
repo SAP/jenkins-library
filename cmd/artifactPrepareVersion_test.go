@@ -28,7 +28,6 @@ type artifactVersioningMock struct {
 	newVersion       string
 	getVersionError  string
 	setVersionError  string
-	initCalled       bool
 	versioningScheme string
 	coordinates      versioning.Coordinates
 	coordinatesError error
@@ -819,7 +818,7 @@ func TestPropagateVersion(t *testing.T) {
 		err = yaml.Unmarshal(chartContent, &chartMeta)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "1.2.4-20200101000000+theGitCommitId", chartMeta.AppVersion)
+		assert.Equal(t, "1.2.4-20200101000000_theGitCommitId", chartMeta.AppVersion)
 		assert.Equal(t, "1.2.4-20200101000000+theGitCommitId", chartMeta.Version)
 	})
 

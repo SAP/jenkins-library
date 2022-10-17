@@ -72,8 +72,8 @@ func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages.
 If a package does not exist yet in the package registry, it is created there. The response contains detail information for this package and a package status, which determines the next actions:
 "P": Package was created in the registry; production can be started / continued
-"R": Package exists and is already released; production is not needed and will be skipped
-The steps waits until the status "P" or "R" is achieved.
+"R": Package exists and is already released; production is not needed and will be skipped.
+The step waits until the status "P" or "R" is achieved.
 The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.
 <br />
 For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
@@ -105,6 +105,10 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())

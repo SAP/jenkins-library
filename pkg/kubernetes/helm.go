@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -17,7 +18,7 @@ type HelmExecutor interface {
 	RunHelmInstall() error
 	RunHelmUninstall() error
 	RunHelmTest() error
-	RunHelmPublish() error
+	RunHelmPublish() (string, error)
 	RunHelmDependency() error
 }
 
@@ -96,6 +97,9 @@ func (h *HelmExecute) runHelmAdd() error {
 	if len(h.config.TargetRepositoryName) == 0 {
 		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
 	}
+	if len(h.config.TargetRepositoryURL) == 0 {
+		return fmt.Errorf("there is no TargetRepositoryURL value. 'helm repo add' command requires 2 arguments")
+	}
 	if len(h.config.TargetRepositoryUser) != 0 {
 		helmParams = append(helmParams, "--username", h.config.TargetRepositoryUser)
 	}
@@ -117,23 +121,23 @@ func (h *HelmExecute) runHelmAdd() error {
 
 // RunHelmUpgrade is used to upgrade a release
 func (h *HelmExecute) RunHelmUpgrade() error {
-	if len(h.config.ChartPath) == 0 {
-		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
-	}
-
 	err := h.runHelmInit()
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
-	}
-
-	if err := h.runHelmAdd(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
 		"upgrade",
 		h.config.DeploymentName,
-		h.config.ChartPath,
+	}
+
+	if len(h.config.ChartPath) == 0 {
+		if err := h.runHelmAdd(); err != nil {
+			return fmt.Errorf("failed to add a chart repository: %v", err)
+		}
+		helmParams = append(helmParams, h.config.TargetRepositoryName)
+	} else {
+		helmParams = append(helmParams, h.config.ChartPath)
 	}
 
 	if h.verbose {
@@ -183,6 +187,10 @@ func (h *HelmExecute) RunHelmLint() error {
 		h.config.ChartPath,
 	}
 
+	for _, v := range h.config.HelmValues {
+		helmParams = append(helmParams, "--values", v)
+	}
+
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
@@ -199,22 +207,22 @@ func (h *HelmExecute) RunHelmLint() error {
 
 // RunHelmInstall is used to install a chart
 func (h *HelmExecute) RunHelmInstall() error {
-	if len(h.config.ChartPath) == 0 {
-		return fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
-	}
-
 	if err := h.runHelmInit(); err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
-	}
-
-	if err := h.runHelmAdd(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	helmParams := []string{
 		"install",
 		h.config.DeploymentName,
-		h.config.ChartPath,
+	}
+
+	if len(h.config.ChartPath) == 0 {
+		if err := h.runHelmAdd(); err != nil {
+			return fmt.Errorf("failed to add a chart repository: %v", err)
+		}
+		helmParams = append(helmParams, h.config.TargetRepositoryName)
+	} else {
+		helmParams = append(helmParams, h.config.ChartPath)
 	}
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
@@ -251,10 +259,6 @@ func (h *HelmExecute) RunHelmInstall() error {
 func (h *HelmExecute) RunHelmUninstall() error {
 	err := h.runHelmInit()
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
-	}
-
-	if err := h.runHelmAdd(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
@@ -373,23 +377,35 @@ func (h *HelmExecute) RunHelmDependency() error {
 		log.Entry().WithError(err).Fatal("Helm dependency call failed")
 	}
 
+	dependencyDir := filepath.Join(h.config.ChartPath, "charts")
+	exists, err := h.utils.DirExists(dependencyDir)
+	if err != nil {
+		return fmt.Errorf("failed to get directory information: %v", err)
+	}
+
+	if exists {
+		if err := h.utils.Chmod(dependencyDir, 0777); err != nil {
+			return fmt.Errorf("failed to change permissions: %v", err)
+		}
+	}
+
 	return nil
 }
 
 //RunHelmPublish is used to upload a chart to a registry
-func (h *HelmExecute) RunHelmPublish() error {
+func (h *HelmExecute) RunHelmPublish() (string, error) {
 	err := h.runHelmInit()
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
+		return "", fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	err = h.runHelmPackage()
 	if err != nil {
-		return fmt.Errorf("failed to execute deployments: %v", err)
+		return "", fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
 	if len(h.config.TargetRepositoryURL) == 0 {
-		return fmt.Errorf("there's no target repository for helm chart publishing configured")
+		return "", fmt.Errorf("there's no target repository for helm chart publishing configured")
 	}
 
 	repoClientOptions := piperhttp.ClientOptions{
@@ -416,14 +432,14 @@ func (h *HelmExecute) RunHelmPublish() error {
 
 	response, err := h.utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
 	if err != nil {
-		return fmt.Errorf("couldn't upload artifact: %w", err)
+		return "", fmt.Errorf("couldn't upload artifact: %w", err)
 	}
 
 	if !(response.StatusCode == 200 || response.StatusCode == 201) {
-		return fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
+		return "", fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
 	}
 
-	return nil
+	return targetURL, nil
 }
 
 func (h *HelmExecute) runHelmCommand(helmParams []string) error {

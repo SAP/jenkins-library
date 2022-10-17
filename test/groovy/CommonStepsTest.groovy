@@ -147,6 +147,7 @@ public class CommonStepsTest extends BasePiperTest{
         'runClosures',
         'checkmarxExecuteScan', //implementing new golang pattern without fields
         'githubCreateIssue', //implementing new golang pattern without fields
+        'githubCreatePullRequest', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
         'githubCheckBranchProtection', //implementing new golang pattern without fields
         'githubCommentIssue', //implementing new golang pattern without fields
@@ -172,6 +173,7 @@ public class CommonStepsTest extends BasePiperTest{
         'gctsExecuteABAPQualityChecks', //implementing new golang pattern without fields
         'gctsExecuteABAPUnitTests', //implementing new golang pattern without fields
         'gctsCloneRepository', //implementing new golang pattern without fields
+        'codeqlExecuteScan', //implementing new golang pattern without fields
         'fortifyExecuteScan', //implementing new golang pattern without fields
         'gctsDeploy', //implementing new golang pattern without fields
         'containerSaveImage', //implementing new golang pattern without fields
@@ -216,7 +218,12 @@ public class CommonStepsTest extends BasePiperTest{
         'apiKeyValueMapUpload', //implementing new golang pattern without fields
         'apiProviderUpload', //implementing new golang pattern without fields
         'pythonBuild', //implementing new golang pattern without fields
-        'awsS3Upload'
+        'awsS3Upload',
+        'apiProxyList', //implementing new golang pattern without fields
+        'azureBlobUpload',
+        'awsS3Upload',
+        'ansSendEvent',
+        'apiProviderList', //implementing new golang pattern without fields
     ]
 
     @Test

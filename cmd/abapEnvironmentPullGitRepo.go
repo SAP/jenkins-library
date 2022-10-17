@@ -60,12 +60,12 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	client.SetOptions(clientOptions)
 	pollIntervall := com.GetPollIntervall()
 
-	repositories := []abaputils.Repository{}
+	var repositories []abaputils.Repository
 	err = checkPullRepositoryConfiguration(*options)
 	if err != nil {
 		return err
 	}
-	repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories})
+	repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories, RepositoryName: options.RepositoryName, CommitID: options.CommitID}, false)
 	handleIgnoreCommit(repositories, options.IgnoreCommit)
 	if err != nil {
 		return err
@@ -155,8 +155,12 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	if errRead != nil {
 		return uriConnectionDetails, err
 	}
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &body)
+	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
+		return uriConnectionDetails, err
+	}
+	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
+		return uriConnectionDetails, err
+	}
 	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not pull the repository / software component")
 		err := errors.New("Request to ABAP System not successful")
@@ -168,10 +172,11 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 }
 
 func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions) error {
-	if len(options.RepositoryNames) > 0 && options.Repositories != "" {
-		log.Entry().Info("It seems like you have specified repositories directly via the configuration parameter 'repositoryNames' as well as in the dedicated repositories configuration file. Please note that in this case both configurations will be handled and pulled.")
+
+	if (len(options.RepositoryNames) > 0 && options.Repositories != "") || (len(options.RepositoryNames) > 0 && options.RepositoryName != "") || (options.RepositoryName != "" && options.Repositories != "") {
+		return fmt.Errorf("Checking configuration failed: %w", errors.New("Only one of the paramters `RepositoryName`,`RepositoryNames` or `Repositories` may be configured at the same time"))
 	}
-	if len(options.RepositoryNames) == 0 && options.Repositories == "" {
+	if len(options.RepositoryNames) == 0 && options.Repositories == "" && options.RepositoryName == "" {
 		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"))
 	}
 	return nil

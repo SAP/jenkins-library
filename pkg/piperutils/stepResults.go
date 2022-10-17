@@ -3,9 +3,10 @@ package piperutils
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 )
 
 // Path - struct to serialize paths and some metadata back to the invoker
@@ -16,8 +17,12 @@ type Path struct {
 	Scope     string `json:"scope"`
 }
 
+type fileWriter interface {
+	WriteFile(filename string, data []byte, perm os.FileMode) error
+}
+
 // PersistReportsAndLinks stores the report paths and links in JSON format in the workspace for processing outside
-func PersistReportsAndLinks(stepName, workspace string, reports, links []Path) {
+func PersistReportsAndLinks(stepName, workspace string, files fileWriter, reports, links []Path) error {
 	if reports == nil {
 		reports = []Path{}
 	}
@@ -32,19 +37,25 @@ func PersistReportsAndLinks(stepName, workspace string, reports, links []Path) {
 			break
 		}
 	}
+
 	reportList, err := json.Marshal(&reports)
 	if err != nil {
 		if hasMandatoryReport {
-			log.Entry().Fatalln("Failed to marshall reports.json data for archiving")
+			return fmt.Errorf("failed to marshall reports.json data for archiving: %w", err)
 		}
 		log.Entry().Errorln("Failed to marshall reports.json data for archiving")
 	}
-	piperenv.SetParameter(workspace, fmt.Sprintf("%v_reports.json", stepName), string(reportList))
+
+	if err := files.WriteFile(filepath.Join(workspace, fmt.Sprintf("%v_reports.json", stepName)), reportList, 0666); err != nil {
+		return fmt.Errorf("failed to write reports.json: %w", err)
+	}
 
 	linkList, err := json.Marshal(&links)
 	if err != nil {
-		log.Entry().Errorln("Failed to marshall links.json data for archiving")
-	} else {
-		piperenv.SetParameter(workspace, fmt.Sprintf("%v_links.json", stepName), string(linkList))
+		return fmt.Errorf("failed to marshall links.json data for archiving: %w", err)
 	}
+	if err := files.WriteFile(filepath.Join(workspace, fmt.Sprintf("%v_links.json", stepName)), linkList, 0666); err != nil {
+		return fmt.Errorf("failed to write links.json: %w", err)
+	}
+	return nil
 }

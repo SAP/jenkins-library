@@ -1,7 +1,6 @@
 package cnbutils_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -56,14 +55,12 @@ func TestGetImageName(t *testing.T) {
 	t.Run("Image name is taken from git repo", func(t *testing.T) {
 		t.Parallel()
 
-		tmpdir, err := ioutil.TempDir("", "cpe")
-		assert.NoError(t, err)
-		defer os.RemoveAll(tmpdir)
+		tmpdir := t.TempDir()
 
-		err = os.MkdirAll(filepath.Join(tmpdir, "commonPipelineEnvironment", "git"), os.ModePerm)
+		err := os.MkdirAll(filepath.Join(tmpdir, "commonPipelineEnvironment", "git"), os.ModePerm)
 		assert.NoError(t, err)
 
-		err = ioutil.WriteFile(filepath.Join(tmpdir, "commonPipelineEnvironment", "git", "repository"), []byte("repo-name"), os.ModePerm)
+		err = os.WriteFile(filepath.Join(tmpdir, "commonPipelineEnvironment", "git", "repository"), []byte("repo-name"), os.ModePerm)
 		assert.NoError(t, err)
 
 		targetImage, err := cnbutils.GetTargetImage("http://registry", "", "tag", "", tmpdir)
@@ -75,14 +72,12 @@ func TestGetImageName(t *testing.T) {
 	t.Run("Image name is taken from github repo", func(t *testing.T) {
 		t.Parallel()
 
-		tmpdir, err := ioutil.TempDir("", "cpe")
-		assert.NoError(t, err)
-		defer os.RemoveAll(tmpdir)
+		tmpdir := t.TempDir()
 
-		err = os.MkdirAll(filepath.Join(tmpdir, "commonPipelineEnvironment", "github"), os.ModePerm)
+		err := os.MkdirAll(filepath.Join(tmpdir, "commonPipelineEnvironment", "github"), os.ModePerm)
 		assert.NoError(t, err)
 
-		err = ioutil.WriteFile(filepath.Join(tmpdir, "commonPipelineEnvironment", "github", "repository"), []byte("repo-name"), os.ModePerm)
+		err = os.WriteFile(filepath.Join(tmpdir, "commonPipelineEnvironment", "github", "repository"), []byte("repo-name"), os.ModePerm)
 		assert.NoError(t, err)
 
 		targetImage, err := cnbutils.GetTargetImage("http://registry", "", "tag", "", tmpdir)

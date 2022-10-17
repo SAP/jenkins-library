@@ -3,15 +3,17 @@ package orchestrator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"net/http"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"net/http"
 )
 
 func TestJenkins(t *testing.T) {
@@ -29,6 +31,7 @@ func TestJenkins(t *testing.T) {
 		assert.False(t, p.IsPullRequest())
 		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.GetBuildURL())
 		assert.Equal(t, "main", p.GetBranch())
+		assert.Equal(t, "refs/heads/main", p.GetReference())
 		assert.Equal(t, "abcdef42713", p.GetCommit())
 		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())
 		assert.Equal(t, "Jenkins", p.OrchestratorType())
@@ -46,6 +49,7 @@ func TestJenkins(t *testing.T) {
 		c := p.GetPullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
+		assert.Equal(t, "refs/pull/42/head", p.GetReference())
 		assert.Equal(t, "feat/test-jenkins", c.Branch)
 		assert.Equal(t, "main", c.Base)
 		assert.Equal(t, "42", c.Key)
@@ -264,6 +268,35 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 				]
 				}`)
 
+	apiJSONPullRequest := []byte(`{
+				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+				"actions": [ {
+					    "_class": "hudson.model.CauseAction",
+					    "causes": [
+						{
+						    "_class": "jenkins.branch.BranchEventCause",
+						    "shortDescription": "Pull request #1511 opened"
+						}
+					    ]
+					}]
+				}`)
+
+	apiJSONResourceTrigger := []byte(`{
+				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+				"actions": [ {
+					    "_class": "hudson.model.CauseAction",
+					    "causes": [
+							{
+							    "_class": "org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause",
+							    "shortDescription": "Started by upstream project \"dummy/dummy/PR-1234\" build number 42",
+							    "upstreamBuild": 24,
+							    "upstreamProject": "dummy/dummy/PR-1234",
+							    "upstreamUrl": "job/dummy/job/dummy/job/PR-1234/"
+							}
+						    ]
+					}]
+				}`)
+
 	apiJSONUnknown := []byte(`{
 				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
 				"actions": [{
@@ -294,6 +327,16 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 			name:           "Scheduled trigger",
 			apiInformation: apiJsonSchedule,
 			want:           "Schedule",
+		},
+		{
+			name:           "PullRequest trigger",
+			apiInformation: apiJSONPullRequest,
+			want:           "PullRequest",
+		},
+		{
+			name:           "ResourceTrigger trigger",
+			apiInformation: apiJSONResourceTrigger,
+			want:           "ResourceTrigger",
 		},
 		{
 			name:           "Unknown",
@@ -493,6 +536,126 @@ func TestJenkinsConfigProvider_InitOrchestratorProvider(t *testing.T) {
 			j.InitOrchestratorProvider(tt.settings)
 			var expected map[string]interface{}
 			assert.Equal(t, j.apiInformation, expected)
+		})
+	}
+}
+
+func TestJenkinsConfigProvider_GetChangeSet(t *testing.T) {
+
+	changeSetTwo := []byte(`{
+"displayName": "#531",
+"duration": 424269,
+"changeSets": [
+        {
+            "_class": "hudson.plugins.git.GitChangeSetList",
+            "items": [
+                {
+                    "_class": "hudson.plugins.git.GitChangeSet",
+                    "commitId": "987654321",
+                    "timestamp": 1655057520000
+                },
+		{
+                    "_class": "hudson.plugins.git.GitChangeSet",
+                    "commitId": "123456789",
+                    "timestamp": 1656057520000
+                }
+            ],
+            "kind": "git"
+        }
+    ]
+}`)
+
+	changeSetMultiple := []byte(`{
+"displayName": "#531",
+"duration": 424269,
+"changeSets": [
+    {
+        "_class": "hudson.plugins.git.GitChangeSetList",
+        "items": [
+            {
+                "_class": "hudson.plugins.git.GitChangeSet",
+                "commitId": "987654321",
+                "timestamp": 1655057520000
+            },
+            {
+                "_class": "hudson.plugins.git.GitChangeSet",
+                "commitId": "123456789",
+                "timestamp": 1656057520000
+            }
+        ],
+        "kind": "git"
+    },
+    {
+        "_class": "hudson.plugins.git.GitChangeSetList",
+        "items": [
+            {
+                "_class": "hudson.plugins.git.GitChangeSet",
+                "commitId": "456789123",
+                "timestamp": 1659948036000
+            },
+            {
+                "_class": "hudson.plugins.git.GitChangeSet",
+                "commitId": "654717777",
+                "timestamp": 1660053494000
+            }
+        ],
+        "kind": "git"
+    }
+]
+}`)
+
+	changeSetEmpty := []byte(`{
+"displayName": "#531",
+"duration": 424269,
+"changeSets": []
+}`)
+	changeSetNotAvailable := []byte(`{
+"displayName": "#531",
+"duration": 424269
+}`)
+	tests := []struct {
+		name          string
+		want          []ChangeSet
+		testChangeSet []byte
+	}{
+		{
+			name: "success",
+			want: []ChangeSet{
+				{CommitId: "987654321", Timestamp: "1655057520000"},
+				{CommitId: "123456789", Timestamp: "1656057520000"},
+			},
+			testChangeSet: changeSetTwo,
+		},
+		{
+			name: "success multiple",
+			want: []ChangeSet{
+				{CommitId: "987654321", Timestamp: "1655057520000"},
+				{CommitId: "123456789", Timestamp: "1656057520000"},
+				{CommitId: "456789123", Timestamp: "1659948036000"},
+				{CommitId: "654717777", Timestamp: "1660053494000"},
+			},
+			testChangeSet: changeSetMultiple,
+		},
+		{
+			name:          "failure - changeSet empty",
+			want:          []ChangeSet(nil),
+			testChangeSet: changeSetEmpty,
+		},
+		{
+			name:          "failure - no changeSet found",
+			want:          []ChangeSet(nil),
+			testChangeSet: changeSetNotAvailable,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var apiInformation map[string]interface{}
+			err := json.Unmarshal(tt.testChangeSet, &apiInformation)
+			if err != nil {
+				t.Fatal("could not parse json:", err)
+			}
+			j := &JenkinsConfigProvider{apiInformation: apiInformation}
+			assert.Equalf(t, tt.want, j.GetChangeSet(), "GetChangeSet()")
 		})
 	}
 }

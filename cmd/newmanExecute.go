@@ -91,7 +91,6 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 	options := resolveOptions(config)
 
 	for _, collection := range collectionList {
-		runOptions := []string{}
 		runOptions, err := resolveTemplate(config, collection)
 		if err != nil {
 			return err

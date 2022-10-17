@@ -16,6 +16,7 @@ import (
 
 type checkStepActiveCommandOptions struct {
 	openFile        func(s string, t map[string]string) (io.ReadCloser, error)
+	fileExists      func(filename string) (bool, error)
 	stageConfigFile string
 	stepName        string
 	stageName       string
@@ -29,6 +30,7 @@ var checkStepActiveOptions checkStepActiveCommandOptions
 // CheckStepActiveCommand is the entry command for checking if a step is active in a defined stage
 func CheckStepActiveCommand() *cobra.Command {
 	checkStepActiveOptions.openFile = config.OpenPiperFile
+	checkStepActiveOptions.fileExists = piperutils.FileExists
 	var checkStepActiveCmd = &cobra.Command{
 		Use:   "checkIfStepActive",
 		Short: "Checks if a step is active in a defined stage.",
@@ -67,6 +69,7 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	projectConfig, err := initializeConfig(&pConfig)
 	if err != nil {
 		log.Entry().Errorf("Failed to load project config: %v", err)
+		return errors.Wrapf(err, "Failed to load project config failed")
 	}
 
 	stageConfigFile, err := checkStepActiveOptions.openFile(checkStepActiveOptions.stageConfigFile, GeneralConfig.GitHubAccessTokens)
@@ -75,8 +78,8 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	}
 	defer stageConfigFile.Close()
 
-	runSteps := map[string]map[string]bool{}
-	runStages := map[string]bool{}
+	var runSteps map[string]map[string]bool
+	var runStages map[string]bool
 
 	// load and evaluate step conditions
 	if checkStepActiveOptions.v1Active {
@@ -146,16 +149,24 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
-	cmd.MarkFlagRequired("step")
+	_ = cmd.MarkFlagRequired("step")
 }
 
 func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
-	customConfig, err := checkStepActiveOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
-	if err != nil {
-		return nil, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+	var customConfig io.ReadCloser
+	var err error
+	//accept that config file cannot be loaded as its not mandatory here
+	if exists, err := checkStepActiveOptions.fileExists(projectConfigFile); exists {
+		log.Entry().Infof("Project config: '%s'", projectConfigFile)
+		customConfig, err = checkStepActiveOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
+		if err != nil {
+			return nil, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+		}
+		defer customConfig.Close()
+	} else {
+		log.Entry().Infof("Project config: NONE ('%s' does not exist)", projectConfigFile)
 	}
-	defer customConfig.Close()
 
 	defaultConfig := []io.ReadCloser{}
 	for _, f := range GeneralConfig.DefaultConfig {

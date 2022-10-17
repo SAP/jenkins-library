@@ -3,9 +3,11 @@ package checkmarx
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -136,6 +138,8 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
 
+	start := time.Now() // For the conversion start time
+
 	var cxxml CxXMLResults
 	err := decoder.Decode(&cxxml)
 	if err != nil {
@@ -189,7 +193,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			}*/
 
 			//General
-			result.RuleID = "checkmarx-" + cxxml.Query[i].ID
+			result.RuleID = "checkmarx-" + cxxml.Query[i].Language + "/" + cxxml.Query[i].ID
 			result.RuleIndex = cweIdsForTaxonomies[cxxml.Query[i].CweID]
 			result.Level = "none"
 			msg := new(format.Message)
@@ -201,11 +205,10 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			}
 			result.Message = msg
 
-			if cxxml.Query[i].Name != "" {
-				msg := new(format.Message)
-				msg.Text = cxxml.Query[i].Name
-			}
 			//Locations
+			codeflow := *new(format.CodeFlow)
+			threadflow := *new(format.ThreadFlow)
+			locationSaved := false
 			for k := 0; k < len(cxxml.Query[i].Result[j].Path.PathNode); k++ {
 				loc := *new(format.Location)
 				loc.PhysicalLocation.ArtifactLocation.URI = cxxml.Query[i].Result[j].FileName
@@ -215,7 +218,10 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 				snip := new(format.SnippetSarif)
 				snip.Text = cxxml.Query[i].Result[j].Path.PathNode[k].Snippet.Line.Code
 				loc.PhysicalLocation.Region.Snippet = snip
-				result.Locations = append(result.Locations, loc)
+				if !locationSaved { // To avoid overloading log file, we only save the 1st location, or source, as in the webview
+					result.Locations = append(result.Locations, loc)
+					locationSaved = true
+				}
 
 				//Related Locations
 				relatedLocation := *new(format.RelatedLocation)
@@ -227,7 +233,19 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 				relatedLocation.PhysicalLocation.Region.StartColumn = cxxml.Query[i].Result[j].Path.PathNode[k].Column
 				result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
 
+				threadFlowLocation := *new(format.Locations)
+				tfloc := new(format.Location)
+				tfloc.PhysicalLocation.ArtifactLocation.URI = cxxml.Query[i].Result[j].FileName
+				tfloc.PhysicalLocation.Region.StartLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
+				tfloc.PhysicalLocation.Region.EndLine = cxxml.Query[i].Result[j].Path.PathNode[k].Line
+				tfloc.PhysicalLocation.Region.StartColumn = cxxml.Query[i].Result[j].Path.PathNode[k].Column
+				tfloc.PhysicalLocation.Region.Snippet = snip
+				threadFlowLocation.Location = tfloc
+				threadflow.Locations = append(threadflow.Locations, threadFlowLocation)
+
 			}
+			codeflow.ThreadFlows = append(codeflow.ThreadFlows, threadflow)
+			result.CodeFlows = append(result.CodeFlows, codeflow)
 
 			result.PartialFingerprints.CheckmarxSimilarityID = cxxml.Query[i].Result[j].Path.SimilarityID
 			result.PartialFingerprints.PrimaryLocationLineHash = cxxml.Query[i].Result[j].Path.SimilarityID
@@ -242,6 +260,21 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			props.InstanceID = cxxml.Query[i].Result[j].Path.ResultID + "-" + strconv.Itoa(cxxml.Query[i].Result[j].Path.PathID)
 			props.ToolSeverity = cxxml.Query[i].Result[j].Severity
 			props.ToolSeverityIndex = cxxml.Query[i].Result[j].SeverityIndex
+			// classify into audit groups
+			switch cxxml.Query[i].Result[j].Severity {
+			case "High", "Medium":
+				props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
+				props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
+				break
+			case "Low":
+				props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_2_DESC
+				props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_2_INDEX
+				break
+			case "Information":
+				props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_3_DESC
+				props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_3_INDEX
+				break
+			}
 			props.ToolStateIndex = cxxml.Query[i].Result[j].State
 			switch cxxml.Query[i].Result[j].State {
 			case 1:
@@ -278,6 +311,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 				}
 				props.ToolAuditMessage = strings.Join(messageCandidates, " \n ")
 			}
+			props.RuleGUID = cxxml.Query[i].ID
 			props.UnifiedAuditState = ""
 			result.Properties = props
 
@@ -287,7 +321,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 
 		//handle the rules array
 		rule := *new(format.SarifRule)
-		rule.ID = "checkmarx-" + cxxml.Query[i].ID
+		rule.ID = "checkmarx-" + cxxml.Query[i].Language + "/" + cxxml.Query[i].ID
 		words := strings.Split(cxxml.Query[i].Name, "_")
 		for w := 0; w < len(words); w++ {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))
@@ -312,6 +346,18 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 				rule.Properties.Tags = append(rule.Properties.Tags, cats[cat])
 			}
 		}
+		switch cxxml.Query[i].SeverityIndex {
+		case 0:
+			rule.Properties.SecuritySeverity = "0.0"
+		case 1:
+			rule.Properties.SecuritySeverity = "2.0"
+		case 2:
+			rule.Properties.SecuritySeverity = "5.0"
+		case 3:
+			rule.Properties.SecuritySeverity = "7.0"
+		default:
+			rule.Properties.SecuritySeverity = "10.0"
+		}
 
 		if cxxml.Query[i].CweID != "" {
 			rule.Properties.Tags = append(rule.Properties.Tags, "external/cwe/cwe-"+cxxml.Query[i].CweID)
@@ -335,7 +381,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	sarif.Runs[0].Tool = tool
 
 	//handle automationDetails
-	sarif.Runs[0].AutomationDetails.Id = cxxml.DeepLink // Use deeplink to pass a maximum of information
+	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: cxxml.DeepLink} // Use deeplink to pass a maximum of information
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
@@ -349,6 +395,15 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}
 	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper Checkmarx XML to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	conversion.Invocation.StartTimeUtc = fmt.Sprintf("%s", start.Format("2006-01-02T15:04:05.000Z")) // "YYYY-MM-DDThh:mm:ss.sZ" on 2006-01-02 15:04:05
+	conversion.Invocation.Account = cxxml.InitiatorName
+	sarif.Runs[0].Conversion = conversion
 
 	return sarif, nil
 }
