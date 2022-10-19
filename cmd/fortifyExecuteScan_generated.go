@@ -81,6 +81,7 @@ type fortifyExecuteScanOptions struct {
 	VerifyOnly                      bool     `json:"verifyOnly,omitempty"`
 	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
 	CreateResultIssue               bool     `json:"createResultIssue,omitempty"`
+	CustomDataJSONMap               string   `json:"customDataJSONMap,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -362,6 +363,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running Fortify. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
+	cmd.Flags().StringVar(&stepConfig.CustomDataJSONMap, "customDataJSONMap", os.Getenv("PIPER_customDataJSONMap"), "The JSON map of key-value pairs to be included in this scan's Custom Data (See protecode API).")
 
 	cmd.MarkFlagRequired("authToken")
 	cmd.Flags().MarkDeprecated("pythonAdditionalPath", "this is deprecated")
@@ -994,6 +996,15 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   false,
+					},
+					{
+						Name:        "customDataJSONMap",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customDataJSONMap"),
 					},
 				},
 			},
