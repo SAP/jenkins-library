@@ -193,7 +193,7 @@ func publishArtifacts(config *gradleExecuteBuildOptions, utils gradleExecuteBuil
 		log.Entry().WithError(err).Errorf("failed to publish artifacts: %v", err)
 		return err
 	}
-	artifacts, err := getPublishedArtifactsNames(utils)
+	artifacts, err := getPublishedArtifactsNames(pathToModuleFile, utils)
 	if err != nil {
 		return fmt.Errorf("failed to get published artifacts: %v", err)
 	}
@@ -216,23 +216,23 @@ func getPublishInitScriptContent(options *gradleExecuteBuildOptions) (string, er
 	return generatedCode.String(), nil
 }
 
-func getPublishedArtifactsNames(utils gradleExecuteBuildUtils) (piperenv.Artifacts, error) {
+func getPublishedArtifactsNames(file string, utils gradleExecuteBuildUtils) (piperenv.Artifacts, error) {
 	artifacts := piperenv.Artifacts{}
 	publishedArtifacts := PublishedArtifacts{}
-	exists, err := utils.FileExists(pathToModuleFile)
+	exists, err := utils.FileExists(file)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check existence of the file '%s': %v", pathToModuleFile, err)
+		return nil, fmt.Errorf("failed to check existence of the file '%s': %v", file, err)
 	}
 	if !exists {
-		return nil, fmt.Errorf("failed to get '%s': file does not exist", pathToModuleFile)
+		return nil, fmt.Errorf("failed to get '%s': file does not exist", file)
 	}
-	content, err := utils.ReadFile(pathToModuleFile)
+	content, err := utils.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read '%s': %v", pathToModuleFile, err)
+		return nil, fmt.Errorf("failed to read '%s': %v", file, err)
 	}
 	err = json.Unmarshal(content, &publishedArtifacts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal '%s': %v", pathToModuleFile, err)
+		return nil, fmt.Errorf("failed to unmarshal '%s': %v", file, err)
 	}
 	for _, publishedArtifact := range publishedArtifacts.Elements {
 		if publishedArtifact.Name != "apiElements" {
