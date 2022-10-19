@@ -18,33 +18,23 @@ import (
 
 
 const syftURL = "https://raw.githubusercontent.com/anchore/syft/main/install.sh"
-
-type kanikoExecuteUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-	piperhttp.Uploader
-	httpClient *piperhttp.Client
-}
-
-type kanikoExecuteUtils interface {
-	command.ExecRunner
-	piperutils.FileUtils
+type kanikoHttpClient interface {
+	piperhttp.Sender
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
-
-func retrieveSyft(utils kanikoExecuteUtils) error {
+func retrieveSyft(execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient kanikoHttpClient) error {
 	installationScript := "./install.sh"
-	err := utils.DownloadFile(syftURL, installationScript, nil, nil)
+	err := httpClient.DownloadFile(syftURL, installationScript, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download syft: %w", err)
 	}
 
-	err = utils.Chmod(installationScript, 0777)
+	err = fileUtils.Chmod(installationScript, 0777)
 	if err != nil {
 		return err
 	}
 
-	err = utils.RunExecutable(installationScript, "-b", "/usr/local/bin")
+	err = execRunner.RunExecutable(installationScript, "-b", "/usr/local/bin")
 	if err != nil {
 		return fmt.Errorf("failed to install syft: %w", err)
 	}
@@ -52,34 +42,6 @@ func retrieveSyft(utils kanikoExecuteUtils) error {
 	return nil
 }
 
-func newKanikoBuildUtils(config *kanikoExecuteOptions) kanikoExecuteUtils {
-	httpClientOptions := piperhttp.ClientOptions{}
-
-	if len(config.CustomTLSCertificateLinks) > 0 {
-		httpClientOptions.TransportSkipVerification = false
-		httpClientOptions.TrustedCerts = config.CustomTLSCertificateLinks
-	}
-
-	httpClient := piperhttp.Client{}
-	httpClient.SetOptions(httpClientOptions)
-
-	utils := kanikoExecuteUtilsBundle{
-		Command: &command.Command{
-			StepName: "golangBuild",
-		},
-		Files:    &piperutils.Files{},
-		Uploader: &httpClient,
-		httpClient: &httpClient,
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
-func (g *kanikoExecuteUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return g.httpClient.DownloadFile(url, filename, header, cookies)
-}
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
 	// for command execution use Command
@@ -302,8 +264,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		return kanikoErr
 	}
 	shellRunner.AppendEnv([]string{"DOCKER_CONFIG", "/kaniko/.docker"})
-	kanikoUtils := newKanikoBuildUtils(config)
-	syftDownloadErr := retrieveSyft(kanikoUtils)
+	syftDownloadErr := retrieveSyft(execRunner, fileUtils, httpClient)
 	if syftDownloadErr!= nil {
 		return syftDownloadErr
 	}
