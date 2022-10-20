@@ -234,11 +234,11 @@ func getPublishedArtifactsNames(file string, utils gradleExecuteBuildUtils) (pip
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal '%s': %v", file, err)
 	}
-	for _, publishedArtifact := range publishedArtifacts.Elements {
-		if publishedArtifact.Name != "apiElements" {
+	for _, element := range publishedArtifacts.Elements {
+		if element.Name != "apiElements" {
 			continue
 		}
-		for _, artifact := range publishedArtifact.Artifacts {
+		for _, artifact := range element.Artifacts {
 			artifacts = append(artifacts, piperenv.Artifact{Name: artifact.Name})
 		}
 	}
