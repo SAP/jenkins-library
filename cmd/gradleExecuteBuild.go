@@ -75,15 +75,17 @@ initscript {
   }
 }
 
-rootProject {
+gradle.allprojects {
     apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
 
     cyclonedxBom {
-	outputName = "` + gradleBomFilename + `"
-	outputFormat = "xml"
-	schemaVersion = "1.2"
+        outputName = "` + gradleBomFilename + `"
+        outputFormat = "xml"
+        schemaVersion = "1.2"
+        includeConfigs = ["runtimeClasspath"]
+        skipConfigs = ["compileClasspath", "testCompileClasspath"]
     }
 }
 `
