@@ -21,7 +21,7 @@ import (
 )
 
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
-func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *format.SARIF {
+func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	log.Entry().Debug("Creating SARIF file for data transfer")
 
 	// Handle results/vulnerabilities
@@ -148,8 +148,8 @@ func transformToLevel(severity string) string {
 	return "none"
 }
 
-func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, projectVersion string, libraries *Components, alerts, assessedAlerts *Vulnerabilities) ([]byte, error) {
-	componentLookup := map[string]Component{}
+func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, projectVersion string, libraries *HierarchicalComponents, alerts, assessedAlerts *Vulnerabilities) ([]byte, error) {
+	componentLookup := map[string]HierarchicalComponent{}
 	for _, comp := range libraries.Items {
 		componentLookup[fmt.Sprintf("%v/%v", comp.Name, comp.Version)] = comp
 	}
@@ -183,7 +183,7 @@ func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, pro
 	}
 
 	components := []cdx.Component{}
-	uniqueComponents := []Component{}
+	uniqueComponents := []HierarchicalComponent{}
 	transformToUniqueFlatList(&uniqueComponents, &componentLookup)
 	log.Entry().Debugf("Got %v unique libraries in condensed flat list", len(uniqueComponents))
 	sort.Slice(uniqueComponents, func(i, j int) bool {
@@ -196,7 +196,7 @@ func CreateCycloneSBOM(buildTool, groupID, artifactID, version, projectName, pro
 		component := cdx.Component{
 			BOMRef:     purl.ToString(),
 			Type:       cdx.ComponentTypeLibrary,
-			Author:     lib.ComponentOriginName,
+			Author:     transformComponentOriginToPurlParts(&lib)[1],
 			Name:       lib.Name,
 			Version:    lib.Version,
 			PackageURL: purl.ToString(),
@@ -323,7 +323,7 @@ func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Pat
 	return paths, nil
 }
 
-func transformToUniqueFlatList(libraries *[]Component, flatMapRef *map[string]Component) {
+func transformToUniqueFlatList(libraries *[]HierarchicalComponent, flatMapRef *map[string]HierarchicalComponent) {
 	log.Entry().Debugf("Got %v libraries reported", len(*libraries))
 	for _, lib := range *libraries {
 		key := lib.ToPackageUrl().ToString()
@@ -335,7 +335,7 @@ func transformToUniqueFlatList(libraries *[]Component, flatMapRef *map[string]Co
 	}
 }
 
-func declareDependency(parentPurl *packageurl.PackageURL, dependents *[]Component, collection *[]cdx.Dependency) {
+func declareDependency(parentPurl *packageurl.PackageURL, dependents *[]HierarchicalComponent, collection *[]cdx.Dependency) {
 	localDependencies := []cdx.Dependency{}
 	for _, lib := range *dependents {
 		purl := lib.ToPackageUrl()

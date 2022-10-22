@@ -73,6 +73,7 @@ func newBlackduckMockSystem(config detectExecuteScanOptions) blackduckSystem {
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?limit=999&offset=0":                                 componentsContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/vunlerable-bom-components?limit=999&offset=0":                  vulnerabilitiesContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?filter=policyCategory%3Alicense&limit=999&offset=0": componentsContent,
+			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/hierarchical-components?limit=999&offset=0":                    hierarchicalComponentsContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/policy-status":                                                 policyStatusContent,
 		},
 		header: map[string]http.Header{},
@@ -118,6 +119,10 @@ const (
 							"href": "https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components"
 						},
 						{
+							"rel": "hierarchical-components",
+							"href": "https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/hierarchical-components"
+						},
+						{
 							"rel": "vulnerable-components",
 							"href": "https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/vunlerable-bom-components"
 						},
@@ -146,6 +151,42 @@ const (
 			}, {
 				"componentName": "Apache Log4j",
 				"componentVersionName": "4.5.16",
+				"policyStatus": "UNKNOWN"
+			}
+		]
+	}`
+	hierarchicalComponentsContent = `{
+		"totalCount": 3,
+		"items" : [
+			{
+				"componentName": "Spring Framework",
+				"componentVersionName": "5.3.9",
+				"origins": [
+					{
+						"externalNamespace": "Maven", 
+						"externalId": "spring:spring-web:5.3.9"
+					}
+				],
+				"policyStatus": "IN_VIOLATION"
+			}, {
+				"componentName": "Apache Tomcat",
+				"componentVersionName": "9.0.52",
+				"origins": [
+					{
+						"externalNamespace": "Maven",
+						"externalId": "apache:tomcat:9.0.52"
+					}
+				],
+				"policyStatus": "IN_VIOLATION"
+			}, {
+				"componentName": "Apache Log4j",
+				"componentVersionName": "4.5.16",
+				"origins": [
+					{
+						"externalNamespace": "Maven",
+						"externalId": "apache:log4j:4.5.16"
+					}
+				],
 				"policyStatus": "UNKNOWN"
 			}
 		]
@@ -811,30 +852,35 @@ func TestGetVulnsAndComponents(t *testing.T) {
 				vulnerabilityLog4j2 = v
 			}
 		}
-		vulnerableComponentSpring := &bd.Component{}
-		vulnerableComponentLog4j := &bd.Component{}
+		vulnerableComponentSpring := bd.HierarchicalComponent{}
+		vulnerableComponentLog4j := bd.HierarchicalComponent{}
 		for _, c := range components.Items {
 			if c.Name == "Spring Framework" {
-				vulnerableComponentSpring = &c
+				vulnerableComponentSpring = c
 			}
 			if c.Name == "Apache Log4j" {
-				vulnerableComponentLog4j = &c
+				vulnerableComponentLog4j = c
 			}
 		}
-		assert.Equal(t, vulnerableComponentSpring, vulnerabilitySpring.Component)
-		assert.Equal(t, vulnerableComponentLog4j, vulnerabilityLog4j1.Component)
-		assert.Equal(t, vulnerableComponentLog4j, vulnerabilityLog4j2.Component)
+		assert.Equal(t, vulnerableComponentSpring, *vulnerabilitySpring.Component)
+		assert.Equal(t, vulnerableComponentLog4j, *vulnerabilityLog4j1.Component)
+		assert.Equal(t, vulnerableComponentLog4j, *vulnerabilityLog4j2.Component)
 	})
 }
 
 func TestFilterAssessedVulnerabilities(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		config := detectExecuteScanOptions{BuildTool: "mven", Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
+		config := detectExecuteScanOptions{BuildTool: "maven", Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
 		sys := newBlackduckMockSystem(config)
 
 		vulnerabilities, err := sys.Client.GetVulnerabilities(config.ProjectName, getVersionName(config))
 		assert.NoError(t, err, "unexpected error when loading vulnerabilities")
-		components, err := sys.Client.GetComponents(config.ProjectName, getVersionName(config))
+		components, err := sys.Client.GetHierarchicalComponents(config.ProjectName, getVersionName(config))
+		keyFormat := "%v/%v"
+		componentLookup := map[string]bd.HierarchicalComponent{}
+		for _, comp := range components.Items {
+			componentLookup[fmt.Sprintf(keyFormat, comp.Name, comp.Version)] = comp
+		}
 		assert.NoError(t, err, "unexpected error when loading components")
 
 		assert.Equal(t, 3, vulnerabilities.TotalCount)
@@ -846,11 +892,11 @@ func TestFilterAssessedVulnerabilities(t *testing.T) {
 		assessment.Vulnerability = "BDSA-2019-2021"
 		assessment.Purls = []format.Purl{
 			{
-				Purl: "pkg:maven/Spring Framework@5.3.9",
+				Purl: "pkg:maven/spring/spring-web@5.3.9",
 			},
 		}
 		assessments = append(assessments, assessment)
-		unassessedVulns, assessedVulns := filterAssessedVulnerabilities(vulnerabilities, components, &assessments)
+		unassessedVulns, assessedVulns := filterAssessedVulnerabilities(vulnerabilities, &assessments, keyFormat, componentLookup)
 		assert.Equal(t, 2, unassessedVulns.TotalCount)
 		assert.Equal(t, 2, len(unassessedVulns.Items))
 		assert.Equal(t, 1, assessedVulns.TotalCount)

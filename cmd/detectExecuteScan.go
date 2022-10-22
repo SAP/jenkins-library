@@ -525,7 +525,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 		}
 	}
 
-	sarif := bd.CreateSarifResultFile(vulns, components)
+	sarif := bd.CreateSarifResultFile(vulns)
 	paths, err := bd.WriteSarifFile(sarif, utils)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))
@@ -583,17 +583,17 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	return nil
 }
 
-func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]format.Assessment, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Vulnerabilities, *bd.Components, error) {
+func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]format.Assessment, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Vulnerabilities, *bd.HierarchicalComponents, error) {
 	detectVersionName := getVersionName(config)
-	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
+	components, err := sys.Client.GetHierarchicalComponents(config.ProjectName, detectVersionName)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	// create component lookup map to interconnect vulnerability and component
 	keyFormat := "%v/%v"
-	componentLookup := map[string]*bd.Component{}
+	componentLookup := map[string]bd.HierarchicalComponent{}
 	for _, comp := range components.Items {
-		componentLookup[fmt.Sprintf(keyFormat, comp.Name, comp.Version)] = &comp
+		componentLookup[fmt.Sprintf(keyFormat, comp.Name, comp.Version)] = comp
 	}
 
 	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
@@ -601,8 +601,7 @@ func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]forma
 		return nil, nil, components, err
 	}
 
-	vulns, assessedVulns := filterAssessedVulnerabilities(vulns, components, assessments)
-
+	vulns, assessedVulns := filterAssessedVulnerabilities(vulns, assessments, keyFormat, componentLookup)
 	majorVulns := 0
 	activeVulns := 0
 	for index, vuln := range vulns.Items {
@@ -612,10 +611,10 @@ func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]forma
 				majorVulns++
 			}
 		}
-		matchComponentToVulnerability(index, vulns.Items, keyFormat, componentLookup)
+		matchComponentToVulnerability(index, vulns, keyFormat, componentLookup)
 	}
-	for index, _ := range assessedVulns.Items {
-		matchComponentToVulnerability(index, assessedVulns.Items, keyFormat, componentLookup)
+	for index := range assessedVulns.Items {
+		matchComponentToVulnerability(index, assessedVulns, keyFormat, componentLookup)
 	}
 	influx.detect_data.fields.vulnerabilities = activeVulns
 	influx.detect_data.fields.major_vulnerabilities = majorVulns
@@ -625,31 +624,23 @@ func getVulnsAndComponents(config detectExecuteScanOptions, assessments *[]forma
 	return vulns, assessedVulns, components, nil
 }
 
-func matchComponentToVulnerability(index int, items []bd.Vulnerability, keyFormat string, componentLookup map[string]*bd.Component) {
-	v := items[index]
+func matchComponentToVulnerability(index int, vulns *bd.Vulnerabilities, keyFormat string, componentLookup map[string]bd.HierarchicalComponent) {
+	v := vulns.Items[index]
 	component := componentLookup[fmt.Sprintf(keyFormat, v.Name, v.Version)]
-	if component != nil && len(component.Name) > 0 {
-		items[index].Component = component
-	} else {
-		items[index].Component = &bd.Component{Name: v.Name, Version: v.Version}
+	if len(component.Name) > 0 {
+		vulns.Items[index].Component = &component
 	}
 }
 
 // filterAssessedVulnerabilities filters any vulnerabilities with matching assessment from the list and returns them in the second list together with their assessment
-func filterAssessedVulnerabilities(vulnerabilities *bd.Vulnerabilities, components *bd.Components, assessments *[]format.Assessment) (*bd.Vulnerabilities, *bd.Vulnerabilities) {
+func filterAssessedVulnerabilities(vulnerabilities *bd.Vulnerabilities, assessments *[]format.Assessment, keyFormat string, componentLookup map[string]bd.HierarchicalComponent) (*bd.Vulnerabilities, *bd.Vulnerabilities) {
 	assessedAlerts := &bd.Vulnerabilities{TotalCount: 0, Items: []bd.Vulnerability{}}
-	// create component lookup map
-	componentLookup := map[string]bd.Component{}
-	for _, comp := range components.Items {
-		componentLookup[fmt.Sprintf("%v/%v", comp.Name, comp.Version)] = comp
-	}
-
 	// filter alerts related to existing assessments
 	if len(*assessments) > 0 {
 		result := bd.Vulnerabilities{}
 		items := []bd.Vulnerability{}
 		for _, alert := range vulnerabilities.Items {
-			relatedComponent := componentLookup[fmt.Sprintf("%v/%v", alert.Name, alert.Version)]
+			relatedComponent := componentLookup[fmt.Sprintf(keyFormat, alert.Name, alert.Version)]
 			if result, err := alert.ContainedIn(&relatedComponent, assessments); err == nil && result == false {
 				items = append(items, alert)
 			} else if alert.Assessment != nil {

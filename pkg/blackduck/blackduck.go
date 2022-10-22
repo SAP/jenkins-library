@@ -78,6 +78,34 @@ type Component struct {
 	Metadata            `json:"_meta,omitempty"`
 }
 
+type HierarchicalComponents struct {
+	TotalCount int                     `json:"totalCount,omitempty"`
+	Items      []HierarchicalComponent `json:"items,omitempty"`
+}
+
+type HierarchicalComponent struct {
+	Name         string   `json:"componentName,omitempty"`
+	Version      string   `json:"componentVersionName,omitempty"`
+	Type         string   `json:"componentType,omitempty"`
+	Origins      []Origin `json:"origins,omitempty"`
+	GroupId      string
+	ArtifactId   string
+	VersionId    string
+	Usages       []string `json:"usages,omitempty"`
+	MatchTypes   []string `json:"matchTypes,omitempty"`
+	PolicyStatus string   `json:"policyStatus,omitempty"`
+	ReviewStatus string   `json:"reviewStatus,omitempty"`
+	Children     *[]HierarchicalComponent
+	Metadata     `json:"_meta,omitempty"`
+}
+
+type Origin struct {
+	Name              string `json:"name,omitempty"`
+	ExternalNamespace string `json:"externalNamespace,omitempty"`
+	ExternalID        string `json:"externalId,omitempty"`
+	Metadata          `json:"_meta,omitempty"`
+}
+
 type Vulnerabilities struct {
 	TotalCount int             `json:"totalCount,omitempty"`
 	Items      []Vulnerability `json:"items,omitempty"`
@@ -88,7 +116,7 @@ type Vulnerability struct {
 	Version                      string `json:"componentVersionName,omitempty"`
 	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
-	Component                    *Component
+	Component                    *HierarchicalComponent
 	*format.Assessment
 }
 
@@ -105,12 +133,12 @@ type VulnerabilityWithRemediation struct {
 }
 
 // ToPackageUrl creates the package URL for the component
-// TODO we need t improve/validate primaryLanguage, componentOriginName, name and version
-func (c *Component) ToPackageUrl() *packageurl.PackageURL {
-	return packageurl.NewPackageURL(transformComponentToPurlType(c.PrimaryLanguage), "", c.Name, c.Version, nil, "")
+func (c *HierarchicalComponent) ToPackageUrl() *packageurl.PackageURL {
+	purlParts := transformComponentOriginToPurlParts(c)
+	return packageurl.NewPackageURL(purlParts[0], purlParts[1], purlParts[2], purlParts[3], nil, "")
 }
 
-func (v *Vulnerability) ContainedIn(relatedComponent *Component, assessments *[]format.Assessment) (bool, error) {
+func (v *Vulnerability) ContainedIn(relatedComponent *HierarchicalComponent, assessments *[]format.Assessment) (bool, error) {
 	localPurl := relatedComponent.ToPackageUrl().ToString()
 	for _, assessment := range *assessments {
 		if assessment.Vulnerability == v.VulnerabilityWithRemediation.VulnerabilityName {
@@ -435,6 +463,79 @@ func (b *Client) GetVulnerabilities(projectName, versionName string) (*Vulnerabi
 	return &vulnerabilities, nil
 }
 
+func (b *Client) GetHierarchicalComponents(projectName, versionName string) (*HierarchicalComponents, error) {
+	projectVersion, err := b.GetProjectVersion(projectName, versionName)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := http.Header{}
+	headers.Add("Accept", HEADER_BOM_V6)
+
+	var hierarchicalComponentsPath string
+	for _, link := range projectVersion.Links {
+		if link.Rel == "hierarchical-components" {
+			hierarchicalComponentsPath = urlPath(link.Href)
+			break
+		}
+	}
+
+	respBody, err := b.sendRequest("GET", hierarchicalComponentsPath, map[string]string{"offset": "0", "limit": "999"}, nil, headers)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get hierarchical components for project version '%v:%v'", projectName, versionName)
+	}
+
+	components := HierarchicalComponents{}
+	err = json.Unmarshal(respBody, &components)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshall hierarchical component details for project version '%v:%v'", projectName, versionName)
+	}
+
+	err = loadChildComponents(b, &components.Items)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to load hierarchical child components for project version '%v:%v'", projectName, versionName)
+	}
+
+	//Just return the components, the details of the components are not necessary
+	return &components, nil
+}
+
+func loadChildComponents(b *Client, childComponents *[]HierarchicalComponent) error {
+	if nil != childComponents && len(*childComponents) > 0 {
+		headers := http.Header{}
+		headers.Add("Accept", HEADER_BOM_V6)
+		for _, component := range *childComponents {
+			var childComponentsPath string
+			for _, link := range component.Metadata.Links {
+				if link.Rel == "children" {
+					childComponentsPath = urlPath(link.Href)
+					break
+				}
+			}
+			if len(childComponentsPath) > 0 {
+				respBody, err := b.sendRequest("GET", childComponentsPath, map[string]string{"offset": "0", "limit": "999"}, nil, headers)
+				if err != nil {
+					return errors.Wrapf(err, "Failed to get hierarchical child components for component '%v:%v'", component.Name, component.Version)
+				}
+
+				childComponents := HierarchicalComponents{}
+				err = json.Unmarshal(respBody, &childComponents)
+
+				if err != nil {
+					return errors.Wrapf(err, "failed to unmarshall hierarchical child component details for component '%v:%v'", component.Name, component.Version)
+				}
+				component.Children = &childComponents.Items
+				err = loadChildComponents(b, component.Children)
+				if err != nil {
+					return errors.Wrapf(err, "failed to load hierarchical child component details for component '%v:%v'", component.Name, component.Version)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func (b *Client) GetPolicyStatus(projectName, versionName string) (*PolicyStatus, error) {
 	projectVersion, err := b.GetProjectVersion(projectName, versionName)
 	if err != nil {
@@ -532,17 +633,25 @@ func urlPath(fullUrl string) string {
 	return theUrl.Path
 }
 
-func transformComponentToPurlType(primaryLanguage string) string {
-	// TODO verify possible relevant values
-	switch strings.ToLower(primaryLanguage) {
-	case "java":
-		return packageurl.TypeMaven
-	case "javascript":
-		return packageurl.TypeNPM
-	case "golang":
-		return packageurl.TypeGolang
-	case "docker":
-		return packageurl.TypeDocker
+func transformComponentOriginToPurlParts(component *HierarchicalComponent) []string {
+	result := []string{}
+	purlType := packageurl.TypeGeneric
+	gav := []string{"", component.Name, component.Version}
+	origins := component.Origins
+	if origins != nil && len(origins) > 0 {
+		gav = strings.Split(origins[0].ExternalID, ":")
+		switch strings.ToLower(origins[0].ExternalNamespace) {
+		case "maven":
+			purlType = packageurl.TypeMaven
+		case "node":
+			purlType = packageurl.TypeNPM
+		case "golang":
+			purlType = packageurl.TypeGolang
+		case "docker":
+			purlType = packageurl.TypeDocker
+		}
 	}
-	return packageurl.TypeGeneric
+	result = append(result, purlType)
+	result = append(result, gav...)
+	return result
 }
