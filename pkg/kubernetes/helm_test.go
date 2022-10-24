@@ -100,7 +100,7 @@ func TestRunHelmAdd(t *testing.T) {
 				verbose: testCase.generalVerbose,
 				stdout:  log.Writer(),
 			}
-			err := helmExecute.runHelmAdd()
+			err := helmExecute.runHelmAdd(testCase.config.TargetRepositoryName, testCase.config.TargetRepositoryURL, testCase.config.TargetRepositoryUser, testCase.config.TargetRepositoryPassword)
 			if testCase.expectedError != nil {
 				assert.Error(t, err)
 			} else {
@@ -457,6 +457,34 @@ func TestRunHelmDependency(t *testing.T) {
 			},
 			expectedError: nil,
 			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"dependency", "update", "."}},
+			},
+		},
+		{
+			config: HelmExecuteOptions{
+				ChartPath:            ".",
+				Dependency:           "update",
+				SourceRepositoryName: "foo",
+				SourceRepositoryURL:  "bar",
+			},
+			expectedError: nil,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"repo", "add", "foo", "bar"}},
+				{Exec: "helm", Params: []string{"dependency", "update", "."}},
+			},
+		},
+		{
+			config: HelmExecuteOptions{
+				ChartPath:                ".",
+				Dependency:               "update",
+				SourceRepositoryName:     "foo",
+				SourceRepositoryURL:      "bar",
+				SourceRepositoryUser:     "username",
+				SourceRepositoryPassword: "password",
+			},
+			expectedError: nil,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"repo", "add", "--username", "username", "--password", "password", "foo", "bar"}},
 				{Exec: "helm", Params: []string{"dependency", "update", "."}},
 			},
 		},
