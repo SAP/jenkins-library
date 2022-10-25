@@ -75,7 +75,7 @@ initscript {
   }
 }
 
-gradle.allprojects {
+rootProject {
     apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
