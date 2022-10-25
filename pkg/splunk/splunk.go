@@ -48,10 +48,11 @@ func (s *Splunk) Initialize(correlationID, dsn, token, index string, sendLogs bo
 	client := piperhttp.Client{}
 
 	client.SetOptions(piperhttp.ClientOptions{
-		MaxRequestDuration:        5 * time.Second,
+		MaxRequestDuration:        15 * time.Second,
 		Token:                     token,
 		TransportSkipVerification: true,
-		MaxRetries:                -1,
+		MaxRetries:                3,
+		TransportTimeout:          30 * time.Second,
 	})
 
 	hostName, err := os.Hostname()
