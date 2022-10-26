@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestNPMIntegration ./integration/...
 
 package main
 
@@ -16,7 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestRunScriptsWithOptions(t *testing.T) {
+func TestNPMIntegrationRunScriptsWithOptions(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -67,7 +68,7 @@ cd /test
 	assert.Contains(t, output, "info  npmExecuteScripts - [ '--tag', 'tag1' ]")
 }
 
-func TestRegistrySetInFlags(t *testing.T) {
+func TestNPMIntegrationRegistrySetInFlags(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -117,7 +118,7 @@ cd /test
 	assert.Contains(t, output, "info  npmExecuteScripts - https://foo.bar")
 }
 
-func TestRegistrySetInNpmrc(t *testing.T) {
+func TestNPMIntegrationRegistrySetInNpmrc(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -167,7 +168,7 @@ cd /test
 	assert.Contains(t, output, "info  npmExecuteScripts - https://example.com")
 }
 
-func TestRegistryWithTwoModules(t *testing.T) {
+func TestNPMIntegrationRegistryWithTwoModules(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 

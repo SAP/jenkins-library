@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestAPICLIIntegration ./integration/...
 
 package main
 
@@ -15,8 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestDummy(t *testing.T) {
-
+func TestDummyIntegration(t *testing.T) {
 	t.Skip("Skipping testing - this is just to show how it can be done")
 	ctx := context.Background()
 
@@ -25,7 +25,7 @@ func TestDummy(t *testing.T) {
 	dir = filepath.Dir(dir)
 
 	req := testcontainers.ContainerRequest{
-		Image:      "node:lts-stretch",
+		Image:      "node:lts-buster",
 		Cmd:        []string{"tail", "-f"},
 		BindMounts: map[string]string{dir: "/data"},
 		//ToDo: we may set up a tmp directory and mount it in addition, e.g. for runtime artifacts ...

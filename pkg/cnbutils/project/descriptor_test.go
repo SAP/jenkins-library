@@ -34,6 +34,10 @@ value = "VAL1"
 name = "VAR2"
 value = "VAL2"
 
+[[build.env]]
+name = "EMPTY"
+value = ""
+
 [[build.buildpacks]]
 id = "paketo-buildpacks/java"
 version = "5.9.1"
@@ -64,6 +68,7 @@ id = "paketo-buildpacks/nodejs"
 		assert.NoError(t, err)
 		assert.Equal(t, descriptor.EnvVars["VAR1"], "VAL1")
 		assert.Equal(t, descriptor.EnvVars["VAR2"], "VAL2")
+		assert.Equal(t, descriptor.EnvVars["EMPTY"], "")
 
 		assert.Equal(t, descriptor.ProjectID, "io.buildpacks.my-app")
 

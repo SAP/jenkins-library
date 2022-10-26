@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 
-# Run all test if no arguments are given, run a single test function if it is passed as $1
-# For example: `./run-tests.sh TestRegistrySetInNpmrc`
-
-TEST_NAME=$1
+# Run all test if no arguments are given, run tests if they've passed as arguments
+# For example: ./run-tests.sh TestNexusIntegration TestNPMIntegration
 
 pushd ..
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags release -o piper
 
-if [[ "$TEST_NAME" ]]
+if [[ "$*" ]]
 then
-    go test -tags=integration -timeout 25m -run "$TEST_NAME" ./integration/...
+    for testName in "$@"
+    do
+        go test -v -tags integration -run "$testName" ./integration/...
+    done
 else
-    go test -tags=integration -timeout 25m ./integration/...
+    go test -v -tags integration ./integration/...
 fi
 
 popd || exit

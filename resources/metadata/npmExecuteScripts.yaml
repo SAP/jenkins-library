@@ -184,4 +184,4 @@ spec:
             type: cucumber
   containers:
     - name: node
-      image: node:lts-stretch
+      image: node:lts-buster

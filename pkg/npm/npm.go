@@ -405,7 +405,7 @@ func (exec *Execute) detectToolFromLockfile() (string, error) {
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	execRunner := exec.Utils.GetExecRunner()
 	// Install CycloneDX Node.js module locally without saving in package.json
-	err := execRunner.RunExecutable("npm", "install", "@cyclonedx/bom", "--no-save")
+	err := execRunner.RunExecutable("npm", "install", "@cyclonedx/bom@^3.10.6", "--no-save")
 	if err != nil {
 		return err
 	}
