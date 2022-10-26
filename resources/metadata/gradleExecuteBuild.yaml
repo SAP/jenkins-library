@@ -122,6 +122,11 @@ spec:
         params:
           - filePattern: "**/bom-gradle.xml"
             type: sbom
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/artifacts
+            type: "piperenv.Artifacts"
   containers:
     - name: gradle
       image: gradle:6-jdk11-alpine
