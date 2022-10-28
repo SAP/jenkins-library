@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -44,11 +45,19 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData,
 		VersioningScheme: "library",
 	}
 
-	artifact, err := versioning.GetArtifact("helm", "", &artifactOpts, utils)
+	buildDescriptorFile := ""
+	if helmConfig.ChartPath != "" {
+		buildDescriptorFile = filepath.Join(helmConfig.ChartPath, "Chart.yaml")
+	}
+
+	artifact, err := versioning.GetArtifact("helm", buildDescriptorFile, &artifactOpts, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("getting artifact information failed: %v", err)
 	}
 	artifactInfo, err := artifact.GetCoordinates()
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("getting artifact coordinates failed: %v", err)
+	}
 
 	helmConfig.DeploymentName = artifactInfo.ArtifactID
 
