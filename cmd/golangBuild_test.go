@@ -136,6 +136,7 @@ go 1.17`
 
 	t.Run("success - test flags", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			RunTests:            true,
 			Packages:            []string{"package/foo"},
 			TargetArchitectures: []string{"linux,amd64"},
@@ -307,7 +308,21 @@ go 1.17`
 		assert.Equal(t, []string{"-b", golangciLintDir, golangciLintVersion}, utils.Calls[0].Params)
 		assert.Equal(t, binaryPath, utils.Calls[1].Exec)
 		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[1].Params)
+	})
 
+	t.Run("success - skip build", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunBuild:            false,
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+
+		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Empty(t, utils.ExecMockRunner.Calls)
 	})
 
 	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
