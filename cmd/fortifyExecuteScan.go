@@ -163,7 +163,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
 			PomPath:             config.BuildDescriptorFile,
-			Defines:             config.AdditionalMvnParameters
+			Defines:             config.AdditionalMvnParameters,
 		}, utils)
 		if err != nil {
 			return reports, fmt.Errorf("Unable to install artifacts: %w", err)
