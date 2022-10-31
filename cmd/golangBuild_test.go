@@ -98,6 +98,7 @@ go 1.17`
 
 	t.Run("success - no tests", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 
@@ -113,6 +114,7 @@ go 1.17`
 
 	t.Run("success - tests & ldflags", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			RunTests:            true,
 			LdflagsTemplate:     "test",
 			Packages:            []string{"package/foo"},
@@ -134,6 +136,7 @@ go 1.17`
 
 	t.Run("success - tests with coverage", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			RunTests:            true,
 			ReportCoverage:      true,
 			TargetArchitectures: []string{"linux,amd64"},
@@ -150,6 +153,7 @@ go 1.17`
 
 	t.Run("success - integration tests", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			RunIntegrationTests: true,
 			TargetArchitectures: []string{"linux,amd64"},
 		}
@@ -169,6 +173,7 @@ go 1.17`
 
 	t.Run("success - simple publish", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			TargetArchitectures: []string{"linux,amd64"},
 			Publish:             true,
 			TargetRepositoryURL: "https://my.target.repository.local/",
@@ -187,6 +192,7 @@ go 1.17`
 
 	t.Run("success - publishes binaries", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:                 true,
 			TargetArchitectures:      []string{"linux,amd64"},
 			Output:                   "testBin",
 			Publish:                  true,
@@ -212,6 +218,7 @@ go 1.17`
 
 	t.Run("success - publishes binaries (when TargetRepositoryURL ends with slash)", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:                 true,
 			TargetArchitectures:      []string{"linux,amd64"},
 			Output:                   "testBin",
 			Publish:                  true,
@@ -237,6 +244,7 @@ go 1.17`
 
 	t.Run("success - create BOM", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			CreateBOM:           true,
 			TargetArchitectures: []string{"linux,amd64"},
 		}
@@ -261,7 +269,8 @@ go 1.17`
 		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 
 		config := golangBuildOptions{
-			RunLint: true,
+			RunBuild: true,
+			RunLint:  true,
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
@@ -282,6 +291,7 @@ go 1.17`
 
 	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild: true,
 			RunTests: true,
 		}
 		utils := newGolangBuildTestsUtils()
@@ -294,6 +304,7 @@ go 1.17`
 
 	t.Run("failure - install pre-requisites for BOM creation", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:  true,
 			CreateBOM: true,
 		}
 		utils := newGolangBuildTestsUtils()
@@ -306,6 +317,7 @@ go 1.17`
 
 	t.Run("failure - test run failure", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild: true,
 			RunTests: true,
 		}
 		utils := newGolangBuildTestsUtils()
@@ -318,6 +330,7 @@ go 1.17`
 
 	t.Run("failure - test failure", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild: true,
 			RunTests: true,
 		}
 		utils := newGolangBuildTestsUtils()
@@ -332,6 +345,7 @@ go 1.17`
 
 	t.Run("failure - prepareLdflags", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			RunTests:            true,
 			LdflagsTemplate:     "{{.CPE.test",
 			TargetArchitectures: []string{"linux,amd64"},
@@ -345,6 +359,7 @@ go 1.17`
 
 	t.Run("failure - build failure", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			RunIntegrationTests: true,
 			TargetArchitectures: []string{"linux,amd64"},
 		}
@@ -359,6 +374,7 @@ go 1.17`
 
 	t.Run("failure - publish - no target repository defined", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			TargetArchitectures: []string{"linux,amd64"},
 			Output:              "testBin",
 			Publish:             true,
@@ -372,6 +388,7 @@ go 1.17`
 
 	t.Run("failure - publish - no go.mod file found", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:                 true,
 			TargetArchitectures:      []string{"linux,amd64"},
 			Output:                   "testBin",
 			Publish:                  true,
@@ -389,6 +406,7 @@ go 1.17`
 
 	t.Run("failure - publish - go.mod file without module path", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:                 true,
 			TargetArchitectures:      []string{"linux,amd64"},
 			Output:                   "testBin",
 			Publish:                  true,
@@ -407,6 +425,7 @@ go 1.17`
 
 	t.Run("failure - publish - no artifactVersion set", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:                 true,
 			TargetArchitectures:      []string{"linux,amd64"},
 			Output:                   "testBin",
 			Publish:                  true,
@@ -424,6 +443,7 @@ go 1.17`
 
 	t.Run("failure - publish - received unexpected status code", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:                 true,
 			TargetArchitectures:      []string{"linux,amd64"},
 			Output:                   "testBin",
 			Publish:                  true,
@@ -443,6 +463,7 @@ go 1.17`
 
 	t.Run("failure - create BOM", func(t *testing.T) {
 		config := golangBuildOptions{
+			RunBuild:            true,
 			CreateBOM:           true,
 			TargetArchitectures: []string{"linux,amd64"},
 		}
@@ -459,7 +480,8 @@ go 1.17`
 		golangciLintDir := filepath.Join(goPath, "bin")
 
 		config := golangBuildOptions{
-			RunLint: true,
+			RunBuild: true,
+			RunLint:  true,
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
@@ -477,7 +499,8 @@ go 1.17`
 		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 
 		config := golangBuildOptions{
-			RunLint: true,
+			RunBuild: true,
+			RunLint:  true,
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
