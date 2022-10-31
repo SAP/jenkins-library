@@ -89,6 +89,7 @@ type Vulnerability struct {
 	Version                      string `json:"componentVersionName,omitempty"`
 	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
+	Component                    *Component
 }
 
 type VulnerabilityWithRemediation struct {
@@ -105,13 +106,13 @@ type VulnerabilityWithRemediation struct {
 
 // Title returns the issue title representation of the contents
 func (v Vulnerability) Title() string {
-	return fmt.Sprintf("Security Vulnerability %v %v", v.VulnerabilityName, v.Name)
+	return v.VulnerabilityWithRemediation.VulnerabilityName
 }
 
 // ToMarkdown returns the markdown representation of the contents
-func (v Vulnerability) ToMarkdown(component *Component) ([]byte, error) {
+func (v Vulnerability) ToMarkdown() ([]byte, error) {
 	vul := reporting.VulnerabilityReport{
-		ArtifactID: v.Name,
+		ArtifactID: v.Component.Name,
 
 		// no information available about branch and commit, yet
 		Branch:   "",
@@ -137,7 +138,7 @@ func (v Vulnerability) ToMarkdown(component *Component) ([]byte, error) {
 		Score:      float64(v.VulnerabilityWithRemediation.BaseScore),
 		Severity:   v.VulnerabilityWithRemediation.Severity,
 		Version:    v.Version,
-		PackageURL: component.ToPackageUrl().ToString(),
+		PackageURL: v.Component.ToPackageUrl().ToString(),
 
 		// no vulnerability link available, yet
 		VulnerabilityLink: "",
@@ -148,7 +149,7 @@ func (v Vulnerability) ToMarkdown(component *Component) ([]byte, error) {
 }
 
 // ToTxt returns the textual representation of the contents
-func (v Vulnerability) ToTxt(component *Component) string {
+func (v Vulnerability) ToTxt() string {
 	return fmt.Sprintf(`Vulnerability %v
 Severity: %v
 Base (NVD) Score: %v
@@ -165,7 +166,7 @@ Link: [%v](%v)`,
 		v.VulnerabilityWithRemediation.OverallScore,
 		v.Name,
 		v.Version,
-		component.ToPackageUrl().ToString(),
+		v.Component.ToPackageUrl().ToString(),
 		v.Description,
 		"",
 		"",
