@@ -13,16 +13,21 @@ import (
 )
 
 func TestCreateSarifResultFile(t *testing.T) {
+	vulnerabilities := []string{"CVE-1", "CVE-2", "CVE-3", "CVE-4"}
+	affectedComponent := Component{Name: "test1", Version: "1.2.3", ComponentOriginName: "Maven", PrimaryLanguage: "Java"}
+	otherAffectedComponent := Component{Name: "test2", Version: "1.2.8", ComponentOriginName: "Maven", PrimaryLanguage: "Java"}
 	alerts := []Vulnerability{
-		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456543", Severity: "Critical", Description: "Some vulnerability that can be exploited by peeling the glue off.", BaseScore: 9.8, OverallScore: 10}},
-		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456542", Severity: "Critical", Description: "Some other vulnerability that can be exploited by filling the glass.", BaseScore: 9, OverallScore: 9}},
-		{Name: "test1", Version: "1.2.3", VulnerabilityWithRemediation: VulnerabilityWithRemediation{VulnerabilityName: "CVE-45456541", Severity: "Medium", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
+		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456543", VulnerabilityName: "CVE-1", Severity: "Critical", Description: "Some vulnerability that can be exploited by peeling the glue off.", BaseScore: 9.8, OverallScore: 10}},
+		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456542", VulnerabilityName: "CVE-2", Severity: "Critical", Description: "Some other vulnerability that can be exploited by filling the glass.", BaseScore: 9, OverallScore: 9}},
+		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456541", VulnerabilityName: "CVE-3", Severity: "High", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
+		{Name: "test2", Version: "1.2.8", Component: &otherAffectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45789754", VulnerabilityName: "CVE-4", Severity: "High", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
+		{Name: "test2", Version: "1.2.8", Component: &otherAffectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456541", VulnerabilityName: "CVE-3", Severity: "High", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
 	}
 	vulns := Vulnerabilities{
 		Items: alerts,
 	}
 	components := []Component{
-		{Name: "test1", Version: "1.2.3", ComponentOriginName: "Maven"},
+		affectedComponent,
 	}
 	componentList := Components{
 		Items: components,
@@ -35,9 +40,24 @@ func TestCreateSarifResultFile(t *testing.T) {
 	assert.Equal(t, 1, len(sarif.Runs))
 	assert.Equal(t, "Blackduck Hub Detect", sarif.Runs[0].Tool.Driver.Name)
 	assert.Equal(t, "unknown", sarif.Runs[0].Tool.Driver.Version)
-	assert.Equal(t, 3, len(sarif.Runs[0].Tool.Driver.Rules))
-	assert.Equal(t, 3, len(sarif.Runs[0].Results))
-	// TODO add more extensive verification once we agree on the format details
+	assert.Equal(t, 4, len(sarif.Runs[0].Tool.Driver.Rules))
+	assert.Equal(t, 5, len(sarif.Runs[0].Results))
+
+	collectedRules := []string{}
+	for _, rule := range sarif.Runs[0].Tool.Driver.Rules {
+		piperutils.ContainsString(vulnerabilities, rule.ID)
+		collectedRules = append(collectedRules, rule.ID)
+	}
+
+	collectedResults := []string{}
+	for _, result := range sarif.Runs[0].Results {
+		piperutils.ContainsString(vulnerabilities, result.RuleID)
+		collectedResults = append(collectedResults, result.RuleID)
+	}
+
+	assert.Equal(t, 4, len(collectedRules))
+	assert.Equal(t, 5, len(collectedResults))
+	assert.Equal(t, vulnerabilities, collectedRules)
 }
 
 func TestWriteCustomVulnerabilityReports(t *testing.T) {
