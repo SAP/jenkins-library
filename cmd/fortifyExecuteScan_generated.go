@@ -23,7 +23,7 @@ import (
 
 type fortifyExecuteScanOptions struct {
 	AdditionalScanParameters        []string `json:"additionalScanParameters,omitempty"`
-	AdditionalMvnParameters         []string `json:"additionalScanParameters,omitempty"`
+	AdditionalMvnParameters         []string `json:"additionalMvnParameters,omitempty"`
 	Assignees                       []string `json:"assignees,omitempty"`
 	AuthToken                       string   `json:"authToken,omitempty"`
 	BuildDescriptorExcludeList      []string `json:"buildDescriptorExcludeList,omitempty"`
