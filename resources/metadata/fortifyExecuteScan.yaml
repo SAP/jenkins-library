@@ -424,12 +424,12 @@ spec:
         default: true
       - name: convertToSarif
         type: bool
-        description: "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard."
+        description: "Convert the proprietary format of Fortify scan results to the open SARIF standard."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: false
+        default: true
       - name: fprUploadEndpoint
         aliases:
           - name: fortifyFprUploadEndpoint
