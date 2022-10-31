@@ -132,6 +132,27 @@ go 1.17`
 		assert.Equal(t, []string{"build", "-trimpath", "-ldflags", "test", "package/foo"}, utils.ExecMockRunner.Calls[2].Params)
 	})
 
+	t.Run("success - test flags", func(t *testing.T) {
+		config := golangBuildOptions{
+			RunTests:            true,
+			Packages:            []string{"package/foo"},
+			TargetArchitectures: []string{"linux,amd64"},
+			TestOptions:         []string{"--foo", "--bar"},
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./...", "--foo", "--bar"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"build", "-trimpath", "package/foo"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
 	t.Run("success - tests with coverage", func(t *testing.T) {
 		config := golangBuildOptions{
 			RunTests:            true,
