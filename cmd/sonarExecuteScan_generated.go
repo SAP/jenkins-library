@@ -564,7 +564,7 @@ func sonarExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.6"},
+				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.7"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
