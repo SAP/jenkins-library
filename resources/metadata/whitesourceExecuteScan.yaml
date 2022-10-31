@@ -75,7 +75,8 @@ spec:
         default: "https://saas.whitesourcesoftware.com/agent"
       - name: aggregateVersionWideReport
         type: bool
-        description: "This does not run a scan, instead just generated a report for all projects with
+        description:
+          "This does not run a scan, instead just generated a report for all projects with
           projectVersion = config.ProductVersion"
         scope:
           - PARAMETERS
@@ -152,7 +153,8 @@ spec:
             param: custom/repositoryUsername
       - name: createProductFromPipeline
         type: bool
-        description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
+        description:
+          "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
           configuration."
         scope:
           - PARAMETERS
@@ -242,7 +244,8 @@ spec:
           - name: whitesource/jreDownloadUrl
             deprecated: true
         type: string
-        description: "URL used for downloading the Java Runtime Environment (JRE) required to run the
+        description:
+          "URL used for downloading the Java Runtime Environment (JRE) required to run the
           WhiteSource Unified Agent."
         scope:
           - GENERAL
@@ -284,7 +287,8 @@ spec:
           - name: whitesource/productName
             deprecated: true
         type: string
-        description: "Name of the WhiteSource product used for results aggregation.
+        description:
+          "Name of the WhiteSource product used for results aggregation.
           This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true`
           and the WhiteSource product does not yet exist.
           It is also mandatory if the parameter `productToken` is not provided."
@@ -299,7 +303,8 @@ spec:
           - name: whitesource/productToken
             deprecated: true
         type: string
-        description: "Token of the WhiteSource product to be created and used for results aggregation,
+        description:
+          "Token of the WhiteSource product to be created and used for results aggregation,
           usually determined automatically. Can optionally be provided as an alternative to `productName`."
         scope:
           - GENERAL
@@ -329,7 +334,8 @@ spec:
         aliases:
           - name: whitesourceProjectName
         type: string
-        description: "The project name used for reporting results in WhiteSource.
+        description:
+          "The project name used for reporting results in WhiteSource.
           When provided, all source modules will be scanned into one aggregated WhiteSource project.
           For scan types `maven`, `mta`, `npm`, the default is to generate one WhiteSource project per module,
           whereas the project name is derived from the module's build descriptor.
@@ -341,7 +347,8 @@ spec:
           - STEPS
       - name: projectToken
         type: string
-        description: "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`.
+        description:
+          "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`.
           Used for project aggregation when scanning with the Unified Agent and can be provided as an
           alternative to `projectName`."
         scope:
@@ -424,7 +431,8 @@ spec:
             default: whitesource
       - name: versioningModel
         type: string
-        description: "The default project versioning model used in case `projectVersion` parameter is
+        description:
+          "The default project versioning model used in case `projectVersion` parameter is
           empty for creating the version based on the build descriptor version to report results in
           Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`"
         scope:
@@ -634,6 +642,8 @@ spec:
           - filePattern: "whitesource-riskReport.pdf"
             type: whitesource-security
           - filePattern: "**/toolrun_whitesource_*.json"
+            type: whitesource-security
+          - filePattern: "**/piper_whitesource_vulnerability.sarif"
             type: whitesource-security
   containers:
     - image: buildpack-deps:stretch-curl
