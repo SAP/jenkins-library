@@ -21,7 +21,7 @@ func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Du
 	//TODO: handle timeout?
 	for build.IsRunning(ctx) {
 		time.Sleep(pollInterval)
-		//TODO: build.Poll() needed?
+		build.Poll(ctx)
 	}
 }
 
