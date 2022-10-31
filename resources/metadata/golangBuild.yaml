@@ -162,6 +162,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: runBuild
+        type: bool
+        description: Defines wether the application shall be compiled or not.
+        default: true
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: runTests
         type: bool
         description: Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).

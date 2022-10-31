@@ -38,6 +38,7 @@ type golangBuildOptions struct {
 	TargetRepositoryURL          string   `json:"targetRepositoryURL,omitempty"`
 	ReportCoverage               bool     `json:"reportCoverage,omitempty"`
 	RunLint                      bool     `json:"runLint,omitempty"`
+	RunBuild                     bool     `json:"runBuild,omitempty"`
 	RunTests                     bool     `json:"runTests,omitempty"`
 	RunIntegrationTests          bool     `json:"runIntegrationTests,omitempty"`
 	TargetArchitectures          []string `json:"targetArchitectures,omitempty"`
@@ -237,6 +238,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().BoolVar(&stepConfig.ReportCoverage, "reportCoverage", true, "Defines if a coverage report should be created.")
 	cmd.Flags().BoolVar(&stepConfig.RunLint, "runLint", false, "Configures the build to run linters with [golangci-lint](https://golangci-lint.run/).")
+	cmd.Flags().BoolVar(&stepConfig.RunBuild, "runBuild", true, "Defines wether the application shall be compiled or not.")
 	cmd.Flags().BoolVar(&stepConfig.RunTests, "runTests", true, "Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).")
 	cmd.Flags().BoolVar(&stepConfig.RunIntegrationTests, "runIntegrationTests", false, "Activates execution of a second test run using tag `integration`.")
 	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{`linux,amd64`}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma.")
@@ -441,6 +443,15 @@ func golangBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "runBuild",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "runTests",

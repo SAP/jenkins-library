@@ -197,6 +197,16 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
+	if config.RunBuild {
+		if err := runGoBuild(config, goModFile, commonPipelineEnvironment, utils); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func runGoBuild(config *golangBuildOptions, goModFile *modfile.File, commonPipelineEnvironment *golangBuildCommonPipelineEnvironment, utils golangBuildUtils) error {
 	ldflags := ""
 
 	if len(config.LdflagsTemplate) > 0 {
