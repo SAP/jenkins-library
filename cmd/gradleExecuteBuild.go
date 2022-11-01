@@ -23,6 +23,10 @@ var (
 
 const publishInitScriptContentTemplate = `
 rootProject {
+	println  "Init script publishing"
+	println  "{{.RepositoryUsername}}"
+	println  "{{.RepositoryPassword}}"
+	println  "{{.RepositoryURL}}"
     apply plugin: 'maven-publish'
     apply plugin: 'java'
 
@@ -76,6 +80,10 @@ initscript {
 }
 
 rootProject {
+	println  "Init script cycloneDX"
+	println  "{{.RepositoryUsername}}"
+	println  "{{.RepositoryPassword}}"
+	println  "{{.RepositoryURL}}"
     apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
