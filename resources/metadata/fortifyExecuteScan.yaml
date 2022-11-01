@@ -48,9 +48,9 @@ spec:
         type: "[]string"
         description: Self-defined additional maven parameters that will be used in mvn command, like `-Dkey=value`.
         scope:
-          - STEPS
-          - STAGES
           - PARAMETERS
+          - STAGES
+          - STEPS
       - name: assignees
         description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.
         scope:
