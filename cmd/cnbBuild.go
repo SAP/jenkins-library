@@ -598,6 +598,10 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 		creatorArgs = append(creatorArgs, "-log-level", "debug")
 	}
 
+	if config.RunImage != "" {
+		creatorArgs = append(creatorArgs, "-run-image", config.RunImage)
+	}
+
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
