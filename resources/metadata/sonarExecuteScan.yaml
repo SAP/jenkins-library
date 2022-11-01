@@ -296,4 +296,4 @@ spec:
                 type: int
   containers:
     - name: sonar
-      image: sonarsource/sonar-scanner-cli:4.6
+      image: sonarsource/sonar-scanner-cli:4.7
