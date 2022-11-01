@@ -44,6 +44,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: additionalMvnParameters
+        type: "[]string"
+        description: Self-defined additional maven parameters that will be used in mvn command, like `-Dkey=value`.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: assignees
         description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.
         scope:
@@ -639,16 +646,6 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/m2Path
-      - name: additionalMvnParameters
-        type: string
-        description: Self-defined additional maven parameters that will be used in mvn command, like `-Dkey=value`.
-        scope:
-          - GENERAL
-          - STEPS
-          - STAGES
-          - PARAMETERS
-        aliases:
-          - name: maven/additionalMvnParameters
       - name: verifyOnly
         type: bool
         description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
