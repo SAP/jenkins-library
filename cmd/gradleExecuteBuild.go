@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -128,8 +129,27 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 	}
 }
 
+func appendToFile(filename, text string) error {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	if _, err = f.WriteString(text); err != nil {
+		return err
+	}
+}
+
 func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
 	log.Entry().Info("BOM file creation...")
+	appErr := appendToFile("./build.gradle", `
+group = "com.sap.s4hana"
+version = "0.0.1"`)
+	if appErr != nil {
+		return appErr
+	}
 	if config.CreateBOM {
 		if err := createBOM(config, utils); err != nil {
 			return err
