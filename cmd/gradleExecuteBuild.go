@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"os"
 	"text/template"
-
+	"io/ioutil"
+	"strings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
