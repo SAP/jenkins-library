@@ -1036,6 +1036,8 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 			oubi.SrcRoot.Uri = prefix + "/" + fvdl.Build.SourceBasePath + "/"
 		}
 		sarif.Runs[0].OriginalUriBaseIds = oubi
+	} else {
+		log.Entry().Warn("SourceBaesPath is empty")
 	}
 
 	//handle artifacts
