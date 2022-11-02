@@ -128,25 +128,30 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
-
-func appendToFile(filename, text string) error {
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+func fixBuildGradle() error {
+	f, err := os.OpenFile("./build.gradle", os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
-
 	defer f.Close()
-
+	bytes, err := ioutil.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	bytes = append(bytes, []byte(`
+group = "com.sap.s4hana"
+version = "0.0.1"`)...)
+	text := string(bytes)
+	text = strings.Replace(text, "NEXUS_USER", "PIPER_VAULTCREDENTIAL_USERNAME", -1)
+	text = strings.Replace(text, "NEXUS_PASSWORD", "PIPER_VAULTCREDENTIAL_PASSWORD", -1)
 	if _, err = f.WriteString(text); err != nil {
 		return err
 	}
+	return nil
 }
-
 func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
 	log.Entry().Info("BOM file creation...")
-	appErr := appendToFile("./build.gradle", `
-group = "com.sap.s4hana"
-version = "0.0.1"`)
+	appErr := fixBuildGradle()
 	if appErr != nil {
 		return appErr
 	}
