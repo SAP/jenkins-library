@@ -56,6 +56,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 					"SECURITY_VULNERABILITY",
 					v.Component.ToPackageUrl().ToString(),
 					v.VulnerabilityWithRemediation.CweID,
+					v.Component.MatchedType(),
 				}
 				ruleProp := format.SarifRuleProperties{
 					Tags:             tags,

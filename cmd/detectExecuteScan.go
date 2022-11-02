@@ -575,8 +575,8 @@ func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecut
 	// create component lookup map to interconnect vulnerability and component
 	keyFormat := "%v/%v"
 	componentLookup := map[string]*bd.Component{}
-	for _, comp := range components.Items {
-		componentLookup[fmt.Sprintf(keyFormat, comp.Name, comp.Version)] = &comp
+	for i := 0; i < len(components.Items); i++ {
+		componentLookup[fmt.Sprintf(keyFormat, components.Items[i].Name, components.Items[i].Version)] = &components.Items[i]
 	}
 
 	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)

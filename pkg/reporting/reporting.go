@@ -27,7 +27,7 @@ type VulnerabilityReport struct {
 	Branch            string
 	CommitID          string
 	Description       string
-	DirectDependency  string
+	DependencyType    string
 	Footer            string
 	Group             string
 	PackageURL        string
@@ -40,6 +40,7 @@ type VulnerabilityReport struct {
 	Version           string
 	VulnerabilityLink string
 	VulnerabilityName string
+	Origin            string
 }
 
 const vulnerabilityMdTemplate string = `# {{title .Severity }} ({{ .Score }}) Vulnerability {{ .VulnerabilityName }} - {{ .ArtifactID }}
@@ -62,8 +63,9 @@ Pipeline run: [{{ .PipelineName }}]({{ .PipelineLink }})
 
 {{if .Branch}}**Branch:** {{ .Branch }}{{- end}}
 {{if .CommitID}}**CommitId:** {{ .CommitID }}{{- end}}
-{{if .DirectDependency}}**Dependency:** {{if (eq .DirectDependency "true")}}direct{{ else }}indirect{{ end }}{{- end}}
+{{if .DependencyType}}**Dependency:** {{ .DependencyType }}{{- end}}
 {{if .ArtifactID}}**ArtifactId:** {{ .ArtifactID }}{{- end}}
+{{if .Origin}}**Origin:** {{ .Origin }}{{- end}}
 {{if .Group}}**Group:** {{ .Group }}{{- end}}
 {{if .Version}}**Version:** {{ .Version }}{{- end}}
 {{if .PackageURL}}**Package URL:** {{ .PackageURL }}{{- end}}
@@ -100,6 +102,7 @@ func (v *VulnerabilityReport) ToMarkdown() ([]byte, error) {
 			v.PipelineLink = provider.GetJobURL()
 			v.PipelineName = provider.GetJobName()
 		}
+		v.Branch = provider.GetBranch()
 	}
 
 	md := []byte{}
