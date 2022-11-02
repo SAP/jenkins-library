@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"text/template"
-	"io/ioutil"
-	"strings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -129,33 +127,10 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
-func fixBuildGradle() error {
-	f, err := os.OpenFile("./build.gradle", os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	bytes, err := ioutil.ReadAll(f)
-	if err != nil {
-		return err
-	}
-	bytes = append(bytes, []byte(`
-group = "com.sap.s4hana"
-version = "0.0.1"`)...)
-	text := string(bytes)
-	text = strings.Replace(text, "NEXUS_USER", "PIPER_VAULTCREDENTIAL_USERNAME", -1)
-	text = strings.Replace(text, "NEXUS_PASSWORD", "PIPER_VAULTCREDENTIAL_PASSWORD", -1)
-	if _, err = f.WriteString(text); err != nil {
-		return err
-	}
-	return nil
-}
+
 func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils) error {
 	log.Entry().Info("BOM file creation...")
-	appErr := fixBuildGradle()
-	if appErr != nil {
-		return appErr
-	}
+
 	if config.CreateBOM {
 		if err := createBOM(config, utils); err != nil {
 			return err
