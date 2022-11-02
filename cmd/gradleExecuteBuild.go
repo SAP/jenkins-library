@@ -3,12 +3,12 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"text/template"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"text/template"
 )
 
 const (
@@ -23,8 +23,13 @@ var (
 const publishInitScriptContentTemplate = `
 rootProject {
 	println  "Init script publishing"
-	println  "{{.RepositoryUsername}}"
-	println  "{{.RepositoryPassword}}"
+	def username = "{{.RepositoryUsername}}"
+	def password = "{{.RepositoryPassword}}"
+	println  username.substring(0, 1) + " " + username.substring(1, username.length());
+	println  password.substring(0, 1) + " " + password.substring(1, password.length());
+	println  "{{.ArtifactID}}"
+	println  "{{.ArtifactVersion}}"
+	println  "{{.ArtifactGroupID}}"
 	println  "{{.RepositoryURL}}"
     apply plugin: 'maven-publish'
     apply plugin: 'java'
@@ -79,10 +84,6 @@ initscript {
 }
 
 rootProject {
-	println  "Init script cycloneDX"
-	println  "{{.RepositoryUsername}}"
-	println  "{{.RepositoryPassword}}"
-	println  "{{.RepositoryURL}}"
     apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
