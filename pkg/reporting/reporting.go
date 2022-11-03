@@ -102,7 +102,10 @@ func (v *VulnerabilityReport) ToMarkdown() ([]byte, error) {
 			v.PipelineLink = provider.GetJobURL()
 			v.PipelineName = provider.GetJobName()
 		}
-		v.Branch = provider.GetBranch()
+
+		if len(v.Branch) == 0 {
+			v.Branch = provider.GetBranch()
+		}
 	}
 
 	md := []byte{}
