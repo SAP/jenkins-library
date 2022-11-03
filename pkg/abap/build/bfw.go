@@ -146,7 +146,7 @@ type Result struct {
 // Value : Returns Build Runtime Value
 type Value struct {
 	connector Connector
-	BuildID   string `json:"build_id"`
+	BuildID   string `json:"build_id,omitempty"`
 	ValueID   string `json:"value_id"`
 	Value     string `json:"value"`
 }
@@ -555,10 +555,12 @@ func (logging *logStruct) print() {
 
 // ******** parsing ********
 func (v Value) String() string {
-	return fmt.Sprintf(
-		`{ "value_id": "%s", "value": "%s" }`,
-		v.ValueID,
-		v.Value)
+	// return fmt.Sprintf(
+	// 	`{ "value_id": "%s", "value": "%s" }`,
+	// 	v.ValueID,
+	// 	v.Value)
+	returnByteArray, _ := json.Marshal(v)
+	return string(returnByteArray)
 }
 
 func (vs Values) String() string {

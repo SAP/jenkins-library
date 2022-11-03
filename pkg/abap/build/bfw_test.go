@@ -47,6 +47,17 @@ func TestStart(t *testing.T) {
 	})
 }
 
+func TestStartValueGeneration(t *testing.T) {
+	myValue := string(`{ "ARES_EC_ATTRIBUTES": [ { "ATTRIBUTE": "A", "VALUE": "B" } ] }`)
+
+	importBody := inputForPost{
+		phase:  "HUGO",
+		values: Values{Values: []Value{{ValueID: "myJson", Value: myValue}}},
+	}.String()
+
+	assert.Equal(t, `{ "phase": "HUGO", "values": [{"value_id":"myJson","value":"{ \"ARES_EC_ATTRIBUTES\": [ { \"ATTRIBUTE\": \"A\", \"VALUE\": \"B\" } ] }"}]}`, importBody)
+}
+
 func TestGet(t *testing.T) {
 	t.Run("Run Get", func(t *testing.T) {
 		b := testSetup(&ClMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
