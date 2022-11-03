@@ -128,7 +128,7 @@ func InstallFile(file, pomFile string, options *EvaluateOptions, utils Utils) er
 	if len(pomFile) == 0 {
 		return fmt.Errorf("pomFile can't be empty")
 	}
-	defines := option.Defines
+	defines := options.Defines
 	if len(file) > 0 {
 		defines = append(defines, "-Dfile="+file)
 		if strings.Contains(file, ".jar") {
