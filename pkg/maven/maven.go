@@ -290,7 +290,7 @@ func warFile(dir, finalName string) string {
 }
 
 func flattenPom(options *EvaluateOptions, utils Utils) error {
-	defines := []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
+	defines := []string{"-Dflatten.mode=resolveCiFriendliesOnly"}
 	defines = append(defines, options.Defines...)
 	log.Entry().Debugf("####### flattenPom: options.Defines is %v", options.Defines)
 	mavenOptionsFlatten := ExecuteOptions{
