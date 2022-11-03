@@ -257,6 +257,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using Syft and stored in a file of CycloneDX 1.4 format.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment

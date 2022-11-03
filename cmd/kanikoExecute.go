@@ -203,20 +203,21 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 					commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 				}
-				//Syft for multi image, generates bom-docker-(1/2/3).xml
-				shellRunner.AppendEnv([]string{"DOCKER_CONFIG", "/kaniko/.docker"})
-				syftDownloadErr := installSyft(shellRunner, fileUtils, httpClient)
-				if syftDownloadErr != nil {
-					return syftDownloadErr
-				}
-				for index, eachImageTag := range commonPipelineEnvironment.container.imageNameTags {
-					// TrimPrefix needed as syft needs containerRegistry name only
-					syftRunErr := shellRunner.RunShell("/busybox/sh", fmt.Sprintf("./syft %s/%s -o cyclonedx-xml=bom-docker-%v.xml", strings.TrimPrefix(commonPipelineEnvironment.container.registryURL, "https://"), eachImageTag, index))
-					if syftRunErr != nil {
-						return syftRunErr
+				if config.CreateBOM {
+					//Syft for multi image, generates bom-docker-(1/2/3).xml
+					shellRunner.AppendEnv([]string{"DOCKER_CONFIG", "/kaniko/.docker"})
+					syftDownloadErr := installSyft(shellRunner, fileUtils, httpClient)
+					if syftDownloadErr != nil {
+						return syftDownloadErr
+					}
+					for index, eachImageTag := range commonPipelineEnvironment.container.imageNameTags {
+						// TrimPrefix needed as syft needs containerRegistry name only
+						syftRunErr := shellRunner.RunShell("/busybox/sh", fmt.Sprintf("./syft %s/%s -o cyclonedx-xml=bom-docker-%v.xml", strings.TrimPrefix(commonPipelineEnvironment.container.registryURL, "https://"), eachImageTag, index))
+						if syftRunErr != nil {
+							return syftRunErr
+						}
 					}
 				}
-
 				return nil
 			} else {
 				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
@@ -277,15 +278,17 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if kanikoErr != nil {
 		return kanikoErr
 	}
-
-	// Syft for single image, generates bom-docekr.xml
-	shellRunner.AppendEnv([]string{"DOCKER_CONFIG", "/kaniko/.docker"})
-	syftDownloadErr := installSyft(shellRunner, fileUtils, httpClient)
-	if syftDownloadErr != nil {
-		return syftDownloadErr
+	if config.CreateBOM {
+		// Syft for single image, generates bom-docker.xml
+		shellRunner.AppendEnv([]string{"DOCKER_CONFIG", "/kaniko/.docker"})
+		syftDownloadErr := installSyft(shellRunner, fileUtils, httpClient)
+		if syftDownloadErr != nil {
+			return syftDownloadErr
+		}
+		// TrimPrefix of https:// is needed as syft needs the containerRegistry name only
+		return shellRunner.RunShell("/busybox/sh", fmt.Sprintf("./syft %s/%s -o cyclonedx-xml=bom-docker.xml", strings.TrimPrefix(commonPipelineEnvironment.container.registryURL, "https://"), commonPipelineEnvironment.container.imageNameTag))
 	}
-	// TrimPrefix of https:// is needed as syft needs the containerRegistry name only
-	return shellRunner.RunShell("/busybox/sh", fmt.Sprintf("./syft %s/%s -o cyclonedx-xml=bom-docker.xml", strings.TrimPrefix(commonPipelineEnvironment.container.registryURL, "https://"), commonPipelineEnvironment.container.imageNameTag))
+	return nil
 }
 
 func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
