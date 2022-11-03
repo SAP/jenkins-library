@@ -331,7 +331,7 @@ func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, e
 		parameters = append(parameters, options.Flags...)
 	}
 
-    log.Entry().Debugf("####### option.Defines is %v", option.Defines)
+    log.Entry().Debugf("####### option.Defines is %v", options.Defines)
 	if options.Defines != nil {
 		parameters = append(parameters, options.Defines...)
 	}
