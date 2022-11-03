@@ -306,6 +306,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		config.Unmap = false
 	}
 
+	if config.MinScanInterval > 0 {
+		//Unmap doesnt work well with min-scan-interval and should be removed
+		config.Unmap = false
+		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%d'", config.MinScanInterval))
+	}
+
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
 			args = append(args, "--detect.project.codelocation.unmap=true")
@@ -562,29 +568,41 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 
 func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
 	detectVersionName := getVersionName(config)
-	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
+	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
 	if err != nil {
 		return nil, nil, err
+	}
+	// create component lookup map to interconnect vulnerability and component
+	keyFormat := "%v/%v"
+	componentLookup := map[string]*bd.Component{}
+	for _, comp := range components.Items {
+		componentLookup[fmt.Sprintf(keyFormat, comp.Name, comp.Version)] = &comp
+	}
+
+	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
+	if err != nil {
+		return nil, components, err
 	}
 
 	majorVulns := 0
 	activeVulns := 0
-	for _, vuln := range vulns.Items {
+	for index, vuln := range vulns.Items {
 		if isActiveVulnerability(vuln) {
 			activeVulns++
 			if isMajorVulnerability(vuln) {
 				majorVulns++
 			}
 		}
+		component := componentLookup[fmt.Sprintf(keyFormat, vuln.Name, vuln.Version)]
+		if component != nil && len(component.Name) > 0 {
+			vulns.Items[index].Component = component
+		} else {
+			vulns.Items[index].Component = &bd.Component{Name: vuln.Name, Version: vuln.Version}
+		}
 	}
 	influx.detect_data.fields.vulnerabilities = activeVulns
 	influx.detect_data.fields.major_vulnerabilities = majorVulns
 	influx.detect_data.fields.minor_vulnerabilities = activeVulns - majorVulns
-
-	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
-	if err != nil {
-		return vulns, nil, err
-	}
 	influx.detect_data.fields.components = components.TotalCount
 
 	return vulns, components, nil
