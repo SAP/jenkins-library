@@ -156,7 +156,8 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 			return reports, fmt.Errorf("Command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
 		}
 	}
-
+	log.Entry().Debugf("####### BuildDescriptorFile is %v", config.BuildDescriptorFile)
+    log.Entry().Debugf("####### AdditionalMvnParameters is %v", config.AdditionalMvnParameters)
 	if config.BuildTool == "maven" && config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
