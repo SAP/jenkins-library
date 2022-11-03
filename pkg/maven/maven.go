@@ -128,8 +128,7 @@ func InstallFile(file, pomFile string, options *EvaluateOptions, utils Utils) er
 	if len(pomFile) == 0 {
 		return fmt.Errorf("pomFile can't be empty")
 	}
-
-	var defines []string
+	defines := option.Defines
 	if len(file) > 0 {
 		defines = append(defines, "-Dfile="+file)
 		if strings.Contains(file, ".jar") {
@@ -332,6 +331,7 @@ func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, e
 		parameters = append(parameters, options.Flags...)
 	}
 
+    log.Entry().Debugf("####### option.Defines is %v", option.Defines)
 	if options.Defines != nil {
 		parameters = append(parameters, options.Defines...)
 	}
