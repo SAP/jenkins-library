@@ -140,7 +140,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 				ProjectSettingsFile: opts.ProjectSettingsFile,
 				GlobalSettingsFile:  opts.GlobalSettingsFile,
 				M2Path:              opts.M2Path,
-				Defines:             opt.Defines
+				Defines:             opt.Defines,
 			},
 		}
 	case "mta":
