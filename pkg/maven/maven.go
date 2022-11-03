@@ -102,7 +102,6 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 // example - 'project.version' from a pom file exactly as Maven itself evaluates it.
 func Evaluate(options *EvaluateOptions, expression string, utils Utils) (string, error) {
 	defines := []string{"-Dexpression=" + expression, "-DforceStdout", "-q"}
-	log.Entry().Debugf("####### Evaluate: option.Defines is %v", options.Defines)
 	defines = append(defines, options.Defines...)
 	executeOptions := ExecuteOptions{
 		PomPath:             options.PomPath,
@@ -129,7 +128,8 @@ func InstallFile(file, pomFile string, options *EvaluateOptions, utils Utils) er
 	if len(pomFile) == 0 {
 		return fmt.Errorf("pomFile can't be empty")
 	}
-	defines := options.Defines
+
+	var defines []string
 	if len(file) > 0 {
 		defines = append(defines, "-Dfile="+file)
 		if strings.Contains(file, ".jar") {
@@ -290,12 +290,9 @@ func warFile(dir, finalName string) string {
 }
 
 func flattenPom(options *EvaluateOptions, utils Utils) error {
-	defines := []string{"-Dflatten.mode=resolveCiFriendliesOnly"}
-	defines = append(defines, options.Defines...)
-	log.Entry().Debugf("####### flattenPom: options.Defines is %v", options.Defines)
 	mavenOptionsFlatten := ExecuteOptions{
 		Goals:               []string{"flatten:flatten"},
-		Defines:             defines,
+		Defines:             []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
 		PomPath:             options.PomPath,
 		M2Path:              options.M2Path,
 		ProjectSettingsFile: options.ProjectSettingsFile,
@@ -335,7 +332,6 @@ func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, e
 		parameters = append(parameters, options.Flags...)
 	}
 
-    log.Entry().Debugf("####### getParametersFromOptions: option.Defines is %v", options.Defines)
 	if options.Defines != nil {
 		parameters = append(parameters, options.Defines...)
 	}
