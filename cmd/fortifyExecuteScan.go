@@ -157,7 +157,6 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 			return reports, fmt.Errorf("Command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
 		}
 	}
-    log.Entry().Debugf("####### AdditionalMvnParameters is %v", config.AdditionalMvnParameters)
 	if config.BuildTool == "maven" && config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
@@ -169,18 +168,15 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 			return reports, fmt.Errorf("Unable to install artifacts: %w", err)
 		}
 	}
-    log.Entry().Debugf("####### After Install")
 	artifact, err := determineArtifact(config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal()
 	}
-	log.Entry().Debugf("####### After Determine")
 	coordinates, err := artifact.GetCoordinates()
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reports, fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-	log.Entry().Debugf("####### After coordinates")
 	log.Entry().Debugf("loaded project coordinates %v from descriptor", coordinates)
 
 	if len(config.Version) > 0 {
