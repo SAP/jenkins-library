@@ -34,6 +34,7 @@ type Options struct {
 	DockerImage          string
 	GlobalSettingsFile   string
 	M2Path               string
+	Defines              []string
 	VersionSource        string
 	VersionSection       string
 	VersionField         string
