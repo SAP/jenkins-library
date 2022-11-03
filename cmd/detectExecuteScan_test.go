@@ -808,12 +808,12 @@ func TestGetVulnsAndComponents(t *testing.T) {
 		}
 		vulnerableComponentSpring := &bd.Component{}
 		vulnerableComponentLog4j := &bd.Component{}
-		for _, c := range components.Items {
-			if c.Name == "Spring Framework" {
-				vulnerableComponentSpring = &c
+		for i := 0; i < len(components.Items); i++ {
+			if components.Items[i].Name == "Spring Framework" {
+				vulnerableComponentSpring = &components.Items[i]
 			}
-			if c.Name == "Apache Log4j" {
-				vulnerableComponentLog4j = &c
+			if components.Items[i].Name == "Apache Log4j" {
+				vulnerableComponentLog4j = &components.Items[i]
 			}
 		}
 		assert.Equal(t, vulnerableComponentSpring, vulnerabilitySpring.Component)
