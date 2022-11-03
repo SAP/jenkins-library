@@ -170,7 +170,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 			return reports, fmt.Errorf("Unable to install artifacts: %w", err)
 		}
 	}
-
+   log.Entry().Debugf("####### After Install")
 	artifact, err := determineArtifact(config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal()
