@@ -555,10 +555,6 @@ func (logging *logStruct) print() {
 
 // ******** parsing ********
 func (v Value) String() string {
-	// return fmt.Sprintf(
-	// 	`{ "value_id": "%s", "value": "%s" }`,
-	// 	v.ValueID,
-	// 	v.Value)
 	returnByteArray, _ := json.Marshal(v)
 	return string(returnByteArray)
 }
