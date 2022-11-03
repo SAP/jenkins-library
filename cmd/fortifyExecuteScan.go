@@ -137,6 +137,7 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 		M2Path:              config.M2Path,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
+		Defines:             config.AdditionalMvnParameters,
 	}
 
 	artifact, err := utils.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions)
@@ -156,7 +157,6 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 			return reports, fmt.Errorf("Command not found: %v. Please configure a supported docker image or install Fortify SCA on the system.", exec)
 		}
 	}
-	log.Entry().Debugf("####### BuildDescriptorFile is %v", config.BuildDescriptorFile)
     log.Entry().Debugf("####### AdditionalMvnParameters is %v", config.AdditionalMvnParameters)
 	if config.BuildTool == "maven" && config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
@@ -164,22 +164,23 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
 			PomPath:             config.BuildDescriptorFile,
-			Defines:             config.AdditionalMvnParameters,
 		}, utils)
 		if err != nil {
 			return reports, fmt.Errorf("Unable to install artifacts: %w", err)
 		}
 	}
-   log.Entry().Debugf("####### After Install")
+    log.Entry().Debugf("####### After Install")
 	artifact, err := determineArtifact(config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal()
 	}
+	log.Entry().Debugf("####### After Determine")
 	coordinates, err := artifact.GetCoordinates()
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reports, fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
+	log.Entry().Debugf("####### After coordinates")
 	log.Entry().Debugf("loaded project coordinates %v from descriptor", coordinates)
 
 	if len(config.Version) > 0 {

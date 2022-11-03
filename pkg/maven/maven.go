@@ -130,7 +130,6 @@ func InstallFile(file, pomFile string, options *EvaluateOptions, utils Utils) er
 		return fmt.Errorf("pomFile can't be empty")
 	}
 	defines := options.Defines
-	log.Entry().Debugf("####### InstallFile: option.Defines is %v", options.Defines)
 	if len(file) > 0 {
 		defines = append(defines, "-Dfile="+file)
 		if strings.Contains(file, ".jar") {
@@ -160,14 +159,11 @@ func InstallFile(file, pomFile string, options *EvaluateOptions, utils Utils) er
 
 // InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
 func InstallMavenArtifacts(options *EvaluateOptions, utils Utils) error {
-    log.Entry().Debugf("####### InstallMavenArtifacts: options.Defines is %v", options.Defines)
 	return doInstallMavenArtifacts(options, utils)
 }
 
 func doInstallMavenArtifacts(options *EvaluateOptions, utils Utils) error {
-    log.Entry().Debugf("####### doInstallMavenArtifacts: options.Defines is %v", options.Defines)
 	err := flattenPom(options, utils)
-	log.Entry().Debugf("####### doInstallMavenArtifacts 2: options.Defines is %v", options.Defines)
 	if err != nil {
 		return err
 	}
