@@ -102,6 +102,7 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 // example - 'project.version' from a pom file exactly as Maven itself evaluates it.
 func Evaluate(options *EvaluateOptions, expression string, utils Utils) (string, error) {
 	defines := []string{"-Dexpression=" + expression, "-DforceStdout", "-q"}
+	log.Entry().Debugf("####### Evaluate: option.Defines is %v", options.Defines)
 	defines = append(defines, options.Defines...)
 	executeOptions := ExecuteOptions{
 		PomPath:             options.PomPath,
