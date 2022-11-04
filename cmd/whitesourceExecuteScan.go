@@ -263,7 +263,7 @@ func checkAndReportScanResults(ctx context.Context, config *ScanOptions, scan *w
 	rPath, err := checkPolicyViolations(ctx, config, scan, sys, utils, reportPaths, influx)
 
 	if err != nil {
-		if !config.FailOnSevereVulnerabilities && log.GetErrorCategory()==log.ErrorCompliance {
+		if !config.FailOnSevereVulnerabilities && log.GetErrorCategory() == log.ErrorCompliance {
 			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 		} else {
 			checkErrors = append(checkErrors, fmt.Sprint(err))
@@ -275,7 +275,7 @@ func checkAndReportScanResults(ctx context.Context, config *ScanOptions, scan *w
 		rPaths, err := checkSecurityViolations(ctx, config, scan, sys, utils, influx)
 		reportPaths = append(reportPaths, rPaths...)
 		if err != nil {
-			if !config.FailOnSevereVulnerabilities && log.GetErrorCategory()==log.ErrorCompliance {
+			if !config.FailOnSevereVulnerabilities && log.GetErrorCategory() == log.ErrorCompliance {
 				log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 			} else {
 				checkErrors = append(checkErrors, fmt.Sprint(err))
@@ -924,7 +924,6 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 }
 
 // create toolrecord file for whitesource
-//
 func createToolRecordWhitesource(utils whitesourceUtils, workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(utils, workspace, "whitesource", config.ServiceURL)
 	wsUiRoot := "https://saas.whitesourcesoftware.com"
