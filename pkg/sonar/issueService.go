@@ -22,15 +22,6 @@ type IssueService struct {
 
 // SearchIssues ...
 func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo.IssuesSearchObject, *http.Response, error) {
-	// ***
-	fmt.Printf("\nIssueService: %+v\n", service)
-	fmt.Printf("\noptions: %+v\n", options)
-	// ***
-	if len(service.PullRequest) > 0 {
-		options.PullRequest = service.PullRequest
-	} else if len(service.Branch) > 0 {
-		options.Branch = service.Branch
-	}
 	request, err := service.apiClient.create("GET", EndpointIssuesSearch, options)
 	if err != nil {
 		return nil, nil, err
@@ -55,20 +46,25 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 }
 
 func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) {
+	// ***
+	fmt.Printf("\nIssueService: %+v\n", service)
+	// ***
 	options := &IssuesSearchOption{
 		ComponentKeys: service.Project,
 		Severities:    severity.ToString(),
 		Resolved:      "false",
 		Ps:            "1",
 	}
-	if len(service.Branch) > 0 {
-		options.Branch = service.Branch
-	}
+	// ***
+	fmt.Printf("\noptions: %+v\n", options)
+	// ***
 	if len(service.Organization) > 0 {
 		options.Organization = service.Organization
 	}
 	if len(service.PullRequest) > 0 {
 		options.PullRequest = service.PullRequest
+	} else if len(service.Branch) > 0 {
+		options.Branch = service.Branch
 	}
 	result, _, err := service.SearchIssues(options)
 	if err != nil {
