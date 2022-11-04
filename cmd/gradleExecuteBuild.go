@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
+	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -21,7 +24,8 @@ const (
 var (
 	bomGradleTaskName = "cyclonedxBom"
 	publishTaskName   = "publish"
-	pathToModuleFile  = "./build/publications/maven/module.json"
+	pathToModuleFile  =  filepath.Join("build", "publications", "maven", "module.json")
+	rootPath = "."
 )
 
 const publishInitScriptContentTemplate = `
@@ -205,9 +209,22 @@ func publishArtifacts(config *gradleExecuteBuildOptions, utils gradleExecuteBuil
 		log.Entry().WithError(err).Errorf("failed to publish artifacts: %v", err)
 		return err
 	}
-	artifacts, err := getPublishedArtifactsNames(pathToModuleFile, utils)
+	var artifacts piperenv.Artifacts
+	err = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(path, pathToModuleFile) {
+			pathArtifacts, artifactsErr := getPublishedArtifactsNames(path, utils)
+			if artifactsErr != nil {
+				return fmt.Errorf("failed to get published artifacts in path %s: %v", path, artifactsErr)
+			}
+			artifacts = append(artifacts, pathArtifacts...)
+		}
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("failed to get published artifacts: %v", err)
+		return err
 	}
 	pipelineEnv.custom.artifacts = artifacts
 	return nil
