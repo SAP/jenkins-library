@@ -48,12 +48,14 @@ func (service *ComponentService) Component(options *MeasuresComponentOption) (*s
 	fmt.Printf("\nComponentService: %+v\n", service)
 	fmt.Printf("\noptions: %+v\n", options)
 	// ***
-	if len(service.Branch) > 0 {
-		options.Branch = service.Branch
-	}
 	if len(service.PullRequest) > 0 {
 		options.PullRequest = service.PullRequest
+	} else if len(service.Branch) > 0 {
+		options.Branch = service.Branch
 	}
+	// ***
+	fmt.Printf("\noptions: %+v\n", options)
+	// ***
 	request, err := service.apiClient.create("GET", EndpointMeasuresComponent, options)
 	if err != nil {
 		return nil, nil, err
