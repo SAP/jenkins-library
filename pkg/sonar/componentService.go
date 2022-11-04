@@ -1,6 +1,7 @@
 package sonar
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,6 +44,10 @@ type SonarLanguageDistribution struct {
 }
 
 func (service *ComponentService) Component(options *MeasuresComponentOption) (*sonargo.MeasuresComponentObject, *http.Response, error) {
+	// ***
+	fmt.Printf("\nComponentService: %+v\n", service)
+	fmt.Printf("\noptions: %+v\n", options)
+	// ***
 	if len(service.Branch) > 0 {
 		options.Branch = service.Branch
 	}

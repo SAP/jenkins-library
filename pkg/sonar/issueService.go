@@ -1,6 +1,7 @@
 package sonar
 
 import (
+	"fmt"
 	"net/http"
 
 	sonargo "github.com/magicsong/sonargo/sonar"
@@ -21,6 +22,10 @@ type IssueService struct {
 
 // SearchIssues ...
 func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo.IssuesSearchObject, *http.Response, error) {
+	// ***
+	fmt.Printf("\nIssueService: %+v\n", service)
+	fmt.Printf("\noptions: %+v\n", options)
+	// ***
 	if len(service.PullRequest) > 0 {
 		options.PullRequest = service.PullRequest
 	} else if len(service.Branch) > 0 {
