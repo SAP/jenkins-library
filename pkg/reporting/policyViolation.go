@@ -13,17 +13,17 @@ import (
 )
 
 type PolicyViolationReport struct {
-	ArtifactID        string
-	Branch            string
-	CommitID          string
-	Description       string
-	DirectDependency  string
-	Footer            string
-	Group             string
-	PackageURL        string
-	PipelineName      string
-	PipelineLink      string
-	Version           string
+	ArtifactID       string
+	Branch           string
+	CommitID         string
+	Description      string
+	DirectDependency string
+	Footer           string
+	Group            string
+	PackageURL       string
+	PipelineName     string
+	PipelineLink     string
+	Version          string
 }
 
 const policyViolationMdTemplate string = `# Policy Violation - {{ .PackageURL }}

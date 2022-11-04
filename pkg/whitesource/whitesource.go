@@ -185,10 +185,10 @@ func (a *Alert) ToMarkdown() ([]byte, error) {
 			Footer: "",
 			Group:  a.Library.GroupID,
 			// no information available about pipeline name and link, yet
-			PipelineName:      "",
-			PipelineLink:      "",
-			Version:           a.Library.Version,
-			PackageURL:        a.Library.ToPackageUrl().ToString(),
+			PipelineName: "",
+			PipelineLink: "",
+			Version:      a.Library.Version,
+			PackageURL:   a.Library.ToPackageUrl().ToString(),
 		}
 		return policyReport.ToMarkdown()
 	}
