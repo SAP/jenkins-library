@@ -557,29 +557,6 @@ func (logging *logStruct) print() {
 	}
 }
 
-// // ******** parsing ********
-// func (v Value) String() string {
-// 	returnByteArray, _ := json.Marshal(v)
-// 	return string(returnByteArray)
-// }
-
-// func (vs Values) String() string {
-// 	returnString := ""
-// 	for _, value := range vs.Values {
-// 		returnString = returnString + value.String() + ",\n"
-// 	}
-// 	if len(returnString) > 0 {
-// 		returnString = returnString[:len(returnString)-2] //removes last ,
-// 	}
-// 	return returnString
-// }
-
-// func (in InputForPost) String() string {
-// 	var myValues Values
-// 	myValues.Values = in.Values
-// 	return fmt.Sprintf(`{"phase":"%s","values":[%s]}`, in.Phase, myValues.String())
-// }
-
 //******** unmarshal function  ************
 func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
 
