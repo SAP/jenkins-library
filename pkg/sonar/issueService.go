@@ -21,6 +21,11 @@ type IssueService struct {
 
 // SearchIssues ...
 func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo.IssuesSearchObject, *http.Response, error) {
+	if len(service.PullRequest) > 0 {
+		options.PullRequest = service.PullRequest
+	} else if len(service.Branch) > 0 {
+		options.Branch = service.Branch
+	}
 	request, err := service.apiClient.create("GET", EndpointIssuesSearch, options)
 	if err != nil {
 		return nil, nil, err
