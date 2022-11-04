@@ -66,6 +66,10 @@ class commonPipelineEnvironment implements Serializable {
         valueMap[property] = value
     }
 
+    void removeValue(String property) {
+        valueMap.remove(property)
+    }
+
     def getValue(String property) {
         return valueMap.get(property)
     }
