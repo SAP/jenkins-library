@@ -159,6 +159,7 @@ func addPactVerifyContractFlags(cmd *cobra.Command, stepConfig *pactVerifyContra
 	cmd.Flags().StringVar(&stepConfig.SwaggerFilePath, "swaggerFilePath", `[api/build/swagger.json]`, "Defines path to the swagger specification file (swagger.json).")
 	cmd.Flags().StringVar(&stepConfig.TargetBranchName, "targetBranchName", os.Getenv("PIPER_targetBranchName"), "ToDo: update description - Participant version.")
 
+	cmd.MarkFlagRequired("pactBrokerBaseURL")
 }
 
 // retrieve step metadata
@@ -263,7 +264,7 @@ func pactVerifyContractMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pactBrokerBaseURL"),
 					},

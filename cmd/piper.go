@@ -192,6 +192,8 @@ func Execute() {
 	rootCmd.AddCommand(AnsSendEventCommand())
 	rootCmd.AddCommand(ApiProviderListCommand())
 	rootCmd.AddCommand(TmsUploadCommand())
+	rootCmd.AddCommand(PactVerifyContractCommand())
+	rootCmd.AddCommand(PactPublishContractCommand())
 
 	addRootFlags(rootCmd)
 

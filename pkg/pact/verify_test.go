@@ -16,7 +16,7 @@ func TestExecPactVerify(t *testing.T) {
 		vConfig := VerifyConfig{
 			Utils: mockUtils,
 		}
-		err := vConfig.ExecPactVerify()
+		err := vConfig.ExecPactVerify(mockUtils)
 		assert.NoError(t, err)
 	})
 
@@ -26,7 +26,7 @@ func TestExecPactVerify(t *testing.T) {
 		vConfig := VerifyConfig{
 			Utils: mockUtils,
 		}
-		err := vConfig.ExecPactVerify()
+		err := vConfig.ExecPactVerify(mockUtils)
 		assert.Contains(t, fmt.Sprint(err), "error saving report")
 	})
 
@@ -46,7 +46,7 @@ func TestExecPactVerify(t *testing.T) {
 			Utils: mockUtils,
 		}
 
-		err := vConfig.ExecPactVerify()
+		err := vConfig.ExecPactVerify(mockUtils)
 		assert.Contains(t, fmt.Sprint(err), "contract tests failed, http: Failed, asynch: Failed")
 	})
 
@@ -64,7 +64,7 @@ func TestExecPactVerify(t *testing.T) {
 			Utils: mockUtils,
 		}
 
-		err := vConfig.ExecPactVerify()
+		err := vConfig.ExecPactVerify(mockUtils)
 		assert.Contains(t, fmt.Sprint(err), "contract tests failed") 
 		assert.Contains(t, fmt.Sprint(err), "asynch: Failed")
 	})
@@ -79,7 +79,7 @@ func TestExecPactVerify(t *testing.T) {
 			Provider: "testProvider",
 
 		}
-		err := vConfig.ExecPactVerify()
+		err := vConfig.ExecPactVerify(mockUtils)
 		assert.Contains(t, fmt.Sprint(err), "contract tests validation failed, http: send error")
 	})
 
@@ -104,7 +104,7 @@ func TestExecPactVerify(t *testing.T) {
 			PathToAsyncFile: asynchFile,
 			PathToSwaggerFile: "swagger.json",
 		}
-		err := vConfig.ExecPactVerify()
+		err := vConfig.ExecPactVerify(mockUtils)
 		assert.Contains(t, fmt.Sprint(err), "contract tests validation failed")
 	})
 }
@@ -298,7 +298,7 @@ func TestVerifyAsync(t *testing.T) {
 			Utils: mockUtils,
 			PathToAsyncFile: "path/to/asynch-file.json",
 		}
-		exitCode, noTests, err := vConfig.verifyAsync()
+		exitCode, noTests, err := vConfig.verifyAsync(mockUtils)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, exitCode)
 		assert.Equal(t, 1, noTests)
@@ -326,7 +326,7 @@ func TestVerifyAsync(t *testing.T) {
 		vConfig := VerifyConfig{
 			Utils: mockUtils,
 		}
-		exitCode, noTests, err := vConfig.verifyAsync()
+		exitCode, noTests, err := vConfig.verifyAsync(mockUtils)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, exitCode)
 		assert.Equal(t, 0, noTests)
@@ -343,7 +343,7 @@ func TestVerifyAsync(t *testing.T) {
 		vConfig := VerifyConfig{
 			Utils: mockUtils,
 		}
-		exitCode, noTests, err := vConfig.verifyAsync()
+		exitCode, noTests, err := vConfig.verifyAsync(mockUtils)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, exitCode)
 		assert.Equal(t, 0, noTests)
@@ -358,7 +358,7 @@ func TestVerifyAsync(t *testing.T) {
 			Provider: "testProvider",
 			GitTargetBranch: "main",
 		}
-		_, _, err := vConfig.verifyAsync()
+		_, _, err := vConfig.verifyAsync(mockUtils)
 		assert.EqualError(t, err, "send failure")
 	})
 
@@ -376,7 +376,7 @@ func TestVerifyAsync(t *testing.T) {
 			Utils: mockUtils,
 			PathToAsyncFile: "path/to/asynch-file.json",
 		}
-		exitCode, _, err := vConfig.verifyAsync()
+		exitCode, _, err := vConfig.verifyAsync(mockUtils)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, exitCode)
 	})
@@ -396,7 +396,7 @@ func TestVerifyAsync(t *testing.T) {
 			Utils: mockUtils,
 			PathToAsyncFile: "path/to/asynch-file.json",
 		}
-		exitCode, _, err := vConfig.verifyAsync()
+		exitCode, _, err := vConfig.verifyAsync(mockUtils)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, exitCode)
 	})
@@ -417,7 +417,7 @@ func TestVerifyAsync(t *testing.T) {
 			Utils: mockUtils,
 			PathToAsyncFile: "path/to/asynch-file.json",
 		}
-		exitCode, _, err := vConfig.verifyAsync()
+		exitCode, _, err := vConfig.verifyAsync(mockUtils)
 		assert.EqualError(t, err, "lookPath error")
 		assert.Equal(t, 1, exitCode)
 	})
@@ -439,7 +439,7 @@ func TestVerifyAsync(t *testing.T) {
 			Utils: mockUtils,
 			PathToAsyncFile: "path/to/asynch-file.json",
 		}
-		exitCode, _, err := vConfig.verifyAsync()
+		exitCode, _, err := vConfig.verifyAsync(mockUtils)
 		assert.EqualError(t, err, "test error")
 		assert.Equal(t, 1, exitCode)
 	})

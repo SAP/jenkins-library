@@ -38,7 +38,7 @@ func runPactVerifyContract(config *pactVerifyContractOptions, telemetryData *tel
 		Utils:                     utils,
 	}
 
-	if err := verifyConfig.ExecPactVerify(); err != nil {
+	if err := verifyConfig.ExecPactVerify(utils); err != nil {
 		return err
 	}
 	return nil

@@ -85,6 +85,7 @@ spec:
       - name: pactBrokerBaseURL
         type: string
         description: Defines the URL to the PACT broker.
+        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
@@ -167,3 +168,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+  containers:
+    - name: node
+      image: node:lts

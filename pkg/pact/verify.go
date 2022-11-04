@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // VerifyConfig represents all configuration options used in verify stage
@@ -54,18 +55,13 @@ const (
 // pathToAsyncPactFolder represents the path to the folder where pact contracts which are associated with verifying provider will be downloaded to.
 const pathToAsyncPactFolder = "./async_verify_pacts/"
 
-type enforcementConfig struct {
-	EnforceOpenAPIValidation  bool `json:"enforceOpenAPIValidation,omitempty"`
-	EnforceAsyncAPIValidation bool `json:"enforceAsyncAPIValidation,omitempty"`
-}
-
 // ErrEnforcement error returned if threshold(s) are not met
 var (
 	ErrEnforcement = fmt.Errorf("pipeline enforcement failed")
 )
 
 // ExecPactVerify will execute applicable http and async contract tests and upload the results to the CI Report server.
-func (v *VerifyConfig) ExecPactVerify() error {
+func (v *VerifyConfig) ExecPactVerify(fileUtils piperutils.FileUtils) error {
 	reportData := v.Report()
 
 	// Removes suffix in case it was wrongly specified in the configuration
@@ -85,7 +81,7 @@ func (v *VerifyConfig) ExecPactVerify() error {
 
 	log.Entry().Info("Executing ASYNC Pact Verify")
 	// If no consumer contracts have been written for provider result will be set to 0 to prevent pipeline failure
-	asyncExitCode, numOfAsyncContracts, asynchErr := v.verifyAsync()
+	asyncExitCode, numOfAsyncContracts, asynchErr := v.verifyAsync(fileUtils)
 	if asynchErr != nil {
 		log.Entry().WithError(asynchErr).Error("failed to verify Asynch Pact tests")
 	}
@@ -143,7 +139,9 @@ func (v *VerifyConfig) verifyHTTP() (exitCode, numOfTests int, err error) {
 	// Find executable to swagger-mock-validator
 	swaggerExecutable, err := v.Utils.LookPath("swagger-mock-validator")
 	if err != nil {
-		return 1, numberOfTests, err
+		if err = v.Utils.RunExecutable("npm", "install", "--global", "swagger-mock-validator"); err != nil {
+			return 1, numOfTests, fmt.Errorf("swagger-mockvalidator could not be found nor installed: %w", err)
+		}
 	}
 
 	// arguments passed to swagger-mock-validator tool
@@ -166,7 +164,7 @@ func (v *VerifyConfig) verifyHTTP() (exitCode, numOfTests int, err error) {
 
 // verifyAsync will verify async contracts for given provider using async-validator.
 // It return two ints and an error representing the validators exit code, the number of contract tests that were associated with given provider, and an error if encountered
-func (v *VerifyConfig) verifyAsync() (exitCode, numOfTests int, err error) {
+func (v *VerifyConfig) verifyAsync(fileUtils piperutils.FileUtils) (exitCode, numOfTests int, err error) {
 	log.Entry().Infof("Validating provider %s-async asyncapidoc against consumer contracts tagged '%s", v.Provider, v.GitTargetBranch)
 	log.Entry().Infof("Path to async: %s", v.PathToAsyncFile)
 
@@ -191,22 +189,9 @@ func (v *VerifyConfig) verifyAsync() (exitCode, numOfTests int, err error) {
 		return exitCode, numberOfTests, nil
 	}
 
-	// Find executable to async-api-validator
-	asyncValidatorExecutable, err := v.Utils.LookPath("async-api-validator")
-	if err != nil {
-		exitCode = 1
-		return exitCode, numberOfTests, err
-	}
-
-	// arguments passed to async-api-validator tool
-	args := []string{
-		fmt.Sprintf("--pathToPactFolder=%s", pathToAsyncPactFolder),
-		fmt.Sprintf("--pathToAsyncFile=%s", v.PathToAsyncFile),
-	}
-
-	// Run async-api-validator and return exit code if contract test fails to fail pipeline
-	if err = v.Utils.RunExecutable(asyncValidatorExecutable, args...); err != nil {
-		return v.Utils.GetExitCode(), numberOfTests, err
+	// validate
+	if err := ValidateAsynch(pathToAsyncPactFolder, v.PathToAsyncFile, fileUtils); err != nil {
+		return 1, numberOfTests, err
 	}
 
 	// Contract test passed
