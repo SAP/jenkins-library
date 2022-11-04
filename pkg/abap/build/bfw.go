@@ -156,9 +156,9 @@ type Values struct {
 	Values []Value `json:"results"`
 }
 
-type inputForPost struct {
-	phase  string
-	values Values
+type InputForPost struct {
+	Phase  string  `json:"phase"`
+	Values []Value `json:"values"`
 }
 
 // *********************************************************************
@@ -170,12 +170,16 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	if err := b.Connector.GetToken(""); err != nil {
 		return err
 	}
-	importBody := inputForPost{
-		phase:  phase,
-		values: inputValues,
-	}.String()
+	inputForPost := InputForPost{
+		Phase:  phase,
+		Values: inputValues.Values,
+	}
+	importBody, err := json.Marshal(inputForPost)
+	if err != nil {
+		return errors.Wrap(err, "Generating Post Request Body failed")
+	}
 
-	body, err := b.Connector.Post("/builds", importBody)
+	body, err := b.Connector.Post("/builds", string(importBody))
 	if err != nil {
 		return errors.Wrap(err, "Start of build failed: "+string(body))
 	}
@@ -553,26 +557,28 @@ func (logging *logStruct) print() {
 	}
 }
 
-// ******** parsing ********
-func (v Value) String() string {
-	returnByteArray, _ := json.Marshal(v)
-	return string(returnByteArray)
-}
+// // ******** parsing ********
+// func (v Value) String() string {
+// 	returnByteArray, _ := json.Marshal(v)
+// 	return string(returnByteArray)
+// }
 
-func (vs Values) String() string {
-	returnString := ""
-	for _, value := range vs.Values {
-		returnString = returnString + value.String() + ",\n"
-	}
-	if len(returnString) > 0 {
-		returnString = returnString[:len(returnString)-2] //removes last ,
-	}
-	return returnString
-}
+// func (vs Values) String() string {
+// 	returnString := ""
+// 	for _, value := range vs.Values {
+// 		returnString = returnString + value.String() + ",\n"
+// 	}
+// 	if len(returnString) > 0 {
+// 		returnString = returnString[:len(returnString)-2] //removes last ,
+// 	}
+// 	return returnString
+// }
 
-func (in inputForPost) String() string {
-	return fmt.Sprintf(`{ "phase": "%s", "values": [%s]}`, in.phase, in.values.String())
-}
+// func (in InputForPost) String() string {
+// 	var myValues Values
+// 	myValues.Values = in.Values
+// 	return fmt.Sprintf(`{"phase":"%s","values":[%s]}`, in.Phase, myValues.String())
+// }
 
 //******** unmarshal function  ************
 func unmarshalTasks(body []byte, connector Connector) ([]task, error) {

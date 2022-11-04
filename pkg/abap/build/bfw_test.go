@@ -1,6 +1,7 @@
 package build
 
 import (
+	"encoding/json"
 	"path"
 	"path/filepath"
 	"testing"
@@ -50,12 +51,14 @@ func TestStart(t *testing.T) {
 func TestStartValueGeneration(t *testing.T) {
 	myValue := string(`{ "ARES_EC_ATTRIBUTES": [ { "ATTRIBUTE": "A", "VALUE": "B" } ] }`)
 
-	importBody := inputForPost{
-		phase:  "HUGO",
-		values: Values{Values: []Value{{ValueID: "myJson", Value: myValue}}},
-	}.String()
+	inputForPost := InputForPost{
+		Phase:  "HUGO",
+		Values: []Value{{ValueID: "myJson", Value: myValue}},
+	}
 
-	assert.Equal(t, `{ "phase": "HUGO", "values": [{"value_id":"myJson","value":"{ \"ARES_EC_ATTRIBUTES\": [ { \"ATTRIBUTE\": \"A\", \"VALUE\": \"B\" } ] }"}]}`, importBody)
+	importBody, err := json.Marshal(inputForPost)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"phase":"HUGO","values":[{"value_id":"myJson","value":"{ \"ARES_EC_ATTRIBUTES\": [ { \"ATTRIBUTE\": \"A\", \"VALUE\": \"B\" } ] }"}]}`, string(importBody))
 }
 
 func TestGet(t *testing.T) {
