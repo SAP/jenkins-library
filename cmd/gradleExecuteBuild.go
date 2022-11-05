@@ -151,7 +151,7 @@ func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
 		Command: &command.Command{
 			StepName: "gradleExecuteBuild",
 		},
-		Files: &piperutils.Files{},
+		Files:    &piperutils.Files{},
 		Filepath: walkDirFunc,
 	}
 	utils.Stdout(log.Writer())
