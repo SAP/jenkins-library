@@ -24,8 +24,8 @@ const (
 var (
 	bomGradleTaskName = "cyclonedxBom"
 	publishTaskName   = "publish"
-	pathToModuleFile  =  filepath.Join("build", "publications", "maven", "module.json")
-	rootPath = "."
+	pathToModuleFile  = filepath.Join("build", "publications", "maven", "module.json")
+	rootPath          = "."
 )
 
 const publishInitScriptContentTemplate = `
@@ -104,7 +104,12 @@ initscript {
 
 // PublishedArtifacts contains information about published artifacts
 type PublishedArtifacts struct {
+	Info     Component `json:"component,omitempty"`
 	Elements []Element `json:"variants,omitempty"`
+}
+
+type Component struct {
+	Module string `json:"module,omitempty"`
 }
 
 type Element struct {
@@ -268,7 +273,7 @@ func getPublishedArtifactsNames(file string, utils gradleExecuteBuildUtils) (pip
 			continue
 		}
 		for _, artifact := range element.Artifacts {
-			artifacts = append(artifacts, piperenv.Artifact{Name: artifact.Name})
+			artifacts = append(artifacts, piperenv.Artifact{Id: publishedArtifacts.Info.Module, Name: artifact.Name})
 		}
 	}
 	return artifacts, nil
