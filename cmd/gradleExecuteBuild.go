@@ -121,22 +121,38 @@ type Artifact struct {
 	Name string `json:"name,omitempty"`
 }
 
+type WalkDir func(root string, fn fs.WalkDirFunc) error
+
+type Filepath interface {
+	WalkDir(root string, fn fs.WalkDirFunc) error
+}
+
+type WalkDirFunc func(root string, fn fs.WalkDirFunc) error
+
+func (f WalkDirFunc) WalkDir(root string, fn fs.WalkDirFunc) error {
+	return f(root, fn)
+}
+
 type gradleExecuteBuildUtils interface {
 	command.ExecRunner
 	piperutils.FileUtils
+	Filepath
 }
 
 type gradleExecuteBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	Filepath
 }
 
 func newGradleExecuteBuildUtils() gradleExecuteBuildUtils {
+	var walkDirFunc WalkDirFunc = filepath.WalkDir
 	utils := gradleExecuteBuildUtilsBundle{
 		Command: &command.Command{
 			StepName: "gradleExecuteBuild",
 		},
 		Files: &piperutils.Files{},
+		Filepath: walkDirFunc,
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -215,7 +231,7 @@ func publishArtifacts(config *gradleExecuteBuildOptions, utils gradleExecuteBuil
 		return err
 	}
 	var artifacts piperenv.Artifacts
-	err = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+	err = utils.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
 		}
