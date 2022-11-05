@@ -21,7 +21,6 @@ type gradleExecuteBuildMockUtils struct {
 	Filepath
 }
 
-
 type isDirEntryMock func() bool
 
 func (d isDirEntryMock) Name() string {
