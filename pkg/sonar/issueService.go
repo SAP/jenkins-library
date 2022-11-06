@@ -1,7 +1,6 @@
 package sonar
 
 import (
-	"fmt"
 	"net/http"
 
 	sonargo "github.com/magicsong/sonargo/sonar"
@@ -46,18 +45,12 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 }
 
 func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) {
-	// ***
-	fmt.Printf("\nIssueService: %+v\n", service)
-	// ***
 	options := &IssuesSearchOption{
 		ComponentKeys: service.Project,
 		Severities:    severity.ToString(),
 		Resolved:      "false",
 		Ps:            "1",
 	}
-	// ***
-	fmt.Printf("\noptions: %+v\n", options)
-	// ***
 	if len(service.Organization) > 0 {
 		options.Organization = service.Organization
 	}
