@@ -363,7 +363,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		//Syft install and call
 		assert.Contains(t, shellRunner.Calls[0], "cat ./install.sh | sh -s -- -b .")
-		assert.Contains(t, shellRunner.Calls[1], "./syft index.docker.io/myImage:tag -o cyclonedx-xml=bom-docker.xml")
+		assert.Contains(t, shellRunner.Calls[1], "./syft index.docker.io/myImage:tag -o cyclonedx-xml=bom-docker-0.xml")
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
@@ -822,9 +822,9 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		// Case 3 syft run failed, using new ShellMockRunner here
 		shellRunner1 := &mock.ShellMockRunner{}
-		shellRunner1.ShouldFailOnCommand = map[string]error{"./syft index.docker.io/myImage:tag -o cyclonedx-xml=bom-docker.xml": fmt.Errorf("run failed")}
+		shellRunner1.ShouldFailOnCommand = map[string]error{"./syft index.docker.io/myImage:tag -o cyclonedx-xml=bom-docker-0.xml": fmt.Errorf("run failed")}
 		err = runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner1, certClient1, fileUtils)
 		assert.Error(t, err)
-		assert.Contains(t, fmt.Sprint(err), "run failed")
+		assert.Contains(t, fmt.Sprint(err), "failed to generate SBOM")
 	})
 }
