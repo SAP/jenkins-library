@@ -137,6 +137,7 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 		M2Path:              config.M2Path,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
+		Defines:             config.AdditionalMvnParameters,
 	}
 
 	artifact, err := utils.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions)
