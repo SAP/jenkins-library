@@ -13,7 +13,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** If set to true, a confirmation is required to delete the system */
     'confirmDeletion',
     /** If set to true, the system is never deleted */
-    'debug'
+    'debug',
+    'testBuild' // Parameter for test execution mode
 ]
 @Field Set STAGE_STEP_KEYS = GENERAL_CONFIG_KEYS
 @Field Set STEP_CONFIG_KEYS = STAGE_STEP_KEYS
