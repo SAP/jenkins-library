@@ -37,7 +37,7 @@ void call(Map parameters = [:]) {
         .use()
 
     if (config.testBuild) {
-        echo "Stage '" + stageName "' skipped as parameter 'testBuild' is active"
+        echo "Stage 'Integration Tests' skipped as parameter 'testBuild' is active"
     } else {
         piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
             try {
