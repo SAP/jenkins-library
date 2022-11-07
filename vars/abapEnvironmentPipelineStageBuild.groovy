@@ -19,8 +19,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'abapEnvironmentAssembleConfirm',
     'abapAddonAssemblyKitCreateTargetVector',
     'abapAddonAssemblyKitPublishTargetVector',
-    /** Parameter for host config */
-    'host',
+    'host', // Parameter for host config
+    'testBuild', // Parameter for test execution mode
     'generateTagForAddonProductVersion',
     'generateTagForAddonComponentVersion'
 ]
@@ -41,6 +41,7 @@ void call(Map parameters = [:]) {
         .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
+        .addIfEmpty('testBuild', false)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
@@ -50,23 +51,27 @@ void call(Map parameters = [:]) {
         abapEnvironmentAssemblePackages script: parameters.script
         abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
         abapAddonAssemblyKitRegisterPackages script: parameters.script
-        abapAddonAssemblyKitReleasePackages script: parameters.script
-        abapEnvironmentAssembleConfirm script: parameters.script
+        if (!config.testBuild) { //Skip final steps which can hardly be undone in test mode #1
+            abapAddonAssemblyKitReleasePackages script: parameters.script
+            abapEnvironmentAssembleConfirm script: parameters.script
+        }
         abapAddonAssemblyKitCreateTargetVector script: parameters.script
-        abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
-        if (config.generateTagForAddonComponentVersion || config.generateTagForAddonProductVersion) {
-            try {
-                Set keys = [ 'cfServiceKeyName' ]
-                Map configClone = ConfigurationHelper.newInstance(this)
-                    .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
-                    .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
-                    .mixinStepConfig(script.commonPipelineEnvironment, keys)
-                    .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
-                    .mixin(parameters, keys)
-                    .use()
-                abapEnvironmentCreateTag(script: parameters.script, cfServiceKeyName: configClone.cfServiceKeyName)
-            } catch (e) {
-                echo 'Tag creation failed: ' + e.message
+        if (!config.testBuild) { //Skip final steps which can hardly be undone in test mode #2
+            abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
+            if (config.generateTagForAddonComponentVersion || config.generateTagForAddonProductVersion) {
+                try {
+                    Set keys = [ 'cfServiceKeyName' ]
+                    Map configClone = ConfigurationHelper.newInstance(this)
+                        .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
+                        .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
+                        .mixinStepConfig(script.commonPipelineEnvironment, keys)
+                        .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
+                        .mixin(parameters, keys)
+                        .use()
+                    abapEnvironmentCreateTag(script: parameters.script, cfServiceKeyName: configClone.cfServiceKeyName)
+                } catch (e) {
+                    echo 'Tag creation failed: ' + e.message
+                }
             }
         }
     }

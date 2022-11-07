@@ -32,22 +32,27 @@ void call(Map parameters = [:]) {
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('confirmDeletion', true)
         .addIfEmpty('debug', false)
+        .addIfEmpty('testBuild', false)
         .use()
 
-    piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        try {
-            abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
-            cloudFoundryCreateServiceKey(script: parameters.script)
-            abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
-        } catch (Exception e) {
-            echo "Deployment test of add-on product failed."
-            throw e
-        } finally {
-            if (config.confirmDeletion) {
-                input message: "Deployment test has been executed. Once you proceed, the test system will be deleted."
-            }
-            if (!config.debug) {
-                cloudFoundryDeleteService script: parameters.script
+    if (config.testBuild) {
+        echo "Stage '" + stageName "' skipped as parameter 'testBuild' is active"
+    } else {
+        piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
+            try {
+                abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
+                cloudFoundryCreateServiceKey(script: parameters.script)
+                abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
+            } catch (Exception e) {
+                echo "Deployment test of add-on product failed."
+                throw e
+            } finally {
+                if (config.confirmDeletion) {
+                    input message: "Deployment test has been executed. Once you proceed, the test system will be deleted."
+                }
+                if (!config.debug) {
+                    cloudFoundryDeleteService script: parameters.script
+                }
             }
         }
     }
