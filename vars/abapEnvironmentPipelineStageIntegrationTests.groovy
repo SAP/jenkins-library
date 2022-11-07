@@ -14,7 +14,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'confirmDeletion',
     /** If set to true, the system is never deleted */
     'debug',
-    'testBuild' // Parameter for test execution mode
+    'testBuild' // Parameter for test execution mode, if true stage will be skipped
 ]
 @Field Set STAGE_STEP_KEYS = GENERAL_CONFIG_KEYS
 @Field Set STEP_CONFIG_KEYS = STAGE_STEP_KEYS

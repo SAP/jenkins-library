@@ -6,7 +6,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
-    'abapEnvironmentAssemblyKitPublishTargetVector'
+    'abapEnvironmentAssemblyKitPublishTargetVector',
+    'testBuild' // Parameter for test execution mode, if true stage will be skipped
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -17,10 +18,19 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults()
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
+        .addIfEmpty('testBuild', false)
+        .use()
 
-        abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
-
+    if (config.testBuild) {
+        echo "Stage 'Publish' skipped as parameter 'testBuild' is active"
+    } else {
+        piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
+            abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
+        }
     }
-
 }

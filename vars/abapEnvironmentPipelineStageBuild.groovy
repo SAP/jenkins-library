@@ -20,7 +20,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'abapAddonAssemblyKitCreateTargetVector',
     'abapAddonAssemblyKitPublishTargetVector',
     'host', // Parameter for host config
-    'testBuild', // Parameter for test execution mode
+    'testBuild', // Parameter for test execution mode, if true stage will be skipped
     'generateTagForAddonProductVersion',
     'generateTagForAddonComponentVersion'
 ]
@@ -54,6 +54,9 @@ void call(Map parameters = [:]) {
         if (!config.testBuild) { //Skip final steps which can hardly be undone in test mode #1
             abapAddonAssemblyKitReleasePackages script: parameters.script
             abapEnvironmentAssembleConfirm script: parameters.script
+        } else {
+            echo "abapAddonAssemblyKitReleasePackages skipped as testBuild = true"
+            echo "abapEnvironmentAssembleConfirm skipped as testBuild = true"
         }
         abapAddonAssemblyKitCreateTargetVector script: parameters.script
         if (!config.testBuild) { //Skip final steps which can hardly be undone in test mode #2
@@ -73,6 +76,9 @@ void call(Map parameters = [:]) {
                     echo 'Tag creation failed: ' + e.message
                 }
             }
+        } else {
+            echo "abapAddonAssemblyKitPublishTargetVector skipped as testBuild = true"
+            echo "abapEnvironmentCreateTag skipped as testBuild = true"
         }
     }
 }
