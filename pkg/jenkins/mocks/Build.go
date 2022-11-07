@@ -44,3 +44,27 @@ func (_m *Build) IsRunning(ctx context.Context) bool {
 
 	return r0
 }
+
+// Poll provides a mock function with given fields: ctx, options
+func (_m *Build) Poll(ctx context.Context, options ...interface{}) (int, error) {
+	var _ca []interface{}
+	_ca = append(_ca, ctx)
+	_ca = append(_ca, options...)
+	ret := _m.Called(_ca...)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context, ...interface{}) int); ok {
+		r0 = rf(ctx, options...)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, ...interface{}) error); ok {
+		r1 = rf(ctx, options...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
