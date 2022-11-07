@@ -52,6 +52,14 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
+    void testKeyRemoveFromMap() {
+        nullScript.commonPipelineEnvironment.setValue('myList', [])
+        nullScript.commonPipelineEnvironment.getValue('myList').add('item1')
+        nullScript.commonPipelineEnvironment.removeValue('myList')
+        assertThat(nullScript.commonPipelineEnvironment.getValue('myList'), is(null))
+    }
+
+    @Test
     void testContainereMap() {
         nullScript.commonPipelineEnvironment.setContainerProperty('image', 'myImage')
         assertThat(nullScript.commonPipelineEnvironment.getContainerProperty('image'), is('myImage'))
