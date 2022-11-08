@@ -11,7 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-//Downloader ...
+// Downloader ...
 type Downloader interface {
 	SetOptions(options ClientOptions)
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
