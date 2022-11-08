@@ -43,7 +43,7 @@ const (
 	dummyResultName string   = "Dummy"
 )
 
-//******** structs needed for json convertion ********
+// ******** structs needed for json convertion ********
 type jsonBuild struct {
 	Build struct {
 		BuildID     string      `json:"build_id"`
@@ -557,7 +557,7 @@ func (logging *logStruct) print() {
 	}
 }
 
-//******** unmarshal function  ************
+// ******** unmarshal function  ************
 func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
 
 	var tasks []task

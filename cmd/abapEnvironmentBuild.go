@@ -430,7 +430,7 @@ func (vE *valuesEvaluator) generateValueSlice() []abapbuild.Value {
 	return values
 }
 
-//**********************************Evaluate AddonDescriptor**************************************************************
+// **********************************Evaluate AddonDescriptor**************************************************************
 type myRepo struct {
 	abaputils.Repository
 }

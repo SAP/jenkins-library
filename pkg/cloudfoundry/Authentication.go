@@ -8,14 +8,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-//LoginCheck checks if user is logged in to Cloud Foundry with the receiver provided
-//to the function call.
+// LoginCheck checks if user is logged in to Cloud Foundry with the receiver provided
+// to the function call.
 func (cf *CFUtils) LoginCheck(options LoginOptions) (bool, error) {
 	return cf.loggedIn, nil
 }
 
-//Login logs user in to Cloud Foundry via cf cli.
-//Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
+// Login logs user in to Cloud Foundry via cf cli.
+// Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
 func (cf *CFUtils) Login(options LoginOptions) error {
 	var err error
 
@@ -62,8 +62,8 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 	return nil
 }
 
-//Logout logs User out of Cloud Foundry
-//Logout can be perforned via 'cf logout' command regardless if user is logged in or not
+// Logout logs User out of Cloud Foundry
+// Logout can be perforned via 'cf logout' command regardless if user is logged in or not
 func (cf *CFUtils) Logout() error {
 
 	_c := cf.Exec
@@ -85,7 +85,7 @@ func (cf *CFUtils) Logout() error {
 	return nil
 }
 
-//LoginOptions for logging in to CF
+// LoginOptions for logging in to CF
 type LoginOptions struct {
 	CfAPIEndpoint string
 	CfOrg         string
