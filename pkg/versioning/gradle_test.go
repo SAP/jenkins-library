@@ -11,11 +11,7 @@ import (
 
 func TestGradleGetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 
 		gradlePropsFilePath := filepath.Join(tmpFolder, "gradle.properties")
 		ioutil.WriteFile(gradlePropsFilePath, []byte("version = 1.2.3"), 0666)
@@ -32,11 +28,7 @@ func TestGradleGetVersion(t *testing.T) {
 
 func TestGradleSetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		tmpFolder, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("failed to create temp dir")
-		}
-		defer os.RemoveAll(tmpFolder)
+		tmpFolder := t.TempDir()
 
 		gradlePropsFilePath := filepath.Join(tmpFolder, "gradle.properties")
 		ioutil.WriteFile(gradlePropsFilePath, []byte("version = 0.0.1"), 0666)
@@ -46,7 +38,7 @@ func TestGradleSetVersion(t *testing.T) {
 			path:      gradlePropsFilePath,
 			writeFile: func(filename string, filecontent []byte, mode os.FileMode) error { content = filecontent; return nil },
 		}
-		err = gradle.SetVersion("1.2.3")
+		err := gradle.SetVersion("1.2.3")
 		assert.NoError(t, err)
 
 		assert.Contains(t, string(content), "version = 1.2.3")

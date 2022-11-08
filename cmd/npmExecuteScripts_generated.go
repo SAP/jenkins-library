@@ -76,7 +76,7 @@ func (p *npmExecuteScriptsReports) persist(stepConfig npmExecuteScriptsOptions, 
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
+		{FilePattern: "**/bom-npm.xml", ParamRef: "", StepResultType: "sbom"},
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 		{FilePattern: "**/e2e/*.json", ParamRef: "", StepResultType: "cucumber"},
@@ -414,7 +414,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-stretch"},
+				{Name: "node", Image: "node:lts-buster"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -429,7 +429,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/bom.xml", "type": "sbom"},
+							{"filePattern": "**/bom-npm.xml", "type": "sbom"},
 							{"filePattern": "**/TEST-*.xml", "type": "junit"},
 							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
 							{"filePattern": "**/e2e/*.json", "type": "cucumber"},

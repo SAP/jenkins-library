@@ -101,7 +101,8 @@ steps:
       filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   batsExecuteTests:
-    dockerImage: 'node:lts-stretch'
+    #TODO: check wheather defaults in here are still required
+    dockerImage: 'node:lts-buster'
     dockerWorkspace: '/home/node'
     envVars: {}
     outputFormat: 'junit' # tap, junit
@@ -236,6 +237,7 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
+      stashBack: '**/node_modules/**,nohup.out'
   dubExecute:
     dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
@@ -268,7 +270,8 @@ steps:
       runCommand: 'mvn test-compile gauge:execute'
       testOptions: '-DspecsDir=specs'
     npm:
-      dockerImage: 'node:lts-stretch'
+      #TODO: check wheather defaults in here are still required
+      dockerImage: 'node:lts-buster'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
       languageRunner: 'js'
@@ -303,13 +306,14 @@ steps:
     influxServer: ''
   karmaExecuteTests:
     containerPortMappings:
-      'node:lts-stretch':
+      'node:lts-buster':
         - containerPort: 9876
           hostPort: 9876
     dockerEnvVars:
       NO_PROXY: 'localhost,selenium,$NO_PROXY'
       no_proxy: 'localhost,selenium,$no_proxy'
-    dockerImage: 'node:lts-stretch'
+    #TODO: check wheather defaults in here are still required
+    dockerImage: 'node:lts-buster'
     dockerName: 'karma'
     dockerWorkspace: '/home/node'
     installCommand: 'npm install --quiet'
@@ -350,9 +354,12 @@ steps:
     enableZeroDowntimeDeployment: false
     parallelExecution: false
   npmExecute:
-    dockerImage: 'node:lts-stretch'
+    #TODO: check wheather defaults in here are still required
+    dockerImage: 'node:lts-buster'
   npmExecuteScripts:
     install: true
+  npmExecuteEndToEndTests:
+    runScript: 'ci-e2e'
   whitesourceExecuteScan:
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
     stashExcludes:
@@ -367,7 +374,7 @@ steps:
     stepMessage: 'Do you want to restart?'
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original'
+      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/**'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
@@ -422,7 +429,7 @@ steps:
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
-      dockerImage: 'node:lts-stretch'
+      dockerImage: 'node:lts-buster'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
     bundler:
@@ -434,7 +441,7 @@ steps:
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
-    dockerImage: 'node:lts-stretch'
+    dockerImage: 'node:lts-buster'
     exclude: []
     monitor: true
     scanType: 'npm'

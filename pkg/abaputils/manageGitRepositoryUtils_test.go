@@ -129,17 +129,12 @@ func TestGetRepositories(t *testing.T) {
 			Name: "testRepository",
 		}}
 
-		dir, err := ioutil.TempDir("", "test abap utils")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
-		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := `
@@ -151,7 +146,7 @@ repositories:
 - name: 'testRepo3'
   branch: 'testBranch3'`
 
-		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			BranchName:      "testBranch",
@@ -169,17 +164,12 @@ repositories:
 		expectedRepositoryList := []Repository([]Repository{})
 		expectedErrorMessage := "Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
-		dir, err := ioutil.TempDir("", "test abap utils")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
-		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := `
@@ -187,7 +177,7 @@ repositories:
 - repo: 'testRepo'
 - repo: 'testRepo2'`
 
-		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			Repositories: "repositoriesTest.yml",
@@ -202,17 +192,12 @@ repositories:
 		expectedRepositoryList := []Repository([]Repository{})
 		expectedErrorMessage := "Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
-		dir, err := ioutil.TempDir("", "test  abap utils")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
-		// clean up tmp dir
 
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		manifestFileString := `
@@ -220,7 +205,7 @@ repositories:
 - repo: 'testRepo'
 - repo: 'testRepo2'`
 
-		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			Repositories: "repositoriesTest.yml",

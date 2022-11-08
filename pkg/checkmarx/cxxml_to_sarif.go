@@ -260,6 +260,21 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			props.InstanceID = cxxml.Query[i].Result[j].Path.ResultID + "-" + strconv.Itoa(cxxml.Query[i].Result[j].Path.PathID)
 			props.ToolSeverity = cxxml.Query[i].Result[j].Severity
 			props.ToolSeverityIndex = cxxml.Query[i].Result[j].SeverityIndex
+			// classify into audit groups
+			switch cxxml.Query[i].Result[j].Severity {
+			case "High", "Medium":
+				props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
+				props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
+				break
+			case "Low":
+				props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_2_DESC
+				props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_2_INDEX
+				break
+			case "Information":
+				props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_3_DESC
+				props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_3_INDEX
+				break
+			}
 			props.ToolStateIndex = cxxml.Query[i].Result[j].State
 			switch cxxml.Query[i].Result[j].State {
 			case 1:
@@ -366,7 +381,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 	sarif.Runs[0].Tool = tool
 
 	//handle automationDetails
-	sarif.Runs[0].AutomationDetails.Id = cxxml.DeepLink // Use deeplink to pass a maximum of information
+	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: cxxml.DeepLink} // Use deeplink to pass a maximum of information
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed

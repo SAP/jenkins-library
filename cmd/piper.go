@@ -190,6 +190,8 @@ func Execute() {
 	rootCmd.AddCommand(AwsS3UploadCommand())
 	rootCmd.AddCommand(ApiProxyListCommand())
 	rootCmd.AddCommand(AnsSendEventCommand())
+	rootCmd.AddCommand(ApiProviderListCommand())
+	rootCmd.AddCommand(TmsUploadCommand())
 
 	addRootFlags(rootCmd)
 

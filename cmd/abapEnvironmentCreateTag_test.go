@@ -1,29 +1,14 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
-
-type abapEnvironmentCreateTagMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newAbapEnvironmentCreateTagTestsUtils() abapEnvironmentCreateTagMockUtils {
-	utils := abapEnvironmentCreateTagMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestRunAbapEnvironmentCreateTag(t *testing.T) {
 
@@ -36,16 +21,12 @@ func TestRunAbapEnvironmentCreateTag(t *testing.T) {
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		body := `---
@@ -58,7 +39,8 @@ repositories:
     version: "4.5.6"
 `
 		file, _ := os.Create("repo.yml")
-		file.Write([]byte(body))
+		_, err := file.Write([]byte(body))
+		assert.NoError(t, err)
 		config := &abapEnvironmentCreateTagOptions{
 			Username:                            "dummy",
 			Password:                            "dummy",
@@ -86,7 +68,7 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
+		err = runAbapEnvironmentCreateTag(config, nil, autils, client)
 
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 3, len(hook.Entries), "Expected a different number of entries")
@@ -105,16 +87,12 @@ repositories:
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		body := `---
@@ -127,7 +105,8 @@ repositories:
     version: "4.5.6"
 `
 		file, _ := os.Create("repo.yml")
-		file.Write([]byte(body))
+		_, err := file.Write([]byte(body))
+		assert.NoError(t, err)
 		config := &abapEnvironmentCreateTagOptions{
 			Username:                            "dummy",
 			Password:                            "dummy",
@@ -155,7 +134,7 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
+		err = runAbapEnvironmentCreateTag(config, nil, autils, client)
 
 		assert.Error(t, err, "Did expect error")
 		assert.Equal(t, 4, len(hook.Entries), "Expected a different number of entries")
@@ -221,16 +200,12 @@ func TestRunAbapEnvironmentCreateTagConfigurations(t *testing.T) {
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
 		defer func() {
 			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
 		}()
 
 		body := `---
@@ -243,7 +218,8 @@ repositories:
     version: "4.5.6"
 `
 		file, _ := os.Create("repo.yml")
-		file.Write([]byte(body))
+		_, err := file.Write([]byte(body))
+		assert.NoError(t, err)
 		config := &abapEnvironmentCreateTagOptions{
 			Username:                            "dummy",
 			Password:                            "dummy",
@@ -274,7 +250,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
+		err = runAbapEnvironmentCreateTag(config, nil, autils, client)
 
 		assert.Error(t, err, "Did expect error")
 		assert.Equal(t, "Something failed during the tag creation: Configuring the parameter repositories and the parameter repositoryName at the same time is not allowed", err.Error(), "Expected different error message")
@@ -290,10 +266,7 @@ repositories:
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
-		if errDir != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
@@ -312,7 +285,8 @@ repositories:
     version: "4.5.6"
 `
 		file, _ := os.Create("repo.yml")
-		file.Write([]byte(body))
+		_, err := file.Write([]byte(body))
+		assert.NoError(t, err)
 		config := &abapEnvironmentCreateTagOptions{
 			Username:                            "dummy",
 			Password:                            "dummy",
@@ -338,7 +312,7 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
+		err = runAbapEnvironmentCreateTag(config, nil, autils, client)
 
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 1, len(hook.Entries), "Expected a different number of entries")

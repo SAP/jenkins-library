@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -22,6 +24,10 @@ type helmExecuteOptions struct {
 	TargetRepositoryName      string   `json:"targetRepositoryName,omitempty"`
 	TargetRepositoryUser      string   `json:"targetRepositoryUser,omitempty"`
 	TargetRepositoryPassword  string   `json:"targetRepositoryPassword,omitempty"`
+	SourceRepositoryURL       string   `json:"sourceRepositoryURL,omitempty"`
+	SourceRepositoryName      string   `json:"sourceRepositoryName,omitempty"`
+	SourceRepositoryUser      string   `json:"sourceRepositoryUser,omitempty"`
+	SourceRepositoryPassword  string   `json:"sourceRepositoryPassword,omitempty"`
 	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                []string `json:"helmValues,omitempty"`
 	Image                     string   `json:"image,omitempty"`
@@ -41,6 +47,34 @@ type helmExecuteOptions struct {
 	Version                   string   `json:"version,omitempty"`
 }
 
+type helmExecuteCommonPipelineEnvironment struct {
+	custom struct {
+		helmChartURL string
+	}
+}
+
+func (p *helmExecuteCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "helmChartUrl", value: p.custom.helmChartURL},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Piper environment")
+	}
+}
+
 // HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
 func HelmExecuteCommand() *cobra.Command {
 	const STEP_NAME = "helmExecute"
@@ -48,6 +82,7 @@ func HelmExecuteCommand() *cobra.Command {
 	metadata := helmExecuteMetadata()
 	var stepConfig helmExecuteOptions
 	var startTime time.Time
+	var commonPipelineEnvironment helmExecuteCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -95,6 +130,8 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			}
 			log.RegisterSecret(stepConfig.TargetRepositoryUser)
 			log.RegisterSecret(stepConfig.TargetRepositoryPassword)
+			log.RegisterSecret(stepConfig.SourceRepositoryUser)
+			log.RegisterSecret(stepConfig.SourceRepositoryPassword)
 			log.RegisterSecret(stepConfig.KubeConfig)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 
@@ -128,6 +165,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -148,7 +186,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			helmExecute(stepConfig, &stepTelemetryData)
+			helmExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -165,6 +203,10 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryName, "targetRepositoryName", os.Getenv("PIPER_targetRepositoryName"), "set the chart repository. The value is required for install/upgrade/uninstall commands.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the chart repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.SourceRepositoryURL, "sourceRepositoryURL", os.Getenv("PIPER_sourceRepositoryURL"), "URL of the source repository where the dependencies can be downloaded.")
+	cmd.Flags().StringVar(&stepConfig.SourceRepositoryName, "sourceRepositoryName", os.Getenv("PIPER_sourceRepositoryName"), "Set the name of the chart repository. The value might be required for fetching dependencies.")
+	cmd.Flags().StringVar(&stepConfig.SourceRepositoryUser, "sourceRepositoryUser", os.Getenv("PIPER_sourceRepositoryUser"), "Username for the chart repository for fetching the dependencies.")
+	cmd.Flags().StringVar(&stepConfig.SourceRepositoryPassword, "sourceRepositoryPassword", os.Getenv("PIPER_sourceRepositoryPassword"), "Password for the chart repository for fetching the dependencies.")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
@@ -312,6 +354,66 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "helmRepositoryPassword"}},
 						Default:   os.Getenv("PIPER_targetRepositoryPassword"),
+					},
+					{
+						Name:        "sourceRepositoryURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_sourceRepositoryURL"),
+					},
+					{
+						Name:        "sourceRepositoryName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_sourceRepositoryName"),
+					},
+					{
+						Name: "sourceRepositoryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "sourceRepositoryCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+
+							{
+								Name:    "sourceRepositoryUserSecretName",
+								Type:    "vaultSecret",
+								Default: "dependencies",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_sourceRepositoryUser"),
+					},
+					{
+						Name: "sourceRepositoryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "sourceRepositoryCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+
+							{
+								Name:    "sourceRepositoryPasswordSecret",
+								Type:    "vaultSecret",
+								Default: "dependencies",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_sourceRepositoryPassword"),
 					},
 					{
 						Name:        "helmDeployWaitSeconds",
@@ -497,6 +599,17 @@ func helmExecuteMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Image: "dtzar/helm-kubectl:3.8.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"name": "custom/helmChartUrl"},
+						},
+					},
+				},
 			},
 		},
 	}

@@ -43,7 +43,7 @@ const (
 	dummyResultName string   = "Dummy"
 )
 
-//******** structs needed for json convertion ********
+// ******** structs needed for json convertion ********
 type jsonBuild struct {
 	Build struct {
 		BuildID     string      `json:"build_id"`
@@ -146,7 +146,7 @@ type Result struct {
 // Value : Returns Build Runtime Value
 type Value struct {
 	connector Connector
-	BuildID   string `json:"build_id"`
+	BuildID   string `json:"build_id,omitempty"`
 	ValueID   string `json:"value_id"`
 	Value     string `json:"value"`
 }
@@ -156,9 +156,9 @@ type Values struct {
 	Values []Value `json:"results"`
 }
 
-type inputForPost struct {
-	phase  string
-	values Values
+type InputForPost struct {
+	Phase  string  `json:"phase"`
+	Values []Value `json:"values"`
 }
 
 // *********************************************************************
@@ -170,12 +170,16 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	if err := b.Connector.GetToken(""); err != nil {
 		return err
 	}
-	importBody := inputForPost{
-		phase:  phase,
-		values: inputValues,
-	}.String()
+	inputForPost := InputForPost{
+		Phase:  phase,
+		Values: inputValues.Values,
+	}
+	importBody, err := json.Marshal(inputForPost)
+	if err != nil {
+		return errors.Wrap(err, "Generating Post Request Body failed")
+	}
 
-	body, err := b.Connector.Post("/builds", importBody)
+	body, err := b.Connector.Post("/builds", string(importBody))
 	if err != nil {
 		return errors.Wrap(err, "Start of build failed: "+string(body))
 	}
@@ -440,7 +444,7 @@ func (b *Build) DownloadResults(filenames []string, basePath string, filenamePre
 }
 
 // PublishAllDownloadedResults : publishes all build artefacts which were downloaded before
-func (b *Build) PublishAllDownloadedResults(stepname string, publish Publish) {
+func (b *Build) PublishAllDownloadedResults(stepname string, utils piperutils.FileUtils) {
 	var filesToPublish []piperutils.Path
 	for i_task := range b.Tasks {
 		for i_result := range b.Tasks[i_task].Results {
@@ -451,12 +455,14 @@ func (b *Build) PublishAllDownloadedResults(stepname string, publish Publish) {
 		}
 	}
 	if len(filesToPublish) > 0 {
-		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+		if err := piperutils.PersistReportsAndLinks(stepname, "", utils, filesToPublish, nil); err != nil {
+			log.Entry().WithError(err).Error("failed to persist reports")
+		}
 	}
 }
 
 // PublishDownloadedResults : Publishes build artefacts specified in filenames
-func (b *Build) PublishDownloadedResults(stepname string, filenames []string, publish Publish) error {
+func (b *Build) PublishDownloadedResults(stepname string, filenames []string, utils piperutils.FileUtils) error {
 	var filesToPublish []piperutils.Path
 	for i := range filenames {
 		result, err := b.GetResult(filenames[i])
@@ -472,7 +478,9 @@ func (b *Build) PublishDownloadedResults(stepname string, filenames []string, pu
 		}
 	}
 	if len(filesToPublish) > 0 {
-		publish.PersistReportsAndLinks(stepname, "", filesToPublish, nil)
+		if err := piperutils.PersistReportsAndLinks(stepname, "", utils, filesToPublish, nil); err != nil {
+			log.Entry().WithError(err).Error("failed to persist reports")
+		}
 	}
 	return nil
 }
@@ -549,30 +557,7 @@ func (logging *logStruct) print() {
 	}
 }
 
-// ******** parsing ********
-func (v Value) String() string {
-	return fmt.Sprintf(
-		`{ "value_id": "%s", "value": "%s" }`,
-		v.ValueID,
-		v.Value)
-}
-
-func (vs Values) String() string {
-	returnString := ""
-	for _, value := range vs.Values {
-		returnString = returnString + value.String() + ",\n"
-	}
-	if len(returnString) > 0 {
-		returnString = returnString[:len(returnString)-2] //removes last ,
-	}
-	return returnString
-}
-
-func (in inputForPost) String() string {
-	return fmt.Sprintf(`{ "phase": "%s", "values": [%s]}`, in.phase, in.values.String())
-}
-
-//******** unmarshal function  ************
+// ******** unmarshal function  ************
 func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
 
 	var tasks []task
@@ -593,13 +578,4 @@ func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
 		tasks = append(tasks, append_task)
 	}
 	return tasks, nil
-}
-
-// *****************publish *******************************
-type Publish interface {
-	PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path)
-}
-
-func PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
-	piperutils.PersistReportsAndLinks(stepName, workspace, reports, links)
 }

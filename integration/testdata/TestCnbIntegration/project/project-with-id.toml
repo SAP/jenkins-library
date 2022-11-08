@@ -1,0 +1,29 @@
+[project]
+id = "io.buildpacks.my-app"
+version = "0.1"
+
+[build]
+include = [
+    "*.js",
+    "/package.json"
+]
+
+[[build.env]]
+name = "BP_NODE_VERSION"
+value = "16"
+
+[[build.buildpacks]]
+id = "paketo-buildpacks/ca-certificates"
+version = "3.2.5"
+
+[[build.buildpacks]]
+uri = "gcr.io/paketo-buildpacks/node-engine:0.15.0"
+
+[[build.buildpacks]]
+uri = "gcr.io/paketo-buildpacks/npm-install:0.10.3"
+
+[[build.buildpacks]]
+uri = "gcr.io/paketo-buildpacks/node-module-bom:0.4.0"
+
+[[build.buildpacks]]
+uri = "gcr.io/paketo-buildpacks/npm-start:0.9.2"

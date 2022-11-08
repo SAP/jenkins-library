@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
@@ -11,6 +12,8 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/fake"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +25,20 @@ func newCnbBuildTestsUtils() cnbutils.MockUtils {
 	utils := cnbutils.MockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
+		DownloadMock:   &mock.DownloadMock{},
 	}
+
+	fakeImage := &fake.FakeImage{}
+	fakeImage.ConfigFileReturns(&v1.ConfigFile{
+		Config: v1.Config{
+			Labels: map[string]string{
+				"io.buildpacks.buildpackage.metadata": "{\"id\": \"testbuildpack\", \"version\": \"0.0.1\"}",
+			},
+		},
+	}, nil)
+
+	utils.RemoteImageInfo = fakeImage
+	utils.ReturnImage = fakeImage
 	utils.AddFile("/layers/report.toml", []byte(`[build]
 [image]
 tags = ["localhost:5000/not-found:0.0.1"]
@@ -43,6 +59,14 @@ func assertLifecycleCalls(t *testing.T, runner *mock.ExecMockRunner, callNo int)
 	}
 }
 
+func assetBuildEnv(t *testing.T, utils cnbutils.MockUtils, key, value string) bool {
+	env, err := utils.FilesMock.ReadFile(filepath.Join("/tmp/platform/env/", key))
+	if !assert.NoError(t, err) {
+		return false
+	}
+	return assert.Equal(t, value, string(env))
+}
+
 func TestRunCnbBuild(t *testing.T) {
 	configOptions.openFile = piperconf.OpenPiperFile
 
@@ -54,6 +78,7 @@ func TestRunCnbBuild(t *testing.T) {
 			ContainerImageTag:    "0.0.1",
 			ContainerRegistryURL: fmt.Sprintf("https://%s", imageRegistry),
 			DockerConfigJSON:     "/path/to/config.json",
+			RunImage:             "my-run-image",
 		}
 
 		projectToml := `[project]
@@ -72,6 +97,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner, 1)
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, config.ContainerImageName, config.ContainerImageTag))
+		assert.Contains(t, runner.Calls[0].Params, "-run-image")
+		assert.Contains(t, runner.Calls[0].Params, "my-run-image")
 		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, "my-image:0.0.1", commonPipelineEnvironment.container.imageNameTag)
 		assert.Equal(t, `{"cnbBuild":[{"dockerImage":"paketobuildpacks/builder:base"}]}`, commonPipelineEnvironment.custom.buildSettingsInfo)
@@ -266,6 +293,46 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:3", config.ContainerRegistryURL, config.ContainerImageName))
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:3.1", config.ContainerRegistryURL, config.ContainerImageName))
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:3.1.5", config.ContainerRegistryURL, config.ContainerImageName))
+	})
+
+	t.Run("success case: build environment variables", func(t *testing.T) {
+		t.Parallel()
+		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
+		config := cnbBuildOptions{
+			ContainerImageTag:    "0.0.1",
+			ContainerRegistryURL: fmt.Sprintf("https://%s", imageRegistry),
+			ProjectDescriptor:    "project.toml",
+			BuildEnvVars: map[string]interface{}{
+				"OPTIONS_KEY": "OPTIONS_VALUE",
+				"OVERWRITE":   "this should win",
+			},
+		}
+
+		projectToml := `[project]
+		id = "io.buildpacks.my-app"
+
+		[[build.env]]
+		name="PROJECT_DESCRIPTOR_KEY"
+		value="PROJECT_DESCRIPTOR_VALUE"
+
+		[[build.env]]
+		name="OVERWRITE"
+		value="this should be overwritten"
+		`
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile("project.toml", []byte(projectToml))
+		addBuilderFiles(&utils)
+
+		telemetryData := telemetry.CustomData{}
+		err := callCnbBuild(&config, &telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+
+		require.NoError(t, err)
+		assertLifecycleCalls(t, utils.ExecMockRunner, 1)
+
+		assetBuildEnv(t, utils, "OPTIONS_KEY", "OPTIONS_VALUE")
+		assetBuildEnv(t, utils, "PROJECT_DESCRIPTOR_KEY", "PROJECT_DESCRIPTOR_VALUE")
+		assetBuildEnv(t, utils, "OVERWRITE", "this should win")
 	})
 
 	t.Run("pom.xml exists (symlink for the target folder)", func(t *testing.T) {

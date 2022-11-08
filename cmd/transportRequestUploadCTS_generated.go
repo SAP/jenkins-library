@@ -281,7 +281,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 								Param: "custom/transportRequestId",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},

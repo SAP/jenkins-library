@@ -231,6 +231,7 @@ func kubernetesDeployMetadata() config.StepData {
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
+					{Name: "downloadedArtifact", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -261,13 +262,18 @@ func kubernetesDeployMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_appTemplate"),
 					},
 					{
-						Name:        "chartPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmChartPath"}},
-						Default:     os.Getenv("PIPER_chartPath"),
+						Name: "chartPath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/localHelmChartPath",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "helmChartPath"}},
+						Default:   os.Getenv("PIPER_chartPath"),
 					},
 					{
 						Name: "containerRegistryPassword",
@@ -660,7 +666,7 @@ func kubernetesDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3.8.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
+				{Image: "dtzar/helm-kubectl:3.9.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
 				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm"}}}}},
 				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "kubectl"}}}}},
 			},

@@ -92,7 +92,7 @@ func (s *ScanReport) AddSubHeader(header, details string) {
 	s.Subheaders = append(s.Subheaders, Subheader{Description: header, Details: details})
 }
 
-//StepReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
+// StepReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
 const StepReportDirectory = ".pipeline/stepReports"
 
 // ToJSON returns the report in JSON format
@@ -327,10 +327,7 @@ func drawCell(cell ScanCell) string {
 }
 
 func shouldDrawTable(table ScanDetailTable) bool {
-	if len(table.Headers) > 0 {
-		return true
-	}
-	return false
+	return len(table.Headers) > 0
 }
 
 func drawOverviewRow(row OverviewRow) string {

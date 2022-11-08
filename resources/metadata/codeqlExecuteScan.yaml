@@ -74,6 +74,14 @@ spec:
           - STAGES
           - STEPS
         default: "./"
+      - name: database
+        type: string
+        description: "Path to the CodeQL database to create. This directory will be created, and must not already exist."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "codeqlDB"
       - name: querySuite
         type: string
         description: "The name of a CodeQL query suite. If omitted, the default query suite for the language of the database being analyzed will be used."
@@ -110,7 +118,7 @@ spec:
         description: "SHA of commit that was analyzed."
         resourceRef:
           - name: commonPipelineEnvironment
-            param: git/commitId
+            param: git/remoteCommitId
         type: string
   containers:
     - image: ""

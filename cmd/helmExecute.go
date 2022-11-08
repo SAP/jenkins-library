@@ -2,14 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
-func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData) {
+func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) {
 	helmConfig := kubernetes.HelmExecuteOptions{
 		AdditionalParameters:      config.AdditionalParameters,
 		ChartPath:                 config.ChartPath,
@@ -30,6 +33,10 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		TargetRepositoryName:      config.TargetRepositoryName,
 		TargetRepositoryUser:      config.TargetRepositoryUser,
 		TargetRepositoryPassword:  config.TargetRepositoryPassword,
+		SourceRepositoryName:      config.SourceRepositoryName,
+		SourceRepositoryURL:       config.SourceRepositoryURL,
+		SourceRepositoryUser:      config.SourceRepositoryUser,
+		SourceRepositoryPassword:  config.SourceRepositoryPassword,
 		HelmCommand:               config.HelmCommand,
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
 		Version:                   config.Version,
@@ -42,11 +49,19 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		VersioningScheme: "library",
 	}
 
-	artifact, err := versioning.GetArtifact("helm", "", &artifactOpts, utils)
+	buildDescriptorFile := ""
+	if helmConfig.ChartPath != "" {
+		buildDescriptorFile = filepath.Join(helmConfig.ChartPath, "Chart.yaml")
+	}
+
+	artifact, err := versioning.GetArtifact("helm", buildDescriptorFile, &artifactOpts, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("getting artifact information failed: %v", err)
 	}
 	artifactInfo, err := artifact.GetCoordinates()
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("getting artifact coordinates failed: %v", err)
+	}
 
 	helmConfig.DeploymentName = artifactInfo.ArtifactID
 
@@ -54,15 +69,20 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData)
 		helmConfig.PublishVersion = artifactInfo.Version
 	}
 
+	err = parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("failed to parse/render template: %v", err)
+	}
+
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmExecute(config, helmExecutor); err != nil {
+	if err := runHelmExecute(config, helmExecutor, commonPipelineEnvironment); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
+func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
 	switch config.HelmCommand {
 	case "upgrade":
 		if err := helmExecutor.RunHelmUpgrade(); err != nil {
@@ -89,11 +109,13 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 			return fmt.Errorf("failed to execute helm dependency: %v", err)
 		}
 	case "publish":
-		if err := helmExecutor.RunHelmPublish(); err != nil {
+		targetURL, err := helmExecutor.RunHelmPublish()
+		if err != nil {
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
+		commonPipelineEnvironment.custom.helmChartURL = targetURL
 	default:
-		if err := runHelmExecuteDefault(config, helmExecutor); err != nil {
+		if err := runHelmExecuteDefault(config, helmExecutor, commonPipelineEnvironment); err != nil {
 			return err
 		}
 	}
@@ -101,7 +123,7 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 	return nil
 }
 
-func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor) error {
+func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
 	if err := helmExecutor.RunHelmLint(); err != nil {
 		return fmt.Errorf("failed to execute helm lint: %v", err)
 	}
@@ -113,8 +135,52 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 	}
 
 	if config.Publish {
-		if err := helmExecutor.RunHelmPublish(); err != nil {
+		targetURL, err := helmExecutor.RunHelmPublish()
+		if err != nil {
 			return fmt.Errorf("failed to execute helm publish: %v", err)
+		}
+		commonPipelineEnvironment.custom.helmChartURL = targetURL
+	}
+
+	return nil
+}
+
+// parseAndRenderCPETemplate allows to parse and render a template which contains references to the CPE
+func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils kubernetes.DeployUtils) error {
+	cpe := piperenv.CPEMap{}
+	err := cpe.LoadFromDisk(path.Join(rootPath, "commonPipelineEnvironment"))
+	if err != nil {
+		return fmt.Errorf("failed to load values from commonPipelineEnvironment: %v", err)
+	}
+
+	valueFiles := []string{}
+	defaultValueFile := fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")
+	defaultValueFileExists, err := utils.FileExists(defaultValueFile)
+	if err != nil {
+		return err
+	}
+
+	if defaultValueFileExists {
+		valueFiles = append(valueFiles, defaultValueFile)
+	} else {
+		if len(config.HelmValues) == 0 {
+			return fmt.Errorf("no value file to proccess, please provide value file(s)")
+		}
+	}
+	valueFiles = append(valueFiles, config.HelmValues...)
+
+	for _, valueFile := range valueFiles {
+		cpeTemplate, err := utils.FileRead(valueFile)
+		if err != nil {
+			return fmt.Errorf("failed to read file: %v", err)
+		}
+		generated, err := cpe.ParseTemplate(string(cpeTemplate))
+		if err != nil {
+			return fmt.Errorf("failed to parse template: %v", err)
+		}
+		err = utils.FileWrite(valueFile, generated.Bytes(), 0700)
+		if err != nil {
+			return fmt.Errorf("failed to update file: %v", err)
 		}
 	}
 

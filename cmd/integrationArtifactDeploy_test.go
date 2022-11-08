@@ -50,7 +50,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		if assert.NoError(t, err) {
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "https://demo/api/v1/IntegrationRuntimeArtifacts('flow1')", httpClient.URL)
+				assert.Equal(t, "https://demo/api/v1/BuildAndDeployStatus(TaskId='')", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployStatus", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
 
-		resp, err := getIntegrationArtifactDeployStatus(&config, &httpClient, "https://demo")
+		resp, err := getIntegrationArtifactDeployStatus(&config, &httpClient, "https://demo", "9094d6cd-3683-4a99-794f-834ed30fcb01")
 
 		assert.Equal(t, "STARTED", resp)
 

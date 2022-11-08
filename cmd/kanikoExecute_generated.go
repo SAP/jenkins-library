@@ -22,18 +22,21 @@ type kanikoExecuteOptions struct {
 	BuildSettingsInfo                string   `json:"buildSettingsInfo,omitempty"`
 	ContainerBuildOptions            string   `json:"containerBuildOptions,omitempty"`
 	ContainerImage                   string   `json:"containerImage,omitempty"`
-	ContainerImageName               string   `json:"containerImageName,omitempty"`
+	ContainerImageName               string   `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
 	ContainerImageTag                string   `json:"containerImageTag,omitempty"`
 	ContainerMultiImageBuild         bool     `json:"containerMultiImageBuild,omitempty"`
 	ContainerMultiImageBuildExcludes []string `json:"containerMultiImageBuildExcludes,omitempty"`
 	ContainerMultiImageBuildTrimDir  string   `json:"containerMultiImageBuildTrimDir,omitempty"`
 	ContainerPreparationCommand      string   `json:"containerPreparationCommand,omitempty"`
 	ContainerRegistryURL             string   `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser            string   `json:"containerRegistryUser,omitempty"`
+	ContainerRegistryPassword        string   `json:"containerRegistryPassword,omitempty"`
 	CustomTLSCertificateLinks        []string `json:"customTlsCertificateLinks,omitempty"`
 	DockerConfigJSON                 string   `json:"dockerConfigJSON,omitempty"`
 	DockerfilePath                   string   `json:"dockerfilePath,omitempty"`
 	TargetArchitectures              []string `json:"targetArchitectures,omitempty"`
 	ReadImageDigest                  bool     `json:"readImageDigest,omitempty"`
+	CreateBOM                        bool     `json:"createBOM,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
@@ -248,11 +251,14 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().StringVar(&stepConfig.ContainerMultiImageBuildTrimDir, "containerMultiImageBuildTrimDir", os.Getenv("PIPER_containerMultiImageBuildTrimDir"), "Defines a trailing directory part which should not be considered in the final image name.")
 	cmd.Flags().StringVar(&stepConfig.ContainerPreparationCommand, "containerPreparationCommand", `rm -f /kaniko/.docker/config.json`, "Defines the command to prepare the Kaniko container. By default the contained credentials are removed in order to allow anonymous access to container registries.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username of the Container registry where the image should be pushed to - which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON` , then the existing file will be enhanced")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password of the Container registry where the image should be pushed to -  which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON` , then the existing file will be enhanced")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.DockerfilePath, "dockerfilePath", `Dockerfile`, "Defines the location of the Dockerfile relative to the Jenkins workspace.")
 	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{``}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma. (EXPERIMENTAL)")
 	cmd.Flags().BoolVar(&stepConfig.ReadImageDigest, "readImageDigest", false, "")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stored in a file of CycloneDX 1.4 format.")
 
 }
 
@@ -385,6 +391,34 @@ func kanikoExecuteMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
+						Name: "containerRegistryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerRegistryUser"}},
+						Default:   os.Getenv("PIPER_containerRegistryUser"),
+					},
+					{
+						Name: "containerRegistryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerRegistryPassword"}},
+						Default:   os.Getenv("PIPER_containerRegistryPassword"),
+					},
+					{
 						Name:        "customTlsCertificateLinks",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -396,11 +430,6 @@ func kanikoExecuteMetadata() config.StepData {
 					{
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/dockerConfigJSON",
-							},
-
 							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
@@ -440,6 +469,15 @@ func kanikoExecuteMetadata() config.StepData {
 						Name:        "readImageDigest",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "createBOM",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

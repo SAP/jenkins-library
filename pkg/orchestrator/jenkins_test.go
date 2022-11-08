@@ -268,6 +268,35 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 				]
 				}`)
 
+	apiJSONPullRequest := []byte(`{
+				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+				"actions": [ {
+					    "_class": "hudson.model.CauseAction",
+					    "causes": [
+						{
+						    "_class": "jenkins.branch.BranchEventCause",
+						    "shortDescription": "Pull request #1511 opened"
+						}
+					    ]
+					}]
+				}`)
+
+	apiJSONResourceTrigger := []byte(`{
+				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+				"actions": [ {
+					    "_class": "hudson.model.CauseAction",
+					    "causes": [
+							{
+							    "_class": "org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause",
+							    "shortDescription": "Started by upstream project \"dummy/dummy/PR-1234\" build number 42",
+							    "upstreamBuild": 24,
+							    "upstreamProject": "dummy/dummy/PR-1234",
+							    "upstreamUrl": "job/dummy/job/dummy/job/PR-1234/"
+							}
+						    ]
+					}]
+				}`)
+
 	apiJSONUnknown := []byte(`{
 				"_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
 				"actions": [{
@@ -300,6 +329,16 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 			want:           "Schedule",
 		},
 		{
+			name:           "PullRequest trigger",
+			apiInformation: apiJSONPullRequest,
+			want:           "PullRequest",
+		},
+		{
+			name:           "ResourceTrigger trigger",
+			apiInformation: apiJSONResourceTrigger,
+			want:           "ResourceTrigger",
+		},
+		{
 			name:           "Unknown",
 			apiInformation: apiJSONUnknown,
 			want:           "Unknown",
@@ -308,6 +347,13 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 			name:           "Empty api",
 			apiInformation: []byte(`{}`),
 			want:           "Unknown",
+		},
+		{
+			name: "Empty action api",
+			apiInformation: []byte(`{
+				"actions": [{}]
+			}`),
+			want: "Unknown",
 		},
 	}
 	for _, tt := range tests {
@@ -524,7 +570,47 @@ func TestJenkinsConfigProvider_GetChangeSet(t *testing.T) {
             "kind": "git"
         }
     ]
-				}`)
+}`)
+
+	changeSetMultiple := []byte(`{
+"displayName": "#531",
+"duration": 424269,
+"changeSets": [
+    {
+        "_class": "hudson.plugins.git.GitChangeSetList",
+        "items": [
+            {
+                "_class": "hudson.plugins.git.GitChangeSet",
+                "commitId": "987654321",
+                "timestamp": 1655057520000
+            },
+            {
+                "_class": "hudson.plugins.git.GitChangeSet",
+                "commitId": "123456789",
+                "timestamp": 1656057520000
+            }
+        ],
+        "kind": "git"
+    },
+    {
+        "_class": "hudson.plugins.git.GitChangeSetList",
+        "items": [
+            {
+                "_class": "hudson.plugins.git.GitChangeSet",
+                "commitId": "456789123",
+                "timestamp": 1659948036000
+            },
+            {
+                "_class": "hudson.plugins.git.GitChangeSet",
+                "commitId": "654717777",
+                "timestamp": 1660053494000
+            }
+        ],
+        "kind": "git"
+    }
+]
+}`)
+
 	changeSetEmpty := []byte(`{
 "displayName": "#531",
 "duration": 424269,
@@ -542,19 +628,29 @@ func TestJenkinsConfigProvider_GetChangeSet(t *testing.T) {
 		{
 			name: "success",
 			want: []ChangeSet{
-				{CommitId: "987654321", timestamp: "1655057520000"},
-				{CommitId: "123456789", timestamp: "1656057520000"},
+				{CommitId: "987654321", Timestamp: "1655057520000"},
+				{CommitId: "123456789", Timestamp: "1656057520000"},
 			},
 			testChangeSet: changeSetTwo,
 		},
 		{
+			name: "success multiple",
+			want: []ChangeSet{
+				{CommitId: "987654321", Timestamp: "1655057520000"},
+				{CommitId: "123456789", Timestamp: "1656057520000"},
+				{CommitId: "456789123", Timestamp: "1659948036000"},
+				{CommitId: "654717777", Timestamp: "1660053494000"},
+			},
+			testChangeSet: changeSetMultiple,
+		},
+		{
 			name:          "failure - changeSet empty",
-			want:          []ChangeSet{},
+			want:          []ChangeSet(nil),
 			testChangeSet: changeSetEmpty,
 		},
 		{
 			name:          "failure - no changeSet found",
-			want:          []ChangeSet{},
+			want:          []ChangeSet(nil),
 			testChangeSet: changeSetNotAvailable,
 		},
 	}

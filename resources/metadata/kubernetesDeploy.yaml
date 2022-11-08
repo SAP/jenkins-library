@@ -49,6 +49,8 @@ spec:
     resources:
       - name: deployDescriptor
         type: stash
+      - name: downloadedArtifact
+        type: stash
     params:
       - name: additionalParameters
         aliases:
@@ -138,6 +140,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/localHelmChartPath
       - name: containerRegistryPassword
         description: Password for container registry access - typically provided by the CI/CD environment.
         type: string
@@ -517,7 +522,7 @@ spec:
           - STAGES
           - STEPS
   containers:
-    - image: dtzar/helm-kubectl:3.8.1
+    - image: dtzar/helm-kubectl:3.9.0
       workingDir: /config
       options:
         - name: -u

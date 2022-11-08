@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/Jeffail/gabs/v2"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -17,34 +16,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
-
-type integrationArtifactUploadUtils interface {
-	command.ExecRunner
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The integrationArtifactUploadUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
-
-type integrationArtifactUploadUtilsBundle struct {
-	*command.Command
-
-	// Embed more structs as necessary to implement methods or interfaces you add to integrationArtifactUploadUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// integrationArtifactUploadUtilsBundle and forward to the implementation of the dependency.
-}
-
-func newIntegrationArtifactUploadUtils() integrationArtifactUploadUtils {
-	utils := integrationArtifactUploadUtilsBundle{
-		Command: &command.Command{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
 
 func integrationArtifactUpload(config integrationArtifactUploadOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
@@ -110,7 +81,7 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 	return errors.Errorf("Failed to check integration flow availability, Response Status code: %v", iFlowStatusResp.StatusCode)
 }
 
-//UploadIntegrationArtifact - Upload new integration artifact
+// UploadIntegrationArtifact - Upload new integration artifact
 func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "POST"
 	uploadIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts", apiHost)
@@ -148,7 +119,7 @@ func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 	return errors.Errorf("Failed to create Integration Flow artefact, Response Status code: %v", uploadIflowStatusResp.StatusCode)
 }
 
-//UpdateIntegrationArtifact - Update existing integration artifact
+// UpdateIntegrationArtifact - Update existing integration artifact
 func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "PUT"
 	header := make(http.Header)
@@ -185,7 +156,7 @@ func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 	return errors.Errorf("Failed to update Integration Flow artefact, Response Status code: %v", updateIflowStatusResp.StatusCode)
 }
 
-//GetJSONPayloadAsByteArray -return http payload as byte array
+// GetJSONPayloadAsByteArray -return http payload as byte array
 func GetJSONPayloadAsByteArray(config *integrationArtifactUploadOptions, mode string, fileUtils piperutils.FileUtils) (*bytes.Buffer, error) {
 	fileContent, readError := fileUtils.FileRead(config.FilePath)
 	if readError != nil {

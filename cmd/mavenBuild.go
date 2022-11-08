@@ -18,6 +18,10 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
+const (
+	mvnBomFilename = "bom-maven"
+)
+
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
 
@@ -49,7 +53,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	if config.CreateBOM {
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.1:makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.2",
 			"-DincludeBomSerialNumber=true",
@@ -60,6 +64,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			"-DincludeTestScope=false",
 			"-DincludeLicenseText=false",
 			"-DoutputFormat=xml",
+			"-DoutputName=" + mvnBomFilename,
 		}
 		defines = append(defines, createBOMConfig...)
 	}
@@ -129,7 +134,10 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			}
 
 			downloadClient := &piperhttp.Client{}
-			runner := &command.Command{}
+			downloadClient.SetOptions(piperhttp.ClientOptions{})
+			runner := &command.Command{
+				StepName: "mavenBuild",
+			}
 			fileUtils := &piperutils.Files{}
 			if len(config.CustomTLSCertificateLinks) > 0 {
 				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {

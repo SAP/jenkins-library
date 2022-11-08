@@ -181,7 +181,7 @@ func TestANSHook_Fire(t *testing.T) {
 		logrusEntryWithoutStepName.Data = map[string]interface{}{}
 		require.NoError(t, ansHook.Fire(logrusEntryWithoutStepName), "error is not nil")
 		assert.Equal(t, "n/a", registrationUtil.Event.Tags["cicd:stepName"], "event step name tag is not as expected.")
-		assert.Equal(t, "Pipeline step 'n/a' sends 'WARNING'", registrationUtil.Event.Subject, "event subject is not as expected")
+		assert.Equal(t, "Step 'n/a' sends 'WARNING'", registrationUtil.Event.Subject, "event subject is not as expected")
 		registrationUtil.clearEventTemplate()
 	})
 }
@@ -399,7 +399,7 @@ func defaultResultingEvent() ans.Event {
 		"EventTimestamp": defaultTime.Unix(),
 		"Severity":       "WARNING",
 		"Category":       "ALERT",
-		"Subject":        "Pipeline step 'testStep' sends 'WARNING'",
+		"Subject":        "Step 'testStep' sends 'WARNING'",
 		"Body":           "my log message",
 		"Tags": map[string]interface{}{
 			"ans:correlationId": "1234",

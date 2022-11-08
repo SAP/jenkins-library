@@ -1,0 +1,7 @@
+_schema-version: "3.1.0"
+ID: com.sap.tms.upload.test_ext
+
+modules:
+   - name: "openui5-sample-app"
+     parameters:
+        version: 1.0.0-${timestamp}

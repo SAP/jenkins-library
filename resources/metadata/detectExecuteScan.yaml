@@ -18,6 +18,9 @@ spec:
           - name: apiTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
         type: jenkins
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
     params:
       - name: token
         aliases:
@@ -297,9 +300,21 @@ spec:
         description:
           "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by
           Synopsys. The full list can be found [here](https://synopsys.atlassian.net/wiki/spaces/IA/pages/1562214619/Shell+Script+Reference+6.9.0)
-          This list affects the detect script downloaded while running the scan. By default detect7.sh will be used. To continue using detect6, please use DETECT_LATEST_RELEASE_VERSION and set it to a valid value
-          defined [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=releasenotes.html&_LANG=enus)"
+          This list affects the detect script downloaded while running the scan. By default detect7.sh will be used. To continue using different versions of detect, please use DETECT_LATEST_RELEASE_VERSION and set it to a valid value
+          defined [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=releasenotes.html&_LANG=enus)
+          Additionally, please note, depending on the Project certain versions of detect will be required.
+          For example: For Swift version 5.5 and lower, Detect 7.13.0 is the minimum required version.
+          For Swift version 5.6 and higher, Detect 7.14.0 is required "
         type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: minScanInterval
+        description:
+          "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
+          value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan."
+        type: int
         scope:
           - PARAMETERS
           - STAGES
@@ -389,6 +404,12 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: failOnSevereVulnerabilities
+        type: bool
+        description: Whether to fail the step on severe vulnerabilties or not
+        scope:
+          - PARAMETERS
+        default: true
   outputs:
     resources:
       - name: influx

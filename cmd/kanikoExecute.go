@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -15,6 +16,50 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
+
+const syftURL = "https://raw.githubusercontent.com/anchore/syft/main/install.sh"
+
+type kanikoHttpClient interface {
+	piperhttp.Sender
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+}
+
+func installSyft(shellRunner command.ShellRunner, fileUtils piperutils.FileUtils, httpClient kanikoHttpClient) error {
+	installationScript := "./install.sh"
+	err := httpClient.DownloadFile(syftURL, installationScript, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to download syft: %w", err)
+	}
+
+	err = fileUtils.Chmod(installationScript, 0777)
+	if err != nil {
+		return err
+	}
+
+	err = shellRunner.RunShell("/busybox/sh", "cat ./install.sh | sh -s -- -b .")
+	if err != nil {
+		return fmt.Errorf("failed to install syft: %w", err)
+	}
+
+	return nil
+}
+
+func generateSBOM(shellRunner command.ShellRunner, fileUtils piperutils.FileUtils, httpClient kanikoHttpClient, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+	shellRunner.AppendEnv([]string{"DOCKER_CONFIG", "/kaniko/.docker"})
+	syftInstallErr := installSyft(shellRunner, fileUtils, httpClient)
+	if syftInstallErr != nil {
+		return syftInstallErr
+	}
+	for index, eachImageTag := range commonPipelineEnvironment.container.imageNameTags {
+		// TrimPrefix needed as syft needs containerRegistry name only
+		syftRunErr := shellRunner.RunShell("/busybox/sh", fmt.Sprintf("./syft %s/%s -o cyclonedx-xml=bom-docker-%v.xml", strings.TrimPrefix(commonPipelineEnvironment.container.registryURL, "https://"), eachImageTag, index))
+		if syftRunErr != nil {
+			return fmt.Errorf("failed to generate SBOM: %w", syftRunErr)
+		}
+	}
+	return nil
+
+}
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
 	// for command execution use Command
@@ -34,13 +79,13 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 
 	fileUtils := &piperutils.Files{}
 
-	err := runKanikoExecute(&config, telemetryData, commonPipelineEnvironment, &c, client, fileUtils)
+	err := runKanikoExecute(&config, telemetryData, commonPipelineEnvironment, &c, &c, client, fileUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Kaniko execution failed")
 	}
 }
 
-func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
+func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, shellRunner command.ShellRunner, httpClient kanikoHttpClient, fileUtils piperutils.FileUtils) error {
 	binfmtSupported, _ := docker.IsBinfmtMiscSupportedByHost(fileUtils)
 
 	if !binfmtSupported && len(config.TargetArchitectures) > 0 {
@@ -74,11 +119,37 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	dockerConfig := []byte(`{"auths":{}}`)
+
+	// respect user provided docker config json file
 	if len(config.DockerConfigJSON) > 0 {
 		var err error
 		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
+			return errors.Wrapf(err, "failed to read existing docker config json at '%v'", config.DockerConfigJSON)
+		}
+	}
+
+	// if : user provided docker config json and registry credentials present then enahance the user provided docker provided json with the registry credentials
+	// else if : no user provided docker config json then create a new docker config json for kaniko
+	if len(config.DockerConfigJSON) > 0 && len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
+		targetConfigJson, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, fileUtils)
+		if err != nil {
+			return errors.Wrapf(err, "failed to update existing docker config json file '%v'", config.DockerConfigJSON)
+		}
+
+		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read enhanced file '%v'", config.DockerConfigJSON)
+		}
+	} else if len(config.DockerConfigJSON) == 0 && len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
+		targetConfigJson, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", "/kaniko/.docker/config.json", fileUtils)
+		if err != nil {
+			return errors.Wrap(err, "failed to create new docker config json at /kaniko/.docker/config.json")
+		}
+
+		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read new docker config file at /kaniko/.docker/config.json")
 		}
 	}
 
@@ -149,7 +220,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 					commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 				}
-
+				if config.CreateBOM {
+					//Syft for multi image, generates bom-docker-(1/2/3).xml
+					return generateSBOM(shellRunner, fileUtils, httpClient, commonPipelineEnvironment)
+				}
 				return nil
 			} else {
 				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
@@ -206,7 +280,15 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	// no support for building multiple containers
-	return runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment)
+	kanikoErr := runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment)
+	if kanikoErr != nil {
+		return kanikoErr
+	}
+	if config.CreateBOM {
+		// Syft for single image, generates bom-docker-0.xml
+		return generateSBOM(shellRunner, fileUtils, httpClient, commonPipelineEnvironment)
+	}
+	return nil
 }
 
 func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {

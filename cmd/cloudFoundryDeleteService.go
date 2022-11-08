@@ -51,7 +51,7 @@ func runCloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, c co
 		}
 	}()
 
-	if options.CfDeleteServiceKeys == true {
+	if options.CfDeleteServiceKeys {
 		err := cloudFoundryDeleteServiceKeys(options, c)
 		if err != nil {
 			return err

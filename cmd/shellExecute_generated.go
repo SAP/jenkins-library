@@ -117,7 +117,7 @@ func ShellExecuteCommand() *cobra.Command {
 func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts paths that must be present in the current workspace or https links to scripts. Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script} Authentication for the download is only supported via the 'githubToken' param. Make sure the script has the necessary execute permissions.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringSliceVar(&stepConfig.ScriptArguments, "scriptArguments", []string{}, "scriptArguments that are needed to be passed to scripts. the scriptArguments list is a flat list and has a positional relationship to the `sources` param. For e.g. The scriptArguments string at position 1 will be considered as the argument(s) for script at position 1 in `sources` list")
+	cmd.Flags().StringSliceVar(&stepConfig.ScriptArguments, "scriptArguments", []string{}, "scriptArguments that are needed to be passed to scripts. the scriptArguments list is a flat list and has a positional relationship to the `sources` param. For e.g. The scriptArguments string at position 1 will be considered as the argument(s) for script at position 1 in `sources` list. For multiple arguments for a script please add them as a comma seperated string.")
 
 }
 
@@ -176,7 +176,7 @@ func shellExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "shell", Image: "node:lts-stretch", WorkingDir: "/home/node"},
+				{Name: "shell", Image: "node:lts-buster", WorkingDir: "/home/node"},
 			},
 		},
 	}

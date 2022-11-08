@@ -1027,14 +1027,18 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 	sarif.Runs[0].Invocations = append(sarif.Runs[0].Invocations, invocation)
 
 	//handle originalUriBaseIds
-	oubi := new(format.OriginalUriBaseIds)
-	prefix := "file://"
-	if fvdl.Build.SourceBasePath[0] == '/' {
-		oubi.SrcRoot.Uri = prefix + fvdl.Build.SourceBasePath + "/"
+	if fvdl.Build.SourceBasePath != "" {
+		oubi := new(format.OriginalUriBaseIds)
+		prefix := "file://"
+		if fvdl.Build.SourceBasePath[0] == '/' {
+			oubi.SrcRoot.Uri = prefix + fvdl.Build.SourceBasePath + "/"
+		} else {
+			oubi.SrcRoot.Uri = prefix + "/" + fvdl.Build.SourceBasePath + "/"
+		}
+		sarif.Runs[0].OriginalUriBaseIds = oubi
 	} else {
-		oubi.SrcRoot.Uri = prefix + "/" + fvdl.Build.SourceBasePath + "/"
+		log.Entry().Warn("SourceBaesPath is empty")
 	}
-	sarif.Runs[0].OriginalUriBaseIds = oubi
 
 	//handle artifacts
 	log.Entry().Debug("[SARIF] Now handling artifacts.")
@@ -1056,7 +1060,7 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 	}
 
 	//handle automationDetails
-	sarif.Runs[0].AutomationDetails.Id = fvdl.Build.BuildID
+	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: fvdl.Build.BuildID}
 
 	//handle threadFlowLocations
 	log.Entry().Debug("[SARIF] Now handling threadFlowLocations.")
@@ -1189,6 +1193,9 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 	ruleProp.ToolAuditMessage = "Error fetching audit state" // We set this as default for the error phase, then reset it to nothing
 	ruleProp.ToolSeverityIndex = 0
 	ruleProp.ToolStateIndex = 0
+	ruleProp.AuditRequirementIndex = 0
+	ruleProp.AuditRequirement = "Unknown"
+
 	// These default values allow for the property bag to be filled even if an error happens later. They all should be overwritten by a normal course of the progrma.
 	if maxretries == 0 {
 		// Max retries reached, we stop there to avoid a longer execution time
@@ -1231,6 +1238,18 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 		for i := 0; i < len(filterSet.Folders); i++ {
 			if filterSet.Folders[i].GUID == *data[0].FolderGUID {
 				ruleProp.FortifyCategory = filterSet.Folders[i].Name
+				//  classify into audit groups
+				switch ruleProp.FortifyCategory {
+				case "Corporate Security Requirements", "Audit All":
+					ruleProp.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
+					ruleProp.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
+				case "Spot Checks of Each Category":
+					ruleProp.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_2_INDEX
+					ruleProp.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_2_DESC
+				case "Optional":
+					ruleProp.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_3_INDEX
+					ruleProp.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_3_DESC
+				}
 				break
 			}
 		}

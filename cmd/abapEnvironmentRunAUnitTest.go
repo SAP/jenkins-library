@@ -34,15 +34,16 @@ func abapEnvironmentRunAUnitTest(config abapEnvironmentRunAUnitTestOptions, tele
 	}
 
 	client := piperhttp.Client{}
+	utils := piperutils.Files{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentRunAUnitTest(&config, telemetryData, &autils, &client)
+	err := runAbapEnvironmentRunAUnitTest(&config, telemetryData, &autils, &client, &utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
+func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, utils piperutils.FileUtils) error {
 	var details abaputils.ConnectionDetailsHTTP
 	subOptions := convertAUnitOptions(config)
 	details, err := com.GetAbapCommunicationArrangementInfo(subOptions, "")
@@ -62,7 +63,7 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 		resp, err = triggerAUnitrun(*config, details, client)
 	}
 	if err == nil {
-		err = fetchAndPersistAUnitResults(resp, details, client, config.AUnitResultsFileName, config.GenerateHTML)
+		err = fetchAndPersistAUnitResults(resp, details, client, utils, config.AUnitResultsFileName, config.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -134,10 +135,9 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	return subOptions
 }
 
-func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, aunitResultFileName string, generateHTML bool) error {
+func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, aunitResultFileName string, generateHTML bool) error {
 	var err error
-	var abapEndpoint string
-	abapEndpoint = details.URL
+	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
 	location, err = pollAUnitRun(details, nil, client)
@@ -152,7 +152,7 @@ func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.Connecti
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = persistAUnitResult(body, aunitResultFileName, generateHTML)
+		err = persistAUnitResult(utils, body, aunitResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling AUnit result failed: %w", err)
@@ -298,7 +298,9 @@ func pollAUnitRun(details abaputils.ConnectionDetailsHTTP, body []byte, client p
 			return "", fmt.Errorf("Reading response body failed: %w", err)
 		}
 		x := new(AUnitRun)
-		xml.Unmarshal(bodyText, &x)
+		if err := xml.Unmarshal(bodyText, &x); err != nil {
+			return "", err
+		}
 
 		log.Entry().Infof("Current polling status: %s", x.Progress.Status)
 		if x.Progress.Status == "Not Created" {
@@ -343,7 +345,7 @@ func getAUnitResults(requestType string, details abaputils.ConnectionDetailsHTTP
 	return req, err
 }
 
-func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bool) (err error) {
+func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing AUnit result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -353,7 +355,9 @@ func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bo
 
 	//Optional checks before writing the Results
 	parsedXML := new(AUnitResult)
-	xml.Unmarshal([]byte(body), &parsedXML)
+	if err := xml.Unmarshal([]byte(body), &parsedXML); err != nil {
+		log.Entry().WithError(err).Warning("failed to unmarshal xml response")
+	}
 
 	//Write Results
 	err = ioutil.WriteFile(aunitResultFileName, body, 0644)
@@ -379,7 +383,7 @@ func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bo
 				log.Entry().Debugf("The following test has been skipped: %s: %s", skipped.Message, skipped.Text)
 			}
 		}
-		if generateHTML == true {
+		if generateHTML {
 			htmlString := generateHTMLDocumentAUnit(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			aUnitResultHTMLFileName := strings.Trim(aunitResultFileName, ".xml") + ".html"
@@ -393,7 +397,7 @@ func persistAUnitResult(body []byte, aunitResultFileName string, generateHTML bo
 	}
 	//Persist findings afterwards
 	reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
-	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", reports, nil)
+	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", utils, reports, nil)
 	return nil
 }
 
@@ -432,7 +436,7 @@ func generateHTMLDocumentAUnit(parsedXML *AUnitResult) (htmlDocumentString strin
 //	Object Set Structure
 //
 
-//AUnitConfig object for parsing yaml config of software components and packages
+// AUnitConfig object for parsing yaml config of software components and packages
 type AUnitConfig struct {
 	Title     string              `json:"title,omitempty"`
 	Context   string              `json:"context,omitempty"`
@@ -440,7 +444,7 @@ type AUnitConfig struct {
 	ObjectSet abaputils.ObjectSet `json:"objectset,omitempty"`
 }
 
-//AUnitOptions in form of packages and software components to be checked
+// AUnitOptions in form of packages and software components to be checked
 type AUnitOptions struct {
 	Measurements string    `json:"measurements,omitempty"`
 	Scope        Scope     `json:"scope,omitempty"`
@@ -448,20 +452,20 @@ type AUnitOptions struct {
 	Duration     Duration  `json:"duration,omitempty"`
 }
 
-//Scope in form of packages and software components to be checked
+// Scope in form of packages and software components to be checked
 type Scope struct {
 	OwnTests     *bool `json:"owntests,omitempty"`
 	ForeignTests *bool `json:"foreigntests,omitempty"`
 }
 
-//RiskLevel in form of packages and software components to be checked
+// RiskLevel in form of packages and software components to be checked
 type RiskLevel struct {
 	Harmless  *bool `json:"harmless,omitempty"`
 	Dangerous *bool `json:"dangerous,omitempty"`
 	Critical  *bool `json:"critical,omitempty"`
 }
 
-//Duration in form of packages and software components to be checked
+// Duration in form of packages and software components to be checked
 type Duration struct {
 	Short  *bool `json:"short,omitempty"`
 	Medium *bool `json:"medium,omitempty"`
@@ -472,7 +476,7 @@ type Duration struct {
 //	AUnit Run Structure
 //
 
-//AUnitRun Object for parsing XML
+// AUnitRun Object for parsing XML
 type AUnitRun struct {
 	XMLName    xml.Name   `xml:"run"`
 	Title      string     `xml:"title,attr"`
@@ -483,24 +487,24 @@ type AUnitRun struct {
 	Link       AUnitLink  `xml:"link"`
 }
 
-//Progress of AUnit run
+// Progress of AUnit run
 type Progress struct {
 	Status     string `xml:"status,attr"`
 	Percentage string `xml:"percentage,attr"`
 }
 
-//ExecutedBy User
+// ExecutedBy User
 type ExecutedBy struct {
 	User string `xml:"user,attr"`
 }
 
-//Time run was started and finished
+// Time run was started and finished
 type Time struct {
 	Started string `xml:"started,attr"`
 	Ended   string `xml:"ended,attr"`
 }
 
-//AUnitLink containing result locations
+// AUnitLink containing result locations
 type AUnitLink struct {
 	Href string `xml:"href,attr"`
 	Rel  string `xml:"rel,attr"`

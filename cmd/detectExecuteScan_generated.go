@@ -22,37 +22,39 @@ import (
 )
 
 type detectExecuteScanOptions struct {
-	Token                      string   `json:"token,omitempty"`
-	CodeLocation               string   `json:"codeLocation,omitempty"`
-	ProjectName                string   `json:"projectName,omitempty"`
-	Scanners                   []string `json:"scanners,omitempty" validate:"possible-values=signature source"`
-	ScanPaths                  []string `json:"scanPaths,omitempty"`
-	DependencyPath             string   `json:"dependencyPath,omitempty"`
-	Unmap                      bool     `json:"unmap,omitempty"`
-	ScanProperties             []string `json:"scanProperties,omitempty"`
-	ServerURL                  string   `json:"serverUrl,omitempty"`
-	Groups                     []string `json:"groups,omitempty"`
-	FailOn                     []string `json:"failOn,omitempty" validate:"possible-values=ALL BLOCKER CRITICAL MAJOR MINOR NONE"`
-	VersioningModel            string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
-	Version                    string   `json:"version,omitempty"`
-	CustomScanVersion          string   `json:"customScanVersion,omitempty"`
-	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile         string   `json:"globalSettingsFile,omitempty"`
-	M2Path                     string   `json:"m2Path,omitempty"`
-	InstallArtifacts           bool     `json:"installArtifacts,omitempty"`
-	IncludedPackageManagers    []string `json:"includedPackageManagers,omitempty"`
-	ExcludedPackageManagers    []string `json:"excludedPackageManagers,omitempty"`
-	MavenExcludedScopes        []string `json:"mavenExcludedScopes,omitempty"`
-	DetectTools                []string `json:"detectTools,omitempty"`
-	ScanOnChanges              bool     `json:"scanOnChanges,omitempty"`
-	CustomEnvironmentVariables []string `json:"customEnvironmentVariables,omitempty"`
-	GithubToken                string   `json:"githubToken,omitempty"`
-	CreateResultIssue          bool     `json:"createResultIssue,omitempty"`
-	GithubAPIURL               string   `json:"githubApiUrl,omitempty"`
-	Owner                      string   `json:"owner,omitempty"`
-	Repository                 string   `json:"repository,omitempty"`
-	Assignees                  []string `json:"assignees,omitempty"`
-	CustomTLSCertificateLinks  []string `json:"customTlsCertificateLinks,omitempty"`
+	Token                       string   `json:"token,omitempty"`
+	CodeLocation                string   `json:"codeLocation,omitempty"`
+	ProjectName                 string   `json:"projectName,omitempty"`
+	Scanners                    []string `json:"scanners,omitempty" validate:"possible-values=signature source"`
+	ScanPaths                   []string `json:"scanPaths,omitempty"`
+	DependencyPath              string   `json:"dependencyPath,omitempty"`
+	Unmap                       bool     `json:"unmap,omitempty"`
+	ScanProperties              []string `json:"scanProperties,omitempty"`
+	ServerURL                   string   `json:"serverUrl,omitempty"`
+	Groups                      []string `json:"groups,omitempty"`
+	FailOn                      []string `json:"failOn,omitempty" validate:"possible-values=ALL BLOCKER CRITICAL MAJOR MINOR NONE"`
+	VersioningModel             string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
+	Version                     string   `json:"version,omitempty"`
+	CustomScanVersion           string   `json:"customScanVersion,omitempty"`
+	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	M2Path                      string   `json:"m2Path,omitempty"`
+	InstallArtifacts            bool     `json:"installArtifacts,omitempty"`
+	IncludedPackageManagers     []string `json:"includedPackageManagers,omitempty"`
+	ExcludedPackageManagers     []string `json:"excludedPackageManagers,omitempty"`
+	MavenExcludedScopes         []string `json:"mavenExcludedScopes,omitempty"`
+	DetectTools                 []string `json:"detectTools,omitempty"`
+	ScanOnChanges               bool     `json:"scanOnChanges,omitempty"`
+	CustomEnvironmentVariables  []string `json:"customEnvironmentVariables,omitempty"`
+	MinScanInterval             int      `json:"minScanInterval,omitempty"`
+	GithubToken                 string   `json:"githubToken,omitempty"`
+	CreateResultIssue           bool     `json:"createResultIssue,omitempty"`
+	GithubAPIURL                string   `json:"githubApiUrl,omitempty"`
+	Owner                       string   `json:"owner,omitempty"`
+	Repository                  string   `json:"repository,omitempty"`
+	Assignees                   []string `json:"assignees,omitempty"`
+	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
+	FailOnSevereVulnerabilities bool     `json:"failOnSevereVulnerabilities,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -270,7 +272,8 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.MavenExcludedScopes, "mavenExcludedScopes", []string{}, "The maven scopes that need to be excluded from the scan. For example, setting the value 'test' will exclude all components which are defined with a test scope in maven")
 	cmd.Flags().StringSliceVar(&stepConfig.DetectTools, "detectTools", []string{}, "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included. For the complete list of possible values, Please refer [Synopsys detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#Detect-tools-included)")
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", false, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
-	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by Synopsys. The full list can be found [here](https://synopsys.atlassian.net/wiki/spaces/IA/pages/1562214619/Shell+Script+Reference+6.9.0) This list affects the detect script downloaded while running the scan. By default detect7.sh will be used. To continue using detect6, please use DETECT_LATEST_RELEASE_VERSION and set it to a valid value defined [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=releasenotes.html&_LANG=enus)")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by Synopsys. The full list can be found [here](https://synopsys.atlassian.net/wiki/spaces/IA/pages/1562214619/Shell+Script+Reference+6.9.0) This list affects the detect script downloaded while running the scan. By default detect7.sh will be used. To continue using different versions of detect, please use DETECT_LATEST_RELEASE_VERSION and set it to a valid value defined [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=releasenotes.html&_LANG=enus) Additionally, please note, depending on the Project certain versions of detect will be required. For example: For Swift version 5.5 and lower, Detect 7.13.0 is the minimum required version. For Swift version 5.6 and higher, Detect 7.14.0 is required ")
+	cmd.Flags().IntVar(&stepConfig.MinScanInterval, "minScanInterval", 0, "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
@@ -278,6 +281,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
+	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the step on severe vulnerabilties or not")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -296,6 +300,7 @@ func detectExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "detectTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.", Type: "jenkins", Aliases: []config.Alias{{Name: "apiTokenCredentialsId", Deprecated: false}}},
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
@@ -535,6 +540,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Default:     []string{},
 					},
 					{
+						Name:        "minScanInterval",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
+					},
+					{
 						Name: "githubToken",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -622,6 +636,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "failOnSevereVulnerabilities",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 				},
 			},
