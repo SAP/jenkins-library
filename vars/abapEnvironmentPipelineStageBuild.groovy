@@ -20,7 +20,9 @@ import static com.sap.piper.Prerequisites.checkScript
     'abapAddonAssemblyKitCreateTargetVector',
     'abapAddonAssemblyKitPublishTargetVector',
     /** Parameter for host config */
-    'host'
+    'host',
+    'generateTagForAddonProductVersion',
+    'generateTagForAddonComponentVersion'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -52,6 +54,20 @@ void call(Map parameters = [:]) {
         abapEnvironmentAssembleConfirm script: parameters.script
         abapAddonAssemblyKitCreateTargetVector script: parameters.script
         abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
+        if (config.generateTagForAddonComponentVersion || config.generateTagForAddonProductVersion) {
+            try {
+                Set keys = [ 'cfServiceKeyName' ]
+                Map configClone = ConfigurationHelper.newInstance(this)
+                    .mixin(ConfigurationLoader.defaultStageConfiguration(script, 'Clone Repositories'))
+                    .mixinGeneralConfig(script.commonPipelineEnvironment, keys)
+                    .mixinStepConfig(script.commonPipelineEnvironment, keys)
+                    .mixinStageConfig(script.commonPipelineEnvironment, 'Clone Repositories', keys)
+                    .mixin(parameters, keys)
+                    .use()
+                abapEnvironmentCreateTag(script: parameters.script, cfServiceKeyName: configClone.cfServiceKeyName)
+            } catch (e) {
+                echo 'Tag creation failed: ' + e.message
+            }
+        }
     }
-
 }

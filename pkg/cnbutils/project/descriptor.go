@@ -104,7 +104,7 @@ func (b *build) envToMap() map[string]interface{} {
 	envMap := map[string]interface{}{}
 
 	for _, e := range b.Env {
-		if len(e.Name) == 0 || len(e.Value) == 0 {
+		if len(e.Name) == 0 {
 			continue
 		}
 

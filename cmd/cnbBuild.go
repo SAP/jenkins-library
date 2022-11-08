@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -368,6 +369,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	cnbTelemetry.dockerImage = dockerImage
 
 	cnbBuildConfig := buildsettings.BuildOptions{
+		CreateBOM:         config.CreateBOM,
 		DockerImage:       dockerImage,
 		BuildSettingsInfo: config.BuildSettingsInfo,
 	}
@@ -582,7 +584,7 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
-	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
+	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.9"})
 
 	creatorArgs := []string{
 		"-no-color",
@@ -594,6 +596,10 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 
 	if GeneralConfig.Verbose {
 		creatorArgs = append(creatorArgs, "-log-level", "debug")
+	}
+
+	if config.RunImage != "" {
+		creatorArgs = append(creatorArgs, "-run-image", config.RunImage)
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
@@ -618,6 +624,16 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	}
 	commonPipelineEnvironment.container.imageDigest = digest
 	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
+
+	if config.CreateBOM {
+		bomFilename := fmt.Sprintf("bom-%s-%s.xml", targetImage.ContainerImageName, strings.TrimLeft(digest, "sha256:"))
+		imageName := fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag)
+		err = cnbutils.MergeSBOMFiles("/layers/sbom/launch/**/sbom.syft.json", bomFilename, imageName, dockerConfigFile, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrap(err, "failed to create SBoM file")
+		}
+	}
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != pathEnumArchive {

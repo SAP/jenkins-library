@@ -99,7 +99,11 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully deployed into CPI runtime")
-		deploymentError := pollIFlowDeploymentStatus(retryCount, config, httpClient, serviceKey.OAuth.Host)
+		taskId, readErr := ioutil.ReadAll(deployResp.Body)
+		if readErr != nil {
+			return errors.Wrap(readErr, "Task Id not found. HTTP response body could not be read.")
+		}
+		deploymentError := pollIFlowDeploymentStatus(string(taskId), retryCount, config, httpClient, serviceKey.OAuth.Host)
 		return deploymentError
 	}
 	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
@@ -112,33 +116,33 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 }
 
 // pollIFlowDeploymentStatus - Poll the integration flow deployment status, return status or error details
-func pollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) error {
+func pollIFlowDeploymentStatus(taskId string, retryCount int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) error {
 
 	if retryCount <= 0 {
 		return errors.New("failed to start integration artifact after retrying several times")
 	}
-	deployStatus, err := getIntegrationArtifactDeployStatus(config, httpClient, apiHost)
+	deployStatus, err := getIntegrationArtifactDeployStatus(config, httpClient, apiHost, taskId)
 	if err != nil {
 		return err
 	}
 
 	//if artifact starting, then retry based on provided retry count
 	//with specific delay between each retry
-	if deployStatus == "STARTING" {
+	if deployStatus == "DEPLOYING" {
 		// Calling Sleep method
 		sleepTime := int(retryCount * 3)
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 		retryCount--
-		return pollIFlowDeploymentStatus(retryCount, config, httpClient, apiHost)
+		return pollIFlowDeploymentStatus(taskId, retryCount, config, httpClient, apiHost)
 	}
 
 	//if artifact started, then just return
-	if deployStatus == "STARTED" {
+	if deployStatus == "SUCCESS" {
 		return nil
 	}
 
 	//if error return immediately with error details
-	if deployStatus == "ERROR" {
+	if deployStatus == "FAIL" || deployStatus == "FAIL_ON_LICENSE_ERROR" {
 		resp, err := getIntegrationArtifactDeployError(config, httpClient, apiHost)
 		if err != nil {
 			return err
@@ -159,12 +163,12 @@ func getHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, sta
 }
 
 // getIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
-func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) (string, error) {
+func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string, taskId string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
 	header.Add("Accept", "application/json")
-	deployStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')", apiHost, config.IntegrationFlowID)
+	deployStatusURL := fmt.Sprintf("%s/api/v1/BuildAndDeployStatus(TaskId='%s')", apiHost, taskId)
 	deployStatusResp, httpErr := httpClient.SendRequest(httpMethod, deployStatusURL, nil, header, nil)
 
 	if deployStatusResp != nil && deployStatusResp.Body != nil {

@@ -256,6 +256,22 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: createBOM
+        type: bool
+        description: "**EXPERIMENTAL:** Creates the bill of materials (BOM) using CycloneDX plugin."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: runImage
+        type: string
+        description: "Base image from which application images are built. Will be defaulted to the image provided by the builder."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -271,5 +287,10 @@ spec:
           - name: container/imageDigests
             type: "[]string"
           - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom-*.xml"
+            type: sbom
   containers:
     - image: "paketobuildpacks/builder:base"
