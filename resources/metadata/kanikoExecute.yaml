@@ -67,7 +67,7 @@ metadata:
     * `myImage-sub1`
     * `myImage-sub2`
 
-    ### Custom buildOptions in newer kaniko versions
+    #### Custom buildOptions in newer kaniko versions
 
     When using kaniko versions newer than v1.3 it is necessary to pass `--ignore-path=/workspace` and `--ignore-path=/busybox` as build options with this step.
     These two options are set by default in `buildOptions`. When **overwriting** the `buildOptions` parameter, remember to add these build options to your buildOption configuration for a successful step execution.
