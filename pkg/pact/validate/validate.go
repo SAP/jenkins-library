@@ -45,7 +45,7 @@ func (c *ComparisonMap) ValidateContract(pactMap *ComparisonMap) (*FailureData, 
 	success := true
 	failureTemplate := FailureData{Failures: map[string]map[string][]string{}}
 
-	for topic, fieldMap := range pactMap.Topics {
+	for topic, pactFieldMap := range pactMap.Topics {
 		failureTemplate.Failures[topic] = map[string][]string{}
 		asyncFieldMap, ok := c.Topics[topic]
 
@@ -55,22 +55,29 @@ func (c *ComparisonMap) ValidateContract(pactMap *ComparisonMap) (*FailureData, 
 			continue
 		}
 
-		for fieldName, pactField := range fieldMap {
-			asyncField, ok := asyncFieldMap[fieldName]
+		for pactFieldName, pactField := range pactFieldMap {
+			asyncField, ok := asyncFieldMap[pactFieldName]
 			if !ok {
 				success = false
-				failureTemplate.Failures[topic][fieldName] = append(failureTemplate.Failures[topic][fieldName], fmt.Sprintf("fieldName '%v' does not exist in async file", fieldName))
+				failureTemplate.Failures[topic][pactFieldName] = append(failureTemplate.Failures[topic][pactFieldName], fmt.Sprintf("fieldName '%v' does not exist in async file", pactFieldName))
 				continue
 			}
 
 			consumerMatchingRule := fmt.Sprintf("consumer matching rule listed as %s", pactField.MatchingRule)
 			consumerPayloadValue := fmt.Sprintf("consumer payload value listed as %v", pactField.PayloadValue)
-			consumerPayloadType := fmt.Sprintf("consumer payload is of type %s", reflect.TypeOf(pactField.PayloadValue).String())
+			var consumerPayloadType string
+			if pactField.PayloadValue != nil {
+				consumerPayloadType = fmt.Sprintf("consumer payload is of type %s", reflect.TypeOf(pactField.PayloadValue).String())
+			}
+			
 			// consumerDateFormat := fmt.Sprintf("consumer date format is %s", pactField.Date)
 
 			providerMatchingRule := fmt.Sprintf("provider matching rule listed as %s", asyncField.MatchingRule)
 			providerPayloadValue := fmt.Sprintf("provider payload value listed as %v", asyncField.PayloadValue)
-			providerPayloadType := fmt.Sprintf("provider payload is of type %s", reflect.TypeOf(asyncField.PayloadValue).String())
+			var providerPayloadType string
+			if asyncField.PayloadValue != nil {
+				providerPayloadType = fmt.Sprintf("provider payload is of type %s", reflect.TypeOf(asyncField.PayloadValue).String())
+			}
 			providerFormat := fmt.Sprintf("provider format is listed as %s", asyncField.Format)
 
 			switch pactField.MatchingRule {
@@ -79,36 +86,36 @@ func (c *ComparisonMap) ValidateContract(pactMap *ComparisonMap) (*FailureData, 
 			case "date":
 				if asyncField.MatchingRule != "string" {
 					success = false
-					failureTemplate.Failures[topic][fieldName] = appendErrorMessages(failureTemplate.Failures[topic][fieldName], consumerMatchingRule, providerMatchingRule,
+					failureTemplate.Failures[topic][pactFieldName] = appendErrorMessages(failureTemplate.Failures[topic][pactFieldName], consumerMatchingRule, providerMatchingRule,
 						consumerPayloadValue, providerPayloadValue)
 				}
 
 				if asyncField.Format != "" && asyncField.Format != "date-time" && asyncField.Format != "date" {
 					success = false
-					failureTemplate.Failures[topic][fieldName] = appendErrorMessages(failureTemplate.Failures[topic][fieldName], consumerMatchingRule, providerFormat)
+					failureTemplate.Failures[topic][pactFieldName] = appendErrorMessages(failureTemplate.Failures[topic][pactFieldName], consumerMatchingRule, providerFormat)
 				}
 			case "decimal":
 				if asyncField.MatchingRule != "number" {
 					success = false
-					failureTemplate.Failures[topic][fieldName] = appendErrorMessages(failureTemplate.Failures[topic][fieldName], consumerMatchingRule, providerMatchingRule,
+					failureTemplate.Failures[topic][pactFieldName] = appendErrorMessages(failureTemplate.Failures[topic][pactFieldName], consumerMatchingRule, providerMatchingRule,
 						consumerPayloadValue, providerPayloadValue)
 				}
 			case "integer":
 				if asyncField.MatchingRule != "integer" {
 					success = false
-					failureTemplate.Failures[topic][fieldName] = appendErrorMessages(failureTemplate.Failures[topic][fieldName], consumerMatchingRule, providerMatchingRule,
+					failureTemplate.Failures[topic][pactFieldName] = appendErrorMessages(failureTemplate.Failures[topic][pactFieldName], consumerMatchingRule, providerMatchingRule,
 						consumerPayloadValue, providerPayloadValue)
 				}
 			case "number":
 				if asyncField.MatchingRule != "integer" && asyncField.MatchingRule != "number" {
 					success = false
-					failureTemplate.Failures[topic][fieldName] = appendErrorMessages(failureTemplate.Failures[topic][fieldName], consumerMatchingRule, providerMatchingRule,
+					failureTemplate.Failures[topic][pactFieldName] = appendErrorMessages(failureTemplate.Failures[topic][pactFieldName], consumerMatchingRule, providerMatchingRule,
 						consumerPayloadValue, providerPayloadValue)
 				}
 			default: // Defaults to matching rule 'type'
 				if reflect.TypeOf(pactField.PayloadValue) != reflect.TypeOf(asyncField.PayloadValue) {
 					success = false
-					failureTemplate.Failures[topic][fieldName] = appendErrorMessages(failureTemplate.Failures[topic][fieldName], consumerMatchingRule, consumerPayloadType,
+					failureTemplate.Failures[topic][pactFieldName] = appendErrorMessages(failureTemplate.Failures[topic][pactFieldName], consumerMatchingRule, consumerPayloadType,
 						providerMatchingRule, providerPayloadType)
 				}
 			}

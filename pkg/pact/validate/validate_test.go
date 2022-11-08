@@ -14,25 +14,30 @@ func TestValidateContract(t *testing.T) {
 			Topics: map[string]map[string]*Field{
 				"topic1": {
 					"field_timestamp": &Field{
-						MatchingRule: "timestamp",
+						MatchingRule: "string",
 						PayloadValue: "2022-01-01",
 					},
 					"field_date": &Field{
-						MatchingRule: "date",
+						MatchingRule: "string",
+						PayloadValue: "2022-01-01",
 					},
 					"field_decimal": &Field{
-						MatchingRule: "decimal",
+						MatchingRule: "number",
+						PayloadValue: 7,
 					},
 				},
 				"topic2": {
 					"field_integer": &Field{
 						MatchingRule: "integer",
+						PayloadValue: 7,
 					},
 					"field_number1": &Field{
 						MatchingRule: "number",
+						PayloadValue: 7,
 					},
 					"field_number2": &Field{
-						MatchingRule: "number",
+						MatchingRule: "integer",
+						PayloadValue: 7,
 					},
 					"field_type": &Field{
 						MatchingRule: "type",
@@ -46,25 +51,31 @@ func TestValidateContract(t *testing.T) {
 				"topic1": {
 					"field_timestamp": &Field{
 						MatchingRule: "timestamp",
+						Format: "date-time",
 						PayloadValue: "2022-01-01",
 					},
 					"field_date": &Field{
-						MatchingRule: "string",
+						MatchingRule: "date",
 						Format: "date-time",
+						PayloadValue: "2022-01-01",
 					},
 					"field_decimal": &Field{
-						MatchingRule: "number",
+						MatchingRule: "decimal",
+						PayloadValue: 1,
 					},
 				},
 				"topic2": {
 					"field_integer": &Field{
 						MatchingRule: "integer",
+						PayloadValue: 1,
 					},
 					"field_number1": &Field{
 						MatchingRule: "number",
+						PayloadValue: 1,
 					},
 					"field_number2": &Field{
-						MatchingRule: "integer",
+						MatchingRule: "number",
+						PayloadValue: 1,
 					},
 					"field_type": &Field{
 						PayloadValue: "someOtherValue",
@@ -73,7 +84,7 @@ func TestValidateContract(t *testing.T) {
 			},
 		}
 	
-		expectedResult := &FailureData{}
+		expectedResult := &FailureData{Failures:map[string]map[string][]string{"topic1":{}, "topic2":{}}}
 	
 	
 		res, ok := comparisonMap.ValidateContract(pactMap)
