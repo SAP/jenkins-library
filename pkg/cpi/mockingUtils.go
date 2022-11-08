@@ -436,7 +436,7 @@ func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
 	case "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='Active'":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
-	case "https://demo/api/v1/IntegrationRuntimeArtifacts('flow1')":
+	case "https://demo/api/v1/BuildAndDeployStatus(TaskId='')":
 		return "GetIntegrationArtifactDeployStatus"
 	case "https://demo/api/v1/IntegrationRuntimeArtifacts('flow1')/ErrorInformation/$value":
 		return "GetIntegrationArtifactDeployErrorDetails"
@@ -535,7 +535,7 @@ func GetIntegrationArtifactDeployStatusErrorMockResponseBody() (*http.Response, 
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(GetIntegrationArtifactDeployStatusPayload("ERROR")))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(GetIntegrationArtifactDeployStatusPayload("FAIL")))),
 	}
 	return &resp, nil
 }

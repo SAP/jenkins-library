@@ -210,6 +210,9 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 
 	for _, child := range jsonParsed.Path("actions").Children() {
 		class := child.S("_class")
+		if class == nil {
+			continue
+		}
 		if class.Data().(string) == "hudson.model.CauseAction" {
 			for _, val := range child.Path("causes").Children() {
 				subclass := val.S("_class")
