@@ -27,7 +27,6 @@ type whitesourceExecuteScanOptions struct {
 	AgentParameters                      []string `json:"agentParameters,omitempty"`
 	AgentURL                             string   `json:"agentUrl,omitempty"`
 	AggregateVersionWideReport           bool     `json:"aggregateVersionWideReport,omitempty"`
-	AssessmentFile                       string   `json:"assessmentFile,omitempty"`
 	BuildDescriptorExcludeList           []string `json:"buildDescriptorExcludeList,omitempty"`
 	BuildDescriptorFile                  string   `json:"buildDescriptorFile,omitempty"`
 	BuildTool                            string   `json:"buildTool,omitempty"`
@@ -41,7 +40,6 @@ type whitesourceExecuteScanOptions struct {
 	DockerConfigJSON                     string   `json:"dockerConfigJSON,omitempty"`
 	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
 	Excludes                             []string `json:"excludes,omitempty"`
-	FailOnSevereVulnerabilities          bool     `json:"failOnSevereVulnerabilities,omitempty"`
 	Includes                             []string `json:"includes,omitempty"`
 	InstallCommand                       string   `json:"installCommand,omitempty"`
 	JreDownloadURL                       string   `json:"jreDownloadUrl,omitempty"`
@@ -167,7 +165,6 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 		{FilePattern: "**/piper_whitesource_vulnerability_report.html", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-security"},
-		{FilePattern: "**/piper_whitesource_vulnerability.sarif", ParamRef: "", StepResultType: "whitesource-security"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -193,7 +190,7 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 	}
 }
 
-// WhitesourceExecuteScanCommand Execute a WhiteSource scan
+// WhitesourceExecuteScanCommand Execute a Mend (formerly known as WhiteSource) scan
 func WhitesourceExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "whitesourceExecuteScan"
 
@@ -209,13 +206,13 @@ func WhitesourceExecuteScanCommand() *cobra.Command {
 
 	var createWhitesourceExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Execute a WhiteSource scan",
-		Long: `With this step [WhiteSource](https://www.whitesourcesoftware.com) security and license compliance scans can be executed and assessed.
-WhiteSource is a Software as a Service offering based on a so called unified agent that locally determines the dependency
+		Short: "Execute a Mend (formerly known as WhiteSource) scan",
+		Long: `With this step [Mend](https://www.mend.io/) (formerly known as Whitesource) security and license compliance scans can be executed and assessed.
+Mend is a Software as a Service offering based on a so called unified agent that locally determines the dependency
 tree of a node.js, Java, Python, Ruby, or Scala based solution and sends it to the WhiteSource server for a policy based license compliance
 check and additional Free and Open Source Software Publicly Known Vulnerabilities detection.
 
-The step uses the so-called WhiteSource Unified Agent. For details please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
+The step uses the so-called Mend Unified Agent. For details please refer to the [Mend Unified Agent Documentation](https://docs.mend.io/bundle/unified_agent/page/overview_of_the_unified_agent.html).
 
 !!! note "Docker Images"
     The underlying Docker images are public and specific to the solution's programming language(s) and therefore may have to be exchanged
@@ -312,7 +309,6 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringSliceVar(&stepConfig.AgentParameters, "agentParameters", []string{}, "[NOT IMPLEMENTED] List of additional parameters passed to the Unified Agent command line.")
 	cmd.Flags().StringVar(&stepConfig.AgentURL, "agentUrl", `https://saas.whitesourcesoftware.com/agent`, "URL to the WhiteSource agent endpoint.")
 	cmd.Flags().BoolVar(&stepConfig.AggregateVersionWideReport, "aggregateVersionWideReport", false, "This does not run a scan, instead just generated a report for all projects with projectVersion = config.ProductVersion")
-	cmd.Flags().StringVar(&stepConfig.AssessmentFile, "assessmentFile", `hs-assessments.yaml`, "Explicit path to the assessment YAML file.")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Explicit path to the build descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
@@ -326,7 +322,6 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringSliceVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", []string{}, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
 	cmd.Flags().StringSliceVar(&stepConfig.Excludes, "excludes", []string{}, "List of file path patterns to exclude in the scan.")
-	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the step on severe vulnerabilties or not")
 	cmd.Flags().StringSliceVar(&stepConfig.Includes, "includes", []string{}, "List of file path patterns to include in the scan.")
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios.")
 	cmd.Flags().StringVar(&stepConfig.JreDownloadURL, "jreDownloadUrl", `https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz`, "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.")
@@ -371,7 +366,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "whitesourceExecuteScan",
 			Aliases:     []config.Alias{},
-			Description: "Execute a WhiteSource scan",
+			Description: "Execute a Mend (formerly known as WhiteSource) scan",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -431,15 +426,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
-					},
-					{
-						Name:        "assessmentFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `hs-assessments.yaml`,
 					},
 					{
 						Name:        "buildDescriptorExcludeList",
@@ -598,15 +584,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
-					},
-					{
-						Name:        "failOnSevereVulnerabilities",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
 					},
 					{
 						Name:        "includes",
@@ -968,9 +945,9 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				{Image: "gradle", WorkingDir: "/home/gradle", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "gradle"}}}}},
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "sbt"}}}}},
 				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
-				{Image: "node:lts-buster", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}}},
+				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}}},
 				{Image: "python:3.6-stretch", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}}},
-				{Image: "node:lts-buster", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "yarn"}}}}},
+				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "yarn"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -999,7 +976,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 							{"filePattern": "**/piper_whitesource_vulnerability_report.html", "type": "whitesource-security"},
 							{"filePattern": "whitesource-riskReport.pdf", "type": "whitesource-security"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-security"},
-							{"filePattern": "**/piper_whitesource_vulnerability.sarif", "type": "whitesource-security"},
 						},
 					},
 				},
