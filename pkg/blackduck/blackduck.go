@@ -86,7 +86,19 @@ type ComponentOrigin struct {
 // ToPackageUrl creates the package URL for the component
 func (c *Component) ToPackageUrl() *packageurl.PackageURL {
 	purlParts := transformComponentOriginToPurlParts(c)
-	return packageurl.NewPackageURL(purlParts[0], purlParts[1], purlParts[2], purlParts[3], nil, "")
+
+	// Namespace could not be in purlParts
+	var purlType, namespace, name, version string
+	if len(purlParts) >= 3 {
+		version = purlParts[len(purlParts)-1]
+		name = purlParts[len(purlParts)-2]
+		purlType = purlParts[0]
+	}
+	if len(purlParts) == 4 {
+		namespace = purlParts[1]
+	}
+
+	return packageurl.NewPackageURL(purlType, namespace, name, version, nil, "")
 }
 
 // MatchedType returns matched type of component: direct/transitive
@@ -525,11 +537,18 @@ func transformComponentOriginToPurlParts(component *Component) []string {
 	gav := []string{"", component.Name, component.Version}
 	origins := component.Origins
 	if origins != nil && len(origins) > 0 {
-		gav = strings.Split(origins[0].ExternalID, ":")
+		// parts of npm origin are separated by "/"
+		if origins[0].ExternalNamespace == "npmjs" {
+			gav = strings.Split(origins[0].ExternalID, "/")
+		} else {
+			gav = strings.Split(origins[0].ExternalID, ":")
+		}
 		switch strings.ToLower(origins[0].ExternalNamespace) {
 		case "maven":
 			purlType = packageurl.TypeMaven
 		case "node":
+			purlType = packageurl.TypeNPM
+		case "npmjs":
 			purlType = packageurl.TypeNPM
 		case "golang":
 			purlType = packageurl.TypeGolang

@@ -15,7 +15,7 @@ import (
 )
 
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
-func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *format.SARIF {
+func CreateSarifResultFile(vulns *Vulnerabilities) *format.SARIF {
 	log.Entry().Debug("Creating SARIF file for data transfer")
 
 	// Handle results/vulnerabilities
@@ -50,7 +50,6 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			// only create rule on new CVE
 			if !piperutils.ContainsString(collectedRules, result.RuleID) {
 				collectedRules = append(collectedRules, result.RuleID)
-
 				markdown, _ := v.ToMarkdown()
 				tags := []string{
 					"SECURITY_VULNERABILITY",

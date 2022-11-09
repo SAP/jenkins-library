@@ -26,14 +26,8 @@ func TestCreateSarifResultFile(t *testing.T) {
 	vulns := Vulnerabilities{
 		Items: alerts,
 	}
-	components := []Component{
-		affectedComponent,
-	}
-	componentList := Components{
-		Items: components,
-	}
 
-	sarif := CreateSarifResultFile(&vulns, &componentList)
+	sarif := CreateSarifResultFile(&vulns)
 
 	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json", sarif.Schema)
 	assert.Equal(t, "2.1.0", sarif.Version)

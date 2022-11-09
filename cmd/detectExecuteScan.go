@@ -499,7 +499,7 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
 	errorsOccured := []string{}
-	vulns, components, err := getVulnsAndComponents(config, influx, sys)
+	vulns, _, err := getVulnsAndComponents(config, influx, sys)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch vulnerabilities")
 	}
@@ -520,7 +520,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 		}
 	}
 
-	sarif := bd.CreateSarifResultFile(vulns, components)
+	sarif := bd.CreateSarifResultFile(vulns)
 	paths, err := bd.WriteSarifFile(sarif, utils)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))
