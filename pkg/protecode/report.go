@@ -8,13 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
-	"github.com/pkg/errors"
 )
 
-//ReportData is representing the data of the step report JSON
+// ReportData is representing the data of the step report JSON
 type ReportData struct {
 	Target                      string `json:"target,omitempty"`
 	Mandatory                   bool   `json:"mandatory,omitempty"`

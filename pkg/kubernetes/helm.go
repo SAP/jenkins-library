@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -54,6 +55,10 @@ type HelmExecuteOptions struct {
 	TargetRepositoryName      string   `json:"targetRepositoryName,omitempty"`
 	TargetRepositoryUser      string   `json:"targetRepositoryUser,omitempty"`
 	TargetRepositoryPassword  string   `json:"targetRepositoryPassword,omitempty"`
+	SourceRepositoryURL       string   `json:"sourceRepositoryURL,omitempty"`
+	SourceRepositoryName      string   `json:"sourceRepositoryName,omitempty"`
+	SourceRepositoryUser      string   `json:"sourceRepositoryUser,omitempty"`
+	SourceRepositoryPassword  string   `json:"sourceRepositoryPassword,omitempty"`
 	HelmCommand               string   `json:"helmCommand,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 }
@@ -88,25 +93,25 @@ func (h *HelmExecute) runHelmInit() error {
 }
 
 // runHelmAdd is used to add a chart repository
-func (h *HelmExecute) runHelmAdd() error {
+func (h *HelmExecute) runHelmAdd(name, url, user, password string) error {
 	helmParams := []string{
 		"repo",
 		"add",
 	}
-	if len(h.config.TargetRepositoryName) == 0 {
-		return fmt.Errorf("there is no TargetRepositoryName value. 'helm repo add' command requires 2 arguments")
+	if len(name) == 0 {
+		return fmt.Errorf("there is no RepositoryName value. 'helm repo add' command requires 2 arguments")
 	}
-	if len(h.config.TargetRepositoryURL) == 0 {
-		return fmt.Errorf("there is no TargetRepositoryURL value. 'helm repo add' command requires 2 arguments")
+	if len(url) == 0 {
+		return fmt.Errorf("there is no RepositoryURL value. 'helm repo add' command requires 2 arguments")
 	}
-	if len(h.config.TargetRepositoryUser) != 0 {
-		helmParams = append(helmParams, "--username", h.config.TargetRepositoryUser)
+	if len(user) != 0 {
+		helmParams = append(helmParams, "--username", user)
 	}
-	if len(h.config.TargetRepositoryPassword) != 0 {
-		helmParams = append(helmParams, "--password", h.config.TargetRepositoryPassword)
+	if len(password) != 0 {
+		helmParams = append(helmParams, "--password", password)
 	}
-	helmParams = append(helmParams, h.config.TargetRepositoryName)
-	helmParams = append(helmParams, h.config.TargetRepositoryURL)
+	helmParams = append(helmParams, name)
+	helmParams = append(helmParams, url)
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
@@ -131,7 +136,7 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 	}
 
 	if len(h.config.ChartPath) == 0 {
-		if err := h.runHelmAdd(); err != nil {
+		if err := h.runHelmAdd(h.config.TargetRepositoryName, h.config.TargetRepositoryURL, h.config.TargetRepositoryUser, h.config.TargetRepositoryPassword); err != nil {
 			return fmt.Errorf("failed to add a chart repository: %v", err)
 		}
 		helmParams = append(helmParams, h.config.TargetRepositoryName)
@@ -216,7 +221,7 @@ func (h *HelmExecute) RunHelmInstall() error {
 	}
 
 	if len(h.config.ChartPath) == 0 {
-		if err := h.runHelmAdd(); err != nil {
+		if err := h.runHelmAdd(h.config.TargetRepositoryName, h.config.TargetRepositoryURL, h.config.TargetRepositoryUser, h.config.TargetRepositoryPassword); err != nil {
 			return fmt.Errorf("failed to add a chart repository: %v", err)
 		}
 		helmParams = append(helmParams, h.config.TargetRepositoryName)
@@ -360,6 +365,12 @@ func (h *HelmExecute) RunHelmDependency() error {
 		return fmt.Errorf("there is no dependency value. Possible values are build, list, update")
 	}
 
+	if len(h.config.SourceRepositoryName) > 0 && len(h.config.SourceRepositoryURL) > 0 {
+		if err := h.runHelmAdd(h.config.SourceRepositoryName, h.config.SourceRepositoryURL, h.config.SourceRepositoryUser, h.config.SourceRepositoryPassword); err != nil {
+			log.Entry().WithError(err).Fatal("Helm repo call failed")
+		}
+	}
+
 	helmParams := []string{
 		"dependency",
 	}
@@ -376,10 +387,22 @@ func (h *HelmExecute) RunHelmDependency() error {
 		log.Entry().WithError(err).Fatal("Helm dependency call failed")
 	}
 
+	dependencyDir := filepath.Join(h.config.ChartPath, "charts")
+	exists, err := h.utils.DirExists(dependencyDir)
+	if err != nil {
+		return fmt.Errorf("failed to get directory information: %v", err)
+	}
+
+	if exists {
+		if err := h.utils.Chmod(dependencyDir, 0777); err != nil {
+			return fmt.Errorf("failed to change permissions: %v", err)
+		}
+	}
+
 	return nil
 }
 
-//RunHelmPublish is used to upload a chart to a registry
+// RunHelmPublish is used to upload a chart to a registry
 func (h *HelmExecute) RunHelmPublish() (string, error) {
 	err := h.runHelmInit()
 	if err != nil {

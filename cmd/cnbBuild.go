@@ -584,7 +584,7 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
-	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
+	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.9"})
 
 	creatorArgs := []string{
 		"-no-color",
@@ -596,6 +596,10 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 
 	if GeneralConfig.Verbose {
 		creatorArgs = append(creatorArgs, "-log-level", "debug")
+	}
+
+	if config.RunImage != "" {
+		creatorArgs = append(creatorArgs, "-run-image", config.RunImage)
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
