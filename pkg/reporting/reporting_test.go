@@ -1,8 +1,6 @@
 package reporting
 
 import (
-	"io/ioutil"
-	"path/filepath"
 	"testing"
 	"time"
 

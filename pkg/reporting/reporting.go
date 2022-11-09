@@ -7,11 +7,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
-
 	"github.com/pkg/errors"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 // IssueDetail represents any content that can be transformed into the body of a GitHub issue
@@ -432,10 +428,7 @@ func drawCell(cell ScanCell) string {
 }
 
 func shouldDrawTable(table ScanDetailTable) bool {
-	if len(table.Headers) > 0 {
-		return true
-	}
-	return false
+	return len(table.Headers) > 0
 }
 
 func drawOverviewRow(row OverviewRow) string {

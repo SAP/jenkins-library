@@ -72,6 +72,8 @@ func (a *Alert) DependencyType() string {
 func (a *Alert) Title() string {
 	if a.Type == "SECURITY_VULNERABILITY" {
 		return fmt.Sprintf("Security Vulnerability %v %v", a.Vulnerability.Name, a.Library.ArtifactID)
+	} else if a.Type == "REJECTED_BY_POLICY_RESOURCE" {
+		return fmt.Sprintf("Policy Violation %v %v", a.Vulnerability.Name, a.Library.ArtifactID)
 	}
 	return fmt.Sprintf("%v %v %v ", a.Type, a.Vulnerability.Name, a.Library.ArtifactID)
 }
@@ -152,7 +154,9 @@ func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score flo
 
 // ToMarkdown returns the markdown representation of the contents
 func (a *Alert) ToMarkdown() ([]byte, error) {
-	score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
+
+	if a.Type == "SECURITY_VULNERABILITY" {
+		score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 
 	vul := reporting.VulnerabilityReport{
 		ArtifactID: a.Library.ArtifactID,
