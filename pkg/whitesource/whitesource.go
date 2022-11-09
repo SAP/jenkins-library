@@ -158,30 +158,50 @@ func (a *Alert) ToMarkdown() ([]byte, error) {
 	if a.Type == "SECURITY_VULNERABILITY" {
 		score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 
-	vul := reporting.VulnerabilityReport{
-		ArtifactID: a.Library.ArtifactID,
-		// no information available about branch and commit, yet
-		Branch:         "",
-		CommitID:       "",
-		Description:    a.Vulnerability.Description,
-		DependencyType: a.DependencyType(),
-		// no information available about footer, yet
-		Footer: "",
-		Group:  a.Library.GroupID,
-		// no information available about pipeline name and link, yet
-		PipelineName:      "",
-		PipelineLink:      "",
-		PublishDate:       a.Vulnerability.PublishDate,
-		Resolution:        a.Vulnerability.TopFix.FixResolution,
-		Score:             score,
-		Severity:          consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score),
-		Version:           a.Library.Version,
-		PackageURL:        a.Library.ToPackageUrl().ToString(),
-		VulnerabilityLink: a.Vulnerability.URL,
-		VulnerabilityName: a.Vulnerability.Name,
+		vul := reporting.VulnerabilityReport{
+			ArtifactID: a.Library.ArtifactID,
+			// no information available about branch and commit, yet
+			Branch:         "",
+			CommitID:       "",
+			Description:    a.Vulnerability.Description,
+			DependencyType: a.DependencyType(),
+			// no information available about footer, yet
+			Footer: "",
+			Group:  a.Library.GroupID,
+			// no information available about pipeline name and link, yet
+			PipelineName:      "",
+			PipelineLink:      "",
+			PublishDate:       a.Vulnerability.PublishDate,
+			Resolution:        a.Vulnerability.TopFix.FixResolution,
+			Score:             score,
+			Severity:          consolidate(a.Vulnerability.Severity, a.Vulnerability.CVSS3Severity, a.Vulnerability.Score, a.Vulnerability.CVSS3Score),
+			Version:           a.Library.Version,
+			PackageURL:        a.Library.ToPackageUrl().ToString(),
+			VulnerabilityLink: a.Vulnerability.URL,
+			VulnerabilityName: a.Vulnerability.Name,
+		}
+		return vul.ToMarkdown()
+	} else if a.Type == "REJECTED_BY_POLICY_RESOURCE" {
+		policyReport := reporting.PolicyViolationReport{
+			ArtifactID: a.Library.ArtifactID,
+			// no information available about branch and commit, yet
+			Branch:           "",
+			CommitID:         "",
+			Description:      a.Vulnerability.Description,
+			DirectDependency: fmt.Sprint(a.DirectDependency),
+			// no information available about footer, yet
+			Footer: "",
+			Group:  a.Library.GroupID,
+			// no information available about pipeline name and link, yet
+			PipelineName: "",
+			PipelineLink: "",
+			Version:      a.Library.Version,
+			PackageURL:   a.Library.ToPackageUrl().ToString(),
+		}
+		return policyReport.ToMarkdown()
 	}
 
-	return vul.ToMarkdown()
+	return []byte{}, nil
 }
 
 // ToTxt returns the textual representation of the contents
