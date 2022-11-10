@@ -17,35 +17,35 @@ import (
 	"github.com/pkg/errors"
 )
 
-//CommonUtils for CPI
+// CommonUtils for CPI
 type CommonUtils interface {
 	GetBearerToken() (string, error)
 }
 
-//HttpCPIUtils for CPI
+// HttpCPIUtils for CPI
 type HttpCPIUtils interface {
 	HandleHTTPFileDownloadResponse() error
 }
 
-//HTTPUploadUtils for CPI
+// HTTPUploadUtils for CPI
 type HTTPUploadUtils interface {
 	HandleHTTPFileUploadResponse() error
 	HandleHTTPGetRequestResponse() (string, error)
 }
 
-//TokenParameters struct
+// TokenParameters struct
 type TokenParameters struct {
 	TokenURL, Username, Password string
 	Client                       piperhttp.Sender
 }
 
-//HttpParameters struct
+// HttpParameters struct
 type HttpFileDownloadRequestParameters struct {
 	ErrMessage, FileDownloadPath string
 	Response                     *http.Response
 }
 
-//HTTPFileUploadRequestParameters struct
+// HTTPFileUploadRequestParameters struct
 type HttpFileUploadRequestParameters struct {
 	ErrMessage, FilePath, HTTPMethod, HTTPURL, SuccessMessage string
 	Response                                                  *http.Response
