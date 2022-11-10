@@ -44,6 +44,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: additionalMvnParameters
+        type: "[]string"
+        description: List of additional maven parameters to be used for Fortify mvn command execution.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: assignees
         description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.
         scope:

@@ -377,6 +377,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success - no violations", func(t *testing.T) {
+		ctx := context.Background()
 		config := ScanOptions{ProductName: "mock-product", Version: "1"}
 		scan := newWhitesourceScan(&config)
 		if err := scan.AppendScannedProject("testProject1"); err != nil {
@@ -391,7 +392,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		}
 		influx := whitesourceExecuteScanInflux{}
 
-		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
+		path, err := checkPolicyViolations(ctx, &config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.NoError(t, err)
 		assert.Equal(t, filepath.Join(ws.ReportsDirectory, "whitesource-ip.json"), path.Target)
 
@@ -405,6 +406,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 	})
 
 	t.Run("success - no reports", func(t *testing.T) {
+		ctx := context.Background()
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
 		if err := scan.AppendScannedProject("testProject1"); err != nil {
@@ -416,7 +418,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		reportPaths := []piperutils.Path{}
 		influx := whitesourceExecuteScanInflux{}
 
-		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
+		path, err := checkPolicyViolations(ctx, &config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.NoError(t, err)
 
 		fileContent, _ := utilsMock.FileRead(path.Target)
@@ -425,6 +427,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 	})
 
 	t.Run("error - policy violations", func(t *testing.T) {
+		ctx := context.Background()
 		config := ScanOptions{FailOnSevereVulnerabilities: true}
 		scan := newWhitesourceScan(&config)
 		if err := scan.AppendScannedProject("testProject1"); err != nil {
@@ -442,7 +445,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		}
 		influx := whitesourceExecuteScanInflux{}
 
-		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
+		path, err := checkPolicyViolations(ctx, &config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.Contains(t, fmt.Sprint(err), "2 policy violation(s) found")
 
 		fileContent, _ := utilsMock.FileRead(path.Target)
@@ -452,6 +455,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 	})
 
 	t.Run("error - get alerts", func(t *testing.T) {
+		ctx := context.Background()
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
 		if err := scan.AppendScannedProject("testProject1"); err != nil {
@@ -463,11 +467,12 @@ func TestCheckPolicyViolations(t *testing.T) {
 		reportPaths := []piperutils.Path{}
 		influx := whitesourceExecuteScanInflux{}
 
-		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
+		_, err := checkPolicyViolations(ctx, &config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project policy alerts from WhiteSource")
 	})
 
 	t.Run("error - write file", func(t *testing.T) {
+		ctx := context.Background()
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
 		if err := scan.AppendScannedProject("testProject1"); err != nil {
@@ -480,11 +485,12 @@ func TestCheckPolicyViolations(t *testing.T) {
 		reportPaths := []piperutils.Path{}
 		influx := whitesourceExecuteScanInflux{}
 
-		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
+		_, err := checkPolicyViolations(ctx, &config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to write policy violation report:")
 	})
 
 	t.Run("failed to write json report", func(t *testing.T) {
+		ctx := context.Background()
 		config := ScanOptions{ProductName: "mock-product", Version: "1"}
 		scan := newWhitesourceScan(&config)
 		if err := scan.AppendScannedProject("testProject1"); err != nil {
@@ -499,7 +505,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		reportPaths := []piperutils.Path{}
 		influx := whitesourceExecuteScanInflux{}
 
-		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
+		_, err := checkPolicyViolations(ctx, &config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to write json report")
 	})
 }

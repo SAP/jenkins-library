@@ -43,11 +43,11 @@ type SonarLanguageDistribution struct {
 }
 
 func (service *ComponentService) Component(options *MeasuresComponentOption) (*sonargo.MeasuresComponentObject, *http.Response, error) {
-	if len(service.Branch) > 0 {
-		options.Branch = service.Branch
-	}
+	// if PR, ignore branch name and consider PR branch name. If not PR, consider branch name
 	if len(service.PullRequest) > 0 {
 		options.PullRequest = service.PullRequest
+	} else if len(service.Branch) > 0 {
+		options.Branch = service.Branch
 	}
 	request, err := service.apiClient.create("GET", EndpointMeasuresComponent, options)
 	if err != nil {
