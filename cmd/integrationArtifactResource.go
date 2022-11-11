@@ -75,7 +75,7 @@ func runIntegrationArtifactResource(config *integrationArtifactResourceOptions, 
 	}
 }
 
-//UploadIntegrationArtifactResource - Upload new resource file to existing integration flow design time artefact
+// UploadIntegrationArtifactResource - Upload new resource file to existing integration flow design time artefact
 func UploadIntegrationArtifactResource(config *integrationArtifactResourceOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "POST"
 	uploadIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/Resources", apiHost, config.IntegrationFlowID, "Active")
@@ -102,7 +102,7 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 	return HttpResponseHandler(uploadIflowStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
-//UpdateIntegrationArtifactResource - Update integration artifact resource file
+// UpdateIntegrationArtifactResource - Update integration artifact resource file
 func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "PUT"
 	header := make(http.Header)
@@ -133,7 +133,7 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 	return HttpResponseHandler(updateIflowStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
-//DeleteIntegrationArtifactResource - Delete integration artifact resource file
+// DeleteIntegrationArtifactResource - Delete integration artifact resource file
 func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "DELETE"
 	header := make(http.Header)
@@ -160,7 +160,7 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 	return HttpResponseHandler(deleteIflowResourceStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
-//GetJSONPayload -return http payload as byte array
+// GetJSONPayload -return http payload as byte array
 func GetJSONPayload(config *integrationArtifactResourceOptions, mode string, fileUtils piperutils.FileUtils) (*bytes.Buffer, error) {
 	fileContent, readError := fileUtils.FileRead(config.ResourcePath)
 	if readError != nil {
@@ -186,7 +186,7 @@ func GetJSONPayload(config *integrationArtifactResourceOptions, mode string, fil
 	return bytes.NewBuffer(jsonBody), nil
 }
 
-//GetResourceFileExtension -return resource file extension
+// GetResourceFileExtension -return resource file extension
 func GetResourceFileExtension(filename string) string {
 	fileExtension := filepath.Ext(filename)
 	switch fileExtension {
@@ -203,7 +203,7 @@ func GetResourceFileExtension(filename string) string {
 	}
 }
 
-//HttpResponseHandler - handle http response object
+// HttpResponseHandler - handle http response object
 func HttpResponseHandler(resp *http.Response, httpErr error, integrationArtifactResourceData *integrationArtifactResourceData) error {
 
 	if resp != nil && resp.Body != nil {

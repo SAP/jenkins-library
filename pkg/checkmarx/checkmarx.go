@@ -165,7 +165,7 @@ type ShortDescription struct {
 	Text string `json:"shortDescription"`
 }
 
-//DetailedResult - DetailedResult Structure
+// DetailedResult - DetailedResult Structure
 type DetailedResult struct {
 	XMLName                  xml.Name `xml:"CxXMLResults"`
 	InitiatorName            string   `xml:"InitiatorName,attr"`

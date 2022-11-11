@@ -91,7 +91,7 @@ func (c *Command) GetStdout() io.Writer {
 	return c.stdout
 }
 
-//GetStderr Retursn the writer for stderr
+// GetStderr Retursn the writer for stderr
 func (c *Command) GetStderr() io.Writer {
 	return c.stderr
 }
@@ -130,7 +130,8 @@ func (c *Command) RunShell(shell, script string) error {
 
 // RunExecutable runs the specified executable with parameters
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
-//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+//
+//	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	c.prepareOut()
@@ -157,7 +158,8 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 
 // RunExecutableInBackground runs the specified executable with parameters in the background non blocking
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
-//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+//
+//	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutableInBackground(executable string, params ...string) (Execution, error) {
 
 	c.prepareOut()

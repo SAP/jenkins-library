@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//based on https://golang.org/src/os/exec/exec_test.go
+// based on https://golang.org/src/os/exec/exec_test.go
 func helperCommand(command string, s ...string) (cmd *exec.Cmd) {
 	cs := []string{"-test.run=TestHelperProcess", "--", command}
 	cs = append(cs, s...)
@@ -232,8 +232,8 @@ func TestCmdPipes(t *testing.T) {
 	})
 }
 
-//based on https://golang.org/src/os/exec/exec_test.go
-//this is not directly executed
+// based on https://golang.org/src/os/exec/exec_test.go
+// this is not directly executed
 func TestHelperProcess(*testing.T) {
 
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
