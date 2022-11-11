@@ -228,7 +228,7 @@ func TestPnpm(t *testing.T) {
 	pwd = filepath.Dir(pwd)
 
 	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
-	tempDir, err := createTmpDir("")
+	tempDir, err := createTmpDir(t)
 	defer os.RemoveAll(tempDir) // clean up
 	assert.NoError(t, err, "Error when creating temp dir")
 
