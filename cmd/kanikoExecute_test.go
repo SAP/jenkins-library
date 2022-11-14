@@ -351,7 +351,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("Syft/syft", []byte(`echo syft`))
-
+		defer fileUtils.FileRemove("Syft/syft")
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
@@ -483,6 +483,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			DockerConfigJSON:         "path/to/docker/config.json",
 			CreateBOM:                true,
 		}
+
 		certClient := &kanikoMockClient{
 			responseBody: "testCert",
 		}
@@ -497,7 +498,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("Syft/syft", []byte(`echo syft`))
-
+		defer fileUtils.FileRemove("Syft/syft")
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
 		assert.NoError(t, err)
 
@@ -806,7 +807,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("Syft/syft", []byte(`echo syft`))
-
+		defer fileUtils.FileRemove("Syft/syft")
 		// Case 1 - Download of syft installation file failed
 		certClient.errorMessage = "Download failed"
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
