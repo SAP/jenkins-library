@@ -351,7 +351,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("Syft/syft", []byte(`echo syft`))
-
+		defer fileUtils.FileRemove("Syft/syft")
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
@@ -474,87 +474,87 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub2:myTag")
 	})
 
-	// t.Run("success case - multi image build with CreateBOM", func(t *testing.T) {
-	// 	config := &kanikoExecuteOptions{
-	// 		ContainerImageName:       "myImage",
-	// 		ContainerImageTag:        "myTag",
-	// 		ContainerRegistryURL:     "https://my.registry.com:50000",
-	// 		ContainerMultiImageBuild: true,
-	// 		DockerConfigJSON:         "path/to/docker/config.json",
-	// 		CreateBOM:                true,
-	// 	}
-	// 	certClient := &kanikoMockClient{
-	// 		responseBody: "testCert",
-	// 	}
+	t.Run("success case - multi image build with CreateBOM", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			ContainerImageName:       "myImage",
+			ContainerImageTag:        "myTag",
+			ContainerRegistryURL:     "https://my.registry.com:50000",
+			ContainerMultiImageBuild: true,
+			DockerConfigJSON:         "path/to/docker/config.json",
+			CreateBOM:                true,
+		}
+		certClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
 
-	// 	execRunner := &mock.ExecMockRunner{}
-	// 	shellRunner := &mock.ShellMockRunner{}
-	// 	commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
+		execRunner := &mock.ExecMockRunner{}
+		shellRunner := &mock.ShellMockRunner{}
+		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
-	// 	fileUtils := &mock.FilesMock{}
-	// 	fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
-	// 	fileUtils.AddFile("Dockerfile", []byte("some content"))
-	// 	fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
-	// 	fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
-	// 	fileUtils.AddFile("Syft/syft", []byte(`echo syft`))
+		fileUtils := &mock.FilesMock{}
+		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
+		fileUtils.AddFile("Dockerfile", []byte("some content"))
+		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
+		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
+		fileUtils.AddFile("Syft/syft", []byte(`echo syft`))
+		defer fileUtils.FileRemove("Syft/syft")
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		assert.NoError(t, err)
 
-	// 	err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
-	// 	assert.NoError(t, err)
+		assert.Equal(t, 3, len(execRunner.Calls))
+		assert.Equal(t, "/kaniko/executor", execRunner.Calls[0].Exec)
+		assert.Equal(t, "/kaniko/executor", execRunner.Calls[1].Exec)
+		assert.Equal(t, "/kaniko/executor", execRunner.Calls[2].Exec)
 
-	// 	assert.Equal(t, 3, len(execRunner.Calls))
-	// 	assert.Equal(t, "/kaniko/executor", execRunner.Calls[0].Exec)
-	// 	assert.Equal(t, "/kaniko/executor", execRunner.Calls[1].Exec)
-	// 	assert.Equal(t, "/kaniko/executor", execRunner.Calls[2].Exec)
+		cwd, _ := fileUtils.Getwd()
+		expectedParams := [][]string{
+			{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+		}
+		// need to go this way since we cannot count on the correct order
+		for _, call := range execRunner.Calls {
+			found := false
+			for _, expected := range expectedParams {
+				if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, fmt.Sprintf("%v not found", call.Params))
+		}
 
-	// 	cwd, _ := fileUtils.Getwd()
-	// 	expectedParams := [][]string{
-	// 		{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
-	// 		{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-	// 		{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
-	// 	}
-	// 	// need to go this way since we cannot count on the correct order
-	// 	for _, call := range execRunner.Calls {
-	// 		found := false
-	// 		for _, expected := range expectedParams {
-	// 			if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
-	// 				found = true
-	// 				break
-	// 			}
-	// 		}
-	// 		assert.True(t, found, fmt.Sprintf("%v not found", call.Params))
-	// 	}
+		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, "myImage:myTag", commonPipelineEnvironment.container.imageNameTag)
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage-sub1")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage-sub2")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage:myTag")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub1:myTag")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub2:myTag")
 
-	// 	assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
-	// 	assert.Equal(t, "myImage:myTag", commonPipelineEnvironment.container.imageNameTag)
-	// 	assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage")
-	// 	assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage-sub1")
-	// 	assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImage-sub2")
-	// 	assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage:myTag")
-	// 	assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub1:myTag")
-	// 	assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImage-sub2:myTag")
+		assert.Equal(t, "", commonPipelineEnvironment.container.imageDigest)
+		assert.Empty(t, commonPipelineEnvironment.container.imageDigests)
 
-	// 	assert.Equal(t, "", commonPipelineEnvironment.container.imageDigest)
-	// 	assert.Empty(t, commonPipelineEnvironment.container.imageDigests)
+		//Syft install and call, can we do it better without 2 for loops?
+		expectedShellCalls := []string{
+			"mkdir Syft & tar -zxvf syftBinary.tar.gz -C Syft",
+			"Syft/syft my.registry.com:50000/myImage:myTag -o cyclonedx-xml=bom-docker-0.xml",
+			"Syft/syft my.registry.com:50000/myImage-sub1:myTag -o cyclonedx-xml=bom-docker-1.xml",
+			"Syft/syft my.registry.com:50000/myImage-sub2:myTag -o cyclonedx-xml=bom-docker-2.xml",
+		}
+		for _, call := range shellRunner.Calls {
+			found := false
+			for _, expected := range expectedShellCalls {
+				if strings.Contains(call, expected) {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found)
+		}
 
-	// 	//Syft install and call, can we do it better without 2 for loops?
-	// 	expectedShellCalls := []string{
-	// 		"mkdir Syft & tar -zxvf syftBinary.tar.gz -C Syft",
-	// 		"Syft/syft my.registry.com:50000/myImage:myTag -o cyclonedx-xml=bom-docker-0.xml",
-	// 		"Syft/syft my.registry.com:50000/myImage-sub1:myTag -o cyclonedx-xml=bom-docker-1.xml",
-	// 		"Syft/syft my.registry.com:50000/myImage-sub2:myTag -o cyclonedx-xml=bom-docker-2.xml",
-	// 	}
-	// 	for _, call := range shellRunner.Calls {
-	// 		found := false
-	// 		for _, expected := range expectedShellCalls {
-	// 			if strings.Contains(call, expected) {
-	// 				found = true
-	// 				break
-	// 			}
-	// 		}
-	// 		assert.True(t, found)
-	// 	}
-
-	// })
+	})
 
 	t.Run("success case - updating an existing docker config json with addtional credentials", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
@@ -806,7 +806,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("Syft/syft", []byte(`echo syft`))
-
+		defer fileUtils.FileRemove("Syft/syft")
 		// Case 1 - Download of syft installation file failed
 		certClient.errorMessage = "Download failed"
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
