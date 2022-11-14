@@ -556,7 +556,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 	})
 
-	t.Run("success case - updating an existing docker config json with addtional credentials", func(t *testing.T) {
+	t.Run("success case - updating an existing docker config json with addtional credentials ", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImageName:          "myImage",
