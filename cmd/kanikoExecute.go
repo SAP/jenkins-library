@@ -30,7 +30,7 @@ func installSyft(shellRunner command.ShellRunner, fileUtils piperutils.FileUtils
 	if err != nil {
 		return fmt.Errorf("failed to download syft binary: %w", err)
 	}
-	err = shellRunner.RunShell("/busybox/sh", "mkdir Syft & tar -zxvf syftBinary.tar.gz -C Syft")
+	err = shellRunner.RunShell("/busybox/sh", "mkdir Syft && tar -zxvf syftBinary.tar.gz -C Syft")
 	if err != nil {
 		return fmt.Errorf("failed to untar syft: %w", err)
 	}
