@@ -362,7 +362,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)
 
 		//Syft install and call
-		assert.Contains(t, shellRunner.Calls[0], "mkdir Syft & tar -zxvf syftBinary.tar.gz -C Syft")
+		assert.Contains(t, shellRunner.Calls[0], "mkdir Syft && tar -zxvf syftBinary.tar.gz -C Syft")
 		assert.Contains(t, shellRunner.Calls[1], "Syft/syft index.docker.io/myImage:tag -o cyclonedx-xml=bom-docker-0.xml")
 	})
 
@@ -538,7 +538,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		//Syft install and call, can we do it better without 2 for loops?
 		expectedShellCalls := []string{
-			"mkdir Syft & tar -zxvf syftBinary.tar.gz -C Syft",
+			"mkdir Syft && tar -zxvf syftBinary.tar.gz -C Syft",
 			"Syft/syft my.registry.com:50000/myImage:myTag -o cyclonedx-xml=bom-docker-0.xml",
 			"Syft/syft my.registry.com:50000/myImage-sub1:myTag -o cyclonedx-xml=bom-docker-1.xml",
 			"Syft/syft my.registry.com:50000/myImage-sub2:myTag -o cyclonedx-xml=bom-docker-2.xml",
@@ -815,7 +815,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		// Case 2 - Installation of syft failed, using new kanikoMockClient here
 		certClient1 := &kanikoMockClient{}
-		shellRunner.ShouldFailOnCommand = map[string]error{"mkdir Syft & tar -zxvf syftBinary.tar.gz -C Syft": fmt.Errorf("untar failed")}
+		shellRunner.ShouldFailOnCommand = map[string]error{"mkdir Syft && tar -zxvf syftBinary.tar.gz -C Syft": fmt.Errorf("untar failed")}
 		err = runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient1, fileUtils)
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "failed to untar syft")
