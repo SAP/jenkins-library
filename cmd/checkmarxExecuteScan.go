@@ -133,7 +133,7 @@ func runScan(ctx context.Context, config checkmarxExecuteScanOptions, sys checkm
 	if err != nil {
 		return errors.Wrap(err, "error when trying to load project")
 	}
-	if project.Name == projectName {
+	if strings.EqualFold(project.Name, projectName) { // case insensitive string comparison
 		err = presetExistingProject(config, sys, projectName, project)
 		if err != nil {
 			return err
