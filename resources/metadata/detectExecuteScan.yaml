@@ -279,7 +279,7 @@ spec:
       - name: detectTools
         description:
           "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included.
-          For the complete list of possible values, Please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus)"
+          For the complete list of possible values, Please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fpaths.html&_LANG=enus&anchor=detect-tools-included)"
         aliases:
           - name: detect/detectTools
         type: "[]string"
