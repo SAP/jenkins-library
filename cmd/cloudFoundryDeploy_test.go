@@ -492,6 +492,41 @@ func TestCfDeployment(t *testing.T) {
 		}
 	})
 
+	t.Run("get app name from default manifest with cf native deployment", func(t *testing.T) {
+
+		defer cleanup()
+
+		config.DeployTool = "cf_native"
+		config.Manifest = ""
+		config.AppName = ""
+
+		//app name does not need to be set if it can be found in the manifest.yml
+		//manifest name does not need to be set- the default manifest.yml will be used if not set
+		defer prepareDefaultManifestMocking("manifest.yml", []string{"newAppName"})()
+
+		s := mock.ExecMockRunner{}
+
+		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+
+		if assert.NoError(t, err) {
+
+			t.Run("check shell calls", func(t *testing.T) {
+
+				withLoginAndLogout(t, func(t *testing.T) {
+
+					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
+							"push",
+						}},
+					}, s.Calls)
+
+				})
+			})
+		}
+	})
+
 	t.Run("deploy cf native without app name", func(t *testing.T) {
 
 		defer cleanup()
