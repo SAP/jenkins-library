@@ -440,14 +440,20 @@ spec:
             type: blackduck-ip
           - filePattern: "**/toolrun_detectExecute_*.json"
             type: blackduck-ip
-          - filePattern: "**/piper_detect_vulnerability_report.html"
-            type: blackduck-ip
-          - filePattern: "**/detectExecuteScan_oss_*.json"
-            type: blackduck-ip
           - filePattern: "**/piper_detect_policy_violation_report.html"
             type: blackduck-ip
+          - filePattern: "**/*BlackDuck_RiskReport.pdf"
+            type: blackduck-security
           - filePattern: "**/detectExecuteScan_policy_*.json"
-            type: blackduck-ip
+            type: blackduck-security
+          - filePattern: "**/piper_detect_vulnerability_report.html"
+            type: blackduck-security
+          - filePattern: "**/toolrun_detectExecute_*.json"
+            type: blackduck-security
+          - filePattern: "**/piper_detect_vulnerability.sarif"
+            type: blackduck-security
+          - filePattern: "**/piper_hub_detect_sbom.xml"
+            type: blackduck-security
   containers:
     - name: openjdk
       image: openjdk:11
