@@ -436,7 +436,7 @@ spec:
         params:
           - filePattern: "**/*BlackDuck_RiskReport.pdf"
             type: blackduck-ip
-          - filePattern: "blackduck-ip.json"
+          - filePattern: "**/blackduck-ip.json"
             type: blackduck-ip
           - filePattern: "**/toolrun_detectExecute_*.json"
             type: blackduck-ip

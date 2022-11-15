@@ -117,7 +117,7 @@ func (p *detectExecuteScanReports) persist(stepConfig detectExecuteScanOptions, 
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/*BlackDuck_RiskReport.pdf", ParamRef: "", StepResultType: "blackduck-ip"},
-		{FilePattern: "blackduck-ip.json", ParamRef: "", StepResultType: "blackduck-ip"},
+		{FilePattern: "**/blackduck-ip.json", ParamRef: "", StepResultType: "blackduck-ip"},
 		{FilePattern: "**/toolrun_detectExecute_*.json", ParamRef: "", StepResultType: "blackduck-ip"},
 		{FilePattern: "**/piper_detect_policy_violation_report.html", ParamRef: "", StepResultType: "blackduck-ip"},
 		{FilePattern: "**/*BlackDuck_RiskReport.pdf", ParamRef: "", StepResultType: "blackduck-security"},
@@ -669,7 +669,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type: "reports",
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/*BlackDuck_RiskReport.pdf", "type": "blackduck-ip"},
-							{"filePattern": "blackduck-ip.json", "type": "blackduck-ip"},
+							{"filePattern": "**/blackduck-ip.json", "type": "blackduck-ip"},
 							{"filePattern": "**/toolrun_detectExecute_*.json", "type": "blackduck-ip"},
 							{"filePattern": "**/piper_detect_policy_violation_report.html", "type": "blackduck-ip"},
 							{"filePattern": "**/*BlackDuck_RiskReport.pdf", "type": "blackduck-security"},
