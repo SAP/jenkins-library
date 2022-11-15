@@ -86,7 +86,7 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 	return errors.Errorf("Failed to upload API key value map artefact, Response Status code: %v", apiProxyUploadStatusResp.StatusCode)
 }
 
-//createJSONPayload -return http payload as byte array
+// createJSONPayload -return http payload as byte array
 func createJSONPayload(config *apiKeyValueMapUploadOptions) (*bytes.Buffer, error) {
 	jsonObj := gabs.New()
 	jsonObj.Set(config.Key, "name")
