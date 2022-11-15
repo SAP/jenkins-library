@@ -143,8 +143,7 @@ spec:
         description: Mark the current build as fail based on the policy categories applied.
         longDescription: |
           A list of policies can be provided which will be applied after the scan is completed. These policies if violated will mark the build/scan result as failed.
-          The list of accepted values can be found at [Synopsys detect documentation](https://
-          .synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fproject.html&anchor=fail-on-policy-violation-severities&_LANG=enus)
+          The list of accepted values can be found at [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fproject.html&anchor=fail-on-policy-violation-severities&_LANG=enus)
         aliases:
           - name: detect/failOn
         type: "[]string"
