@@ -212,6 +212,9 @@ func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
 	var project checkmarx.Project
 	projectName := initialProjectName
+	if len(initialProjectName) == 0 {
+		return project, projectName, errors.New("You need to provide the Checkmarx project name, projectName parameter is mandatory")
+	}
 	if len(pullRequestName) > 0 {
 		projectName = fmt.Sprintf("%v_%v", initialProjectName, pullRequestName)
 		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
