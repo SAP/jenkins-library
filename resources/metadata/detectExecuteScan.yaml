@@ -143,7 +143,8 @@ spec:
         description: Mark the current build as fail based on the policy categories applied.
         longDescription: |
           A list of policies can be provided which will be applied after the scan is completed. These policies if violated will mark the build/scan result as failed.
-          The list of accepted values can be found at [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fproject.html&anchor=fail-on-policy-violation-severities&_LANG=enus)
+          The list of accepted values can be found at [Synopsys detect documentation](https://
+          .synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fproject.html&anchor=fail-on-policy-violation-severities&_LANG=enus)
         aliases:
           - name: detect/failOn
         type: "[]string"
@@ -247,7 +248,7 @@ spec:
       - name: includedPackageManagers
         description:
           "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder
-          For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus)"
+          For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-included-advanced)"
         aliases:
           - name: detect/includedPackageManagers
         type: "[]string"
@@ -258,7 +259,7 @@ spec:
       - name: excludedPackageManagers
         description:
           "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder
-          For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus)"
+          For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-excluded-advanced)"
         aliases:
           - name: detect/excludedPackageManagers
         type: "[]string"
@@ -290,7 +291,7 @@ spec:
         description:
           "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials
           If the flag is set to false, then the scan request is submitted to server regardless of any changes.
-          For more details please refer to the [documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fblackduck-server.html&_LANG=enus)"
+          For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)"
         type: bool
         scope:
           - PARAMETERS
