@@ -33,7 +33,6 @@ type gradleExecuteBuildOptions struct {
 	ArtifactGroupID               string   `json:"artifactGroupId,omitempty"`
 	ArtifactID                    string   `json:"artifactId,omitempty"`
 	UseWrapper                    bool     `json:"useWrapper,omitempty"`
-	ApplyCreateBOMForAllProjects  bool     `json:"applyCreateBOMForAllProjects,omitempty"`
 	ApplyPublishingForAllProjects bool     `json:"applyPublishingForAllProjects,omitempty"`
 	ExcludeCreateBOMForProjects   []string `json:"excludeCreateBOMForProjects,omitempty"`
 	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
@@ -213,7 +212,6 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringVar(&stepConfig.ArtifactGroupID, "artifactGroupId", os.Getenv("PIPER_artifactGroupId"), "The group of the artifact.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The name of the artifact.")
 	cmd.Flags().BoolVar(&stepConfig.UseWrapper, "useWrapper", false, "If set to false all commands are executed using 'gradle', otherwise 'gradlew' is executed.")
-	cmd.Flags().BoolVar(&stepConfig.ApplyCreateBOMForAllProjects, "applyCreateBOMForAllProjects", false, "If set to false cycloneDX plugin will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used")
 	cmd.Flags().BoolVar(&stepConfig.ApplyPublishingForAllProjects, "applyPublishingForAllProjects", false, "If set to false publishing logic will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludeCreateBOMForProjects, "excludeCreateBOMForProjects", []string{}, "Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
@@ -353,15 +351,6 @@ func gradleExecuteBuildMetadata() config.StepData {
 					},
 					{
 						Name:        "useWrapper",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "applyCreateBOMForAllProjects",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
