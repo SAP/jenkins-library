@@ -115,14 +115,6 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
-      - name: applyCreateBOMForAllProjects
-        type: bool
-        description: If set to false cycloneDX plugin will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used
-        scope:
-          - STEPS
-          - STAGES
-          - PARAMETERS
-        default: false
       - name: applyPublishingForAllProjects
         type: bool
         description: If set to false publishing logic will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used
