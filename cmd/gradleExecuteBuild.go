@@ -85,8 +85,8 @@ initscript {
   }
 }
 
-{{ if .ApplyCreateBOMForAllProjects}}allprojects{{else}}rootProject{{ end }} {
-    def gradleExecuteBuild_skipBOMProjects = [{{ if .ApplyCreateBOMForAllProjects}}{{range .ExcludeCreateBOMForProjects}} "{{.}}",{{end}}{{end}} ];
+allprojects {
+    def gradleExecuteBuild_skipBOMProjects = [{{range .ExcludeCreateBOMForProjects}} "{{.}}",{{end}} ];
     if (!gradleExecuteBuild_skipBOMProjects.contains(project.name)) {
         apply plugin: 'java'
         apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
