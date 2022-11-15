@@ -264,6 +264,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: runImage
+        type: string
+        description: "Base image from which application images are built. Will be defaulted to the image provided by the builder."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
