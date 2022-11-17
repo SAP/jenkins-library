@@ -363,6 +363,7 @@ func (sys *SystemInstance) getAPIToken() (string, error) {
     {{Cx1_IAM}}/auth/admin/realms/{{Cx1_Tenant}}/groups - regular users/oidc clients/api keys?
     {{Cx1_IAM}}/auth/admin/realms/{{Cx1_Tenant}}/groups/:groupId/members - admin API Key only. This actually returns the members of a group
     {{Cx1_IAM}}/auth/admin/realms/{{Cx1_Tenant}}/users/:userid/groups - admin API key only, groups assigned to a user
+    
 */
 // Updated for Cx1
 func (sys *SystemInstance) GetGroups() ([]Group, error) {
