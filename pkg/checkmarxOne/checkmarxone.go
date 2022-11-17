@@ -8,12 +8,10 @@ import (
     "io/ioutil"
     "net/http"
     "net/url"
-    "strconv"
+    //"strconv"
     "strings"
     "time"
-
     "encoding/xml"
-
     piperHttp "github.com/SAP/jenkins-library/pkg/http"
     "github.com/SAP/jenkins-library/pkg/log"
     "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -39,14 +37,14 @@ type AuthToken struct {
 // Preset - Project's Preset
 // Updated for Cx1
 type Preset struct {
-    ID        int    `json:"id"`
+    PresetID        int    `json:"id"`
     Name      string `json:"name"`
 }
 
 // Project - Project Structure
 // Updated for Cx1
 type Project struct {
-    ID                  string              `json:"id"`
+    ProjectID           string              `json:"id"`
     Name                string              `json:"name"`
     CreatedAt           string              `json:"createdAt"`
     UpdatedAt           string              `json:"updatedAt"`
@@ -55,8 +53,22 @@ type Project struct {
     RepoUrl             string              `json:"repoUrl"`
     MainBranch          string              `json:"mainBranch"`
     Origin              string              `json:"origin"`
-    Criticality         int                 `json:"criticality"
+    Criticality         int                 `json:"criticality"`
 }
+
+// New for Cx1
+// These settings are higher-level settings that define how an engine should run, for example "multi-language" mode or setting a preset.
+type ProjectConfigurationSetting struct {
+    Key                 string              `json:"key"`
+    Name                string              `json:"name"`
+    Category            string              `json:"category"`
+    OriginLevel         string              `json:"originLevel"`
+    Value               string              `json:"value"`
+    ValueType           string              `json:"valuetype"`
+    ValueTypeParams     string              `json:"valuetypeparams"`
+    AllowOverride       bool                `json:"allowOverride"`
+}
+
 
 // ReportStatus - ReportStatus Structure
 // Updated for Cx1
@@ -70,9 +82,9 @@ type ReportStatus struct {
 // Scan - Scan Structure
 // updated for Cx1
 type Scan struct {
-    ID   string  `json:"id"`
+    ScanID   string  `json:"id"`
     Status string `json:"status"`
-    StatusDetails []ScanStatusDetails  `json:"statusDetails"
+    StatusDetails []ScanStatusDetails  `json:"statusDetails"`
     Branch string `json:"branch"`
     CreatedAt string `json:"createdAt"`
     UpdatedAt string `json:"updatedAt"`
@@ -92,12 +104,13 @@ type Scan struct {
 
 
 // New for Cx1: ScanConfiguration - list of key:value pairs used to configure the scan for each scan engine
+// This is specifically for scan-level configurations like "is incremental" and scan tags
 type ScanConfiguration struct {
     ScanType string `json:"type"`
     Values map[string]string `json:"value"`
 }
 
-
+/*
 // ScanStatus - ScanStatus Structure
 type ScanStatus struct {
     ID              int    `json:"id"`
@@ -107,7 +120,7 @@ type ScanStatus struct {
     Comment         string `json:"comment"`
     IsIncremental   bool   `json:"isIncremental"`
 }
-
+*/
 
 // Cx1: StatusDetails - details of each engine type's scan status for a multi-engine scan
 type ScanStatusDetails struct {
@@ -116,24 +129,17 @@ type ScanStatusDetails struct {
     Details         string `json:"details"`
 }
 
-
-type ShortDescription struct {
-    Text string `json:"shortDescription"`
-}
-
-
 // Status - Status Structure
 type Status struct {
-    ID      int              `json:"id"`
-    Name    string           `json:"name"`
-    Details ScanStatusDetail `json:"details"`
+    ID      int                 `json:"id"`
+    Name    string              `json:"name"`
+    Details ScanStatusDetails   `json:"details"`
 }
 
 
-
-// Cx1 Group/Team - Team Structure
-type Team struct {
-    ID          string              `json:"id"`
+// Cx1 Group/Group - Group Structure
+type Group struct {
+    GroupID          string              `json:"id"`
     Name        string              `json:"name"`
 }
 
@@ -167,29 +173,31 @@ type SystemInstance struct {
 
 // System is the interface abstraction of a specific SystemIns
 type System interface {
-    FilterPresetByName(presets []Preset, presetName string) Preset
-    FilterPresetByID(presets []Preset, presetID int) Preset
-    FilterProjectByName(projects []Project, projectName string) Project
-    FilterTeamByName(teams []Team, teamName string) (Team, error)
-    FilterTeamByID(teams []Team, teamID json.RawMessage) Team
-    DownloadReport(reportID int) ([]byte, error)
-    GetReportStatus(reportID int) (ReportStatusResponse, error)
-    RequestNewReport(scanID int, reportType string) (Report, error)
-    GetResults(scanID int) ResultsStatistics
-    GetScanStatusAndDetail(scanID int) (string, ScanStatusDetail)
-    GetScans(projectID string) ([]ScanStatus, error)
-    ScanProject(projectID string, isIncremental, isPublic, forceScan bool) (Scan, error)
-    UpdateProjectConfiguration(projectID string, presetID int, engineConfigurationID string) error
-    UpdateProjectExcludeSettings(projectID string, excludeFolders string, excludeFiles string) error
-    UploadAndScanProjectSourceCode(projectID string, zipFile string) (RunningScan, error)
-    CreateProject(projectName, teamID string) (ProjectCreateResult, error)
-    CreateBranch(projectID string, branchName string) int
-    GetPresets() []Preset
+    //FilterPresetByName(presets []Preset, presetName string) Preset
+    //FilterPresetByID(presets []Preset, presetID int) Preset
+    //FilterProjectByName(projects []Project, projectName string) Project
+    //FilterGroupByName(groups []Group, groupName string) (Group, error)
+    //FilterGroupByID(groups []Group, groupID json.RawMessage) Group
+    //DownloadReport(reportID int) ([]byte, error)
+    //GetReportStatus(reportID int) (ReportStatusResponse, error)
+    //RequestNewReport(scanID int, reportType string) (Report, error)
+    //GetResults(scanID int) ResultsStatistics
+    //GetScanStatusAndDetail(scanID int) (string, ScanStatusDetail)
+    GetScans(projectID string) ([]Scan, error)
+    //ScanProject(projectID string, isIncremental, isPublic, forceScan bool) (Scan, error)
+    //UpdateProjectConfiguration(projectID string, presetID int, engineConfigurationID string) error
+    //UpdateProjectExcludeSettings(projectID string, excludeFolders string, excludeFiles string) error
+    UploadAndScanProjectSourceCode(projectID string, zipFile string) (Scan, error)
+    UploadProjectSourceCode(projectID string, zipFile string) (string, error)
+    CreateProject(projectName string, groupIDs []string) (Project, error)
+    //CreateBranch(projectID string, branchName string) int
+    GetPresets() ([]Preset, error)
     GetProjectByID(projectID string) (Project, error)
-    GetProjectsByNameAndTeam(projectName, teamID string) ([]Project, error)
+    GetProjectsByNameAndGroup(projectName, groupID string) ([]Project, error)
     GetProjects() ([]Project, error)
-    GetShortDescription(scanID int, pathID int) (ShortDescription, error)
-    GetTeams() []Team
+    //GetShortDescription(scanID int, pathID int) (ShortDescription, error)
+    GetGroups() ([]Group, error)
+    GetGroupByName( groupName string ) (Group, error)
 }
 
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
@@ -200,7 +208,7 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
         serverURL: serverURL,
         iamURL: iamURL,
         tenant: tenant,
-        APIKey: APIkey,
+        APIKey: APIKey,
         oauth_client_id: client_id,
         oauth_client_secret: client_secret,
         client:    client,
@@ -208,14 +216,15 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
     }
 
     var token string
+    var err error
     
     if APIKey != "" {
-        token, err := sys.getAPIToken()
+        token, err = sys.getAPIToken()
         if err != nil {
             return sys, errors.Wrap(err, "Error fetching oAuth token using API Key")
         }
     } else {
-        token, err := sys.getOAuth2Token()
+        token, err = sys.getOAuth2Token()
         if err != nil {
             return sys, errors.Wrap(err, "Error fetching oAuth token using OIDC client")
         }
@@ -242,9 +251,9 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
     {{Cx1_URL}}/api/presets?limit=100
 */
 // Updated for Cx1
-func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header) ([]byte, error) {
+func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header, acceptedErrorCodes []int ) ([]byte, error) {
     cx1url := fmt.Sprintf("%v/api%v", sys.serverURL, url)
-    return sendRequestInternal(sys, method, cx1url, body, header, []int{})
+    return sendRequestInternal(sys, method, cx1url, body, header, acceptedErrorCodes )
 }
 
 /*
@@ -259,9 +268,9 @@ func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header
     Note: some have /auth/admin, others just /auth
 */
 // Updated for Cx1
-func sendRequestIAM(sys *SystemInstance, method, base, url string, body io.Reader, header http.Header) ([]byte, error) {
+func sendRequestIAM(sys *SystemInstance, method, base, url string, body io.Reader, header http.Header, acceptedErrorCodes []int ) ([]byte, error) {
     iamurl := fmt.Sprintf("%v%v/realms/%v/api%v", sys.iamURL, base, sys.tenant, url)
-    return sendRequestInternal(sys, method, url, body, header, []int{})
+    return sendRequestInternal(sys, method, iamurl, body, header, acceptedErrorCodes)
 }
 
 // Updated for Cx1
@@ -318,7 +327,7 @@ func (sys *SystemInstance) getOAuth2Token() (string, error) {
     }
     header := http.Header{}
     header.Add("Content-type", "application/x-www-form-urlencoded")
-    data, err := sendRequest(sys, http.MethodPost, "/auth/identity/connect/token", strings.NewReader(body.Encode()), header)
+    data, err := sendRequest(sys, http.MethodPost, "/auth/identity/connect/token", strings.NewReader(body.Encode()), header, []int{})
     if err != nil {
         return "", err
     }
@@ -337,7 +346,7 @@ func (sys *SystemInstance) getAPIToken() (string, error) {
     }
     header := http.Header{}
     header.Add("Content-type", "application/x-www-form-urlencoded")
-    data, err := sendRequest(sys, http.MethodPost, "/auth/identity/connect/token", strings.NewReader(body.Encode()), header)
+    data, err := sendRequest(sys, http.MethodPost, "/auth/identity/connect/token", strings.NewReader(body.Encode()), header, []int{})
     if err != nil {
         return "", err
     }
@@ -347,8 +356,8 @@ func (sys *SystemInstance) getAPIToken() (string, error) {
     return token.TokenType + " " + token.AccessToken, nil
 }
 
-// GetTeams returns the teams the user is assigned to
-// TODO: This functionality doesn't seem to work correctly in Cx1 yet, returns all teams
+// GetGroups returns the groups the user is assigned to
+// TODO: This functionality doesn't seem to work correctly in Cx1 yet, returns all groups
 /*
     {{Cx1_IAM}}/auth/realms/{{Cx1_Tenant}}/pip/groups  - regular users/oidc clients/api keys
     {{Cx1_IAM}}/auth/admin/realms/{{Cx1_Tenant}}/groups - regular users/oidc clients/api keys?
@@ -356,24 +365,67 @@ func (sys *SystemInstance) getAPIToken() (string, error) {
     {{Cx1_IAM}}/auth/admin/realms/{{Cx1_Tenant}}/users/:userid/groups - admin API key only, groups assigned to a user
 */
 // Updated for Cx1
-func (sys *SystemInstance) GetTeams() []Team {
-    sys.logger.Debug("Getting Teams...")
-    var teams []Team
+func (sys *SystemInstance) GetGroups() ([]Group, error) {
+    sys.logger.Debug("Getting Groups...")
+    var groups []Group
 
 
-    data, err := sendRequestIAM(sys, http.MethodGet, "/auth", "/pip/groups", nil, nil)
+    data, err := sendRequestIAM(sys, http.MethodGet, "/auth", "/pip/groups", nil, nil, []int{})
     if err != nil {
-        sys.logger.Errorf("Fetching teams failed: %s", err)
-        return teams
+        sys.logger.Errorf("Fetching groups failed: %s", err)
+        return groups, err
     }
 
-    json.Unmarshal(data, &teams)
-    return teams
+    err = json.Unmarshal(data, &groups)
+    if err != nil {
+        sys.logger.Errorf("Fetching groups failed: %s", err)
+        return groups, err
+    }
+
+    return groups, nil
 }
+
+// New for Cx1
+func (sys *SystemInstance) GetGroupByName( groupName string ) (Group, error) {
+    sys.logger.Debug("Getting Group named %v...", groupName)
+    var groups []Group
+
+    body := url.Values {
+        "briefRepresentation" : {"true"},
+        "search": {groupName},
+    }
+
+    data, err := sendRequestIAM(sys, http.MethodGet, "/auth/admin", "/groups?%v", strings.NewReader(body.Encode()), nil, nil)
+    if err != nil {
+        sys.logger.Errorf("Fetching groups failed: %s", err)
+        return Group{}, err
+    }
+
+    err = json.Unmarshal(data, &groups)
+    if err != nil {
+        sys.logger.Errorf("Fetching groups failed: %s", err)
+        return Group{}, err
+    }
+
+    if len(groups) == 0 {
+        err := errors.New("No matching group found")
+        sys.logger.Errorf( "Error fetching group: %s", err )
+        return Group{}, err
+    }
+
+    if len(groups) > 1 {
+        err := errors.New( "Multiple matching groups found, returning the first match" )
+        sys.logger.Errorf("Error fetching group: %s", err )
+        return groups[0], err
+    }
+
+    return groups[0], nil
+}
+
 
 // GetProjects returns the projects defined in the Checkmarx backend which the user has access to
 func (sys *SystemInstance) GetProjects() ([]Project, error) {
-    return sys.GetProjectsByNameAndTeam("", "")
+    return sys.GetProjectsByNameAndGroup("", "")
 }
 
 // GetProjectByID returns the project addressed by projectID from the Checkmarx backend which the user has access to
@@ -382,97 +434,73 @@ func (sys *SystemInstance) GetProjectByID(projectID string) (Project, error) {
     sys.logger.Debugf("Getting Project with ID %v...", projectID)
     var project Project
 
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/%v", projectID), nil, nil)
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/%v", projectID), nil, nil, []int{})
     if err != nil {
         return project, errors.Wrapf(err, "fetching project %v failed", projectID)
     }
 
-    json.Unmarshal(data, &project)
-    return project, nil
+    err = json.Unmarshal(data, &project)
+    return project, err
 }
 
-// GetProjectsByNameAndTeam returns the project addressed by projectID from the Checkmarx backend which the user has access to
+// GetProjectsByNameAndGroup returns the project addressed by projectID from the Checkmarx backend which the user has access to
 // Updated for Cx1
-func (sys *SystemInstance) GetProjectsByNameAndTeam(projectName, teamID string) ([]Project, error) {
-    sys.logger.Debugf("Getting projects with name %v of team %v...", projectName, teamID)
+func (sys *SystemInstance) GetProjectsByNameAndGroup(projectName, groupID string) ([]Project, error) {
+    sys.logger.Debugf("Getting projects with name %v of group %v...", projectName, groupID)
     var projects []Project
     header := http.Header{}
     header.Set("Accept-Type", "application/json")
     var data []byte
     var err error
-    if len(teamID) > 0 && len(projectName) > 0 {
-        body := url.Values{
-            "name": {projectName},
-            "groups":      {teamID},
-        }
-        data, err = sendRequestInternal(sys, http.MethodGet, fmt.Sprintf("/projects?%v", body.Encode()), nil, header, []int{404})
+
+    body := url.Values{}
+    if len(groupID) > 0 {
+        body.Add( "groups", groupID )
+    }
+    if len(projectName) > 0 {
+        body.Add( "name", projectName )
+    }
+
+    if len(body) > 0 {
+        data, err = sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/?%v", body.Encode()), nil, header, []int{404})
     } else {
-        data, err = sendRequestInternal(sys, http.MethodGet, "/projects", nil, header, []int{404})
+        data, err = sendRequest(sys, http.MethodGet, "/projects/", nil, header, []int{404})
     }
     if err != nil {
         return projects, errors.Wrapf(err, "fetching project %v failed", projectName)
     }
 
-    json.Unmarshal(data, &projects)
-    return projects, nil
+    err = json.Unmarshal(data, &projects)
+    return projects, err
 }
 
 // CreateProject creates a new project in the Checkmarx backend
 // Updated for Cx1
-func (sys *SystemInstance) CreateProject(projectName, teamID string) (ProjectCreateResult, error) {
-    var result ProjectCreateResult
+func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) (Project, error) {
+    var project Project
     jsonData := map[string]interface{}{
-        "name":       projectName,
-        "groups": []string( teamID ),
+        "name":   projectName,
+        "groups": groupIDs,
         "origin": cxOrigin,
-        "criticality": 3 // default
+        "criticality": 3, // default
         // multiple additional parameters exist as options
     }
 
     jsonValue, err := json.Marshal(jsonData)
     if err != nil {
-        return result, errors.Wrapf(err, "failed to marshal project data")
+        return project, errors.Wrapf(err, "failed to marshal project data")
     }
 
     header := http.Header{}
     header.Set("Content-Type", "application/json")
 
-    data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header)
+    data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
-        return result, errors.Wrapf(err, "failed to create project %v", projectName)
+        return project, errors.Wrapf(err, "failed to create project %v", projectName)
     }
 
-    json.Unmarshal(data, &result)
-    return result, nil
-}
-
-// CreateBranch creates a branch of an existing project in the Checkmarx backend
-// This behaves differently in Cx1 - there is one project that contains multiple branches which are stored automatically based on scanning those branches
-// TODO
-func (sys *SystemInstance) CreateBranch(projectID string, branchName string) string {
-/*    jsonData := map[string]interface{}{
-        "name": branchName,
-    }
-
-    jsonValue, err := json.Marshal(jsonData)
-    if err != nil {
-        sys.logger.Errorf("Error Marshal: %s", err)
-        return 0
-    }
-
-    header := http.Header{}
-    header.Set("Content-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("/projects/%v/branch", projectID), bytes.NewBuffer(jsonValue), header)
-    if err != nil {
-        sys.logger.Errorf("Failed to create project: %s", err)
-        return 0
-    }
-
-    var scan Scan
-
-    json.Unmarshal(data, &scan)
-    return scan.ID*/
-    return "Not implemented"
+    err = json.Unmarshal(data, &project)
+    return project, err
 }
 
 // New for Cx1
@@ -480,23 +508,38 @@ func (sys *SystemInstance) GetUploadURI() (string,error) {
     sys.logger.Debug("Retrieving upload URI")
     header := http.Header{}
     header.Set("Content-Type", "application/json")
-    resp, err := sendRequest(sys, http.MethodPost, "/uploads", nil, header)
+    resp, err := sendRequest(sys, http.MethodPost, "/uploads", nil, header, []int{})
+    
     if err != nil {
         return "", errors.Wrap(err, "failed to get an upload uri")
     }
 
-    data, err := ioutil.ReadAll(resp.Body)
-    defer resp.Body.Close()
-    if err != nil {
-        return "", errors.Wrap(err, "error reading the response data")
-    }
-
     responseData := make(map[string]string)
-    json.Unmarshal( data, &responseData )
-    sys.logger.Debugf("Upload URI %s", data)
+    json.Unmarshal( resp, &responseData )
+    sys.logger.Debugf("Upload URI %s", responseData["url"] )
 
     return responseData["url"], nil
 }
+
+func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile string) (string, error) {
+    sys.logger.Debug("Preparing to upload file...")
+
+    // get URI
+    uploadUri, err := sys.GetUploadURI()
+    if err != nil {
+        return "", err
+    }
+
+    // PUT request to uri
+    // TODO - does this work?
+    _, err = sendRequest(sys, http.MethodPut, uploadUri, strings.NewReader(zipFile), nil, []int{})
+    if err != nil {
+        return uploadUri, err
+    }
+
+    return uploadUri, nil
+}
+
 
 // Originally: func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile string) (string, error) 
 // For Cx1: updated as there is no "per-project upload" anymore, high level steps are:
@@ -504,35 +547,11 @@ func (sys *SystemInstance) GetUploadURI() (string,error) {
 //  2. PUT a file there
 //  3. Tell Cx1 to start a scan for a project using this uploaded file
 // New for Cx1
-func (sys *SystemInstance) UploadAndScanProjectSourceCode(projectID string, zipFile string) (RunningScan, error) {
-    sys.logger.Debug("Preparing to upload file...")
-    scan := RunningScan{}
-
-    // get URI
-    uploadUri, err := sys.GetUploadURI()
+func (sys *SystemInstance) UploadAndScanProjectSourceCode(projectID string, zipFile string) (Scan, error) {
+    scan := Scan{}
+    uploadUri, err := sys.UploadProjectSourceCode(projectID, zipFile)
     if err != nil {
         return scan, err
-    }
-
-    // PUT request to uri
-    // TODO - does this work?
-    resp, err = sendRequest(sys, http.MethodPut, uploadUri, zipFile, nil)
-    if err != nil {
-        return scan, err
-    }
-
-    if resp.StatusCode != http.StatusOK {
-        data, err := ioutil.ReadAll(resp.Body)
-        defer resp.Body.Close()
-        if err != nil {
-            return scan, errors.Wrap(err, "error reading the response data")
-        }
-
-        responseData := make(map[string]string)
-        json.Unmarshal(data, &responseData)
-
-        sys.logger.Debugf("Body %s", data)
-        return scan, errors.Wrapf(err, "error writing the request's body, status: %s", resp.Status)
     }
 
     // Run a scan
@@ -557,13 +576,13 @@ func (sys *SystemInstance) UploadAndScanProjectSourceCode(projectID string, zipF
     
     header := http.Header{}
     header.Set("Content-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodPost, "/scans", bytes.NewBuffer(jsonValue), header)
+    data, err := sendRequest(sys, http.MethodPost, "/scans", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
-        return scan, errors.Wrapf(err, "failed to start a scan with project %v and url %v", projectId, uploadUri )
+        return scan, errors.Wrapf(err, "failed to start a scan with project %v and url %v", projectID, uploadUri )
     }
 
-    json.Unmarshal(data, &scan)
-    return scan, nil
+    err = json.Unmarshal(data, &scan)
+    return scan, err
 
 }
 
@@ -582,7 +601,7 @@ func (sys *SystemInstance) UpdateProjectExcludeSettings(projectID string, exclud
 
     header := http.Header{}
     header.Set("Content-Type", "application/json")
-    _, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/projects/%v/sourceCode/excludeSettings", projectID), bytes.NewBuffer(jsonValue), header)
+    _, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/projects/%v/sourceCode/excludeSettings", projectID), bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
         return errors.Wrap(err, "request to checkmarx system failed")
     }*/
@@ -590,32 +609,40 @@ func (sys *SystemInstance) UpdateProjectExcludeSettings(projectID string, exclud
     return nil
 }
 
-// GetPresets loads the preset values defined in the Checkmarx backend
-// TODO
-func (sys *SystemInstance) GetPresets() []Preset {
+// Updated for Cx1: GetPresets loads the preset values defined in the Checkmarx backend
+func (sys *SystemInstance) GetPresets() ([]Preset,error) {
     sys.logger.Debug("Getting Presets...")
     var presets []Preset
 
-    data, err := sendRequest(sys, http.MethodGet, "/sast/presets", nil, nil)
+    data, err := sendRequest(sys, http.MethodGet, "/queries/presets", nil, nil, []int{})
     if err != nil {
         sys.logger.Errorf("Fetching presets failed: %s", err)
-        return presets
+        return presets, err
     }
 
-    json.Unmarshal(data, &presets)
-    return presets
+    err = json.Unmarshal(data, &presets)
+    return presets, err
 }
 
 // UpdateProjectConfiguration updates the configuration of the project addressed by projectID
 // TODO
 // unclear if this is still relevant? need to investigate usage.
 func (sys *SystemInstance) UpdateProjectConfiguration(projectID string, presetID int, engineConfigurationID string) error {
+    /*
+        This behaves differently in Cx1. Configurations like the "Multi-Language Scan Mode" and the Preset are one of the 
+            configurations returned by the /api/configurations/projects/?project-id=
+            This returns an array of object 
+
+
+    */
+
+
     /*engineConfigID, _ := strconv.Atoi(engineConfigurationID)
 
     var projectScanSettings ScanSettings
     header := http.Header{}
     header.Set("Content-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scanSettings/%v", projectID), nil, header)
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scanSettings/%v", projectID), nil, header, []int{})
     if err != nil {
         // if an error happens, try to update the config anyway
         sys.logger.Warnf("Failed to fetch scan settings of project %v: %s", projectID, err)
@@ -639,7 +666,7 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID string, presetID
         return errors.Wrapf(err, "error marshalling project data")
     }
 
-    _, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), header)
+    _, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
         return errors.Wrapf(err, "request to checkmarx system failed")
     }
@@ -672,8 +699,8 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID string, presetID
     ]
 }
 */
-func (sys *SystemInstance) ScanProject(projectID string, isIncremental, isPublic, forceScan bool) (RunningScan, error) {
-    scan := RunningScan{}
+func (sys *SystemInstance) ScanProject(projectID string, isIncremental, isPublic, forceScan bool) (Scan, error) {
+    scan := Scan{}
 
     /*
     jsonData := map[string]interface{}{
@@ -689,7 +716,7 @@ func (sys *SystemInstance) ScanProject(projectID string, isIncremental, isPublic
     header := http.Header{}
     header.Set("cxOrigin", cxOrigin)
     header.Set("Content-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodPost, "/sast/scans", bytes.NewBuffer(jsonValue), header)
+    data, err := sendRequest(sys, http.MethodPost, "/sast/scans", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
         sys.logger.Errorf("Failed to trigger scan of project %v: %s", projectID, err)
         return scan, errors.Wrapf(err, "Failed to trigger scan of project %v", projectID)
@@ -701,18 +728,18 @@ func (sys *SystemInstance) ScanProject(projectID string, isIncremental, isPublic
 
 // GetScans returns all scan status on the project addressed by projectID
 // Partially updated for Cx1 but the data structure to store the response is not yet fully defined
-func (sys *SystemInstance) GetScans(projectID string) ([]ScanStatus, error) {
-    scans := []ScanStatus{}
+func (sys *SystemInstance) GetScans(projectID string) ([]Scan, error) {
+    scans := []Scan{}
     body := url.Values{
         "projectId": {projectID},
         "offset":     {fmt.Sprintf("%v",0)},
         "limit":      {fmt.Sprintf("%v", 20)},
-        "sort":        {"+created_at"}
+        "sort":        {"+created_at"},
     }
 
     header := http.Header{}
     header.Set("Accept-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans?%v", body.Encode()), nil, header)
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans?%v", body.Encode()), nil, header, []int{})
     if err != nil {
         sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
         return scans, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
@@ -724,11 +751,12 @@ func (sys *SystemInstance) GetScans(projectID string) ([]ScanStatus, error) {
 
 // GetScanStatusAndDetail returns the status of the scan addressed by scanID
 // Partially updated for Cx1 but the data structure to store the response is not yet fully defined
+/*
 func (sys *SystemInstance) GetScanStatusAndDetail(scanID string) (string, ScanStatusDetail) {
     var scanStatus ScanStatus
     header := http.Header{}
     header.Set("Accept-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/%v", scanID), nil, header)
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/%v", scanID), nil, header, []int{})
     if err != nil {
         sys.logger.Errorf("Failed to get scan status for scanID %v: %s", scanID, err)
         return "Failed", ScanStatusDetail{}
@@ -736,7 +764,7 @@ func (sys *SystemInstance) GetScanStatusAndDetail(scanID string) (string, ScanSt
 
     json.Unmarshal(data, &scanStatus)
     return scanStatus.Status.Name, scanStatus.Status.Details //TODO after creating ScanStatus type
-}
+}/
 
 // GetResults returns the results of the scan addressed by scanID
 // Two options:
@@ -778,10 +806,7 @@ func (sys *SystemInstance) RequestNewReport(scanID string, reportType string) (R
             ],
             "host": ""
         }
-    }
-    */
-
-    /*
+    } // *//*
     jsonData := map[string]interface{}{
         "scanId":     scanID,
         "reportType": reportType,
@@ -793,23 +818,24 @@ func (sys *SystemInstance) RequestNewReport(scanID string, reportType string) (R
     header := http.Header{}
     header.Set("cxOrigin", cxOrigin)
     header.Set("Content-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodPost, "/reports", bytes.NewBuffer(jsonValue), header)
+    data, err := sendRequest(sys, http.MethodPost, "/reports", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
         return report, errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
     }
 
-    json.Unmarshal(data, &report) */
+    json.Unmarshal(data, &report) 
     return report, nil
 }
-
+*/
 // GetReportStatus returns the status of the report generation process
 // TODO - request is sent but the response is not yet stored, "ReportStatusResponse" structure not yet fully defined
+/*
 func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, error) {
     var response ReportStatusResponse
 
     header := http.Header{}
     header.Set("Accept", "application/json")
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v", reportID), nil, header)
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v", reportID), nil, header, []int{})
     if err != nil {
         sys.logger.Errorf("Failed to fetch report status for reportID %v: %s", reportID, err)
         return response, errors.Wrapf(err, "failed to fetch report status for reportID %v", reportID)
@@ -817,10 +843,11 @@ func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, 
 
     json.Unmarshal(data, &response)
     return response, nil
-}
+}*/
 
 // GetShortDescription returns the short description for an issue with a scanID and pathID
 // TODO - I believe this is quite different in Cx1 as it is a per-query description rather than using the specific Scan & Path ID.
+/*
 func (sys *SystemInstance) GetShortDescription(scanID int, pathID int) (ShortDescription, error) {
     var shortDescription ShortDescription
 
@@ -832,76 +859,16 @@ func (sys *SystemInstance) GetShortDescription(scanID int, pathID int) (ShortDes
 
     json.Unmarshal(data, &shortDescription)
     return shortDescription, nil
-}
+} */
 
 // DownloadReport downloads the report addressed by reportID and returns the XML contents
 // TODO
 func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
     header := http.Header{}
     header.Set("Accept", "application/json")
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v", reportID), nil, header)
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v", reportID), nil, header, []int{})
     if err != nil {
         return []byte{}, errors.Wrapf(err, "failed to download report with reportID %v", reportID)
     }
     return data, nil
 }
-
-// FilterTeamByName filters a team by its name
-// TODO
-func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) (Team, error) {
-    /*for _, team := range teams {
-        if team.FullName == teamName || team.FullName == strings.ReplaceAll(teamName, `\`, `/`) {
-            return team, nil
-        }
-    }*/
-    return Team{}, errors.New("Failed to find team with name " + teamName)
-}
-
-// FilterTeamByID filters a team by its ID
-// TODO
-func (sys *SystemInstance) FilterTeamByID(teams []Team, teamID json.RawMessage) Team {
-    /*teamIDBytes1, _ := teamID.MarshalJSON()
-    for _, team := range teams {
-        teamIDBytes2, _ := team.ID.MarshalJSON()
-        if bytes.Compare(teamIDBytes1, teamIDBytes2) == 0 {
-            return team
-        }
-    }*/
-    return Team{}
-}
-
-
-// TODO: evaluate the purpose of these filter functions, there should be equivalent "search" parameters in the API
-
-/*
-// FilterProjectByName filters a project by its name
-func (sys *SystemInstance) FilterProjectByName(projects []Project, projectName string) Project {
-    for _, project := range projects {
-        if project.Name == projectName {
-            sys.logger.Debugf("Filtered project with name %v", project.Name)
-            return project
-        }
-    }
-    return Project{}
-}
-
-// FilterPresetByName filters a preset by its name
-func (sys *SystemInstance) FilterPresetByName(presets []Preset, presetName string) Preset {
-    for _, preset := range presets {
-        if preset.Name == presetName {
-            return preset
-        }
-    }
-    return Preset{}
-}
-
-// FilterPresetByID filters a preset by its name
-func (sys *SystemInstance) FilterPresetByID(presets []Preset, presetID int) Preset {
-    for _, preset := range presets {
-        if preset.ID == presetID {
-            return preset
-        }
-    }
-    return Preset{}
-}
-*/
