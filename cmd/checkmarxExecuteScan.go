@@ -227,7 +227,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 			if err != nil {
 				return project, projectName, fmt.Errorf("failed to create branch %v for project %v", projectName, initialProjectName)
 			}
-			project = branchProject 
+			project = branchProject
 		} else {
 			project = projects[0]
 			log.Entry().Debugf("Loaded project with name %v", project.Name)
