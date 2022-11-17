@@ -3,11 +3,11 @@ package cmd
 import (
 	"archive/zip"
 	"context"
-//	"encoding/json"
-//	"encoding/xml"
+	//	"encoding/json"
+	//	"encoding/xml"
 	"fmt"
 	"io"
-//	"math"
+	//	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -21,12 +21,11 @@ import (
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-//	"github.com/SAP/jenkins-library/pkg/reporting"
+	//	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
-
 	"github.com/google/go-github/v45/github"
 )
 
@@ -111,6 +110,7 @@ func checkmarxoneExecuteScan(config checkmarxoneExecuteScanOptions, _ *telemetry
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 
+
 	// Updated for Cx1: serverURL, iamURL, tenant, APIKey, client_id, client_secret string
 	// This handles the authentication based on the provided configuration.
 	// Priority is: First use the APIKey if present, otherwise use the ClientID + Secret
@@ -119,7 +119,7 @@ func checkmarxoneExecuteScan(config checkmarxoneExecuteScanOptions, _ *telemetry
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx One client talking to URLs %v and %v with tenant %v", config.ServerURL, config.IamURL, config.Tenant)
 	}
-	influx.step_data.fields.checkmarxone = false
+	//influx.step_data.fields.checkmarxone = false
 	utils := newCheckmarxOneExecuteScanUtilsBundle("./", ghClient)
 
 	cx1scanhelper := checkmarxoneExecuteScanHelper{}
@@ -127,7 +127,7 @@ func checkmarxoneExecuteScan(config checkmarxoneExecuteScanOptions, _ *telemetry
 	if err := cx1scanhelper.RunScan(ctx, config, sys, influx, utils); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx One scan.")
 	}
-	influx.step_data.fields.checkmarxone = true
+	//influx.step_data.fields.checkmarxone = true
 }
 
 // Updated for Cx1
@@ -220,7 +220,6 @@ func (cx1sh *checkmarxoneExecuteScanHelper) loadExistingProject(sys checkmarxone
 	var project checkmarxone.Project
 	projectName := initialProjectName
 
-
 	/*if len(pullRequestName) > 0 {
 		projectName = fmt.Sprintf("%v_%v", initialProjectName, pullRequestName)
 		projects, err := sys.GetProjectsByNameAndGroup(projectName, groupID)
@@ -243,27 +242,27 @@ func (cx1sh *checkmarxoneExecuteScanHelper) loadExistingProject(sys checkmarxone
 		}
 	} else { */
 
-    projects, err := sys.GetProjectsByNameAndGroup(projectName, groupID)
-    if err != nil {
-        return project, projectName, errors.Wrap(err, "failed getting projects")
-    }
-    if len(projects) == 0 {
-        return checkmarxone.Project{}, projectName, nil
-    }
-    if len(projects) == 1 {
-        project = projects[0]
-    } else {
-        for _, current_project := range projects {
-            if projectName == current_project.Name {
-                project = current_project
-                break
-            }
-        }
-        if len(project.Name) == 0 {
-            return project, projectName, errors.New("Cannot find project " + projectName + ". You need to provide the groupName parameter if you want a new project to be created.")
-        }
-    }
-    log.Entry().Debugf("Loaded project with name %v", project.Name)
+	projects, err := sys.GetProjectsByNameAndGroup(projectName, groupID)
+	if err != nil {
+		return project, projectName, errors.Wrap(err, "failed getting projects")
+	}
+	if len(projects) == 0 {
+		return checkmarxone.Project{}, projectName, nil
+	}
+	if len(projects) == 1 {
+		project = projects[0]
+	} else {
+		for _, current_project := range projects {
+			if projectName == current_project.Name {
+				project = current_project
+				break
+			}
+		}
+		if len(project.Name) == 0 {
+			return project, projectName, errors.New("Cannot find project " + projectName + ". You need to provide the groupName parameter if you want a new project to be created.")
+		}
+	}
+	log.Entry().Debugf("Loaded project with name %v", project.Name)
 
 	//}
 	return project, projectName, nil
@@ -344,7 +343,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) triggerScan(ctx context.Context, con
 
 	log.Entry().Debugln("Scan finished")
 	return cx1sh.verifyCxProjectCompliance(ctx, config, sys, scan.ID, influx, utils) */
-    return nil
+	return nil
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, scanID string, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) error {
@@ -495,182 +494,182 @@ func (cx1sh *checkmarxoneExecuteScanHelper) pollScanStatus(sys checkmarxone.Syst
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) reportToInflux(results map[string]interface{}, influx *checkmarxoneExecuteScanInflux) {
-    /*
-	influx.checkmarxone_data.fields.high_issues = results["High"].(map[string]int)["Issues"]
-	influx.checkmarxone_data.fields.high_not_false_postive = results["High"].(map[string]int)["NotFalsePositive"]
-	influx.checkmarxone_data.fields.high_not_exploitable = results["High"].(map[string]int)["NotExploitable"]
-	influx.checkmarxone_data.fields.high_confirmed = results["High"].(map[string]int)["Confirmed"]
-	influx.checkmarxone_data.fields.high_urgent = results["High"].(map[string]int)["Urgent"]
-	influx.checkmarxone_data.fields.high_proposed_not_exploitable = results["High"].(map[string]int)["ProposedNotExploitable"]
-	influx.checkmarxone_data.fields.high_to_verify = results["High"].(map[string]int)["ToVerify"]
-	influx.checkmarxone_data.fields.medium_issues = results["Medium"].(map[string]int)["Issues"]
-	influx.checkmarxone_data.fields.medium_not_false_postive = results["Medium"].(map[string]int)["NotFalsePositive"]
-	influx.checkmarxone_data.fields.medium_not_exploitable = results["Medium"].(map[string]int)["NotExploitable"]
-	influx.checkmarxone_data.fields.medium_confirmed = results["Medium"].(map[string]int)["Confirmed"]
-	influx.checkmarxone_data.fields.medium_urgent = results["Medium"].(map[string]int)["Urgent"]
-	influx.checkmarxone_data.fields.medium_proposed_not_exploitable = results["Medium"].(map[string]int)["ProposedNotExploitable"]
-	influx.checkmarxone_data.fields.medium_to_verify = results["Medium"].(map[string]int)["ToVerify"]
-	influx.checkmarxone_data.fields.low_issues = results["Low"].(map[string]int)["Issues"]
-	influx.checkmarxone_data.fields.low_not_false_postive = results["Low"].(map[string]int)["NotFalsePositive"]
-	influx.checkmarxone_data.fields.low_not_exploitable = results["Low"].(map[string]int)["NotExploitable"]
-	influx.checkmarxone_data.fields.low_confirmed = results["Low"].(map[string]int)["Confirmed"]
-	influx.checkmarxone_data.fields.low_urgent = results["Low"].(map[string]int)["Urgent"]
-	influx.checkmarxone_data.fields.low_proposed_not_exploitable = results["Low"].(map[string]int)["ProposedNotExploitable"]
-	influx.checkmarxone_data.fields.low_to_verify = results["Low"].(map[string]int)["ToVerify"]
-	influx.checkmarxone_data.fields.information_issues = results["Information"].(map[string]int)["Issues"]
-	influx.checkmarxone_data.fields.information_not_false_postive = results["Information"].(map[string]int)["NotFalsePositive"]
-	influx.checkmarxone_data.fields.information_not_exploitable = results["Information"].(map[string]int)["NotExploitable"]
-	influx.checkmarxone_data.fields.information_confirmed = results["Information"].(map[string]int)["Confirmed"]
-	influx.checkmarxone_data.fields.information_urgent = results["Information"].(map[string]int)["Urgent"]
-	influx.checkmarxone_data.fields.information_proposed_not_exploitable = results["Information"].(map[string]int)["ProposedNotExploitable"]
-	influx.checkmarxone_data.fields.information_to_verify = results["Information"].(map[string]int)["ToVerify"]
-	influx.checkmarxone_data.fields.initiator_name = results["InitiatorName"].(string)
-	influx.checkmarxone_data.fields.owner = results["Owner"].(string)
-	influx.checkmarxone_data.fields.scan_id = results["ScanId"].(string)
-	influx.checkmarxone_data.fields.project_id = results["ProjectId"].(string)
-	influx.checkmarxone_data.fields.projectName = results["ProjectName"].(string)
-	influx.checkmarxone_data.fields.group = results["Group"].(string)
-	influx.checkmarxone_data.fields.group_full_path_on_report_date = results["GroupFullPathOnReportDate"].(string)
-	influx.checkmarxone_data.fields.scan_start = results["ScanStart"].(string)
-	influx.checkmarxone_data.fields.scan_time = results["ScanTime"].(string)
-	influx.checkmarxone_data.fields.lines_of_code_scanned = results["LinesOfCodeScanned"].(int)
-	influx.checkmarxone_data.fields.files_scanned = results["FilesScanned"].(int)
-	influx.checkmarxone_data.fields.checkmarxone_version = results["CheckmarxVersion"].(string)
-	influx.checkmarxone_data.fields.scan_type = results["ScanType"].(string)
-	influx.checkmarxone_data.fields.preset = results["Preset"].(string)
-	influx.checkmarxone_data.fields.deep_link = results["DeepLink"].(string)
-	influx.checkmarxone_data.fields.report_creation_time = results["ReportCreationTime"].(string)
-    */
+	/*
+		influx.checkmarxone_data.fields.high_issues = results["High"].(map[string]int)["Issues"]
+		influx.checkmarxone_data.fields.high_not_false_postive = results["High"].(map[string]int)["NotFalsePositive"]
+		influx.checkmarxone_data.fields.high_not_exploitable = results["High"].(map[string]int)["NotExploitable"]
+		influx.checkmarxone_data.fields.high_confirmed = results["High"].(map[string]int)["Confirmed"]
+		influx.checkmarxone_data.fields.high_urgent = results["High"].(map[string]int)["Urgent"]
+		influx.checkmarxone_data.fields.high_proposed_not_exploitable = results["High"].(map[string]int)["ProposedNotExploitable"]
+		influx.checkmarxone_data.fields.high_to_verify = results["High"].(map[string]int)["ToVerify"]
+		influx.checkmarxone_data.fields.medium_issues = results["Medium"].(map[string]int)["Issues"]
+		influx.checkmarxone_data.fields.medium_not_false_postive = results["Medium"].(map[string]int)["NotFalsePositive"]
+		influx.checkmarxone_data.fields.medium_not_exploitable = results["Medium"].(map[string]int)["NotExploitable"]
+		influx.checkmarxone_data.fields.medium_confirmed = results["Medium"].(map[string]int)["Confirmed"]
+		influx.checkmarxone_data.fields.medium_urgent = results["Medium"].(map[string]int)["Urgent"]
+		influx.checkmarxone_data.fields.medium_proposed_not_exploitable = results["Medium"].(map[string]int)["ProposedNotExploitable"]
+		influx.checkmarxone_data.fields.medium_to_verify = results["Medium"].(map[string]int)["ToVerify"]
+		influx.checkmarxone_data.fields.low_issues = results["Low"].(map[string]int)["Issues"]
+		influx.checkmarxone_data.fields.low_not_false_postive = results["Low"].(map[string]int)["NotFalsePositive"]
+		influx.checkmarxone_data.fields.low_not_exploitable = results["Low"].(map[string]int)["NotExploitable"]
+		influx.checkmarxone_data.fields.low_confirmed = results["Low"].(map[string]int)["Confirmed"]
+		influx.checkmarxone_data.fields.low_urgent = results["Low"].(map[string]int)["Urgent"]
+		influx.checkmarxone_data.fields.low_proposed_not_exploitable = results["Low"].(map[string]int)["ProposedNotExploitable"]
+		influx.checkmarxone_data.fields.low_to_verify = results["Low"].(map[string]int)["ToVerify"]
+		influx.checkmarxone_data.fields.information_issues = results["Information"].(map[string]int)["Issues"]
+		influx.checkmarxone_data.fields.information_not_false_postive = results["Information"].(map[string]int)["NotFalsePositive"]
+		influx.checkmarxone_data.fields.information_not_exploitable = results["Information"].(map[string]int)["NotExploitable"]
+		influx.checkmarxone_data.fields.information_confirmed = results["Information"].(map[string]int)["Confirmed"]
+		influx.checkmarxone_data.fields.information_urgent = results["Information"].(map[string]int)["Urgent"]
+		influx.checkmarxone_data.fields.information_proposed_not_exploitable = results["Information"].(map[string]int)["ProposedNotExploitable"]
+		influx.checkmarxone_data.fields.information_to_verify = results["Information"].(map[string]int)["ToVerify"]
+		influx.checkmarxone_data.fields.initiator_name = results["InitiatorName"].(string)
+		influx.checkmarxone_data.fields.owner = results["Owner"].(string)
+		influx.checkmarxone_data.fields.scan_id = results["ScanId"].(string)
+		influx.checkmarxone_data.fields.project_id = results["ProjectId"].(string)
+		influx.checkmarxone_data.fields.projectName = results["ProjectName"].(string)
+		influx.checkmarxone_data.fields.group = results["Group"].(string)
+		influx.checkmarxone_data.fields.group_full_path_on_report_date = results["GroupFullPathOnReportDate"].(string)
+		influx.checkmarxone_data.fields.scan_start = results["ScanStart"].(string)
+		influx.checkmarxone_data.fields.scan_time = results["ScanTime"].(string)
+		influx.checkmarxone_data.fields.lines_of_code_scanned = results["LinesOfCodeScanned"].(int)
+		influx.checkmarxone_data.fields.files_scanned = results["FilesScanned"].(int)
+		influx.checkmarxone_data.fields.checkmarxone_version = results["CheckmarxVersion"].(string)
+		influx.checkmarxone_data.fields.scan_type = results["ScanType"].(string)
+		influx.checkmarxone_data.fields.preset = results["Preset"].(string)
+		influx.checkmarxone_data.fields.deep_link = results["DeepLink"].(string)
+		influx.checkmarxone_data.fields.report_creation_time = results["ReportCreationTime"].(string)
+	*/
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) downloadAndSaveReport(sys checkmarxone.System, reportFileName string, scanID int, utils checkmarxoneExecuteScanUtils) error {
-    /*
-	report, err := generateAndDownloadReport(sys, scanID, "PDF")
-	if err != nil {
-		return errors.Wrap(err, "failed to download the report")
-	}
-	log.Entry().Debugf("Saving report to file %v...", reportFileName)
-	return utils.WriteFile(reportFileName, report, 0o700)
-    */
-    return nil
+	/*
+		report, err := generateAndDownloadReport(sys, scanID, "PDF")
+		if err != nil {
+			return errors.Wrap(err, "failed to download the report")
+		}
+		log.Entry().Debugf("Saving report to file %v...", reportFileName)
+		return utils.WriteFile(reportFileName, report, 0o700)
+	*/
+	return nil
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) enforceThresholds(config checkmarxoneExecuteScanOptions, results map[string]interface{}) (bool, []string, []string) {
-    
+
 	neutralResults := []string{}
 	insecureResults := []string{}
 	insecure := false
 	/*
-    cxHighThreshold := config.VulnerabilityThresholdHigh
-	cxMediumThreshold := config.VulnerabilityThresholdMedium
-	cxLowThreshold := config.VulnerabilityThresholdLow
-	cxLowThresholdPerQuery := config.VulnerabilityThresholdLowPerQuery
-	cxLowThresholdPerQueryMax := config.VulnerabilityThresholdLowPerQueryMax
-	highValue := results["High"].(map[string]int)["NotFalsePositive"]
-	mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
-	lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
-	var unit string
-	highViolation := ""
-	mediumViolation := ""
-	lowViolation := ""
-	if config.VulnerabilityThresholdUnit == "percentage" {
-		unit = "%"
-		highAudited := results["High"].(map[string]int)["Issues"] - results["High"].(map[string]int)["NotFalsePositive"]
-		highOverall := results["High"].(map[string]int)["Issues"]
-		if highOverall == 0 {
-			highAudited = 1
-			highOverall = 1
-		}
-		mediumAudited := results["Medium"].(map[string]int)["Issues"] - results["Medium"].(map[string]int)["NotFalsePositive"]
-		mediumOverall := results["Medium"].(map[string]int)["Issues"]
-		if mediumOverall == 0 {
-			mediumAudited = 1
-			mediumOverall = 1
-		}
-		lowAudited := results["Low"].(map[string]int)["Confirmed"] + results["Low"].(map[string]int)["NotExploitable"]
-		lowOverall := results["Low"].(map[string]int)["Issues"]
-		if lowOverall == 0 {
-			lowAudited = 1
-			lowOverall = 1
-		}
-		highValue = int(float32(highAudited) / float32(highOverall) * 100.0)
-		mediumValue = int(float32(mediumAudited) / float32(mediumOverall) * 100.0)
-		lowValue = int(float32(lowAudited) / float32(lowOverall) * 100.0)
+		    cxHighThreshold := config.VulnerabilityThresholdHigh
+			cxMediumThreshold := config.VulnerabilityThresholdMedium
+			cxLowThreshold := config.VulnerabilityThresholdLow
+			cxLowThresholdPerQuery := config.VulnerabilityThresholdLowPerQuery
+			cxLowThresholdPerQueryMax := config.VulnerabilityThresholdLowPerQueryMax
+			highValue := results["High"].(map[string]int)["NotFalsePositive"]
+			mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
+			lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
+			var unit string
+			highViolation := ""
+			mediumViolation := ""
+			lowViolation := ""
+			if config.VulnerabilityThresholdUnit == "percentage" {
+				unit = "%"
+				highAudited := results["High"].(map[string]int)["Issues"] - results["High"].(map[string]int)["NotFalsePositive"]
+				highOverall := results["High"].(map[string]int)["Issues"]
+				if highOverall == 0 {
+					highAudited = 1
+					highOverall = 1
+				}
+				mediumAudited := results["Medium"].(map[string]int)["Issues"] - results["Medium"].(map[string]int)["NotFalsePositive"]
+				mediumOverall := results["Medium"].(map[string]int)["Issues"]
+				if mediumOverall == 0 {
+					mediumAudited = 1
+					mediumOverall = 1
+				}
+				lowAudited := results["Low"].(map[string]int)["Confirmed"] + results["Low"].(map[string]int)["NotExploitable"]
+				lowOverall := results["Low"].(map[string]int)["Issues"]
+				if lowOverall == 0 {
+					lowAudited = 1
+					lowOverall = 1
+				}
+				highValue = int(float32(highAudited) / float32(highOverall) * 100.0)
+				mediumValue = int(float32(mediumAudited) / float32(mediumOverall) * 100.0)
+				lowValue = int(float32(lowAudited) / float32(lowOverall) * 100.0)
 
-		if highValue < cxHighThreshold {
-			insecure = true
-			highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
-		}
-		if mediumValue < cxMediumThreshold {
-			insecure = true
-			mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
-		}
-		// if the flag is switched on, calculate the Low findings threshold per query
-		if cxLowThresholdPerQuery {
-			lowPerQueryMap := results["LowPerQuery"].(map[string]map[string]int)
-			if lowPerQueryMap != nil {
-				for lowQuery, resultsLowQuery := range lowPerQueryMap {
-					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
-					lowOverallPerQuery := resultsLowQuery["Issues"]
-					lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
-					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
-						insecure = true
-						msgSeperator := "|"
-						if lowViolation == "" {
-							msgSeperator = "<--"
+				if highValue < cxHighThreshold {
+					insecure = true
+					highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
+				}
+				if mediumValue < cxMediumThreshold {
+					insecure = true
+					mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
+				}
+				// if the flag is switched on, calculate the Low findings threshold per query
+				if cxLowThresholdPerQuery {
+					lowPerQueryMap := results["LowPerQuery"].(map[string]map[string]int)
+					if lowPerQueryMap != nil {
+						for lowQuery, resultsLowQuery := range lowPerQueryMap {
+							lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+							lowOverallPerQuery := resultsLowQuery["Issues"]
+							lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
+							if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
+								insecure = true
+								msgSeperator := "|"
+								if lowViolation == "" {
+									msgSeperator = "<--"
+								}
+								lowViolation += fmt.Sprintf(" %v query: %v, audited: %v, required: %v ", msgSeperator, lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
+							}
 						}
-						lowViolation += fmt.Sprintf(" %v query: %v, audited: %v, required: %v ", msgSeperator, lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
+					}
+				} else { // calculate the Low findings threshold in total
+					if lowValue < cxLowThreshold {
+						insecure = true
+						lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
 					}
 				}
-			}
-		} else { // calculate the Low findings threshold in total
-			if lowValue < cxLowThreshold {
-				insecure = true
-				lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
-			}
-		}
 
-	}
-	if config.VulnerabilityThresholdUnit == "absolute" {
-		unit = " findings"
-		if highValue > cxHighThreshold {
-			insecure = true
-			highViolation = fmt.Sprintf("<-- %v%v deviation", highValue-cxHighThreshold, unit)
-		}
-		if mediumValue > cxMediumThreshold {
-			insecure = true
-			mediumViolation = fmt.Sprintf("<-- %v%v deviation", mediumValue-cxMediumThreshold, unit)
-		}
-		if lowValue > cxLowThreshold {
-			insecure = true
-			lowViolation = fmt.Sprintf("<-- %v%v deviation", lowValue-cxLowThreshold, unit)
-		}
-	}
+			}
+			if config.VulnerabilityThresholdUnit == "absolute" {
+				unit = " findings"
+				if highValue > cxHighThreshold {
+					insecure = true
+					highViolation = fmt.Sprintf("<-- %v%v deviation", highValue-cxHighThreshold, unit)
+				}
+				if mediumValue > cxMediumThreshold {
+					insecure = true
+					mediumViolation = fmt.Sprintf("<-- %v%v deviation", mediumValue-cxMediumThreshold, unit)
+				}
+				if lowValue > cxLowThreshold {
+					insecure = true
+					lowViolation = fmt.Sprintf("<-- %v%v deviation", lowValue-cxLowThreshold, unit)
+				}
+			}
 
-	highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
-	mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
-	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
-	if len(highViolation) > 0 {
-		insecureResults = append(insecureResults, highText)
-		log.Entry().Error(highText)
-	} else {
-		neutralResults = append(neutralResults, highText)
-		log.Entry().Info(highText)
-	}
-	if len(mediumViolation) > 0 {
-		insecureResults = append(insecureResults, mediumText)
-		log.Entry().Error(mediumText)
-	} else {
-		neutralResults = append(neutralResults, mediumText)
-		log.Entry().Info(mediumText)
-	}
-	if len(lowViolation) > 0 {
-		insecureResults = append(insecureResults, lowText)
-		log.Entry().Error(lowText)
-	} else {
-		neutralResults = append(neutralResults, lowText)
-		log.Entry().Info(lowText)
-	} */
+			highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
+			mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
+			lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
+			if len(highViolation) > 0 {
+				insecureResults = append(insecureResults, highText)
+				log.Entry().Error(highText)
+			} else {
+				neutralResults = append(neutralResults, highText)
+				log.Entry().Info(highText)
+			}
+			if len(mediumViolation) > 0 {
+				insecureResults = append(insecureResults, mediumText)
+				log.Entry().Error(mediumText)
+			} else {
+				neutralResults = append(neutralResults, mediumText)
+				log.Entry().Info(mediumText)
+			}
+			if len(lowViolation) > 0 {
+				insecureResults = append(insecureResults, lowText)
+				log.Entry().Error(lowText)
+			} else {
+				neutralResults = append(neutralResults, lowText)
+				log.Entry().Info(lowText)
+			} */
 
 	return insecure, insecureResults, neutralResults
 }
@@ -686,39 +685,39 @@ func (cx1sh *checkmarxoneExecuteScanHelper) createAndConfigureNewProject(sys che
 		return checkmarxone.Project{}, errors.Wrapf(err, "cannot create project %v", projectName)
 	}
 
-    /*
-	if err := cx1sh.setPresetForProject(sys, projectCreateResult.ID, presetIDValue, projectName, presetValue, engineConfiguration); err != nil {
-		return checkmarxone.Project{}, errors.Wrapf(err, "failed to set preset %v for project", presetValue)
-	}
+	/*
+		if err := cx1sh.setPresetForProject(sys, projectCreateResult.ID, presetIDValue, projectName, presetValue, engineConfiguration); err != nil {
+			return checkmarxone.Project{}, errors.Wrapf(err, "failed to set preset %v for project", presetValue)
+		}
 
-	projects, err := sys.GetProjectsByNameAndGroup(projectName, groupID)
-	if err != nil || len(projects) == 0 {
-		return checkmarxone.Project{}, errors.Wrapf(err, "failed to load newly created project %v", projectName)
-	}
-	log.Entry().Debugf("New Project %v created", projectName)
-	log.Entry().Debugf("Projects: %v", projects)
-	return projects[0], nil */
-    return project, nil
+		projects, err := sys.GetProjectsByNameAndGroup(projectName, groupID)
+		if err != nil || len(projects) == 0 {
+			return checkmarxone.Project{}, errors.Wrapf(err, "failed to load newly created project %v", projectName)
+		}
+		log.Entry().Debugf("New Project %v created", projectName)
+		log.Entry().Debugf("Projects: %v", projects)
+		return projects[0], nil */
+	return project, nil
 }
 
 // loadPreset finds a checkmarxone.Preset that has either the ID or Name given by presetValue.
 // presetValue is not expected to be empty.
 func (cx1sh *checkmarxoneExecuteScanHelper) loadPreset(sys checkmarxone.System, presetName string) (checkmarxone.Preset, error) {
-    /*
-	presets := sys.GetPresets()
-	var preset checkmarxone.Preset
-	var configuredPresetName string
-	preset = sys.FilterPresetByName(presets, presetValue)
-	configuredPresetName = presetValue
-	if len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
-		log.Entry().Infof("Loaded preset %v", preset.Name)
-		return preset, nil
-	}
-	log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue)
-	for _, prs := range presets {
-		log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
-	}
-    */
+	/*
+		presets := sys.GetPresets()
+		var preset checkmarxone.Preset
+		var configuredPresetName string
+		preset = sys.FilterPresetByName(presets, presetValue)
+		configuredPresetName = presetValue
+		if len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
+			log.Entry().Infof("Loaded preset %v", preset.Name)
+			return preset, nil
+		}
+		log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue)
+		for _, prs := range presets {
+			log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
+		}
+	*/
 
 	return checkmarxone.Preset{}, fmt.Errorf("preset %v not found", presetName)
 }
@@ -727,44 +726,44 @@ func (cx1sh *checkmarxoneExecuteScanHelper) loadPreset(sys checkmarxone.System, 
 // It will exit via the logging framework in case the preset could be found, or the project could not be updated.
 func (cx1sh *checkmarxoneExecuteScanHelper) setPresetForProject(sys checkmarxone.System, projectID, presetIDValue int, projectName, presetValue, engineConfiguration string) error {
 	/*
-    presetID := presetIDValue
-	if presetID <= 0 {
-		preset, err := cx1sh.loadPreset(sys, presetValue)
-		if err != nil {
-			return errors.Wrapf(err, "preset %v not found, configuration of project %v failed", presetValue, projectName)
-		}
-		presetID = preset.ID
-	}
-	err := sys.UpdateProjectConfiguration(projectID, presetID, engineConfiguration)
-	if err != nil {
-		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
-	}
-    */
+		    presetID := presetIDValue
+			if presetID <= 0 {
+				preset, err := cx1sh.loadPreset(sys, presetValue)
+				if err != nil {
+					return errors.Wrapf(err, "preset %v not found, configuration of project %v failed", presetValue, projectName)
+				}
+				presetID = preset.ID
+			}
+			err := sys.UpdateProjectConfiguration(projectID, presetID, engineConfiguration)
+			if err != nil {
+				return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
+			}
+	*/
 	return nil
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) generateAndDownloadReport(sys checkmarxone.System, scanID int, reportType string) ([]byte, error) {
 	finalStatus := 1
-    
-    /*
-	report, err := sys.RequestNewReport(scanID, reportType)
-	if err != nil {
-		return []byte{}, errors.Wrap(err, "failed to request new report")
-	}
-	for {
-		reportStatus, err := sys.GetReportStatus(report.ReportID)
+
+	/*
+		report, err := sys.RequestNewReport(scanID, reportType)
 		if err != nil {
-			return []byte{}, errors.Wrap(err, "failed to get report status")
+			return []byte{}, errors.Wrap(err, "failed to request new report")
 		}
-		finalStatus = reportStatus.Status.ID
-		if finalStatus != 1 {
-			break
+		for {
+			reportStatus, err := sys.GetReportStatus(report.ReportID)
+			if err != nil {
+				return []byte{}, errors.Wrap(err, "failed to get report status")
+			}
+			finalStatus = reportStatus.Status.ID
+			if finalStatus != 1 {
+				break
+			}
+			time.Sleep(10 * time.Second)
 		}
-		time.Sleep(10 * time.Second)
-	}
-	if finalStatus == 2 {
-		return sys.DownloadReport(report.ReportID)
-	}*/
+		if finalStatus == 2 {
+			return sys.DownloadReport(report.ReportID)
+		}*/
 	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus)
 }
 
@@ -781,6 +780,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) getNumCoherentIncrementalScans(scans
 
 func (cx1sh *checkmarxoneExecuteScanHelper) getDetailedResults(config checkmarxoneExecuteScanOptions, sys checkmarxone.System, reportFileName string, scanID int, utils checkmarxoneExecuteScanUtils) (map[string]interface{}, error) {
 	resultMap := map[string]interface{}{}
+
 	/*data, err := cx1sh.generateAndDownloadReport(sys, scanID, "XML")
 	if err != nil {
 		return resultMap, errors.Wrap(err, "failed to download xml report")
