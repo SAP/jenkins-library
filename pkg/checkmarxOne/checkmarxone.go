@@ -26,12 +26,12 @@ const cxOrigin = "GolangScript"
 // AuthToken - Structure to store OAuth2 token 
 // Updated for Cx1
 type AuthToken struct {
+    TokenType               string `json:"token_type"`
     AccessToken             string `json:"access_token"`    
     ExpiresIn               int    `json:"expires_in"`
-    RefreshExpiresIn        int    `json:"refresh_expires_in"`
-    TokenType               string `json:"token_type"`
-    NotBeforePolicy         int    `json:"not-before-policy"`
-    Scope                   string `json:"scope"`
+ //   RefreshExpiresIn        int    `json:"refresh_expires_in"`
+ //   NotBeforePolicy         int    `json:"not-before-policy"`
+ //   Scope                   string `json:"scope"`
 }
 
 // Preset - Project's Preset
@@ -203,7 +203,7 @@ type System interface {
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
 // Updated for Cx1
 func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, APIKey, client_id, client_secret string) (*SystemInstance, error) {
-    loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne")
+    loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone")
     sys := &SystemInstance{
         serverURL: serverURL,
         iamURL: iamURL,
@@ -217,7 +217,7 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 
     var token string
     var err error
-    
+
     if APIKey != "" {
         token, err = sys.getAPIToken()
         if err != nil {
@@ -230,12 +230,16 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
         }
     }
 
-
     log.RegisterSecret(token)
+
+    url, err := url.Parse("http://127.0.0.1:8080")
+    log.Entry().Error( url.String() )
 
     options := piperHttp.ClientOptions{
         Token:            token,
         TransportTimeout: time.Minute * 15,
+        TransportProxy:          url,
+        TransportSkipVerification:  true,
     }
     sys.client.SetOptions(options)
 
@@ -269,7 +273,7 @@ func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header
 */
 // Updated for Cx1
 func sendRequestIAM(sys *SystemInstance, method, base, url string, body io.Reader, header http.Header, acceptedErrorCodes []int ) ([]byte, error) {
-    iamurl := fmt.Sprintf("%v%v/realms/%v/api%v", sys.iamURL, base, sys.tenant, url)
+    iamurl := fmt.Sprintf("%v%v/realms/%v%v", sys.iamURL, base, sys.tenant, url)
     return sendRequestInternal(sys, method, iamurl, body, header, acceptedErrorCodes)
 }
 
@@ -284,6 +288,12 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
         requestBodyCopy = bytes.NewBuffer(bodyBytes)
         defer closer.Close()
     }
+
+    if header == nil {
+        header = http.Header{}
+    }
+    header.Set( "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0" )
+
     response, err := sys.client.SendRequest(method, url, requestBody, header, nil)
     if err != nil && (response == nil || !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode)) {
         sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
@@ -327,7 +337,7 @@ func (sys *SystemInstance) getOAuth2Token() (string, error) {
     }
     header := http.Header{}
     header.Add("Content-type", "application/x-www-form-urlencoded")
-    data, err := sendRequest(sys, http.MethodPost, "/auth/identity/connect/token", strings.NewReader(body.Encode()), header, []int{})
+    data, err := sendRequestIAM(sys, http.MethodPost, "/auth", "/protocol/openid-connect/token", strings.NewReader(body.Encode()), header, []int{})
     if err != nil {
         return "", err
     }
@@ -342,11 +352,11 @@ func (sys *SystemInstance) getAPIToken() (string, error) {
     body := url.Values{
         "grant_type":    {"refresh_token"},
         "client_id":     {"ast-app"},
-        "client_secret": {sys.APIKey},
+        "refresh_token": {sys.APIKey},
     }
     header := http.Header{}
     header.Add("Content-type", "application/x-www-form-urlencoded")
-    data, err := sendRequest(sys, http.MethodPost, "/auth/identity/connect/token", strings.NewReader(body.Encode()), header, []int{})
+    data, err := sendRequestIAM(sys, http.MethodPost, "/auth", "/protocol/openid-connect/token", strings.NewReader(body.Encode()), header, []int{})
     if err != nil {
         return "", err
     }
@@ -371,7 +381,7 @@ func (sys *SystemInstance) GetGroups() ([]Group, error) {
     var groups []Group
 
 
-    data, err := sendRequestIAM(sys, http.MethodGet, "/auth", "/pip/groups", nil, nil, []int{})
+    data, err := sendRequestIAM(sys, http.MethodGet, "/auth", "/pip/groups", nil, http.Header{}, []int{})
     if err != nil {
         sys.logger.Errorf("Fetching groups failed: %s", err)
         return groups, err
@@ -388,7 +398,7 @@ func (sys *SystemInstance) GetGroups() ([]Group, error) {
 
 // New for Cx1
 func (sys *SystemInstance) GetGroupByName( groupName string ) (Group, error) {
-    sys.logger.Debug("Getting Group named %v...", groupName)
+    sys.logger.Debugf("Getting Group named %v...", groupName)
     var groups []Group
 
     body := url.Values {
@@ -396,7 +406,7 @@ func (sys *SystemInstance) GetGroupByName( groupName string ) (Group, error) {
         "search": {groupName},
     }
 
-    data, err := sendRequestIAM(sys, http.MethodGet, "/auth/admin", "/groups?%v", strings.NewReader(body.Encode()), nil, nil)
+    data, err := sendRequestIAM(sys, http.MethodGet, "/auth/admin", fmt.Sprintf("/groups?%v", body.Encode()), nil, http.Header{}, []int{})
     if err != nil {
         sys.logger.Errorf("Fetching groups failed: %s", err)
         return Group{}, err
@@ -435,7 +445,7 @@ func (sys *SystemInstance) GetProjectByID(projectID string) (Project, error) {
     sys.logger.Debugf("Getting Project with ID %v...", projectID)
     var project Project
 
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/%v", projectID), nil, nil, []int{})
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/%v", projectID), nil, http.Header{}, []int{})
     if err != nil {
         return project, errors.Wrapf(err, "fetching project %v failed", projectID)
     }
@@ -533,7 +543,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 
     // PUT request to uri
     // TODO - does this work?
-    _, err = sendRequest(sys, http.MethodPut, uploadUri, strings.NewReader(zipFile), nil, []int{})
+    _, err = sendRequest(sys, http.MethodPut, uploadUri, strings.NewReader(zipFile), http.Header{}, []int{})
     if err != nil {
         return uploadUri, err
     }
@@ -615,7 +625,7 @@ func (sys *SystemInstance) GetPresets() ([]Preset,error) {
     sys.logger.Debug("Getting Presets...")
     var presets []Preset
 
-    data, err := sendRequest(sys, http.MethodGet, "/queries/presets", nil, nil, []int{})
+    data, err := sendRequest(sys, http.MethodGet, "/queries/presets", nil, http.Header{}, []int{})
     if err != nil {
         sys.logger.Errorf("Fetching presets failed: %s", err)
         return presets, err
