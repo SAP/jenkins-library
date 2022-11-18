@@ -173,24 +173,21 @@ type SystemInstance struct {
 
 // System is the interface abstraction of a specific SystemIns
 type System interface {
-    //FilterPresetByName(presets []Preset, presetName string) Preset
-    //FilterPresetByID(presets []Preset, presetID int) Preset
-    //FilterProjectByName(projects []Project, projectName string) Project
-    //FilterGroupByName(groups []Group, groupName string) (Group, error)
-    //FilterGroupByID(groups []Group, groupID json.RawMessage) Group
     //DownloadReport(reportID int) ([]byte, error)
     //GetReportStatus(reportID int) (ReportStatusResponse, error)
     //RequestNewReport(scanID int, reportType string) (Report, error)
     //GetResults(scanID int) ResultsStatistics
-    //GetScanStatusAndDetail(scanID int) (string, ScanStatusDetail)
-    GetScans(projectID string) ([]Scan, error)
-    //ScanProject(projectID string, isIncremental, isPublic, forceScan bool) (Scan, error)
-    //UpdateProjectConfiguration(projectID string, presetID int, engineConfigurationID string) error
-    //UpdateProjectExcludeSettings(projectID string, excludeFolders string, excludeFiles string) error
-    UploadAndScanProjectSourceCode(projectID string, zipFile string) (Scan, error)
+    GetScan(scanID string) (Scan, error)
+    GetLastScans(projectID string, limit int) ([]Scan, error)
+
+    ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration ) (Scan, error)
+    ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration ) (Scan, error)
+    ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration ) (Scan, error)
+    
+    UpdateProjectConfiguration(projectID string, settings []ProjectConfigurationSetting) error
+
     UploadProjectSourceCode(projectID string, zipFile string) (string, error)
     CreateProject(projectName string, groupIDs []string) (Project, error)
-    //CreateBranch(projectID string, branchName string) int
     GetPresets() ([]Preset, error)
     GetProjectByID(projectID string) (Project, error)
     GetProjectsByNameAndGroup(projectName, groupID string) ([]Project, error)
@@ -198,6 +195,11 @@ type System interface {
     //GetShortDescription(scanID int, pathID int) (ShortDescription, error)
     GetGroups() ([]Group, error)
     GetGroupByName( groupName string ) (Group, error)
+
+    SetProjectBranch( projectID, branch string, allowOverride bool ) error
+    SetProjectPreset( projectID, presetName string, allowOverride bool ) error
+    SetProjectLanguageMode( projectID, languageMode string, allowOverride bool ) error
+    SetProjectFileFilter( projectID, filter string, allowOverride bool ) error
 }
 
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
@@ -232,14 +234,14 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 
     log.RegisterSecret(token)
 
-    url, err := url.Parse("http://127.0.0.1:8080")
-    log.Entry().Error( url.String() )
+    //url, err := url.Parse("http://127.0.0.1:8080")
+    
 
     options := piperHttp.ClientOptions{
         Token:            token,
         TransportTimeout: time.Minute * 15,
-        TransportProxy:          url,
-        TransportSkipVerification:  true,
+        //TransportProxy:          url,
+        //TransportSkipVerification:  true,
     }
     sys.client.SetOptions(options)
 
@@ -458,7 +460,13 @@ func (sys *SystemInstance) GetProjectByID(projectID string) (Project, error) {
 // Updated for Cx1
 func (sys *SystemInstance) GetProjectsByNameAndGroup(projectName, groupID string) ([]Project, error) {
     sys.logger.Debugf("Getting projects with name %v of group %v...", projectName, groupID)
-    var projects []Project
+    
+    var projectResponse struct {
+        TotalCount      int     `json:"totalCount"`
+        FilteredCount   int     `json:"filteredCount"`
+        Projects        []Project `json:"projects"`
+    } 
+
     header := http.Header{}
     header.Set("Accept-Type", "application/json")
     var data []byte
@@ -478,12 +486,13 @@ func (sys *SystemInstance) GetProjectsByNameAndGroup(projectName, groupID string
         data, err = sendRequest(sys, http.MethodGet, "/projects/", nil, header, []int{404})
     }
     if err != nil {
-        return projects, errors.Wrapf(err, "fetching project %v failed", projectName)
+        return projectResponse.Projects, errors.Wrapf(err, "fetching project %v failed", projectName)
     }
 
-    err = json.Unmarshal(data, &projects)
-    return projects, err
+    err = json.Unmarshal(data, &projectResponse)
+    return projectResponse.Projects, err
 }
+
 
 // CreateProject creates a new project in the Checkmarx backend
 // Updated for Cx1
@@ -533,7 +542,7 @@ func (sys *SystemInstance) GetUploadURI() (string,error) {
 }
 
 func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile string) (string, error) {
-    sys.logger.Debug("Preparing to upload file...")
+    sys.logger.Debugf("Preparing to upload file %v...", zipFile )
 
     // get URI
     uploadUri, err := sys.GetUploadURI()
@@ -543,8 +552,20 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 
     // PUT request to uri
     // TODO - does this work?
-    _, err = sendRequest(sys, http.MethodPut, uploadUri, strings.NewReader(zipFile), http.Header{}, []int{})
+	header := http.Header{}
+	header.Add("Accept-Encoding", "gzip,deflate")
+    header.Add("Content-Type", "application/zip")
+	header.Add("Accept", "application/json")
+	
+    zipContents, err := ioutil.ReadFile(zipFile)
     if err != nil {
+    	sys.logger.Error("Failed to Read the File "+ zipFile + ": " + err.Error())
+		return "", err
+    }
+
+    _, err = sendRequestInternal(sys, http.MethodPut, uploadUri, bytes.NewReader(zipContents), header, []int{})
+    if err != nil {
+        sys.logger.Errorf( "Failed to upload file %v: s", zipFile, err )
         return uploadUri, err
     }
 
@@ -552,73 +573,71 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 }
 
 
-// Originally: func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile string) (string, error) 
-// For Cx1: updated as there is no "per-project upload" anymore, high level steps are:
-//    1. Get an upload URL
-//  2. PUT a file there
-//  3. Tell Cx1 to start a scan for a project using this uploaded file
-// New for Cx1
-func (sys *SystemInstance) UploadAndScanProjectSourceCode(projectID string, zipFile string) (Scan, error) {
+func (sys *SystemInstance) scanProject( scanConfig map[string]interface{} ) (Scan, error) {
     scan := Scan{}
-    uploadUri, err := sys.UploadProjectSourceCode(projectID, zipFile)
-    if err != nil {
-        return scan, err
-    }
 
-    // Run a scan
-    // ToDo: Full vs incremental?
-    // ToDo: Preset?
-    // ToDo: scan tags
-    jsonBody := map[string]interface{}{
-        "project" : map[string]interface{}{    "id" : projectID },
-        "type": "upload",
-        "handler" : map[string]interface{}{ "uploadurl" : uploadUri },
-        "config" : []map[string]interface{}{
-            map[string]interface{}{
-                "type" : "sast",
-                "value" : map[string]interface{}{
-                    "incremental" : "false",
-                    "presetName": "Checkmarx Default",
-                },
-            },
-        },
-    }
-    jsonValue, err := json.Marshal( jsonBody )
-    
+    jsonValue, err := json.Marshal( scanConfig )    
     header := http.Header{}
     header.Set("Content-Type", "application/json")
     data, err := sendRequest(sys, http.MethodPost, "/scans", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
-        return scan, errors.Wrapf(err, "failed to start a scan with project %v and url %v", projectID, uploadUri )
+        return scan, err
     }
 
     err = json.Unmarshal(data, &scan)
     return scan, err
-
 }
 
-// UpdateProjectExcludeSettings updates the exclude configuration of the project
-// TODO
-func (sys *SystemInstance) UpdateProjectExcludeSettings(projectID string, excludeFolders string, excludeFiles string) error {
-    /*jsonData := map[string]string{
-        "excludeFoldersPattern": excludeFolders,
-        "excludeFilesPattern":   excludeFiles,
+func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration ) (Scan, error) {
+    jsonBody := map[string]interface{}{
+        "project" : map[string]interface{}{    "id" : projectID },
+        "type": "upload",
+        "handler" : map[string]interface{}{ 
+            "uploadurl" : sourceUrl,
+            "branch" : branch,
+        },
+        "config" : settings,
     }
 
-    jsonValue, err := json.Marshal(jsonData)
+    scan, err := sys.scanProject( jsonBody )
     if err != nil {
-        return errors.Wrap(err, "error marhalling project exclude settings")
+        return scan, errors.Wrapf( err, "Failed to start a zip scan for project %v", projectID )
     }
-
-    header := http.Header{}
-    header.Set("Content-Type", "application/json")
-    _, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/projects/%v/sourceCode/excludeSettings", projectID), bytes.NewBuffer(jsonValue), header, []int{})
-    if err != nil {
-        return errors.Wrap(err, "request to checkmarx system failed")
-    }*/
-
-    return nil
+    return scan, err
 }
+
+func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration ) (Scan, error) {
+    jsonBody := map[string]interface{}{
+        "project" : map[string]interface{}{    "id" : projectID },
+        "type": "git",
+        "handler" : map[string]interface{}{ 
+            "repoUrl" : repoUrl,
+            "branch" : branch,
+        },
+        "config" : settings,
+    }
+
+    scan, err := sys.scanProject( jsonBody )
+    if err != nil {
+        return scan, errors.Wrapf( err, "Failed to start a git scan for project %v", projectID )
+    }
+    return scan, err
+}
+
+
+func (sys *SystemInstance) ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration ) (Scan, error) {
+    if scanType == "upload" {
+        return sys.ScanProjectZip( projectID, sourceUrl, branch, settings )
+    } else if scanType == "git" {
+        return sys.ScanProjectGit( projectID, sourceUrl, branch, settings )
+    }
+
+    return Scan{}, errors.New( "Invalid scanType provided, must be 'upload' or 'git'" )
+}
+
+
+//func (sys *SystemInstance) UpdateProjectExcludeSettings(projectID string, excludeFolders string, excludeFiles string) error {
+// replaced by SetProjectFileFilter
 
 // Updated for Cx1: GetPresets loads the preset values defined in the Checkmarx backend
 func (sys *SystemInstance) GetPresets() ([]Preset,error) {
@@ -635,56 +654,91 @@ func (sys *SystemInstance) GetPresets() ([]Preset,error) {
     return presets, err
 }
 
+
+// New for Cx1
+func (sys *SystemInstance) GetProjectConfiguration(projectID string) ([]ProjectConfigurationSetting, error) {
+    sys.logger.Debug("Getting project configuration")
+    var projectConfigurations []ProjectConfigurationSetting
+    params := url.Values{
+        "project-id":   {projectID},
+    }
+    data, err := sendRequest( sys, http.MethodGet, fmt.Sprintf( "/configuration/project?%v", params.Encode() ), nil, http.Header{}, []int{})
+
+    if err != nil {
+        sys.logger.Errorf("Failed to get project configuration for project ID %v: %s", projectID, err)
+        return projectConfigurations, err
+    }
+
+    err = json.Unmarshal( data, &projectConfigurations )
+    return projectConfigurations, err
+}
+
 // UpdateProjectConfiguration updates the configuration of the project addressed by projectID
-// TODO
-// unclear if this is still relevant? need to investigate usage.
-func (sys *SystemInstance) UpdateProjectConfiguration(projectID string, presetID int, engineConfigurationID string) error {
-    /*
-        This behaves differently in Cx1. Configurations like the "Multi-Language Scan Mode" and the Preset are one of the 
-            configurations returned by the /api/configurations/projects/?project-id=
-            This returns an array of object 
+// Updated for Cx1
+func (sys *SystemInstance) UpdateProjectConfiguration(projectID string, settings []ProjectConfigurationSetting) error {
+    if len(settings) == 0 {
+        return errors.New("Empty list of settings provided.")
+    }
 
+    params := url.Values{
+        "project-id":   {projectID},
+    }
 
-    */
+    jsonValue, err := json.Marshal( settings )
 
-
-    /*engineConfigID, _ := strconv.Atoi(engineConfigurationID)
-
-    var projectScanSettings ScanSettings
-    header := http.Header{}
-    header.Set("Content-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scanSettings/%v", projectID), nil, header, []int{})
     if err != nil {
-        // if an error happens, try to update the config anyway
-        sys.logger.Warnf("Failed to fetch scan settings of project %v: %s", projectID, err)
-    } else {
-        // Check if the current project config needs to be updated
-        json.Unmarshal(data, &projectScanSettings)
-        if projectScanSettings.Preset.PresetID == presetID && projectScanSettings.EngineConfiguration.EngineConfigurationID == engineConfigID {
-            sys.logger.Debugf("Project configuration does not need to be updated")
-            return nil
-        }
+        sys.logger.Errorf("Failed to marshal settings.")
+        return err
     }
 
-    jsonData := map[string]interface{}{
-        "projectId":             projectID,
-        "presetId":              presetID,
-        "engineConfigurationId": engineConfigID,
-    }
-
-    jsonValue, err := json.Marshal(jsonData)
+    _, err = sendRequest( sys, http.MethodPatch, fmt.Sprintf( "/configuration/project?%v", params.Encode() ), bytes.NewReader(jsonValue), http.Header{}, []int{})
     if err != nil {
-        return errors.Wrapf(err, "error marshalling project data")
+        sys.logger.Errorf( "Failed to update project configuration: %s", err )
+        return err
     }
-
-    _, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), header, []int{})
-    if err != nil {
-        return errors.Wrapf(err, "request to checkmarx system failed")
-    }
-    sys.logger.Debugf("Project configuration updated")*/
 
     return nil
 }
+
+
+func (sys *SystemInstance) SetProjectBranch( projectID, branch string, allowOverride bool ) error {
+    var setting ProjectConfigurationSetting
+    setting.Key = "scan.handler.git.branch"
+    setting.Value = branch
+    setting.AllowOverride = allowOverride
+
+    return sys.UpdateProjectConfiguration( projectID, []ProjectConfigurationSetting{setting} )
+}
+
+func (sys *SystemInstance) SetProjectPreset( projectID, presetName string, allowOverride bool ) error {
+    var setting ProjectConfigurationSetting
+    setting.Key = "scan.config.sast.presetName"
+    setting.Value = presetName
+    setting.AllowOverride = allowOverride
+
+    return sys.UpdateProjectConfiguration( projectID, []ProjectConfigurationSetting{setting} )
+}
+
+func (sys *SystemInstance) SetProjectLanguageMode( projectID, languageMode string, allowOverride bool ) error {
+    var setting ProjectConfigurationSetting
+    setting.Key = "scan.config.sast.languageMode"
+    setting.Value = languageMode
+    setting.AllowOverride = allowOverride
+
+    return sys.UpdateProjectConfiguration( projectID, []ProjectConfigurationSetting{setting} )
+}
+
+func (sys *SystemInstance) SetProjectFileFilter( projectID, filter string, allowOverride bool ) error {
+    var setting ProjectConfigurationSetting
+    setting.Key = "scan.config.sast.filter"
+    setting.Value = filter
+    setting.AllowOverride = allowOverride
+
+    // TODO - apply the filter across all languages? set up separate calls per engine? engine as param?
+
+    return sys.UpdateProjectConfiguration( projectID, []ProjectConfigurationSetting{setting} )
+}
+
 
 // ScanProject triggers a scan on the project addressed by projectID
 // TODO
@@ -710,41 +764,28 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID string, presetID
     ]
 }
 */
-func (sys *SystemInstance) ScanProject(projectID string, isIncremental, isPublic, forceScan bool) (Scan, error) {
-    scan := Scan{}
 
-    /*
-    jsonData := map[string]interface{}{
-        "projectId":     projectID,
-        "isIncremental": isIncremental,
-        "isPublic":      isPublic,
-        "forceScan":     forceScan,
-        "comment":       "Scan From Golang Script",
-    }
+// GetScans returns all scan status on the project addressed by projectID
+func (sys *SystemInstance) GetScan(scanID string) (Scan, error) {
+    var scan Scan
 
-    jsonValue, _ := json.Marshal(jsonData)
-
-    header := http.Header{}
-    header.Set("cxOrigin", cxOrigin)
-    header.Set("Content-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodPost, "/sast/scans", bytes.NewBuffer(jsonValue), header, []int{})
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/%v", scanID), nil, http.Header{}, []int{})
     if err != nil {
-        sys.logger.Errorf("Failed to trigger scan of project %v: %s", projectID, err)
-        return scan, errors.Wrapf(err, "Failed to trigger scan of project %v", projectID)
+        sys.logger.Errorf("Failed to fetch scan with ID %v: %s", scanID, err)
+        return scan, errors.Wrapf(err, "failed to fetch scan with ID %v", scanID)
     }
 
-    json.Unmarshal(data, &scan)*/
+    json.Unmarshal(data, &scan)
     return scan, nil
 }
 
 // GetScans returns all scan status on the project addressed by projectID
-// Partially updated for Cx1 but the data structure to store the response is not yet fully defined
-func (sys *SystemInstance) GetScans(projectID string) ([]Scan, error) {
+func (sys *SystemInstance) GetLastScans(projectID string, limit int ) ([]Scan, error) {
     scans := []Scan{}
     body := url.Values{
         "projectId": {projectID},
         "offset":     {fmt.Sprintf("%v",0)},
-        "limit":      {fmt.Sprintf("%v", 20)},
+        "limit":      {fmt.Sprintf("%v", limit)},
         "sort":        {"+created_at"},
     }
 

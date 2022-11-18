@@ -36,6 +36,7 @@ type checkmarxoneExecuteScanOptions struct {
 	ClientSecret                         string   `json:"clientSecret,omitempty"`
 	APIKey                               string   `json:"APIKey,omitempty"`
 	Preset                               string   `json:"preset,omitempty"`
+	LanguageMode                         string   `json:"languageMode,omitempty"`
 	ProjectCriticality                   string   `json:"projectCriticality,omitempty"`
 	ProjectName                          string   `json:"projectName,omitempty"`
 	PullRequestName                      string   `json:"pullRequestName,omitempty"`
@@ -351,10 +352,11 @@ func addCheckmarxoneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxon
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.ClientSecret, "clientSecret", os.Getenv("PIPER_clientSecret"), "The clientSecret to authenticate using a service account")
 	cmd.Flags().StringVar(&stepConfig.APIKey, "APIKey", os.Getenv("PIPER_APIKey"), "The APIKey to authenticate")
-	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxoneCredentialsId`")
+	cmd.Flags().StringVar(&stepConfig.Preset, "preset", `Checkmarx Default`, "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxoneCredentialsId`")
+	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
 	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", os.Getenv("PIPER_projectCriticality"), "The criticality of the CheckmarxOne project, used during project creation")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the CheckmarxOne project to scan into")
-	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
+	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", `zip`, "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the CheckmarxOne server to be used")
 	cmd.Flags().StringVar(&stepConfig.IamURL, "iamUrl", os.Getenv("PIPER_iamUrl"), "The URL pointing to the access control root of the CheckmarxOne IAM server to be used")
@@ -567,8 +569,17 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "presetName"}},
+						Default:     `Checkmarx Default`,
+					},
+					{
+						Name:        "languageMode",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_preset"),
+						Default:     `multi`,
 					},
 					{
 						Name:        "projectCriticality",
@@ -585,7 +596,7 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxoneProject"}, {Name: "checkMarxOneProjectName", Deprecated: true}},
+						Aliases:     []config.Alias{{Name: "checkmarxoneProject"}},
 						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
@@ -595,7 +606,7 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "branch"}},
-						Default:     os.Getenv("PIPER_pullRequestName"),
+						Default:     `zip`,
 					},
 					{
 						Name: "repository",

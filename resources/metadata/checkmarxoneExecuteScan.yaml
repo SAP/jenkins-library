@@ -169,13 +169,23 @@ spec:
             name: checkmarxoneVaultSecretName
             default: checkmarxone
       - name: preset
+        aliases:
+          - name: presetName
         type: string
         description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxoneCredentialsId`
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: null
+        default: "Checkmarx Default"
+      - name: languageMode
+        type: string
+        description: Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "multi"
       - name: projectCriticality
         aliases:
           - name: criticality
@@ -190,8 +200,6 @@ spec:
       - name: projectName
         aliases:
           - name: checkmarxoneProject
-          - name: checkMarxOneProjectName
-            deprecated: true
         type: string
         description: The name of the CheckmarxOne project to scan into
         mandatory: true
@@ -208,6 +216,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: "zip"
       - name: repository
         aliases:
           - name: githubRepo
