@@ -70,6 +70,12 @@ type ProjectConfigurationSetting struct {
 }
 
 
+type WorkflowLog struct {
+    Source              string              `json:"Source"`
+    Info                string              `json:"Info"`
+    Timestamp           string              `json:"Timestamp"`
+}
+
 // ReportStatus - ReportStatus Structure
 // Updated for Cx1
 type ReportStatus struct {
@@ -178,6 +184,7 @@ type System interface {
     //RequestNewReport(scanID int, reportType string) (Report, error)
     //GetResults(scanID int) ResultsStatistics
     GetScan(scanID string) (Scan, error)
+    GetScanWorkflow(scanID string) ([]WorkflowLog, error)
     GetLastScans(projectID string, limit int) ([]Scan, error)
 
     ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration ) (Scan, error)
@@ -777,6 +784,20 @@ func (sys *SystemInstance) GetScan(scanID string) (Scan, error) {
 
     json.Unmarshal(data, &scan)
     return scan, nil
+}
+
+// GetScans returns all scan status on the project addressed by projectID
+func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error) {
+    var workflow []WorkflowLog
+
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/%v/workflow", scanID), nil, http.Header{}, []int{})
+    if err != nil {
+        sys.logger.Errorf("Failed to fetch scan with ID %v: %s", scanID, err)
+        return []WorkflowLog{}, errors.Wrapf(err, "failed to fetch scan with ID %v", scanID)
+    }
+
+    json.Unmarshal(data, &workflow)
+    return workflow, nil
 }
 
 // GetScans returns all scan status on the project addressed by projectID
