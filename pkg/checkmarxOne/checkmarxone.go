@@ -179,9 +179,9 @@ type SystemInstance struct {
 
 // System is the interface abstraction of a specific SystemIns
 type System interface {
-    //DownloadReport(reportID int) ([]byte, error)
-    //GetReportStatus(reportID int) (ReportStatusResponse, error)
-    //RequestNewReport(scanID int, reportType string) (Report, error)
+    DownloadReport(reportID string) ([]byte, error)
+    GetReportStatus(reportID string) (ReportStatus, error)
+    RequestNewReport(scanID, projectID, branch, reportType string) (string, error)
     //GetResults(scanID int) ResultsStatistics
     GetScan(scanID string) (Scan, error)
     GetScanWorkflow(scanID string) ([]WorkflowLog, error)
@@ -312,7 +312,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
     }
 
     data, _ := ioutil.ReadAll(response.Body)
-    sys.logger.Debugf("Valid response body: %v", string(data))
+    //sys.logger.Debugf("Valid response body: %v", string(data))
     defer response.Body.Close()
     return data, nil
 }
@@ -588,6 +588,8 @@ func (sys *SystemInstance) scanProject( scanConfig map[string]interface{} ) (Sca
     jsonValue, err := json.Marshal( scanConfig )    
     header := http.Header{}
     header.Set("Content-Type", "application/json")
+    sys.logger.Errorf( "Starting scan with settings: " + string(jsonValue) )
+
     data, err := sendRequest(sys, http.MethodPost, "/scans", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
         return scan, err
@@ -835,24 +837,7 @@ func (s *Scan) IsIncremental() (bool, error) {
     return false, errors.New( fmt.Sprintf("Scan %v did not have a sast-engine incremental flag set", s.ScanID) )
 }
 
-
-// GetScanStatusAndDetail returns the status of the scan addressed by scanID
-// Partially updated for Cx1 but the data structure to store the response is not yet fully defined
 /*
-func (sys *SystemInstance) GetScanStatusAndDetail(scanID string) (string, ScanStatusDetail) {
-    var scanStatus ScanStatus
-    header := http.Header{}
-    header.Set("Accept-Type", "application/json")
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/%v", scanID), nil, header, []int{})
-    if err != nil {
-        sys.logger.Errorf("Failed to get scan status for scanID %v: %s", scanID, err)
-        return "Failed", ScanStatusDetail{}
-    }
-
-    json.Unmarshal(data, &scanStatus)
-    return scanStatus.Status.Name, scanStatus.Status.Details //TODO after creating ScanStatus type
-}/
-
 // GetResults returns the results of the scan addressed by scanID
 // Two options:
 //   1. /results/?scan-id= &offset=0&limit=20&sort=%2Bstatus&sort=%2Bseverity
@@ -869,11 +854,11 @@ func (sys *SystemInstance) GetResults(scanID string) ResultsStatistics {
     json.Unmarshal(data, &results)
     return results
 }
+*/
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 // TODO
-func (sys *SystemInstance) RequestNewReport(scanID string, reportType string) (Report, error) {
-    report := Report{}
+func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
     /* Example
     {
         "fileFormat": "pdf",
@@ -893,11 +878,23 @@ func (sys *SystemInstance) RequestNewReport(scanID string, reportType string) (R
             ],
             "host": ""
         }
-    } // *//*
+    } // */
     jsonData := map[string]interface{}{
-        "scanId":     scanID,
-        "reportType": reportType,
-        "comment":    "Scan report triggered by Piper",
+        "fileFormat": reportType,
+        "reportType": "ui",
+        "reportName": "scan-report",
+        "data": map[string]interface{}{
+            "scanId":     scanID,
+            "projectId":  projectID,
+            "branchName": branch,
+            "sections": []string{
+                "ScanSummary",
+                "ExecutiveSummary",
+                "ScanResults",
+            },
+            "scanners": []string{ "SAST" },
+            "host":"",
+        },
     }
 
     jsonValue, _ := json.Marshal(jsonData)
@@ -907,18 +904,25 @@ func (sys *SystemInstance) RequestNewReport(scanID string, reportType string) (R
     header.Set("Content-Type", "application/json")
     data, err := sendRequest(sys, http.MethodPost, "/reports", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
-        return report, errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
+        return "", errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
+    } else {
+        sys.logger.Infof( "Generating report %v", data )
     }
 
-    json.Unmarshal(data, &report) 
-    return report, nil
+    var reportResponse struct {
+        ReportId string
+    }
+    err = json.Unmarshal( data, &reportResponse )
+
+    return reportResponse.ReportId, err
 }
-*/
+
+
 // GetReportStatus returns the status of the report generation process
 // TODO - request is sent but the response is not yet stored, "ReportStatusResponse" structure not yet fully defined
-/*
-func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, error) {
-    var response ReportStatusResponse
+
+func (sys *SystemInstance) GetReportStatus(reportID string) (ReportStatus, error) {
+    var response ReportStatus
 
     header := http.Header{}
     header.Set("Accept", "application/json")
@@ -930,7 +934,7 @@ func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, 
 
     json.Unmarshal(data, &response)
     return response, nil
-}*/
+}
 
 // GetShortDescription returns the short description for an issue with a scanID and pathID
 // TODO - I believe this is quite different in Cx1 as it is a per-query description rather than using the specific Scan & Path ID.
@@ -950,12 +954,12 @@ func (sys *SystemInstance) GetShortDescription(scanID int, pathID int) (ShortDes
 
 // DownloadReport downloads the report addressed by reportID and returns the XML contents
 // TODO
-func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
+func (sys *SystemInstance) DownloadReport(reportUrl string) ([]byte, error) {
     header := http.Header{}
     header.Set("Accept", "application/json")
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v", reportID), nil, header, []int{})
+    data, err := sendRequestInternal(sys, http.MethodGet, reportUrl, nil, header, []int{})
     if err != nil {
-        return []byte{}, errors.Wrapf(err, "failed to download report with reportID %v", reportID)
+        return []byte{}, errors.Wrapf(err, "failed to download report from url: %v", reportUrl)
     }
     return data, nil
 }

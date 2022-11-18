@@ -123,54 +123,68 @@ func checkmarxoneExecuteScan(config checkmarxoneExecuteScanOptions, _ *telemetry
 
 	cx1scanhelper := checkmarxoneExecuteScanHelper{}
 
-	if err := cx1scanhelper.RunScan(ctx, config, sys, influx, utils); err != nil {
+    _, err = cx1scanhelper.RunScan(ctx, config, sys, influx, utils)
+	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx One scan.")
 	}
+
 	influx.step_data.fields.checkmarxone = true
 }
 
 // Updated for Cx1
-func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) error {
+func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) (checkmarxone.Scan, error) {
+    var scan checkmarxone.Scan
 
 	// get the Group ID
 	groupID := config.GroupID
 	if len(groupID) == 0 && len(config.GroupName) > 0 {
 		cx1group, err := sys.GetGroupByName(config.GroupName)
 		if err != nil {
-			return err
+			return scan, err
 		}
 		groupID = cx1group.GroupID
 	}
 
     if len(config.ProjectName) == 0 {
-        return errors.New( "No project name set in the configuration" )
+        return scan, errors.New( "No project name set in the configuration" )
     }
 
 	// get the Project, if it exists
-	//project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, groupID)
 	projects, err := sys.GetProjectsByNameAndGroup(config.ProjectName, groupID)
 	if err != nil {
-		return errors.Wrap(err, "error when trying to load project")
+		return scan, errors.Wrap(err, "error when trying to load project")
 	}
 
 	var project checkmarxone.Project
 
 	if len(projects) == 0 {
 		if len(groupID) == 0 {
-			return errors.New("GroupName or GroupID is required to create a new project")
+			return scan, errors.New("GroupName or GroupID is required to create a new project")
 		}
 
 		project, err = sys.CreateProject(config.ProjectName, []string{groupID})
 		if err != nil {
-			return errors.Wrap(err, "Failed to create new project")
+			return scan, errors.Wrap(err, "Failed to create new project")
 		}
 
 		// new project, set the defaults per pipeline config
 		if len(config.Preset) != 0 {
 			err = sys.SetProjectPreset(project.ProjectID, config.Preset, true)
+            if err != nil {
+                log.Entry().Errorf( "Unable to set preset for project %v to: %v. %s", project.ProjectID, config.Preset, err )
+                return scan, err
+            } else {
+                log.Entry().Infof( "Project preset updated to %v", config.Preset )
+            }
 		}
 		if len(config.LanguageMode) != 0 {
 			err = sys.SetProjectLanguageMode(project.ProjectID, config.LanguageMode, true)
+            if err != nil {
+                log.Entry().Errorf( "Unable to set languageMode for project %v to: %v. %s", project.ProjectID, config.LanguageMode, err )
+                return scan, err
+            } else {
+                log.Entry().Infof( "Project languageMode updated to %v", config.LanguageMode )
+            }
 		}
 
 	} else if len(projects) > 1 {
@@ -196,35 +210,44 @@ func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config 
 	log.Entry().Infof("Project %v (ID %v)", project.ProjectID, project.Name)
 
 	
-    err = cx1sh.uploadAndScan(ctx, config, sys, project, influx, utils)
+    scan, err = cx1sh.uploadAndScan(ctx, config, sys, project, influx, utils)
     if err != nil {
-        return errors.Wrap(err, "scan, upload, and result validation returned an error")
+        return scan, errors.Wrap(err, "scan, upload, and result validation returned an error")
     }
-	
-	return nil
+
+    // validation
+    
+    err = cx1sh.verifyCxProjectCompliance(ctx, config, sys, scan, influx, utils)
+    if err != nil {
+        log.SetErrorCategory(log.ErrorCompliance)
+        return scan, errors.Wrapf(err, "project %v not compliant", project.Name)
+    }
+
+	return scan, nil
 }
 
-func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, project checkmarxone.Project, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) error {
-	previousScans, err := sys.GetLastScans(project.ProjectID, 20)
+func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, project checkmarxone.Project, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) (checkmarxone.Scan, error) {
+	var scan checkmarxone.Scan
+    previousScans, err := sys.GetLastScans(project.ProjectID, 20)
 	if err != nil && config.VerifyOnly {
 		log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", project.Name)
 	}
 
 	if len(previousScans) > 0 && config.VerifyOnly {
-		err := cx1sh.verifyCxProjectCompliance(ctx, config, sys, previousScans[0].ScanID, influx, utils)
+		err := cx1sh.verifyCxProjectCompliance(ctx, config, sys, previousScans[0], influx, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
-			return errors.Wrapf(err, "project %v not compliant", project.Name)
+			return scan, errors.Wrapf(err, "project %v not compliant", project.Name)
 		}
 	} else {
 		zipFile, err := cx1sh.zipWorkspaceFiles(config.FilterPattern, utils)
 		if err != nil {
-			return errors.Wrap(err, "failed to zip workspace files")
+			return scan, errors.Wrap(err, "failed to zip workspace files")
 		}
 
 		uploadUri, err := sys.UploadProjectSourceCode(project.ProjectID, zipFile.Name())
 		if err != nil {
-			return errors.Wrapf(err, "failed to upload source code for project %v", project.Name)
+			return scan, errors.Wrapf(err, "failed to upload source code for project %v", project.Name)
 		}
 
 		log.Entry().Debugf("Source code uploaded for project %v", project.Name)
@@ -237,7 +260,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, c
 		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
+			return scan, errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
 		}
 
 		if config.IsOptimizedAndScheduled {
@@ -263,14 +286,14 @@ func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, c
 
 		return cx1sh.triggerScan(ctx, config, sys, project, uploadUri, config.PullRequestName, []checkmarxone.ScanConfiguration{sastConfig}, influx, utils)
 	}
-	return nil
+	return scan, nil
 }
 
-func (cx1sh *checkmarxoneExecuteScanHelper) triggerScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, project checkmarxone.Project, repoUrl string, branch string, settings []checkmarxone.ScanConfiguration, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) error {
+func (cx1sh *checkmarxoneExecuteScanHelper) triggerScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, project checkmarxone.Project, repoUrl string, branch string, settings []checkmarxone.ScanConfiguration, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) (checkmarxone.Scan, error) {
 	scan, err := sys.ScanProjectZip(project.ProjectID, repoUrl, branch, settings)
 
 	if err != nil {
-		return errors.Wrapf(err, "cannot scan project %v", project.Name)
+		return scan, errors.Wrapf(err, "cannot scan project %v", project.Name)
 	}
 
 	log.Entry().Debugf("Scanning project %v: %v ", project.Name, scan.ScanID)
@@ -279,12 +302,12 @@ func (cx1sh *checkmarxoneExecuteScanHelper) triggerScan(ctx context.Context, con
 
 	err = cx1sh.pollScanStatus(sys, scan)
     if err != nil {
-        return errors.Wrap(err, "polling scan status failed")
+        return scan, errors.Wrap(err, "polling scan status failed")
     }
 
     log.Entry().Debugln("Scan finished")
-    return cx1sh.verifyCxProjectCompliance(ctx, config, sys, scan.ScanID, influx, utils) 
-	
+    // original verify step here
+    return scan, nil	
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) createReportName(workspace, reportFileNameTemplate string) string {
@@ -336,84 +359,38 @@ func (cx1sh *checkmarxoneExecuteScanHelper) pollScanStatus(sys checkmarxone.Syst
 	return nil
 }
 
-func (cx1sh *checkmarxoneExecuteScanHelper) downloadAndSaveReport(sys checkmarxone.System, reportFileName string, scanID int, utils checkmarxoneExecuteScanUtils) error {
-	/*
-		report, err := generateAndDownloadReport(sys, scanID, "PDF")
-		if err != nil {
-			return errors.Wrap(err, "failed to download the report")
-		}
-		log.Entry().Debugf("Saving report to file %v...", reportFileName)
-		return utils.WriteFile(reportFileName, report, 0o700)
-	*/
-	return nil
+func (cx1sh *checkmarxoneExecuteScanHelper) downloadAndSaveReport(sys checkmarxone.System, reportFileName string, scan checkmarxone.Scan, utils checkmarxoneExecuteScanUtils) error {
+    report, err := cx1sh.generateAndDownloadReport(sys, scan, "pdf")
+    if err != nil {
+        return errors.Wrap(err, "failed to download the report")
+    }
+    log.Entry().Debugf("Saving report to file %v...", reportFileName)
+    return utils.WriteFile(reportFileName, report, 0o700)
 }
 
-// loadPreset finds a checkmarxone.Preset that has either the ID or Name given by presetValue.
-// presetValue is not expected to be empty.
-func (cx1sh *checkmarxoneExecuteScanHelper) loadPreset(sys checkmarxone.System, presetName string) (checkmarxone.Preset, error) {
-	/*
-		presets := sys.GetPresets()
-		var preset checkmarxone.Preset
-		var configuredPresetName string
-		preset = sys.FilterPresetByName(presets, presetValue)
-		configuredPresetName = presetValue
-		if len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
-			log.Entry().Infof("Loaded preset %v", preset.Name)
-			return preset, nil
-		}
-		log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue)
-		for _, prs := range presets {
-			log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
-		}
-	*/
 
-	return checkmarxone.Preset{}, fmt.Errorf("preset %v not found", presetName)
-}
+func (cx1sh *checkmarxoneExecuteScanHelper) generateAndDownloadReport(sys checkmarxone.System, scan checkmarxone.Scan, reportType string) ([]byte, error) {
+	var finalStatus checkmarxone.ReportStatus
 
-// setPresetForProject is only called when it has already been established that the preset needs to be set.
-// It will exit via the logging framework in case the preset could be found, or the project could not be updated.
-func (cx1sh *checkmarxoneExecuteScanHelper) setPresetForProject(sys checkmarxone.System, projectID, presetName string) error {
-
-	/*
-		    presetID := presetIDValue
-			if presetID <= 0 {
-				preset, err := cx1sh.loadPreset(sys, presetValue)
-				if err != nil {
-					return errors.Wrapf(err, "preset %v not found, configuration of project %v failed", presetValue, projectName)
-				}
-				presetID = preset.ID
-			}
-			err := sys.UpdateProjectConfiguration(projectID, presetID, engineConfiguration)
-			if err != nil {
-				return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
-			}
-	*/
-	return nil
-}
-
-func (cx1sh *checkmarxoneExecuteScanHelper) generateAndDownloadReport(sys checkmarxone.System, scanID int, reportType string) ([]byte, error) {
-	finalStatus := 1
-
-	/*
-		report, err := sys.RequestNewReport(scanID, reportType)
-		if err != nil {
-			return []byte{}, errors.Wrap(err, "failed to request new report")
-		}
-		for {
-			reportStatus, err := sys.GetReportStatus(report.ReportID)
-			if err != nil {
-				return []byte{}, errors.Wrap(err, "failed to get report status")
-			}
-			finalStatus = reportStatus.Status.ID
-			if finalStatus != 1 {
-				break
-			}
-			time.Sleep(10 * time.Second)
-		}
-		if finalStatus == 2 {
-			return sys.DownloadReport(report.ReportID)
-		}*/
-	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus)
+    report, err := sys.RequestNewReport(scan.ScanID, scan.ProjectID, scan.Branch, reportType)
+    if err != nil {
+        return []byte{}, errors.Wrap(err, "failed to request new report")
+    }
+    for {
+        finalStatus, err = sys.GetReportStatus(report)
+        if err != nil {
+            return []byte{}, errors.Wrap(err, "failed to get report status")
+        }
+        
+        if finalStatus.Status == "completed" {
+            break
+        }
+        time.Sleep(10 * time.Second)
+    }
+    if finalStatus.Status == "completed" {
+        return sys.DownloadReport(finalStatus.ReportURL)
+    }
+	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus.Status)
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) getNumCoherentIncrementalScans(scans []checkmarxone.Scan) int {
@@ -701,11 +678,11 @@ func (cx1sh *checkmarxoneExecuteScanHelper) createToolRecordCx(utils checkmarxon
 	return record.GetFileName(), nil
 }
 
-func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, scanID string, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) error {
-	/*var reports []piperutils.Path
+func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, scan checkmarxone.Scan, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) error {
+	var reports []piperutils.Path
 	if config.GeneratePdfReport {
-		pdfReportName := cx1sh.createReportName(utils.GetWorkspace(), "CxSASTReport_%v.pdf")
-		err := cx1sh.downloadAndSaveReport(sys, pdfReportName, scanID, utils)
+		pdfReportName := cx1sh.createReportName(utils.GetWorkspace(), "Cx1_SASTReport_%v.pdf")
+		err := cx1sh.downloadAndSaveReport(sys, pdfReportName, scan, utils)
 		if err != nil {
 			log.Entry().Warning("Report download failed - continue processing ...")
 		} else {
@@ -715,7 +692,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		log.Entry().Debug("Report generation is disabled via configuration")
 	}
 
-	xmlReportName := cx1sh.createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
+	/*xmlReportName := cx1sh.createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
 	results, err := cx1sh.getDetailedResults(config, sys, xmlReportName, scanID, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
@@ -734,7 +711,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 			return fmt.Errorf("failed to write sarif")
 		}
 		reports = append(reports, paths...)
-	}
+	} 
 
 	// create toolrecord
 	toolRecordFileName, err := cx1sh.createToolRecordCx(utils, utils.GetWorkspace(), config, results)
@@ -971,74 +948,3 @@ func (cx1sh *checkmarxoneExecuteScanHelper) reportToInflux(results map[string]in
 	*/
 }
 
-// the following are potentially unnecessary?
-
-/*
-func presetExistingProject(config checkmarxoneExecuteScanOptions, sys checkmarxone.System, projectName string, project checkmarxone.Project) error {
-	log.Entry().Infof("Project %v exists...", projectName)
-	if len(config.Preset) > 0 {
-		presetID, _ := strconv.Atoi(config.Preset)
-		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
-		if err != nil {
-			return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
-		}
-	}
-	return nil
-} */
-
-func (cx1sh *checkmarxoneExecuteScanHelper) loadExistingProject(sys checkmarxone.System, initialProjectName, pullRequestName, groupID string) (checkmarxone.Project, string, error) {
-	/*
-	   To discuss the "Pull Request" approach
-	       - should this continue to create new distinct projects?
-	       - should this add a "Branch" to the existing project?
-	*/
-	var project checkmarxone.Project
-	projectName := initialProjectName
-
-	/*if len(pullRequestName) > 0 {
-		projectName = fmt.Sprintf("%v_%v", initialProjectName, pullRequestName)
-		projects, err := sys.GetProjectsByNameAndGroup(projectName, groupID)
-		if err != nil || len(projects) == 0 {
-			projects, err = sys.GetProjectsByNameAndGroup(initialProjectName, groupID)
-			if err != nil {
-				return project, projectName, errors.Wrap(err, "failed getting projects")
-			}
-			if len(projects) == 0 {
-				return checkmarxone.Project{}, projectName, nil
-			}
-			branchProject, err := sys.GetProjectByID(sys.CreateBranch(projects[0].ID, projectName))
-			if err != nil {
-				return project, projectName, fmt.Errorf("failed to create branch %v for project %v", projectName, initialProjectName)
-			}
-			project = branchProject
-		} else {
-			project = projects[0]
-			log.Entry().Debugf("Loaded project with name %v", project.Name)
-		}
-	} else { */
-
-	projects, err := sys.GetProjectsByNameAndGroup(projectName, groupID)
-	if err != nil {
-		return project, projectName, errors.Wrap(err, "failed getting projects")
-	}
-	if len(projects) == 0 {
-		return checkmarxone.Project{}, projectName, nil
-	}
-	if len(projects) == 1 {
-		project = projects[0]
-	} else {
-		for _, current_project := range projects {
-			if projectName == current_project.Name {
-				project = current_project
-				break
-			}
-		}
-		if len(project.Name) == 0 {
-			return project, projectName, errors.New("Cannot find project " + projectName + ". You need to provide the groupName parameter if you want a new project to be created.")
-		}
-	}
-	log.Entry().Debugf("Loaded project with name %v", project.Name)
-
-	//}
-	return project, projectName, nil
-}
