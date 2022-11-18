@@ -127,6 +127,9 @@ type Vulnerability struct {
 	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
 	Component                    *Component
+	projectName                  string
+	projectVersion               string
+	projectVersionLink           string
 }
 
 type VulnerabilityWithRemediation struct {
@@ -150,10 +153,13 @@ func (v Vulnerability) Title() string {
 // ToMarkdown returns the markdown representation of the contents
 func (v Vulnerability) ToMarkdown() ([]byte, error) {
 	vul := reporting.VulnerabilityReport{
-		ArtifactID:     v.Component.Name,
-		Description:    v.Description,
-		DependencyType: v.Component.MatchedType(),
-		Origin:         v.ComponentVersionOriginID,
+		ProjectName:          v.projectName,
+		ProjectVersion:       v.projectVersion,
+		BlackDuckProjectLink: v.projectVersionLink,
+		ArtifactID:           v.Component.Name,
+		Description:          v.Description,
+		DependencyType:       v.Component.MatchedType(),
+		Origin:               v.ComponentVersionOriginID,
 
 		// no information available about footer, yet
 		Footer: "",
@@ -225,6 +231,7 @@ type Client struct {
 	token                       string
 	httpClient                  piperhttp.Sender
 	serverURL                   string
+	projectVersion              *ProjectVersion
 }
 
 // NewClient creates a new BlackDuck client
@@ -270,6 +277,10 @@ func (b *Client) GetProject(projectName string) (*Project, error) {
 
 // GetProjectVersion returns a project version with a given name
 func (b *Client) GetProjectVersion(projectName, projectVersion string) (*ProjectVersion, error) {
+	// get version from cache if it is there
+	if b.projectVersion != nil {
+		return b.projectVersion, nil
+	}
 	project, err := b.GetProject(projectName)
 	if err != nil {
 		return nil, err
@@ -304,6 +315,8 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 	// even if more than one projects found, let's return the first one with exact project name match
 	for _, version := range projectVersions.Items {
 		if version.Name == projectVersion {
+			// save version to cache in order not to do several same requests
+			b.projectVersion = &version
 			return &version, nil
 		}
 	}

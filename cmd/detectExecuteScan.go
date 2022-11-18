@@ -520,7 +520,14 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 		}
 	}
 
-	sarif := bd.CreateSarifResultFile(vulns)
+	projectVersion, err := sys.Client.GetProjectVersion(config.ProjectName, config.Version)
+
+	var projectLink string
+	if projectVersion != nil {
+		projectLink = projectVersion.Href
+	}
+
+	sarif := bd.CreateSarifResultFile(vulns, config.ProjectName, config.Version, projectLink)
 	paths, err := bd.WriteSarifFile(sarif, utils)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))

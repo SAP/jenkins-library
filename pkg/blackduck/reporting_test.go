@@ -26,13 +26,16 @@ func TestCreateSarifResultFile(t *testing.T) {
 	vulns := Vulnerabilities{
 		Items: alerts,
 	}
+	projectName := "theProjectName"
+	projectVersion := "theProjectVersion"
+	projectLink := "theProjectLink"
 
-	sarif := CreateSarifResultFile(&vulns)
+	sarif := CreateSarifResultFile(&vulns, projectName, projectVersion, projectLink)
 
 	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json", sarif.Schema)
 	assert.Equal(t, "2.1.0", sarif.Version)
 	assert.Equal(t, 1, len(sarif.Runs))
-	assert.Equal(t, "Blackduck Hub Detect", sarif.Runs[0].Tool.Driver.Name)
+	assert.Equal(t, "Black Duck", sarif.Runs[0].Tool.Driver.Name)
 	assert.Equal(t, "unknown", sarif.Runs[0].Tool.Driver.Version)
 	assert.Equal(t, 4, len(sarif.Runs[0].Tool.Driver.Rules))
 	assert.Equal(t, 5, len(sarif.Runs[0].Results))
