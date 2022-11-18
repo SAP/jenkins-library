@@ -142,6 +142,10 @@ func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config 
 		groupID = cx1group.GroupID
 	}
 
+    if len(config.ProjectName) == 0 {
+        return errors.New( "No project name set in the configuration" )
+    }
+
 	// get the Project, if it exists
 	//project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, groupID)
 	projects, err := sys.GetProjectsByNameAndGroup(config.ProjectName, groupID)
@@ -185,7 +189,9 @@ func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config 
 			project = projects[0]
 			log.Entry().Info("Exact project name match not found, selecting the first project in the list: " + project.Name)
 		}
-	}
+	} else {
+        project = projects[0]
+    }
 
 	log.Entry().Infof("Project %v (ID %v)", project.ProjectID, project.Name)
 
@@ -243,6 +249,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, c
 		// TODO: need to define the engines somewhere also.
 		sastConfig := checkmarxone.ScanConfiguration{}
 		sastConfig.ScanType = "sast"
+
         sastConfig.Values = make( map[string]string, 0 )
 		sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
 
@@ -287,10 +294,10 @@ func (cx1sh *checkmarxoneExecuteScanHelper) createReportName(workspace, reportFi
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) pollScanStatus(sys checkmarxone.System, scan checkmarxone.Scan) error {
-	status := "Scan phase: New"
-	pastStatus := status
-	log.Entry().Info(status)
-	statusDetails := ""
+	statusDetails := "Scan phase: New"
+	pastStatusDetails := statusDetails
+	log.Entry().Info(statusDetails)
+    status := "New"
 	for {
 		scan_refresh, err := sys.GetScan(scan.ScanID)
 
@@ -300,19 +307,21 @@ func (cx1sh *checkmarxoneExecuteScanHelper) pollScanStatus(sys checkmarxone.Syst
         }
 
         status = scan_refresh.Status
+        workflow, err := sys.GetScanWorkflow( scan.ScanID )
+        if err != nil {
+            log.Entry().Errorf( "Error while polling scan %v: %s", scan.ScanID, err )
+            return err;
+        }
+
+        statusDetails = workflow[ len(workflow)-1 ].Info
 
 		if status == "Completed" || status == "Canceled" || status == "Failed" {
 			break
 		}
 
-        statusDetails = ""
-        for _, status := range scan_refresh.StatusDetails {
-            statusDetails += fmt.Sprintf( " (%v: %v - %v)\n", status.Name, status.Status, status.Details )
-        }
-
-		if pastStatus != status {
-			log.Entry().Info(status)
-			pastStatus = status
+		if pastStatusDetails != statusDetails {
+			log.Entry().Info(statusDetails)
+			pastStatusDetails = statusDetails
 		}
 		log.Entry().Debug("Polling for status: sleeping...")
 		time.Sleep(10 * time.Second)
@@ -409,12 +418,13 @@ func (cx1sh *checkmarxoneExecuteScanHelper) generateAndDownloadReport(sys checkm
 
 func (cx1sh *checkmarxoneExecuteScanHelper) getNumCoherentIncrementalScans(scans []checkmarxone.Scan) int {
 	count := 0
-	/*for _, scan := range scans {
-		if !scan.IsIncremental {
+	for _, scan := range scans {
+        inc, err := scan.IsIncremental()
+		if !inc && err == nil {
 			break
 		}
 		count++
-	}*/
+	}
 	return count
 }
 
@@ -560,7 +570,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) zipFolder(source string, zipFile io.
 	archive := zip.NewWriter(zipFile)
 	defer archive.Close()
 
-    log.Entry().Infof( "Zipping %v into %v", source, zipFile )
+    log.Entry().Infof( "Zipping %v into workspace.zip", source )
 
 	info, err := utils.Stat(source)
 	if err != nil {

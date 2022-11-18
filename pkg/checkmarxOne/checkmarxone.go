@@ -302,6 +302,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
         header = http.Header{}
     }
     header.Set( "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0" )
+    //header.Set( "User-Agent", "Project-Piper.io cicd pipeline" )
 
     response, err := sys.client.SendRequest(method, url, requestBody, header, nil)
     if err != nil && (response == nil || !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode)) {
@@ -486,6 +487,7 @@ func (sys *SystemInstance) GetProjectsByNameAndGroup(projectName, groupID string
     if len(projectName) > 0 {
         body.Add( "name", projectName )
     }
+
 
     if len(body) > 0 {
         data, err = sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/?%v", body.Encode()), nil, header, []int{404})
@@ -821,6 +823,18 @@ func (sys *SystemInstance) GetLastScans(projectID string, limit int ) ([]Scan, e
     json.Unmarshal(data, &scans)
     return scans, nil
 }
+
+func (s *Scan) IsIncremental() (bool, error) {
+    for _, scanconfig := range s.Metadata.Configs {
+        if scanconfig.ScanType == "sast" {
+            if val, ok := scanconfig.Values["incremental"]; ok {
+                return val=="true", nil
+            }
+        }
+    }
+    return false, errors.New( fmt.Sprintf("Scan %v did not have a sast-engine incremental flag set", s.ScanID) )
+}
+
 
 // GetScanStatusAndDetail returns the status of the scan addressed by scanID
 // Partially updated for Cx1 but the data structure to store the response is not yet fully defined
