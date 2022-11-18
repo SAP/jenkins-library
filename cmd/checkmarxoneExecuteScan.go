@@ -222,10 +222,10 @@ func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, c
 		}
 
 		log.Entry().Debugf("Source code uploaded for project %v", project.Name)
-		/*err = os.Remove(zipFile.Name())
+		err = os.Remove(zipFile.Name())
 		if err != nil {
 			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", project.Name)
-		}*/
+		}
 
 		incremental := config.Incremental
 		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
