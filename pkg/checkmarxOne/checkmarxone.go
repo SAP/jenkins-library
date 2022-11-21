@@ -11,7 +11,7 @@ import (
     //"strconv"
     "strings"
     "time"
-    "encoding/xml"
+    //"encoding/xml"
     piperHttp "github.com/SAP/jenkins-library/pkg/http"
     "github.com/SAP/jenkins-library/pkg/log"
     "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -149,21 +149,6 @@ type Group struct {
     Name        string              `json:"name"`
 }
 
-
-// Query - Query Structure
-type Query struct {
-    XMLName xml.Name `xml:"Query"`
-    Name    string   `xml:"name,attr"`
-    Results []Result `xml:"Result"`
-}
-
-// Result - Result Structure
-type Result struct {
-    XMLName       xml.Name `xml:"Result"`
-    State         string   `xml:"state,attr"`
-    Severity      string   `xml:"Severity,attr"`
-    FalsePositive string   `xml:"FalsePositive,attr"`
-}
 
 // SystemInstance is the client communicating with the Checkmarx backend
 type SystemInstance struct {
