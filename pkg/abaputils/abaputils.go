@@ -249,7 +249,7 @@ type AbapEnvironmentRunATCCheckOptions struct {
  *	Structs for ABAP in general *
  ********************************/
 
-//AbapEnvironmentOptions contains cloud foundry fields and the host parameter for connections to ABAP Environment instances
+// AbapEnvironmentOptions contains cloud foundry fields and the host parameter for connections to ABAP Environment instances
 type AbapEnvironmentOptions struct {
 	Username          string `json:"username,omitempty"`
 	Password          string `json:"password,omitempty"`

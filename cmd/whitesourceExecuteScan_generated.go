@@ -162,11 +162,13 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/whitesource-ip.json", ParamRef: "", StepResultType: "whitesource-ip"},
-		{FilePattern: "whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-ip"},
+		{FilePattern: "**/whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-ip"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-ip"},
 		{FilePattern: "**/piper_whitesource_vulnerability_report.html", ParamRef: "", StepResultType: "whitesource-security"},
-		{FilePattern: "whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-security"},
+		{FilePattern: "**/whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-security"},
+		{FilePattern: "**/piper_whitesource_vulnerability.sarif", ParamRef: "", StepResultType: "whitesource-security"},
+		{FilePattern: "**/piper_whitesource_sbom.xml", ParamRef: "", StepResultType: "whitesource-security"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -192,7 +194,7 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 	}
 }
 
-// WhitesourceExecuteScanCommand Execute a WhiteSource scan
+// WhitesourceExecuteScanCommand Execute a Mend (formerly known as WhiteSource) scan
 func WhitesourceExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "whitesourceExecuteScan"
 
@@ -208,13 +210,13 @@ func WhitesourceExecuteScanCommand() *cobra.Command {
 
 	var createWhitesourceExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Execute a WhiteSource scan",
-		Long: `With this step [WhiteSource](https://www.whitesourcesoftware.com) security and license compliance scans can be executed and assessed.
-WhiteSource is a Software as a Service offering based on a so called unified agent that locally determines the dependency
+		Short: "Execute a Mend (formerly known as WhiteSource) scan",
+		Long: `With this step [Mend](https://www.mend.io/) (formerly known as Whitesource) security and license compliance scans can be executed and assessed.
+Mend is a Software as a Service offering based on a so called unified agent that locally determines the dependency
 tree of a node.js, Java, Python, Ruby, or Scala based solution and sends it to the WhiteSource server for a policy based license compliance
 check and additional Free and Open Source Software Publicly Known Vulnerabilities detection.
 
-The step uses the so-called WhiteSource Unified Agent. For details please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
+The step uses the so-called Mend Unified Agent. For details please refer to the [Mend Unified Agent Documentation](https://docs.mend.io/bundle/unified_agent/page/overview_of_the_unified_agent.html).
 
 !!! note "Docker Images"
     The underlying Docker images are public and specific to the solution's programming language(s) and therefore may have to be exchanged
@@ -370,7 +372,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "whitesourceExecuteScan",
 			Aliases:     []config.Alias{},
-			Description: "Execute a WhiteSource scan",
+			Description: "Execute a Mend (formerly known as WhiteSource) scan",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -967,9 +969,9 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				{Image: "gradle", WorkingDir: "/home/gradle", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "gradle"}}}}},
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "sbt"}}}}},
 				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
-				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}}},
+				{Image: "node:lts-buster", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}}},
 				{Image: "python:3.6-stretch", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}}},
-				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "yarn"}}}}},
+				{Image: "node:lts-buster", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "yarn"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -993,11 +995,13 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Type: "reports",
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/whitesource-ip.json", "type": "whitesource-ip"},
-							{"filePattern": "whitesource-riskReport.pdf", "type": "whitesource-ip"},
+							{"filePattern": "**/whitesource-riskReport.pdf", "type": "whitesource-ip"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-ip"},
 							{"filePattern": "**/piper_whitesource_vulnerability_report.html", "type": "whitesource-security"},
-							{"filePattern": "whitesource-riskReport.pdf", "type": "whitesource-security"},
+							{"filePattern": "**/whitesource-riskReport.pdf", "type": "whitesource-security"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-security"},
+							{"filePattern": "**/piper_whitesource_vulnerability.sarif", "type": "whitesource-security"},
+							{"filePattern": "**/piper_whitesource_sbom.xml", "type": "whitesource-security"},
 						},
 					},
 				},
