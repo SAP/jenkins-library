@@ -162,12 +162,13 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/whitesource-ip.json", ParamRef: "", StepResultType: "whitesource-ip"},
-		{FilePattern: "whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-ip"},
+		{FilePattern: "**/whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-ip"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-ip"},
 		{FilePattern: "**/piper_whitesource_vulnerability_report.html", ParamRef: "", StepResultType: "whitesource-security"},
-		{FilePattern: "whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-security"},
+		{FilePattern: "**/whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "**/piper_whitesource_vulnerability.sarif", ParamRef: "", StepResultType: "whitesource-security"},
+		{FilePattern: "**/piper_whitesource_sbom.xml", ParamRef: "", StepResultType: "whitesource-security"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -994,12 +995,13 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Type: "reports",
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/whitesource-ip.json", "type": "whitesource-ip"},
-							{"filePattern": "whitesource-riskReport.pdf", "type": "whitesource-ip"},
+							{"filePattern": "**/whitesource-riskReport.pdf", "type": "whitesource-ip"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-ip"},
 							{"filePattern": "**/piper_whitesource_vulnerability_report.html", "type": "whitesource-security"},
-							{"filePattern": "whitesource-riskReport.pdf", "type": "whitesource-security"},
+							{"filePattern": "**/whitesource-riskReport.pdf", "type": "whitesource-security"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-security"},
 							{"filePattern": "**/piper_whitesource_vulnerability.sarif", "type": "whitesource-security"},
+							{"filePattern": "**/piper_whitesource_sbom.xml", "type": "whitesource-security"},
 						},
 					},
 				},
