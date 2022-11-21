@@ -8,7 +8,7 @@ spec:
   inputs:
     secrets:
       - name: casApiServiceKeyCredentialsId
-        description: Jenkins secret text credential ID containing the service key to the CAS service instance 
+        description: Jenkins secret text credential ID containing the service key to the CAS service instance
         type: jenkins
     params:
       - name: casServiceKey
@@ -58,4 +58,3 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-
