@@ -32,7 +32,6 @@ func TestRunIntegrationArtifactTransport(t *testing.T) {
 		apim := apim.Bundle{APIServiceKey: config.CasServiceKey, Client: httpClientMock}
 		// test
 		err := CreateIntegrationArtifactTransportRequest(&config, apim)
-
 		// assert
 		if assert.NoError(t, err) {
 			t.Run("check url", func(t *testing.T) {
