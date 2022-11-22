@@ -10,7 +10,7 @@ boolean isMergeCommit(){
 }
 
 String getGitMergeCommitId(String gitChangeId){
-    if(!binding.hasVariable('scm')){
+    if(!scm){
         throw new Exception('scm content not found')
     }
 
