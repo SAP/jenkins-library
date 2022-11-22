@@ -43,7 +43,7 @@ String getGitMergeCommitId(String gitChangeId){
 }
 
 boolean compareParentsOfMergeAndHead(String mergeCommitId){
-    if(!binding.hasVariable('pullRequest')){
+    if(!pullRequest){
         echo 'pullRequest context not found'
         throw new Exception('pullRequest context not found')
     }
