@@ -208,7 +208,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             configFile: '.pipeline/config-with-custom-defaults.yml'
         )
 
-        print loggingRule.getLog()
         assertEquals('WARNING: Ignoring invalid entry in custom defaults from files: \'\' \n' +
             'WARNING: Ignoring invalid entry in custom defaults from files: \'true\' \n'+
             'Setting of scm info skipped \n', loggingRule.getLog())
