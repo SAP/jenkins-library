@@ -499,7 +499,7 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
 	errorsOccured := []string{}
-	vulns, _, err := getVulnsAndComponents(config, influx, sys)
+	vulns, err := getVulnerabilitiesWithComponents(config, influx, sys)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch vulnerabilities")
 	}
@@ -573,11 +573,11 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	return nil
 }
 
-func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
+func getVulnerabilitiesWithComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, error) {
 	detectVersionName := getVersionName(config)
 	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	// create component lookup map to interconnect vulnerability and component
 	keyFormat := "%v/%v"
@@ -588,7 +588,7 @@ func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecut
 
 	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
 	if err != nil {
-		return nil, components, err
+		return nil, err
 	}
 
 	majorVulns := 0
@@ -612,7 +612,7 @@ func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecut
 	influx.detect_data.fields.minor_vulnerabilities = activeVulns - majorVulns
 	influx.detect_data.fields.components = components.TotalCount
 
-	return vulns, components, nil
+	return vulns, nil
 }
 
 func getPolicyStatus(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.PolicyStatus, error) {

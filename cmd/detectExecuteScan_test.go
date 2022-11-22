@@ -782,16 +782,14 @@ func TestGetActivePolicyViolations(t *testing.T) {
 	})
 }
 
-func TestGetVulnsAndComponents(t *testing.T) {
+func TestGetVulnerabilitiesWithComponents(t *testing.T) {
 	t.Parallel()
 	t.Run("Case true", func(t *testing.T) {
 		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
 		sys := newBlackduckMockSystem(config)
 
-		vulns, components, err := getVulnsAndComponents(config, &detectExecuteScanInflux{}, &sys)
+		vulns, err := getVulnerabilitiesWithComponents(config, &detectExecuteScanInflux{}, &sys)
 		assert.NoError(t, err)
-		assert.Equal(t, 3, len(vulns.Items))
-		assert.Equal(t, 3, len(components.Items))
 		vulnerabilitySpring := bd.Vulnerability{}
 		vulnerabilityLog4j1 := bd.Vulnerability{}
 		vulnerabilityLog4j2 := bd.Vulnerability{}
@@ -808,12 +806,12 @@ func TestGetVulnsAndComponents(t *testing.T) {
 		}
 		vulnerableComponentSpring := &bd.Component{}
 		vulnerableComponentLog4j := &bd.Component{}
-		for i := 0; i < len(components.Items); i++ {
-			if components.Items[i].Name == "Spring Framework" {
-				vulnerableComponentSpring = &components.Items[i]
+		for i := 0; i < len(vulns.Items); i++ {
+			if vulns.Items[i].Component != nil && vulns.Items[i].Component.Name == "Spring Framework" {
+				vulnerableComponentSpring = vulns.Items[i].Component
 			}
-			if components.Items[i].Name == "Apache Log4j" {
-				vulnerableComponentLog4j = &components.Items[i]
+			if vulns.Items[i].Component != nil && vulns.Items[i].Component.Name == "Apache Log4j" {
+				vulnerableComponentLog4j = vulns.Items[i].Component
 			}
 		}
 		assert.Equal(t, vulnerableComponentSpring, vulnerabilitySpring.Component)
