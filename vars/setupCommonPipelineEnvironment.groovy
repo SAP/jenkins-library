@@ -118,8 +118,12 @@ void call(Map parameters = [:]) {
         def scmInfo = null
         if(parameters.scmInfo){
             scmInfo = parameters.scmInfo
+            echo "Setting parameters.scmInfo"
         }else if(binding.hasVariable('scm')){
             scmInfo = scm
+            echo "Setting global scm"
+        }else{
+            echo "Setting of scm info skipped"
         }
 
         if (scmInfo) {
