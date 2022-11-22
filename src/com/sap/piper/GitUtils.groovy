@@ -10,7 +10,7 @@ boolean isMergeCommit(){
 }
 
 String getGitMergeCommitId(String gitChangeId){
-    if(!scm){
+    if(!binding.hasVariable('scm')){
         throw new Exception('scm content not found')
     }
 
@@ -43,21 +43,18 @@ String getGitMergeCommitId(String gitChangeId){
 }
 
 boolean compareParentsOfMergeAndHead(String mergeCommitId){
-    try {
-        String mergeCommitParents = sh(returnStdout: true, script: "git rev-parse ${mergeCommitId}^@ | tac").trim()
-        String headCommitParents = sh(returnStdout: true, script: "git rev-parse HEAD^@").trim()
-        if(mergeCommitParents.equals(headCommitParents)){
-            return true
-        }
-    } catch (Exception e) {
-        echo 'Error comparing merge commit parents and local merge commit parents'
-        throw e
+    if(!binding.hasVariable('pullRequest')){
+        echo 'pullRequest context not found'
+        throw new Exception('pullRequest context not found')
     }
 
+    if(pullRequest.mergeCommitSha.equals(mergeCommitId)){
+        return true
+    }
 
-    echo "GH merge parents: ${mergeCommitParents}"
-    echo "Local merge parents: ${headCommitParents}"
-    echo 'Github merge parents and local merge parents do not match; PR was updated since Jenkins job started. Try re-running the job.'
+    echo "Jenkins mergecommitsha: ${pullRequest.mergeCommitSha}"
+    echo "GH remote mergecommitsha: ${mergeCommitId}"
+    echo 'Jenkins mergecommitsha and GH remote mergecommitsha do not match; PR was updated since Jenkins job started. Try re-running the job.'
     return false
 }
 
