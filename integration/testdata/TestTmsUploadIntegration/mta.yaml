@@ -1,0 +1,14 @@
+_schema-version: "3.1.0"
+ID: alm.pi.test.scv_x
+version: 1.0.0
+
+modules:
+  - name: java-hello-sap-x
+    type: java.tomcat
+    path: java/target/scv_x-1.0.0.war
+    properties:
+      API_URL: "${xs-api-url}"
+      SET_LOGGING_LEVEL: "{alm.pi.test: INFO}"
+      MEMORY_CALCULATOR_V1: true
+    parameters:
+      memory: 128MM
