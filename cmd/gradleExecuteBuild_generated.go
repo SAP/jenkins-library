@@ -22,17 +22,20 @@ import (
 )
 
 type gradleExecuteBuildOptions struct {
-	Path               string `json:"path,omitempty"`
-	Task               string `json:"task,omitempty"`
-	Publish            bool   `json:"publish,omitempty"`
-	RepositoryURL      string `json:"repositoryUrl,omitempty"`
-	RepositoryPassword string `json:"repositoryPassword,omitempty"`
-	RepositoryUsername string `json:"repositoryUsername,omitempty"`
-	CreateBOM          bool   `json:"createBOM,omitempty"`
-	ArtifactVersion    string `json:"artifactVersion,omitempty"`
-	ArtifactGroupID    string `json:"artifactGroupId,omitempty"`
-	ArtifactID         string `json:"artifactId,omitempty"`
-	UseWrapper         bool   `json:"useWrapper,omitempty"`
+	Path                          string   `json:"path,omitempty"`
+	Task                          string   `json:"task,omitempty"`
+	Publish                       bool     `json:"publish,omitempty"`
+	RepositoryURL                 string   `json:"repositoryUrl,omitempty"`
+	RepositoryPassword            string   `json:"repositoryPassword,omitempty"`
+	RepositoryUsername            string   `json:"repositoryUsername,omitempty"`
+	CreateBOM                     bool     `json:"createBOM,omitempty"`
+	ArtifactVersion               string   `json:"artifactVersion,omitempty"`
+	ArtifactGroupID               string   `json:"artifactGroupId,omitempty"`
+	ArtifactID                    string   `json:"artifactId,omitempty"`
+	UseWrapper                    bool     `json:"useWrapper,omitempty"`
+	ApplyPublishingForAllProjects bool     `json:"applyPublishingForAllProjects,omitempty"`
+	ExcludeCreateBOMForProjects   []string `json:"excludeCreateBOMForProjects,omitempty"`
+	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -209,6 +212,9 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringVar(&stepConfig.ArtifactGroupID, "artifactGroupId", os.Getenv("PIPER_artifactGroupId"), "The group of the artifact.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The name of the artifact.")
 	cmd.Flags().BoolVar(&stepConfig.UseWrapper, "useWrapper", false, "If set to false all commands are executed using 'gradle', otherwise 'gradlew' is executed.")
+	cmd.Flags().BoolVar(&stepConfig.ApplyPublishingForAllProjects, "applyPublishingForAllProjects", false, "If set to false publishing logic will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludeCreateBOMForProjects, "excludeCreateBOMForProjects", []string{}, "Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
 
 }
 
@@ -351,6 +357,33 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "applyPublishingForAllProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "excludeCreateBOMForProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "excludePublishingForProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},
