@@ -3,11 +3,9 @@ package cmd
 import (
 	"archive/zip"
 	"context"
-	//	"encoding/json"
-	//	"encoding/xml"
 	"fmt"
 	"io"
-	//	"math"
+    "math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,13 +13,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/SAP/jenkins-library/pkg/checkmarxone"
+    
+    "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	//	"github.com/SAP/jenkins-library/pkg/reporting"
+    "github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
@@ -134,15 +132,19 @@ func checkmarxoneExecuteScan(config checkmarxoneExecuteScanOptions, _ *telemetry
 // Updated for Cx1
 func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) (checkmarxone.Scan, error) {
     var scan checkmarxone.Scan
+    var group checkmarxone.Group
+    var err error
 
-	// get the Group ID
-	groupID := config.GroupID
-	if len(groupID) == 0 && len(config.GroupName) > 0 {
-		cx1group, err := sys.GetGroupByName(config.GroupName)
+	if len(config.GroupID) > 0 {
+        group, err = sys.GetGroupByID(config.GroupID)
 		if err != nil {
 			return scan, err
 		}
-		groupID = cx1group.GroupID
+    } else if len(config.GroupName) > 0 {
+		group, err = sys.GetGroupByName(config.GroupName)
+		if err != nil {
+			return scan, err
+		}
 	}
 
     if len(config.ProjectName) == 0 {
@@ -150,7 +152,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config 
     }
 
 	// get the Project, if it exists
-	projects, err := sys.GetProjectsByNameAndGroup(config.ProjectName, groupID)
+	projects, err := sys.GetProjectsByNameAndGroup(config.ProjectName, group.GroupID)
 	if err != nil {
 		return scan, errors.Wrap(err, "error when trying to load project")
 	}
@@ -158,11 +160,11 @@ func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config 
 	var project checkmarxone.Project
 
 	if len(projects) == 0 {
-		if len(groupID) == 0 {
+		if len(group.Name) == 0 {
 			return scan, errors.New("GroupName or GroupID is required to create a new project")
 		}
 
-		project, err = sys.CreateProject(config.ProjectName, []string{groupID})
+		project, err = sys.CreateProject(config.ProjectName, []string{group.GroupID})
 		if err != nil {
 			return scan, errors.Wrap(err, "Failed to create new project")
 		}
@@ -210,14 +212,14 @@ func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config 
 	log.Entry().Infof("Project %v (ID %v)", project.ProjectID, project.Name)
 
 	
-    scan, err = cx1sh.uploadAndScan(ctx, config, sys, project, influx, utils)
+    scan, err = cx1sh.uploadAndScan(ctx, config, sys, group, project, influx, utils)
     if err != nil {
         return scan, errors.Wrap(err, "scan, upload, and result validation returned an error")
     }
 
     // validation
     
-    err = cx1sh.verifyCxProjectCompliance(ctx, config, sys, scan, influx, utils)
+    err = cx1sh.verifyCxProjectCompliance(ctx, config, sys, group, project, scan, influx, utils)
     if err != nil {
         log.SetErrorCategory(log.ErrorCompliance)
         return scan, errors.Wrapf(err, "project %v not compliant", project.Name)
@@ -226,7 +228,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) RunScan(ctx context.Context, config 
 	return scan, nil
 }
 
-func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, project checkmarxone.Project, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) (checkmarxone.Scan, error) {
+func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, group checkmarxone.Group, project checkmarxone.Project, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) (checkmarxone.Scan, error) {
 	var scan checkmarxone.Scan
     previousScans, err := sys.GetLastScans(project.ProjectID, 20)
 	if err != nil && config.VerifyOnly {
@@ -234,7 +236,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) uploadAndScan(ctx context.Context, c
 	}
 
 	if len(previousScans) > 0 && config.VerifyOnly {
-		err := cx1sh.verifyCxProjectCompliance(ctx, config, sys, previousScans[0], influx, utils)
+		err := cx1sh.verifyCxProjectCompliance(ctx, config, sys, group, project, previousScans[0], influx, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
 			return scan, errors.Wrapf(err, "project %v not compliant", project.Name)
@@ -405,123 +407,144 @@ func (cx1sh *checkmarxoneExecuteScanHelper) getNumCoherentIncrementalScans(scans
 	return count
 }
 
-func (cx1sh *checkmarxoneExecuteScanHelper) getDetailedResults(config checkmarxoneExecuteScanOptions, sys checkmarxone.System, reportFileName string, scanID int, utils checkmarxoneExecuteScanUtils) (map[string]interface{}, error) {
-	resultMap := map[string]interface{}{}
+func (cx1sh *checkmarxoneExecuteScanHelper) getDetailedResults(config checkmarxoneExecuteScanOptions, group checkmarxone.Group, project checkmarxone.Project, scan checkmarxone.Scan, scanmeta checkmarxone.ScanMetadata, results []checkmarxone.ScanResults, /*sys checkmarxone.System, reportFileName string, scanID int,*/ utils checkmarxoneExecuteScanUtils) (map[string]interface{}, error) {
+	log.Entry().Infof( "Test - getDetailedResults entry with %d results", len( results ) )
 
-	/*data, err := cx1sh.generateAndDownloadReport(sys, scanID, "XML")
-	if err != nil {
-		return resultMap, errors.Wrap(err, "failed to download xml report")
-	}
-	if len(data) > 0 {
-		err = utils.WriteFile(reportFileName, data, 0o700)
-		if err != nil {
-			return resultMap, errors.Wrap(err, "failed to write file")
-		}
-		var xmlResult checkmarxone.DetailedResult
-		err := xml.Unmarshal(data, &xmlResult)
-		if err != nil {
-			return resultMap, errors.Wrapf(err, "failed to unmarshal XML report for scan %v", scanID)
-		}
-		resultMap["InitiatorName"] = xmlResult.InitiatorName
-		resultMap["Owner"] = xmlResult.Owner
-		resultMap["ScanId"] = xmlResult.ScanID
-		resultMap["ProjectId"] = xmlResult.ProjectID
-		resultMap["ProjectName"] = xmlResult.ProjectName
-		resultMap["Group"] = xmlResult.Group
-		resultMap["GroupFullPathOnReportDate"] = xmlResult.GroupFullPathOnReportDate
-		resultMap["ScanStart"] = xmlResult.ScanStart
-		resultMap["ScanTime"] = xmlResult.ScanTime
-		resultMap["LinesOfCodeScanned"] = xmlResult.LinesOfCodeScanned
-		resultMap["FilesScanned"] = xmlResult.FilesScanned
-		resultMap["CheckmarxVersion"] = xmlResult.CheckmarxVersion
-		resultMap["ScanType"] = xmlResult.ScanType
-		resultMap["Preset"] = xmlResult.Preset
-		resultMap["DeepLink"] = xmlResult.DeepLink
-		resultMap["ReportCreationTime"] = xmlResult.ReportCreationTime
-		resultMap["High"] = map[string]int{}
-		resultMap["Medium"] = map[string]int{}
-		resultMap["Low"] = map[string]int{}
-		resultMap["Information"] = map[string]int{}
-		for _, query := range xmlResult.Queries {
-			for _, result := range query.Results {
-				key := result.Severity
-				var submap map[string]int
-				if resultMap[key] == nil {
-					submap = map[string]int{}
-					resultMap[key] = submap
-				} else {
-					submap = resultMap[key].(map[string]int)
-				}
-				submap["Issues"]++
+    resultMap := map[string]interface{}{}
+    resultMap["InitiatorName"] = scan.Initiator
+    resultMap["Owner"] = "Cx1 Gap: no project owner" //xmlResult.Owner
+    resultMap["ScanId"] = scan.ScanID
+    resultMap["ProjectId"] = project.ProjectID
+    resultMap["ProjectName"] = project.Name
+    resultMap["Group"] = group.GroupID
+    resultMap["GroupFullPathOnReportDate"] = group.Name
+    resultMap["ScanStart"] = scan.CreatedAt
 
-				auditState := "ToVerify"
-				switch result.State {
-				case "1":
-					auditState = "NotExploitable"
-				case "2":
-					auditState = "Confirmed"
-				case "3":
-					auditState = "Urgent"
-				case "4":
-					auditState = "ProposedNotExploitable"
-				case "0":
-				default:
-					auditState = "ToVerify"
-				}
-				submap[auditState]++
+    scanCreated, err := time.Parse(time.RFC3339, scan.CreatedAt )
+    if err != nil {
+        log.Entry().Warningf( "Failed to parse string %v into time: %s", scan.CreatedAt, err )
+        resultMap["ScanTime"] = "Error parsing scan.CreatedAt"
+    } else {
+        scanFinished, err := time.Parse(time.RFC3339, scan.UpdatedAt)
+        if err != nil {
+            log.Entry().Warningf( "Failed to parse string %v into time: %s", scan.UpdatedAt, err )
+            resultMap["ScanTime"] = "Error parsing scan.UpdatedAt"
+        } else {
+            difference := scanFinished.Sub(scanCreated)
+            resultMap["ScanTime"] = difference.String()
+        }
+    }
 
-				if result.FalsePositive != "True" {
-					submap["NotFalsePositive"]++
-				}
-			}
+    
+    resultMap["LinesOfCodeScanned"] = scanmeta.LOC
+    resultMap["FilesScanned"] = scanmeta.FileCount
+    resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this, bundle.js"
+    
+    if scanmeta.IsIncremental {
+        resultMap["ScanType"] = "Incremental"
+    } else {
+        resultMap["ScanType"] = "Full"
+    }
+
+    resultMap["Preset"] = scanmeta.PresetName
+    resultMap["DeepLink"] = fmt.Sprintf( "%v/projects/%v/overview?branch=%v", config.ServerURL, project.ProjectID, scan.Branch )
+    resultMap["ReportCreationTime"] = time.Now().String()
+    resultMap["High"] = map[string]int{}
+    resultMap["Medium"] = map[string]int{}
+    resultMap["Low"] = map[string]int{}
+    resultMap["Information"] = map[string]int{}
+
+
+	if len(results) > 0 {       
+		for _, result := range results {			
+            key := "Information"
+            switch result.Severity {
+            case "HIGH":
+                key = "High"
+            case "MEDIUM":
+                key = "Medium"
+            case "LOW":
+                key = "Low"
+            case "INFORMATION":
+            default:
+                key = "Information"
+            }
+            
+            var submap map[string]int
+            if resultMap[key] == nil {
+                submap = map[string]int{}
+                resultMap[key] = submap
+            } else {
+                submap = resultMap[key].(map[string]int)
+            }
+            submap["Issues"]++
+
+            auditState := "ToVerify"
+            switch result.State {
+            case "NOT_EXPLOITABLE":
+                auditState = "NotExploitable"
+            case "CONFIRMED":
+                auditState = "Confirmed"
+            case "URGENT", "URGENT " :
+                auditState = "Urgent"
+            case "PROPOSED_NOT_EXPLOITABLE":
+                auditState = "ProposedNotExploitable"
+            case "TO_VERIFY":
+            default:
+                auditState = "ToVerify"
+            }
+            submap[auditState]++
+
+            //TODO
+            // Review the change below - how does .FalsePositive work in old SAST XML, original line:
+            //if result.FalsePositive != "True" {
+            if auditState != "NotExploitable" {
+                submap["NotFalsePositive"]++
+            }
+			
 		}
 
 		// if the flag is switched on, build the list  of Low findings per query
 		if config.VulnerabilityThresholdLowPerQuery {
 			var lowPerQuery = map[string]map[string]int{}
-			for _, query := range xmlResult.Queries {
-				for _, result := range query.Results {
-					if result.Severity != "Low" {
-						continue
-					}
-					key := query.Name
-					var submap map[string]int
-					if lowPerQuery[key] == nil {
-						submap = map[string]int{}
-						lowPerQuery[key] = submap
-					} else {
-						submap = lowPerQuery[key]
-					}
-					submap["Issues"]++
-					auditState := "ToVerify"
-					switch result.State {
-					case "1":
-						auditState = "NotExploitable"
-						break
-					case "2":
-						auditState = "Confirmed"
-						break
-					case "3":
-						auditState = "Urgent"
-						break
-					case "4":
-						auditState = "ProposedNotExploitable"
-						break
-					case "0":
-					default:
-						auditState = "ToVerify"
-						break
-					}
-					submap[auditState]++
 
-					if result.FalsePositive != "True" {
-						submap["NotFalsePositive"]++
-					}
-				}
-			}
+            for _, result := range results {
+                if result.Severity != "LOW" {
+                    continue
+                }
+                key := result.Data.QueryName
+                var submap map[string]int
+                if lowPerQuery[key] == nil {
+                    submap = map[string]int{}
+                    lowPerQuery[key] = submap
+                } else {
+                    submap = lowPerQuery[key]
+                }
+                submap["Issues"]++
+                auditState := "ToVerify"
+                switch result.State {
+                case "NOT_EXPLOITABLE":
+                    auditState = "NotExploitable"
+                case "CONFIRMED":
+                    auditState = "Confirmed"
+                case "URGENT", "URGENT " :
+                    auditState = "Urgent"
+                case "PROPOSED_NOT_EXPLOITABLE":
+                    auditState = "ProposedNotExploitable"
+                case "TO_VERIFY":
+                default:
+                    auditState = "ToVerify"
+                }
+                submap[auditState]++
+
+                if auditState != "NotExploitable" {
+                    submap["NotFalsePositive"]++
+                }
+            }
+			
 			resultMap["LowPerQuery"] = lowPerQuery
 		}
-	}*/
+	}
 	return resultMap, nil
 }
 
@@ -651,10 +674,10 @@ func (cx1sh *checkmarxoneExecuteScanHelper) isFileNotMatchingPattern(patterns []
 	return true, nil
 }
 
-func (cx1sh *checkmarxoneExecuteScanHelper) createToolRecordCx(utils checkmarxoneExecuteScanUtils, workspace string, config checkmarxoneExecuteScanOptions, results map[string]interface{}) (string, error) {
-	record := toolrecord.New(utils, workspace, "checkmarxone", config.ServerURL)
+func (cx1sh *checkmarxoneExecuteScanHelper) createToolRecordCx(utils checkmarxoneExecuteScanUtils, workspace string, config checkmarxoneExecuteScanOptions, results map[string]interface{} ) (string, error) {
+	record := toolrecord.New(utils, workspace, "checkmarx", config.ServerURL)
 	// Todo GroupId - see run_scan()
-	// record.AddKeyData("group", XXX, resultMap["Group"], "")
+	// record.AddKeyData("team", XXX, resultMap["Group"], "")
 	// Project
 	err := record.AddKeyData("project",
 		results["ProjectId"].(string),
@@ -678,8 +701,10 @@ func (cx1sh *checkmarxoneExecuteScanHelper) createToolRecordCx(utils checkmarxon
 	return record.GetFileName(), nil
 }
 
-func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, scan checkmarxone.Scan, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) error {
-	var reports []piperutils.Path
+func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx context.Context, config checkmarxoneExecuteScanOptions, sys checkmarxone.System, group checkmarxone.Group, project checkmarxone.Project, scan checkmarxone.Scan, influx *checkmarxoneExecuteScanInflux, utils checkmarxoneExecuteScanUtils) error {
+	log.Entry().Info( "Test - verifyCxProjectCompliance entry" )
+    
+    var reports []piperutils.Path
 	if config.GeneratePdfReport {
 		pdfReportName := cx1sh.createReportName(utils.GetWorkspace(), "Cx1_SASTReport_%v.pdf")
 		err := cx1sh.downloadAndSaveReport(sys, pdfReportName, scan, utils)
@@ -692,13 +717,32 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		log.Entry().Debug("Report generation is disabled via configuration")
 	}
 
+    results, err := sys.GetScanResults( scan.ScanID )
+    if err != nil {
+		return errors.Wrap(err, "failed to get detailed results")
+	}
+
+    scanmeta, err := sys.GetScanMetadata( scan.ScanID )
+    if err != nil {
+        log.Entry().Warnf( "Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err )
+    }
+
+    detailedResults, err := cx1sh.getDetailedResults(config, group, project, scan, scanmeta, results, utils)
+	if err != nil {
+		return errors.Wrap(err, "failed to get detailed results")
+	}
+
+    // unclear if this step is required, currently 
 	/*xmlReportName := cx1sh.createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
 	results, err := cx1sh.getDetailedResults(config, sys, xmlReportName, scanID, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
+    */
 
+
+    /* Also unclear if SARIF-style report should be created from XML, or wait for support in the platform.
 	// generate sarif report
 	if config.ConvertToSarif {
 		log.Entry().Info("Calling conversion to SARIF function.")
@@ -712,9 +756,10 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		}
 		reports = append(reports, paths...)
 	} 
+    */
 
 	// create toolrecord
-	toolRecordFileName, err := cx1sh.createToolRecordCx(utils, utils.GetWorkspace(), config, results)
+	toolRecordFileName, err := cx1sh.createToolRecordCx(utils, utils.GetWorkspace(), config, detailedResults)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
@@ -722,6 +767,8 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
+    
+    /*
 	// create JSON report (regardless vulnerabilityThreshold enabled or not)
 	jsonReport := checkmarxone.CreateJSONReport(results)
 	paths, err := checkmarxone.WriteJSONReport(jsonReport)
@@ -731,15 +778,18 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		// add JSON report to archiving list
 		reports = append(reports, paths...)
 	}
-	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
+	
+    */
+
+    links := []piperutils.Path{{Target: detailedResults["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
 
 	insecure := false
 	var insecureResults []string
 	var neutralResults []string
 
 	if config.VulnerabilityThresholdEnabled {
-		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
-		scanReport := checkmarxone.CreateCustomReport(results, insecureResults, neutralResults)
+		insecure, insecureResults, neutralResults = cx1sh.enforceThresholds(config, detailedResults)
+		scanReport := checkmarxone.CreateCustomReport(detailedResults, insecureResults, neutralResults)
 
 		if insecure && config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")
@@ -755,7 +805,7 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 			}
 		}
 
-		paths, err := checkmarxone.WriteCustomReports(scanReport, fmt.Sprint(results["ProjectName"]), fmt.Sprint(results["ProjectID"]))
+		paths, err := checkmarxone.WriteCustomReports(scanReport, project.Name, project.ProjectID)
 		if err != nil {
 			// do not fail until we have a better idea to handle it
 			log.Entry().Warning("failed to write HTML/MarkDown report file ...", err)
@@ -763,9 +813,11 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 			reports = append(reports, paths...)
 		}
 	}
+    
 
 	piperutils.PersistReportsAndLinks("checkmarxoneExecuteScan", utils.GetWorkspace(), utils, reports, links)
-	cx1sh.reportToInflux(results, influx)
+	
+    cx1sh.reportToInflux(detailedResults, influx)
 
 	if insecure {
 		if config.VulnerabilityThresholdResult == "FAILURE" {
@@ -775,176 +827,176 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		log.Entry().Errorf("Checkmarx One scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", config.VulnerabilityThresholdResult)
 	} else {
 		log.Entry().Infoln("Checkmarx One scan finished successfully")
-	}*/
+	}
 	return nil
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) enforceThresholds(config checkmarxoneExecuteScanOptions, results map[string]interface{}) (bool, []string, []string) {
-
+    log.Entry().Info( "Test - enforceThresholds entry" )
 	neutralResults := []string{}
 	insecureResults := []string{}
 	insecure := false
-	/*
-		    cxHighThreshold := config.VulnerabilityThresholdHigh
-			cxMediumThreshold := config.VulnerabilityThresholdMedium
-			cxLowThreshold := config.VulnerabilityThresholdLow
-			cxLowThresholdPerQuery := config.VulnerabilityThresholdLowPerQuery
-			cxLowThresholdPerQueryMax := config.VulnerabilityThresholdLowPerQueryMax
-			highValue := results["High"].(map[string]int)["NotFalsePositive"]
-			mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
-			lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
-			var unit string
-			highViolation := ""
-			mediumViolation := ""
-			lowViolation := ""
-			if config.VulnerabilityThresholdUnit == "percentage" {
-				unit = "%"
-				highAudited := results["High"].(map[string]int)["Issues"] - results["High"].(map[string]int)["NotFalsePositive"]
-				highOverall := results["High"].(map[string]int)["Issues"]
-				if highOverall == 0 {
-					highAudited = 1
-					highOverall = 1
-				}
-				mediumAudited := results["Medium"].(map[string]int)["Issues"] - results["Medium"].(map[string]int)["NotFalsePositive"]
-				mediumOverall := results["Medium"].(map[string]int)["Issues"]
-				if mediumOverall == 0 {
-					mediumAudited = 1
-					mediumOverall = 1
-				}
-				lowAudited := results["Low"].(map[string]int)["Confirmed"] + results["Low"].(map[string]int)["NotExploitable"]
-				lowOverall := results["Low"].(map[string]int)["Issues"]
-				if lowOverall == 0 {
-					lowAudited = 1
-					lowOverall = 1
-				}
-				highValue = int(float32(highAudited) / float32(highOverall) * 100.0)
-				mediumValue = int(float32(mediumAudited) / float32(mediumOverall) * 100.0)
-				lowValue = int(float32(lowAudited) / float32(lowOverall) * 100.0)
+	
+    cxHighThreshold := config.VulnerabilityThresholdHigh
+    cxMediumThreshold := config.VulnerabilityThresholdMedium
+    cxLowThreshold := config.VulnerabilityThresholdLow
+    cxLowThresholdPerQuery := config.VulnerabilityThresholdLowPerQuery
+    cxLowThresholdPerQueryMax := config.VulnerabilityThresholdLowPerQueryMax
+    highValue := results["High"].(map[string]int)["NotFalsePositive"]
+    mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
+    lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
+    var unit string
+    highViolation := ""
+    mediumViolation := ""
+    lowViolation := ""
+    if config.VulnerabilityThresholdUnit == "percentage" {
+        unit = "%"
+        highAudited := results["High"].(map[string]int)["Issues"] - results["High"].(map[string]int)["NotFalsePositive"]
+        highOverall := results["High"].(map[string]int)["Issues"]
+        if highOverall == 0 {
+            highAudited = 1
+            highOverall = 1
+        }
+        mediumAudited := results["Medium"].(map[string]int)["Issues"] - results["Medium"].(map[string]int)["NotFalsePositive"]
+        mediumOverall := results["Medium"].(map[string]int)["Issues"]
+        if mediumOverall == 0 {
+            mediumAudited = 1
+            mediumOverall = 1
+        }
+        lowAudited := results["Low"].(map[string]int)["Confirmed"] + results["Low"].(map[string]int)["NotExploitable"]
+        lowOverall := results["Low"].(map[string]int)["Issues"]
+        if lowOverall == 0 {
+            lowAudited = 1
+            lowOverall = 1
+        }
+        highValue = int(float32(highAudited) / float32(highOverall) * 100.0)
+        mediumValue = int(float32(mediumAudited) / float32(mediumOverall) * 100.0)
+        lowValue = int(float32(lowAudited) / float32(lowOverall) * 100.0)
 
-				if highValue < cxHighThreshold {
-					insecure = true
-					highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
-				}
-				if mediumValue < cxMediumThreshold {
-					insecure = true
-					mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
-				}
-				// if the flag is switched on, calculate the Low findings threshold per query
-				if cxLowThresholdPerQuery {
-					lowPerQueryMap := results["LowPerQuery"].(map[string]map[string]int)
-					if lowPerQueryMap != nil {
-						for lowQuery, resultsLowQuery := range lowPerQueryMap {
-							lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
-							lowOverallPerQuery := resultsLowQuery["Issues"]
-							lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
-							if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
-								insecure = true
-								msgSeperator := "|"
-								if lowViolation == "" {
-									msgSeperator = "<--"
-								}
-								lowViolation += fmt.Sprintf(" %v query: %v, audited: %v, required: %v ", msgSeperator, lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
-							}
-						}
-					}
-				} else { // calculate the Low findings threshold in total
-					if lowValue < cxLowThreshold {
-						insecure = true
-						lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
-					}
-				}
+        if highValue < cxHighThreshold {
+            insecure = true
+            highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
+        }
+        if mediumValue < cxMediumThreshold {
+            insecure = true
+            mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
+        }
+        // if the flag is switched on, calculate the Low findings threshold per query
+        if cxLowThresholdPerQuery {
+            lowPerQueryMap := results["LowPerQuery"].(map[string]map[string]int)
+            if lowPerQueryMap != nil {
+                for lowQuery, resultsLowQuery := range lowPerQueryMap {
+                    lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+                    lowOverallPerQuery := resultsLowQuery["Issues"]
+                    lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
+                    if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
+                        insecure = true
+                        msgSeperator := "|"
+                        if lowViolation == "" {
+                            msgSeperator = "<--"
+                        }
+                        lowViolation += fmt.Sprintf(" %v query: %v, audited: %v, required: %v ", msgSeperator, lowQuery, lowAuditedPerQuery, lowAuditedRequiredPerQuery)
+                    }
+                }
+            }
+        } else { // calculate the Low findings threshold in total
+            if lowValue < cxLowThreshold {
+                insecure = true
+                lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
+            }
+        }
 
-			}
-			if config.VulnerabilityThresholdUnit == "absolute" {
-				unit = " findings"
-				if highValue > cxHighThreshold {
-					insecure = true
-					highViolation = fmt.Sprintf("<-- %v%v deviation", highValue-cxHighThreshold, unit)
-				}
-				if mediumValue > cxMediumThreshold {
-					insecure = true
-					mediumViolation = fmt.Sprintf("<-- %v%v deviation", mediumValue-cxMediumThreshold, unit)
-				}
-				if lowValue > cxLowThreshold {
-					insecure = true
-					lowViolation = fmt.Sprintf("<-- %v%v deviation", lowValue-cxLowThreshold, unit)
-				}
-			}
+    }
+    if config.VulnerabilityThresholdUnit == "absolute" {
+        unit = " findings"
+        if highValue > cxHighThreshold {
+            insecure = true
+            highViolation = fmt.Sprintf("<-- %v%v deviation", highValue-cxHighThreshold, unit)
+        }
+        if mediumValue > cxMediumThreshold {
+            insecure = true
+            mediumViolation = fmt.Sprintf("<-- %v%v deviation", mediumValue-cxMediumThreshold, unit)
+        }
+        if lowValue > cxLowThreshold {
+            insecure = true
+            lowViolation = fmt.Sprintf("<-- %v%v deviation", lowValue-cxLowThreshold, unit)
+        }
+    }
 
-			highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
-			mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
-			lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
-			if len(highViolation) > 0 {
-				insecureResults = append(insecureResults, highText)
-				log.Entry().Error(highText)
-			} else {
-				neutralResults = append(neutralResults, highText)
-				log.Entry().Info(highText)
-			}
-			if len(mediumViolation) > 0 {
-				insecureResults = append(insecureResults, mediumText)
-				log.Entry().Error(mediumText)
-			} else {
-				neutralResults = append(neutralResults, mediumText)
-				log.Entry().Info(mediumText)
-			}
-			if len(lowViolation) > 0 {
-				insecureResults = append(insecureResults, lowText)
-				log.Entry().Error(lowText)
-			} else {
-				neutralResults = append(neutralResults, lowText)
-				log.Entry().Info(lowText)
-			} */
+    highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
+    mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
+    lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
+    if len(highViolation) > 0 {
+        insecureResults = append(insecureResults, highText)
+        log.Entry().Error(highText)
+    } else {
+        neutralResults = append(neutralResults, highText)
+        log.Entry().Info(highText)
+    }
+    if len(mediumViolation) > 0 {
+        insecureResults = append(insecureResults, mediumText)
+        log.Entry().Error(mediumText)
+    } else {
+        neutralResults = append(neutralResults, mediumText)
+        log.Entry().Info(mediumText)
+    }
+    if len(lowViolation) > 0 {
+        insecureResults = append(insecureResults, lowText)
+        log.Entry().Error(lowText)
+    } else {
+        neutralResults = append(neutralResults, lowText)
+        log.Entry().Info(lowText)
+    } 
 
 	return insecure, insecureResults, neutralResults
 }
 
 func (cx1sh *checkmarxoneExecuteScanHelper) reportToInflux(results map[string]interface{}, influx *checkmarxoneExecuteScanInflux) {
-	/*
-		influx.checkmarxone_data.fields.high_issues = results["High"].(map[string]int)["Issues"]
-		influx.checkmarxone_data.fields.high_not_false_postive = results["High"].(map[string]int)["NotFalsePositive"]
-		influx.checkmarxone_data.fields.high_not_exploitable = results["High"].(map[string]int)["NotExploitable"]
-		influx.checkmarxone_data.fields.high_confirmed = results["High"].(map[string]int)["Confirmed"]
-		influx.checkmarxone_data.fields.high_urgent = results["High"].(map[string]int)["Urgent"]
-		influx.checkmarxone_data.fields.high_proposed_not_exploitable = results["High"].(map[string]int)["ProposedNotExploitable"]
-		influx.checkmarxone_data.fields.high_to_verify = results["High"].(map[string]int)["ToVerify"]
-		influx.checkmarxone_data.fields.medium_issues = results["Medium"].(map[string]int)["Issues"]
-		influx.checkmarxone_data.fields.medium_not_false_postive = results["Medium"].(map[string]int)["NotFalsePositive"]
-		influx.checkmarxone_data.fields.medium_not_exploitable = results["Medium"].(map[string]int)["NotExploitable"]
-		influx.checkmarxone_data.fields.medium_confirmed = results["Medium"].(map[string]int)["Confirmed"]
-		influx.checkmarxone_data.fields.medium_urgent = results["Medium"].(map[string]int)["Urgent"]
-		influx.checkmarxone_data.fields.medium_proposed_not_exploitable = results["Medium"].(map[string]int)["ProposedNotExploitable"]
-		influx.checkmarxone_data.fields.medium_to_verify = results["Medium"].(map[string]int)["ToVerify"]
-		influx.checkmarxone_data.fields.low_issues = results["Low"].(map[string]int)["Issues"]
-		influx.checkmarxone_data.fields.low_not_false_postive = results["Low"].(map[string]int)["NotFalsePositive"]
-		influx.checkmarxone_data.fields.low_not_exploitable = results["Low"].(map[string]int)["NotExploitable"]
-		influx.checkmarxone_data.fields.low_confirmed = results["Low"].(map[string]int)["Confirmed"]
-		influx.checkmarxone_data.fields.low_urgent = results["Low"].(map[string]int)["Urgent"]
-		influx.checkmarxone_data.fields.low_proposed_not_exploitable = results["Low"].(map[string]int)["ProposedNotExploitable"]
-		influx.checkmarxone_data.fields.low_to_verify = results["Low"].(map[string]int)["ToVerify"]
-		influx.checkmarxone_data.fields.information_issues = results["Information"].(map[string]int)["Issues"]
-		influx.checkmarxone_data.fields.information_not_false_postive = results["Information"].(map[string]int)["NotFalsePositive"]
-		influx.checkmarxone_data.fields.information_not_exploitable = results["Information"].(map[string]int)["NotExploitable"]
-		influx.checkmarxone_data.fields.information_confirmed = results["Information"].(map[string]int)["Confirmed"]
-		influx.checkmarxone_data.fields.information_urgent = results["Information"].(map[string]int)["Urgent"]
-		influx.checkmarxone_data.fields.information_proposed_not_exploitable = results["Information"].(map[string]int)["ProposedNotExploitable"]
-		influx.checkmarxone_data.fields.information_to_verify = results["Information"].(map[string]int)["ToVerify"]
-		influx.checkmarxone_data.fields.initiator_name = results["InitiatorName"].(string)
-		influx.checkmarxone_data.fields.owner = results["Owner"].(string)
-		influx.checkmarxone_data.fields.scan_id = results["ScanId"].(string)
-		influx.checkmarxone_data.fields.project_id = results["ProjectId"].(string)
-		influx.checkmarxone_data.fields.projectName = results["ProjectName"].(string)
-		influx.checkmarxone_data.fields.group = results["Group"].(string)
-		influx.checkmarxone_data.fields.group_full_path_on_report_date = results["GroupFullPathOnReportDate"].(string)
-		influx.checkmarxone_data.fields.scan_start = results["ScanStart"].(string)
-		influx.checkmarxone_data.fields.scan_time = results["ScanTime"].(string)
-		influx.checkmarxone_data.fields.lines_of_code_scanned = results["LinesOfCodeScanned"].(int)
-		influx.checkmarxone_data.fields.files_scanned = results["FilesScanned"].(int)
-		influx.checkmarxone_data.fields.checkmarxone_version = results["CheckmarxVersion"].(string)
-		influx.checkmarxone_data.fields.scan_type = results["ScanType"].(string)
-		influx.checkmarxone_data.fields.preset = results["Preset"].(string)
-		influx.checkmarxone_data.fields.deep_link = results["DeepLink"].(string)
-		influx.checkmarxone_data.fields.report_creation_time = results["ReportCreationTime"].(string)
-	*/
+    log.Entry().Info( "Test - reportToInflux entry" )
+	
+    influx.checkmarxone_data.fields.high_issues = results["High"].(map[string]int)["Issues"]
+    influx.checkmarxone_data.fields.high_not_false_postive = results["High"].(map[string]int)["NotFalsePositive"]
+    influx.checkmarxone_data.fields.high_not_exploitable = results["High"].(map[string]int)["NotExploitable"]
+    influx.checkmarxone_data.fields.high_confirmed = results["High"].(map[string]int)["Confirmed"]
+    influx.checkmarxone_data.fields.high_urgent = results["High"].(map[string]int)["Urgent"]
+    influx.checkmarxone_data.fields.high_proposed_not_exploitable = results["High"].(map[string]int)["ProposedNotExploitable"]
+    influx.checkmarxone_data.fields.high_to_verify = results["High"].(map[string]int)["ToVerify"]
+    influx.checkmarxone_data.fields.medium_issues = results["Medium"].(map[string]int)["Issues"]
+    influx.checkmarxone_data.fields.medium_not_false_postive = results["Medium"].(map[string]int)["NotFalsePositive"]
+    influx.checkmarxone_data.fields.medium_not_exploitable = results["Medium"].(map[string]int)["NotExploitable"]
+    influx.checkmarxone_data.fields.medium_confirmed = results["Medium"].(map[string]int)["Confirmed"]
+    influx.checkmarxone_data.fields.medium_urgent = results["Medium"].(map[string]int)["Urgent"]
+    influx.checkmarxone_data.fields.medium_proposed_not_exploitable = results["Medium"].(map[string]int)["ProposedNotExploitable"]
+    influx.checkmarxone_data.fields.medium_to_verify = results["Medium"].(map[string]int)["ToVerify"]
+    influx.checkmarxone_data.fields.low_issues = results["Low"].(map[string]int)["Issues"]
+    influx.checkmarxone_data.fields.low_not_false_postive = results["Low"].(map[string]int)["NotFalsePositive"]
+    influx.checkmarxone_data.fields.low_not_exploitable = results["Low"].(map[string]int)["NotExploitable"]
+    influx.checkmarxone_data.fields.low_confirmed = results["Low"].(map[string]int)["Confirmed"]
+    influx.checkmarxone_data.fields.low_urgent = results["Low"].(map[string]int)["Urgent"]
+    influx.checkmarxone_data.fields.low_proposed_not_exploitable = results["Low"].(map[string]int)["ProposedNotExploitable"]
+    influx.checkmarxone_data.fields.low_to_verify = results["Low"].(map[string]int)["ToVerify"]
+    influx.checkmarxone_data.fields.information_issues = results["Information"].(map[string]int)["Issues"]
+    influx.checkmarxone_data.fields.information_not_false_postive = results["Information"].(map[string]int)["NotFalsePositive"]
+    influx.checkmarxone_data.fields.information_not_exploitable = results["Information"].(map[string]int)["NotExploitable"]
+    influx.checkmarxone_data.fields.information_confirmed = results["Information"].(map[string]int)["Confirmed"]
+    influx.checkmarxone_data.fields.information_urgent = results["Information"].(map[string]int)["Urgent"]
+    influx.checkmarxone_data.fields.information_proposed_not_exploitable = results["Information"].(map[string]int)["ProposedNotExploitable"]
+    influx.checkmarxone_data.fields.information_to_verify = results["Information"].(map[string]int)["ToVerify"]
+    influx.checkmarxone_data.fields.initiator_name = results["InitiatorName"].(string)
+    influx.checkmarxone_data.fields.owner = results["Owner"].(string)
+    influx.checkmarxone_data.fields.scan_id = results["ScanId"].(string)
+    influx.checkmarxone_data.fields.project_id = results["ProjectId"].(string)
+    influx.checkmarxone_data.fields.projectName = results["ProjectName"].(string)
+    influx.checkmarxone_data.fields.group = results["Group"].(string)
+    influx.checkmarxone_data.fields.group_full_path_on_report_date = results["GroupFullPathOnReportDate"].(string)
+    influx.checkmarxone_data.fields.scan_start = results["ScanStart"].(string)
+    influx.checkmarxone_data.fields.scan_time = results["ScanTime"].(string)
+    influx.checkmarxone_data.fields.lines_of_code_scanned = results["LinesOfCodeScanned"].(int)
+    influx.checkmarxone_data.fields.files_scanned = results["FilesScanned"].(int)
+    influx.checkmarxone_data.fields.checkmarxone_version = results["CheckmarxVersion"].(string)
+    influx.checkmarxone_data.fields.scan_type = results["ScanType"].(string)
+    influx.checkmarxone_data.fields.preset = results["Preset"].(string)
+    influx.checkmarxone_data.fields.deep_link = results["DeepLink"].(string)
+    influx.checkmarxone_data.fields.report_creation_time = results["ReportCreationTime"].(string)
 }
 

@@ -117,16 +117,63 @@ type ScanConfiguration struct {
 }
 
 /*
-// ScanStatus - ScanStatus Structure
-type ScanStatus struct {
-    ID              int    `json:"id"`
-    Link            Link   `json:"link"`
-    Status          Status `json:"status"`
-    ScanType        string `json:"scanType"`
-    Comment         string `json:"comment"`
-    IsIncremental   bool   `json:"isIncremental"`
-}
+{"scanId":"bef5d38b-7eb9-4138-b74b-2639fcf49e2e","projectId":"ad34ade3-9bf3-4b5a-91d7-3ad67eca7852","loc":137,"fileCount":12,"isIncremental":false,"isIncrementalCanceled":false,"queryPreset":"ASA Premium"}
 */
+type ScanMetadata struct {
+    ScanID          string
+    ProjectID       string
+    LOC             uint64
+    FileCount       uint64
+    IsIncremental   bool
+    IsIncrementalCanceled bool
+    PresetName      string
+}
+
+type ScanResultData struct {
+    QueryID         uint64
+    QueryName       string
+    Group           string
+    ResultHash      string
+    LanguageName    string
+    Nodes           []ScanResultNodes
+}
+
+type ScanResultNodes struct {
+    ID              string
+    Line            int
+    Name            string
+    Column          int
+    Length          int
+    Method          string
+    NodeID          int
+    DOMType         string
+    FileName        string
+    FullName        string
+    TypeName        string
+    MethodLine      int
+    Definitions     string 
+}
+
+type ScanResults struct {
+    Type            string
+    ResultID        string              `json:"id"`
+    SimilarityID    string
+    Status          string
+    State           string
+    Severity        string
+    CreatedAt       string              `json:"created"`
+    FirstFoundAt    string
+    FoundAt         string
+    FirstScanId     string
+    Description     string
+    Data            ScanResultData
+    VulnerabilityDetails ScanResultDetails 
+}
+
+type ScanResultDetails struct {
+    CweId           int
+    Compliances     []string
+}
 
 // Cx1: StatusDetails - details of each engine type's scan status for a multi-engine scan
 type ScanStatusDetails struct {
@@ -167,8 +214,10 @@ type System interface {
     DownloadReport(reportID string) ([]byte, error)
     GetReportStatus(reportID string) (ReportStatus, error)
     RequestNewReport(scanID, projectID, branch, reportType string) (string, error)
-    //GetResults(scanID int) ResultsStatistics
+    
     GetScan(scanID string) (Scan, error)
+    GetScanMetadata(scanID string) (ScanMetadata, error)
+    GetScanResults (scanID string) ([]ScanResults, error)
     GetScanWorkflow(scanID string) ([]WorkflowLog, error)
     GetLastScans(projectID string, limit int) ([]Scan, error)
 
@@ -187,6 +236,7 @@ type System interface {
     //GetShortDescription(scanID int, pathID int) (ShortDescription, error)
     GetGroups() ([]Group, error)
     GetGroupByName( groupName string ) (Group, error)
+    GetGroupByID( groupID string ) (Group, error)
 
     SetProjectBranch( projectID, branch string, allowOverride bool ) error
     SetProjectPreset( projectID, presetName string, allowOverride bool ) error
@@ -428,6 +478,24 @@ func (sys *SystemInstance) GetGroupByName( groupName string ) (Group, error) {
     return groups[0], nil
 }
 
+// New for Cx1
+func (sys *SystemInstance) GetGroupByID( groupID string ) (Group, error) {
+    sys.logger.Debugf("Getting Group with ID %v...", groupID)
+    var group Group
+
+    body := url.Values {
+        "briefRepresentation" : {"true"},
+    }
+
+    data, err := sendRequestIAM(sys, http.MethodGet, "/auth/admin", fmt.Sprintf("/groups/%v?%v", groupID, body.Encode()), nil, http.Header{}, []int{})
+    if err != nil {
+        sys.logger.Errorf("Fetching group failed: %s", err)
+        return group, err
+    }
+
+    err = json.Unmarshal(data, &group)
+    return group, err
+}
 
 // GetProjects returns the projects defined in the Checkmarx backend which the user has access to
 func (sys *SystemInstance) GetProjects() ([]Project, error) {
@@ -573,7 +641,7 @@ func (sys *SystemInstance) scanProject( scanConfig map[string]interface{} ) (Sca
     jsonValue, err := json.Marshal( scanConfig )    
     header := http.Header{}
     header.Set("Content-Type", "application/json")
-    sys.logger.Errorf( "Starting scan with settings: " + string(jsonValue) )
+    sys.logger.Tracef( "Starting scan with settings: " + string(jsonValue) )
 
     data, err := sendRequest(sys, http.MethodPost, "/scans", bytes.NewBuffer(jsonValue), header, []int{})
     if err != nil {
@@ -775,6 +843,19 @@ func (sys *SystemInstance) GetScan(scanID string) (Scan, error) {
     return scan, nil
 }
 
+func (sys *SystemInstance) GetScanMetadata(scanID string) (ScanMetadata, error) {
+    var scanmeta ScanMetadata
+
+    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast-metadata/%v", scanID), nil, http.Header{}, []int{})
+    if err != nil {
+        sys.logger.Errorf("Failed to fetch metadata for scan with ID %v: %s", scanID, err)
+        return scanmeta, errors.Wrapf(err, "failed to fetch metadata for scan with ID %v", scanID)
+    }
+
+    json.Unmarshal(data, &scanmeta)
+    return scanmeta, nil
+}
+
 // GetScans returns all scan status on the project addressed by projectID
 func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error) {
     var workflow []WorkflowLog
@@ -841,6 +922,33 @@ func (sys *SystemInstance) GetResults(scanID string) ResultsStatistics {
 }
 */
 
+func (sys *SystemInstance) GetScanResults (scanID string) ([]ScanResults, error) {
+	sys.logger.Debug( "Get Scan Results" )
+    var resultResponse struct {
+        Results         []ScanResults
+        TotalCount      int
+    }
+    
+    params := url.Values{
+        "scan-id":   {scanID},
+    }
+    	
+    response, err := sendRequest( sys, http.MethodGet, fmt.Sprintf("/results/?%v", params.Encode()), nil, nil, []int{} )
+    if err != nil && len(response) == 0 {
+        sys.logger.Errorf( "Failed to retrieve scan results for scan ID %v", scanID )
+        return []ScanResults{}, err
+    }
+
+    err = json.Unmarshal( response, &resultResponse )
+    if err != nil {
+        sys.logger.Errorf( "Failed while parsing response: %s", err )
+        sys.logger.Tracef( "Response contents: %s", string(response) )
+        return []ScanResults{}, err
+    }
+    sys.logger.Debugf( "Retrieved %d results", resultResponse.TotalCount )
+    return resultResponse.Results, nil	
+}
+
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 // TODO
 func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
@@ -891,7 +999,7 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
     if err != nil {
         return "", errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
     } else {
-        sys.logger.Infof( "Generating report %v", data )
+        sys.logger.Infof( "Generating report %v", string(data) )
     }
 
     var reportResponse struct {

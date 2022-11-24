@@ -1,17 +1,17 @@
 package checkmarxone
 
 import (
-	"bytes"
+//	"bytes"
 	"crypto/sha1"
-	"encoding/json"
+//	"encoding/json"
 	"fmt"
-	"math"
+//	"math"
 	"path/filepath"
-	"strconv"
+//	"strconv"
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/format"
+//	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -19,13 +19,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-type CheckmarxReportData struct {
+type CheckmarxoneReportData struct {
 	ToolName             string         `json:"toolName"`
 	ProjectName          string         `json:"projectName"`
 	ProjectID            int64          `json:"projectID"`
 	ScanID               int64          `json:"scanID"`
-	TeamName             string         `json:"teamName"`
-	TeamPath             string         `json:"teamPath"`
+	GroupName            string         `json:"groupName"`
+	GroupPath            string         `json:"groupPath"`
 	DeepLink             string         `json:"deepLink"`
 	Preset               string         `json:"preset"`
 	CheckmarxVersion     string         `json:"checkmarxVersion"`
@@ -52,14 +52,14 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
 
 	scanReport := reporting.ScanReport{
-		ReportTitle: "Checkmarx SAST Report",
+		ReportTitle: "CheckmarxOne SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Project name", Details: fmt.Sprint(data["ProjectName"])},
 			{Description: "Project ID", Details: fmt.Sprint(data["ProjectID"])},
 			{Description: "Owner", Details: fmt.Sprint(data["Owner"])},
 			{Description: "Scan ID", Details: fmt.Sprint(data["ScanID"])},
-			{Description: "Team", Details: fmt.Sprint(data["Team"])},
-			{Description: "Team full path", Details: fmt.Sprint(data["TeamFullPathOnReportDate"])},
+			{Description: "Group", Details: fmt.Sprint(data["Group"])},
+			{Description: "Group full path", Details: fmt.Sprint(data["GroupFullPathOnReportDate"])},
 			{Description: "Scan start", Details: fmt.Sprint(data["ScanStart"])},
 			{Description: "Scan duration", Details: fmt.Sprint(data["ScanTime"])},
 			{Description: "Scan type", Details: fmt.Sprint(data["ScanType"])},
@@ -137,12 +137,13 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	return scanReport
 }
 
+/*
 func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
 	checkmarxReportData := CheckmarxReportData{
 		ToolName:         `checkmarx`,
 		ProjectName:      fmt.Sprint(data["ProjectName"]),
-		TeamName:         fmt.Sprint(data["Team"]),
-		TeamPath:         fmt.Sprint(data["TeamFullPathOnReportDate"]),
+		GroupName:         fmt.Sprint(data["Group"]),
+		GroupPath:         fmt.Sprint(data["GroupFullPathOnReportDate"]),
 		DeepLink:         fmt.Sprint(data["DeepLink"]),
 		Preset:           fmt.Sprint(data["Preset"]),
 		CheckmarxVersion: fmt.Sprint(data["CheckmarxVersion"]),
@@ -243,6 +244,8 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	return reportPaths, nil
 }
 
+*/
+
 func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID string) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
@@ -283,3 +286,4 @@ func reportShaCheckmarx(parts []string) string {
 	reportShaData := []byte(strings.Join(parts, ","))
 	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
+
