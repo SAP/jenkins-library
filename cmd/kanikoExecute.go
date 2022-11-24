@@ -17,7 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-const syftURL = "https://raw.githubusercontent.com/anchore/syft/main/install.sh"
+const syftURL = "https://github.com/anchore/syft/releases/download/v0.60.3/syft_0.60.3_linux_amd64.tar.gz"
 
 type kanikoHttpClient interface {
 	piperhttp.Sender
@@ -25,22 +25,15 @@ type kanikoHttpClient interface {
 }
 
 func installSyft(shellRunner command.ShellRunner, fileUtils piperutils.FileUtils, httpClient kanikoHttpClient) error {
-	installationScript := "./install.sh"
-	err := httpClient.DownloadFile(syftURL, installationScript, nil, nil)
+	//Pinning to latest version as of today , to avoid nasty surprises
+	err := httpClient.DownloadFile(syftURL, "syftBinary.tar.gz", nil, nil)
 	if err != nil {
-		return fmt.Errorf("failed to download syft: %w", err)
+		return fmt.Errorf("failed to download syft binary: %w", err)
 	}
-
-	err = fileUtils.Chmod(installationScript, 0777)
+	err = shellRunner.RunShell("/busybox/sh", "mkdir Syft && tar -zxvf syftBinary.tar.gz -C Syft")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to untar syft: %w", err)
 	}
-
-	err = shellRunner.RunShell("/busybox/sh", "cat ./install.sh | sh -s -- -b .")
-	if err != nil {
-		return fmt.Errorf("failed to install syft: %w", err)
-	}
-
 	return nil
 }
 
@@ -52,13 +45,12 @@ func generateSBOM(shellRunner command.ShellRunner, fileUtils piperutils.FileUtil
 	}
 	for index, eachImageTag := range commonPipelineEnvironment.container.imageNameTags {
 		// TrimPrefix needed as syft needs containerRegistry name only
-		syftRunErr := shellRunner.RunShell("/busybox/sh", fmt.Sprintf("./syft %s/%s -o cyclonedx-xml=bom-docker-%v.xml", strings.TrimPrefix(commonPipelineEnvironment.container.registryURL, "https://"), eachImageTag, index))
+		syftRunErr := shellRunner.RunShell("/busybox/sh", fmt.Sprintf("Syft/syft %s/%s -o cyclonedx-xml=bom-docker-%v.xml", strings.TrimPrefix(commonPipelineEnvironment.container.registryURL, "https://"), eachImageTag, index))
 		if syftRunErr != nil {
 			return fmt.Errorf("failed to generate SBOM: %w", syftRunErr)
 		}
 	}
 	return nil
-
 }
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {

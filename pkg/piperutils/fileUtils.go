@@ -150,7 +150,7 @@ func (f Files) Chmod(path string, mode os.FileMode) error {
 // from https://golangcode.com/unzip-files-in-go/ with the following license:
 // MIT License
 //
-// Copyright (c) 2017 Edd Turtle
+// # Copyright (c) 2017 Edd Turtle
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
