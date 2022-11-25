@@ -5,7 +5,7 @@
 With this step, you can transport SAP Cloud Integration content across various landscapes using SAP Content Agent Service.
 
 SAP Cloud Integration provides content transport mechanism. SAP Content Agent service enables you to assemble the content from these content providers in MTAR format. Later, this content is either available for download or exported to the configured transport queue, such as SAP Cloud Transport Management. For more information on
-configurations required for SAP Cloud integration, see the documet [Content Assembly for SAP Integration Suite](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html)
+configurations required for SAP Cloud integration, see the document [Content Assembly for SAP Integration Suite](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html)
 
 To consume the integrationArtifactTransport step, proceed as follows:
 
