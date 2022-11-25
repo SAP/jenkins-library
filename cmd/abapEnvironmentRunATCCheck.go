@@ -95,7 +95,7 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 		return fmt.Errorf("Handling ATC result failed: %w", err)
 	}
 	if failStep {
-		return errors.New("Step execution failed due to at least one ATC finding with severity equal to or higher than the failOnSeverity parameter of this step (see config.yml)")
+		return fmt.Errorf("Step execution failed due to at least one ATC finding with severity equal to or higher than the failOnSeverity parameter of this step (see config.yml)")
 	}
 	return nil
 }
