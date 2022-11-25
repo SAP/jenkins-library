@@ -73,6 +73,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 
 func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) error {
 	var err error
+	var failStep bool
 	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
