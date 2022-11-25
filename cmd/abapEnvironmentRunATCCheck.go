@@ -88,10 +88,13 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = logAndPersistATCResult(utils, body, atcResultFileName, generateHTML, failOnSeverityLevel)
+		err, failStep = logAndPersistATCResult(utils, body, atcResultFileName, generateHTML, failOnSeverityLevel)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
+	}
+	if failStep {
+		return errors.New("Step execution failed due to at least one ATC finding with severity equal to or higher than the failOnSeverity parameter of this step (see config.yml)")
 	}
 	return nil
 }
@@ -202,15 +205,16 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	return objectSet, nil
 }
 
-func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) error {
+func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) (error, bool) {
+	var failStep bool
 	if len(body) == 0 {
-		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
+		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body")), failStep
 	}
 
 	responseBody := string(body)
 	log.Entry().Debugf("Response body: %s", responseBody)
 	if strings.HasPrefix(responseBody, "<html>") {
-		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
+		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system"), failStep
 	}
 
 	parsedXML := new(Result)
@@ -225,7 +229,6 @@ func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFi
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", atcResultFileName)
 		var reports []piperutils.Path
-		var failStep bool
 		reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results", Mandatory: true})
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
@@ -246,14 +249,11 @@ func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFi
 			}
 		}
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", utils, reports, nil)
-		if failStep {
-			return errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + failOnSeverityLevel + "'")
-		}
 	}
 	if err != nil {
-		return fmt.Errorf("Writing results failed: %w", err)
+		return fmt.Errorf("Writing results failed: %w", err), failStep
 	}
-	return nil
+	return nil, failStep
 }
 func checkStepFailing(severity string, failOnSeverityLevel string) bool {
 	switch failOnSeverityLevel {
