@@ -8,7 +8,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -271,8 +270,10 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "error"
 		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		//fail true
 		assert.Equal(t, true, failStep)
-		assert.NotEqual(t, nil, err)
+		//but no error here
+		assert.Equal(t, nil, err)
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity warning", func(t *testing.T) {
 		dir := t.TempDir()
@@ -298,10 +299,10 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "warning"
 		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
-		expErr := errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + doFailOnSeverityLevel + "'")
-		assert.Equal(t, expErr.Error(), err.Error())
+		//fail true
 		assert.Equal(t, true, failStep)
-		assert.NotEqual(t, nil, err)
+		//but no error here
+		assert.Equal(t, nil, err)
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity info", func(t *testing.T) {
 		dir := t.TempDir()
@@ -327,8 +328,10 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
 		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		//fail true
 		assert.Equal(t, true, failStep)
-		assert.NotEqual(t, nil, err)
+		//but no error here
+		assert.Equal(t, nil, err)
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity warning - only errors", func(t *testing.T) {
 		dir := t.TempDir()
@@ -354,8 +357,10 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "warning"
 		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		//fail true
 		assert.Equal(t, true, failStep)
-		assert.NotEqual(t, nil, err)
+		//but no error here
+		assert.Equal(t, nil, err)
 	})
 	t.Run("succes case: test parsing example XML result - Fail on Severity info - only errors", func(t *testing.T) {
 		dir := t.TempDir()
@@ -381,10 +386,12 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
 		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		//fail true
 		assert.Equal(t, true, failStep)
-		assert.NotEqual(t, nil, err)
+		//but no error here
+		assert.Equal(t, nil, err)
 	})
-	t.Run("succes case: test parsing example XML result - Fail on Severity warning - only warnings", func(t *testing.T) {
+	t.Run("succes case: test parsing example XML result - Fail on Severity info - only warnings", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
@@ -408,9 +415,40 @@ func TestParseATCResult(t *testing.T) {
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
 		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		//fail true
 		assert.Equal(t, true, failStep)
-		assert.NotEqual(t, nil, err)
+		//but no error here
+		assert.Equal(t, nil, err)
 	})
+	t.Run("succes case: test parsing example XML result - NOT Fail on Severity warning - only infos", func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="info">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="info">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="info">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+		doFailOnSeverityLevel := "warning"
+		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		//fail false
+		assert.Equal(t, false, failStep)
+		//no error here
+		assert.Equal(t, nil, err)
+	})	
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
