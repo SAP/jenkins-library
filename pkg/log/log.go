@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//PiperLogFormatter is the custom formatter of piper
+// PiperLogFormatter is the custom formatter of piper
 type PiperLogFormatter struct {
 	logrus.TextFormatter
 	logFormat string
@@ -21,7 +21,7 @@ const (
 	logFormatWithTimestamp = "timestamp"
 )
 
-//Format the log message
+// Format the log message
 func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
 	message := ""
 

@@ -137,6 +137,7 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 		M2Path:              config.M2Path,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
+		Defines:             config.AdditionalMvnParameters,
 	}
 
 	artifact, err := utils.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions)
@@ -688,7 +689,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 		artifacts, err = sys.GetArtifactsOfProjectVersion(projectVersionID)
 		log.Entry().Debugf("Received %v artifacts for project version ID %v", len(artifacts), projectVersionID)
 		if err != nil {
-			return fmt.Errorf("failed to fetch artifacts of project version ID %v", projectVersionID)
+			return fmt.Errorf("failed to fetch artifacts of project version ID %v: %w", projectVersionID, err)
 		}
 		if len(artifacts) == 0 {
 			return fmt.Errorf("no uploaded artifacts for assessment detected for project version with ID %v", projectVersionID)
