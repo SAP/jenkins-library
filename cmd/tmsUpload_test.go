@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"testing"
 
@@ -164,10 +164,10 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -213,10 +213,10 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -300,7 +300,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(INVALID_MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(INVALID_MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -324,7 +324,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(INVALID_MTA_YAML_PATH_2)
+		mtaYamlBytes, _ := os.ReadFile(INVALID_MTA_YAML_PATH_2)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -352,19 +352,19 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
-		invalidMtaExtDescriptorBytes, _ := ioutil.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH)
+		invalidMtaExtDescriptorBytes, _ := os.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL, invalidMtaExtDescriptorBytes)
 
-		invalidMtaExtDescriptorBytes2, _ := ioutil.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_2)
+		invalidMtaExtDescriptorBytes2, _ := os.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_2)
 		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2, invalidMtaExtDescriptorBytes2)
 
-		invalidMtaExtDescriptorBytes3, _ := ioutil.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_3)
+		invalidMtaExtDescriptorBytes3, _ := os.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_3)
 		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3, invalidMtaExtDescriptorBytes3)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL, "UNEXISTING_NODE": "unexisting.mtaext", "ONE_MORE_UNEXISTING_NODE": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL, "ONE_MORE_UNEXISTING_NODE_2": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2, "ONE_MORE_UNEXISTING_NODE_3": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3}
@@ -394,10 +394,10 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -423,10 +423,10 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -451,10 +451,10 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -479,10 +479,10 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -508,10 +508,10 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
