@@ -242,7 +242,7 @@ func TestParseATCResult(t *testing.T) {
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
 		assert.Equal(t, false, failStep)
 		assert.Equal(t, nil, err)
 	})
@@ -269,7 +269,7 @@ func TestParseATCResult(t *testing.T) {
 		</checkstyle>`
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "error"
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		//fail true
 		assert.Equal(t, true, failStep)
 		//but no error here
@@ -298,7 +298,7 @@ func TestParseATCResult(t *testing.T) {
 		</checkstyle>`
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "warning"
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		//fail true
 		assert.Equal(t, true, failStep)
 		//but no error here
@@ -327,7 +327,7 @@ func TestParseATCResult(t *testing.T) {
 		</checkstyle>`
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		//fail true
 		assert.Equal(t, true, failStep)
 		//but no error here
@@ -356,7 +356,7 @@ func TestParseATCResult(t *testing.T) {
 		</checkstyle>`
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "warning"
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		//fail true
 		assert.Equal(t, true, failStep)
 		//but no error here
@@ -385,7 +385,7 @@ func TestParseATCResult(t *testing.T) {
 		</checkstyle>`
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		//fail true
 		assert.Equal(t, true, failStep)
 		//but no error here
@@ -414,7 +414,7 @@ func TestParseATCResult(t *testing.T) {
 		</checkstyle>`
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "info"
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		//fail true
 		assert.Equal(t, true, failStep)
 		//but no error here
@@ -443,7 +443,7 @@ func TestParseATCResult(t *testing.T) {
 		</checkstyle>`
 		body := []byte(bodyString)
 		doFailOnSeverityLevel := "warning"
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
 		//fail false
 		assert.Equal(t, false, failStep)
 		//no error here
@@ -461,7 +461,7 @@ func TestParseATCResult(t *testing.T) {
 		<checkstyle>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
 		assert.Equal(t, false, failStep)
 		assert.Equal(t, nil, err)
 	})
@@ -469,7 +469,7 @@ func TestParseATCResult(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
 		assert.Equal(t, false, failStep)
 		assert.EqualError(t, err, "Parsing ATC result failed: Body is empty, can't parse empty body")
 	})
@@ -483,7 +483,7 @@ func TestParseATCResult(t *testing.T) {
 		}()
 		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
 		body := []byte(bodyString)
-		err, failStep := logAndPersistATCResult(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, "")
 		assert.Equal(t, false, failStep)
 		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})

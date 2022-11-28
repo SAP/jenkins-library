@@ -89,7 +89,7 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err, failStep = logAndPersistATCResult(utils, body, atcResultFileName, generateHTML, failOnSeverityLevel)
+		err, failStep = logAndPersistAndEvaluateATCResults(utils, body, atcResultFileName, generateHTML, failOnSeverityLevel)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
@@ -206,7 +206,7 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	return objectSet, nil
 }
 
-func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) (error, bool) {
+func logAndPersistAndEvaluateATCResults(utils piperutils.FileUtils, body []byte, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) (error, bool) {
 	var failStep bool
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body")), failStep
