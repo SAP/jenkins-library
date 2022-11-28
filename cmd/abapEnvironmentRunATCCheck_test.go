@@ -449,6 +449,35 @@ func TestParseATCResult(t *testing.T) {
 		//no error here
 		assert.Equal(t, nil, err)
 	})
+	t.Run("succes case: test parsing example XML result - NOT Fail on Severity error - only warnings", func(t *testing.T) {
+		dir := t.TempDir()
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="warning">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="warning">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="warning">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+		doFailOnSeverityLevel := "error"
+		err, failStep := logAndPersistAndEvaluateATCResults(&mock.FilesMock{}, body, "ATCResults.xml", false, doFailOnSeverityLevel)
+		//fail false
+		assert.Equal(t, false, failStep)
+		//no error here
+		assert.Equal(t, nil, err)
+	})	
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
