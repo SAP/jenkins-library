@@ -477,7 +477,7 @@ func TestParseATCResult(t *testing.T) {
 		assert.Equal(t, false, failStep)
 		//no error here
 		assert.Equal(t, nil, err)
-	})	
+	})
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
 		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
