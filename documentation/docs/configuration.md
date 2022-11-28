@@ -150,8 +150,7 @@ hooks:
     serviceKeyCredentialsId: 'my_ANS_Service_Key'
 ```
 
-!!! warning
-    It is **not** possible to configure the above in the project configuration file, i.e. in `.pipeline/config.yaml`
+!!! warning It is **not** possible to configure the above in the project configuration file, i.e. in `.pipeline/config.yaml`
 
 #### Event template
 
