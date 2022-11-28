@@ -29,7 +29,8 @@ func TestTmsUploadIntegration1(t *testing.T) {
 		"--tmsServiceKey="+tmsServiceKey,
 		"--mtaPath=scv_x.mtar",
 		"--nodeName=PIPER-TEST",
-		"--customDescription=Piper integration test")
+		"--customDescription=Piper integration test",
+		"--nodeExtDescriptorMapping={\"PIPER-TEST\":\"scv_x.mtaext\", \"PIPER-PROD\":\"scv_x.mtaext\"}")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}

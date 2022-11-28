@@ -1,8 +1,0 @@
-_schema-version: "3.1.0"
-ID: alm.pi.test.scv_x_ext_ext
-extends: alm.pi.test.scv_x_ext
-
-modules:
-  - name: java-hello-sap-x
-    properties:
-      FEATURE: "extended"
