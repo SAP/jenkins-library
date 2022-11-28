@@ -265,6 +265,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: syftDownloadUrl
+        type: string
+        description: Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.
+        scope:
+          - PARAMETERS
+          - STEPS
+        default: "https://github.com/anchore/syft/releases/download/v0.60.3/syft_0.60.3_linux_amd64.tar.gz"
   outputs:
     resources:
       - name: commonPipelineEnvironment
