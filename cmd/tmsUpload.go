@@ -102,6 +102,12 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	}
 }
 
+func jsonToMap(jsonStr string) map[string]interface{} {
+	result := make(map[string]interface{})
+	json.Unmarshal([]byte(jsonStr), &result)
+	return result
+}
+
 func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils) error {
 	mtaPath := config.MtaPath
 	exists, _ := utils.FileExists(mtaPath)
@@ -114,7 +120,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	namedUser := config.NamedUser
 	nodeName := config.NodeName
 	mtaVersion := config.MtaVersion
-	nodeNameExtDescriptorMapping := config.NodeExtDescriptorMapping
+	nodeNameExtDescriptorMapping := jsonToMap(config.NodeExtDescriptorMapping)
 
 	if GeneralConfig.Verbose {
 		log.Entry().Info("The step will use the following values:")
