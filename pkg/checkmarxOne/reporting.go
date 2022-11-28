@@ -49,15 +49,15 @@ type LowPerQuery struct {
 }
 
 func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
-	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
-
+	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX1 UI</a>`, data["DeepLink"])
+    log.Entry().Errorf( "Test report gen - LOC %d, files %d", data["LinesOfCodeScanned"], data["FilesScanned"] )
 	scanReport := reporting.ScanReport{
 		ReportTitle: "CheckmarxOne SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Project name", Details: fmt.Sprint(data["ProjectName"])},
-			{Description: "Project ID", Details: fmt.Sprint(data["ProjectID"])},
+			{Description: "Project ID", Details: fmt.Sprint(data["ProjectId"])},
 			{Description: "Owner", Details: fmt.Sprint(data["Owner"])},
-			{Description: "Scan ID", Details: fmt.Sprint(data["ScanID"])},
+			{Description: "Scan ID", Details: fmt.Sprint(data["ScanId"])},
 			{Description: "Group", Details: fmt.Sprint(data["Group"])},
 			{Description: "Group full path", Details: fmt.Sprint(data["GroupFullPathOnReportDate"])},
 			{Description: "Scan start", Details: fmt.Sprint(data["ScanStart"])},

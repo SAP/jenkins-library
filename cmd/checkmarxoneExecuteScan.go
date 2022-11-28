@@ -438,6 +438,9 @@ func (cx1sh *checkmarxoneExecuteScanHelper) getDetailedResults(config checkmarxo
     
     resultMap["LinesOfCodeScanned"] = scanmeta.LOC
     resultMap["FilesScanned"] = scanmeta.FileCount
+
+    log.Entry().Errorf( "Test - LOC %d, files %d", resultMap["LinesOfCodeScanned"], resultMap["FilesScanned"] )
+    
     resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this, bundle.js"
     
     if scanmeta.IsIncremental {
@@ -726,6 +729,8 @@ func (cx1sh *checkmarxoneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
     if err != nil {
         log.Entry().Warnf( "Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err )
     }
+
+    log.Entry().Errorf( "ScanMeta LOC: %d, files: %d", scanmeta.LOC, scanmeta.FileCount )
 
     detailedResults, err := cx1sh.getDetailedResults(config, group, project, scan, scanmeta, results, utils)
 	if err != nil {

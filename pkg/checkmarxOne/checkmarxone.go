@@ -122,11 +122,11 @@ type ScanConfiguration struct {
 type ScanMetadata struct {
     ScanID          string
     ProjectID       string
-    LOC             uint64
-    FileCount       uint64
+    LOC             int
+    FileCount       int
     IsIncremental   bool
     IsIncrementalCanceled bool
-    PresetName      string
+    PresetName      string      `json:"queryPreset"`
 }
 
 type ScanResultData struct {
@@ -276,14 +276,14 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 
     log.RegisterSecret(token)
 
-    //url, err := url.Parse("http://127.0.0.1:8080")
+    url, err := url.Parse("http://127.0.0.1:8080")
     
 
     options := piperHttp.ClientOptions{
         Token:            token,
         TransportTimeout: time.Minute * 15,
-        //TransportProxy:          url,
-        //TransportSkipVerification:  true,
+        TransportProxy:          url,
+        TransportSkipVerification:  true,
     }
     sys.client.SetOptions(options)
 
@@ -874,7 +874,7 @@ func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error)
 func (sys *SystemInstance) GetLastScans(projectID string, limit int ) ([]Scan, error) {
     scans := []Scan{}
     body := url.Values{
-        "projectId": {projectID},
+        "project-id": {projectID},
         "offset":     {fmt.Sprintf("%v",0)},
         "limit":      {fmt.Sprintf("%v", limit)},
         "sort":        {"+created_at"},
@@ -891,6 +891,27 @@ func (sys *SystemInstance) GetLastScans(projectID string, limit int ) ([]Scan, e
     json.Unmarshal(data, &scans)
     return scans, nil
 }
+
+func (sys *SystemInstance) GetLastScansByStatus(projectID string, limit int, status []string ) ([]Scan, error) {
+    scans := []Scan{}
+    body := url.Values{
+        "project-id": {projectID},
+        "offset":     {fmt.Sprintf("%d",0)},
+        "limit":      {fmt.Sprintf("%d", limit)},
+        "sort":        {"+created_at"},
+        "statuses":     status,
+    }
+
+    data, err := sendRequest( sys, http.MethodGet, fmt.Sprintf("/scans?%v", body.Encode()), nil, nil, []int{} )
+    if err != nil {
+        c.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
+        return scans, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
+    }
+
+    json.Unmarshal(data, &scans)
+    return scans, nil
+}
+
 
 func (s *Scan) IsIncremental() (bool, error) {
     for _, scanconfig := range s.Metadata.Configs {
