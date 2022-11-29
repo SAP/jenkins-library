@@ -16,7 +16,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = [
     'neo',
     /**
-     * The SAP Cloud Platform account to deploy to.
+     * The SAP BTP account to deploy to.
      * @parentConfigKey neo
      * @mandatory for deployMode=warParams
      */
@@ -43,7 +43,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'environment',
     /**
-     * The SAP Cloud Platform host to deploy to.
+     * The SAP BTP host to deploy to.
      * @parentConfigKey neo
      * @mandatory for deployMode=warParams
      */
@@ -55,13 +55,13 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'propertiesFile',
     /**
-     * Name of SAP Cloud Platform application runtime.
+     * Name of SAP BTP application runtime.
      * @parentConfigKey neo
      * @mandatory for deployMode=warParams
      */
     'runtime',
     /**
-     * Version of SAP Cloud Platform application runtime.
+     * Version of SAP BTP application runtime.
      * @parentConfigKey neo
      * @mandatory for deployMode=warParams
      */
@@ -83,12 +83,12 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'invalidateCache',
     /**
-     * Portal landscape region subscribed to in SAP Cloud Platform.
+     * Portal landscape region subscribed to in SAP BTP.
      * @parentConfigKey neo
      */
     'portalLandscape',
     /**
-     * UsernamePassword type credential containing SAP Cloud Platform OAuth client ID and client secret.
+     * UsernamePassword type credential containing SAP BTP OAuth client ID and client secret.
      * @parentConfigKey neo
      */
     'oauthCredentialId',
@@ -151,7 +151,7 @@ import static com.sap.piper.Prerequisites.checkScript
 ])
 
 /**
- * Deploys an Application to SAP Cloud Platform (SAP CP) using the SAP Cloud Platform Console Client (Neo Java Web SDK).
+ * Deploys an Application to SAP BTP (SAP CP) using the SAP BTP Console Client (Neo Java Web SDK).
  */
 @GenerateDocumentation
 void call(parameters = [:]) {
@@ -393,7 +393,7 @@ private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, doc
     }
     catch (Exception ex) {
 
-        echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
+        echo "Error while deploying to SAP BTP. Here are the neo.sh logs:"
         try {
             sh "cat ${logFolder}/*"
         } catch(Exception e) {
@@ -481,7 +481,7 @@ private boolean isAppRunning(NeoCommandHelper commandHelper) {
 
 private assertPasswordRules(String password) {
     if (password.startsWith("@")) {
-        error("Your password for the deployment to SAP Cloud Platform contains characters which are not " +
+        error("Your password for the deployment to SAP BTP contains characters which are not " +
             "supported by the neo tools. " +
             "For example it is not allowed that the password starts with @. " +
             "Please consult the documentation for the neo command line tool for more information: " +
