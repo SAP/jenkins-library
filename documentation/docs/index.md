@@ -24,6 +24,8 @@ To find out which offering is right for you, we recommend you to look at the pre
 If you don't need to care about the underlying infrastructure of your pipelines, you can use the [SAP Continuous Integration and Delivery](https://help.sap.com/docs/CONTINUOUS_DELIVERY) service on SAP BTP. It offers an easy, UI-guided way to set up continuous integration and delivery without hosting your own Jenkins instance.
 
  ![SAP CI/CD vs Project "Piper"](images/CICD_Piper.png "Solution Comparison")
+ 
+The support infrastructure for SAP Continuous Integration and Delivery is provided by SAP according to the Service Level Agreements (SLAs). Project "Piper" offers community support using GitHub issues and pull requests. Users are free to contribute to the repository independently. See [Contributing](https://github.com/SAP/jenkins-library/blob/master/.github/CONTRIBUTING.md).
 
 For more information about the CI/CD solutions offered by SAP, see [SAP Solutions for Continuous Integration and Delivery](https://help.sap.com/docs/CICD_OVERVIEW/8cacec64ed854b2a88e9a0973e0f97a2/e9fa320181124fa9808d4446a1bf69dd.html).
 
