@@ -95,7 +95,7 @@ func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]c
 		}
 		return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 	}
-	if projectName == "Test" {
+	if strings.EqualFold(projectName, "Test") {
 		return []checkmarx.Project{{ID: 1, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 	}
 	sys.previousPName = projectName
@@ -708,7 +708,7 @@ func TestRunScanWOtherCycle(t *testing.T) {
 	ctx := context.Background()
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{ProjectName: "test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
 	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
@@ -731,7 +731,7 @@ func TestRunScanErrorInZip(t *testing.T) {
 	ctx := context.Background()
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{ProjectName: "test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
 
 	influx := checkmarxExecuteScanInflux{}
@@ -833,7 +833,7 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 		</Result>
 	</Query>
 	</CxXMLResults>`)}
-	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{ProjectName: "test", VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
 	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
@@ -872,7 +872,7 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{ProjectName: "test", VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
 	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)

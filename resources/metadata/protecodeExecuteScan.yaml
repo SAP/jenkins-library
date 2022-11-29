@@ -13,6 +13,9 @@ spec:
       - name: protecodeCredentialsId
         description: Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.
         type: jenkins
+      - name: protecodeApiKeyCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing API Key/token to authenticate to BDBA server.
+        type: jenkins
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).
         type: jenkins
@@ -199,6 +202,21 @@ spec:
           - type: vaultSecret
             name: protecodeVaultSecretName
             default: protecode
+      - name: userAPIKey
+        type: string
+        description: User API key which is used for API calls. Replacement for username and password / basic authentication.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: protecodeApiKeyCredentialsId
+            type: secret
+            param: userAPIKey
+          - type: vaultSecret
+            name: protecodeApiKeyVaultSecretName
+            default: protecode
       - name: version
         aliases:
           - name: artifactVersion
@@ -245,6 +263,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: customDataJSONMap
+        type: string
+        description:
+          "The JSON map of key-value pairs to be included in this scan's Custom Data (See protecode API)."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: influx
