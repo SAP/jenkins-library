@@ -38,7 +38,7 @@ import static com.sap.piper.Prerequisites.checkScript
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** The source file to deploy to SAP Cloud Platform.*/
+    /** The source file to deploy to SAP BTP.*/
     'source',
     /** Closure which is executed before calling the deployment steps.*/
     'preDeploymentHook'
@@ -47,7 +47,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
 
 /**
- * Deploys an application to multiple platforms (Cloud Foundry, SAP Cloud Platform) or to multiple instances of multiple platforms or the same platform.
+ * Deploys an application to multiple platforms (Cloud Foundry, SAP BTP) or to multiple instances of multiple platforms or the same platform.
  */
 @GenerateDocumentation
 void call(parameters = [:]) {
