@@ -91,9 +91,9 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 }
 
 //pollTransportStatus - Poll the integration package transport processing, return status or error details
-func pollTransportStatus(processId string, retryCount int, config *integrationArtifactTransportOptions, httpClient piperhttp.Sender, apiHost string) error {
+func pollTransportStatus(processId string, remainingRetries int, config *integrationArtifactTransportOptions, httpClient piperhttp.Sender, apiHost string) error {
 
-	if retryCount <= 0 {
+	if remainingRetries <= 0 {
 		return errors.New("failed to start integration artifact after retrying several times")
 	}
 	transportStatus, err := getIntegrationTransportProcessingStatus(config, httpClient, apiHost, processId)
@@ -106,7 +106,7 @@ func pollTransportStatus(processId string, retryCount int, config *integrationAr
 		// Calling Sleep method
 		sleepTime := int(retryCount * 3)
 		time.Sleep(time.Duration(sleepTime) * time.Second)
-		retryCount--
+		remainingRetries--
 		return pollTransportStatus(processId, retryCount, config, httpClient, apiHost)
 	}
 
