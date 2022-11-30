@@ -23,14 +23,15 @@ func TestTmsUploadIntegration1(t *testing.T) {
 		User:    "root",
 		TestDir: []string{"testdata", "TestTmsUploadIntegration"},
 	})
-	//defer container.terminate(t)
+	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("tmsUpload",
 		"--tmsServiceKey="+tmsServiceKey,
 		"--mtaPath=scv_x.mtar",
 		"--nodeName=PIPER-TEST",
 		"--customDescription=Piper integration test",
-		"--nodeExtDescriptorMapping={\"PIPER-TEST\":\"scv_x.mtaext\", \"PIPER-PROD\":\"scv_x.mtaext\"}")
+		"--nodeExtDescriptorMapping={\"PIPER-TEST\":\"scv_x.mtaext\", \"PIPER-PROD\":\"scv_x.mtaext\"}",
+		"--mtaVersion=1.0.0")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
