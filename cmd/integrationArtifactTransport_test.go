@@ -26,7 +26,7 @@ func newIntegrationArtifactTransportTestsUtils() integrationArtifactTransportMoc
 func TestRunIntegrationArtifactTransport(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Create Transport Request successful test", func(t *testing.T) {
+	t.Run("Create Transport Request Successful test", func(t *testing.T) {
 		config := getDefaultOptionsForIntegrationArtifactTransport()
 		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 202, ResponseBody: `{"processId": "100", "state": "FINISHED"}`}
 		apim := apim.Bundle{APIServiceKey: config.CasServiceKey, Client: httpClientMock}
