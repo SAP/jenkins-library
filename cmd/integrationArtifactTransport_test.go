@@ -26,7 +26,7 @@ func newIntegrationArtifactTransportTestsUtils() integrationArtifactTransportMoc
 func TestRunIntegrationArtifactTransport(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Create Transport Request successfull test", func(t *testing.T) {
+	t.Run("Create Transport Request successful test", func(t *testing.T) {
 		config := getDefaultOptionsForIntegrationArtifactTransport()
 		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 202, ResponseBody: `{"processId": "100", "state": "FINISHED"}`}
 		apim := apim.Bundle{APIServiceKey: config.CasServiceKey, Client: httpClientMock}
@@ -43,7 +43,7 @@ func TestRunIntegrationArtifactTransport(t *testing.T) {
 		}
 	})
 
-	t.Run("getIntegrationTransportProcessingStatus successfull test", func(t *testing.T) {
+	t.Run("getIntegrationTransportProcessingStatus successful test", func(t *testing.T) {
 		config := getDefaultOptionsForIntegrationArtifactTransport()
 		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 200, ResponseBody: `{"state": "FINISHED"}`}
 		// test
@@ -54,7 +54,7 @@ func TestRunIntegrationArtifactTransport(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("getIntegrationTransportError successfull test", func(t *testing.T) {
+	t.Run("getIntegrationTransportError successful test", func(t *testing.T) {
 		config := getDefaultOptionsForIntegrationArtifactTransport()
 		httpClientMock := &apimhttp.HttpMockAPIM{StatusCode: 200, ResponseBody: `{ "logs": [] }`}
 		// test
@@ -73,7 +73,7 @@ func TestRunIntegrationArtifactTransport(t *testing.T) {
 		}
 	})
 
-	t.Run("GetCPITransportReqPayload successfull test", func(t *testing.T) {
+	t.Run("GetCPITransportReqPayload successful test", func(t *testing.T) {
 		config := getDefaultOptionsForIntegrationArtifactTransport()
 		// test
 		resp, err := GetCPITransportReqPayload(&config)

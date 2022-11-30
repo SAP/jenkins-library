@@ -23,7 +23,7 @@ type integrationArtifactTransportOptions struct {
 	Version              string `json:"version,omitempty"`
 }
 
-// IntegrationArtifactTransportCommand Integration artifact content transport using SAP Content Agent service
+// IntegrationArtifactTransportCommand Integration artifact content transport using the SAP Content Agent service
 func IntegrationArtifactTransportCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactTransport"
 
@@ -36,7 +36,7 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 
 	var createIntegrationArtifactTransportCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Integration artifact content transport using SAP Content Agent service",
+		Short: "Integration artifact content transport using the SAP Content Agent service",
 		Long:  `With this step you can trigger the integration artifact content transport using SAP Content Agent Service and Cloud Transport Management Service. Learn more about the integration artifact content transport using SAP Content Agent service [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -136,7 +136,7 @@ func integrationArtifactTransportMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactTransport",
 			Aliases:     []config.Alias{},
-			Description: "Integration artifact content transport using SAP Content Agent service",
+			Description: "Integration artifact content transport using the SAP Content Agent service",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
