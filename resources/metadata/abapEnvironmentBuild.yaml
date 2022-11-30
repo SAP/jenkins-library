@@ -71,7 +71,7 @@ spec:
           - name: cloudFoundry/serviceKeyName
           - name: cfServiceKey
       - name: host
-        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        description: Specifies the host address of the SAP BTP ABAP Environment system
         type: string
         mandatory: false
         scope:
@@ -80,7 +80,7 @@ spec:
           - STEPS
           - GENERAL
       - name: abapSourceClient
-        description: Specifies the client of the SAP Cloud Platform ABAP Environment system, use only in combination with host
+        description: Specifies the client of the SAP BTP ABAP Environment system, use only in combination with host
         type: string
         mandatory: false
         scope:
