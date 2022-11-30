@@ -5,7 +5,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
-    /** Deletes a SAP Cloud Platform ABAP Environment instance via the cloud foundry command line interface */
+    /** Deletes a SAP BTP ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryDeleteService',
     /** If set to true, a confirmation is required to delete the system in case the pipeline was not successful */
     'confirmDeletion',
