@@ -18,7 +18,6 @@ const (
 )
 
 type OrchestratorSpecificConfigProviding interface {
-	InitOrchestratorProvider(settings *OrchestratorSettings)
 	OrchestratorType() string
 	OrchestratorVersion() string
 	GetStageName() string
@@ -56,6 +55,7 @@ type OrchestratorSettings struct {
 	JenkinsUser  string
 	JenkinsToken string
 	AzureToken   string
+	GitHubToken  string
 }
 
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
@@ -63,7 +63,11 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	case AzureDevOps:
 		return &AzureDevOpsConfigProvider{}, nil
 	case GitHubActions:
-		return &GitHubActionsConfigProvider{}, nil
+		provider := &GitHubActionsConfigProvider{}
+		provider.initOrchestratorProvider(&OrchestratorSettings{
+			GitHubToken: getEnv("GITHUB_TOKEN", ""),
+		})
+		return provider, nil
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
 	default:
@@ -75,13 +79,14 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 func DetectOrchestrator() Orchestrator {
 	if isAzure() {
 		return Orchestrator(AzureDevOps)
-	} else if isGitHubActions() {
-		return Orchestrator(GitHubActions)
-	} else if isJenkins() {
-		return Orchestrator(Jenkins)
-	} else {
-		return Orchestrator(Unknown)
 	}
+	if isGitHubActions() {
+		return Orchestrator(GitHubActions)
+	}
+	if isJenkins() {
+		return Orchestrator(Jenkins)
+	}
+	return Orchestrator(Unknown)
 }
 
 func (o Orchestrator) String() string {
