@@ -426,9 +426,7 @@ func (h *HelmExecute) RunHelmPublish() (string, error) {
 
 	h.utils.SetOptions(repoClientOptions)
 
-	binary := fmt.Sprintf("%v", h.config.DeploymentName+"-"+h.config.PublishVersion+".tgz")
-
-	targetPath := fmt.Sprintf("%v/%s", h.config.DeploymentName, binary)
+	binary := fmt.Sprintf("%s-%s.tgz", h.config.DeploymentName, h.config.PublishVersion)
 
 	separator := "/"
 
@@ -436,7 +434,7 @@ func (h *HelmExecute) RunHelmPublish() (string, error) {
 		separator = ""
 	}
 
-	targetURL := fmt.Sprintf("%s%s%s", h.config.TargetRepositoryURL, separator, targetPath)
+	targetURL := fmt.Sprintf("%s%s%s", h.config.TargetRepositoryURL, separator, binary)
 
 	log.Entry().Infof("publishing artifact: %s", targetURL)
 

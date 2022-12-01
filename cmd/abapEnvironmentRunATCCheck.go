@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -73,6 +72,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 
 func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) error {
 	var err error
+	var failStep bool
 	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
@@ -88,10 +88,13 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = logAndPersistATCResult(utils, body, atcResultFileName, generateHTML, failOnSeverityLevel)
+		err, failStep = logAndPersistAndEvaluateATCResults(utils, body, atcResultFileName, generateHTML, failOnSeverityLevel)
 	}
 	if err != nil {
-		return fmt.Errorf("Handling ATC result failed: %w", err)
+		return errors.Errorf("Handling ATC result failed: %v", err)
+	}
+	if failStep {
+		return errors.Errorf("Step execution failed due to at least one ATC finding with severity equal to or higher than the failOnSeverity parameter of this step (see config.yml)")
 	}
 	return nil
 }
@@ -139,7 +142,7 @@ func buildATCRequestBody(config abapEnvironmentRunATCCheckOptions) (bodyString s
 	}
 
 	if objectSetString == "" {
-		return objectSetString, fmt.Errorf("Error while parsing ATC test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
+		return objectSetString, errors.Errorf("Error while parsing ATC test run object set config. No object set has been provided. Please configure the objects you want to be checked for the respective test run")
 	}
 
 	bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + runParameters + `>` + objectSetString + `</atc:runparameters>`
@@ -202,15 +205,16 @@ func getATCObjectSet(ATCConfig ATCConfiguration) (objectSet string, err error) {
 	return objectSet, nil
 }
 
-func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) error {
+func logAndPersistAndEvaluateATCResults(utils piperutils.FileUtils, body []byte, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) (error, bool) {
+	var failStep bool
 	if len(body) == 0 {
-		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
+		return errors.Errorf("Parsing ATC result failed: %v", errors.New("Body is empty, can't parse empty body")), failStep
 	}
 
 	responseBody := string(body)
 	log.Entry().Debugf("Response body: %s", responseBody)
 	if strings.HasPrefix(responseBody, "<html>") {
-		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
+		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system"), failStep
 	}
 
 	parsedXML := new(Result)
@@ -225,7 +229,6 @@ func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFi
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", atcResultFileName)
 		var reports []piperutils.Path
-		var failStep bool
 		reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results", Mandatory: true})
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
@@ -246,14 +249,11 @@ func logAndPersistATCResult(utils piperutils.FileUtils, body []byte, atcResultFi
 			}
 		}
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", utils, reports, nil)
-		if failStep {
-			return errors.New("Step Execution failed due to at least one ATC Finding with severity equal (or higher) to configured failOnSeverity Option - '" + failOnSeverityLevel + "'")
-		}
 	}
 	if err != nil {
-		return fmt.Errorf("Writing results failed: %w", err)
+		return errors.Errorf("Writing results failed: %v", err), failStep
 	}
-	return nil
+	return nil, failStep
 }
 func checkStepFailing(severity string, failOnSeverityLevel string) bool {
 	switch failOnSeverityLevel {
@@ -307,7 +307,7 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 	if err != nil || (resp != nil && resp.StatusCode == 400) { // send request does not seem to produce error with StatusCode 400!!!
 		err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
 		log.SetErrorCategory(log.ErrorService)
-		return resp, fmt.Errorf("triggering ATC run failed: %w", err)
+		return resp, errors.Errorf("triggering ATC run failed: %v", err)
 	}
 	defer resp.Body.Close()
 	return resp, err
@@ -337,7 +337,7 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
+		return "", errors.Errorf("Fetching Xcsrf-Token failed: %v", err)
 	}
 	defer req.Body.Close()
 
@@ -351,11 +351,11 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 	for {
 		resp, err := getHTTPResponseATCRun("GET", details, nil, client)
 		if err != nil {
-			return "", fmt.Errorf("Getting HTTP response failed: %w", err)
+			return "", errors.Errorf("Getting HTTP response failed: %v", err)
 		}
 		bodyText, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return "", fmt.Errorf("Reading response body failed: %w", err)
+			return "", errors.Errorf("Reading response body failed: %v", err)
 		}
 
 		x := new(Run)
@@ -371,7 +371,7 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 			return x.Link[0].Key, err
 		}
 		if x.Status == "" {
-			return "", fmt.Errorf("Could not get any response from ATC poll: %w", errors.New("Status from ATC run is empty. Either it's not an ABAP system or ATC run hasn't started"))
+			return "", errors.Errorf("Could not get any response from ATC poll: %v", errors.New("Status from ATC run is empty. Either it's not an ABAP system or ATC run hasn't started"))
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -383,7 +383,7 @@ func getHTTPResponseATCRun(requestType string, details abaputils.ConnectionDetai
 
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return resp, fmt.Errorf("Getting ATC run status failed: %w", err)
+		return resp, errors.Errorf("Getting ATC run status failed: %v", err)
 	}
 	return resp, err
 }
@@ -397,7 +397,7 @@ func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP
 
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return resp, fmt.Errorf("Getting ATC run results failed: %w", err)
+		return resp, errors.Errorf("Getting ATC run results failed: %v", err)
 	}
 	return resp, err
 }

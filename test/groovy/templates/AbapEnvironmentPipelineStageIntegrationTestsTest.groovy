@@ -97,4 +97,19 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
     }
 
+    @Test
+    void testIntegrationTestsTageSkipped4testBuild() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Integration Tests': true
+        ]
+        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, testBuild: true)
+
+        assertThat(stepsCalled, not(hasItems('input',
+                                                'abapEnvironmentCreateSystem',
+                                                'cloudFoundryDeleteService',
+                                                'abapEnvironmentBuild',
+                                                'cloudFoundryCreateServiceKey')))
+    }
+
 }
