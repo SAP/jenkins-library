@@ -904,7 +904,7 @@ func (sys *SystemInstance) GetLastScansByStatus(projectID string, limit int, sta
 
     data, err := sendRequest( sys, http.MethodGet, fmt.Sprintf("/scans?%v", body.Encode()), nil, nil, []int{} )
     if err != nil {
-        c.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
+        sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
         return scans, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
     }
 

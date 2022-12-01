@@ -1,4 +1,4 @@
-package checkmarxone
+package checkmarxOne
 
 import (
 	"encoding/xml"
