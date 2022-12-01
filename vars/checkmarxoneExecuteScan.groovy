@@ -1,7 +1,7 @@
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/checkmarxExecuteScan.yaml'
+@Field String METADATA_FILE = 'metadata/checkmarxoneExecuteScan.yaml'
 
 //Metadata maintained in file project://resources/metadata/checkmarxExecuteScan.yaml
 
