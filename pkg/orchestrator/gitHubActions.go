@@ -12,7 +12,7 @@ type GitHubActionsConfigProvider struct {
 	run run
 }
 
-func (g *GitHubActionsConfigProvider) initOrchestratorProvider(settings *OrchestratorSettings) {
+func (g *GitHubActionsConfigProvider) initOrchestratorProvider(settings *OrchestratorSettings) error {
 	client := piperHttp.Client{}
 	client.SetOptions(piperHttp.ClientOptions{
 		Password:         settings.GitHubToken,
@@ -35,13 +35,14 @@ func (g *GitHubActionsConfigProvider) initOrchestratorProvider(settings *Orchest
 			"Authorization": {"Bearer $GITHUB_TOKEN"},
 		}, nil)
 	if err != nil {
-		panic(fmt.Errorf("can't get API data: %w", err).Error())
+		return fmt.Errorf("can't get API data: %w", err)
 
 	}
 	err = piperHttp.ParseHTTPResponseBodyJSON(resp, g.run)
 	if err != nil {
-		panic(fmt.Errorf("can't parse JSON data: %w", err).Error())
+		return fmt.Errorf("can't parse JSON data: %w", err)
 	}
+	return err
 }
 
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {

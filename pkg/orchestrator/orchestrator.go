@@ -64,10 +64,10 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 		return &AzureDevOpsConfigProvider{}, nil
 	case GitHubActions:
 		provider := &GitHubActionsConfigProvider{}
-		provider.initOrchestratorProvider(&OrchestratorSettings{
+		err := provider.initOrchestratorProvider(&OrchestratorSettings{
 			GitHubToken: getEnv("GITHUB_TOKEN", ""),
 		})
-		return provider, nil
+		return provider, err
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
 	default:
