@@ -15,7 +15,7 @@ import (
 )
 
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
-func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *format.SARIF {
+func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, projectLink string) *format.SARIF {
 	log.Entry().Debug("Creating SARIF file for data transfer")
 
 	// Handle results/vulnerabilities
@@ -51,11 +51,17 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			if !piperutils.ContainsString(collectedRules, result.RuleID) {
 				collectedRules = append(collectedRules, result.RuleID)
 
+				// set information about BlackDuck project
+				v.projectVersionLink = projectLink
+				v.projectName = projectName
+				v.projectVersion = projectVersion
+
 				markdown, _ := v.ToMarkdown()
 				tags := []string{
 					"SECURITY_VULNERABILITY",
 					v.Component.ToPackageUrl().ToString(),
 					v.VulnerabilityWithRemediation.CweID,
+					v.Component.MatchedType(),
 				}
 				ruleProp := format.SarifRuleProperties{
 					Tags:             tags,
@@ -95,7 +101,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	//handle the tool object
 	tool := format.Tool{
 		Driver: format.Driver{
-			Name:           "Blackduck Hub Detect",
+			Name:           "Black Duck",
 			Version:        "unknown",
 			InformationUri: "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus",
 			Rules:          rules,
