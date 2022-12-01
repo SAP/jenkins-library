@@ -111,7 +111,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentCreateTagCommand())
 	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
-	rootCmd.AddCommand(CheckmarxoneExecuteScanCommand())
+	rootCmd.AddCommand(CheckmarxOneExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(CodeqlExecuteScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())

@@ -1,4 +1,4 @@
-package checkmarxone
+package checkmarxOne
 
 import (
     "bytes"
@@ -247,7 +247,7 @@ type System interface {
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
 // Updated for Cx1
 func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, APIKey, client_id, client_secret string) (*SystemInstance, error) {
-    loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone")
+    loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne")
     sys := &SystemInstance{
         serverURL: serverURL,
         iamURL: iamURL,

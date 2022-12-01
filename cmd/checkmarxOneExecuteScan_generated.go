@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type checkmarxoneExecuteScanOptions struct {
+type checkmarxOneExecuteScanOptions struct {
 	Assignees                            []string `json:"assignees,omitempty"`
 	AvoidDuplicateProjectScans           bool     `json:"avoidDuplicateProjectScans,omitempty"`
 	FilterPattern                        string   `json:"filterPattern,omitempty"`
@@ -62,15 +62,15 @@ type checkmarxoneExecuteScanOptions struct {
 	ConvertToSarif                       bool     `json:"convertToSarif,omitempty"`
 }
 
-type checkmarxoneExecuteScanInflux struct {
+type checkmarxOneExecuteScanInflux struct {
 	step_data struct {
 		fields struct {
-			checkmarxone bool
+			checkmarxOne bool
 		}
 		tags struct {
 		}
 	}
-	checkmarxone_data struct {
+	checkmarxOne_data struct {
 		fields struct {
 			high_issues                          int
 			high_not_false_postive               int
@@ -111,7 +111,7 @@ type checkmarxoneExecuteScanInflux struct {
 			group_full_path_on_report_date       string
 			scan_start                           string
 			scan_time                            string
-			checkmarxone_version                 string
+			checkmarxOne_version                 string
 			scan_type                            string
 			preset                               string
 			deep_link                            string
@@ -122,58 +122,58 @@ type checkmarxoneExecuteScanInflux struct {
 	}
 }
 
-func (i *checkmarxoneExecuteScanInflux) persist(path, resourceName string) {
+func (i *checkmarxOneExecuteScanInflux) persist(path, resourceName string) {
 	measurementContent := []struct {
 		measurement string
 		valType     string
 		name        string
 		value       interface{}
 	}{
-		{valType: config.InfluxField, measurement: "step_data", name: "checkmarxone", value: i.step_data.fields.checkmarxone},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "high_issues", value: i.checkmarxone_data.fields.high_issues},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "high_not_false_postive", value: i.checkmarxone_data.fields.high_not_false_postive},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "high_not_exploitable", value: i.checkmarxone_data.fields.high_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "high_confirmed", value: i.checkmarxone_data.fields.high_confirmed},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "high_urgent", value: i.checkmarxone_data.fields.high_urgent},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "high_proposed_not_exploitable", value: i.checkmarxone_data.fields.high_proposed_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "high_to_verify", value: i.checkmarxone_data.fields.high_to_verify},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "medium_issues", value: i.checkmarxone_data.fields.medium_issues},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "medium_not_false_postive", value: i.checkmarxone_data.fields.medium_not_false_postive},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "medium_not_exploitable", value: i.checkmarxone_data.fields.medium_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "medium_confirmed", value: i.checkmarxone_data.fields.medium_confirmed},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "medium_urgent", value: i.checkmarxone_data.fields.medium_urgent},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "medium_proposed_not_exploitable", value: i.checkmarxone_data.fields.medium_proposed_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "medium_to_verify", value: i.checkmarxone_data.fields.medium_to_verify},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "low_issues", value: i.checkmarxone_data.fields.low_issues},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "low_not_false_postive", value: i.checkmarxone_data.fields.low_not_false_postive},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "low_not_exploitable", value: i.checkmarxone_data.fields.low_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "low_confirmed", value: i.checkmarxone_data.fields.low_confirmed},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "low_urgent", value: i.checkmarxone_data.fields.low_urgent},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "low_proposed_not_exploitable", value: i.checkmarxone_data.fields.low_proposed_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "low_to_verify", value: i.checkmarxone_data.fields.low_to_verify},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "information_issues", value: i.checkmarxone_data.fields.information_issues},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "information_not_false_postive", value: i.checkmarxone_data.fields.information_not_false_postive},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "information_not_exploitable", value: i.checkmarxone_data.fields.information_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "information_confirmed", value: i.checkmarxone_data.fields.information_confirmed},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "information_urgent", value: i.checkmarxone_data.fields.information_urgent},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "information_proposed_not_exploitable", value: i.checkmarxone_data.fields.information_proposed_not_exploitable},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "information_to_verify", value: i.checkmarxone_data.fields.information_to_verify},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "lines_of_code_scanned", value: i.checkmarxone_data.fields.lines_of_code_scanned},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "files_scanned", value: i.checkmarxone_data.fields.files_scanned},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "initiator_name", value: i.checkmarxone_data.fields.initiator_name},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "owner", value: i.checkmarxone_data.fields.owner},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "scan_id", value: i.checkmarxone_data.fields.scan_id},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "project_id", value: i.checkmarxone_data.fields.project_id},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "projectName", value: i.checkmarxone_data.fields.projectName},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "group", value: i.checkmarxone_data.fields.group},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "group_full_path_on_report_date", value: i.checkmarxone_data.fields.group_full_path_on_report_date},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "scan_start", value: i.checkmarxone_data.fields.scan_start},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "scan_time", value: i.checkmarxone_data.fields.scan_time},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "checkmarxone_version", value: i.checkmarxone_data.fields.checkmarxone_version},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "scan_type", value: i.checkmarxone_data.fields.scan_type},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "preset", value: i.checkmarxone_data.fields.preset},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "deep_link", value: i.checkmarxone_data.fields.deep_link},
-		{valType: config.InfluxField, measurement: "checkmarxone_data", name: "report_creation_time", value: i.checkmarxone_data.fields.report_creation_time},
+		{valType: config.InfluxField, measurement: "step_data", name: "checkmarxOne", value: i.step_data.fields.checkmarxOne},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "high_issues", value: i.checkmarxOne_data.fields.high_issues},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "high_not_false_postive", value: i.checkmarxOne_data.fields.high_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "high_not_exploitable", value: i.checkmarxOne_data.fields.high_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "high_confirmed", value: i.checkmarxOne_data.fields.high_confirmed},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "high_urgent", value: i.checkmarxOne_data.fields.high_urgent},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "high_proposed_not_exploitable", value: i.checkmarxOne_data.fields.high_proposed_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "high_to_verify", value: i.checkmarxOne_data.fields.high_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "medium_issues", value: i.checkmarxOne_data.fields.medium_issues},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "medium_not_false_postive", value: i.checkmarxOne_data.fields.medium_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "medium_not_exploitable", value: i.checkmarxOne_data.fields.medium_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "medium_confirmed", value: i.checkmarxOne_data.fields.medium_confirmed},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "medium_urgent", value: i.checkmarxOne_data.fields.medium_urgent},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "medium_proposed_not_exploitable", value: i.checkmarxOne_data.fields.medium_proposed_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "medium_to_verify", value: i.checkmarxOne_data.fields.medium_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "low_issues", value: i.checkmarxOne_data.fields.low_issues},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "low_not_false_postive", value: i.checkmarxOne_data.fields.low_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "low_not_exploitable", value: i.checkmarxOne_data.fields.low_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "low_confirmed", value: i.checkmarxOne_data.fields.low_confirmed},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "low_urgent", value: i.checkmarxOne_data.fields.low_urgent},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "low_proposed_not_exploitable", value: i.checkmarxOne_data.fields.low_proposed_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "low_to_verify", value: i.checkmarxOne_data.fields.low_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "information_issues", value: i.checkmarxOne_data.fields.information_issues},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "information_not_false_postive", value: i.checkmarxOne_data.fields.information_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "information_not_exploitable", value: i.checkmarxOne_data.fields.information_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "information_confirmed", value: i.checkmarxOne_data.fields.information_confirmed},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "information_urgent", value: i.checkmarxOne_data.fields.information_urgent},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "information_proposed_not_exploitable", value: i.checkmarxOne_data.fields.information_proposed_not_exploitable},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "information_to_verify", value: i.checkmarxOne_data.fields.information_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "lines_of_code_scanned", value: i.checkmarxOne_data.fields.lines_of_code_scanned},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "files_scanned", value: i.checkmarxOne_data.fields.files_scanned},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "initiator_name", value: i.checkmarxOne_data.fields.initiator_name},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "owner", value: i.checkmarxOne_data.fields.owner},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "scan_id", value: i.checkmarxOne_data.fields.scan_id},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "project_id", value: i.checkmarxOne_data.fields.project_id},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "projectName", value: i.checkmarxOne_data.fields.projectName},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "group", value: i.checkmarxOne_data.fields.group},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "group_full_path_on_report_date", value: i.checkmarxOne_data.fields.group_full_path_on_report_date},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "scan_start", value: i.checkmarxOne_data.fields.scan_start},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "scan_time", value: i.checkmarxOne_data.fields.scan_time},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "checkmarxOne_version", value: i.checkmarxOne_data.fields.checkmarxOne_version},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "scan_type", value: i.checkmarxOne_data.fields.scan_type},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "preset", value: i.checkmarxOne_data.fields.preset},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "deep_link", value: i.checkmarxOne_data.fields.deep_link},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "report_creation_time", value: i.checkmarxOne_data.fields.report_creation_time},
 	}
 
 	errCount := 0
@@ -189,20 +189,20 @@ func (i *checkmarxoneExecuteScanInflux) persist(path, resourceName string) {
 	}
 }
 
-type checkmarxoneExecuteScanReports struct {
+type checkmarxOneExecuteScanReports struct {
 }
 
-func (p *checkmarxoneExecuteScanReports) persist(stepConfig checkmarxoneExecuteScanOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+func (p *checkmarxOneExecuteScanReports) persist(stepConfig checkmarxOneExecuteScanOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
 	if gcsBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "**/piper_checkmarxone_report.html", ParamRef: "", StepResultType: "checkmarxone"},
-		{FilePattern: "**/CxSASTResults_*.xml", ParamRef: "", StepResultType: "checkmarxone"},
-		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarxone"},
-		{FilePattern: "**/toolrun_checkmarxone_*.json", ParamRef: "", StepResultType: "checkmarxone"},
+		{FilePattern: "**/piper_checkmarxOne_report.html", ParamRef: "", StepResultType: "checkmarxOne"},
+		{FilePattern: "**/CxSASTResults_*.xml", ParamRef: "", StepResultType: "checkmarxOne"},
+		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarxOne"},
+		{FilePattern: "**/toolrun_checkmarxOne_*.json", ParamRef: "", StepResultType: "checkmarxOne"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -228,23 +228,23 @@ func (p *checkmarxoneExecuteScanReports) persist(stepConfig checkmarxoneExecuteS
 	}
 }
 
-// CheckmarxoneExecuteScanCommand CheckmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
-func CheckmarxoneExecuteScanCommand() *cobra.Command {
-	const STEP_NAME = "checkmarxoneExecuteScan"
+// CheckmarxOneExecuteScanCommand checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
+func CheckmarxOneExecuteScanCommand() *cobra.Command {
+	const STEP_NAME = "checkmarxOneExecuteScan"
 
-	metadata := checkmarxoneExecuteScanMetadata()
-	var stepConfig checkmarxoneExecuteScanOptions
+	metadata := checkmarxOneExecuteScanMetadata()
+	var stepConfig checkmarxOneExecuteScanOptions
 	var startTime time.Time
-	var influx checkmarxoneExecuteScanInflux
-	var reports checkmarxoneExecuteScanReports
+	var influx checkmarxOneExecuteScanInflux
+	var reports checkmarxOneExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createCheckmarxoneExecuteScanCmd = &cobra.Command{
+	var createCheckmarxOneExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "CheckmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
-		Long: `CheckmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java- or TypeScript, Swift, Golang, Ruby code,
+		Short: "checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
+		Long: `checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java- or TypeScript, Swift, Golang, Ruby code,
 and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
 This step by default enforces a specific audit baseline for findings and therefore ensures that:
@@ -328,17 +328,17 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			checkmarxoneExecuteScan(stepConfig, &stepTelemetryData, &influx)
+			checkmarxOneExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addCheckmarxoneExecuteScanFlags(createCheckmarxoneExecuteScanCmd, &stepConfig)
-	return createCheckmarxoneExecuteScanCmd
+	addCheckmarxOneExecuteScanFlags(createCheckmarxOneExecuteScanCmd, &stepConfig)
+	return createCheckmarxOneExecuteScanCmd
 }
 
-func addCheckmarxoneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxoneExecuteScanOptions) {
+func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOneExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not")
 	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
@@ -352,15 +352,15 @@ func addCheckmarxoneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxon
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.ClientSecret, "clientSecret", os.Getenv("PIPER_clientSecret"), "The clientSecret to authenticate using a service account")
 	cmd.Flags().StringVar(&stepConfig.APIKey, "APIKey", os.Getenv("PIPER_APIKey"), "The APIKey to authenticate")
-	cmd.Flags().StringVar(&stepConfig.Preset, "preset", `Checkmarx Default`, "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxoneCredentialsId`")
+	cmd.Flags().StringVar(&stepConfig.Preset, "preset", `Checkmarx Default`, "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
-	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", os.Getenv("PIPER_projectCriticality"), "The criticality of the CheckmarxOne project, used during project creation")
-	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the CheckmarxOne project to scan into")
+	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", os.Getenv("PIPER_projectCriticality"), "The criticality of the checkmarxOne project, used during project creation")
+	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the checkmarxOne project to scan into")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", `zip`, "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
-	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the CheckmarxOne server to be used")
-	cmd.Flags().StringVar(&stepConfig.IamURL, "iamUrl", os.Getenv("PIPER_iamUrl"), "The URL pointing to the access control root of the CheckmarxOne IAM server to be used")
-	cmd.Flags().StringVar(&stepConfig.Tenant, "tenant", os.Getenv("PIPER_tenant"), "The name of the CheckmarxOne tenant to be used")
+	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the checkmarxOne server to be used")
+	cmd.Flags().StringVar(&stepConfig.IamURL, "iamUrl", os.Getenv("PIPER_iamUrl"), "The URL pointing to the access control root of the checkmarxOne IAM server to be used")
+	cmd.Flags().StringVar(&stepConfig.Tenant, "tenant", os.Getenv("PIPER_tenant"), "The name of the checkmarxOne tenant to be used")
 	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used")
 	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to assign newly created projects to which is preferred to groupId")
@@ -376,7 +376,7 @@ func addCheckmarxoneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxon
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", `percentage`, "The unit for the threshold to apply.")
 	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
 	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
-	cmd.Flags().BoolVar(&stepConfig.ConvertToSarif, "convertToSarif", true, "Convert the CheckmarxOne XML scan results to the open SARIF standard.")
+	cmd.Flags().BoolVar(&stepConfig.ConvertToSarif, "convertToSarif", true, "Convert the checkmarxOne XML scan results to the open SARIF standard.")
 
 	cmd.MarkFlagRequired("clientSecret")
 	cmd.MarkFlagRequired("APIKey")
@@ -389,21 +389,21 @@ func addCheckmarxoneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxon
 }
 
 // retrieve step metadata
-func checkmarxoneExecuteScanMetadata() config.StepData {
+func checkmarxOneExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "checkmarxoneExecuteScan",
+			Name:        "checkmarxOneExecuteScan",
 			Aliases:     []config.Alias{},
-			Description: "CheckmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
+			Description: "checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "checkmarxoneCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing ClientID and ClientSecret to communicate with the CheckmarxOne backend.", Type: "jenkins"},
+					{Name: "checkmarxOneCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing ClientID and ClientSecret to communicate with the checkmarxOne backend.", Type: "jenkins"},
 					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
-					{Name: "checkmarxone", Type: "stash"},
+					{Name: "checkmarxOne", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -525,15 +525,15 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Name: "clientSecret",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "checkmarxoneCredentialsId",
+								Name:  "checkmarxOneCredentialsId",
 								Param: "clientSecret",
 								Type:  "secret",
 							},
 
 							{
-								Name:    "checkmarxoneVaultSecretName",
+								Name:    "checkmarxOneVaultSecretName",
 								Type:    "vaultSecret",
-								Default: "checkmarxone",
+								Default: "checkmarxOne",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -546,21 +546,21 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Name: "APIKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "checkmarxoneCredentialsId",
+								Name:  "checkmarxOneCredentialsId",
 								Param: "apiKey",
 								Type:  "secret",
 							},
 
 							{
-								Name:    "checkmarxoneVaultSecretName",
+								Name:    "checkmarxOneVaultSecretName",
 								Type:    "vaultSecret",
-								Default: "checkmarxone",
+								Default: "checkmarxOne",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "checkmarxoneAPIKey"}},
+						Aliases:   []config.Alias{{Name: "checkmarxOneAPIKey"}},
 						Default:   os.Getenv("PIPER_APIKey"),
 					},
 					{
@@ -596,7 +596,7 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxoneProject"}},
+						Aliases:     []config.Alias{{Name: "checkmarxOneProject"}},
 						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
@@ -628,7 +628,7 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxoneServerUrl"}},
+						Aliases:     []config.Alias{{Name: "checkmarxOneServerUrl"}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -637,7 +637,7 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxoneIAMUrl"}},
+						Aliases:     []config.Alias{{Name: "checkmarxOneIAMUrl"}},
 						Default:     os.Getenv("PIPER_iamUrl"),
 					},
 					{
@@ -646,7 +646,7 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxoneTenant"}},
+						Aliases:     []config.Alias{{Name: "checkmarxOneTenant"}},
 						Default:     os.Getenv("PIPER_tenant"),
 					},
 					{
@@ -664,7 +664,7 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "checkmarxoneGroupId"}, {Name: "teamId", Deprecated: true}},
+						Aliases:     []config.Alias{{Name: "checkmarxOneGroupId"}, {Name: "teamId", Deprecated: true}},
 						Default:     os.Getenv("PIPER_groupId"),
 					},
 					{
@@ -673,22 +673,22 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "checkmarxoneGroupName"}, {Name: "teamName"}},
+						Aliases:     []config.Alias{{Name: "checkmarxOneGroupName"}, {Name: "teamName"}},
 						Default:     os.Getenv("PIPER_groupName"),
 					},
 					{
 						Name: "clientId",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "checkmarxoneCredentialsId",
+								Name:  "checkmarxOneCredentialsId",
 								Param: "clientId",
 								Type:  "secret",
 							},
 
 							{
-								Name:    "checkmarxoneVaultSecretName",
+								Name:    "checkmarxOneVaultSecretName",
 								Type:    "vaultSecret",
-								Default: "checkmarxone",
+								Default: "checkmarxOne",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -823,18 +823,18 @@ func checkmarxoneExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"name": "step_data", "fields": []map[string]string{{"name": "checkmarxone"}}},
-							{"name": "checkmarxone_data", "fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "group"}, {"name": "group_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "checkmarxone_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
+							{"name": "step_data", "fields": []map[string]string{{"name": "checkmarxOne"}}},
+							{"name": "checkmarxOne_data", "fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "group"}, {"name": "group_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "checkmarxOne_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
 						},
 					},
 					{
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/piper_checkmarxone_report.html", "type": "checkmarxone"},
-							{"filePattern": "**/CxSASTResults_*.xml", "type": "checkmarxone"},
-							{"filePattern": "**/ScanReport.*", "type": "checkmarxone"},
-							{"filePattern": "**/toolrun_checkmarxone_*.json", "type": "checkmarxone"},
+							{"filePattern": "**/piper_checkmarxOne_report.html", "type": "checkmarxOne"},
+							{"filePattern": "**/CxSASTResults_*.xml", "type": "checkmarxOne"},
+							{"filePattern": "**/ScanReport.*", "type": "checkmarxOne"},
+							{"filePattern": "**/toolrun_checkmarxOne_*.json", "type": "checkmarxOne"},
 						},
 					},
 				},

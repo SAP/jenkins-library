@@ -1,8 +1,8 @@
 metadata:
-  name: checkmarxoneExecuteScan
-  description: CheckmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
+  name: checkmarxOneExecuteScan
+  description: checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
   longDescription: |-
-    CheckmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java- or TypeScript, Swift, Golang, Ruby code,
+    checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java- or TypeScript, Swift, Golang, Ruby code,
     and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
     This step by default enforces a specific audit baseline for findings and therefore ensures that:
@@ -16,14 +16,14 @@ metadata:
 spec:
   inputs:
     secrets:  
-      - name: checkmarxoneCredentialsId
-        description: Jenkins 'Username with password' credentials ID containing ClientID and ClientSecret to communicate with the CheckmarxOne backend.
+      - name: checkmarxOneCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing ClientID and ClientSecret to communicate with the checkmarxOne backend.
         type: jenkins
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
     resources:
-      - name: checkmarxone
+      - name: checkmarxOne
         type: stash
     params:
       - name: assignees
@@ -144,15 +144,15 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: checkmarxoneCredentialsId
+          - name: checkmarxOneCredentialsId
             type: secret
             param: clientSecret
           - type: vaultSecret
-            name: checkmarxoneVaultSecretName
-            default: checkmarxone
+            name: checkmarxOneVaultSecretName
+            default: checkmarxOne
       - name: APIKey
         aliases:
-          - name: checkmarxoneAPIKey
+          - name: checkmarxOneAPIKey
         type: string
         description: The APIKey to authenticate
         mandatory: true
@@ -162,17 +162,17 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: checkmarxoneCredentialsId
+          - name: checkmarxOneCredentialsId
             type: secret
             param: apiKey
           - type: vaultSecret
-            name: checkmarxoneVaultSecretName
-            default: checkmarxone
+            name: checkmarxOneVaultSecretName
+            default: checkmarxOne
       - name: preset
         aliases:
           - name: presetName
         type: string
-        description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxoneCredentialsId`
+        description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`
         scope:
           - PARAMETERS
           - STAGES
@@ -191,7 +191,7 @@ spec:
           - name: criticality
             deprecated: true
         type: string
-        description: The criticality of the CheckmarxOne project, used during project creation
+        description: The criticality of the checkmarxOne project, used during project creation
         mandatory: true
         scope:
           - PARAMETERS
@@ -199,9 +199,9 @@ spec:
           - STEPS
       - name: projectName
         aliases:
-          - name: checkmarxoneProject
+          - name: checkmarxOneProject
         type: string
-        description: The name of the CheckmarxOne project to scan into
+        description: The name of the checkmarxOne project to scan into
         mandatory: true
         scope:
           - PARAMETERS
@@ -232,9 +232,9 @@ spec:
         type: string
       - name: serverUrl
         aliases:
-          - name: checkmarxoneServerUrl
+          - name: checkmarxOneServerUrl
         type: string
-        description: The URL pointing to the root of the CheckmarxOne server to be used
+        description: The URL pointing to the root of the checkmarxOne server to be used
         mandatory: true
         scope:
           - GENERAL
@@ -243,9 +243,9 @@ spec:
           - STEPS
       - name: iamUrl
         aliases:
-          - name: checkmarxoneIAMUrl
+          - name: checkmarxOneIAMUrl
         type: string
-        description: The URL pointing to the access control root of the CheckmarxOne IAM server to be used
+        description: The URL pointing to the access control root of the checkmarxOne IAM server to be used
         mandatory: true
         scope:
           - GENERAL
@@ -254,9 +254,9 @@ spec:
           - STEPS
       - name: tenant
         aliases:
-          - name: checkmarxoneTenant
+          - name: checkmarxOneTenant
         type: string
-        description: The name of the CheckmarxOne tenant to be used
+        description: The name of the checkmarxOne tenant to be used
         mandatory: true
         scope:
           - GENERAL
@@ -273,7 +273,7 @@ spec:
         default: "1"
       - name: groupId
         aliases:
-          - name: checkmarxoneGroupId
+          - name: checkmarxOneGroupId
           - name: teamId
             deprecated: true
         type: string
@@ -284,7 +284,7 @@ spec:
           - STEPS
       - name: groupName
         aliases:
-          - name: checkmarxoneGroupName
+          - name: checkmarxOneGroupName
           - name: teamName
         type: string
         description: The full name of the group to assign newly created projects to which is preferred to groupId
@@ -304,12 +304,12 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: checkmarxoneCredentialsId
+          - name: checkmarxOneCredentialsId
             type: secret
             param: clientId
           - type: vaultSecret
-            name: checkmarxoneVaultSecretName
-            default: checkmarxone
+            name: checkmarxOneVaultSecretName
+            default: checkmarxOne
       - name: verifyOnly
         type: bool
         description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
@@ -409,7 +409,7 @@ spec:
         default: false
       - name: convertToSarif
         type: bool
-        description: "Convert the CheckmarxOne XML scan results to the open SARIF standard."
+        description: "Convert the checkmarxOne XML scan results to the open SARIF standard."
         scope:
           - PARAMETERS
           - STAGES
@@ -422,9 +422,9 @@ spec:
         params:
           - name: step_data
             fields:
-              - name: checkmarxone
+              - name: checkmarxOne
                 type: bool
-          - name: checkmarxone_data
+          - name: checkmarxOne_data
             fields:
               - name: high_issues
                 type: int
@@ -495,7 +495,7 @@ spec:
               - name: group_full_path_on_report_date
               - name: scan_start
               - name: scan_time
-              - name: checkmarxone_version
+              - name: checkmarxOne_version
               - name: scan_type
               - name: preset
               - name: deep_link
@@ -503,11 +503,11 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "**/piper_checkmarxone_report.html"
-            type: checkmarxone
+          - filePattern: "**/piper_checkmarxOne_report.html"
+            type: checkmarxOne
           - filePattern: "**/CxSASTResults_*.xml"
-            type: checkmarxone
+            type: checkmarxOne
           - filePattern: "**/ScanReport.*"
-            type: checkmarxone
-          - filePattern: "**/toolrun_checkmarxone_*.json"
-            type: checkmarxone
+            type: checkmarxOne
+          - filePattern: "**/toolrun_checkmarxOne_*.json"
+            type: checkmarxOne
