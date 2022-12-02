@@ -47,12 +47,12 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key.
 	connectionDetails, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001")
 	if err != nil {
-		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
+		return errors.Errorf("Parameters for the ABAP Connection not available", err)
 	}
 
 	cookieJar, err := cookiejar.New(nil)
 	if err != nil {
-		return errors.Wrap(err, "could not create a Cookie Jar")
+		return errors.Errorf("could not create a Cookie Jar", err)
 	}
 	clientOptions := piperhttp.ClientOptions{
 		MaxRequestDuration: 180 * time.Second,
@@ -61,6 +61,11 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
+
+	connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client)
+	if err != nil {
+		return err
+	}
 
 	return pushATCSystemConfig(config, connectionDetails, client)
 
@@ -122,7 +127,7 @@ func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigO
 	//check if parsedConfigurationJson is not initial or Configuration Name not supplied
 	if reflect.DeepEqual(parsedConfigurationJson, emptyConfigurationJson) ||
 		parsedConfigurationJson.ConfName == "" {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, nil
@@ -140,7 +145,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 	}
 
 	if len(filelocation) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
 	filename, err = filepath.Abs(filelocation[0])
@@ -152,23 +157,18 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	if len(atcSystemConfiguartionJsonFile) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, fmt.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
 	if err != nil {
-		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, err
+		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Unmarshal Error of ATC Configuration File (" + config.AtcSystemConfigFilePath + "). ", err)
 	}
 
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 }
 
 func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
-	var err error
-	connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client)
-	if err != nil {
-		return err
-	}
 	if configDoesExist {
 		err = doPatchATCSystemConfig(config, confUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
 		if err != nil {
@@ -199,7 +199,7 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 	resp, err := abaputils.GetHTTPResponse("HEAD", connectionDetails, nil, client)
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
-		return connectionDetails.XCsrfToken, err
+		return connectionDetails.XCsrfToken, errors.Errorf("X-Csrf-Token fetch failed for Service ATC System Configuration", err)
 	}
 	defer resp.Body.Close()
 
@@ -284,9 +284,8 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 	var i interface{}
 	var outputString string = ``
 
-	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {
-		log.Entry().Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile, err)
-		return outputString, err
+	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {	
+		return outputString, errors.Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile, err)
 	}
 	if m, ok := i.(map[string]interface{}); ok {
 		delete(m, "_priorities")
@@ -294,8 +293,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 
 	output, err := json.Marshal(i)
 	if err != nil {
-		log.Entry().Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile, err)
-		return outputString, err
+		return outputString, errors.Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile, err)
 	}
 	//injecting the configuration ID
 	output = output[1:] // remove leading '{'
@@ -420,8 +418,8 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 
 	var parsedoDataResponse parsedOdataResp
 	err = json.Unmarshal(body, &parsedoDataResponse)
-	if err != nil {
-		return false, configName, configUUID, configLastChangedAt, err
+	if err != nil {		
+		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body" + string(body))
 	}
 	if len(parsedoDataResponse.Value) > 0 {
 		configUUID = parsedoDataResponse.Value[0].ConfUUID
@@ -502,7 +500,7 @@ func getErrorDetailsFromBody(resp *http.Response, bodyText []byte) (errorString 
 		}
 	}
 
-	return errorString, errors.New("Could not parse the JSON error response")
+	return errorString, errors.New("Could not parse the JSON error response. stringified body " + string(body))
 
 }
 
