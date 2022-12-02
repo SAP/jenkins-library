@@ -294,7 +294,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 
 	output, err := json.Marshal(i)
 	if err != nil {
-		return outputString, errors.Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile": %v", err)
+		return outputString, errors.Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile+": %v", err)
 	}
 	//injecting the configuration ID
 	output = output[1:] // remove leading '{'
