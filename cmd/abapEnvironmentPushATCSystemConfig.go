@@ -169,6 +169,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 }
 
 func handlePushConfiguration(config *abapEnvironmentPushATCSystemConfigOptions, confUUID string, configDoesExist bool, atcSystemConfiguartionJsonFile []byte, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) error {
+	var err error
 	if configDoesExist {
 		err = doPatchATCSystemConfig(config, confUUID, atcSystemConfiguartionJsonFile, connectionDetails, client)
 		if err != nil {
@@ -500,7 +501,7 @@ func getErrorDetailsFromBody(resp *http.Response, bodyText []byte) (errorString 
 		}
 	}
 
-	return errorString, errors.New("Could not parse the JSON error response. stringified body " + string(body))
+	return errorString, errors.New("Could not parse the JSON error response. stringified body " + string(bodyText))
 
 }
 
