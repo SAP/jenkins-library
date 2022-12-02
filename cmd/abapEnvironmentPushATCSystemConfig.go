@@ -47,12 +47,12 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key.
 	connectionDetails, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata4/sap/satc_ci_cf_api/srvd_a2x/sap/satc_ci_cf_sv_api/0001")
 	if err != nil {
-		return errors.Errorf("Parameters for the ABAP Connection not available", err)
+		return errors.Errorf("Parameters for the ABAP Connection not available: %v", err)
 	}
 
 	cookieJar, err := cookiejar.New(nil)
 	if err != nil {
-		return errors.Errorf("could not create a Cookie Jar", err)
+		return errors.Errorf("could not create a Cookie Jar: %v", err)
 	}
 	clientOptions := piperhttp.ClientOptions{
 		MaxRequestDuration: 180 * time.Second,
@@ -162,7 +162,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
 	if err != nil {
-		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Unmarshal Error of ATC Configuration File (" + config.AtcSystemConfigFilePath + "). ", err)
+		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Unmarshal Error of ATC Configuration File (" + config.AtcSystemConfigFilePath + "): %v", err)
 	}
 
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
@@ -200,7 +200,7 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 	resp, err := abaputils.GetHTTPResponse("HEAD", connectionDetails, nil, client)
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
-		return connectionDetails.XCsrfToken, errors.Errorf("X-Csrf-Token fetch failed for Service ATC System Configuration", err)
+		return connectionDetails.XCsrfToken, errors.Errorf("X-Csrf-Token fetch failed for Service ATC System Configuration: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -286,7 +286,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 	var outputString string = ``
 
 	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {	
-		return outputString, errors.Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile, err)
+		return outputString, errors.Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile+": %v", err)
 	}
 	if m, ok := i.(map[string]interface{}); ok {
 		delete(m, "_priorities")
@@ -294,7 +294,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 
 	output, err := json.Marshal(i)
 	if err != nil {
-		return outputString, errors.Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile, err)
+		return outputString, errors.Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile": %v", err)
 	}
 	//injecting the configuration ID
 	output = output[1:] // remove leading '{'
