@@ -601,6 +601,10 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 		creatorArgs = append(creatorArgs, "-run-image", config.RunImage)
 	}
 
+	if config.DefaultProcess != "" {
+		creatorArgs = append(creatorArgs, "-process-type", config.DefaultProcess)
+	}
+
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
