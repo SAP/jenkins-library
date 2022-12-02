@@ -51,26 +51,13 @@ type LowPerQuery struct {
 func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
 
-	var projectID, scanID, linesScanned, filesCcanned int64
-	if s, err := strconv.ParseInt(fmt.Sprint(data["ProjectId"]), 10, 64); err == nil {
-		projectID = s
-	}
-	if s, err := strconv.ParseInt(fmt.Sprint(data["ScanId"]), 10, 64); err == nil {
-		scanID = s
-	}
-	if s, err := strconv.ParseInt(fmt.Sprint(data["LinesOfCodeScanned"]), 10, 64); err == nil {
-		linesScanned = s
-	}
-	if s, err := strconv.ParseInt(fmt.Sprint(data["FilesScanned"]), 10, 64); err == nil {
-		filesCcanned = s
-	}
 	scanReport := reporting.ScanReport{
 		ReportTitle: "Checkmarx SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Project name", Details: fmt.Sprint(data["ProjectName"])},
-			{Description: "Project ID", Details: fmt.Sprint(projectID)},
+			{Description: "Project ID", Details: fmt.Sprint(data["ProjectId"])},
 			{Description: "Owner", Details: fmt.Sprint(data["Owner"])},
-			{Description: "Scan ID", Details: fmt.Sprint(scanID)},
+			{Description: "Scan ID", Details: fmt.Sprint(data["ScanId"])},
 			{Description: "Team", Details: fmt.Sprint(data["Team"])},
 			{Description: "Team full path", Details: fmt.Sprint(data["TeamFullPathOnReportDate"])},
 			{Description: "Scan start", Details: fmt.Sprint(data["ScanStart"])},
@@ -78,8 +65,8 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 			{Description: "Scan type", Details: fmt.Sprint(data["ScanType"])},
 			{Description: "Preset", Details: fmt.Sprint(data["Preset"])},
 			{Description: "Report creation time", Details: fmt.Sprint(data["ReportCreationTime"])},
-			{Description: "Lines of code scanned", Details: fmt.Sprint(linesScanned)},
-			{Description: "Files scanned", Details: fmt.Sprint(filesCcanned)},
+			{Description: "Lines of code scanned", Details: fmt.Sprint(data["LinesOfCodeScanned"])},
+			{Description: "Files scanned", Details: fmt.Sprint(data["FilesScanned"])},
 			{Description: "Checkmarx version", Details: fmt.Sprint(data["CheckmarxVersion"])},
 			{Description: "Deep link", Details: deepLink},
 		},
