@@ -35,9 +35,12 @@ const (
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom-golang.xml"
-	golangciLintURL             = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
-	golangciLintVersion         = "latest"
+	// golangciLintURL             = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
 )
+
+// https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-darwin-amd64.tar.gz
+var golangciLintURL = "https://github.com/golangci/golangci-lint/releases/download/v%s/golangci-lint-%s-%s-%s.tar.gz"
+var golangciLintVersion = "1.50.1"
 
 type golangBuildUtils interface {
 	command.ExecRunner
@@ -173,9 +176,20 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	if config.RunLint {
 		goPath := os.Getenv("GOPATH")
+		// ***
+		fmt.Println("goPath: ", goPath)
+		// ***
 		golangciLintDir := filepath.Join(goPath, "bin")
+		// ***
+		fmt.Println("golangciLintDir: ", golangciLintDir)
+		// ***
 
-		if err := retrieveGolangciLint(utils, golangciLintDir); err != nil {
+		platforms, err := multiarch.ParsePlatformStrings(config.TargetArchitectures)
+		if err != nil {
+			return err
+		}
+
+		if err := retrieveGolangciLint(utils, golangciLintDir, platforms[0]); err != nil {
 			return err
 		}
 
@@ -186,7 +200,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			"additionalParams": "",
 		}
 
-		if err := runGolangciLint(utils, golangciLintDir, lintSettings); err != nil {
+		if err := runGolangciLint(utils, golangciLintDir, lintSettings, platforms[0]); err != nil {
 			return err
 		}
 	}
@@ -433,19 +447,18 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error {
-	installationScript := "./install.sh"
-	err := utils.DownloadFile(golangciLintURL, installationScript, nil, nil)
+func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string, architecture multiarch.Platform) error {
+	err := utils.DownloadFile(fmt.Sprintf(golangciLintURL, golangciLintVersion, golangciLintVersion, architecture.OS, architecture.Arch), "golangci-lint-binary.tar.gz", nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download golangci-lint: %w", err)
 	}
 
-	err = utils.Chmod(installationScript, 0777)
+	err = utils.MkdirAll(golangciLintDir, 0777)
 	if err != nil {
 		return err
 	}
 
-	err = utils.RunExecutable(installationScript, "-b", golangciLintDir, golangciLintVersion)
+	err = utils.RunExecutable("tar", "-C", golangciLintDir, "-zxvf", "golangci-lint-binary.tar.gz")
 	if err != nil {
 		return fmt.Errorf("failed to install golangci-lint: %w", err)
 	}
@@ -453,11 +466,15 @@ func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error 
 	return nil
 }
 
-func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string) error {
-	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string, architecture multiarch.Platform) error {
+	binaryPath := filepath.Join(golangciLintDir, fmt.Sprintf("golangci-lint-%s-%s-%s", golangciLintVersion, architecture.OS, architecture.Arch), "golangci-lint")
+	// ***
+	fmt.Println("binaryPath: ", binaryPath)
+	// ***
 	var outputBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
-	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
+	err := utils.RunExecutable(binaryPath, "version")
+	err = utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
 	if err != nil && utils.GetExitCode() != 1 {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
