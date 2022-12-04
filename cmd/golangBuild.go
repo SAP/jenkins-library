@@ -39,7 +39,9 @@ const (
 )
 
 // https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-darwin-amd64.tar.gz
-var golangciLintURL = "https://github.com/golangci/golangci-lint/releases/download/v%s/golangci-lint-%s-%s-%s.tar.gz"
+var golangciLintURL = "https://github.com/golangci/golangci-lint/releases/download/v%s/golangci-lint-%s-%s-%s.%s"
+
+// var golangciLintURL = "https://github.com/golangci/golangci-lint/releases/download/"
 var golangciLintVersion = "1.50.1"
 
 type golangBuildUtils interface {
@@ -448,26 +450,39 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 }
 
 func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string, architecture multiarch.Platform) error {
-	err := utils.DownloadFile(fmt.Sprintf(golangciLintURL, golangciLintVersion, golangciLintVersion, architecture.OS, architecture.Arch), "golangci-lint-binary.tar.gz", nil, nil)
+	archiveName := "golangci-lint-archive"
+	extention := "tar.gz"
+	if architecture.OS == "windows" {
+		extention = "zip"
+	}
+	// err := utils.DownloadFile(fmt.Sprintf(golangciLintURL, golangciLintVersion, golangciLintVersion, architecture.OS, architecture.Arch, extention), fmt.Sprintf("golangci-lint-binary.%s", extention), nil, nil)
+	err := utils.DownloadFile(fmt.Sprintf(golangciLintURL, golangciLintVersion, golangciLintVersion, architecture.OS, architecture.Arch, extention), archiveName, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download golangci-lint: %w", err)
 	}
 
-	err = utils.MkdirAll(golangciLintDir, 0777)
-	if err != nil {
-		return err
-	}
-
-	err = utils.RunExecutable("tar", "-C", golangciLintDir, "-zxvf", "golangci-lint-binary.tar.gz")
-	if err != nil {
-		return fmt.Errorf("failed to install golangci-lint: %w", err)
+	if architecture.OS == "windows" {
+		_, err := piperutils.Unzip(archiveName, golangciLintDir)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = piperutils.Untar(archiveName, golangciLintDir, 0)
+		if err != nil {
+			return fmt.Errorf("failed to install golangci-lint: %w", err)
+		}
 	}
 
 	return nil
 }
 
 func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string, architecture multiarch.Platform) error {
-	binaryPath := filepath.Join(golangciLintDir, fmt.Sprintf("golangci-lint-%s-%s-%s", golangciLintVersion, architecture.OS, architecture.Arch), "golangci-lint")
+	extention := ""
+	if architecture.OS == "windows" {
+		extention = ".exe"
+	}
+	binaryName := fmt.Sprintf("golangci-lint%s", extention)
+	binaryPath := filepath.Join(golangciLintDir, fmt.Sprintf("golangci-lint-%s-%s-%s", golangciLintVersion, architecture.OS, architecture.Arch), binaryName)
 	// ***
 	fmt.Println("binaryPath: ", binaryPath)
 	// ***
