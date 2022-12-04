@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -67,16 +68,50 @@ type Components struct {
 }
 
 type Component struct {
-	Name                string `json:"componentName,omitempty"`
-	Version             string `json:"componentVersionName,omitempty"`
-	ComponentOriginName string `json:"componentVersionOriginName,omitempty"`
-	PrimaryLanguage     string `json:"primaryLanguage,omitempty"`
-	PolicyStatus        string `json:"policyStatus,omitempty"`
+	Name                string            `json:"componentName,omitempty"`
+	Version             string            `json:"componentVersionName,omitempty"`
+	ComponentOriginName string            `json:"componentVersionOriginName,omitempty"`
+	PrimaryLanguage     string            `json:"primaryLanguage,omitempty"`
+	PolicyStatus        string            `json:"policyStatus,omitempty"`
+	MatchTypes          []string          `json:"matchTypes,omitempty"`
+	Origins             []ComponentOrigin `json:"origins,omitempty"`
 	Metadata            `json:"_meta,omitempty"`
 }
 
-func (c Component) ToPackageUrl() *packageurl.PackageURL {
-	return packageurl.NewPackageURL(transformComponentToPurlType(c.PrimaryLanguage), "", c.Name, c.Version, nil, "")
+type ComponentOrigin struct {
+	ExternalNamespace string `json:"externalNamespace,omitempty"`
+	ExternalID        string `json:"externalId,omitempty"`
+}
+
+// ToPackageUrl creates the package URL for the component
+func (c *Component) ToPackageUrl() *packageurl.PackageURL {
+	purlParts := transformComponentOriginToPurlParts(c)
+
+	// Namespace could not be in purlParts
+	var purlType, namespace, name, version string
+	if len(purlParts) >= 3 {
+		version = purlParts[len(purlParts)-1]
+		name = purlParts[len(purlParts)-2]
+		purlType = purlParts[0]
+	}
+	if len(purlParts) == 4 {
+		namespace = purlParts[1]
+	}
+
+	return packageurl.NewPackageURL(purlType, namespace, name, version, nil, "")
+}
+
+// MatchedType returns matched type of component: direct/transitive
+func (c *Component) MatchedType() string {
+	for _, matchedType := range c.MatchTypes {
+		if matchedType == "FILE_DEPENDENCY_DIRECT" {
+			return "direct"
+		} else if matchedType == "FILE_DEPENDENCY_TRANSITIVE" {
+			return "transitive"
+		}
+	}
+
+	return ""
 }
 
 type Vulnerabilities struct {
@@ -87,9 +122,14 @@ type Vulnerabilities struct {
 type Vulnerability struct {
 	Name                         string `json:"componentName,omitempty"`
 	Version                      string `json:"componentVersionName,omitempty"`
+	ComponentVersionOriginID     string `json:"componentVersionOriginId,omitempty"`
+	ComponentVersionOriginName   string `json:"componentVersionOriginName,omitempty"`
 	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
 	Component                    *Component
+	projectName                  string
+	projectVersion               string
+	projectVersionLink           string
 }
 
 type VulnerabilityWithRemediation struct {
@@ -102,6 +142,7 @@ type VulnerabilityWithRemediation struct {
 	CweID                  string  `json:"cweId,omitempty"`
 	ExploitabilitySubscore float32 `json:"exploitabilitySubscore,omitempty"`
 	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
+	RelatedVulnerability   string  `json:"relatedVulnerability,omitempty"`
 }
 
 // Title returns the issue title representation of the contents
@@ -112,16 +153,13 @@ func (v Vulnerability) Title() string {
 // ToMarkdown returns the markdown representation of the contents
 func (v Vulnerability) ToMarkdown() ([]byte, error) {
 	vul := reporting.VulnerabilityReport{
-		ArtifactID: v.Component.Name,
-
-		// no information available about branch and commit, yet
-		Branch:   "",
-		CommitID: "",
-
-		Description: v.Description,
-
-		// no information available about direct/indirect dependency, yet
-		//DirectDependency:  ... ,
+		ProjectName:          v.projectName,
+		ProjectVersion:       v.projectVersion,
+		BlackDuckProjectLink: v.projectVersionLink,
+		ArtifactID:           v.Component.Name,
+		Description:          v.Description,
+		DependencyType:       v.Component.MatchedType(),
+		Origin:               v.ComponentVersionOriginID,
 
 		// no information available about footer, yet
 		Footer: "",
@@ -129,19 +167,15 @@ func (v Vulnerability) ToMarkdown() ([]byte, error) {
 		// no information available about group, yet
 		Group: "",
 
-		// no information available about pipeline name and link, publish date and resolution yet
-		PipelineName: "",
-		PipelineLink: "",
-		PublishDate:  "",
-		Resolution:   "",
+		// no information available about publish date and resolution yet
+		PublishDate: "",
+		Resolution:  "",
 
-		Score:      float64(v.VulnerabilityWithRemediation.BaseScore),
-		Severity:   v.VulnerabilityWithRemediation.Severity,
-		Version:    v.Version,
-		PackageURL: v.Component.ToPackageUrl().ToString(),
-
-		// no vulnerability link available, yet
-		VulnerabilityLink: "",
+		Score:             float64(v.VulnerabilityWithRemediation.BaseScore),
+		Severity:          v.VulnerabilityWithRemediation.Severity,
+		Version:           v.Version,
+		PackageURL:        v.Component.ToPackageUrl().ToString(),
+		VulnerabilityLink: v.RelatedVulnerability,
 		VulnerabilityName: v.VulnerabilityName,
 	}
 
@@ -197,6 +231,7 @@ type Client struct {
 	token                       string
 	httpClient                  piperhttp.Sender
 	serverURL                   string
+	projectVersion              *ProjectVersion
 }
 
 // NewClient creates a new BlackDuck client
@@ -242,6 +277,10 @@ func (b *Client) GetProject(projectName string) (*Project, error) {
 
 // GetProjectVersion returns a project version with a given name
 func (b *Client) GetProjectVersion(projectName, projectVersion string) (*ProjectVersion, error) {
+	// get version from cache if it is there
+	if b.projectVersion != nil {
+		return b.projectVersion, nil
+	}
 	project, err := b.GetProject(projectName)
 	if err != nil {
 		return nil, err
@@ -276,6 +315,8 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 	// even if more than one projects found, let's return the first one with exact project name match
 	for _, version := range projectVersions.Items {
 		if version.Name == projectVersion {
+			// save version to cache in order not to do several same requests
+			b.projectVersion = &version
 			return &version, nil
 		}
 	}
@@ -503,17 +544,32 @@ func urlPath(fullUrl string) string {
 	return theUrl.Path
 }
 
-func transformComponentToPurlType(primaryLanguage string) string {
-	// TODO verify possible relevant values
-	switch primaryLanguage {
-	case "Java":
-		return packageurl.TypeMaven
-	case "Javascript":
-		return packageurl.TypeNPM
-	case "Golang":
-		return packageurl.TypeGolang
-	case "Docker":
-		return packageurl.TypeDocker
+func transformComponentOriginToPurlParts(component *Component) []string {
+	result := []string{}
+	purlType := packageurl.TypeGeneric
+	gav := []string{"", component.Name, component.Version}
+	origins := component.Origins
+	if origins != nil && len(origins) > 0 {
+		// parts of npm origin are separated by "/"
+		if origins[0].ExternalNamespace == "npmjs" {
+			gav = strings.Split(origins[0].ExternalID, "/")
+		} else {
+			gav = strings.Split(origins[0].ExternalID, ":")
+		}
+		switch strings.ToLower(origins[0].ExternalNamespace) {
+		case "maven":
+			purlType = packageurl.TypeMaven
+		case "node":
+			purlType = packageurl.TypeNPM
+		case "npmjs":
+			purlType = packageurl.TypeNPM
+		case "golang":
+			purlType = packageurl.TypeGolang
+		case "docker":
+			purlType = packageurl.TypeDocker
+		}
 	}
-	return packageurl.TypeGeneric
+	result = append(result, purlType)
+	result = append(result, gav...)
+	return result
 }
