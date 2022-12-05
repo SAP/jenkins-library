@@ -291,8 +291,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 		delete(m, "_priorities")
 	}
 
-	output, err := json.Marshal(i)
-	if err != nil {
+	if output, err := json.Marshal(i); err != nil {
 		return outputString, errors.Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile+": %v", err)
 	}
 	//injecting the configuration ID
@@ -419,6 +418,7 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 	var parsedoDataResponse parsedOdataResp
 	if err = json.Unmarshal(body, &parsedoDataResponse); err != nil {		
 		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body: " + string(body))
+	
 	}
 	if len(parsedoDataResponse.Value) > 0 {
 		configUUID = parsedoDataResponse.Value[0].ConfUUID
