@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -46,14 +47,16 @@ type detectUtils interface {
 
 	GetIssueService() *github.IssuesService
 	GetSearchService() *github.SearchService
+	GetProvider() orchestrator.OrchestratorSpecificConfigProviding
 }
 
 type detectUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
-	issues *github.IssuesService
-	search *github.SearchService
+	issues   *github.IssuesService
+	search   *github.SearchService
+	provider orchestrator.OrchestratorSpecificConfigProviding
 }
 
 func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
@@ -62,6 +65,10 @@ func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
 
 func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 	return d.search
+}
+
+func (d *detectUtilsBundle) GetProvider() orchestrator.OrchestratorSpecificConfigProviding {
+	return d.provider
 }
 
 type blackduckSystem struct {
@@ -104,6 +111,17 @@ func newDetectUtils(client *github.Client) detectUtils {
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
+
+	// rapid scan on pull request
+	log.Entry().Debug("checking pull request or not")
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().WithError(err).Warning(err)
+		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
+	}
+
+	utils.provider = provider
+
 	return &utils
 }
 
@@ -159,8 +177,10 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		}
 	}
 
+	blackduckSystem := newBlackduckSystem(config)
+
 	args := []string{"./detect.sh"}
-	args, err = addDetectArgs(args, config, utils)
+	args, err = addDetectArgs(args, config, utils, blackduckSystem)
 	if err != nil {
 		return err
 	}
@@ -173,7 +193,6 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
-	blackduckSystem := newBlackduckSystem(config)
 	reportingErr := postScanChecksAndReporting(ctx, config, influx, utils, blackduckSystem)
 	if reportingErr != nil {
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
@@ -295,7 +314,7 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
 }
 
-func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
+func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem) ([]string, error) {
 	detectVersionName := getVersionName(config)
 	// Split on spaces, the scanPropeties, so that each property is available as a single string
 	// instead of all properties being part of a single string
@@ -388,6 +407,18 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if len(mavenArgs) > 0 {
 		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
+	}
+
+	// rapid scan on pull request
+	if utils.GetProvider().IsPullRequest() {
+		log.Entry().Debug("pull request detected")
+		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
+		_, err := sys.Client.GetProjectVersion(config.ProjectName, config.Version)
+		if err == nil {
+			args = append(args, "--detect.blackduck.rapid.compare.mode='BOM_COMPARE_STRICT'")
+		}
+		args = append(args, "--detect.cleanup=false")
+		args = append(args, "--detect.output.path='report'")
 	}
 
 	return args, nil
@@ -498,6 +529,33 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 }
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
+
+	if utils.GetProvider().IsPullRequest() {
+		issueNumber, err := strconv.Atoi(utils.GetProvider().GetPullRequestConfig().Key)
+		if err != nil {
+			log.Entry().Warning("Can not get issue number ", err)
+			return nil
+		}
+		commentBody, err := reporting.RapidScanResult("./report")
+		if err != nil {
+			log.Entry().Warning("Couldn't read file of report of rapid scan, error: ", err)
+			return nil
+		}
+		_, _, err = utils.GetIssueService().CreateComment(ctx,
+			config.Owner,
+			config.Repository,
+			issueNumber,
+			&github.IssueComment{
+				Body: &commentBody,
+			})
+		if err != nil {
+			log.Entry().Warning("Can send request to github ", err)
+			return nil
+		}
+
+		return nil
+	}
+
 	errorsOccured := []string{}
 	vulns, err := getVulnerabilitiesWithComponents(config, influx, sys)
 	if err != nil {
