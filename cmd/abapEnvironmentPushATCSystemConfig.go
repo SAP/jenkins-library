@@ -127,7 +127,7 @@ func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigO
 	//check if parsedConfigurationJson is not initial or Configuration Name not supplied
 	if reflect.DeepEqual(parsedConfigurationJson, emptyConfigurationJson) ||
 		parsedConfigurationJson.ConfName == "" {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: "+config.AtcSystemConfigFilePath+")")
 	}
 
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, nil
@@ -145,7 +145,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 	}
 
 	if len(filelocation) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: "+config.AtcSystemConfigFilePath+")")
 	}
 
 	filename, err = filepath.Abs(filelocation[0])
@@ -420,7 +420,7 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 	var parsedoDataResponse parsedOdataResp
 	err = json.Unmarshal(body, &parsedoDataResponse)
 	if err != nil {		
-		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body" + string(body))
+		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body"+string(body))
 	}
 	if len(parsedoDataResponse.Value) > 0 {
 		configUUID = parsedoDataResponse.Value[0].ConfUUID
