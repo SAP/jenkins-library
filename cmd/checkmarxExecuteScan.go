@@ -176,7 +176,7 @@ func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.Syst
 func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, teamID string) (checkmarx.Project, error) {
 	log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
 	presetID, _ := strconv.Atoi(config.Preset)
-	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
+	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.EngineConfigurationID)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 	}
@@ -187,7 +187,7 @@ func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.Sys
 	log.Entry().Infof("Project %v exists...", projectName)
 	if len(config.Preset) > 0 {
 		presetID, _ := strconv.Atoi(config.Preset)
-		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
+		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.EngineConfigurationID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
 		}

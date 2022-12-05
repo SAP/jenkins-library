@@ -39,7 +39,7 @@ type checkmarxExecuteScanOptions struct {
 	PullRequestName                      string   `json:"pullRequestName,omitempty"`
 	Repository                           string   `json:"repository,omitempty"`
 	ServerURL                            string   `json:"serverUrl,omitempty"`
-	SourceEncoding                       string   `json:"sourceEncoding,omitempty"`
+	EngineConfigurationID                string   `json:"engineConfigurationID,omitempty"`
 	TeamID                               string   `json:"teamId,omitempty"`
 	TeamName                             string   `json:"teamName,omitempty"`
 	Username                             string   `json:"username,omitempty"`
@@ -334,7 +334,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 
 func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
-	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not")
+	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Tell Checkmarx to skip the scan if no code change is detected")
 	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
 	cmd.Flags().StringVar(&stepConfig.FullScanCycle, "fullScanCycle", `5`, "Indicates how often a full scan should happen between the incremental scans when activated")
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
@@ -350,7 +350,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the Checkmarx server to be used")
-	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used")
+	cmd.Flags().StringVar(&stepConfig.EngineConfigurationID, "engineConfigurationID", `1`, "The engine configuration ID to be used, if not set explicitly the project's default will be used")
 	cmd.Flags().StringVar(&stepConfig.TeamID, "teamId", os.Getenv("PIPER_teamId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&stepConfig.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The full name of the team to assign newly created projects to which is preferred to teamId")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The username to authenticate")
@@ -406,7 +406,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "notForceScan"}},
 						Default:     true,
 					},
 					{
@@ -578,12 +578,12 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
-						Name:        "sourceEncoding",
+						Name:        "engineConfigurationID",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "sourceEncoding"}},
 						Default:     `1`,
 					},
 					{
