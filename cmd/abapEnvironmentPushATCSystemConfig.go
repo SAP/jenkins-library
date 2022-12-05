@@ -157,12 +157,12 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	if len(atcSystemConfiguartionJsonFile) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: "+config.AtcSystemConfigFilePath+")")
 	}
 
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
 	if err != nil {
-		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Unmarshal Error of ATC Configuration File (" + config.AtcSystemConfigFilePath + "): %v", err)
+		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Unmarshal Error of ATC Configuration File ("+config.AtcSystemConfigFilePath+"): %v", err)
 	}
 
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
