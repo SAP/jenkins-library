@@ -144,7 +144,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 	}
 
 	if len(filelocation) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: "+config.AtcSystemConfigFilePath+")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
 	filename, err = filepath.Abs(filelocation[0])
@@ -156,7 +156,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	if len(atcSystemConfiguartionJsonFile) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: "+config.AtcSystemConfigFilePath+")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
 	}
 
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
@@ -285,7 +285,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 	var outputString string = ``
 
 	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {	
-		return outputString, errors.Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile +": %v", err)
+		return outputString, errors.Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile+": %v", err)
 	}
 	if m, ok := i.(map[string]interface{}); ok {
 		delete(m, "_priorities")
