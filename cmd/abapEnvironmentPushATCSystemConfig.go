@@ -284,7 +284,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 	var i interface{}
 	var outputString string = ``
 
-	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {	
+	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {
 		return outputString, errors.Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile+": %v", err)
 	}
 	if m, ok := i.(map[string]interface{}); ok {
@@ -416,9 +416,8 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 	}
 
 	var parsedoDataResponse parsedOdataResp
-	if err = json.Unmarshal(body, &parsedoDataResponse); err != nil {		
-		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body: " + string(body))
-	
+	if err = json.Unmarshal(body, &parsedoDataResponse); err != nil {
+	    return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body: " + string(body))
 	}
 	if len(parsedoDataResponse.Value) > 0 {
 		configUUID = parsedoDataResponse.Value[0].ConfUUID
