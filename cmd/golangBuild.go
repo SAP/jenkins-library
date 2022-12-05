@@ -37,6 +37,7 @@ const (
 	sbomFilename                = "bom-golang.xml"
 	golangciLintURL             = "https://github.com/golangci/golangci-lint/releases/download/v%s/golangci-lint-%s-%s-%s.%s"
 	golangciLintVersion         = "1.50.1"
+	failedToInstallGolangciLint = "failed to install golangci-lint: %w"
 )
 
 type golangBuildUtils interface {
@@ -49,6 +50,8 @@ type golangBuildUtils interface {
 	getDockerImageValue(stepName string) (string, error)
 	GetExitCode() int
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	Untar(src string, dest string, stripComponentLevel int) error
+	Unzip(src, dest string) ([]string, error)
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -76,6 +79,14 @@ func (g *golangBuildUtilsBundle) DownloadFile(url, filename string, header http.
 
 func (g *golangBuildUtilsBundle) getDockerImageValue(stepName string) (string, error) {
 	return GetDockerImageValue(stepName)
+}
+
+func (g *golangBuildUtilsBundle) Untar(src string, dest string, stripComponentLevel int) error {
+	return piperutils.Untar(src, dest, stripComponentLevel)
+}
+
+func (g *golangBuildUtilsBundle) Unzip(src, dest string) ([]string, error) {
+	return piperutils.Unzip(src, dest)
 }
 
 func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
@@ -450,14 +461,14 @@ func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string, archit
 	}
 
 	if architecture.OS == "windows" {
-		_, err := piperutils.Unzip(archiveName, golangciLintDir)
+		_, err := utils.Unzip(archiveName, golangciLintDir)
 		if err != nil {
-			return err
+			return fmt.Errorf(failedToInstallGolangciLint, err)
 		}
 	} else {
-		err = piperutils.Untar(archiveName, golangciLintDir, 0)
+		err = utils.Untar(archiveName, golangciLintDir, 0)
 		if err != nil {
-			return fmt.Errorf("failed to install golangci-lint: %w", err)
+			return fmt.Errorf(failedToInstallGolangciLint, err)
 		}
 	}
 

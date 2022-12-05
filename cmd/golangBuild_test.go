@@ -27,6 +27,7 @@ type golangBuildMockUtils struct {
 	returnFileUploadStatus  int   // expected to be set upfront
 	returnFileUploadError   error // expected to be set upfront
 	returnFileDownloadError error // expected to be set upfront
+	returnFileUntarError    error // expected to be set upfront
 
 	clientOptions []piperhttp.ClientOptions // set by mock
 	fileUploads   map[string]string         // set by mock
@@ -72,6 +73,20 @@ func (g *golangBuildMockUtils) Upload(data piperhttp.UploadRequestData) (*http.R
 
 func (g *golangBuildMockUtils) getDockerImageValue(stepName string) (string, error) {
 	return "golang:latest", nil
+}
+
+func (g *golangBuildMockUtils) Untar(src string, dest string, stripComponentLevel int) error {
+	if g.returnFileUntarError != nil {
+		return g.returnFileUntarError
+	}
+	return nil
+}
+
+func (g *golangBuildMockUtils) Unzip(src, dest string) ([]string, error) {
+	if g.returnFileUntarError != nil {
+		return nil, g.returnFileUntarError
+	}
+	return nil, nil
 }
 
 func newGolangBuildTestsUtils() *golangBuildMockUtils {
@@ -279,10 +294,11 @@ go 1.17`
 	t.Run("success - RunLint", func(t *testing.T) {
 		goPath := os.Getenv("GOPATH")
 		golangciLintDir := filepath.Join(goPath, "bin")
-		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+		binaryPath := filepath.Join(golangciLintDir, fmt.Sprintf("golangci-lint-%s-%s-%s", golangciLintVersion, "linux", "amd64"), "golangci-lint")
 
 		config := golangBuildOptions{
-			RunLint: true,
+			RunLint:             true,
+			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
@@ -290,15 +306,12 @@ go 1.17`
 		err := runGolangBuild(&config, &telemetry, utils, &cpe)
 		assert.NoError(t, err)
 
-		b, err := utils.FileRead("install.sh")
+		b, err := utils.FileRead("golangci-lint-archive")
 		assert.NoError(t, err)
 
 		assert.Equal(t, []byte("content"), b)
-		assert.Equal(t, "./install.sh", utils.Calls[0].Exec)
-		assert.Equal(t, []string{"-b", golangciLintDir, golangciLintVersion}, utils.Calls[0].Params)
-		assert.Equal(t, binaryPath, utils.Calls[1].Exec)
-		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[1].Params)
-
+		assert.Equal(t, binaryPath, utils.Calls[0].Exec)
+		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[0].Params)
 	})
 
 	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
@@ -476,29 +489,27 @@ go 1.17`
 	})
 
 	t.Run("failure - RunLint: retrieveGolangciLint failed", func(t *testing.T) {
-		goPath := os.Getenv("GOPATH")
-		golangciLintDir := filepath.Join(goPath, "bin")
-
 		config := golangBuildOptions{
-			RunLint: true,
+			RunLint:             true,
+			TargetArchitectures: []string{"linux,amd64"},
 		}
+
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
-		utils.ShouldFailOnCommand = map[string]error{
-			fmt.Sprintf("./install.sh -b %s %s", golangciLintDir, golangciLintVersion): fmt.Errorf("installation err"),
-		}
+		utils.returnFileDownloadError = fmt.Errorf("downloading error")
 		telemetry := telemetry.CustomData{}
 		err := runGolangBuild(&config, &telemetry, utils, &cpe)
-		assert.EqualError(t, err, "failed to install golangci-lint: installation err")
+		assert.EqualError(t, err, "failed to download golangci-lint: downloading error")
 	})
 
 	t.Run("failure - RunLint: runGolangciLint failed", func(t *testing.T) {
 		goPath := os.Getenv("GOPATH")
 		golangciLintDir := filepath.Join(goPath, "bin")
-		binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+		binaryPath := filepath.Join(golangciLintDir, fmt.Sprintf("golangci-lint-%s-%s-%s", golangciLintVersion, "linux", "amd64"), "golangci-lint")
 
 		config := golangBuildOptions{
-			RunLint: true,
+			RunLint:             true,
+			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
@@ -1022,7 +1033,9 @@ func TestRunGolangciLint(t *testing.T) {
 
 	goPath := os.Getenv("GOPATH")
 	golangciLintDir := filepath.Join(goPath, "bin")
-	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+	binaryPath := filepath.Join(golangciLintDir, "golangci-lint-%s-%s-%s", "golangci-lint%s")
+	binaryPathLinux := fmt.Sprintf(binaryPath, golangciLintVersion, "linux", "amd64", "")
+
 	lintSettings := map[string]string{
 		"reportStyle":      "checkstyle",
 		"reportOutputPath": "golangci-lint-report.xml",
@@ -1031,6 +1044,7 @@ func TestRunGolangciLint(t *testing.T) {
 
 	tt := []struct {
 		name                string
+		architecture        multiarch.Platform
 		shouldFailOnCommand map[string]error
 		fileWriteError      error
 		exitCode            int
@@ -1038,16 +1052,36 @@ func TestRunGolangciLint(t *testing.T) {
 		expectedErr         error
 	}{
 		{
-			name:                "success",
+			name:                "success (linux)",
+			architecture:        multiarch.Platform{OS: "linux", Arch: "amd64"},
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      nil,
 			exitCode:            0,
-			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedCommand:     []string{binaryPathLinux, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedErr:         nil,
+		},
+		{
+			name:                "success (windows)",
+			architecture:        multiarch.Platform{OS: "windows", Arch: "amd64"},
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{fmt.Sprintf(binaryPath, golangciLintVersion, "windows", "amd64", ".exe"), "run", "--out-format", lintSettings["reportStyle"]},
+			expectedErr:         nil,
+		},
+		{
+			name:                "success (darwin)",
+			architecture:        multiarch.Platform{OS: "darwin", Arch: "amd64"},
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{fmt.Sprintf(binaryPath, golangciLintVersion, "darwin", "amd64", ""), "run", "--out-format", lintSettings["reportStyle"]},
 			expectedErr:         nil,
 		},
 		{
 			name:                "failure - failed to run golangci-lint",
-			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
+			architecture:        multiarch.Platform{OS: "linux", Arch: "amd64"},
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPathLinux, lintSettings["reportStyle"]): fmt.Errorf("err")},
 			fileWriteError:      nil,
 			exitCode:            0,
 			expectedCommand:     []string{},
@@ -1055,6 +1089,7 @@ func TestRunGolangciLint(t *testing.T) {
 		},
 		{
 			name:                "failure - failed to write golangci-lint report",
+			architecture:        multiarch.Platform{OS: "linux", Arch: "amd64"},
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
 			exitCode:            0,
@@ -1063,6 +1098,7 @@ func TestRunGolangciLint(t *testing.T) {
 		},
 		{
 			name:                "failure - failed with ExitCode == 1",
+			architecture:        multiarch.Platform{OS: "linux", Arch: "amd64"},
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
 			expectedCommand:     []string{},
@@ -1070,19 +1106,19 @@ func TestRunGolangciLint(t *testing.T) {
 		},
 	}
 
-	for i, test := range tt {
-		i, test := i, test
+	for _, test := range tt {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			utils := newGolangBuildTestsUtils()
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
-			err := runGolangciLint(utils, golangciLintDir, lintSettings)
+			err := runGolangciLint(utils, golangciLintDir, lintSettings, test.architecture)
 
 			if test.expectedErr == nil {
-				assert.Equal(t, test.expectedCommand[0], utils.Calls[i].Exec)
-				assert.Equal(t, test.expectedCommand[1:], utils.Calls[i].Params)
+				assert.Equal(t, test.expectedCommand[0], utils.Calls[0].Exec)
+				assert.Equal(t, test.expectedCommand[1:], utils.Calls[0].Params)
 			} else {
 				assert.EqualError(t, err, test.expectedErr.Error())
 			}
@@ -1097,48 +1133,62 @@ func TestRetrieveGolangciLint(t *testing.T) {
 	golangciLintDir := filepath.Join(goPath, "bin")
 
 	tt := []struct {
-		name                string
-		shouldFailOnCommand map[string]error
-		downloadErr         error
-		expectedCommand     []string
-		expectedErr         error
+		name         string
+		architecture multiarch.Platform
+		downloadErr  error
+		untarErr     error
+		expectedErr  error
 	}{
 		{
-			name:                "success",
-			shouldFailOnCommand: map[string]error{},
-			downloadErr:         nil,
-			expectedCommand:     []string{"./install.sh", "-b", golangciLintDir, golangciLintVersion},
-			expectedErr:         nil,
+			name:         "success (linux,amd64)",
+			architecture: multiarch.Platform{OS: "linux", Arch: "amd64"},
+			expectedErr:  nil,
 		},
 		{
-			name:                "failure - failed to download golangci-lint",
-			shouldFailOnCommand: map[string]error{},
-			downloadErr:         fmt.Errorf("download err"),
-			expectedCommand:     []string{},
-			expectedErr:         fmt.Errorf("failed to download golangci-lint: download err"),
+			name:         "success (windows,amd64)",
+			architecture: multiarch.Platform{OS: "windows", Arch: "amd64"},
+			expectedErr:  nil,
 		},
 		{
-			name:                "failure - failed to install golangci-lint with sh error",
-			shouldFailOnCommand: map[string]error{fmt.Sprintf("./install.sh -b %s %s", golangciLintDir, golangciLintVersion): fmt.Errorf("installation err")},
-			expectedCommand:     []string{},
-			expectedErr:         fmt.Errorf("failed to install golangci-lint: installation err"),
+			name:         "success (darwin,amd64)",
+			architecture: multiarch.Platform{OS: "darwin", Arch: "amd64"},
+			expectedErr:  nil,
+		},
+		{
+			name:         "failure - failed to download golangci-lint",
+			architecture: multiarch.Platform{OS: "linux", Arch: "amd64"},
+			downloadErr:  fmt.Errorf("download err"),
+			expectedErr:  fmt.Errorf("failed to download golangci-lint: download err"),
+		},
+		{
+			name:         "failure - failed to install golangci-lint (windows)",
+			architecture: multiarch.Platform{OS: "windows", Arch: "amd64"},
+			untarErr:     fmt.Errorf("retrieve archive err"),
+			expectedErr:  fmt.Errorf("failed to install golangci-lint: retrieve archive err"),
+		},
+		{
+			name:         "failure - failed to install golangci-lint (linux)",
+			architecture: multiarch.Platform{OS: "linux", Arch: "amd64"},
+			untarErr:     fmt.Errorf("retrieve archive err"),
+			expectedErr:  fmt.Errorf("failed to install golangci-lint: retrieve archive err"),
 		},
 	}
 
-	for i, test := range tt {
-		i, test := i, test
+	for _, test := range tt {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			utils := newGolangBuildTestsUtils()
-			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.returnFileDownloadError = test.downloadErr
-			err := retrieveGolangciLint(utils, golangciLintDir)
+			utils.returnFileUntarError = test.untarErr
+			err := retrieveGolangciLint(utils, golangciLintDir, test.architecture)
 
-			if test.expectedErr == nil {
-				assert.Equal(t, test.expectedCommand[0], utils.Calls[i].Exec)
-				assert.Equal(t, test.expectedCommand[1:], utils.Calls[i].Params)
-			} else {
+			if test.expectedErr != nil {
 				assert.EqualError(t, err, test.expectedErr.Error())
+			} else {
+				b, err := utils.ReadFile("golangci-lint-archive")
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("content"), b)
 			}
 		})
 	}
