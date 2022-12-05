@@ -62,8 +62,7 @@ func runAbapEnvironmentPushATCSystemConfig(config *abapEnvironmentPushATCSystemC
 	}
 	client.SetOptions(clientOptions)
 
-	connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client)
-	if err != nil {
+	if connectionDetails.XCsrfToken, err = fetchXcsrfTokenFromHead(connectionDetails, client); err != nil {
 		return err
 	}
 
@@ -418,8 +417,7 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 	}
 
 	var parsedoDataResponse parsedOdataResp
-	err = json.Unmarshal(body, &parsedoDataResponse)
-	if err != nil {		
+	if err = json.Unmarshal(body, &parsedoDataResponse); err != nil {		
 		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body: " + string(body))
 	}
 	if len(parsedoDataResponse.Value) > 0 {
