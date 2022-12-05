@@ -417,7 +417,7 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 
 	var parsedoDataResponse parsedOdataResp
 	if err = json.Unmarshal(body, &parsedoDataResponse); err != nil {
-	    return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body: " + string(body))
+		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body: " + string(body))
 	}
 	if len(parsedoDataResponse.Value) > 0 {
 		configUUID = parsedoDataResponse.Value[0].ConfUUID
