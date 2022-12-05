@@ -293,14 +293,16 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 
 	if output, err := json.Marshal(i); err != nil {
 		return outputString, errors.Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile+": %v", err)
-	}
-	//injecting the configuration ID
-	output = output[1:] // remove leading '{'
-	outputString = string(output)
-	confIDString := `{"conf_id":"` + confUUID + `",`
-	outputString = confIDString + outputString
+	}else{
+	    output = output[1:] // remove leading '{'
+		outputString = string(output)
+		//injecting the configuration ID
+		confIDString := `{"conf_id":"` + confUUID + `",`
+		outputString = confIDString + outputString
 
-	return outputString, err
+		return outputString, err
+	}
+
 }
 
 func addPatchConfigBaseChangeset(inputString string, confUUID string, configBaseJsonBody string) string {
