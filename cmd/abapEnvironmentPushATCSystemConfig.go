@@ -144,7 +144,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 	}
 
 	if len(filelocation) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: "+config.AtcSystemConfigFilePath+")")
 	}
 
 	filename, err = filepath.Abs(filelocation[0])
@@ -156,12 +156,12 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	if len(atcSystemConfiguartionJsonFile) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: "+config.AtcSystemConfigFilePath+")")
 	}
 
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
 	if err != nil {
-		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Unmarshal Error of ATC Configuration File (" + config.AtcSystemConfigFilePath + "): %v", err)
+		return emptyConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Unmarshal Error of ATC Configuration File ("+config.AtcSystemConfigFilePath+"): %v", err)
 	}
 
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
@@ -285,7 +285,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 	var outputString string = ``
 
 	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {	
-		return outputString, errors.Errorf("problem with unmarshall input " + atcSystemConfiguartionJsonFile + ": %v", err)
+		return outputString, errors.Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile +": %v", err)
 	}
 	if m, ok := i.(map[string]interface{}); ok {
 		delete(m, "_priorities")
@@ -293,7 +293,7 @@ func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguart
 
 	output, err := json.Marshal(i)
 	if err != nil {
-		return outputString, errors.Errorf("problem with marshall output " + atcSystemConfiguartionJsonFile + ": %v", err)
+		return outputString, errors.Errorf("problem with marshall output "+atcSystemConfiguartionJsonFile+": %v", err)
 	}
 	//injecting the configuration ID
 	output = output[1:] // remove leading '{'
@@ -418,7 +418,7 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 
 	var parsedoDataResponse parsedOdataResp
 	if err = json.Unmarshal(body, &parsedoDataResponse); err != nil {		
-		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body: " + string(body))
+		return false, configName, configUUID, configLastChangedAt, errors.New("GET Request for check existence of ATC System Configuration - Unexpected Response - Problem with Unmarshal body: "+string(body))
 	}
 	if len(parsedoDataResponse.Value) > 0 {
 		configUUID = parsedoDataResponse.Value[0].ConfUUID
