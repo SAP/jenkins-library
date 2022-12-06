@@ -1040,7 +1040,7 @@ func TestRunGolangciLint(t *testing.T) {
 		expectedErr         error
 	}{
 		{
-			name:                "success (linux)",
+			name:                "success",
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      nil,
 			exitCode:            0,
@@ -1105,7 +1105,7 @@ func TestRetrieveGolangciLint(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "success (linux,amd64)",
+			name:        "success",
 			expectedErr: nil,
 		},
 		{
@@ -1114,7 +1114,7 @@ func TestRetrieveGolangciLint(t *testing.T) {
 			expectedErr: fmt.Errorf("failed to download golangci-lint: download err"),
 		},
 		{
-			name:        "failure - failed to install golangci-lint (linux)",
+			name:        "failure - failed to install golangci-lint",
 			untarErr:    fmt.Errorf("retrieve archive err"),
 			expectedErr: fmt.Errorf("failed to install golangci-lint: retrieve archive err"),
 		},
