@@ -178,7 +178,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		goPath := os.Getenv("GOPATH")
 		golangciLintDir := filepath.Join(goPath, "bin")
 
-		if err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintDownloadURL); err != nil {
+		if err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL); err != nil {
 			return err
 		}
 

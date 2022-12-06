@@ -46,7 +46,7 @@ type golangBuildOptions struct {
 	PrivateModules               string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken       string   `json:"privateModulesGitToken,omitempty"`
 	ArtifactVersion              string   `json:"artifactVersion,omitempty"`
-	GolangciLintDownloadURL      string   `json:"golangciLintDownloadUrl,omitempty"`
+	GolangciLintURL              string   `json:"golangciLintUrl,omitempty"`
 }
 
 type golangBuildCommonPipelineEnvironment struct {
@@ -246,7 +246,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "Version of the artifact to be built.")
-	cmd.Flags().StringVar(&stepConfig.GolangciLintDownloadURL, "golangciLintDownloadUrl", `https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.0-darwin-amd64.tar.gz`, "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.")
+	cmd.Flags().StringVar(&stepConfig.GolangciLintURL, "golangciLintUrl", `https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.0-darwin-amd64.tar.gz`, "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.")
 
 	cmd.MarkFlagRequired("targetArchitectures")
 }
@@ -534,7 +534,7 @@ func golangBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_artifactVersion"),
 					},
 					{
-						Name:        "golangciLintDownloadUrl",
+						Name:        "golangciLintUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STEPS"},
 						Type:        "string",

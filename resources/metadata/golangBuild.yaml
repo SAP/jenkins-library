@@ -241,7 +241,7 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
-      - name: golangciLintDownloadUrl
+      - name: golangciLintUrl
         type: string
         description: Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.
         scope:
