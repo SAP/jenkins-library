@@ -35,7 +35,6 @@ const (
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom-golang.xml"
-	golangciLintURL             = "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-darwin-amd64.tar.gz"
 )
 
 type golangBuildUtils interface {
@@ -179,7 +178,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		goPath := os.Getenv("GOPATH")
 		golangciLintDir := filepath.Join(goPath, "bin")
 
-		if err := retrieveGolangciLint(utils, golangciLintDir); err != nil {
+		if err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintDownloadURL); err != nil {
 			return err
 		}
 
@@ -437,7 +436,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error {
+func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir, golangciLintURL string) error {
 	archiveName := "golangci-lint.tar.gz"
 	err := utils.DownloadFile(golangciLintURL, archiveName, nil, nil)
 	if err != nil {
