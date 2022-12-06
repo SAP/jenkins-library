@@ -29,8 +29,9 @@ type golangBuildMockUtils struct {
 	returnFileDownloadError error // expected to be set upfront
 	returnFileUntarError    error // expected to be set upfront
 
-	clientOptions []piperhttp.ClientOptions // set by mock
-	fileUploads   map[string]string         // set by mock
+	clientOptions  []piperhttp.ClientOptions // set by mock
+	fileUploads    map[string]string         // set by mock
+	untarFileNames []string
 }
 
 func (g *golangBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
@@ -78,6 +79,9 @@ func (g *golangBuildMockUtils) getDockerImageValue(stepName string) (string, err
 func (g *golangBuildMockUtils) Untar(src string, dest string, stripComponentLevel int) error {
 	if g.returnFileUntarError != nil {
 		return g.returnFileUntarError
+	}
+	for _, file := range g.untarFileNames {
+		g.AddFile(filepath.Join(dest, file), []byte("test content"))
 	}
 	return nil
 }
@@ -1105,8 +1109,7 @@ func TestRetrieveGolangciLint(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:        "success",
-			expectedErr: nil,
+			name: "success",
 		},
 		{
 			name:        "failure - failed to download golangci-lint",
@@ -1127,6 +1130,7 @@ func TestRetrieveGolangciLint(t *testing.T) {
 			utils := newGolangBuildTestsUtils()
 			utils.returnFileDownloadError = test.downloadErr
 			utils.returnFileUntarError = test.untarErr
+			utils.untarFileNames = []string{"golangci-lint"}
 			config := golangBuildOptions{
 				GolangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.0-darwin-amd64.tar.gz",
 			}
@@ -1138,6 +1142,9 @@ func TestRetrieveGolangciLint(t *testing.T) {
 				b, err := utils.ReadFile("golangci-lint.tar.gz")
 				assert.NoError(t, err)
 				assert.Equal(t, []byte("content"), b)
+				b, err = utils.ReadFile(filepath.Join(golangciLintDir, "golangci-lint"))
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("test content"), b)
 			}
 		})
 	}
