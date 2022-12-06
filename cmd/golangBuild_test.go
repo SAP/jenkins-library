@@ -306,7 +306,7 @@ go 1.17`
 		err := runGolangBuild(&config, &telemetry, utils, &cpe)
 		assert.NoError(t, err)
 
-		b, err := utils.FileRead("golangci-lint-archive")
+		b, err := utils.FileRead("golangci-lint.tar.gz")
 		assert.NoError(t, err)
 
 		assert.Equal(t, []byte("content"), b)
@@ -1135,6 +1135,7 @@ func TestRetrieveGolangciLint(t *testing.T) {
 	tt := []struct {
 		name         string
 		architecture multiarch.Platform
+		archiveName  string
 		downloadErr  error
 		untarErr     error
 		expectedErr  error
@@ -1142,33 +1143,39 @@ func TestRetrieveGolangciLint(t *testing.T) {
 		{
 			name:         "success (linux,amd64)",
 			architecture: multiarch.Platform{OS: "linux", Arch: "amd64"},
+			archiveName:  "golangci-lint.tar.gz",
 			expectedErr:  nil,
 		},
 		{
 			name:         "success (windows,amd64)",
 			architecture: multiarch.Platform{OS: "windows", Arch: "amd64"},
+			archiveName:  "golangci-lint.zip",
 			expectedErr:  nil,
 		},
 		{
 			name:         "success (darwin,amd64)",
 			architecture: multiarch.Platform{OS: "darwin", Arch: "amd64"},
+			archiveName:  "golangci-lint.tar.gz",
 			expectedErr:  nil,
 		},
 		{
 			name:         "failure - failed to download golangci-lint",
 			architecture: multiarch.Platform{OS: "linux", Arch: "amd64"},
+			archiveName:  "golangci-lint.tar.gz",
 			downloadErr:  fmt.Errorf("download err"),
 			expectedErr:  fmt.Errorf("failed to download golangci-lint: download err"),
 		},
 		{
 			name:         "failure - failed to install golangci-lint (windows)",
 			architecture: multiarch.Platform{OS: "windows", Arch: "amd64"},
+			archiveName:  "golangci-lint.zip",
 			untarErr:     fmt.Errorf("retrieve archive err"),
 			expectedErr:  fmt.Errorf("failed to install golangci-lint: retrieve archive err"),
 		},
 		{
 			name:         "failure - failed to install golangci-lint (linux)",
 			architecture: multiarch.Platform{OS: "linux", Arch: "amd64"},
+			archiveName:  "golangci-lint.tar.gz",
 			untarErr:     fmt.Errorf("retrieve archive err"),
 			expectedErr:  fmt.Errorf("failed to install golangci-lint: retrieve archive err"),
 		},
@@ -1186,7 +1193,7 @@ func TestRetrieveGolangciLint(t *testing.T) {
 			if test.expectedErr != nil {
 				assert.EqualError(t, err, test.expectedErr.Error())
 			} else {
-				b, err := utils.ReadFile("golangci-lint-archive")
+				b, err := utils.ReadFile(test.archiveName)
 				assert.NoError(t, err)
 				assert.Equal(t, []byte("content"), b)
 			}

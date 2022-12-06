@@ -450,11 +450,11 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 }
 
 func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string, architecture multiarch.Platform) error {
-	archiveName := "golangci-lint-archive"
 	extention := "tar.gz"
 	if architecture.OS == "windows" {
 		extention = "zip"
 	}
+	archiveName := fmt.Sprintf("golangci-lint.%s", extention)
 	err := utils.DownloadFile(fmt.Sprintf(golangciLintURL, golangciLintVersion, golangciLintVersion, architecture.OS, architecture.Arch, extention), archiveName, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download golangci-lint: %w", err)
