@@ -41,7 +41,7 @@ func (c *ComponentVersion) Validate() error {
 	values := url.Values{}
 	values.Set("Name", "'"+c.Name+"'")
 	values.Set("Version", "'"+c.Version+"'")
-	requestUrl := pvValidateURL + "?" + values.Encode()
+	requestUrl := cvValidateURL + "?" + values.Encode()
 
 	body, err := c.connector.Get(requestUrl)
 	if err != nil {
