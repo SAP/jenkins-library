@@ -36,12 +36,14 @@ spec:
         default: []
       - name: avoidDuplicateProjectScans
         type: bool
-        description: Whether duplicate scans of the same project state shall be avoided or not
+        description: Tell Checkmarx to skip the scan if no code change is detected
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: true
+        aliases:
+          - name: notForceScan
       - name: filterPattern
         type: string
         description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
@@ -199,14 +201,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: sourceEncoding
+      - name: engineConfigurationID
         type: string
-        description: The source encoding to be used, if not set explicitly the project's default will be used
+        description: The engine configuration ID to be used, if not set explicitly the project's default will be used
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: "1"
+        aliases:
+          - name: sourceEncoding
       - name: teamId
         aliases:
           - name: checkmarxGroupId
