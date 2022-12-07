@@ -230,6 +230,7 @@ func isGitHubActions() bool {
 	return getEnv("GITHUB_ACTIONS", "") == "true"
 }
 
+// https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#get-a-workflow-run
 type run struct {
 	//Id               int           `json:"id"`
 	//Name             string        `json:"name"`
