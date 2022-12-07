@@ -100,6 +100,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"shellExecute":                              shellExecuteMetadata(),
 		"sonarExecuteScan":                          sonarExecuteScanMetadata(),
 		"terraformExecute":                          terraformExecuteMetadata(),
+		"tmsExport":                                 tmsExportMetadata(),
 		"tmsUpload":                                 tmsUploadMetadata(),
 		"transportRequestDocIDFromGit":              transportRequestDocIDFromGitMetadata(),
 		"transportRequestReqIDFromGit":              transportRequestReqIDFromGitMetadata(),
