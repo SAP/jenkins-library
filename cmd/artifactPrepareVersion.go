@@ -45,7 +45,7 @@ type gitWorktree interface {
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
 	Submodules() (git.Submodules, error)
 	Status() (git.Status, error)
-	Add(path string) (plumbing.Hash, error)	
+	Add(path string) (plumbing.Hash, error)
 }
 
 func getGitWorktree(repository gitRepository) (gitWorktree, error) {
