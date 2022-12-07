@@ -1,0 +1,68 @@
+package aakaas
+
+import (
+	"encoding/json"
+	"net/url"
+
+	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
+	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
+)
+
+const pvQueryURL string = "/odata/aas_ocs_package/xSSDAxC_Product_Version"
+const pvValidateURL string = "/odata/aas_ocs_package/ValidateProductVersion"
+
+type ProductVersion struct {
+	versionable
+}
+
+func (p *ProductVersion) ConstructProductversion(desc abaputils.AddonDescriptor, conn abapbuild.Connector) error {
+	if err := p.constructVersionable(desc.AddonProduct, desc.AddonVersionYAML, conn, pvQueryURL); err != nil {
+		return err
+	}
+	if err := p.resolveNext(); err != nil {
+		return err
+	}
+	p.Version = desc.AddonVersionYAML
+	return nil
+}
+
+func (p *ProductVersion) CopyVersionFieldsToDescriptor(desc *abaputils.AddonDescriptor) {
+	desc.AddonVersion = p.TechRelease
+	desc.AddonSpsLevel = p.TechSpLevel
+	desc.AddonPatchLevel = p.TechPatchLevel
+}
+
+func (p *ProductVersion) ValidateAndResolveVersionFields() error {
+	log.Entry().Infof("Validate product '%s' version '%s' and resolve version", p.Name, p.Version)
+
+	values := url.Values{}
+	values.Set("Name", p.Name)       // value to be enclosed by '???
+	values.Set("Version", p.Version) // value to be enclosed by '???
+	requestUrl := pvValidateURL + "?" + values.Encode()
+
+	body, err := p.connector.Get(requestUrl)
+	if err != nil {
+		return err
+	}
+	var response jsonProductVersionValidationResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return errors.Wrap(err, "Unexpected AAKaaS response for Validate Product Version: "+string(body))
+	}
+	p.Name = response.Wrapper.Name
+	p.TechRelease = response.Wrapper.TechRelease
+	p.TechSpLevel = response.Wrapper.TechSpLevel
+	p.TechPatchLevel = response.Wrapper.TechPatchLevel
+	log.Entry().Infof("Resolved version %s, spslevel %s, patchlevel %s", p.TechRelease, p.TechSpLevel, p.TechPatchLevel)
+	return nil
+}
+
+type jsonProductVersionValidationResponse struct {
+	Wrapper struct {
+		Name           string `json:"Name"`
+		TechRelease    string `json:"Version"`
+		TechSpLevel    string `json:"SpsLevel"`
+		TechPatchLevel string `json:"PatchLevel"`
+	} `json:"d"`
+}

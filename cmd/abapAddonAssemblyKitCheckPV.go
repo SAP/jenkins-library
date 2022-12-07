@@ -1,16 +1,12 @@
 package cmd
 
 import (
-	"encoding/json"
-	"net/url"
-
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) {
@@ -33,12 +29,14 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 		return err
 	}
 
-	pv := new(productVersion).init(addonDescriptor, *conn)
-	err = pv.validateAndResolveVersionFields()
-	if err != nil {
+	pv := new(aakaas.ProductVersion)
+	if err := pv.ConstructProductversion(addonDescriptor, *conn); err != nil {
 		return err
 	}
-	pv.transferVersionFields(&addonDescriptor)
+	if err = pv.ValidateAndResolveVersionFields(); err != nil {
+		return err
+	}
+	pv.CopyVersionFieldsToDescriptor(&addonDescriptor)
 
 	// now Product Version fields are valid, but maybe Component Versions (Repositories) were checked before, so copy that part from CPE
 	// we don't care for errors
@@ -65,49 +63,49 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	return nil
 }
 
-func (p *productVersion) init(desc abaputils.AddonDescriptor, conn abapbuild.Connector) *productVersion {
-	p.Connector = conn
-	p.Name = desc.AddonProduct
-	p.VersionYAML = desc.AddonVersionYAML
+// func (p *productVersion) init(desc abaputils.AddonDescriptor, conn abapbuild.Connector) *productVersion {
+// 	p.Connector = conn
+// 	p.Name = desc.AddonProduct
+// 	p.VersionYAML = desc.AddonVersionYAML
 
-	return p
-}
+// 	return p
+// }
 
-func (p *productVersion) transferVersionFields(initialAddonDescriptor *abaputils.AddonDescriptor) {
-	initialAddonDescriptor.AddonVersion = p.Version
-	initialAddonDescriptor.AddonSpsLevel = p.SpsLevel
-	initialAddonDescriptor.AddonPatchLevel = p.PatchLevel
-}
+// func (p *productVersion) transferVersionFields(initialAddonDescriptor *abaputils.AddonDescriptor) {
+// 	initialAddonDescriptor.AddonVersion = p.Version
+// 	initialAddonDescriptor.AddonSpsLevel = p.SpsLevel
+// 	initialAddonDescriptor.AddonPatchLevel = p.PatchLevel
+// }
 
-func (p *productVersion) validateAndResolveVersionFields() error {
-	log.Entry().Infof("Validate product '%s' version '%s' and resolve version", p.Name, p.VersionYAML)
-	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + url.QueryEscape(p.Name) + "'&Version='" + url.QueryEscape(p.VersionYAML) + "'"
-	body, err := p.Connector.Get(appendum)
-	if err != nil {
-		return err
-	}
-	var jPV jsonProductVersion
-	if err := json.Unmarshal(body, &jPV); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for Validate Product Version: "+string(body))
-	}
-	p.Name = jPV.ProductVersion.Name
-	p.Version = jPV.ProductVersion.Version
-	p.SpsLevel = jPV.ProductVersion.SpsLevel
-	p.PatchLevel = jPV.ProductVersion.PatchLevel
-	log.Entry().Infof("Resolved version %s, spslevel %s, patchlevel %s", p.Version, p.SpsLevel, p.PatchLevel)
-	return nil
-}
+// func (p *productVersion) validateAndResolveVersionFields() error {
+// 	log.Entry().Infof("Validate product '%s' version '%s' and resolve version", p.Name, p.VersionYAML)
+// 	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + url.QueryEscape(p.Name) + "'&Version='" + url.QueryEscape(p.VersionYAML) + "'"
+// 	body, err := p.Connector.Get(appendum)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	var jPV jsonProductVersion
+// 	if err := json.Unmarshal(body, &jPV); err != nil {
+// 		return errors.Wrap(err, "Unexpected AAKaaS response for Validate Product Version: "+string(body))
+// 	}
+// 	p.Name = jPV.ProductVersion.Name
+// 	p.Version = jPV.ProductVersion.Version
+// 	p.SpsLevel = jPV.ProductVersion.SpsLevel
+// 	p.PatchLevel = jPV.ProductVersion.PatchLevel
+// 	log.Entry().Infof("Resolved version %s, spslevel %s, patchlevel %s", p.Version, p.SpsLevel, p.PatchLevel)
+// 	return nil
+// }
 
-type jsonProductVersion struct {
-	ProductVersion *productVersion `json:"d"`
-}
+// type jsonProductVersion struct {
+// 	ProductVersion *productVersion `json:"d"`
+// }
 
-type productVersion struct {
-	abapbuild.Connector
-	Name           string `json:"Name"`
-	VersionYAML    string
-	Version        string `json:"Version"`
-	SpsLevel       string `json:"SpsLevel"`
-	PatchLevel     string `json:"PatchLevel"`
-	TargetVectorID string
-}
+// type productVersion struct {
+// 	abapbuild.Connector
+// 	Name           string `json:"Name"`
+// 	VersionYAML    string
+// 	Version        string `json:"Version"`
+// 	SpsLevel       string `json:"SpsLevel"`
+// 	PatchLevel     string `json:"PatchLevel"`
+// 	TargetVectorID string
+// }
