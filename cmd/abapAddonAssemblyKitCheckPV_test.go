@@ -42,14 +42,3 @@ func TestCheckPVStep(t *testing.T) {
 		assert.Error(t, err, "Did expect error")
 	})
 }
-
-// var responseCheckPV = `{
-//     "d": {
-//         "Name": "/DRNMSPC/PRD01",
-//         "Version": "0003",
-//         "SpsLevel": "0002",
-//         "PatchLevel": "0001",
-//         "Vendor": "",
-//         "VendorType": ""
-//     }
-// }`
