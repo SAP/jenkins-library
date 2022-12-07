@@ -17,6 +17,11 @@ func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, te
 }
 
 func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
+
+	log.Entry().Info("╔══════════════════════════════╗")
+	log.Entry().Info("║ abapAddonAssemblyKitCheckCVs ║")
+	log.Entry().Info("╚══════════════════════════════╝")
+
 	conn := new(abapbuild.Connector)
 	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
 		return err

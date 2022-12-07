@@ -18,6 +18,10 @@ func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, tele
 }
 func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, utils aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) error {
 
+	log.Entry().Info("╔═════════════════════════════╗")
+	log.Entry().Info("║ abapAddonAssemblyKitCheckPV ║")
+	log.Entry().Info("╚═════════════════════════════╝")
+
 	conn := new(abapbuild.Connector)
 	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, utils); err != nil {
 		return err
