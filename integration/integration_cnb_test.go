@@ -154,7 +154,7 @@ func TestCNBIntegrationNonZipPath(t *testing.T) {
 	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "mta.yaml")
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	container.assertHasOutput(t, "Copying  '/project/mta.yaml' into '/workspace' failed: application path must be a directory or zip")
 }
@@ -243,7 +243,7 @@ func TestCNBIntegrationBindings(t *testing.T) {
 	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "TestMtaIntegration/maven")
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	container.assertHasOutput(t, "bindings/maven-settings/settings.xml: only whitespace content allowed before start tag")
 	container.assertHasFiles(t,
