@@ -39,8 +39,8 @@ func (c *ComponentVersion) Validate() error {
 	log.Entry().Infof("Validate component %s version %s and resolve version", c.Name, c.Version)
 
 	values := url.Values{}
-	values.Set("Name", c.Name)       // value to be enclosed by '???
-	values.Set("Version", c.Version) // value to be enclosed by '???
+	values.Set("Name", "'"+c.Name+"'")
+	values.Set("Version", "'"+c.Version+"'")
 	requestUrl := pvValidateURL + "?" + values.Encode()
 
 	body, err := c.connector.Get(requestUrl)

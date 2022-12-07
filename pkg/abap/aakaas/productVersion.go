@@ -38,8 +38,8 @@ func (p *ProductVersion) ValidateAndResolveVersionFields() error {
 	log.Entry().Infof("Validate product '%s' version '%s' and resolve version", p.Name, p.Version)
 
 	values := url.Values{}
-	values.Set("Name", p.Name)       // value to be enclosed by '???
-	values.Set("Version", p.Version) // value to be enclosed by '???
+	values.Set("Name", "'"+p.Name+"'")
+	values.Set("Version", "'"+p.Version+"'")
 	requestUrl := pvValidateURL + "?" + values.Encode()
 
 	body, err := p.connector.Get(requestUrl)
