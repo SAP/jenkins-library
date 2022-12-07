@@ -1,48 +1,64 @@
 package orchestrator
 
 import (
+	"context"
 	"fmt"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
+	"io"
+	"sync"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type GitHubActionsConfigProvider struct {
-	run run
+	client piperHttp.Client
+	run    run
 }
 
-func (g *GitHubActionsConfigProvider) initOrchestratorProvider(settings *OrchestratorSettings) error {
-	client := piperHttp.Client{}
-	client.SetOptions(piperHttp.ClientOptions{
+func getActionsURL() string {
+	ghURL := getEnv("GITHUB_URL", "")
+	switch ghURL {
+	case "https://github.com/":
+		ghURL = "https://api.github.com"
+	default:
+		ghURL += "api/v3"
+	}
+	return fmt.Sprintf("%s/repos/%s/actions", ghURL, getEnv("GITHUB_REPOSITORY", ""))
+}
+
+func initGHProvider(settings *OrchestratorSettings) (*GitHubActionsConfigProvider, error) {
+	g := GitHubActionsConfigProvider{}
+	g.client = piperHttp.Client{}
+	g.client.SetOptions(piperHttp.ClientOptions{
 		Password:         settings.GitHubToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
 	})
-	ghURL := getEnv("GITHUB_URL", "")
-	switch ghURL {
-	case "https://github.com/":
-		ghURL = "https://api.github.com/"
-	default:
-		ghURL += "api/v3/"
-	}
-	resp, err := client.GetRequest(
+	return &g, nil
+}
+
+func (g *GitHubActionsConfigProvider) getData() error {
+	resp, err := g.client.GetRequest(
 		fmt.Sprintf(
-			"%s/repos/%s/actions/runs/%s", ghURL, getEnv("GITHUB_REPOSITORY", ""), getEnv("GITHUB_RUN_ID", ""),
+			"%s/runs/%s", getActionsURL(), getEnv("GITHUB_RUN_ID", ""),
 		),
 		map[string][]string{
 			"Accept":        {"application/vnd.github+json"},
 			"Authorization": {"Bearer $GITHUB_TOKEN"},
 		}, nil)
-	if err != nil {
+	if err != nil || resp.StatusCode != 200 {
 		return fmt.Errorf("can't get API data: %w", err)
 
 	}
-	err = piperHttp.ParseHTTPResponseBodyJSON(resp, g.run)
+	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &g.run)
 	if err != nil {
 		return fmt.Errorf("can't parse JSON data: %w", err)
 	}
-	return err
+
+	return nil
 }
 
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
@@ -55,15 +71,82 @@ func (g *GitHubActionsConfigProvider) OrchestratorType() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
-	// By default, we will assume it ass a success
+	// By default, we will assume it's a success
 	// On error it would be handled by the action itself
 	return "SUCCESS"
 }
 
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
-	// It's not possible to get log during workflow execution
-	log.Entry().Debugf("GetLog() for GitHub Actions is not applicable.")
-	return []byte{}, nil
+	resp, err := g.client.GetRequest(
+		fmt.Sprintf(
+			"%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", ""),
+		),
+		map[string][]string{
+			"Accept":        {"application/vnd.github+json"},
+			"Authorization": {"Bearer $GITHUB_TOKEN"},
+		}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("can't get API data: %w", err)
+
+	}
+	var ids struct {
+		Jobs []struct {
+			Id string `json:"id"`
+		} `json:"jobs"`
+	}
+	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &ids)
+	if err != nil {
+		return nil, fmt.Errorf("can't parse JSON data: %w", err)
+	}
+	ids = struct {
+		Jobs []struct {
+			Id string `json:"id"`
+		} `json:"jobs"`
+		// we cant get the log for the last(current) job
+	}{Jobs: ids.Jobs[:len(ids.Jobs)-1]}
+	if len(ids.Jobs) == 0 {
+		return nil, fmt.Errorf("can't get the log form the last(current) job")
+	}
+	var logs sync.Map
+	ctx := context.TODO()
+	sem := semaphore.NewWeighted(10)
+	wg := errgroup.Group{}
+	for i := range ids.Jobs {
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return nil, fmt.Errorf("failed to acquire semaphore: %w", err)
+		}
+		j := i
+		wg.Go(func() error {
+			defer sem.Release(1)
+			resp, err := g.client.GetRequest(
+				fmt.Sprintf(
+					"%s/jobs/%s/logs", getActionsURL(), ids.Jobs[j].Id,
+				),
+				map[string][]string{
+					"Accept":        {"application/vnd.github+json"},
+					"Authorization": {"Bearer $GITHUB_TOKEN"},
+				}, nil)
+			if err != nil {
+				return fmt.Errorf("can't get API data: %w", err)
+
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return fmt.Errorf("can't read response body: %w", err)
+			}
+			logs.Store(j, body)
+			return nil
+		})
+	}
+	if err = wg.Wait(); err != nil {
+		return nil, fmt.Errorf("recieving log error: %w", err)
+	}
+	var logsBytes []byte
+	for i := range ids.Jobs {
+		log, _ := logs.Load(i)
+		logsBytes = append(logsBytes, log.([]byte)...)
+	}
+	return logsBytes, nil
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildID() string {
@@ -81,6 +164,9 @@ func (g *GitHubActionsConfigProvider) GetChangeSet() []ChangeSet {
 }
 
 func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
+	if g.run == (run{}) {
+		g.getData()
+	}
 	return g.run.RunStartedAt.UTC()
 }
 
@@ -101,6 +187,9 @@ func (g *GitHubActionsConfigProvider) GetReference() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
+	if g.run == (run{}) {
+		g.getData()
+	}
 	return g.run.HtmlUrl
 }
 
@@ -119,6 +208,9 @@ func (g *GitHubActionsConfigProvider) GetCommit() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetRepoURL() string {
+	if g.run == (run{}) {
+		g.getData()
+	}
 	return g.run.Repository.HtmlUrl
 }
 
