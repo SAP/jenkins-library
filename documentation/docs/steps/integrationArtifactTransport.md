@@ -10,9 +10,9 @@ configurations required for Cloud Integration, see [Content Assembly for SAP Int
 To use the integrationArtifactTransport step, proceed as follows:
 
 * [Create SAP Content Agent Service Destination](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/a4da0c26ced74bbfbc60e7f607dc05ab.html).
-* [Create Cloud Integration Destination](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/c17c4004049d4d9dba373d72ce5610cd.html).
-* [Export using SAP Cloud Transport Management Destination](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/b44463a657fa4be48ea2525b7eb6e7de.html).
-* Transport Cloud Integration Content with CAS as explained here [Transport SAP Cloud Integration (CI/CPI) Content with Transport Management Service (TMS) and Content Agent Service (CAS)](https://blogs.sap.com/2022/03/25/transport-sap-cloud-integration-ci-cpi-content-with-transport-management-service-tms-and-content-agent-service-cas/)
+* [Create SAP Cloud Integration Destination](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/c17c4004049d4d9dba373d72ce5610cd.html).
+* [Create SAP Cloud Transport Management Destination](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/b44463a657fa4be48ea2525b7eb6e7de.html).
+* Transport SAP Cloud Integration Content with CAS as explained in the blog [Transport SAP Cloud Integration (CI/CPI) Content with Transport Management Service (TMS) and Content Agent Service (CAS)](https://blogs.sap.com/2022/03/25/transport-sap-cloud-integration-ci-cpi-content-with-transport-management-service-tms-and-content-agent-service-cas/)
 * integrationArtifactTransport step only supports Integration Package transport.
 
 ## Prerequisites
