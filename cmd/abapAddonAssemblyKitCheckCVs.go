@@ -35,9 +35,10 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 
 	for i, repo := range addonDescriptor.Repositories {
 		componentVersion := new(aakaas.ComponentVersion)
-		componentVersion.ConstructComponentVersion(addonDescriptor.Repositories[i], *conn)
-		err := componentVersion.Validate()
-		if err != nil {
+		if err := componentVersion.ConstructComponentVersion(addonDescriptor.Repositories[i], *conn); err != nil {
+			return err
+		}
+		if err := componentVersion.Validate(); err != nil {
 			return err
 		}
 		componentVersion.CopyVersionFieldsToRepo(&addonDescriptor.Repositories[i])
