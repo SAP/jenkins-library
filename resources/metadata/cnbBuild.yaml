@@ -258,7 +258,7 @@ spec:
             param: custom/buildSettingsInfo
       - name: createBOM
         type: bool
-        description: Creates the bill of materials (BOM) using Syft and stored in a file of CycloneDX 1.4 format.
+        description: Creates the bill of materials (BOM) using Syft and stores in a file in CycloneDX 1.4 format.
         scope:
           - GENERAL
           - STEPS

@@ -15,9 +15,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-const syftArchiveName = "syft.tar.gz"
-
 func GenerateSBOM(syftDownloadURL, dockerConfigDir string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender, registryURL string, images []string) error {
+	if registryURL == "" {
+		return errors.New("syft: regisitry url must not be empty")
+	}
+
+	if len(images) == 0 {
+		return errors.New("syft: no images provided")
+	}
+
 	execRunner.AppendEnv([]string{"DOCKER_CONFIG", dockerConfigDir})
 
 	tmpDir, err := fileUtils.TempDir("", "syft")
@@ -28,12 +34,15 @@ func GenerateSBOM(syftDownloadURL, dockerConfigDir string, execRunner command.Ex
 
 	err = install(syftDownloadURL, syftFile, fileUtils, httpClient)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to install syft")
 	}
 
 	for index, image := range images {
+		if image == "" {
+			return errors.New("syft: image name must not be empty")
+		}
 		// TrimPrefix needed as syft needs containerRegistry name only
-		err = execRunner.RunExecutable(syftFile, "packages", fmt.Sprintf("%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", "cyclonedx-xml", "--file", fmt.Sprintf("bom-docker-%v.xml", index))
+		err = execRunner.RunExecutable(syftFile, "packages", fmt.Sprintf("%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", "cyclonedx-xml", "--file", fmt.Sprintf("bom-docker-%v.xml", index), "-q")
 		if err != nil {
 			return fmt.Errorf("failed to generate SBOM: %w", err)
 		}
@@ -49,18 +58,7 @@ func install(syftDownloadURL, dest string, fileUtils piperutils.FileUtils, httpC
 	}
 	defer response.Body.Close()
 
-	archiveFile, err := fileUtils.Create(syftArchiveName)
-	if err != nil {
-		return errors.Wrap(err, "failed to create syft archive file")
-	}
-	defer archiveFile.Close()
-
-	_, err = piperutils.CopyData(archiveFile, response.Body)
-	if err != nil {
-		return errors.Wrap(err, "failed to write syft archive to disk")
-	}
-
-	err = extractSyft(archiveFile, dest, fileUtils)
+	err = extractSyft(response.Body, dest, fileUtils)
 	if err != nil {
 		return errors.Wrap(err, "failed to extract syft binary")
 	}
@@ -73,11 +71,12 @@ func install(syftDownloadURL, dest string, fileUtils piperutils.FileUtils, httpC
 	return nil
 }
 
-func extractSyft(archive io.ReadWriteCloser, dest string, fileUtils piperutils.FileUtils) error {
+func extractSyft(archive io.Reader, dest string, fileUtils piperutils.FileUtils) error {
 	zr, err := gzip.NewReader(archive)
 	if err != nil {
 		return err
 	}
+	defer zr.Close()
 
 	tr := tar.NewReader(zr)
 
@@ -89,18 +88,23 @@ func extractSyft(archive io.ReadWriteCloser, dest string, fileUtils piperutils.F
 		}
 
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to read archive")
 		}
 
 		if filepath.Base(f.Name) == "syft" {
 			fileFound = true
 
-			sf, err := fileUtils.Create(dest)
+			df, err := fileUtils.Create(dest)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create file %q", dest)
+			}
+
+			size, err := io.Copy(df, tr)
 			if err != nil {
 				return err
 			}
 
-			size, err := io.Copy(sf, tr)
+			err = df.Close()
 			if err != nil {
 				return err
 			}
