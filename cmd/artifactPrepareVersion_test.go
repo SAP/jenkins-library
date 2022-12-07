@@ -704,8 +704,8 @@ func TestPushChanges(t *testing.T) {
 		config := artifactPrepareVersionOptions{}
 		repo := gitRepositoryMock{remote: remoteSSH}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}), submodulesResult: []string{"submodule1"}, statusResult: map[string]*git.FileStatus{
-			"some/file": nil,
-			"submodule1": nil,
+			"some/file":   nil,
+			"submodule1":  nil,
 			"anotherFile": nil,
 		}}
 
