@@ -48,8 +48,33 @@ type gitWorktree interface {
 	Add(path string) (plumbing.Hash, error)
 }
 
-func getGitWorktree(repository gitRepository) (gitWorktree, error) {
-	return repository.Worktree()
+type gitWorktreeWrap interface {
+	gitWorktree
+	SubmodulesPaths() ([]string, error)
+}
+
+type gitWorktreeExt struct {
+	gitWorktree
+}
+
+func (e gitWorktreeExt) SubmodulesPaths() ([]string, error) {
+	submodules, err := e.Submodules()
+	if err != nil {
+		return nil, err
+	}
+	paths := make([]string, len(submodules))
+	for i, submodule := range submodules {
+		paths[i] = submodule.Config().Path
+	}
+	return paths, nil
+}
+
+func getGitWorktree(repository gitRepository) (gitWorktreeWrap, error) {
+	w, err := repository.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	return gitWorktreeExt{gitWorktree: w}, nil
 }
 
 type artifactPrepareVersionUtils interface {
@@ -108,7 +133,7 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 
 var sshAgentAuth = ssh.NewSSHAgentAuth
 
-func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, utils artifactPrepareVersionUtils, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
+func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, utils artifactPrepareVersionUtils, repository gitRepository, getWorktree func(gitRepository) (gitWorktreeWrap, error)) error {
 
 	telemetryData.Custom1Label = "buildTool"
 	telemetryData.Custom1 = config.BuildTool
@@ -337,7 +362,7 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 	return nil
 }
 
-func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time) (string, error) {
+func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktreeWrap, t time.Time) (string, error) {
 
 	var commitID string
 
@@ -442,8 +467,8 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	return commitID, nil
 }
 
-func addAllExceptSubmodules(worktree gitWorktree) error {
-	submodules, err := worktree.Submodules()
+func addAllExceptSubmodules(worktree gitWorktreeWrap) error {
+	submodulesPaths, err := worktree.SubmodulesPaths()
 	if err != nil {
 		return err
 	}
@@ -455,8 +480,8 @@ func addAllExceptSubmodules(worktree gitWorktree) error {
 
 statusLoop:
 	for path := range status {
-		for _, submodule := range submodules {
-			if submodule.Config().Path == path {
+		for _, submodulePath := range submodulesPaths {
+			if submodulePath == path {
 				continue statusLoop
 			}
 		}
@@ -468,7 +493,7 @@ statusLoop:
 	return nil
 }
 
-func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
+func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktreeWrap, newVersion string, t time.Time) (plumbing.Hash, error) {
 	err := addAllExceptSubmodules(worktree)
 	if err != nil {
 		return plumbing.Hash{}, err

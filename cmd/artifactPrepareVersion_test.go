@@ -156,15 +156,20 @@ type gitWorktreeMock struct {
 	addError         string
 	statusResult     git.Status
 	statusError      string
-	submodulesResult git.Submodules
+	submodulesResult []string
 	submodulesError  string
+	addedPaths       []string
 }
 
-func (w *gitWorktreeMock) Submodules() (git.Submodules, error) {
-	if len(w.submodulesError) > 0 {
+func (w *gitWorktreeMock) SubmodulesPaths() ([]string, error) {
+	if len(w.submodulesError) != 0 {
 		return nil, fmt.Errorf(w.submodulesError)
 	}
 	return w.submodulesResult, nil
+}
+
+func (w *gitWorktreeMock) Submodules() (git.Submodules, error) {
+	panic("use mathod SubmodulesPaths")
 }
 
 func (w *gitWorktreeMock) Status() (git.Status, error) {
@@ -178,6 +183,7 @@ func (w *gitWorktreeMock) Add(path string) (plumbing.Hash, error) {
 	if len(w.addError) > 0 {
 		return plumbing.Hash{}, fmt.Errorf(w.addError)
 	}
+	w.addedPaths = append(w.addedPaths, path)
 	return w.addHash, nil
 }
 
@@ -188,6 +194,7 @@ func (w *gitWorktreeMock) Checkout(opts *git.CheckoutOptions) error {
 	w.checkoutOpts = opts
 	return nil
 }
+
 func (w *gitWorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
 	if len(w.commitError) > 0 {
 		return plumbing.Hash{}, fmt.Errorf(w.commitError)
@@ -253,7 +260,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			remote:       git.NewRemote(nil, &conf),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 
@@ -305,7 +312,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			remote:       git.NewRemote(nil, &conf),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 
@@ -332,7 +339,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		worktree := gitWorktreeMock{}
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 		assert.Equal(t, "1.2.3", cpe.artifactVersion)
@@ -358,7 +365,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 		assert.Equal(t, "1.2.3", cpe.artifactVersion)
@@ -387,7 +394,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 		assert.Equal(t, "testArtifact", cpe.artifactID)
@@ -453,7 +460,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return nil, fmt.Errorf("worktree error") })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return nil, fmt.Errorf("worktree error") })
 		assert.EqualError(t, err, "failed to retrieve git worktree: worktree error")
 	})
 
@@ -472,7 +479,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		worktree := gitWorktreeMock{checkoutError: "checkout error"}
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 		assert.EqualError(t, err, "failed to initialize worktree: checkout error")
 	})
 
@@ -492,7 +499,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		worktree := gitWorktreeMock{}
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 		assert.EqualError(t, err, "failed to write version: setVersion error")
 	})
 
@@ -511,7 +518,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		worktree := gitWorktreeMock{}
 		repo := gitRepositoryMock{}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 		assert.Contains(t, fmt.Sprint(err), "failed to push changes for version '1.2.3")
 	})
 
@@ -539,7 +546,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 
 		assert.EqualError(t, err, "failed to get coordinates: coordinatesError")
 	})
@@ -568,7 +575,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
 		}
 
-		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktreeWrap, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 	})
@@ -647,7 +654,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
@@ -666,7 +673,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
@@ -685,6 +692,29 @@ func TestPushChanges(t *testing.T) {
 		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
 		sshAgentAuth = originalSSHAgentAuth
 
+		assert.NoError(t, err)
+		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
+	})
+
+	t.Run("success - ssh with submodules", func(t *testing.T) {
+		confSSH := gitConfig.RemoteConfig{Name: "origin", URLs: []string{"git@my.test.server"}}
+		remoteSSH := git.NewRemote(nil, &confSSH)
+
+		config := artifactPrepareVersionOptions{}
+		repo := gitRepositoryMock{remote: remoteSSH}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}), submodulesResult: []string{"submodule1"}, statusResult: map[string]*git.FileStatus{
+			"some/file": nil,
+			"submodule1": nil,
+			"anotherFile": nil,
+		}}
+
+		originalSSHAgentAuth := sshAgentAuth
+		sshAgentAuth = func(u string) (*ssh.PublicKeysCallback, error) { return &ssh.PublicKeysCallback{}, nil }
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		sshAgentAuth = originalSSHAgentAuth
+
+		assert.Equal(t, []string{"some/file", "anotherFile"}, worktree.addedPaths)
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
