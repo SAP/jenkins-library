@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -107,7 +108,12 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	if len(ids.Jobs) == 0 {
 		return nil, fmt.Errorf("can't get the log form the last(current) job")
 	}
-	var logs sync.Map
+	logs := struct {
+		b [][]byte
+		sync.Mutex
+	}{
+		b: make([][]byte, len(ids.Jobs)),
+	}
 	ctx := context.TODO()
 	sem := semaphore.NewWeighted(10)
 	wg := errgroup.Group{}
@@ -134,19 +140,16 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 			if err != nil {
 				return fmt.Errorf("can't read response body: %w", err)
 			}
-			logs.Store(j, body)
+			logs.Lock()
+			defer logs.Unlock()
+			logs.b[j] = append([]byte{}, body...)
 			return nil
 		})
 	}
 	if err = wg.Wait(); err != nil {
 		return nil, fmt.Errorf("recieving log error: %w", err)
 	}
-	var logsBytes []byte
-	for i := range ids.Jobs {
-		log, _ := logs.Load(i)
-		logsBytes = append(logsBytes, log.([]byte)...)
-	}
-	return logsBytes, nil
+	return bytes.Join(logs.b, []byte("")), nil
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildID() string {
