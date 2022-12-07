@@ -43,6 +43,9 @@ type gitRepository interface {
 type gitWorktree interface {
 	Checkout(*git.CheckoutOptions) error
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
+	Submodules() (git.Submodules, error)
+	Status() (git.Status, error)
+  Add(path string) (plumbing.Hash, error)	
 }
 
 func getGitWorktree(repository gitRepository) (gitWorktree, error) {
@@ -439,9 +442,39 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	return commitID, nil
 }
 
+func addAllExceptSubmodules(worktree gitWorktree) error {
+	submodules, err := worktree.Submodules()
+	if err != nil {
+		return err
+	}
+
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+
+statusLoop:
+	for path := range status {
+		for _, submodule := range submodules {
+			if submodule.Config().Path == path {
+				continue statusLoop
+			}
+		}
+		_, err := worktree.Add(path)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
+	err := addAllExceptSubmodules(worktree)
+	if err != nil {
+		return plumbing.Hash{}, err
+	}
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
-	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{All: true, Author: &object.Signature{Name: config.CommitUserName, When: t}})
+	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{Author: &object.Signature{Name: config.CommitUserName, When: t}})
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}
