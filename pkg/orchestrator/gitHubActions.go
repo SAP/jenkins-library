@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -197,13 +198,19 @@ func (g *GitHubActionsConfigProvider) GetBuildURL() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
-	log.Entry().Infof("GetJobURL() for GitHub Actions is not applicable.")
-	return "n/a"
+	if g.run == (run{}) {
+		g.getData()
+	}
+	path := strings.Split(g.run.Path, "/")
+	workflowFileName := path[len(path)-1]
+	return fmt.Sprintf("%s/actions/workflows/%s", g.GetRepoURL(), workflowFileName)
 }
 
 func (g *GitHubActionsConfigProvider) GetJobName() string {
-	log.Entry().Debugf("GetJobName() for GitHub Actions is not applicable.")
-	return "n/a"
+	if g.run == (run{}) {
+		g.getData()
+	}
+	return g.run.Repository.FullName
 }
 
 func (g *GitHubActionsConfigProvider) GetCommit() string {
@@ -240,6 +247,7 @@ type run struct {
 	//NodeId           string        `json:"node_id"`
 	//HeadBranch       string        `json:"head_branch"`
 	//HeadSha          string        `json:"head_sha"`
+	Path string `json:"path"`
 	//RunNumber        int           `json:"run_number"`
 	//Event            string        `json:"event"`
 	//Status           string        `json:"status"`
@@ -320,7 +328,7 @@ type run struct {
 		//	Id       int    `json:"id"`
 		//	NodeId   string `json:"node_id"`
 		//	Name     string `json:"name"`
-		//	FullName string `json:"full_name"`
+		FullName string `json:"full_name"`
 		//	Private  bool   `json:"private"`
 		//	Owner    struct {
 		//		Login             string `json:"login"`

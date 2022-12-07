@@ -50,7 +50,8 @@ func TestGitHubActions(t *testing.T) {
 						// to be filled
 					},
 					Repository: struct {
-						HtmlUrl string `json:"html_url"`
+						FullName string `json:"full_name"`
+						HtmlUrl  string `json:"html_url"`
 					}{
 						HtmlUrl: "https://github.com/foo/bar",
 					},
