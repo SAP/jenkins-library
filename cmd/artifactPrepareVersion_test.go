@@ -146,12 +146,39 @@ func (r *gitRepositoryMock) Worktree() (*git.Worktree, error) {
 }
 
 type gitWorktreeMock struct {
-	checkoutError string
-	checkoutOpts  *git.CheckoutOptions
-	commitHash    plumbing.Hash
-	commitMsg     string
-	commitOpts    *git.CommitOptions
-	commitError   string
+	checkoutError    string
+	checkoutOpts     *git.CheckoutOptions
+	commitHash       plumbing.Hash
+	commitMsg        string
+	commitOpts       *git.CommitOptions
+	commitError      string
+	addHash          plumbing.Hash
+	addError         string
+	statusResult     git.Status
+	statusError      string
+	submodulesResult git.Submodules
+	submodulesError  string
+}
+
+func (w *gitWorktreeMock) Submodules() (git.Submodules, error) {
+	if len(w.submodulesError) > 0 {
+		return nil, fmt.Errorf(w.submodulesError)
+	}
+	return w.submodulesResult, nil
+}
+
+func (w *gitWorktreeMock) Status() (git.Status, error) {
+	if len(w.statusError) > 0 {
+		return nil, fmt.Errorf(w.statusError)
+	}
+	return w.statusResult, nil
+}
+
+func (w *gitWorktreeMock) Add(path string) (plumbing.Hash, error) {
+	if len(w.addError) > 0 {
+		return plumbing.Hash{}, fmt.Errorf(w.addError)
+	}
+	return w.addHash, nil
 }
 
 func (w *gitWorktreeMock) Checkout(opts *git.CheckoutOptions) error {
