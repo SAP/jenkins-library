@@ -50,21 +50,21 @@ type gitWorktree interface {
 
 type gitWorktreeWrap interface {
 	gitWorktree
-	SubmodulesPaths() ([]string, error)
+	SubmodulesPaths() (map[string]struct{}, error)
 }
 
 type gitWorktreeExt struct {
 	gitWorktree
 }
 
-func (e gitWorktreeExt) SubmodulesPaths() ([]string, error) {
+func (e gitWorktreeExt) SubmodulesPaths() (map[string]struct{}, error) {
 	submodules, err := e.Submodules()
 	if err != nil {
 		return nil, err
 	}
-	paths := make([]string, len(submodules))
-	for i, submodule := range submodules {
-		paths[i] = submodule.Config().Path
+	paths := make(map[string]struct{}, len(submodules))
+	for _, submodule := range submodules {
+		paths[submodule.Config().Path] = struct{}{}
 	}
 	return paths, nil
 }
@@ -478,12 +478,9 @@ func addAllExceptSubmodules(worktree gitWorktreeWrap) error {
 		return err
 	}
 
-statusLoop:
 	for path := range status {
-		for _, submodulePath := range submodulesPaths {
-			if submodulePath == path {
-				continue statusLoop
-			}
+		if _, ok := submodulesPaths[path]; ok {
+			continue
 		}
 		_, err := worktree.Add(path)
 		if err != nil {

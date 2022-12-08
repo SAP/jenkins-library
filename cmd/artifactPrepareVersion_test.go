@@ -156,12 +156,12 @@ type gitWorktreeMock struct {
 	addError         string
 	statusResult     git.Status
 	statusError      string
-	submodulesResult []string
+	submodulesResult map[string]struct{}
 	submodulesError  string
 	addedPaths       []string
 }
 
-func (w *gitWorktreeMock) SubmodulesPaths() ([]string, error) {
+func (w *gitWorktreeMock) SubmodulesPaths() (map[string]struct{}, error) {
 	if len(w.submodulesError) != 0 {
 		return nil, fmt.Errorf(w.submodulesError)
 	}
@@ -703,11 +703,14 @@ func TestPushChanges(t *testing.T) {
 
 		config := artifactPrepareVersionOptions{}
 		repo := gitRepositoryMock{remote: remoteSSH}
-		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}), submodulesResult: []string{"submodule1"}, statusResult: map[string]*git.FileStatus{
-			"some/file":   nil,
-			"submodule1":  nil,
-			"anotherFile": nil,
-		}}
+		worktree := gitWorktreeMock{
+			commitHash:       plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+			submodulesResult: map[string]struct{}{"submodule1": struct{}{}},
+			statusResult: map[string]*git.FileStatus{
+				"some/file":   nil,
+				"submodule1":  nil,
+				"anotherFile": nil,
+			}}
 
 		originalSSHAgentAuth := sshAgentAuth
 		sshAgentAuth = func(u string) (*ssh.PublicKeysCallback, error) { return &ssh.PublicKeysCallback{}, nil }
