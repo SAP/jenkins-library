@@ -60,7 +60,8 @@ func (v *versionable) resolveNext() error {
 }
 
 func (v *versionable) resolveRelease() error {
-	filter := "Name eq '" + v.Name + "' and TechSpLevel eq '0000' and TechPatchLevel eq '0000'"
+	//take only unrevertable status R/C for packages and T/P for TargetVectors
+	filter := "Name eq '" + v.Name + "' and TechSpLevel eq '0000' and TechPatchLevel eq '0000' and ( DeliveryStatus eq 'R' or DeliveryStatus eq 'C' or DeliveryStatus eq 'T' or DeliveryStatus eq 'P' )"
 	orderBy := "TechRelease desc"
 
 	if queryResuult, err := v.queryVersion(filter, orderBy); err != nil {
@@ -76,7 +77,7 @@ func (v *versionable) resolveRelease() error {
 }
 
 func (v *versionable) resolveSpLevel() error {
-	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechPatchLevel eq '0000'"
+	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechPatchLevel eq '0000'  and ( DeliveryStatus eq 'R' or DeliveryStatus eq 'C' or DeliveryStatus eq 'T' or DeliveryStatus eq 'P' )"
 	orderBy := "TechSpLevel desc"
 
 	if queryResuult, err := v.queryVersion(filter, orderBy); err != nil {
@@ -92,7 +93,7 @@ func (v *versionable) resolveSpLevel() error {
 }
 
 func (v *versionable) resolvePatchLevel() error {
-	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechSpLevel eq '" + v.TechSpLevel + "'"
+	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechSpLevel eq '" + v.TechSpLevel + "' and ( DeliveryStatus eq 'R' or DeliveryStatus eq 'C' or DeliveryStatus eq 'T' or DeliveryStatus eq 'P' )"
 	orderBy := "TechPatchLevel desc"
 
 	if queryResuult, err := v.queryVersion(filter, orderBy); err != nil {
