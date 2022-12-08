@@ -12,12 +12,6 @@ import (
 )
 
 func TestTmsUploadIntegration1(t *testing.T) {
-	//Reading TMS credentials from environment
-	tmsServiceKey, ok := os.LookupEnv("PIPER_tmsServiceKey")
-	if !ok {
-		t.Fatalf("Could not read TMS credentials from environment")
-	}
-
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
 		User:    "root",
@@ -26,7 +20,6 @@ func TestTmsUploadIntegration1(t *testing.T) {
 	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("tmsUpload",
-		//"--tmsServiceKey="+tmsServiceKey,
 		"--mtaPath=scv_x.mtar",
 		"--nodeName=PIPER-TEST",
 		"--customDescription=Piper integration test",
