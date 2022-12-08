@@ -17,7 +17,7 @@ To get started with project "Piper", you can choose from the following offerings
   * [A shared library][piper-library] that contains reusable step implementations, which enable you to customize the  preconfigured pipelines or to build your own ones, if necessary
   * A standalone [command line utility](cli) for Linux and a [GitHub Action](https://github.com/SAP/project-piper-action)
   **Note:** This version is still in early development and might not contain all features of the Jenkins library, yet. Feel free to use it and [provide feedback](https://github.com/SAP/jenkins-library/issues).
-    
+
 * A set of [Docker images][devops-docker-images] to easily set up a CI/CD environment using sophisticated life-cycle management
 
 To find out which offering is right for you, we recommend you to look at the preconfigured pipelines first. In most cases,  you don't need to build your own pipelines - you can use the ready-made ones and adapt them according to your needs, if necessary.
@@ -25,13 +25,12 @@ To find out which offering is right for you, we recommend you to look at the pre
 If you don't need to care about the underlying infrastructure of your pipelines, you can use the [SAP Continuous Integration and Delivery](https://help.sap.com/docs/CONTINUOUS_DELIVERY) service on SAP BTP. It offers an easy, UI-guided way to set up continuous integration and delivery without hosting your own Jenkins instance.
 
  ![SAP CI/CD vs Project "Piper"](images/CICD_Piper.png "Solution Comparison")
- 
+
 The support infrastructure for SAP Continuous Integration and Delivery is provided by SAP according to the Service Level Agreements (SLAs). Project "Piper" offers community support using GitHub issues and pull requests. Users are free to contribute to the repository independently. See [Contributing](https://github.com/SAP/jenkins-library/blob/master/.github/CONTRIBUTING.md).
 
 For more information about the CI/CD solutions offered by SAP, see [SAP Solutions for Continuous Integration and Delivery](https://help.sap.com/docs/CICD_OVERVIEW/8cacec64ed854b2a88e9a0973e0f97a2/e9fa320181124fa9808d4446a1bf69dd.html).
 
-To learn more about the continuous integration and delivery offerings by SAP, see [Continuous Integration and Delivery by SAP](https://help.sap.com/docs/CICD_OVERVIEW) and [Continuous Integration and Delivery by SAP Learning Journey](https://help.sap.com/learning-journeys/b76f0b2e5d534c449c1f3b0fa84ab697). 
-
+To learn more about the continuous integration and delivery offerings by SAP, see [Continuous Integration and Delivery by SAP](https://help.sap.com/docs/CICD_OVERVIEW) and [Continuous Integration and Delivery by SAP Learning Journey](https://help.sap.com/learning-journeys/b76f0b2e5d534c449c1f3b0fa84ab697).
 
 ### The Best-Practice Way: Ready-Made Pipelines
 
