@@ -717,7 +717,7 @@ func TestPushChanges(t *testing.T) {
 		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
 		sshAgentAuth = originalSSHAgentAuth
 
-		assert.Equal(t, []string{"some/file", "anotherFile"}, worktree.addedPaths)
+		assert.ElementsMatch(t, []string{"some/file", "anotherFile"}, worktree.addedPaths)
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
