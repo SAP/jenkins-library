@@ -2,7 +2,7 @@ metadata:
   name: integrationArtifactTransport
   description: Integration artifact content transport using the SAP Content Agent service
   longDescription: |
-    With this step you can trigger the integration artifact content transport using SAP Content Agent Service and Cloud Transport Management Service. Learn more about the integration artifact content transport using SAP Content Agent service [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).
+    With this step you can trigger the integration artifact content transport using SAP Content Agent service and SAP Cloud Transport Management Service. For more information about the integration artifact content transport using SAP Content Agent service [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).
 
 spec:
   inputs:
@@ -24,7 +24,7 @@ spec:
             param: casServiceKey
       - name: integrationPackageId
         type: string
-        description: Specifies the ID of the Integration Package artifact.
+        description: Specifies the ID of the integration package artifact.
         scope:
           - PARAMETERS
           - GENERAL
@@ -33,7 +33,7 @@ spec:
         mandatory: true
       - name: resourceID
         type: string
-        description: Specifies the technical ID of the Integration Package artifact.
+        description: Specifies the technical ID of the integration package artifact.
         scope:
           - PARAMETERS
           - GENERAL
@@ -42,7 +42,7 @@ spec:
         mandatory: true
       - name: name
         type: string
-        description: Specifies the name of the Integration Package artifact.
+        description: Specifies the name of the integration package artifact.
         scope:
           - PARAMETERS
           - GENERAL

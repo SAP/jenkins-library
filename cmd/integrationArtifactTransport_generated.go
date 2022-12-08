@@ -37,7 +37,7 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 	var createIntegrationArtifactTransportCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Integration artifact content transport using the SAP Content Agent service",
-		Long:  `With this step you can trigger the integration artifact content transport using SAP Content Agent Service and Cloud Transport Management Service. Learn more about the integration artifact content transport using SAP Content Agent service [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).`,
+		Long:  `With this step you can trigger the integration artifact content transport using SAP Content Agent service and SAP Cloud Transport Management Service. For more information about the integration artifact content transport using SAP Content Agent service [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -118,9 +118,9 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 
 func addIntegrationArtifactTransportFlags(cmd *cobra.Command, stepConfig *integrationArtifactTransportOptions) {
 	cmd.Flags().StringVar(&stepConfig.CasServiceKey, "casServiceKey", os.Getenv("PIPER_casServiceKey"), "Service key JSON string to access the CAS service instance")
-	cmd.Flags().StringVar(&stepConfig.IntegrationPackageID, "integrationPackageId", os.Getenv("PIPER_integrationPackageId"), "Specifies the ID of the Integration Package artifact.")
-	cmd.Flags().StringVar(&stepConfig.ResourceID, "resourceID", os.Getenv("PIPER_resourceID"), "Specifies the technical ID of the Integration Package artifact.")
-	cmd.Flags().StringVar(&stepConfig.Name, "name", os.Getenv("PIPER_name"), "Specifies the name of the Integration Package artifact.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationPackageID, "integrationPackageId", os.Getenv("PIPER_integrationPackageId"), "Specifies the ID of the integration package artifact.")
+	cmd.Flags().StringVar(&stepConfig.ResourceID, "resourceID", os.Getenv("PIPER_resourceID"), "Specifies the technical ID of the integration package artifact.")
+	cmd.Flags().StringVar(&stepConfig.Name, "name", os.Getenv("PIPER_name"), "Specifies the name of the integration package artifact.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Specifies the version of the Integration Package artifact.")
 
 	cmd.MarkFlagRequired("casServiceKey")
