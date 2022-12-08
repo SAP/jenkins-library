@@ -34,7 +34,7 @@ spec:
         default: []
         mandatory: false
       - name: chunkSize
-        description: Defines size of the chunk. If content exceed chunk size it'll be sliced into chunks and stored in comments 
+        description: Defines size of the chunk. If content exceed chunk size it'll be sliced into chunks and stored in comments
         scope:
           - PARAMETERS
           - STAGES
