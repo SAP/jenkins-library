@@ -10,8 +10,9 @@ import (
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
+
 type githubCreateIssueUtils interface {
-FileRead(string) ([]byte, error)
+	FileRead(string) ([]byte, error)
 }
 
 func githubCreateIssue(config githubCreateIssueOptions, telemetryData *telemetry.CustomData) {
@@ -81,11 +82,11 @@ func getChunks(value []rune, chunkSize int) []string {
 	if length == 0 {
 		return []string{""}
 	}
-	for i := 0; i < length; i+=chunkSize {
+	for i := 0; i < length; i += chunkSize {
 		to := length
 		if to > i+chunkSize {
 			to = i + chunkSize
-		} 
+		}
 		chunks = append(chunks, string(value[i:to]))
 	}
 	return chunks
