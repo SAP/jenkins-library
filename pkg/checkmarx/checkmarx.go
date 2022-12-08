@@ -518,7 +518,7 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 	} else {
 		// Check if the current project config needs to be updated
 		json.Unmarshal(data, &projectScanSettings)
-		if projectScanSettings.Preset.PresetID == presetID && projectScanSettings.EngineConfiguration.EngineConfigurationID == engineConfigID {
+		if projectScanSettings.Preset.PresetID == presetID && (projectScanSettings.EngineConfiguration.EngineConfigurationID == engineConfigID || engineConfigID == 0) {
 			sys.logger.Debugf("Project configuration does not need to be updated")
 			return nil
 		}
