@@ -1,22 +1,58 @@
 package cmd
 
 import (
-	"fmt"
 	"testing"
+
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetChunk(t *testing.T) {
-	testString := []rune(`1AB
-`)
-
-	chunkSize := 8
-	chunks := getChunks(testString, chunkSize)
-	for k, v := range chunks {
-
-		t.Log(fmt.Sprintf("%v -- '%v'", k,v))
+	tests := []struct {
+		name           string
+		chunkSize      int
+		largeString    string
+		expectedChunks []string
+	}{
+		{
+			name: "large string",
+			largeString: `The quick
+brown fox jumps
+over
+the lazy dog
+`,
+			chunkSize:      12,
+			expectedChunks: []string{"The quick\nbr", "own fox jump", "s\nover\nthe l", "azy dog\n"},
+		},
+		{
+			name: "small string",
+			largeString: `small`,
+			chunkSize:      12,
+			expectedChunks: []string{"small"},
+		},
+		{
+			name: "exact size",
+			largeString: `exact size12`,
+			chunkSize:      12,
+			expectedChunks: []string{"exact size12"},
+		},
+		{
+			name: "empty strict",
+			largeString: ``,
+			chunkSize:      12,
+			expectedChunks: []string{""},
+		},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			chunks := getChunks([]rune(test.largeString), test.chunkSize)
+			assert.ElementsMatch(t, test.expectedChunks, chunks)
+		})
 	}
 }
-/*
+
 func TestTransformConfig(t *testing.T) {
 	t.Parallel()
 
@@ -33,7 +69,7 @@ func TestTransformConfig(t *testing.T) {
 		options := piperGithub.CreateIssueOptions{}
 
 		// test
-		err := transformConfig(&config, &options, filesMock.FileRead)
+		err := runGithubCreateIssue(&config, nil, &options, &filesMock)
 
 		// assert
 		assert.NoError(t, err)
@@ -61,7 +97,7 @@ func TestTransformConfig(t *testing.T) {
 		options := piperGithub.CreateIssueOptions{}
 
 		// test
-		err := transformConfig(&config, &options, filesMock.FileRead)
+		err := runGithubCreateIssue(&config, nil, &options, &filesMock)
 
 		// assert
 		assert.NoError(t, err)
@@ -82,10 +118,9 @@ func TestTransformConfig(t *testing.T) {
 		options := piperGithub.CreateIssueOptions{}
 
 		// test
-		err := transformConfig(&config, &options, filesMock.FileRead)
+		err := runGithubCreateIssue(&config, nil, &options, &filesMock)
 
 		// assert
 		assert.EqualError(t, err, "either parameter `body` or parameter `bodyFilePath` is required")
 	})
 }
-*/
