@@ -16,8 +16,7 @@ To get started with project "Piper", you can choose from the following offerings
   * [General Purpose Pipeline](stages/introduction/)
   * [A shared library][piper-library] that contains reusable step implementations, which enable you to customize the  preconfigured pipelines or to build your own ones, if necessary
   * A standalone [command line utility](cli) for Linux and a [GitHub Action](https://github.com/SAP/project-piper-action)
-
-    **Note:** This version is still in early development and might not contain all features of the Jenkins library, yet. Feel free to use it and [provide feedback](https://github.com/SAP/jenkins-library/issues).
+  **Note:** This version is still in early development and might not contain all features of the Jenkins library, yet. Feel free to use it and [provide feedback](https://github.com/SAP/jenkins-library/issues).
     
 * A set of [Docker images][devops-docker-images] to easily set up a CI/CD environment using sophisticated life-cycle management
 
@@ -32,6 +31,7 @@ The support infrastructure for SAP Continuous Integration and Delivery is provid
 For more information about the CI/CD solutions offered by SAP, see [SAP Solutions for Continuous Integration and Delivery](https://help.sap.com/docs/CICD_OVERVIEW/8cacec64ed854b2a88e9a0973e0f97a2/e9fa320181124fa9808d4446a1bf69dd.html).
 
 To learn more about the continuous integration and delivery offerings by SAP, see [Continuous Integration and Delivery by SAP](https://help.sap.com/docs/CICD_OVERVIEW) and [Continuous Integration and Delivery by SAP Learning Journey](https://help.sap.com/learning-journeys/b76f0b2e5d534c449c1f3b0fa84ab697). 
+
 
 ### The Best-Practice Way: Ready-Made Pipelines
 
