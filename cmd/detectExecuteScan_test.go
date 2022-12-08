@@ -130,7 +130,7 @@ const (
 		]
 	}`
 	componentsContent = `{
-		"totalCount": 2,
+		"totalCount": 3,
 		"items" : [
 			{
 				"componentName": "Spring Framework",
@@ -140,20 +140,46 @@ const (
 				"componentName": "Apache Tomcat",
 				"componentVersionName": "9.0.52",
 				"policyStatus": "IN_VIOLATION"
+			}, {
+				"componentName": "Apache Log4j",
+				"componentVersionName": "4.5.16",
+				"policyStatus": "UNKNOWN"
 			}
 		]
 	}`
 	vulnerabilitiesContent = `{
-		"totalCount": 1,
+		"totalCount": 3,
 		"items": [
 			{
 				"componentName": "Spring Framework",
-				"componentVersionName": "5.3.2",
+				"componentVersionName": "5.3.9",
 				"vulnerabilityWithRemediation" : {
 					"vulnerabilityName" : "BDSA-2019-2021",
 					"baseScore" : 7.5,
 					"overallScore" : 7.5,
 					"severity" : "HIGH",
+					"remediationStatus" : "IGNORED",
+					"description" : "description"
+				}
+			}, {
+				"componentName": "Apache Log4j",
+				"componentVersionName": "4.5.16",
+				"vulnerabilityWithRemediation" : {
+					"vulnerabilityName" : "BDSA-2020-4711",
+					"baseScore" : 7.5,
+					"overallScore" : 7.5,
+					"severity" : "HIGH",
+					"remediationStatus" : "IGNORED",
+					"description" : "description"
+				}
+			}, {
+				"componentName": "Apache Log4j",
+				"componentVersionName": "4.5.16",
+				"vulnerabilityWithRemediation" : {
+					"vulnerabilityName" : "BDSA-2020-4712",
+					"baseScore" : 4.5,
+					"overallScore" : 4.5,
+					"severity" : "MEDIUM",
 					"remediationStatus" : "IGNORED",
 					"description" : "description"
 				}
@@ -595,6 +621,30 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.tools=DETECTOR",
 			},
 		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:       "https://server.url",
+				Token:           "apiToken",
+				ProjectName:     "testName",
+				Version:         "1.0",
+				VersioningModel: "major-minor",
+				CodeLocation:    "",
+				ScanPaths:       []string{"path1", "path2"},
+				MinScanInterval: 4,
+			},
+			expected: []string{
+				"--testProp1=1",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"\"--detect.project.name='testName'\"",
+				"\"--detect.project.version.name='1.0'\"",
+				"\"--detect.code.location.name='testName/1.0'\"",
+				"--detect.blackduck.signature.scanner.paths=path1,path2",
+				"--detect.source.path='.'",
+			},
+		},
 	}
 
 	for k, v := range testData {
@@ -728,6 +778,44 @@ func TestGetActivePolicyViolations(t *testing.T) {
 
 		components, err := sys.Client.GetComponents("SHC-PiperTest", "1.0")
 		assert.NoError(t, err)
-		assert.Equal(t, getActivePolicyViolations(components), 2)
+		assert.Equal(t, 2, getActivePolicyViolations(components))
+	})
+}
+
+func TestGetVulnerabilitiesWithComponents(t *testing.T) {
+	t.Parallel()
+	t.Run("Case true", func(t *testing.T) {
+		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
+		sys := newBlackduckMockSystem(config)
+
+		vulns, err := getVulnerabilitiesWithComponents(config, &detectExecuteScanInflux{}, &sys)
+		assert.NoError(t, err)
+		vulnerabilitySpring := bd.Vulnerability{}
+		vulnerabilityLog4j1 := bd.Vulnerability{}
+		vulnerabilityLog4j2 := bd.Vulnerability{}
+		for _, v := range vulns.Items {
+			if v.VulnerabilityWithRemediation.VulnerabilityName == "BDSA-2019-2021" {
+				vulnerabilitySpring = v
+			}
+			if v.VulnerabilityWithRemediation.VulnerabilityName == "BDSA-2020-4711" {
+				vulnerabilityLog4j1 = v
+			}
+			if v.VulnerabilityWithRemediation.VulnerabilityName == "BDSA-2020-4712" {
+				vulnerabilityLog4j2 = v
+			}
+		}
+		vulnerableComponentSpring := &bd.Component{}
+		vulnerableComponentLog4j := &bd.Component{}
+		for i := 0; i < len(vulns.Items); i++ {
+			if vulns.Items[i].Component != nil && vulns.Items[i].Component.Name == "Spring Framework" {
+				vulnerableComponentSpring = vulns.Items[i].Component
+			}
+			if vulns.Items[i].Component != nil && vulns.Items[i].Component.Name == "Apache Log4j" {
+				vulnerableComponentLog4j = vulns.Items[i].Component
+			}
+		}
+		assert.Equal(t, vulnerableComponentSpring, vulnerabilitySpring.Component)
+		assert.Equal(t, vulnerableComponentLog4j, vulnerabilityLog4j1.Component)
+		assert.Equal(t, vulnerableComponentLog4j, vulnerabilityLog4j2.Component)
 	})
 }

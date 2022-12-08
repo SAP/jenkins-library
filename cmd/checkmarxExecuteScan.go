@@ -133,7 +133,7 @@ func runScan(ctx context.Context, config checkmarxExecuteScanOptions, sys checkm
 	if err != nil {
 		return errors.Wrap(err, "error when trying to load project")
 	}
-	if project.Name == projectName {
+	if strings.EqualFold(project.Name, projectName) { // case insensitive string comparison
 		err = presetExistingProject(config, sys, projectName, project)
 		if err != nil {
 			return err
@@ -176,7 +176,7 @@ func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.Syst
 func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, teamID string) (checkmarx.Project, error) {
 	log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
 	presetID, _ := strconv.Atoi(config.Preset)
-	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
+	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.EngineConfigurationID)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 	}
@@ -187,7 +187,7 @@ func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.Sys
 	log.Entry().Infof("Project %v exists...", projectName)
 	if len(config.Preset) > 0 {
 		presetID, _ := strconv.Atoi(config.Preset)
-		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
+		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.EngineConfigurationID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
 		}
@@ -212,6 +212,9 @@ func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
 	var project checkmarx.Project
 	projectName := initialProjectName
+	if len(initialProjectName) == 0 {
+		return project, projectName, errors.New("You need to provide the Checkmarx project name, projectName parameter is mandatory")
+	}
 	if len(pullRequestName) > 0 {
 		projectName = fmt.Sprintf("%v_%v", initialProjectName, pullRequestName)
 		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
@@ -484,28 +487,28 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 
 func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScanInflux) {
 	influx.checkmarx_data.fields.high_issues = results["High"].(map[string]int)["Issues"]
-	influx.checkmarx_data.fields.high_not_false_postive = results["High"].(map[string]int)["NotFalsePositive"]
+	influx.checkmarx_data.fields.high_not_false_positive = results["High"].(map[string]int)["NotFalsePositive"]
 	influx.checkmarx_data.fields.high_not_exploitable = results["High"].(map[string]int)["NotExploitable"]
 	influx.checkmarx_data.fields.high_confirmed = results["High"].(map[string]int)["Confirmed"]
 	influx.checkmarx_data.fields.high_urgent = results["High"].(map[string]int)["Urgent"]
 	influx.checkmarx_data.fields.high_proposed_not_exploitable = results["High"].(map[string]int)["ProposedNotExploitable"]
 	influx.checkmarx_data.fields.high_to_verify = results["High"].(map[string]int)["ToVerify"]
 	influx.checkmarx_data.fields.medium_issues = results["Medium"].(map[string]int)["Issues"]
-	influx.checkmarx_data.fields.medium_not_false_postive = results["Medium"].(map[string]int)["NotFalsePositive"]
+	influx.checkmarx_data.fields.medium_not_false_positive = results["Medium"].(map[string]int)["NotFalsePositive"]
 	influx.checkmarx_data.fields.medium_not_exploitable = results["Medium"].(map[string]int)["NotExploitable"]
 	influx.checkmarx_data.fields.medium_confirmed = results["Medium"].(map[string]int)["Confirmed"]
 	influx.checkmarx_data.fields.medium_urgent = results["Medium"].(map[string]int)["Urgent"]
 	influx.checkmarx_data.fields.medium_proposed_not_exploitable = results["Medium"].(map[string]int)["ProposedNotExploitable"]
 	influx.checkmarx_data.fields.medium_to_verify = results["Medium"].(map[string]int)["ToVerify"]
 	influx.checkmarx_data.fields.low_issues = results["Low"].(map[string]int)["Issues"]
-	influx.checkmarx_data.fields.low_not_false_postive = results["Low"].(map[string]int)["NotFalsePositive"]
+	influx.checkmarx_data.fields.low_not_false_positive = results["Low"].(map[string]int)["NotFalsePositive"]
 	influx.checkmarx_data.fields.low_not_exploitable = results["Low"].(map[string]int)["NotExploitable"]
 	influx.checkmarx_data.fields.low_confirmed = results["Low"].(map[string]int)["Confirmed"]
 	influx.checkmarx_data.fields.low_urgent = results["Low"].(map[string]int)["Urgent"]
 	influx.checkmarx_data.fields.low_proposed_not_exploitable = results["Low"].(map[string]int)["ProposedNotExploitable"]
 	influx.checkmarx_data.fields.low_to_verify = results["Low"].(map[string]int)["ToVerify"]
 	influx.checkmarx_data.fields.information_issues = results["Information"].(map[string]int)["Issues"]
-	influx.checkmarx_data.fields.information_not_false_postive = results["Information"].(map[string]int)["NotFalsePositive"]
+	influx.checkmarx_data.fields.information_not_false_positive = results["Information"].(map[string]int)["NotFalsePositive"]
 	influx.checkmarx_data.fields.information_not_exploitable = results["Information"].(map[string]int)["NotExploitable"]
 	influx.checkmarx_data.fields.information_confirmed = results["Information"].(map[string]int)["Confirmed"]
 	influx.checkmarx_data.fields.information_urgent = results["Information"].(map[string]int)["Urgent"]
