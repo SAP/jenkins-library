@@ -33,6 +33,13 @@ spec:
         type: "[]string"
         default: []
         mandatory: false
+      - name: chunkSize
+        description: Defines size of the chunk. If content exceed chunk size it'll be sliced into chunks and stored in comments 
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: int
       - name: body
         description: Defines the content of the issue, e.g. using markdown syntax.
         scope:

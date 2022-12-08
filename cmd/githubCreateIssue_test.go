@@ -1,15 +1,22 @@
 package cmd
 
 import (
+	"fmt"
 	"testing"
-
-	"github.com/SAP/jenkins-library/pkg/mock"
-
-	"github.com/stretchr/testify/assert"
-
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
+func TestGetChunk(t *testing.T) {
+	testString := []rune(`1AB
+`)
+
+	chunkSize := 8
+	chunks := getChunks(testString, chunkSize)
+	for k, v := range chunks {
+
+		t.Log(fmt.Sprintf("%v -- '%v'", k,v))
+	}
+}
+/*
 func TestTransformConfig(t *testing.T) {
 	t.Parallel()
 
@@ -81,3 +88,4 @@ func TestTransformConfig(t *testing.T) {
 		assert.EqualError(t, err, "either parameter `body` or parameter `bodyFilePath` is required")
 	})
 }
+*/

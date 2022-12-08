@@ -21,15 +21,47 @@ func githubCreateIssue(config githubCreateIssueOptions, telemetryData *telemetry
 func runGithubCreateIssue(config *githubCreateIssueOptions, _ *telemetry.CustomData) error {
 
 	options := piperGithub.CreateIssueOptions{}
-	err := transformConfig(config, &options, ioutil.ReadFile)
+	chunks, err := getBody(config, ioutil.ReadFile)
 	if err != nil {
 		return err
 	}
+	transformConfig(config, &options, chunks[0])
+	err = piperGithub.CreateIssue(&options)
+	if err != nil {
+		return err
+	}
+	if len(chunks) > 0 {
+		for _, v := range chunks[1:] {
+			options.Body = []byte(v)
+			options.UpdateExisting = true
+			err = piperGithub.CreateIssue(&options)
+			if err != nil {
+				return err
+			}
 
-	return piperGithub.CreateIssue(&options)
+		}
+	}
+	return nil
 }
 
-func transformConfig(config *githubCreateIssueOptions, options *piperGithub.CreateIssueOptions, readFile func(string) ([]byte, error)) error {
+func getBody(config *githubCreateIssueOptions, readFile func(string) ([]byte, error)) ([]string, error) {
+	var bodyString []rune
+	if len(config.Body)+len(config.BodyFilePath) == 0 {
+		return nil, fmt.Errorf("either parameter `body` or parameter `bodyFilePath` is required")
+	}
+	if len(config.Body) == 0 {
+		issueContent, err := readFile(config.BodyFilePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read file '%v'", config.BodyFilePath)
+		}
+		bodyString = []rune(string(issueContent))
+	} else {
+		bodyString = []rune(config.Body)
+	}
+	return getChunks(bodyString, config.ChunkSize), nil
+}
+
+func transformConfig(config *githubCreateIssueOptions, options *piperGithub.CreateIssueOptions, body string) {
 	options.Token = config.Token
 	options.APIURL = config.APIURL
 	options.Owner = config.Owner
@@ -38,16 +70,30 @@ func transformConfig(config *githubCreateIssueOptions, options *piperGithub.Crea
 	options.Body = []byte(config.Body)
 	options.Assignees = config.Assignees
 	options.UpdateExisting = config.UpdateExisting
+	options.Body = []byte(body)
+}
 
-	if len(config.Body)+len(config.BodyFilePath) == 0 {
-		return fmt.Errorf("either parameter `body` or parameter `bodyFilePath` is required")
-	}
-	if len(config.Body) == 0 {
-		issueContent, err := readFile(config.BodyFilePath)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", config.BodyFilePath)
+func getChunks(value []rune, chunkSize int) []string {
+	chunks := []string{}
+	length := len(value)
+	for i := 0; i < length; {
+		to := length
+		if to > i+chunkSize {
+			to = i + chunkSize
+		} else {
+			chunks = append(chunks, string(value[i:to]))
+			break
 		}
-		options.Body = issueContent
+
+		for j := to - 1; j > i; j-- {
+			if value[j] == '\n' {
+				to = j
+				break
+			}
+		}
+		fmt.Printf("to %v  i %v", to, i)
+		chunks = append(chunks, string(value[i:to]))
+		i = to
 	}
-	return nil
+	return chunks
 }
