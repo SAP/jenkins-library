@@ -524,6 +524,11 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 		}
 	}
 
+	// use the project-level value to configure the project if no value was provided in piper config
+	if engineConfigID == 0 {
+		engineConfigID = projectScanSettings.EngineConfiguration.EngineConfigurationID
+	}
+
 	jsonData := map[string]interface{}{
 		"projectId":             projectID,
 		"presetId":              presetID,
