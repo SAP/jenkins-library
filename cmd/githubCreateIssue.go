@@ -18,19 +18,19 @@ type githubCreateIssueUtils interface {
 func githubCreateIssue(config githubCreateIssueOptions, telemetryData *telemetry.CustomData) {
 	fileUtils := &piperutils.Files{}
 	options := piperGithub.CreateIssueOptions{}
-	err := runGithubCreateIssue(&config, telemetryData, &options, fileUtils)
+	err := runGithubCreateIssue(&config, telemetryData, &options, fileUtils, piperGithub.CreateIssue)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to comment on issue")
 	}
 }
 
-func runGithubCreateIssue(config *githubCreateIssueOptions, _ *telemetry.CustomData, options *piperGithub.CreateIssueOptions, utils githubCreateIssueUtils) error {
+func runGithubCreateIssue(config *githubCreateIssueOptions, _ *telemetry.CustomData, options *piperGithub.CreateIssueOptions, utils githubCreateIssueUtils, createIssue func(*piperGithub.CreateIssueOptions) error) error {
 	chunks, err := getBody(config, utils.FileRead)
 	if err != nil {
 		return err
 	}
 	transformConfig(config, options, chunks[0])
-	err = piperGithub.CreateIssue(options)
+	err = createIssue(options)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func runGithubCreateIssue(config *githubCreateIssueOptions, _ *telemetry.CustomD
 		for _, v := range chunks[1:] {
 			options.Body = []byte(v)
 			options.UpdateExisting = true
-			err = piperGithub.CreateIssue(options)
+			err = createIssue(options)
 			if err != nil {
 				return err
 			}

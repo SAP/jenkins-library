@@ -65,11 +65,17 @@ func TestTransformConfig(t *testing.T) {
 			Body:       "This is my test body",
 			Title:      "This is my title",
 			Assignees:  []string{"userIdOne", "userIdTwo"},
+			ChunkSize: 100,
 		}
 		options := piperGithub.CreateIssueOptions{}
+		resultChunks := []string{}
+		createIssue := func(options *piperGithub.CreateIssueOptions) error {
+			resultChunks = append(resultChunks, string(options.Body))
+			return nil
+		} 
 
 		// test
-		err := runGithubCreateIssue(&config, nil, &options, &filesMock)
+		err := runGithubCreateIssue(&config, nil, &options, &filesMock, createIssue)
 
 		// assert
 		assert.NoError(t, err)
@@ -77,10 +83,10 @@ func TestTransformConfig(t *testing.T) {
 		assert.Equal(t, config.APIURL, options.APIURL)
 		assert.Equal(t, config.Owner, options.Owner)
 		assert.Equal(t, config.Repository, options.Repository)
-		assert.Equal(t, []byte(config.Body), options.Body)
 		assert.Equal(t, config.Title, options.Title)
 		assert.Equal(t, config.Assignees, options.Assignees)
 		assert.Equal(t, config.UpdateExisting, options.UpdateExisting)
+		assert.ElementsMatch(t, resultChunks, []string{string(config.Body)})
 	})
 
 	t.Run("Success bodyFilePath", func(t *testing.T) {
@@ -95,9 +101,13 @@ func TestTransformConfig(t *testing.T) {
 			Assignees:    []string{"userIdOne", "userIdTwo"},
 		}
 		options := piperGithub.CreateIssueOptions{}
-
+		resultChunks := []string{}
+		createIssue := func(options *piperGithub.CreateIssueOptions) error {
+			resultChunks = append(resultChunks, string(options.Body))
+			return nil
+		} 
 		// test
-		err := runGithubCreateIssue(&config, nil, &options, &filesMock)
+		err := runGithubCreateIssue(&config, nil, &options, &filesMock, createIssue)
 
 		// assert
 		assert.NoError(t, err)
@@ -105,10 +115,10 @@ func TestTransformConfig(t *testing.T) {
 		assert.Equal(t, config.APIURL, options.APIURL)
 		assert.Equal(t, config.Owner, options.Owner)
 		assert.Equal(t, config.Repository, options.Repository)
-		assert.Equal(t, []byte("Test markdown"), options.Body)
 		assert.Equal(t, config.Title, options.Title)
 		assert.Equal(t, config.Assignees, options.Assignees)
 		assert.Equal(t, config.UpdateExisting, options.UpdateExisting)
+		assert.ElementsMatch(t, resultChunks, []string{"Test markdown"})
 	})
 
 	t.Run("Error - missing issue body", func(t *testing.T) {
@@ -116,9 +126,13 @@ func TestTransformConfig(t *testing.T) {
 		filesMock := mock.FilesMock{}
 		config := githubCreateIssueOptions{}
 		options := piperGithub.CreateIssueOptions{}
-
+		resultChunks := []string{}
+		createIssue := func(options *piperGithub.CreateIssueOptions) error {
+			resultChunks = append(resultChunks, string(options.Body))
+			return nil
+		} 
 		// test
-		err := runGithubCreateIssue(&config, nil, &options, &filesMock)
+		err := runGithubCreateIssue(&config, nil, &options, &filesMock, createIssue)
 
 		// assert
 		assert.EqualError(t, err, "either parameter `body` or parameter `bodyFilePath` is required")
