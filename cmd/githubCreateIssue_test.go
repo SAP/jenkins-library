@@ -65,14 +65,14 @@ func TestTransformConfig(t *testing.T) {
 			Body:       "This is my test body",
 			Title:      "This is my title",
 			Assignees:  []string{"userIdOne", "userIdTwo"},
-			ChunkSize: 100,
+			ChunkSize:  100,
 		}
 		options := piperGithub.CreateIssueOptions{}
 		resultChunks := []string{}
 		createIssue := func(options *piperGithub.CreateIssueOptions) error {
 			resultChunks = append(resultChunks, string(options.Body))
 			return nil
-		} 
+		}
 
 		// test
 		err := runGithubCreateIssue(&config, nil, &options, &filesMock, createIssue)
@@ -99,14 +99,14 @@ func TestTransformConfig(t *testing.T) {
 			BodyFilePath: "test.md",
 			Title:        "This is my title",
 			Assignees:    []string{"userIdOne", "userIdTwo"},
-			ChunkSize: 100,
+			ChunkSize:    100,
 		}
 		options := piperGithub.CreateIssueOptions{}
 		resultChunks := []string{}
 		createIssue := func(options *piperGithub.CreateIssueOptions) error {
 			resultChunks = append(resultChunks, string(options.Body))
 			return nil
-		} 
+		}
 		// test
 		err := runGithubCreateIssue(&config, nil, &options, &filesMock, createIssue)
 
@@ -125,13 +125,13 @@ func TestTransformConfig(t *testing.T) {
 	t.Run("Error - missing issue body", func(t *testing.T) {
 		// init
 		filesMock := mock.FilesMock{}
-		config := githubCreateIssueOptions{ChunkSize: 100,}
+		config := githubCreateIssueOptions{ChunkSize: 100}
 		options := piperGithub.CreateIssueOptions{}
 		resultChunks := []string{}
 		createIssue := func(options *piperGithub.CreateIssueOptions) error {
 			resultChunks = append(resultChunks, string(options.Body))
 			return nil
-		} 
+		}
 		// test
 		err := runGithubCreateIssue(&config, nil, &options, &filesMock, createIssue)
 
