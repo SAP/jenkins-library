@@ -15,7 +15,10 @@ func TestTmsUploadIntegration1(t *testing.T) {
 	//Reading TMS credentials from environment
 	tmsServiceKey := os.Getenv("PIPER_tmsServiceKey")
 	if len(tmsServiceKey) == 0 {
-		t.Fatal("No tmsServiceKey maintained")
+		tmsServiceKey := os.Getenv("PIPER_TMSSERVICEKEY")
+		if len(tmsServiceKey) == 0 {
+			t.Fatal("No tmsServiceKey maintained")
+		}
 	}
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
