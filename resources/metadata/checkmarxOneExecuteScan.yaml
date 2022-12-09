@@ -506,11 +506,11 @@ spec:
       - name: reports
         type: reports
         params:
-          - filePattern: "**/piper_checkmarxOne_report.html"
-            type: checkmarxOne
-          - filePattern: "**/CxSASTResults_*.xml"
-            type: checkmarxOne
+          - filePattern: "**/piper_checkmarxone_report.html"
+            type: checkmarxone
+          - filePattern: "**/Cx1_SASTResults_*.xml"
+            type: checkmarxone
           - filePattern: "**/ScanReport.*"
-            type: checkmarxOne
-          - filePattern: "**/toolrun_checkmarxOne_*.json"
-            type: checkmarxOne
+            type: checkmarxone
+          - filePattern: "**/toolrun_checkmarxone_*.json"
+            type: checkmarxone

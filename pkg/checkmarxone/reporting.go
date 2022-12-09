@@ -138,9 +138,9 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 }
 
 /*
-func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
-	checkmarxReportData := CheckmarxReportData{
-		ToolName:         `checkmarx`,
+func CreateJSONReport(data map[string]interface{}) CheckmarxOneReportData {
+	checkmarxReportData := CheckmarxOneReportData{
+		ToolName:         `checkmarxone`,
 		ProjectName:      fmt.Sprint(data["ProjectName"]),
 		GroupName:         fmt.Sprint(data["Group"]),
 		GroupPath:         fmt.Sprint(data["GroupFullPathOnReportDate"]),
@@ -193,12 +193,12 @@ func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
 	return checkmarxReportData
 }
 
-func WriteJSONReport(jsonReport CheckmarxReportData) ([]piperutils.Path, error) {
+func WriteJSONReport(jsonReport CheckmarxOneReportData) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 
 	// Standard JSON Report
-	jsonComplianceReportPath := filepath.Join(ReportsDirectory, "piper_checkmarx_report.json")
+	jsonComplianceReportPath := filepath.Join(ReportsDirectory, "piper_checkmarxone_report.json")
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to create report directory")
@@ -207,9 +207,9 @@ func WriteJSONReport(jsonReport CheckmarxReportData) ([]piperutils.Path, error) 
 	file, _ := json.Marshal(jsonReport)
 	if err := utils.FileWrite(jsonComplianceReportPath, file, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write Checkmarx JSON compliance report")
+		return reportPaths, errors.Wrapf(err, "failed to write CheckmarxOne JSON compliance report")
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "Checkmarx JSON Compliance Report", Target: jsonComplianceReportPath})
+	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne JSON Compliance Report", Target: jsonComplianceReportPath})
 
 	return reportPaths, nil
 }
@@ -237,9 +237,9 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	log.Entry().Info("Writing file to disk: ", sarifReportPath)
 	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write Checkmarx SARIF report")
+		return reportPaths, errors.Wrapf(err, "failed to write CheckmarxOne SARIF report")
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "Checkmarx SARIF Report", Target: sarifReportPath})
+	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne SARIF Report", Target: sarifReportPath})
 
 	return reportPaths, nil
 }
@@ -252,7 +252,7 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, _ := scanReport.ToHTML()
-	htmlReportPath := filepath.Join(ReportsDirectory, "piper_checkmarx_report.html")
+	htmlReportPath := filepath.Join(ReportsDirectory, "piper_checkmarxone_report.html")
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to create report directory")
@@ -261,7 +261,7 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write html report")
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "Checkmarx Report", Target: htmlReportPath})
+	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne Report", Target: htmlReportPath})
 
 	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
 	// ignore JSON errors since structure is in our hands
@@ -272,7 +272,7 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("checkmarxExecuteScan_sast_%v.json", reportShaCheckmarx([]string{projectName, projectID}))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("checkmarxOneExecuteScan_sast_%v.json", reportShaCheckmarxOne([]string{projectName, projectID}))), jsonReport, 0666); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to write json report")
 	}
 	// we do not add the json report to the overall list of reports for now,
@@ -282,7 +282,7 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 	return reportPaths, nil
 }
 
-func reportShaCheckmarx(parts []string) string {
+func reportShaCheckmarxOne(parts []string) string {
 	reportShaData := []byte(strings.Join(parts, ","))
 	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }

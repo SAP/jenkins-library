@@ -759,7 +759,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 	toolRecordFileName, err := cx1sh.createToolRecordCx(utils, utils.GetWorkspace(), config, detailedResults)
 	if err != nil {
 		// do not fail until the framework is well established
-		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
+		log.Entry().Warning("TR_CHECKMARXONE: Failed to create toolrecord file ...", err)
 	} else {
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}

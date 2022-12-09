@@ -199,10 +199,10 @@ func (p *checkmarxOneExecuteScanReports) persist(stepConfig checkmarxOneExecuteS
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "**/piper_checkmarxOne_report.html", ParamRef: "", StepResultType: "checkmarxOne"},
-		{FilePattern: "**/CxSASTResults_*.xml", ParamRef: "", StepResultType: "checkmarxOne"},
-		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarxOne"},
-		{FilePattern: "**/toolrun_checkmarxOne_*.json", ParamRef: "", StepResultType: "checkmarxOne"},
+		{FilePattern: "**/piper_checkmarxone_report.html", ParamRef: "", StepResultType: "checkmarxone"},
+		{FilePattern: "**/Cx1_SASTResults_*.xml", ParamRef: "", StepResultType: "checkmarxone"},
+		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarxone"},
+		{FilePattern: "**/toolrun_checkmarxone_*.json", ParamRef: "", StepResultType: "checkmarxone"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -832,10 +832,10 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/piper_checkmarxOne_report.html", "type": "checkmarxOne"},
-							{"filePattern": "**/CxSASTResults_*.xml", "type": "checkmarxOne"},
-							{"filePattern": "**/ScanReport.*", "type": "checkmarxOne"},
-							{"filePattern": "**/toolrun_checkmarxOne_*.json", "type": "checkmarxOne"},
+							{"filePattern": "**/piper_checkmarxone_report.html", "type": "checkmarxone"},
+							{"filePattern": "**/Cx1_SASTResults_*.xml", "type": "checkmarxone"},
+							{"filePattern": "**/ScanReport.*", "type": "checkmarxone"},
+							{"filePattern": "**/toolrun_checkmarxone_*.json", "type": "checkmarxone"},
 						},
 					},
 				},
