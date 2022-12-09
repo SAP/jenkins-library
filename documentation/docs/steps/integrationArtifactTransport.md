@@ -13,7 +13,7 @@ To use the integrationArtifactTransport step, proceed as follows:
 * [Create SAP Cloud Integration Destination](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/c17c4004049d4d9dba373d72ce5610cd.html).
 * [Create SAP Cloud Transport Management Destination](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/b44463a657fa4be48ea2525b7eb6e7de.html).
 * Transport Cloud Integration Content with CAS as explained in the blog [Transport Cloud Integration (CI/CPI) Content with Transport Management Service (TMS) and Content Agent service (CAS)](https://blogs.sap.com/2022/03/25/transport-sap-cloud-integration-ci-cpi-content-with-transport-management-service-tms-and-content-agent-service-cas/)
-* integrationArtifactTransport step only supports integration package transport.
+* integrationArtifactTransport step only supports Integration Package transport.
 
 ## Prerequisites
 
