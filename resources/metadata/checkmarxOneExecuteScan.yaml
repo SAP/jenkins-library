@@ -19,6 +19,9 @@ spec:
       - name: checkmarxOneCredentialsId
         description: Jenkins 'Username with password' credentials ID containing ClientID and ClientSecret to communicate with the checkmarxOne backend.
         type: jenkins
+      - name: checkmarxOneAPIKey
+        description: Jenkins 'Secret Text' containing the APIKey to communicate with the checkmarxOne backend.
+        type: jenkins
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
@@ -162,9 +165,9 @@ spec:
           - STEPS
         secret: true
         resourceRef:
-          - name: checkmarxOneCredentialsId
+          - name: checkmarxOneAPIKey
             type: secret
-            param: apiKey
+            param: APIKey
           - type: vaultSecret
             name: checkmarxOneVaultSecretName
             default: checkmarxOne
@@ -207,9 +210,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: pullRequestName
+      - name: branch
         aliases:
-          - name: branch
+          - name: pullRequestName
         type: string
         description: Used to supply the name for the newly created PR project branch when being used in pull request scenarios
         scope:

@@ -6,6 +6,7 @@ import groovy.transform.Field
 //Metadata maintained in file project://resources/metadata/checkmarxExecuteScan.yaml
 
 void call(Map parameters = [:]) {
-    List credentials = [[type: 'usernamePassword', id: 'checkmarxOneCredentialsId', env: ['PIPER_username', 'PIPER_password']]]
+    List credentials = [[type: 'usernamePassword', id: 'checkmarxOneCredentialsId', env: ['PIPER_clientId', 'PIPER_clientSecret']],
+                        [type: 'token', id: 'checkmarxOneAPIKey', env: ['PIPER_APIKey']]]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, true)
 }

@@ -276,14 +276,14 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 
     log.RegisterSecret(token)
 
-    url, err := url.Parse("http://127.0.0.1:8080")
+    //url, err := url.Parse("http://127.0.0.1:8080")
     
 
     options := piperHttp.ClientOptions{
         Token:            token,
         TransportTimeout: time.Minute * 15,
-        TransportProxy:          url,
-        TransportSkipVerification:  true,
+        //TransportProxy:          url,
+        //TransportSkipVerification:  true,
     }
     sys.client.SetOptions(options)
 

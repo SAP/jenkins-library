@@ -39,7 +39,7 @@ type checkmarxOneExecuteScanOptions struct {
 	LanguageMode                         string   `json:"languageMode,omitempty"`
 	ProjectCriticality                   string   `json:"projectCriticality,omitempty"`
 	ProjectName                          string   `json:"projectName,omitempty"`
-	PullRequestName                      string   `json:"pullRequestName,omitempty"`
+	Branch                               string   `json:"branch,omitempty"`
 	Repository                           string   `json:"repository,omitempty"`
 	ServerURL                            string   `json:"serverUrl,omitempty"`
 	IamURL                               string   `json:"iamUrl,omitempty"`
@@ -356,7 +356,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
 	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", os.Getenv("PIPER_projectCriticality"), "The criticality of the checkmarxOne project, used during project creation")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the checkmarxOne project to scan into")
-	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", `zip`, "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
+	cmd.Flags().StringVar(&stepConfig.Branch, "branch", `zip`, "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the checkmarxOne server to be used")
 	cmd.Flags().StringVar(&stepConfig.IamURL, "iamUrl", os.Getenv("PIPER_iamUrl"), "The URL pointing to the access control root of the checkmarxOne IAM server to be used")
@@ -400,6 +400,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "checkmarxOneCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing ClientID and ClientSecret to communicate with the checkmarxOne backend.", Type: "jenkins"},
+					{Name: "checkmarxOneAPIKey", Description: "Jenkins 'Secret Text' containing the APIKey to communicate with the checkmarxOne backend.", Type: "jenkins"},
 					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
@@ -546,8 +547,8 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Name: "APIKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "checkmarxOneCredentialsId",
-								Param: "apiKey",
+								Name:  "checkmarxOneAPIKey",
+								Param: "APIKey",
 								Type:  "secret",
 							},
 
@@ -600,12 +601,12 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
-						Name:        "pullRequestName",
+						Name:        "branch",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "branch"}},
+						Aliases:     []config.Alias{{Name: "pullRequestName"}},
 						Default:     `zip`,
 					},
 					{

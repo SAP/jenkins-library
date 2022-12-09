@@ -285,7 +285,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) uploadAndScan(ctx context.Context, c
 			sastConfig.Values["languageMode"] = config.LanguageMode
 		}
 
-		return cx1sh.triggerScan(ctx, config, sys, project, uploadUri, config.PullRequestName, []checkmarxOne.ScanConfiguration{sastConfig}, influx, utils)
+		return cx1sh.triggerScan(ctx, config, sys, project, uploadUri, config.Branch, []checkmarxOne.ScanConfiguration{sastConfig}, influx, utils)
 	}
 	return scan, nil
 }
