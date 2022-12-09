@@ -34,7 +34,7 @@ func runGithubCreateIssue(config *githubCreateIssueOptions, _ *telemetry.CustomD
 	if err != nil {
 		return err
 	}
-	if len(chunks) > 0 {
+	if len(chunks) > 1 {
 		for _, v := range chunks[1:] {
 			options.Body = []byte(v)
 			options.UpdateExisting = true
