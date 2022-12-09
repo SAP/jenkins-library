@@ -39,6 +39,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"azureBlobUpload":                           azureBlobUploadMetadata(),
 		"batsExecuteTests":                          batsExecuteTestsMetadata(),
 		"checkmarxExecuteScan":                      checkmarxExecuteScanMetadata(),
+		"checkmarxOneExecuteScan":                   checkmarxOneExecuteScanMetadata(),
 		"cloudFoundryCreateService":                 cloudFoundryCreateServiceMetadata(),
 		"cloudFoundryCreateServiceKey":              cloudFoundryCreateServiceKeyMetadata(),
 		"cloudFoundryCreateSpace":                   cloudFoundryCreateSpaceMetadata(),
