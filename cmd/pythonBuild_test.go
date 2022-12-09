@@ -97,7 +97,7 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, "python", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[2].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[3].Exec)
-		assert.Equal(t, []string{"install", "--upgrade", "cyclonedx-bom"}, utils.ExecMockRunner.Calls[3].Params)
+		assert.Equal(t, []string{"install", "--upgrade", "cyclonedx-bom", "packaging==21.3"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-bom"), utils.ExecMockRunner.Calls[4].Exec)
 		assert.Equal(t, []string{"--e", "--output", "bom-pip.xml"}, utils.ExecMockRunner.Calls[4].Params)
 	})
