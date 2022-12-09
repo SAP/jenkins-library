@@ -119,7 +119,6 @@ jobs:
           PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
           PIPER_tmsServiceKey: ${{secrets.PIPER_TMSSERVICEKEY}}
         run: |
-          echo $PIPER_tmsServiceKey
           chmod +x piper
           cd ./integration
           chmod +x integration_tests
