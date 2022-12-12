@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/tms"
 )
 
 type tmsExportUtils interface {
@@ -44,7 +45,19 @@ func newTmsExportUtils() tmsExportUtils {
 func tmsExport(config tmsExportOptions, telemetryData *telemetry.CustomData, influx *tmsExportInflux) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newTmsExportUtils()
+	utils := newTmsUtils(stepUpload)
+	var uploadConfig tmsUploadOptions
+	uploadConfig.TmsServiceKey = config.TmsServiceKey
+	uploadConfig.CustomDescription = config.CustomDescription
+	uploadConfig.NamedUser = config.NamedUser
+	uploadConfig.NodeName = config.NodeName
+	uploadConfig.MtaPath = config.MtaPath
+	uploadConfig.MtaVersion = config.MtaVersion
+	uploadConfig.NodeExtDescriptorMapping = config.NodeExtDescriptorMapping
+	uploadConfig.Proxy = config.Proxy
+	uploadConfig.StashContent = config.StashContent
+
+	communicationInstance := communicationSetup(uploadConfig)
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -52,27 +65,31 @@ func tmsExport(config tmsExportOptions, telemetryData *telemetry.CustomData, inf
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTmsExport(&config, telemetryData, utils, &influx)
+	err := runTmsExport(uploadConfig, communicationInstance, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runTmsExport(config *tmsExportOptions, telemetryData *telemetry.CustomData, utils tmsExportUtils, influx *tmsExportInflux) error {
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
-
-	// Example of calling methods from external dependencies directly on utils:
-	exists, err := utils.FileExists("file.txt")
-	if err != nil {
-		// It is good practice to set an error category.
-		// Most likely you want to do this at the place where enough context is known.
-		log.SetErrorCategory(log.ErrorConfiguration)
-		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
-		return fmt.Errorf("failed to check for important file: %w", err)
+func runTmsExport(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) error {
+	fileId, errUploadFile := fileUpload(config, communicationInstance, utils)
+	if errUploadFile != nil {
+		return errUploadFile
 	}
-	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("cannot run without important file")
+
+	errUploadDescriptors := uploadDescriptors(config, communicationInstance, utils)
+	if errUploadDescriptors != nil {
+		return errUploadDescriptors
+	}
+
+	description := DEFAULT_DESCRIPTION
+	if config.CustomDescription != "" {
+		description = config.CustomDescription
+	}
+	_, errExportFileToNode := communicationInstance.ExportFileToNode(config.NodeName, fileId, description, config.NamedUser)
+	if errExportFileToNode != nil {
+		log.SetErrorCategory(log.ErrorService)
+		return fmt.Errorf("failed to export file to node: %w", errExportFileToNode)
 	}
 
 	return nil

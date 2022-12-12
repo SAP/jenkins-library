@@ -93,6 +93,7 @@ type CommunicationInterface interface {
 	UploadMtaExtDescriptorToNode(nodeId int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
 	UploadFile(file, namedUser string) (FileInfo, error)
 	UploadFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
+	ExportFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
 }
 
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
@@ -281,6 +282,36 @@ func (communicationInstance *CommunicationInstance) UploadFileToNode(nodeName, f
 	json.Unmarshal(data, &nodeUploadResponseEntity)
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("Node upload executed successfully")
+	}
+	return nodeUploadResponseEntity, nil
+
+}
+
+func (communicationInstance *CommunicationInstance) ExportFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error) {
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Node export started")
+		communicationInstance.logger.Infof("tmsUrl: %v, nodeName: %v, fileId: %v, description: %v, namedUser: %v", communicationInstance.tmsUrl, nodeName, fileId, description, namedUser)
+	}
+
+	header := http.Header{}
+	header.Add("Content-Type", "application/json")
+
+	var nodeUploadResponseEntity NodeUploadResponseEntity
+	entry := Entry{Uri: fileId}
+	body := NodeUploadRequestEntity{ContentType: "MTA", StorageType: "FILE", NodeName: nodeName, Description: description, NamedUser: namedUser, Entries: []Entry{entry}}
+	bodyBytes, errMarshaling := json.Marshal(body)
+	if errMarshaling != nil {
+		return nodeUploadResponseEntity, errors.Wrapf(errMarshaling, "unable to marshal request body %v", body)
+	}
+
+	data, errSendRequest := sendRequest(communicationInstance, http.MethodPost, "/v2/nodes/export", bytes.NewReader(bodyBytes), header, http.StatusOK, false)
+	if errSendRequest != nil {
+		return nodeUploadResponseEntity, errSendRequest
+	}
+
+	json.Unmarshal(data, &nodeUploadResponseEntity)
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Node export executed successfully")
 	}
 	return nodeUploadResponseEntity, nil
 

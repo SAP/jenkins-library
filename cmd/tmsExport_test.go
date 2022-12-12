@@ -1,9 +1,12 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/tms"
+	"github.com/stretchr/testify/assert"
 )
 
 type tmsExportMockUtils struct {
@@ -22,32 +25,32 @@ func newTmsExportTestsUtils() tmsExportMockUtils {
 func TestRunTmsExport(t *testing.T) {
 	t.Parallel()
 
-	t.Run("happy path", func(t *testing.T) {
+	t.Run("happy path: 1. get nodes 2. get MTA ext descriptor -> nothing obtained 3. upload MTA ext descriptor to node 4. upload file 5. upload file to node", func(t *testing.T) {
 		t.Parallel()
-		// init
-		config := tmsExportOptions{}
 
-		utils := newTmsExportTestsUtils()
-		utils.AddFile("file.txt", []byte("dummy content"))
+		// init
+		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
+		fileInfo := tms.FileInfo{Id: FILE_ID, Name: MTA_NAME}
+		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, uploadFileResponse: fileInfo}
+
+		utils := newTmsTestsUtils()
+		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
+
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
+		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
+
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
+
+		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
+		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
+		assert.NoError(t, convErr)
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
 
 		// test
-		err := runTmsExport(&config, nil, utils)
+		err := runTmsExport(config, &communicationInstance, utils)
 
 		// assert
 		assert.NoError(t, err)
-	})
-
-	t.Run("error path", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := tmsExportOptions{}
-
-		utils := newTmsExportTestsUtils()
-
-		// test
-		err := runTmsExport(&config, nil, utils)
-
-		// assert
-		assert.EqualError(t, err, "cannot run without important file")
 	})
 }
