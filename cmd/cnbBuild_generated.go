@@ -39,6 +39,7 @@ type cnbBuildOptions struct {
 	BuildSettingsInfo         string                   `json:"buildSettingsInfo,omitempty"`
 	CreateBOM                 bool                     `json:"createBOM,omitempty"`
 	RunImage                  string                   `json:"runImage,omitempty"`
+	DefaultProcess            string                   `json:"defaultProcess,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -234,6 +235,7 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "**EXPERIMENTAL:** Creates the bill of materials (BOM) using CycloneDX plugin.")
 	cmd.Flags().StringVar(&stepConfig.RunImage, "runImage", os.Getenv("PIPER_runImage"), "Base image from which application images are built. Will be defaulted to the image provided by the builder.")
+	cmd.Flags().StringVar(&stepConfig.DefaultProcess, "defaultProcess", os.Getenv("PIPER_defaultProcess"), "Process that should be started by default. See https://buildpacks.io/docs/app-developer-guide/run-an-app/")
 
 	cmd.MarkFlagRequired("containerImageTag")
 	cmd.MarkFlagRequired("containerRegistryUrl")
@@ -443,6 +445,15 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_runImage"),
+					},
+					{
+						Name:        "defaultProcess",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_defaultProcess"),
 					},
 				},
 			},
