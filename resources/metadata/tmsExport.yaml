@@ -78,7 +78,7 @@ spec:
           - STEPS
           - STAGES
       - name: nodeExtDescriptorMapping
-        type: map[string]interface{}
+        type: string
         description: 'Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: {"nodeName": "example.mtaext", "nodeName2": "example2.mtaext"}.'
         scope:
           - PARAMETERS
