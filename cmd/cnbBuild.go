@@ -211,7 +211,7 @@ func extractZip(source, target string) error {
 	return nil
 }
 
-func prepareDockerConfig(config *cnbBuildOptions, utils cnbutils.BuildUtils) error {
+func renameDockerConfig(config *cnbBuildOptions, utils cnbutils.BuildUtils) error {
 	if filepath.Base(config.DockerConfigJSON) != "config.json" {
 		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(config.DockerConfigJSON))
 
@@ -382,7 +382,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if len(config.DockerConfigJSON) > 0 {
-		err = prepareDockerConfig(config, utils)
+		err = renameDockerConfig(config, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
