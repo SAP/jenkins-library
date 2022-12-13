@@ -358,7 +358,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)
 
 		assert.Equal(t, "/tmp/syfttest/syft", execRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"packages", "index.docker.io/myImage:tag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"}, execRunner.Calls[2].Params)
+		assert.Equal(t, []string{"packages", "registry:index.docker.io/myImage:tag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"}, execRunner.Calls[2].Params)
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
@@ -507,9 +507,9 @@ func TestRunKanikoExecute(t *testing.T) {
 			{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
 			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
 			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
-			{"packages", "my.registry.com:50000/myImage:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"},
-			{"packages", "my.registry.com:50000/myImage-sub1:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-1.xml", "-q"},
-			{"packages", "my.registry.com:50000/myImage-sub2:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-2.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage-sub1:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-1.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage-sub2:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-2.xml", "-q"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range execRunner.Calls {
