@@ -28,6 +28,7 @@ type License struct {
 }
 
 func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils BuildUtils) (Order, error) {
+
 	if dockerCreds != "" {
 		os.Setenv("DOCKER_CONFIG", filepath.Dir(dockerCreds))
 	}

@@ -1,11 +1,7 @@
 package mock
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -675,44 +671,5 @@ func TestFilesMockSymlink(t *testing.T) {
 		err := files.Symlink("/non/existent/folder", "/symbolic/link")
 		assert.Error(t, err)
 		assert.Equal(t, expectedErr, err)
-	})
-}
-
-func TestFilesMockCreateArchive(t *testing.T) {
-	t.Parallel()
-	t.Run("creates an archive with the provided content", func(t *testing.T) {
-		files := FilesMock{}
-		a, err := files.CreateArchive(map[string][]byte{
-			"filename": []byte("file content"),
-		})
-		assert.NoError(t, err)
-
-		buf := bytes.NewBuffer(a)
-		zr, err := gzip.NewReader(buf)
-		assert.NoError(t, err)
-		defer zr.Close()
-
-		tr := tar.NewReader(zr)
-
-		for {
-			f, err := tr.Next()
-			if err == io.EOF {
-				break
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, "filename", f.Name)
-
-			content, err := io.ReadAll(tr)
-			assert.NoError(t, err)
-			assert.Equal(t, "file content", string(content))
-		}
-	})
-
-	t.Run("fails if the content is empty", func(t *testing.T) {
-		files := FilesMock{}
-		a, err := files.CreateArchive(nil)
-		assert.Error(t, err)
-		assert.Equal(t, "mock archive content must not be empty", err.Error())
-		assert.Nil(t, a)
 	})
 }

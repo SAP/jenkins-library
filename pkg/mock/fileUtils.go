@@ -4,11 +4,8 @@
 package mock
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -541,46 +538,6 @@ func (f *FilesMock) Symlink(oldname, newname string) error {
 	}
 
 	return nil
-}
-
-// CreateArchive creates in memory tar.gz archive, with the content provided.
-func (f *FilesMock) CreateArchive(content map[string][]byte) ([]byte, error) {
-	if len(content) == 0 {
-		return nil, errors.New("mock archive content must not be empty")
-	}
-
-	buf := bytes.NewBuffer(nil)
-	gw := gzip.NewWriter(buf)
-	tw := tar.NewWriter(gw)
-
-	for fileName, fileContent := range content {
-		err := tw.WriteHeader(&tar.Header{
-			Name:     fileName,
-			Size:     int64(len(fileContent)),
-			Typeflag: tar.TypeRegA,
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = tw.Write(fileContent)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	err := tw.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	err = gw.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
 }
 
 // FileMock can be used in places where a io.Closer, io.StringWriter or io.Writer is expected.

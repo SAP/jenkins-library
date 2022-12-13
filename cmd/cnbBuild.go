@@ -20,7 +20,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/syft"
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/imdario/mergo"
@@ -211,29 +210,28 @@ func extractZip(source, target string) error {
 	return nil
 }
 
-func renameDockerConfig(config *cnbBuildOptions, utils cnbutils.BuildUtils) error {
-	if filepath.Base(config.DockerConfigJSON) != "config.json" {
-		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(config.DockerConfigJSON))
+func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, error) {
+	if filepath.Base(source) != "config.json" {
+		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(source))
 
-		newPath := filepath.Join(filepath.Dir(config.DockerConfigJSON), "config.json")
+		newPath := filepath.Join(filepath.Dir(source), "config.json")
 		alreadyExists, err := utils.FileExists(newPath)
 		if err != nil {
-			return err
+			return "", err
 		}
-
 		if alreadyExists {
-			return nil
+			return newPath, nil
 		}
 
-		err = utils.FileRename(config.DockerConfigJSON, newPath)
+		err = utils.FileRename(source, newPath)
 		if err != nil {
-			return err
+			return "", err
 		}
 
-		config.DockerConfigJSON = newPath
+		return newPath, nil
 	}
 
-	return nil
+	return source, nil
 }
 
 func linkTargetFolder(utils cnbutils.BuildUtils, source, target string) error {
@@ -381,31 +379,14 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
-	if len(config.DockerConfigJSON) > 0 {
-		err = renameDockerConfig(config, utils)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
-		}
-	}
-
 	mergedConfigs, err := processConfigs(*config, config.MultipleImages)
 	if err != nil {
 		return errors.Wrap(err, "failed to process config")
 	}
-
 	for _, c := range mergedConfigs {
 		err = runCnbBuild(&c, cnbTelemetry, utils, commonPipelineEnvironment, httpClient)
 		if err != nil {
 			return err
-		}
-	}
-
-	if config.CreateBOM {
-		err = syft.GenerateSBOM(config.SyftDownloadURL, filepath.Dir(config.DockerConfigJSON), utils, utils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorCompliance)
-			return errors.Wrap(err, "failed to create BOM file")
 		}
 	}
 
@@ -520,6 +501,15 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 		return errors.Wrap(err, "failed process bindings")
 	}
 
+	dockerConfigFile := ""
+	if len(config.DockerConfigJSON) > 0 {
+		dockerConfigFile, err = prepareDockerConfig(config.DockerConfigJSON, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
+		}
+	}
+
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -562,7 +552,7 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 
 	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, config.DockerConfigJSON, utils)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, dockerConfigFile, utils)
 		defer func() { _ = utils.RemoveAll(buildpacksPath) }()
 		defer func() { _ = utils.RemoveAll(orderPath) }()
 		if err != nil {
@@ -571,7 +561,7 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 		}
 	}
 
-	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(config.DockerConfigJSON, utils)
+	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(dockerConfigFile, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
@@ -637,6 +627,16 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	}
 	commonPipelineEnvironment.container.imageDigest = digest
 	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
+
+	// if config.CreateBOM {
+	// 	bomFilename := fmt.Sprintf("bom-%s-%s.xml", targetImage.ContainerImageName, strings.TrimLeft(digest, "sha256:"))
+	// 	imageName := fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag)
+	// 	err = cnbutils.MergeSBOMFiles("/layers/sbom/launch/**/sbom.syft.json", bomFilename, imageName, dockerConfigFile, utils)
+	// 	if err != nil {
+	// 		log.SetErrorCategory(log.ErrorBuild)
+	// 		return errors.Wrap(err, "failed to create SBoM file")
+	// 	}
+	// }
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != pathEnumArchive {
