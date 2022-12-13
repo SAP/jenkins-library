@@ -1,9 +1,6 @@
 package syft_test
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"net/http"
 	"testing"
 
@@ -16,44 +13,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func fakeSyftArchive(t *testing.T) []byte {
-	var mockContent = []byte("test")
-	buf := bytes.NewBuffer(nil)
-
-	gw := gzip.NewWriter(buf)
-
-	tw := tar.NewWriter(gw)
-	err := tw.WriteHeader(&tar.Header{
-		Name:     "syft",
-		Size:     int64(len(mockContent)),
-		Typeflag: tar.TypeRegA,
-	})
-	assert.NoError(t, err)
-
-	_, err = tw.Write(mockContent)
-	assert.NoError(t, err)
-
-	err = tw.Close()
-	assert.NoError(t, err)
-
-	err = gw.Close()
-	assert.NoError(t, err)
-
-	return buf.Bytes()
-}
-
 func TestGenerateSBOM(t *testing.T) {
+	execMock := mock.ExecMockRunner{}
+	fileMock := mock.FilesMock{}
+
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	httpmock.RegisterResponder(http.MethodGet, "http://test-syft-gh-release.com/syft.tar.gz", httpmock.NewBytesResponder(http.StatusOK, fakeSyftArchive(t)))
+	fakeArchive, err := fileMock.CreateArchive(map[string][]byte{"syft": []byte("test")})
+	assert.NoError(t, err)
+
+	httpmock.RegisterResponder(http.MethodGet, "http://test-syft-gh-release.com/syft.tar.gz", httpmock.NewBytesResponder(http.StatusOK, fakeArchive))
 	httpmock.RegisterResponder(http.MethodGet, "http://not-found.com/syft.tar.gz", httpmock.NewBytesResponder(http.StatusNotFound, nil))
 	httpmock.RegisterResponder(http.MethodGet, "http://failure.com/syft.tar.gz", httpmock.NewErrorResponder(errors.New("network error")))
 	client := &piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
-
-	execMock := mock.ExecMockRunner{}
-	fileMock := mock.FilesMock{}
 
 	t.Run("should generate SBOM", func(t *testing.T) {
 		err := syft.GenerateSBOM("http://test-syft-gh-release.com/syft.tar.gz", "", &execMock, &fileMock, client, "https://my-registry", []string{"image:latest", "image:1.2.3"})

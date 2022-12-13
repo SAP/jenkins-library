@@ -35,13 +35,13 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 
 	fileUtils := &piperutils.Files{}
 
-	err := runKanikoExecute(&config, telemetryData, commonPipelineEnvironment, &c, &c, client, fileUtils)
+	err := runKanikoExecute(&config, telemetryData, commonPipelineEnvironment, &c, client, fileUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Kaniko execution failed")
 	}
 }
 
-func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, shellRunner command.ShellRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
+func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
 	binfmtSupported, _ := docker.IsBinfmtMiscSupportedByHost(fileUtils)
 
 	if !binfmtSupported && len(config.TargetArchitectures) > 0 {
