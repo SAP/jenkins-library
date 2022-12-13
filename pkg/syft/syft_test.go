@@ -41,17 +41,17 @@ func TestGenerateSBOM(t *testing.T) {
 		assert.Len(t, execMock.Calls, 2)
 		firstCall := execMock.Calls[0]
 		assert.Equal(t, firstCall.Exec, "/tmp/syfttest/syft")
-		assert.Equal(t, firstCall.Params, []string{"packages", "my-registry/image:latest", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"})
+		assert.Equal(t, firstCall.Params, []string{"packages", "registry:my-registry/image:latest", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"})
 
 		secondCall := execMock.Calls[1]
 		assert.Equal(t, secondCall.Exec, "/tmp/syfttest/syft")
-		assert.Equal(t, secondCall.Params, []string{"packages", "my-registry/image:1.2.3", "-o", "cyclonedx-xml", "--file", "bom-docker-1.xml", "-q"})
+		assert.Equal(t, secondCall.Params, []string{"packages", "registry:my-registry/image:1.2.3", "-o", "cyclonedx-xml", "--file", "bom-docker-1.xml", "-q"})
 	})
 
 	t.Run("error case: syft execution failed", func(t *testing.T) {
 		execMock = mock.ExecMockRunner{}
 		execMock.ShouldFailOnCommand = map[string]error{
-			"/tmp/syfttest/syft packages my-registry/image:latest -o cyclonedx-xml --file bom-docker-0.xml -q": errors.New("failed"),
+			"/tmp/syfttest/syft packages registry:my-registry/image:latest -o cyclonedx-xml --file bom-docker-0.xml -q": errors.New("failed"),
 		}
 
 		err := syft.GenerateSBOM("http://test-syft-gh-release.com/syft.tar.gz", "", &execMock, &fileMock, client, "https://my-registry", []string{"image:latest"})

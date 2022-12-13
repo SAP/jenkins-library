@@ -24,7 +24,7 @@ func GenerateSBOM(syftDownloadURL, dockerConfigDir string, execRunner command.Ex
 		return errors.New("syft: no images provided")
 	}
 
-	execRunner.AppendEnv([]string{"DOCKER_CONFIG", dockerConfigDir})
+	execRunner.AppendEnv([]string{fmt.Sprintf("DOCKER_CONFIG=%s", dockerConfigDir)})
 
 	tmpDir, err := fileUtils.TempDir("", "syft")
 	if err != nil {
@@ -42,7 +42,7 @@ func GenerateSBOM(syftDownloadURL, dockerConfigDir string, execRunner command.Ex
 			return errors.New("syft: image name must not be empty")
 		}
 		// TrimPrefix needed as syft needs containerRegistry name only
-		err = execRunner.RunExecutable(syftFile, "packages", fmt.Sprintf("%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", "cyclonedx-xml", "--file", fmt.Sprintf("bom-docker-%v.xml", index), "-q")
+		err = execRunner.RunExecutable(syftFile, "packages", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", "cyclonedx-xml", "--file", fmt.Sprintf("bom-docker-%v.xml", index), "-q")
 		if err != nil {
 			return fmt.Errorf("failed to generate SBOM: %w", err)
 		}
