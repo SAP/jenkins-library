@@ -1,8 +1,8 @@
 metadata:
   name: integrationArtifactTransport
-  description: Integration artifact content transport using the SAP Content Agent service
+  description: Integration Package transport using the SAP Content Agent Service
   longDescription: |
-    With this step you can trigger the integration artifact content transport using SAP Content Agent service and SAP Cloud Transport Management Service. For more information about the integration artifact content transport using SAP Content Agent service [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).
+    With this step you can trigger an Integration Package transport from SAP Integration Suite using SAP Content Agent Service and SAP Cloud Transport Management Service. For more information about doing an Integration Package transport using SAP Content Agent Service see the documentation [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).
 
 spec:
   inputs:

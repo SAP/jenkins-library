@@ -23,7 +23,7 @@ type integrationArtifactTransportOptions struct {
 	Version              string `json:"version,omitempty"`
 }
 
-// IntegrationArtifactTransportCommand Integration artifact content transport using the SAP Content Agent service
+// IntegrationArtifactTransportCommand Integration Package transport using the SAP Content Agent Service
 func IntegrationArtifactTransportCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactTransport"
 
@@ -36,8 +36,8 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 
 	var createIntegrationArtifactTransportCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Integration artifact content transport using the SAP Content Agent service",
-		Long:  `With this step you can trigger the integration artifact content transport using SAP Content Agent service and SAP Cloud Transport Management Service. For more information about the integration artifact content transport using SAP Content Agent service [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).`,
+		Short: "Integration Package transport using the SAP Content Agent Service",
+		Long:  `With this step you can trigger an Integration Package transport from SAP Integration Suite using SAP Content Agent Service and SAP Cloud Transport Management Service. For more information about doing an Integration Package transport using SAP Content Agent Service see the documentation [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -136,7 +136,7 @@ func integrationArtifactTransportMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactTransport",
 			Aliases:     []config.Alias{},
-			Description: "Integration artifact content transport using the SAP Content Agent service",
+			Description: "Integration Package transport using the SAP Content Agent Service",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
