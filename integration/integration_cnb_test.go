@@ -57,12 +57,13 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	})
 	defer container2.terminate(t)
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--defaultProcess", "greeter")
 	assert.NoError(t, err)
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
+	container.assertHasOutput(t, "Setting default process type 'greeter'")
 	container.assertHasOutput(t, "*** Images (sha256:")
 	container.assertHasOutput(t, "SUCCESS")
 	container.terminate(t)
@@ -92,7 +93,8 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	assert.NoError(t, err)
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator",
 		"Dockerfile doesn't match include pattern, ignoring",
@@ -122,7 +124,8 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "go.zip")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "go.zip", "--createBOM")
+	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
 		"running command: /cnb/lifecycle/creator",
@@ -131,7 +134,9 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
+		"syft packages localhost:5000/not-found:0.0.1 -o cyclonedx-xml --file bom-docker-0.xml -q",
 	)
+	container.assertHasFiles(t, "/project/bom-docker-0.xml")
 }
 
 func TestCNBIntegrationNonZipPath(t *testing.T) {
@@ -148,7 +153,8 @@ func TestCNBIntegrationNonZipPath(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "mta.yaml")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "mta.yaml")
+	assert.Error(t, err)
 
 	container.assertHasOutput(t, "Copying  '/project/mta.yaml' into '/workspace' failed: application path must be a directory or zip")
 }
@@ -167,7 +173,8 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
 		"Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.19.0]'",
@@ -194,7 +201,8 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	assert.NoError(t, err)
 
 	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.19.0]'",
 		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.19.0' to /tmp/buildpacks_cache/sha256:",
@@ -214,7 +222,8 @@ func TestCNBIntegrationWrongBuilderProject(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
+	assert.Error(t, err)
 
 	container.assertHasOutput(t, "the provided dockerImage is not a valid builder")
 }
@@ -233,7 +242,8 @@ func TestCNBIntegrationBindings(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "TestMtaIntegration/maven")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "TestMtaIntegration/maven")
+	assert.Error(t, err)
 
 	container.assertHasOutput(t, "bindings/maven-settings/settings.xml: only whitespace content allowed before start tag")
 	container.assertHasFiles(t,
@@ -256,7 +266,8 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_multi_image.yml")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_multi_image.yml", "--createBOM")
+	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
 		"Previous image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found",
@@ -265,7 +276,14 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 		"Saving localhost:5000/go-app:v1.0.0...",
 		"Using cached buildpack",
 		"Saving localhost:5000/my-app2:latest...",
+		"syft packages localhost:5000/io-buildpacks-my-app:latest -o cyclonedx-xml --file bom-docker-0.xml -q",
+		"syft packages localhost:5000/go-app:v1.0.0 -o cyclonedx-xml --file bom-docker-1.xml -q",
+		"syft packages localhost:5000/my-app2:latest -o cyclonedx-xml --file bom-docker-2.xml -q",
 	)
+
+	container.assertHasFiles(t, "/project/bom-docker-0.xml")
+	container.assertHasFiles(t, "/project/bom-docker-1.xml")
+	container.assertHasFiles(t, "/project/bom-docker-2.xml")
 }
 
 func TestCNBIntegrationPreserveFiles(t *testing.T) {
@@ -282,7 +300,9 @@ func TestCNBIntegrationPreserveFiles(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml")
+	assert.NoError(t, err)
+
 	container.assertHasFiles(t, "/project/project/node_modules/base/README.md", "/project/project/package-lock.json")
 }
 
@@ -300,6 +320,7 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml", "--path", "zip/go.zip", "--containerImageName", "go-zip")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml", "--path", "zip/go.zip", "--containerImageName", "go-zip")
+	assert.NoError(t, err)
 	container.assertHasOutput(t, "skipping preserving files because the source")
 }
