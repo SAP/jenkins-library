@@ -80,7 +80,7 @@ func (g *ghSearchIssuesMock) Issues(ctx context.Context, query string, opts *git
 
 type ghCreateCommentMock struct {
 	issueComment      *github.IssueComment
-	issueNumber int
+	issueNumber       int
 	issueCommentError error
 }
 
@@ -172,7 +172,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 			Assignees:      []string{"userIdOne", "userIdTwo"},
 			UpdateExisting: true,
 			Issue: &github.Issue{
-				ID: &id,
+				ID:     &id,
 				Number: &number,
 			},
 		}
