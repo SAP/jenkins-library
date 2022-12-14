@@ -100,9 +100,10 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 		issue.Assignees = &[]string{}
 	}
 
-	var existingIssue *github.Issue = ghCreateIssueOptions.Issue
+	var existingIssue *github.Issue = nil
 
 	if ghCreateIssueOptions.UpdateExisting {
+		existingIssue = ghCreateIssueOptions.Issue
 		if existingIssue == nil {
 			queryString := fmt.Sprintf("is:open is:issue repo:%v/%v in:title %v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
 			searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, nil)
