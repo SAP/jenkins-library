@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
+	github "github.com/google/go-github/v45/github"
 )
 
 type githubCreateIssueUtils interface {
@@ -24,21 +25,22 @@ func githubCreateIssue(config githubCreateIssueOptions, telemetryData *telemetry
 	}
 }
 
-func runGithubCreateIssue(config *githubCreateIssueOptions, _ *telemetry.CustomData, options *piperGithub.CreateIssueOptions, utils githubCreateIssueUtils, createIssue func(*piperGithub.CreateIssueOptions) error) error {
+func runGithubCreateIssue(config *githubCreateIssueOptions, _ *telemetry.CustomData, options *piperGithub.CreateIssueOptions, utils githubCreateIssueUtils, createIssue func(*piperGithub.CreateIssueOptions) (*github.Issue, error)) error {
 	chunks, err := getBody(config, utils.FileRead)
 	if err != nil {
 		return err
 	}
 	transformConfig(config, options, chunks[0])
-	err = createIssue(options)
+	issue, err := createIssue(options)
 	if err != nil {
 		return err
 	}
 	if len(chunks) > 1 {
 		for _, v := range chunks[1:] {
 			options.Body = []byte(v)
+			options.Issue = issue
 			options.UpdateExisting = true
-			err = createIssue(options)
+			_, err = createIssue(options)
 			if err != nil {
 				return err
 			}

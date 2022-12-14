@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	github "github.com/google/go-github/v45/github"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
@@ -69,9 +70,9 @@ func TestTransformConfig(t *testing.T) {
 		}
 		options := piperGithub.CreateIssueOptions{}
 		resultChunks := []string{}
-		createIssue := func(options *piperGithub.CreateIssueOptions) error {
+		createIssue := func(options *piperGithub.CreateIssueOptions) (*github.Issue, error) {
 			resultChunks = append(resultChunks, string(options.Body))
-			return nil
+			return nil, nil
 		}
 
 		// test
@@ -103,9 +104,9 @@ func TestTransformConfig(t *testing.T) {
 		}
 		options := piperGithub.CreateIssueOptions{}
 		resultChunks := []string{}
-		createIssue := func(options *piperGithub.CreateIssueOptions) error {
+		createIssue := func(options *piperGithub.CreateIssueOptions) (*github.Issue, error) {
 			resultChunks = append(resultChunks, string(options.Body))
-			return nil
+			return nil, nil
 		}
 		// test
 		err := runGithubCreateIssue(&config, nil, &options, &filesMock, createIssue)
@@ -128,9 +129,9 @@ func TestTransformConfig(t *testing.T) {
 		config := githubCreateIssueOptions{ChunkSize: 100}
 		options := piperGithub.CreateIssueOptions{}
 		resultChunks := []string{}
-		createIssue := func(options *piperGithub.CreateIssueOptions) error {
+		createIssue := func(options *piperGithub.CreateIssueOptions) (*github.Issue, error) {
 			resultChunks = append(resultChunks, string(options.Body))
-			return nil
+			return nil, nil
 		}
 		// test
 		err := runGithubCreateIssue(&config, nil, &options, &filesMock, createIssue)
