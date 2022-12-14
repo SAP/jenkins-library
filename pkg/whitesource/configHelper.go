@@ -237,7 +237,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "sbt.resolveDependencies", Value: true, Force: true},
 			{Name: "sbt.ignoreSourceFiles", Value: true, Force: true},
-			{Name: "sbt.aggregateModules", Value: false, Force: true},
+			{Name: "sbt.aggregateModules", Value: false},
 			{Name: "sbt.runPreStep", Value: true},
 			{Name: "includes", Value: "**/*.jar"},
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
