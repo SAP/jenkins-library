@@ -42,4 +42,3 @@ func TestTmsUploadIntegration(t *testing.T) {
 
 	container.assertHasOutput(t, "tmsUpload - SUCCESS")
 }
-
