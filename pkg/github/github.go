@@ -104,20 +104,20 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 
 	if ghCreateIssueOptions.UpdateExisting {
 		if existingIssue == nil {
-		queryString := fmt.Sprintf("is:open is:issue repo:%v/%v in:title %v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
-		searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, nil)
-		if err != nil {
-			if resp != nil {
-				log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
-			}
-			return nil, errors.Wrap(err, "error occurred when looking for existing issue")
-		} else {
-			for _, value := range searchResult.Issues {
-				if value != nil && *value.Title == ghCreateIssueOptions.Title {
-					existingIssue = value
+			queryString := fmt.Sprintf("is:open is:issue repo:%v/%v in:title %v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
+			searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, nil)
+			if err != nil {
+				if resp != nil {
+					log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
+				}
+				return nil, errors.Wrap(err, "error occurred when looking for existing issue")
+			} else {
+				for _, value := range searchResult.Issues {
+					if value != nil && *value.Title == ghCreateIssueOptions.Title {
+						existingIssue = value
+					}
 				}
 			}
-		}
 		}
 
 		if existingIssue != nil {
