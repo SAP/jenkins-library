@@ -39,7 +39,7 @@ the lazy dog
 			expectedChunks: []string{"exact size12"},
 		},
 		{
-			name:           "empty strict",
+			name:           "empty string",
 			largeString:    ``,
 			chunkSize:      12,
 			expectedChunks: []string{""},

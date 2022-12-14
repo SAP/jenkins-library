@@ -272,6 +272,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: defaultProcess
+        type: string
+        description: "Process that should be started by default. See https://buildpacks.io/docs/app-developer-guide/run-an-app/"
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
