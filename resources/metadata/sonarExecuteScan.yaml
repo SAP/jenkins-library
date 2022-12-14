@@ -15,6 +15,13 @@ spec:
         description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
           with the Github Server."
     params:
+      - name: settings
+        type: string
+        description: "Custom path or filename for the sonar-project.properties file. See sonar-scanner parameter `project.settings`"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: instance
         type: string
         description: "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings.

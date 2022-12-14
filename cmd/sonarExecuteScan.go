@@ -108,6 +108,10 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	// Set config based on orchestrator-specific environment variables
 	detectParametersFromCI(&config)
 
+	if len(config.Settings) > 0 {
+		sonar.addOption("project.settings=" + config.Settings)
+	}
+
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}

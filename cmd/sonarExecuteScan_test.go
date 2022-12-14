@@ -289,7 +289,7 @@ func TestRunSonar(t *testing.T) {
 			filepath.Join("target", "classes")))
 		assert.Contains(t, sonar.options, "-Dsonar.java.binaries=user/provided")
 	})
-	t.Run("projectKey, coverageExclusions, m2Path, verbose", func(t *testing.T) {
+	t.Run("custom settings, projectKey, coverageExclusions, m2Path, verbose", func(t *testing.T) {
 		// init
 		tmpFolder := t.TempDir()
 		createTaskReportFile(t, tmpFolder)
@@ -301,6 +301,7 @@ func TestRunSonar(t *testing.T) {
 			options:     []string{},
 		}
 		options := sonarExecuteScanOptions{
+			Settings:            "foo/custom-sonar.properties",
 			ProjectKey:          "mock-project-key",
 			M2Path:              "my/custom/m2", // assumed to be resolved via alias from mavenExecute
 			InferJavaLibraries:  true,
@@ -317,6 +318,7 @@ func TestRunSonar(t *testing.T) {
 		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
+		assert.Contains(t, sonar.options, "-Dproject.settings=foo/custom-sonar.properties")
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=mock-project-key")
 		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.libraries=%s",
 			filepath.Join("my/custom/m2", "**")))

@@ -22,6 +22,7 @@ import (
 )
 
 type sonarExecuteScanOptions struct {
+	Settings                  string   `json:"settings,omitempty"`
 	Instance                  string   `json:"instance,omitempty"`
 	ServerURL                 string   `json:"serverUrl,omitempty"`
 	Token                     string   `json:"token,omitempty"`
@@ -236,6 +237,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 }
 
 func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOptions) {
+	cmd.Flags().StringVar(&stepConfig.Settings, "settings", os.Getenv("PIPER_settings"), "Custom path or filename for the sonar-project.properties file. See sonar-scanner parameter `project.settings`")
 	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use serverUrl parameter instead")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Sonar backend.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token used to authenticate with the Sonar Server.")
@@ -281,6 +283,15 @@ func sonarExecuteScanMetadata() config.StepData {
 					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate with the Github Server.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name:        "settings",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_settings"),
+					},
 					{
 						Name:        "instance",
 						ResourceRef: []config.ResourceReference{},
