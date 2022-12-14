@@ -2,7 +2,7 @@
 // +build integration
 
 // can be executed with
-// go test -v -tags integration -run TestTmsUploadIntegration ./integration/...
+// go test -v -tags integration -run TestTmsExportIntegration ./integration/...
 
 package main
 
@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestTmsUploadIntegration(t *testing.T) {
+func TestTmsExportIntegration(t *testing.T) {
 	//Reading TMS credentials from environment
 	tmsServiceKey := os.Getenv("PIPER_tmsServiceKey")
 	if len(tmsServiceKey) == 0 {
@@ -29,17 +29,16 @@ func TestTmsUploadIntegration(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("tmsUpload",
+	err := container.whenRunningPiperCommand("tmsExport",
 		"--tmsServiceKey="+tmsServiceKey,
 		"--mtaPath=scv_x.mtar",
 		"--nodeName=PIPER-TEST",
-		"--customDescription=Piper node upload integration test",
+		"--customDescription=Piper node export integration test",
 		"--nodeExtDescriptorMapping={\"PIPER-TEST\":\"scv_x.mtaext\", \"PIPER-PROD\":\"scv_x.mtaext\"}",
 		"--mtaVersion=1.0.0")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t, "tmsUpload - SUCCESS")
+	container.assertHasOutput(t, "tmsExport - SUCCESS")
 }
-
