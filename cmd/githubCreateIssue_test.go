@@ -3,9 +3,9 @@ package cmd
 import (
 	"testing"
 
-	github "github.com/google/go-github/v45/github"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	github "github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 )
 
