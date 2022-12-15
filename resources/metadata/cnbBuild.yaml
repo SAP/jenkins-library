@@ -258,12 +258,19 @@ spec:
             param: custom/buildSettingsInfo
       - name: createBOM
         type: bool
-        description: "**EXPERIMENTAL:** Creates the bill of materials (BOM) using CycloneDX plugin."
+        description: Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.
         scope:
           - GENERAL
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: syftDownloadUrl
+        type: string
+        description: Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.
+        scope:
+          - PARAMETERS
+          - STEPS
+        default: "https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz"
       - name: runImage
         type: string
         description: "Base image from which application images are built. Will be defaulted to the image provided by the builder."

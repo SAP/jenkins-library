@@ -350,7 +350,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the Checkmarx server to be used")
-	cmd.Flags().StringVar(&stepConfig.EngineConfigurationID, "engineConfigurationID", `1`, "The engine configuration ID to be used, if not set explicitly the project's default will be used")
+	cmd.Flags().StringVar(&stepConfig.EngineConfigurationID, "engineConfigurationID", os.Getenv("PIPER_engineConfigurationID"), "The engine configuration ID to be used, if not set explicitly the project's default will be used")
 	cmd.Flags().StringVar(&stepConfig.TeamID, "teamId", os.Getenv("PIPER_teamId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&stepConfig.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The full name of the team to assign newly created projects to which is preferred to teamId")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The username to authenticate")
@@ -584,7 +584,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "sourceEncoding"}},
-						Default:     `1`,
+						Default:     os.Getenv("PIPER_engineConfigurationID"),
 					},
 					{
 						Name:        "teamId",
