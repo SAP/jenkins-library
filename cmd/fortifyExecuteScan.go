@@ -78,7 +78,8 @@ func (f *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, 
 }
 
 func (f *fortifyUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
-	return piperGithub.CreateIssue(ghCreateIssueOptions)
+	_, err := piperGithub.CreateIssue(ghCreateIssueOptions)
+	return err
 }
 
 func (f *fortifyUtilsBundle) GetIssueService() *github.IssuesService {

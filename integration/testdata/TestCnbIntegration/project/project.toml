@@ -5,7 +5,8 @@ version = "0.1"
 [build]
 include = [
     "*.js",
-    "/package.json"
+    "/package.json",
+    "Procfile"
 ]
 
 [[build.env]]
@@ -26,3 +27,6 @@ uri = "gcr.io/paketo-buildpacks/node-module-bom:0.4.0"
 
 [[build.buildpacks]]
 uri = "gcr.io/paketo-buildpacks/npm-start:0.9.2"
+
+[[build.buildpacks]]
+uri = "gcr.io/paketo-buildpacks/procfile:5.4.0"
