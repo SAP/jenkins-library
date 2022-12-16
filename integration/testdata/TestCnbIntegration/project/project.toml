@@ -5,7 +5,8 @@ version = "0.1"
 [build]
 include = [
     "*.js",
-    "/package.json"
+    "/package.json",
+    "Procfile"
 ]
 
 [[build.env]]
@@ -13,21 +14,19 @@ name = "BP_NODE_VERSION"
 value = "16"
 
 [[build.buildpacks]]
-id = "paketo-buildpacks/ca-certificates"
-version = "3.0.3"
+uri = "gcr.io/paketo-buildpacks/ca-certificates:3.2.5"
 
 [[build.buildpacks]]
-id = "paketo-buildpacks/node-engine"
-version = "0.12.0"
+uri = "gcr.io/paketo-buildpacks/node-engine:0.15.0"
 
 [[build.buildpacks]]
-id = "paketo-buildpacks/npm-install"
-version = "0.7.2"
+uri = "gcr.io/paketo-buildpacks/npm-install:0.10.3"
 
 [[build.buildpacks]]
-id = "paketo-buildpacks/node-module-bom"
-version = "0.2.2"
+uri = "gcr.io/paketo-buildpacks/node-module-bom:0.4.0"
 
 [[build.buildpacks]]
-id = "paketo-buildpacks/npm-start"
-version = "0.8.0"
+uri = "gcr.io/paketo-buildpacks/npm-start:0.9.2"
+
+[[build.buildpacks]]
+uri = "gcr.io/paketo-buildpacks/procfile:5.4.0"

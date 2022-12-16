@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,24 +20,32 @@ import (
 )
 
 type CheckmarxReportData struct {
-	ToolName           string `json:"toolName"`
-	ProjectName        string `json:"projectName"`
-	ProjectID          int64  `json:"projectID"`
-	ScanID             int64  `json:"scanID"`
-	TeamName           string `json:"teamName"`
-	TeamPath           string `json:"teamPath"`
-	DeepLink           string `json:"deepLink"`
-	Preset             string `json:"preset"`
-	CheckmarxVersion   string `json:"checkmarxVersion"`
-	ScanType           string `json:"scanType"`
-	HighTotal          int    `json:"highTotal"`
-	HighAudited        int    `json:"highAudited"`
-	MediumTotal        int    `json:"mediumTotal"`
-	MediumAudited      int    `json:"mediumAudited"`
-	LowTotal           int    `json:"lowTotal"`
-	LowAudited         int    `json:"lowAudited"`
-	InformationTotal   int    `json:"informationTotal"`
-	InformationAudited int    `json:"informationAudited"`
+	ToolName             string         `json:"toolName"`
+	ProjectName          string         `json:"projectName"`
+	ProjectID            int64          `json:"projectID"`
+	ScanID               int64          `json:"scanID"`
+	TeamName             string         `json:"teamName"`
+	TeamPath             string         `json:"teamPath"`
+	DeepLink             string         `json:"deepLink"`
+	Preset               string         `json:"preset"`
+	CheckmarxVersion     string         `json:"checkmarxVersion"`
+	ScanType             string         `json:"scanType"`
+	HighTotal            int            `json:"highTotal"`
+	HighAudited          int            `json:"highAudited"`
+	MediumTotal          int            `json:"mediumTotal"`
+	MediumAudited        int            `json:"mediumAudited"`
+	LowTotal             int            `json:"lowTotal"`
+	LowAudited           int            `json:"lowAudited"`
+	InformationTotal     int            `json:"informationTotal"`
+	InformationAudited   int            `json:"informationAudited"`
+	IsLowPerQueryAudited bool           `json:"isLowPerQueryAudited"`
+	LowPerQuery          *[]LowPerQuery `json:"lowPerQuery"`
+}
+
+type LowPerQuery struct {
+	QueryName string `json:"query"`
+	Audited   int    `json:"audited"`
+	Total     int    `json:"total"`
 }
 
 func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
@@ -46,9 +55,9 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 		ReportTitle: "Checkmarx SAST Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Project name", Details: fmt.Sprint(data["ProjectName"])},
-			{Description: "Project ID", Details: fmt.Sprint(data["ProjectID"])},
+			{Description: "Project ID", Details: fmt.Sprint(data["ProjectId"])},
 			{Description: "Owner", Details: fmt.Sprint(data["Owner"])},
-			{Description: "Scan ID", Details: fmt.Sprint(data["ScanID"])},
+			{Description: "Scan ID", Details: fmt.Sprint(data["ScanId"])},
 			{Description: "Team", Details: fmt.Sprint(data["Team"])},
 			{Description: "Team full path", Details: fmt.Sprint(data["TeamFullPathOnReportDate"])},
 			{Description: "Scan start", Details: fmt.Sprint(data["ScanStart"])},
@@ -56,8 +65,8 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 			{Description: "Scan type", Details: fmt.Sprint(data["ScanType"])},
 			{Description: "Preset", Details: fmt.Sprint(data["Preset"])},
 			{Description: "Report creation time", Details: fmt.Sprint(data["ReportCreationTime"])},
-			{Description: "Lines of code scanned", Details: fmt.Sprint(data["LinesOfCodeScanned)"])},
-			{Description: "Files scanned", Details: fmt.Sprint(data["FilesScanned)"])},
+			{Description: "Lines of code scanned", Details: fmt.Sprint(data["LinesOfCodeScanned"])},
+			{Description: "Files scanned", Details: fmt.Sprint(data["FilesScanned"])},
 			{Description: "Checkmarx version", Details: fmt.Sprint(data["CheckmarxVersion"])},
 			{Description: "Deep link", Details: deepLink},
 		},
@@ -154,11 +163,31 @@ func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
 	checkmarxReportData.MediumAudited = data["Medium"].(map[string]int)["Issues"] - data["Medium"].(map[string]int)["NotFalsePositive"]
 	checkmarxReportData.MediumTotal = data["Medium"].(map[string]int)["Issues"]
 
-	checkmarxReportData.LowAudited = data["Low"].(map[string]int)["Issues"] - data["Low"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.LowAudited = data["Low"].(map[string]int)["Confirmed"] + data["Low"].(map[string]int)["NotExploitable"]
 	checkmarxReportData.LowTotal = data["Low"].(map[string]int)["Issues"]
 
-	checkmarxReportData.InformationAudited = data["Information"].(map[string]int)["Issues"] - data["Information"].(map[string]int)["NotFalsePositive"]
+	checkmarxReportData.InformationAudited = data["Information"].(map[string]int)["Confirmed"] + data["Information"].(map[string]int)["NotExploitable"]
 	checkmarxReportData.InformationTotal = data["Information"].(map[string]int)["Issues"]
+
+	lowPerQueryList := []LowPerQuery{}
+	checkmarxReportData.IsLowPerQueryAudited = true
+	if _, ok := data["LowPerQuery"]; ok {
+		lowPerQueryMap := data["LowPerQuery"].(map[string]map[string]int)
+		for queryName, resultsLowQuery := range lowPerQueryMap {
+			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+			total := resultsLowQuery["Issues"]
+			lowPerQuery := LowPerQuery{}
+			lowPerQuery.QueryName = queryName
+			lowPerQuery.Audited = audited
+			lowPerQuery.Total = total
+			lowAuditedRequiredPerQuery := int(math.Ceil(0.10 * float64(total)))
+			if audited < lowAuditedRequiredPerQuery && audited < 10 {
+				checkmarxReportData.IsLowPerQueryAudited = false
+			}
+			lowPerQueryList = append(lowPerQueryList, lowPerQuery)
+		}
+	}
+	checkmarxReportData.LowPerQuery = &lowPerQueryList
 
 	return checkmarxReportData
 }
@@ -204,6 +233,7 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	bufEncoder.SetIndent("", "  ")
 	//encode to buffer
 	bufEncoder.Encode(sarif)
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
 	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write Checkmarx SARIF report")

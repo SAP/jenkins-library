@@ -28,6 +28,24 @@ func TestSendRequest(t *testing.T) {
 	})
 }
 
+func TestDownloadFile(t *testing.T) {
+	t.Parallel()
+	t.Run("DownloadFile", func(t *testing.T) {
+		utils := HttpClientMock{
+			HTTPFileUtils: &FilesMock{},
+		}
+		url := "https://localhost"
+		filename := "testFile"
+		var header http.Header
+		var cookies []*http.Cookie
+		err := utils.DownloadFile(url, filename, header, cookies)
+		assert.NoError(t, err)
+		content, err := utils.HTTPFileUtils.FileRead(filename)
+		assert.NoError(t, err)
+		assert.Equal(t, "some content", string(content))
+	})
+}
+
 func TestSetOption(t *testing.T) {
 	t.Parallel()
 	t.Run("SetOption", func(t *testing.T) {

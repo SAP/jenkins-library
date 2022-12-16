@@ -266,9 +266,11 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 		return err
 	}
 
+	manifestFile, err := getManifestFileName(config)
+
 	log.Entry().Infof("CF native deployment ('%s') with:", config.DeployType)
 	log.Entry().Infof("cfAppName='%s'", appName)
-	log.Entry().Infof("cfManifest='%s'", config.Manifest)
+	log.Entry().Infof("cfManifest='%s'", manifestFile)
 	log.Entry().Infof("cfManifestVariables: '%v'", config.ManifestVariables)
 	log.Entry().Infof("cfManifestVariablesFiles: '%v'", config.ManifestVariablesFiles)
 	log.Entry().Infof("cfdeployDockerImage: '%s'", config.DeployDockerImage)
@@ -369,6 +371,15 @@ func getManifest(name string) (cloudfoundry.Manifest, error) {
 	return cloudfoundry.ReadManifest(name)
 }
 
+func getManifestFileName(config *cloudFoundryDeployOptions) (string, error) {
+
+	manifestFileName := config.Manifest
+	if len(manifestFileName) == 0 {
+		manifestFileName = "manifest.yml"
+	}
+	return manifestFileName, nil
+}
+
 func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 
 	if len(config.AppName) > 0 {
@@ -377,17 +388,16 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	if config.DeployType == "blue-green" {
 		return "", fmt.Errorf("Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)")
 	}
-	if len(config.Manifest) == 0 {
-		return "", fmt.Errorf("Manifest file not provided in configuration. Cannot retrieve app name")
-	}
-	fileExists, err := fileUtils.FileExists(config.Manifest)
+	manifestFile, err := getManifestFileName(config)
+
+	fileExists, err := fileUtils.FileExists(manifestFile)
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot check if file '%s' exists", config.Manifest)
+		return "", errors.Wrapf(err, "Cannot check if file '%s' exists", manifestFile)
 	}
 	if !fileExists {
-		return "", fmt.Errorf("Manifest file '%s' not found. Cannot retrieve app name", config.Manifest)
+		return "", fmt.Errorf("Manifest file '%s' not found. Cannot retrieve app name", manifestFile)
 	}
-	manifest, err := _getManifest(config.Manifest)
+	manifest, err := _getManifest(manifestFile)
 	if err != nil {
 		return "", err
 	}
@@ -397,14 +407,14 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	}
 
 	if len(apps) == 0 {
-		return "", fmt.Errorf("No apps declared in manifest '%s'", config.Manifest)
+		return "", fmt.Errorf("No apps declared in manifest '%s'", manifestFile)
 	}
 	namePropertyExists, err := manifest.ApplicationHasProperty(0, "name")
 	if err != nil {
 		return "", err
 	}
 	if !namePropertyExists {
-		return "", fmt.Errorf("No appName available in manifest '%s'", config.Manifest)
+		return "", fmt.Errorf("No appName available in manifest '%s'", manifestFile)
 	}
 	appName, err := manifest.GetApplicationProperty(0, "name")
 	if err != nil {
@@ -413,10 +423,10 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	var name string
 	var ok bool
 	if name, ok = appName.(string); !ok {
-		return "", fmt.Errorf("appName from manifest '%s' has wrong type", config.Manifest)
+		return "", fmt.Errorf("appName from manifest '%s' has wrong type", manifestFile)
 	}
 	if len(name) == 0 {
-		return "", fmt.Errorf("appName from manifest '%s' is empty", config.Manifest)
+		return "", fmt.Errorf("appName from manifest '%s' is empty", manifestFile)
 	}
 	return name, nil
 }
@@ -443,7 +453,7 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 			return []string{}, fmt.Errorf("failed to get current working directory for execution of smoke-test script: %w", err)
 		}
 
-		return []string{"--smoke-test", fmt.Sprintf("%s", filepath.Join(pwd, smokeTestScript))}, nil
+		return []string{"--smoke-test", filepath.Join(pwd, smokeTestScript)}, nil
 	}
 	return []string{}, nil
 }
@@ -461,47 +471,46 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 		deployOptions = append(deployOptions, "--delete-old-apps")
 	}
 
-	if len(config.Manifest) > 0 {
-		manifestFileExists, err := fileUtils.FileExists(config.Manifest)
-		if err != nil {
-			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot check if file '%s' exists", config.Manifest)
-		}
+	manifestFile, err := getManifestFileName(config)
 
-		if !manifestFileExists {
-
-			log.Entry().Infof("Manifest file '%s' does not exist", config.Manifest)
-
-		} else {
-
-			manifestVariables, err := toStringInterfaceMap(toParameterMap(config.ManifestVariables))
-			if err != nil {
-				return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare manifest variables: '%v'", config.ManifestVariables)
-			}
-
-			manifestVariablesFiles, err := validateManifestVariablesFiles(config.ManifestVariablesFiles)
-			if err != nil {
-				return "", []string{}, []string{}, errors.Wrapf(err, "Cannot validate manifest variables files '%v'", config.ManifestVariablesFiles)
-			}
-
-			modified, err := _replaceVariables(config.Manifest, manifestVariables, manifestVariablesFiles)
-			if err != nil {
-				return "", []string{}, []string{}, errors.Wrap(err, "Cannot prepare manifest file")
-			}
-
-			if modified {
-				log.Entry().Infof("Manifest file '%s' has been updated (variable substitution)", config.Manifest)
-			} else {
-				log.Entry().Infof("Manifest file '%s' has not been updated (no variable substitution)", config.Manifest)
-			}
-
-			err = handleLegacyCfManifest(config.Manifest)
-			if err != nil {
-				return "", []string{}, []string{}, errors.Wrapf(err, "Cannot handle legacy manifest '%s'", config.Manifest)
-			}
-		}
-	} else {
-		log.Entry().Info("No manifest file configured")
+	manifestFileExists, err := fileUtils.FileExists(manifestFile)
+	if err != nil {
+		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot check if file '%s' exists", manifestFile)
 	}
+
+	if !manifestFileExists {
+
+		log.Entry().Infof("Manifest file '%s' does not exist", manifestFile)
+
+	} else {
+
+		manifestVariables, err := toStringInterfaceMap(toParameterMap(config.ManifestVariables))
+		if err != nil {
+			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare manifest variables: '%v'", config.ManifestVariables)
+		}
+
+		manifestVariablesFiles, err := validateManifestVariablesFiles(config.ManifestVariablesFiles)
+		if err != nil {
+			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot validate manifest variables files '%v'", config.ManifestVariablesFiles)
+		}
+
+		modified, err := _replaceVariables(manifestFile, manifestVariables, manifestVariablesFiles)
+		if err != nil {
+			return "", []string{}, []string{}, errors.Wrap(err, "Cannot prepare manifest file")
+		}
+
+		if modified {
+			log.Entry().Infof("Manifest file '%s' has been updated (variable substitution)", manifestFile)
+		} else {
+			log.Entry().Infof("Manifest file '%s' has not been updated (no variable substitution)", manifestFile)
+		}
+
+		err = handleLegacyCfManifest(manifestFile)
+		if err != nil {
+			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot handle legacy manifest '%s'", manifestFile)
+		}
+	}
+
 	return "blue-green-deploy", deployOptions, smokeTest, nil
 }
 
@@ -612,10 +621,7 @@ func toStringInterfaceMap(in *orderedmap.OrderedMap, err error) (map[string]inte
 
 func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployOptions) (string, error) {
 
-	manifestFile := config.Manifest
-	if len(manifestFile) == 0 {
-		manifestFile = "manifest.yml"
-	}
+	manifestFile, err := getManifestFileName(config)
 
 	manifestFileExists, err := fileUtils.FileExists(manifestFile)
 	if err != nil {
@@ -912,9 +918,7 @@ func findMtar() (string, error) {
 
 	if len(mtars) > 1 {
 		sMtars := []string{}
-		for _, mtar := range mtars {
-			sMtars = append(sMtars, mtar)
-		}
+		sMtars = append(sMtars, mtars...)
 		return "", fmt.Errorf("Found multiple mtar files matching pattern '%s' (%s), please specify file via parameter 'mtarPath'", pattern, strings.Join(sMtars, ","))
 	}
 

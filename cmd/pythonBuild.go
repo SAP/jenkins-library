@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	PyBomFilename = "bom.xml"
+	PyBomFilename = "bom-pip.xml"
+	stepName      = "pythonBuild"
 )
 
 type pythonBuildUtils interface {
@@ -27,8 +29,10 @@ type pythonBuildUtilsBundle struct {
 
 func newPythonBuildUtils() pythonBuildUtils {
 	utils := pythonBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
+		Command: &command.Command{
+			StepName: "pythonBuild",
+		},
+		Files: &piperutils.Files{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -47,21 +51,27 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
 
-	installFlags := []string{"-m", "pip", "install", "--upgrade"}
+	pipInstallFlags := []string{"install", "--upgrade"}
+	virutalEnvironmentPathMap := make(map[string]string)
 
-	err := buildExecute(config, utils, installFlags)
+	err := createVirtualEnvironment(utils, config, virutalEnvironmentPathMap)
+	if err != nil {
+		return err
+	}
+
+	err = buildExecute(config, utils, pipInstallFlags, virutalEnvironmentPathMap)
 	if err != nil {
 		return fmt.Errorf("Python build failed with error: %w", err)
 	}
 
 	if config.CreateBOM {
-		if err := runBOMCreationForPy(utils, installFlags); err != nil {
+		if err := runBOMCreationForPy(utils, pipInstallFlags, virutalEnvironmentPathMap, config); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
 
 	log.Entry().Debugf("creating build settings information...")
-	stepName := "pythonBuild"
+
 	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return err
@@ -80,21 +90,12 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if config.Publish {
-		if err := publishWithTwine(config, utils, installFlags); err != nil {
+		if err := publishWithTwine(config, utils, pipInstallFlags, virutalEnvironmentPathMap); err != nil {
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 	}
 
-	return nil
-}
-
-func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
-	var flags []string
-	flags = append(flags, config.BuildFlags...)
-	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
-
-	log.Entry().Info("starting building python project:")
-	err := utils.RunExecutable("python3", flags...)
+	err = removeVirtualEnvironment(utils, config)
 	if err != nil {
 		return err
 	}
@@ -102,24 +103,67 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, installFla
 	return nil
 }
 
-func runBOMCreationForPy(utils pythonBuildUtils, installFlags []string) error {
-	installFlags = append(installFlags, "cyclonedx-bom")
-	if err := utils.RunExecutable("python3", installFlags...); err != nil {
-		return err
-	}
-	if err := utils.RunExecutable("cyclonedx-bom", "--e", "--output", PyBomFilename); err != nil {
+func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
+
+	var flags []string
+	flags = append(flags, config.BuildFlags...)
+	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
+
+	log.Entry().Info("starting building python project:")
+	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, installFlags []string) error {
-	installFlags = append(installFlags, "twine")
-	if err := utils.RunExecutable("python3", installFlags...); err != nil {
+func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virutalEnvironmentPathMap map[string]string) error {
+	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
+	err := utils.RunExecutable("python3", virtualEnvironmentFlags...)
+	if err != nil {
 		return err
 	}
-	if err := utils.RunExecutable("twine", "upload", "--username", config.TargetRepositoryUser,
-		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
+	err = utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate"))
+	if err != nil {
+		return err
+	}
+	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
+	// venv will create symlinks to python3 inside the container
+	virutalEnvironmentPathMap["python"] = "python"
+	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
+
+	return nil
+}
+
+func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions) error {
+	err := utils.RemoveAll(config.VirutalEnvironmentName)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
+	pipInstallFlags = append(pipInstallFlags, "cyclonedx-bom")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
+		return err
+	}
+	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-bom")
+
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename); err != nil {
+		return err
+	}
+	return nil
+}
+
+func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
+	pipInstallFlags = append(pipInstallFlags, "twine")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
+		return err
+	}
+	virutalEnvironmentPathMap["twine"] = filepath.Join(config.VirutalEnvironmentName, "bin", "twine")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["twine"], "upload", "--username", config.TargetRepositoryUser,
+		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL, "--disable-progress-bar",
 		"dist/*"); err != nil {
 		return err
 	}

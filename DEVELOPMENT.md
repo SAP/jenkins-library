@@ -29,6 +29,8 @@ First you need to set up an appropriate development environment:
 1. Install Go, see [GO Getting Started](https://golang.org/doc/install)
 1. Install an IDE with Go plugins, see for example [Go in Visual Studio Code](https://code.visualstudio.com/docs/languages/go)
 
+**Note:** The Go version to be used is the one specified in the "go.mod" file.
+
 ### Go basics
 
 In order to get yourself started, there is a lot of useful information out there.
@@ -129,6 +131,7 @@ There are certain extensions:
 
 1. [Logging](#logging)
 1. [Error handling](#error-handling)
+1. [HTTP calls](#http-calls)
 
 Implementing a new step starts by adding a new yaml file in `resources/metadata/` and running
 the [step generator](#generating-step-framework). This creates most of the boiler-plate code for the
@@ -226,6 +229,27 @@ log.Entry().WithError(err).Fatal("the error message")
 
 the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
 Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
+
+### HTTP calls
+
+All HTTP(S) interactions with other systems should be leveraging the [`pkg/http`](pkg/http) to enable capabilities provided
+centrally like automatic retries in case of intermittend HTTP errors or individual and optimized timout or logging capabilities.
+The HTTP package provides a thin wrapper around the standard golang `net/http` package adding just the right bit of sugar on top to
+have more control on common behaviors.
+
+### Automatic retries
+
+Automatic retries have been implemented based on [hashicorp's retryable HTTP client for golang](https://github.com/hashicorp/go-retryablehttp)
+with some extensions and customizations to the HTTP status codes being retried as well as to improve some service specific error situations.
+The client by default retries 15 times until it gives up and regards a specific communication event as being not recoverable. If you know by heart that
+your service is much more stable and cloud live without retry handling or a specifically lower amout of retries, you can easily customize behavior via the
+`ClientOptions` as shown in the sample below:
+
+```golang
+clientOptions := piperhttp.ClientOptions{}
+clientOptions.MaxRetries = -1
+httpClient.SetOptions(clientOptions)
+```
 
 ## Testing
 
@@ -580,11 +604,18 @@ Finally, set your breakpoints and use the `Launch` button in the VS code UI to s
 
 ## Release
 
-Releases are performed using [Project "Piper" Action](https://github.com/SAP/project-piper-action).
-We release on schedule (once a week) and on demand.
-To perform a release, the respective action must be invoked for which a convenience script is available in `contrib/perform-release.sh`.
-It requires a personal access token for GitHub with `repo` scope.
-Example usage `PIPER_RELEASE_TOKEN=THIS_IS_MY_TOKEN contrib/perform-release.sh`.
+Releases are performed using GitHub workflows and [Project "Piper" Action](https://github.com/SAP/project-piper-action).
+
+There are two different workflows:
+
+- [weekly release workflow](.github/workflows/release-go.yml) running every Monday at 09:00 UTC.
+- [commit-based workflow](.github/workflows/upload-go-master.yml) which releases the binary as `piper_master` on the [latest release](https://github.com/SAP/jenkins-library/releases/latest).
+
+It is also possible to release on demand using the `contrib/perform-release.sh` script with a personal access token (`repo` scope).
+
+```
+PIPER_RELEASE_TOKEN=<token> contrib/perform-release.sh
+```
 
 ## Pipeline Configuration
 

@@ -605,3 +605,20 @@ func TestGetProjectByName(t *testing.T) {
 		assert.Equal(t, "Project1_PR-18", result[0].Name, "Result incorrect")
 	})
 }
+
+func TestGetShortDescription(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{"shortDescription":"This is a dummy short description."}`, httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		shortDescription, err := sys.GetShortDescription(11037, 1)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "https://cx.server.com/cxrestapi/sast/scans/11037/results/1/shortDescription", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, "This is a dummy short description.", shortDescription.Text, "Description incorrect")
+	})
+}

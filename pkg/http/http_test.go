@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -59,6 +60,24 @@ func TestSend(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, response)
 	})
+	t.Run("failure when calling via proxy", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		transportProxy, _ := url.Parse("https://proxy.dummy.sap.com")
+		client.SetOptions(ClientOptions{MaxRetries: -1, TransportProxy: transportProxy})
+
+		// when
+		response, err := client.Send(request)
+
+		// then
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "lookup proxy.dummy.sap.com: no such host")
+		assert.Nil(t, response)
+	})
 }
 
 func TestDefaultTransport(t *testing.T) {
@@ -103,6 +122,7 @@ func TestSendRequest(t *testing.T) {
 	passedCookies := []*http.Cookie{}
 	var passedUsername string
 	var passedPassword string
+
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		passedHeaders = map[string][]string{}
@@ -135,6 +155,7 @@ func TestSendRequest(t *testing.T) {
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, method: "GET", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "GET", expected: "OK"},
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http"), username: "TestUser", password: "TestPwd"}, method: "GET", expected: "OK"},
+		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http"), token: "api-token-string"}, method: "GET", expected: "OK"},
 	}
 
 	for key, test := range tt {
@@ -172,16 +193,26 @@ func TestSendRequest(t *testing.T) {
 				assert.NotContains(t, log, fmt.Sprintf("Authorization:[Basic %s]", credentialsEncoded))
 				assert.Contains(t, log, "Authorization:[<set>]")
 			}
+
+			// Token authentication
+			if len(test.client.token) > 0 {
+				assert.Equal(t, test.client.token, "api-token-string")
+				log := fmt.Sprintf("%s", logBuffer)
+				assert.Contains(t, log, fmt.Sprintf("Using Token Authentication ****"))
+				assert.Contains(t, log, "Authorization:[<set>]")
+			}
 		})
 	}
 }
 
 func TestSetOptions(t *testing.T) {
 	c := Client{}
-	opts := ClientOptions{MaxRetries: -1, TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	transportProxy, _ := url.Parse("https://proxy.dummy.sap.com")
+	opts := ClientOptions{MaxRetries: -1, TransportTimeout: 10, TransportProxy: transportProxy, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
+	assert.Equal(t, opts.TransportProxy, c.transportProxy)
 	assert.Equal(t, opts.TransportSkipVerification, c.transportSkipVerification)
 	assert.Equal(t, opts.MaxRequestDuration, c.maxRequestDuration)
 	assert.Equal(t, opts.Username, c.username)

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/cmd/mocks"
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -31,7 +31,6 @@ type ghRCMock struct {
 	listOpts          *github.ListOptions
 	latestStatusCode  int
 	latestErr         error
-	preRelease        bool
 	uploadID          int64
 	uploadOpts        *github.UploadOptions
 	uploadOwner       string
@@ -152,7 +151,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 
 	t.Run("Success - subsequent releases & with body", func(t *testing.T) {
 		lastTag := "1.0"
-		lastPublishedAt := github.Timestamp{Time: time.Date(2019, 01, 01, 0, 0, 0, 0, time.UTC)}
+		lastPublishedAt := github.Timestamp{Time: time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)}
 		ghRepoClient := ghRCMock{
 			createErr: nil,
 			latestRelease: &github.RepositoryRelease{
@@ -264,7 +263,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 
 func TestGetClosedIssuesText(t *testing.T) {
 	ctx := context.Background()
-	publishedAt := github.Timestamp{Time: time.Date(2019, 01, 01, 0, 0, 0, 0, time.UTC)}
+	publishedAt := github.Timestamp{Time: time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)}
 
 	t.Run("No issues", func(t *testing.T) {
 		ghIssueClient := ghICMock{}
@@ -279,7 +278,7 @@ func TestGetClosedIssuesText(t *testing.T) {
 
 	t.Run("All issues", func(t *testing.T) {
 		ctx := context.Background()
-		publishedAt := github.Timestamp{Time: time.Date(2019, 01, 01, 0, 0, 0, 0, time.UTC)}
+		publishedAt := github.Timestamp{Time: time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)}
 
 		prHTMLURL := []string{"https://github.com/TEST/test/pull/1", "https://github.com/TEST/test/pull/2"}
 		prTitle := []string{"Pull1", "Pull2"}
@@ -312,7 +311,6 @@ func TestGetClosedIssuesText(t *testing.T) {
 		assert.Equal(t, "asc", ghIssueClient.options.Direction, "Sort direction not properly passed")
 		assert.Equal(t, publishedAt.Time, ghIssueClient.options.Since, "PublishedAt not properly passed")
 	})
-
 }
 
 func TestGetReleaseDeltaText(t *testing.T) {
@@ -460,7 +458,6 @@ func TestUploadReleaseAssetList(t *testing.T) {
 }
 
 func TestIsExcluded(t *testing.T) {
-
 	l1 := "label1"
 	l2 := "label2"
 
@@ -481,5 +478,4 @@ func TestIsExcluded(t *testing.T) {
 	for k, v := range tt {
 		assert.Equal(t, v.expected, isExcluded(v.issue, v.excludeLabels), fmt.Sprintf("Run %v failed", k))
 	}
-
 }

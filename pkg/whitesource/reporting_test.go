@@ -1,14 +1,19 @@
 package whitesource
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"testing"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,15 +61,126 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 	})
 }
 
+func TestCreateCycloneSBOM(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success case", func(t *testing.T) {
+		config := &ScanOptions{}
+		scan := &Scan{
+			AgentName:            "Mend Unified Agent",
+			AgentVersion:         "3.3.3",
+			AggregateProjectName: config.ProjectName,
+			BuildTool:            "maven",
+			ProductVersion:       config.ProductVersion,
+			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
+		}
+		scan.AppendScannedProject("testProject")
+		alerts := []Alert{
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
+			{Library: Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Filename: "vul2"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"}, Vulnerability: Vulnerability{Score: 6}},
+		}
+
+		assessedAlerts := []Alert{
+			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul4"}, Vulnerability: Vulnerability{Name: "CVE-23456", CVSS3Score: 7.0, Score: 6}, Assessment: &format.Assessment{Vulnerability: "CVE-23456", Status: format.Relevant, Analysis: format.Mitigated}},
+		}
+
+		libraries := []Library{
+			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1", Dependencies: []Library{{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Filename: "vul2"}}},
+			{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul3"},
+		}
+
+		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts, &assessedAlerts)
+		assert.NoError(t, err, "unexpected error")
+		buffer := bytes.NewBuffer(contents)
+		decoder := cdx.NewBOMDecoder(buffer, cdx.BOMFileFormatXML)
+		bom := cdx.NewBOM()
+		decoder.Decode(bom)
+
+		assert.NotNil(t, bom, "BOM was nil")
+		assert.NotEmpty(t, bom.SpecVersion)
+
+		components := *bom.Components
+		vulnerabilities := *bom.Vulnerabilities
+		assert.Equal(t, 2, len(components))
+		assert.Equal(t, true, components[0].Name == "log4j" || components[0].Name == "commons-lang")
+		assert.Equal(t, true, components[1].Name == "log4j" || components[1].Name == "commons-lang")
+		assert.Equal(t, true, components[0].Name != components[1].Name)
+		assert.Equal(t, 4, len(vulnerabilities))
+		assert.NotNil(t, vulnerabilities[3].Analysis)
+		assert.Equal(t, cdx.IAJProtectedByMitigatingControl, vulnerabilities[3].Analysis.Justification)
+	})
+
+	t.Run("success - golden", func(t *testing.T) {
+		config := &ScanOptions{ProjectName: "myproduct - 1.3.4", ProductVersion: "1"}
+		scan := &Scan{
+			AgentName:            "Mend Unified Agent",
+			AgentVersion:         "3.3.3",
+			scannedProjects:      map[string]Project{"testProject": {Name: "testProject", Token: "projectToken-567"}},
+			AggregateProjectName: config.ProjectName,
+			BuildTool:            "maven",
+			ProductVersion:       config.ProductVersion,
+			ProductToken:         "productToken-123",
+			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
+		}
+		scan.AppendScannedProject("testProject")
+
+		lib3 := Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "Java", Filename: "vul2"}
+		lib4 := Library{KeyID: 45, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "3.15", LibType: "Java", Filename: "novul"}
+		lib1 := Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "1.14", LibType: "Java", Filename: "vul1", Dependencies: []Library{lib3}}
+		lib2 := Library{KeyID: 44, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Version: "3.25", LibType: "Java", Filename: "vul3", Dependencies: []Library{lib4}}
+
+		alerts := []Alert{
+			{Library: lib1, Vulnerability: Vulnerability{Name: "CVE-2022-001", CVSS3Score: 7, Score: 6, CVSS3Severity: "high", Severity: "medium", PublishDate: "01.01.2022"}},
+			{Library: lib3, Vulnerability: Vulnerability{Name: "CVE-2022-002", CVSS3Score: 8, CVSS3Severity: "high", PublishDate: "02.01.2022", TopFix: Fix{Message: "this is the top fix"}}},
+			{Library: lib2, Vulnerability: Vulnerability{Name: "CVE-2022-003", Score: 6, Severity: "medium", PublishDate: "03.01.2022"}},
+		}
+
+		assessedAlerts := []Alert{}
+
+		libraries := []Library{
+			lib1,
+			lib2,
+		}
+
+		contents, err := CreateCycloneSBOM(scan, &libraries, &alerts, &assessedAlerts)
+		assert.NoError(t, err, "unexpected error")
+
+		goldenFilePath := filepath.Join("testdata", "sbom.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		assert.NoError(t, err)
+
+		assert.Equal(t, string(expected), string(contents))
+	})
+}
+
+func TestWriteCycloneSBOM(t *testing.T) {
+	t.Parallel()
+
+	var utilsMock piperutils.FileUtils
+	utilsMock = &mock.FilesMock{}
+
+	t.Run("success case", func(t *testing.T) {
+		paths, err := WriteCycloneSBOM([]byte{1, 2, 3, 4}, utilsMock)
+		assert.NoError(t, err, "unexpexted error")
+		assert.Equal(t, 1, len(paths))
+		assert.Equal(t, "whitesource/piper_whitesource_sbom.xml", paths[0].Target)
+
+		exists, err := utilsMock.FileExists(paths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+}
+
 func TestCreateSarifResultFile(t *testing.T) {
 	scan := &Scan{ProductVersion: "1"}
 	scan.AppendScannedProject("project1")
 	scan.AgentName = "Some test agent"
 	scan.AgentVersion = "1.2.6"
 	alerts := []Alert{
-		{Library: Library{Filename: "vul1", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
-		{Library: Library{Filename: "vul2", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
-		{Library: Library{Filename: "vul3", ArtifactID: "org.some.lib2"}, Vulnerability: Vulnerability{Score: 6}},
+		{Library: Library{Filename: "vul1", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{Name: "CVE-2022-001", CVSS3Score: 7.0, Score: 6}},
+		{Library: Library{Filename: "vul2", ArtifactID: "org.some.lib"}, Vulnerability: Vulnerability{Name: "CVE-2022-002", CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
+		{Library: Library{Filename: "vul3", ArtifactID: "org.some.lib2"}, Vulnerability: Vulnerability{Name: "CVE-2022-003", Score: 6}},
 	}
 
 	sarif := CreateSarifResultFile(scan, &alerts)
@@ -167,7 +283,6 @@ func TestWriteSarifFile(t *testing.T) {
 }
 
 func TestCountSecurityVulnerabilities(t *testing.T) {
-	t.Parallel()
 
 	alerts := []Alert{
 		{Vulnerability: Vulnerability{CVSS3Score: 7.1}},

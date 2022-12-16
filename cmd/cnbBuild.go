@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/bindings"
@@ -19,6 +20,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/syft"
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/imdario/mergo"
@@ -47,8 +49,9 @@ type cnbBuildUtilsBundle struct {
 }
 
 type cnbBuildTelemetry struct {
-	Version int                     `json:"version"`
-	Data    []cnbBuildTelemetryData `json:"data"`
+	dockerImage string
+	Version     int                     `json:"version"`
+	Data        []cnbBuildTelemetryData `json:"data"`
 }
 
 type cnbBuildTelemetryData struct {
@@ -127,9 +130,11 @@ func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.Bui
 
 func newCnbBuildUtils() cnbutils.BuildUtils {
 	utils := cnbBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-		Client:  &docker.Client{},
+		Command: &command.Command{
+			StepName: "cnbBuild",
+		},
+		Files:  &piperutils.Files{},
+		Client: &docker.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -206,28 +211,29 @@ func extractZip(source, target string) error {
 	return nil
 }
 
-func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, error) {
-	if filepath.Base(source) != "config.json" {
-		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(source))
+func renameDockerConfig(config *cnbBuildOptions, utils cnbutils.BuildUtils) error {
+	if filepath.Base(config.DockerConfigJSON) != "config.json" {
+		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(config.DockerConfigJSON))
 
-		newPath := filepath.Join(filepath.Dir(source), "config.json")
+		newPath := filepath.Join(filepath.Dir(config.DockerConfigJSON), "config.json")
 		alreadyExists, err := utils.FileExists(newPath)
 		if err != nil {
-			return "", err
+			return err
 		}
+
 		if alreadyExists {
-			return newPath, nil
+			return nil
 		}
 
-		err = utils.FileRename(source, newPath)
+		err = utils.FileRename(config.DockerConfigJSON, newPath)
 		if err != nil {
-			return "", err
+			return err
 		}
 
-		return newPath, nil
+		config.DockerConfigJSON = newPath
 	}
 
-	return source, nil
+	return nil
 }
 
 func linkTargetFolder(utils cnbutils.BuildUtils, source, target string) error {
@@ -306,7 +312,7 @@ func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (pathEnum,
 	}
 }
 
-func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryData, config *cnbBuildOptions) {
+func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryData, dockerImage string, config *cnbBuildOptions) {
 	var bindingKeys []string
 	for k := range config.Bindings {
 		bindingKeys = append(bindingKeys, k)
@@ -330,13 +336,7 @@ func addConfigTelemetryData(utils cnbutils.BuildUtils, data *cnbBuildTelemetryDa
 
 	data.Buildpacks.FromConfig = privacy.FilterBuildpacks(config.Buildpacks)
 
-	dockerImage, err := GetDockerImageValue("cnbBuild")
-	if err != nil {
-		log.Entry().Warnf("Error while preparing telemetry: retrieving docker image failed: '%v'", err)
-		data.Builder = ""
-	} else {
-		data.Builder = privacy.FilterBuilder(dockerImage)
-	}
+	data.Builder = privacy.FilterBuilder(dockerImage)
 }
 
 func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor project.Descriptor) {
@@ -357,22 +357,60 @@ func addProjectDescriptorTelemetryData(data *cnbBuildTelemetryData, descriptor p
 }
 
 func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
-	telemetry := &cnbBuildTelemetry{
+	stepName := "cnbBuild"
+	cnbTelemetry := &cnbBuildTelemetry{
 		Version: 3,
 	}
+
+	dockerImage, err := GetDockerImageValue(stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to retrieve dockerImage configuration: '%v'", err)
+	}
+
+	cnbTelemetry.dockerImage = dockerImage
+
+	cnbBuildConfig := buildsettings.BuildOptions{
+		CreateBOM:         config.CreateBOM,
+		DockerImage:       dockerImage,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+	}
+	log.Entry().Debugf("creating build settings information...")
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&cnbBuildConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
+	if len(config.DockerConfigJSON) > 0 {
+		err = renameDockerConfig(config, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
+		}
+	}
+
 	mergedConfigs, err := processConfigs(*config, config.MultipleImages)
 	if err != nil {
 		return errors.Wrap(err, "failed to process config")
 	}
+
 	for _, c := range mergedConfigs {
-		err = runCnbBuild(&c, telemetryData, telemetry, utils, commonPipelineEnvironment, httpClient)
+		err = runCnbBuild(&c, cnbTelemetry, utils, commonPipelineEnvironment, httpClient)
 		if err != nil {
 			return err
 		}
 	}
 
+	if config.CreateBOM {
+		err = syft.GenerateSBOM(config.SyftDownloadURL, filepath.Dir(config.DockerConfigJSON), utils, utils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return errors.Wrap(err, "failed to create BOM file")
+		}
+	}
+
 	telemetryData.Custom1Label = "cnbBuildStepData"
-	customData, err := json.Marshal(telemetry)
+	customData, err := json.Marshal(cnbTelemetry)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal custom telemetry data")
 	}
@@ -380,7 +418,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	return nil
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, telemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	err := cleanDir("/layers", utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -393,8 +431,18 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
 	}
 
+	tempdir, err := os.MkdirTemp("", "cnbBuild-")
+	if err != nil {
+		return errors.Wrap(err, "failed to create tempdir")
+	}
+	defer os.RemoveAll(tempdir)
+	if config.BuildEnvVars == nil {
+		config.BuildEnvVars = map[string]interface{}{}
+	}
+	config.BuildEnvVars["TMPDIR"] = tempdir
+
 	customTelemetryData := cnbBuildTelemetryData{}
-	addConfigTelemetryData(utils, &customTelemetryData, config)
+	addConfigTelemetryData(utils, &customTelemetryData, cnbTelemetry.dockerImage, config)
 
 	err = isBuilder(utils)
 	if err != nil {
@@ -444,14 +492,18 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	}
 	customTelemetryData.Buildpacks.Overall = privacy.FilterBuildpacks(config.Buildpacks)
 	customTelemetryData.BuildEnv.KeyValues = privacy.FilterEnv(config.BuildEnvVars)
-	telemetry.Data = append(telemetry.Data, customTelemetryData)
+	cnbTelemetry.Data = append(cnbTelemetry.Data, customTelemetryData)
 
 	if commonPipelineEnvironment.container.imageNameTag == "" {
 		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
 		commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag)
 	}
 	commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%v:%v", targetImage.ContainerImageName, targetImage.ContainerImageTag))
-	commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, targetImage.ContainerImageName)
+	imageNameAlias := targetImage.ContainerImageName
+	if config.ContainerImageAlias != "" {
+		imageNameAlias = config.ContainerImageAlias
+	}
+	commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, imageNameAlias)
 
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
@@ -466,15 +518,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed process bindings")
-	}
-
-	dockerConfigFile := ""
-	if len(config.DockerConfigJSON) > 0 {
-		dockerConfigFile, err = prepareDockerConfig(config.DockerConfigJSON, utils)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
-		}
 	}
 
 	pathType, source, err := config.resolvePath(utils)
@@ -519,16 +562,16 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 
 	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, dockerConfigFile, utils)
-		defer utils.RemoveAll(buildpacksPath)
-		defer utils.RemoveAll(orderPath)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, config.DockerConfigJSON, utils)
+		defer func() { _ = utils.RemoveAll(buildpacksPath) }()
+		defer func() { _ = utils.RemoveAll(orderPath) }()
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Setting custom buildpacks: %v", config.Buildpacks)
 		}
 	}
 
-	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(dockerConfigFile, utils)
+	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(config.DockerConfigJSON, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
@@ -550,7 +593,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
-	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.8"})
+	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.9"})
 
 	creatorArgs := []string{
 		"-no-color",
@@ -562,6 +605,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, t
 
 	if GeneralConfig.Verbose {
 		creatorArgs = append(creatorArgs, "-log-level", "debug")
+	}
+
+	if config.RunImage != "" {
+		creatorArgs = append(creatorArgs, "-run-image", config.RunImage)
+	}
+
+	if config.DefaultProcess != "" {
+		creatorArgs = append(creatorArgs, "-process-type", config.DefaultProcess)
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)

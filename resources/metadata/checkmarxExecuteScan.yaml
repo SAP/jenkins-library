@@ -19,6 +19,9 @@ spec:
       - name: checkmarxCredentialsId
         description: Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.
         type: jenkins
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
     resources:
       - name: checkmarx
         type: stash
@@ -33,12 +36,14 @@ spec:
         default: []
       - name: avoidDuplicateProjectScans
         type: bool
-        description: Whether duplicate scans of the same project state shall be avoided or not
+        description: Tell Checkmarx to skip the scan if no code change is detected
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: true
+        aliases:
+          - name: notForceScan
       - name: filterPattern
         type: string
         description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
@@ -196,14 +201,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: sourceEncoding
+      - name: engineConfigurationID
         type: string
-        description: The source encoding to be used, if not set explicitly the project's default will be used
+        description: The engine configuration ID to be used, if not set explicitly the project's default will be used
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "1"
+        aliases:
+          - name: sourceEncoding
       - name: teamId
         aliases:
           - name: checkmarxGroupId
@@ -262,14 +268,6 @@ spec:
           - STAGES
           - STEPS
         default: 100
-      - name: vulnerabilityThresholdLow
-        type: int
-        description: The specific threshold for low severity findings
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: 10
       - name: vulnerabilityThresholdMedium
         type: int
         description: The specific threshold for medium severity findings
@@ -278,6 +276,30 @@ spec:
           - STAGES
           - STEPS
         default: 100
+      - name: vulnerabilityThresholdLow
+        type: int
+        description: The specific threshold for low severity findings
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
+      - name: vulnerabilityThresholdLowPerQuery
+        type: bool
+        description: Flag to activate/deactivate the threshold of low severity findings per query
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: vulnerabilityThresholdLowPerQueryMax
+        type: int
+        description: Upper threshold of low severity findings per query (in absolute number)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
       - name: vulnerabilityThresholdResult
         type: string
         description: The result of the build in case thresholds are enabled and exceeded
@@ -321,11 +343,12 @@ spec:
         default: false
       - name: convertToSarif
         type: bool
-        description: "[BETA] Convert the Checkmarx XML (Cxxml) scan results to the open SARIF standard. Uploaded through Cumulus later on."
+        description: "Convert the Checkmarx XML scan results to the open SARIF standard."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: true
   outputs:
     resources:
       - name: influx
@@ -339,7 +362,7 @@ spec:
             fields:
               - name: high_issues
                 type: int
-              - name: high_not_false_postive
+              - name: high_not_false_positive
                 type: int
               - name: high_not_exploitable
                 type: int
@@ -353,7 +376,7 @@ spec:
                 type: int
               - name: medium_issues
                 type: int
-              - name: medium_not_false_postive
+              - name: medium_not_false_positive
                 type: int
               - name: medium_not_exploitable
                 type: int
@@ -367,7 +390,7 @@ spec:
                 type: int
               - name: low_issues
                 type: int
-              - name: low_not_false_postive
+              - name: low_not_false_positive
                 type: int
               - name: low_not_exploitable
                 type: int
@@ -381,7 +404,7 @@ spec:
                 type: int
               - name: information_issues
                 type: int
-              - name: information_not_false_postive
+              - name: information_not_false_positive
                 type: int
               - name: information_not_exploitable
                 type: int

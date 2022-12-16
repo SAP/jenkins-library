@@ -10,6 +10,8 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
+import util.JenkinsShellCallRule
+import com.sap.piper.PiperGoUtils
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -19,15 +21,16 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
     private ExpectedException thrown = new ExpectedException()
-
+    private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
+    private PiperGoUtils piperGoUtils = new PiperGoUtils(utils) { void unstashPiperBin() { }}
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(jryr)
         .around(thrown)
+        .around(shellCallRule)
         .around(jlr)
         .around(jsr)
-
     @Before
     void init()  {
 
@@ -43,328 +46,24 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
                     return [].toArray()
             }
         })
-    }
-
-    @Test
-    void testStageConfig() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            if(s == 'testDefault.yml') {
-                return '''
-stages:
-  testStage1: {}
-  testStage2: {}
-  testStage3: {}
-'''
-            } else {
-                return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            stages: [
-                testStage2: [testStage: 'myVal2'],
-                testStage3: [testStage: 'myVal3']
-            ]
-        ]
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(false))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(true))
-    }
-
-
-    @Test
-    void testConditionConfig() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            if(s == 'testDefault.yml') {
-                return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        config: testGeneral
-  testStage2:
-    stepConditions:
-      secondStep:
-        config: testStage
-  testStage3:
-    stepConditions:
-      thirdStep:
-        config: testStep
-
-'''
-            } else {
-                return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [testGeneral: 'myVal1'],
-            stages: [testStage2: [testStage: 'myVal2']],
-            steps: [thirdStep: [testStep: 'myVal3']]
-        ]
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(true))
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2.secondStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
-
-    }
-
-    @Test
-    void testConditionConfigValue() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            if(s == 'testDefault.yml') {
-                return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        config:
-          testGeneral:
-            - myValx
-            - myVal1
-  testStage2:
-    stepConditions:
-      secondStep:
-        config:
-          testStage:
-            - maValXyz
-  testStage3:
-    stepConditions:
-      thirdStep:
-        config:
-          testStep:
-            - myVal3
-
-'''
-            } else {
-                return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [testGeneral: 'myVal1'],
-            stages: [:],
-            steps: [thirdStep: [testStep: 'myVal3']]
-        ]
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(false))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(true))
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
-
-    }
-
-    @Test
-    void testConditionConfigKeys() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            if(s == 'testDefault.yml') {
-                return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        configKeys:
-          - myKey1_1
-          - myKey1_2
-  testStage2:
-    stepConditions:
-      secondStep:
-        configKeys:
-          - myKey2_1
-  testStage3:
-    stepConditions:
-      thirdStep:
-        configKeys:
-          - myKey3_1
-'''
-            } else {
-                return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [myKey1_1: 'myVal1_1'],
-            stages: [:],
-            steps: [thirdStep: [myKey3_1: 'myVal3_1']]
-        ]
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(false))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(true))
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
-
-    }
-
-
-    @Test
-    void testConditionFilePattern() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            if(s == 'testDefault.yml') {
-                return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePattern: \'**/conf.js\'
-      secondStep:
-        filePattern: \'**/conf.jsx\'
-
-'''
-            } else {
-                return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
-            allOf(
-                contains('testStage1'),
-                hasSize(1)
-            )
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
-
-    }
-
-    @Test
-    void testConditionFilePatternWithList() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            if(s == 'testDefault.yml') {
-                return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePattern:
-         - \'**/conf.js\'
-         - \'myCollection.json\'
-      secondStep:
-        filePattern: \'**/conf.jsx\'
-
-'''
-            } else {
-                return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
-
-    }
-
-    @Test
-    void testConditionFilePatternFromConfig() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            if(s == 'testDefault.yml') {
-                return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePatternFromConfig: myVal1
-      secondStep:
-        filePatternFromConfig: myVal2
-
-'''
-            } else {
-                return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [:],
-            stages: [testStage1: [myVal1: '**/conf.js']]
-        ]
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
-            allOf(
-                contains('testStage1'),
-                hasSize(1)
-            )
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
+        helper.registerAllowedMethod("writeFile", [Map.class], null)
     }
 
     @Test
     void testVerboseOption() {
-        nullScript.commonPipelineEnvironment.configuration = [
+        shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
+         helper.registerAllowedMethod("readJSON", [Map.class], { m ->
+                     if (m.containsValue(".pipeline/stage_out.json")) {
+                         return ["testStage1":false]
+                     } else {
+                         if (m.containsValue(".pipeline/step_out.json")) {
+                             return  [:]
+                         }
+                         return [:]
+                     }
+                 })
+
+         nullScript.commonPipelineEnvironment.configuration = [
             general: [verbose: true],
             steps: [:],
             stages: [
@@ -377,6 +76,7 @@ steps: {}
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
 
@@ -384,10 +84,48 @@ steps: {}
             containsString('[piperInitRunStageConfiguration] Debug - Run Stage Configuration:'),
             containsString('[piperInitRunStageConfiguration] Debug - Run Step Configuration:')
         ))
+        assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
     }
 
+    @Test(expected = Exception.class)
+    void testPiperShFailed() {
+        shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 1)
+        helper.registerAllowedMethod("readJSON", [Map.class], { m ->
+            if (m.containsValue(".pipeline/stage_out.json")) {
+                return ["Integration":true, "Acceptance":true]
+            } else {
+                if (m.containsValue(".pipeline/step_out.json")) {
+                    return  [ Integration: [test: true], Acceptance: [test: true]]
+                }
+                return [:]
+            }
+        })
+
+        helper.registerAllowedMethod("findFiles", [Map.class], { map -> [].toArray() })
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
+            stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
+        )
+    }
+    
     @Test
     void testPiperInitDefault() {
+
+        shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
+
+        helper.registerAllowedMethod("readJSON", [Map.class], { m ->
+            if (m.containsValue(".pipeline/stage_out.json")) {
+                return ["Integration":true, "Acceptance":true]
+            } else {
+                if (m.containsValue(".pipeline/step_out.json")) {
+                    return  [ Integration: [test: true], Acceptance: [test: true]]
+                }
+                return [:]
+            }
+        })
 
         helper.registerAllowedMethod("findFiles", [Map.class], { map -> [].toArray() })
 
@@ -404,168 +142,41 @@ steps: {}
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Acceptance, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Integration, is(true))
-
-    }
-
-    @Test
-    void testPiperStepActivation() {
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [:],
-            steps: [
-                cloudFoundryDeploy: [cfSpace: 'myTestSpace'],
-                newmanExecute: [newmanCollection: 'myCollection.json']
-            ],
-            stages: [:]
-        ]
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.cloudFoundryDeploy, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.newmanExecute, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.newmanExecute, is(true))
-    }
-
-    @Test
-    void testPiperStepActivationWithStage() {
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [:],
-            steps: [:],
-            stages: [Acceptance: [cfSpace: 'test']]
-        ]
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
-        )
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.cloudFoundryDeploy, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Acceptance, is(true))
-
-    }
-
-    @Test
-    void testConditionNpmScripts() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            if(s == 'testDefault.yml') {
-                return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        npmScripts: \'npmScript\'
-      secondStep:
-        filePattern: \'**/conf.jsx\'
-
-'''
-            } else {
-                return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        helper.registerAllowedMethod('findFiles', [Map], {m ->
-            if(m.glob == '**/package.json') {
-                return [new File("package.json")].toArray()
-            } else {
-                return []
-            }
-        })
-
-        helper.registerAllowedMethod('readJSON', [Map], { m ->
-            if (m.file == 'package.json') {
-                return [scripts: [npmScript: "echo test",
-                                  npmScript2: "echo test"]]
-            } else {
-                return [:]
-            }
-        })
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
-
-    }
-
-    @Test
-    void testConditionNpmScriptsWithList() {
-        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-                    if(s == 'testDefault.yml') {
-                        return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        npmScripts:
-         - \'npmScript\'
-         - \'npmScript2\'
-      secondStep:
-        filePattern: \'**/conf.jsx\'
-
-'''
-                    } else {
-                        return '''
-general: {}
-steps: {}
-'''
-            }
-        })
-
-        helper.registerAllowedMethod('findFiles', [Map], {m ->
-            if(m.glob == '**/package.json') {
-                return [new File("package.json")].toArray()
-            } else {
-                return []
-            }
-        })
-
-        helper.registerAllowedMethod('readJSON', [Map], { m ->
-            if (m.file == 'package.json') {
-                return [scripts: [npmScript: "echo test",
-                                  npmScript2: "echo test"]]
-            } else {
-                return [:]
-            }
-        })
-
-        jsr.step.piperInitRunStageConfiguration(
-            script: nullScript,
-            juStabUtils: utils,
-            stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
+        assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
 
     }
 
     @Test
     void testConditionOnlyProductiveBranchOnNonProductiveBranch() {
+        shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
+        helper.registerAllowedMethod("readJSON", [Map.class], { m ->
+                    if (m.containsValue(".pipeline/stage_out.json")) {
+                        return ["testStage1":true]
+                    } else {
+                        if (m.containsValue(".pipeline/step_out.json")) {
+                            return  [:]
+                        }
+                        return [:]
+                    }
+                })
+
         helper.registerAllowedMethod('libraryResource', [String.class], {s ->
             if(s == 'testDefault.yml') {
                 return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePattern: \'**/conf.js\'
+spec:
+  stages:
+    - name: testStage1
+      displayName: testStage1
+      steps:
+        - name: firstStep
+          conditions:
+          - filePattern: \'**/conf.js\'
 '''
             } else {
                 return '''
@@ -583,23 +194,40 @@ stages:
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'testDefault.yml',
             productiveBranch: 'master'
         )
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(false))
+        assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
     }
 
     @Test
     void testConditionOnlyProductiveBranchOnProductiveBranch() {
+        helper.registerAllowedMethod("readJSON", [Map.class], { m ->
+                    if (m.containsValue(".pipeline/stage_out.json")) {
+                        return ["testStage1":true]
+                    } else {
+                        if (m.containsValue(".pipeline/step_out.json")) {
+                            return  ["testStage1":["firstStep":true]]
+                        }
+                        return [:]
+                    }
+                })
+        shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
+
         helper.registerAllowedMethod('libraryResource', [String.class], {s ->
             if(s == 'testDefault.yml') {
                 return '''
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePattern: \'**/conf.js\'
+spec:
+  stages:
+    - name: testStage1
+      displayName: testStage1
+      steps:
+        - name: firstStep
+          conditions:
+            - filePattern: \'**/conf.js\'
 '''
             } else {
                 return '''
@@ -617,29 +245,49 @@ stages:
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'testDefault.yml',
             productiveBranch: 'test'
         )
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
+        assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
     }
 
     @Test
     void testStageExtensionExists() {
+        shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
+        helper.registerAllowedMethod("readJSON", [Map.class], { m ->
+                    if (m.containsValue(".pipeline/stage_out.json")) {
+                        return ["testStage1":false, "testStage2":false, "testStage3":false, "testStage4":false, "testStage5":false]
+                    } else {
+                        if (m.containsValue(".pipeline/step_out.json")) {
+                            return  [:]
+                        }
+                        return [:]
+                    }
+                })
+
         helper.registerAllowedMethod('libraryResource', [String.class], {s ->
             if(s == 'testDefault.yml') {
                 return '''
-stages:
-  testStage1:
-    extensionExists: true
-  testStage2:
-    extensionExists: true
-  testStage3:
-    extensionExists: false
-  testStage4:
-    extensionExists: 'false'
-  testStage5:
-    dummy: true
+spec:
+  stages:
+    - name: testStage1
+      displayName: testStage1
+      extensionExists: true
+    - name: testStage2
+      displayName: testStage2
+      extensionExists: true
+    - name: testStage3
+      displayName: testStage3
+      extensionExists: false
+    - name: testStage4
+      displayName: testStage4
+      extensionExists: 'false'
+    - name: testStage5
+      displayName: testStage5
+      dummy: true
 '''
             } else {
                 return '''
@@ -673,6 +321,7 @@ steps: {}
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
+            piperGoUtils: piperGoUtils,
             stageConfigResource: 'testDefault.yml'
         )
 
@@ -681,5 +330,6 @@ steps: {}
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(false))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage4, is(false))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage5, is(false))
+        assertThat(shellCallRule.shell, hasItem('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _'))
     }
 }

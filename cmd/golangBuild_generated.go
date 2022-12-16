@@ -37,6 +37,7 @@ type golangBuildOptions struct {
 	TargetRepositoryUser         string   `json:"targetRepositoryUser,omitempty"`
 	TargetRepositoryURL          string   `json:"targetRepositoryURL,omitempty"`
 	ReportCoverage               bool     `json:"reportCoverage,omitempty"`
+	RunLint                      bool     `json:"runLint,omitempty"`
 	RunTests                     bool     `json:"runTests,omitempty"`
 	RunIntegrationTests          bool     `json:"runIntegrationTests,omitempty"`
 	TargetArchitectures          []string `json:"targetArchitectures,omitempty"`
@@ -45,11 +46,13 @@ type golangBuildOptions struct {
 	PrivateModules               string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken       string   `json:"privateModulesGitToken,omitempty"`
 	ArtifactVersion              string   `json:"artifactVersion,omitempty"`
+	GolangciLintURL              string   `json:"golangciLintUrl,omitempty"`
 }
 
 type golangBuildCommonPipelineEnvironment struct {
 	custom struct {
 		buildSettingsInfo string
+		artifacts         piperenv.Artifacts
 	}
 }
 
@@ -60,6 +63,7 @@ func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "artifacts", value: p.custom.artifacts},
 	}
 
 	errCount := 0
@@ -85,7 +89,7 @@ func (p *golangBuildReports) persist(stepConfig golangBuildOptions, gcpJsonKeyFi
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "**/bom.xml", ParamRef: "", StepResultType: "sbom"},
+		{FilePattern: "**/bom-golang.xml", ParamRef: "", StepResultType: "sbom"},
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 	}
@@ -166,6 +170,10 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -229,6 +237,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().BoolVar(&stepConfig.ReportCoverage, "reportCoverage", true, "Defines if a coverage report should be created.")
+	cmd.Flags().BoolVar(&stepConfig.RunLint, "runLint", false, "Configures the build to run linters with [golangci-lint](https://golangci-lint.run/).")
 	cmd.Flags().BoolVar(&stepConfig.RunTests, "runTests", true, "Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).")
 	cmd.Flags().BoolVar(&stepConfig.RunIntegrationTests, "runIntegrationTests", false, "Activates execution of a second test run using tag `integration`.")
 	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{`linux,amd64`}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma.")
@@ -237,6 +246,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "Version of the artifact to be built.")
+	cmd.Flags().StringVar(&stepConfig.GolangciLintURL, "golangciLintUrl", `https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-linux-amd64.tar.gz`, "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.")
 
 	cmd.MarkFlagRequired("targetArchitectures")
 }
@@ -426,6 +436,15 @@ func golangBuildMetadata() config.StepData {
 						Default:     true,
 					},
 					{
+						Name:        "runLint",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
 						Name:        "runTests",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
@@ -483,8 +502,9 @@ func golangBuildMetadata() config.StepData {
 						Name: "privateModulesGitToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "golangPrivateModulesGitTokenCredentialsId",
-								Type: "secret",
+								Name:  "golangPrivateModulesGitTokenCredentialsId",
+								Param: "password",
+								Type:  "secret",
 							},
 
 							{
@@ -513,6 +533,15 @@ func golangBuildMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_artifactVersion"),
 					},
+					{
+						Name:        "golangciLintUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-linux-amd64.tar.gz`,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -525,13 +554,14 @@ func golangBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
 						},
 					},
 					{
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/bom.xml", "type": "sbom"},
+							{"filePattern": "**/bom-golang.xml", "type": "sbom"},
 							{"filePattern": "**/TEST-*.xml", "type": "junit"},
 							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
 						},

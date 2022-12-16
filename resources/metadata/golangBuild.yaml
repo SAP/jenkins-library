@@ -155,6 +155,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: runLint
+        type: bool
+        description: Configures the build to run linters with [golangci-lint](https://golangci-lint.run/).
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: runTests
         type: bool
         description: Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).
@@ -219,6 +226,7 @@ spec:
         resourceRef:
           - name: golangPrivateModulesGitTokenCredentialsId
             type: secret
+            param: password
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
@@ -233,16 +241,25 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: golangciLintUrl
+        type: string
+        description: Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.
+        scope:
+          - PARAMETERS
+          - STEPS
+        default: "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-linux-amd64.tar.gz"
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/artifacts
+            type: "piperenv.Artifacts"
       - name: reports
         type: reports
         params:
-          - filePattern: "**/bom.xml"
+          - filePattern: "**/bom-golang.xml"
             type: sbom
           - filePattern: "**/TEST-*.xml"
             type: junit

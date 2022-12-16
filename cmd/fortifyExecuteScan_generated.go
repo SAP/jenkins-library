@@ -23,6 +23,7 @@ import (
 
 type fortifyExecuteScanOptions struct {
 	AdditionalScanParameters        []string `json:"additionalScanParameters,omitempty"`
+	AdditionalMvnParameters         []string `json:"additionalMvnParameters,omitempty"`
 	Assignees                       []string `json:"assignees,omitempty"`
 	AuthToken                       string   `json:"authToken,omitempty"`
 	BuildDescriptorExcludeList      []string `json:"buildDescriptorExcludeList,omitempty"`
@@ -35,7 +36,7 @@ type fortifyExecuteScanOptions struct {
 	MustAuditIssueGroups            string   `json:"mustAuditIssueGroups,omitempty"`
 	SpotAuditIssueGroups            string   `json:"spotAuditIssueGroups,omitempty"`
 	PythonRequirementsInstallSuffix string   `json:"pythonRequirementsInstallSuffix,omitempty"`
-	PythonVersion                   string   `json:"pythonVersion,omitempty"`
+	PythonVersion                   string   `json:"pythonVersion,omitempty" validate:"possible-values=python3 python2"`
 	UploadResults                   bool     `json:"uploadResults,omitempty"`
 	Version                         string   `json:"version,omitempty"`
 	BuildDescriptorFile             string   `json:"buildDescriptorFile,omitempty"`
@@ -65,6 +66,8 @@ type fortifyExecuteScanOptions struct {
 	PullRequestMessageRegexGroup    int      `json:"pullRequestMessageRegexGroup,omitempty"`
 	DeltaMinutes                    int      `json:"deltaMinutes,omitempty"`
 	SpotCheckMinimum                int      `json:"spotCheckMinimum,omitempty"`
+	SpotCheckMinimumUnit            string   `json:"spotCheckMinimumUnit,omitempty" validate:"possible-values=number percentage"`
+	SpotCheckMaximum                int      `json:"spotCheckMaximum,omitempty"`
 	FprDownloadEndpoint             string   `json:"fprDownloadEndpoint,omitempty"`
 	VersioningModel                 string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	PythonInstallCommand            string   `json:"pythonInstallCommand,omitempty"`
@@ -91,6 +94,7 @@ type fortifyExecuteScanInflux struct {
 	}
 	fortify_data struct {
 		fields struct {
+			projectID         int64
 			projectName       string
 			projectVersion    string
 			projectVersionID  int64
@@ -119,6 +123,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "fortify", value: i.step_data.fields.fortify},
+		{valType: config.InfluxField, measurement: "fortify_data", name: "projectID", value: i.fortify_data.fields.projectID},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersionId", value: i.fortify_data.fields.projectVersionID},
@@ -247,6 +252,10 @@ Besides triggering a scan the step verifies the results after they have been upl
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -296,6 +305,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalScanParameters, "additionalScanParameters", []string{}, "List of additional scan parameters to be used for Fortify sourceanalyzer command execution.")
+	cmd.Flags().StringSliceVar(&stepConfig.AdditionalMvnParameters, "additionalMvnParameters", []string{}, "List of additional maven parameters to be used for Fortify mvn command execution.")
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
@@ -323,21 +333,23 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact''s status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
 	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "Options for translate phase of Fortify. Most likely, you do not need to set this parameter. See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details: It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
-	cmd.Flags().StringSliceVar(&stepConfig.Src, "src", []string{}, "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`. If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*', '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for `buildTool: 'pip'` it is `['./**/*']`.")
+	cmd.Flags().StringSliceVar(&stepConfig.Src, "src", []string{}, "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`. If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*', '**/src/gen/java/cds/**/*', '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for `buildTool: 'pip'` it is `['./**/*']`.")
 	cmd.Flags().StringSliceVar(&stepConfig.Exclude, "exclude", []string{}, "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g., `'**/Test.java'`. If `translate` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/src/test/**/*']`, for `buildTool: 'pip'` it is `['./**/tests/**/*', './**/setup.py']`.")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `/api/v1`, "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", `PDF`, "The type of report to be generated")
 	cmd.Flags().StringSliceVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", []string{`./lib`, `.`}, "A list of additional paths which can be used in `buildTool: 'pip'` for customization purposes")
 	cmd.Flags().StringVar(&stepConfig.ArtifactURL, "artifactUrl", os.Getenv("PIPER_artifactUrl"), "Path/URL pointing to an additional artifact repository for resolution of additional artifacts during the build")
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
-	cmd.Flags().BoolVar(&stepConfig.ConvertToSarif, "convertToSarif", false, "[BETA] Convert the proprietary format of Fortify scan results to the open SARIF standard. Uploaded through Cumulus later on.")
+	cmd.Flags().BoolVar(&stepConfig.ConvertToSarif, "convertToSarif", true, "Convert the proprietary format of Fortify scan results to the open SARIF standard.")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Fortify SSC Url to be used for accessing the APIs")
 	cmd.Flags().IntVar(&stepConfig.PullRequestMessageRegexGroup, "pullRequestMessageRegexGroup", 1, "The group number for extracting the pull request id in `'pullRequestMessageRegex'`")
 	cmd.Flags().IntVar(&stepConfig.DeltaMinutes, "deltaMinutes", 5, "The number of minutes for which an uploaded FPR artifact is considered to be recent and healthy, if exceeded an error will be thrown")
-	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
+	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number/percentage of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
+	cmd.Flags().StringVar(&stepConfig.SpotCheckMinimumUnit, "spotCheckMinimumUnit", `number`, "The unit for the spotCheckMinimum to apply.")
+	cmd.Flags().IntVar(&stepConfig.SpotCheckMaximum, "spotCheckMaximum", 0, "The maximum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown. Note that this flag depends on the result of spotCheckMinimum. For example if spotCheckMinimum percentage value exceeds spotCheckMaximum then spotCheckMaximum will be considerd else spotCheckMinimum is considered. If value is less than one, this flag will be ignored.")
 	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint for FPR downloads")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The default project versioning model used for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `buildTool: 'pip'` is used which allows further customizing the execution environment of the scan")
@@ -382,6 +394,15 @@ func fortifyExecuteScanMetadata() config.StepData {
 				Parameters: []config.StepParameters{
 					{
 						Name:        "additionalScanParameters",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "additionalMvnParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
@@ -771,7 +792,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     false,
+						Default:     true,
 					},
 					{
 						Name:        "fprUploadEndpoint",
@@ -835,6 +856,24 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     1,
+					},
+					{
+						Name:        "spotCheckMinimumUnit",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `number`,
+					},
+					{
+						Name:        "spotCheckMaximum",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
 					},
 					{
 						Name:        "fprDownloadEndpoint",
@@ -979,7 +1018,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"name": "step_data", "fields": []map[string]string{{"name": "fortify"}}},
-							{"name": "fortify_data", "fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+							{"name": "fortify_data", "fields": []map[string]string{{"name": "projectID"}, {"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},
 					{

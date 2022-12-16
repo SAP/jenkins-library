@@ -69,6 +69,9 @@ spec:
           - STEPS
         type: string
         default: "master"
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/headCommitId
       - name: excludeLabels
         description: "Allows to exclude issues with dedicated list of labels."
         scope:
@@ -91,6 +94,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/owner
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -119,6 +123,7 @@ spec:
           - name: commonPipelineEnvironment
             param: github/repository
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS

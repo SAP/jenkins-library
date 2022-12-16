@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestGradleIntegration ./integration/...
 
 package main
 
@@ -17,7 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestGradleExecuteBuild_JavaProject_BOMCreation(t *testing.T) {
+func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -26,8 +27,7 @@ func TestGradleExecuteBuild_JavaProject_BOMCreation(t *testing.T) {
 	pwd = filepath.Dir(pwd)
 
 	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestGradleIntegration", "java-project"), tempDir)
@@ -38,12 +38,12 @@ func TestGradleExecuteBuild_JavaProject_BOMCreation(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := fmt.Sprintf(`#!/bin/sh
 cd /test
-/piperbin/piper gradleExecuteBuild --createBOM >test-log.txt 2>&1
+/piperbin/piper gradleExecuteBuild >test-log.txt 2>&1
 `)
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
-		Image: "gradle:6-jdk11-alpine",
+		Image: "adoptopenjdk/openjdk11:jdk-11.0.11_9-alpine",
 		Cmd:   []string{"tail", "-f"},
 		BindMounts: map[string]string{
 			pwd:     "/piperbin",
@@ -65,9 +65,9 @@ cd /test
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)
-	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle tasks")
-	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle --init-script cyclonedx.gradle cyclonedxBom")
-	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle build")
+	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew tasks")
+	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew cyclonedxBom --init-script initScript.gradle.tmp")
+	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew build")
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
@@ -87,10 +87,10 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 		t.Fatal("Could not read files-list.txt.", err)
 	}
 	output = string(content)
-	assert.Contains(t, output, "bom.xml")
+	assert.Contains(t, output, "bom-gradle.xml")
 }
 
-func TestGradleExecuteBuild_JavaProjectWithBomPlugin(t *testing.T) {
+func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -99,8 +99,7 @@ func TestGradleExecuteBuild_JavaProjectWithBomPlugin(t *testing.T) {
 	pwd = filepath.Dir(pwd)
 
 	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
+	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestGradleIntegration", "java-project-with-bom-plugin"), tempDir)
@@ -139,7 +138,7 @@ cd /test
 	}
 	output := string(content)
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle tasks")
-	assert.Contains(t, output, "gradle cyclonedxBom")
+	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle cyclonedxBom")
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle build")
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
@@ -160,5 +159,5 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 		t.Fatal("Could not read files-list.txt.", err)
 	}
 	output = string(content)
-	assert.Contains(t, output, "bom.xml")
+	assert.Contains(t, output, "bom-gradle.xml")
 }

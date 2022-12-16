@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,7 +47,6 @@ type ghSearchIssuesMock struct {
 }
 
 func (g *ghSearchIssuesMock) Issues(ctx context.Context, query string, opts *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error) {
-
 	regex := regexp.MustCompile(`.*in:title (?P<Title>(.*))`)
 	matches := regex.FindStringSubmatch(query)
 
@@ -81,11 +80,13 @@ func (g *ghSearchIssuesMock) Issues(ctx context.Context, query string, opts *git
 
 type ghCreateCommentMock struct {
 	issueComment      *github.IssueComment
+	issueNumber       int
 	issueCommentError error
 }
 
 func (g *ghCreateCommentMock) CreateComment(ctx context.Context, owner string, repo string, number int, comment *github.IssueComment) (*github.IssueComment, *github.Response, error) {
 	g.issueComment = comment
+	g.issueNumber = number
 	ghRes := github.Response{Response: &http.Response{Status: "200"}}
 	if g.issueCommentError != nil {
 		ghRes.Status = "401"
@@ -115,7 +116,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		}
 
 		// test
-		err := createIssueLocal(ctx, &config, &ghCreateIssueService, &ghSearchIssuesMock, &ghCreateCommentMock)
+		_, err := createIssueLocal(ctx, &config, &ghCreateIssueService, &ghSearchIssuesMock, &ghCreateCommentMock)
 
 		// assert
 		assert.NoError(t, err)
@@ -144,7 +145,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		}
 
 		// test
-		err := createIssueLocal(ctx, &config, nil, &ghSearchIssuesMock, &ghCreateCommentMock)
+		_, err := createIssueLocal(ctx, &config, nil, &ghSearchIssuesMock, &ghCreateCommentMock)
 
 		// assert
 		assert.NoError(t, err)
@@ -152,6 +153,38 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		assert.NotNil(t, ghCreateCommentMock.issueComment)
 		assert.Equal(t, config.Title, ghSearchIssuesMock.issueTitle)
 		assert.Equal(t, config.Title, *ghSearchIssuesMock.issuesSearchResult.Issues[0].Title)
+		assert.Equal(t, "This is my test body", ghCreateCommentMock.issueComment.GetBody())
+	})
+
+	t.Run("Success update existing based on instance", func(t *testing.T) {
+		// init
+		ghSearchIssuesMock := ghSearchIssuesMock{
+			issueID: 1,
+		}
+		ghCreateCommentMock := ghCreateCommentMock{}
+		var id int64 = 2
+		var number int = 123
+		config := CreateIssueOptions{
+			Owner:          "TEST",
+			Repository:     "test",
+			Body:           []byte("This is my test body"),
+			Title:          "This is my title",
+			Assignees:      []string{"userIdOne", "userIdTwo"},
+			UpdateExisting: true,
+			Issue: &github.Issue{
+				ID:     &id,
+				Number: &number,
+			},
+		}
+
+		// test
+		_, err := createIssueLocal(ctx, &config, nil, &ghSearchIssuesMock, &ghCreateCommentMock)
+
+		// assert
+		assert.NoError(t, err)
+		assert.Nil(t, ghSearchIssuesMock.issuesSearchResult)
+		assert.NotNil(t, ghCreateCommentMock.issueComment)
+		assert.Equal(t, ghCreateCommentMock.issueNumber, number)
 		assert.Equal(t, "This is my test body", ghCreateCommentMock.issueComment.GetBody())
 	})
 
@@ -174,7 +207,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		}
 
 		// test
-		err := createIssueLocal(ctx, &config, &ghCreateIssueService, &ghSearchIssuesMock, &ghCreateCommentMock)
+		_, err := createIssueLocal(ctx, &config, &ghCreateIssueService, &ghSearchIssuesMock, &ghCreateCommentMock)
 
 		// assert
 		assert.NoError(t, err)
@@ -195,7 +228,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		}
 
 		// test
-		err := createIssueLocal(ctx, &config, &ghCreateIssueService, nil, nil)
+		_, err := createIssueLocal(ctx, &config, &ghCreateIssueService, nil, nil)
 
 		// assert
 		assert.EqualError(t, err, "error occurred when creating issue: error creating issue")

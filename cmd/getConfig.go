@@ -222,7 +222,10 @@ func generateConfig(utils getConfigUtils) error {
 		return err
 	}
 
-	myConfigJSON, _ := config.GetJSON(stepConfig.Config)
+	myConfigJSON, err := config.GetJSON(stepConfig.Config)
+	if err != nil {
+		return fmt.Errorf("failed to get JSON from config: %w", err)
+	}
 
 	if len(configOptions.outputFile) > 0 {
 		err := utils.FileWrite(configOptions.outputFile, []byte(myConfigJSON), 0666)
@@ -288,7 +291,7 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			}
 			if _, err := os.Stat(filepath.Dir(paramPath)); errors.Is(err, os.ErrNotExist) {
 				log.Entry().Debugf("Creating directory: %v", filepath.Dir(paramPath))
-				os.MkdirAll(filepath.Dir(paramPath), 0777)
+				_ = os.MkdirAll(filepath.Dir(paramPath), 0777)
 			}
 		}
 	}
@@ -304,7 +307,7 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 	for _, dir := range stepOutputDirectories {
 		if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
 			log.Entry().Debugf("Creating directory: %v", dir)
-			os.MkdirAll(dir, 0777)
+			_ = os.MkdirAll(dir, 0777)
 		}
 	}
 }

@@ -60,7 +60,7 @@ func (p *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) persist(path,
 	}
 }
 
-// AbapEnvironmentAssemblePackagesCommand Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
+// AbapEnvironmentAssemblePackagesCommand Assembly of installation, support package or patch in SAP BTP ABAP Environment system
 func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentAssemblePackages"
 
@@ -74,7 +74,7 @@ func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 
 	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
+		Short: "Assembly of installation, support package or patch in SAP BTP ABAP Environment system",
 		Long: `This step runs the assembly of a list of provided [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in SAP Cloud
 Platform ABAP Environment system and saves the corresponding [SAR archive](https://launchpad.support.sap.com/#/notes/212876) to the filesystem.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -105,6 +105,10 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
@@ -159,7 +163,7 @@ func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *aba
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
@@ -180,7 +184,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapEnvironmentAssemblePackages",
 			Aliases:     []config.Alias{},
-			Description: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
+			Description: "Assembly of installation, support package or patch in SAP BTP ABAP Environment system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

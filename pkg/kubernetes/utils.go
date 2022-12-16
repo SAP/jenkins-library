@@ -22,13 +22,14 @@ type DeployUtils interface {
 
 	piperutils.FileUtils
 	piperhttp.Uploader
+	piperhttp.Downloader
 }
 
 // deployUtilsBundle struct  for utils
 type deployUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
-	piperhttp.Uploader
+	*piperhttp.Client
 }
 
 // NewDeployUtilsBundle initialize using deployUtilsBundle struct
@@ -61,9 +62,10 @@ func NewDeployUtilsBundle(customTLSCertificateLinks []string) DeployUtils {
 					"Error: release * failed, * timed out waiting for the condition",
 				},
 			},
+			StepName: "helmExecute",
 		},
-		Files:    &piperutils.Files{},
-		Uploader: &httpClient,
+		Files:  &piperutils.Files{},
+		Client: &piperhttp.Client{},
 	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	utils.Stderr(log.Writer())

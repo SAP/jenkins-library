@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 )
 
@@ -22,18 +26,22 @@ type kanikoExecuteOptions struct {
 	BuildSettingsInfo                string   `json:"buildSettingsInfo,omitempty"`
 	ContainerBuildOptions            string   `json:"containerBuildOptions,omitempty"`
 	ContainerImage                   string   `json:"containerImage,omitempty"`
-	ContainerImageName               string   `json:"containerImageName,omitempty"`
+	ContainerImageName               string   `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
 	ContainerImageTag                string   `json:"containerImageTag,omitempty"`
 	ContainerMultiImageBuild         bool     `json:"containerMultiImageBuild,omitempty"`
 	ContainerMultiImageBuildExcludes []string `json:"containerMultiImageBuildExcludes,omitempty"`
 	ContainerMultiImageBuildTrimDir  string   `json:"containerMultiImageBuildTrimDir,omitempty"`
 	ContainerPreparationCommand      string   `json:"containerPreparationCommand,omitempty"`
 	ContainerRegistryURL             string   `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser            string   `json:"containerRegistryUser,omitempty"`
+	ContainerRegistryPassword        string   `json:"containerRegistryPassword,omitempty"`
 	CustomTLSCertificateLinks        []string `json:"customTlsCertificateLinks,omitempty"`
 	DockerConfigJSON                 string   `json:"dockerConfigJSON,omitempty"`
 	DockerfilePath                   string   `json:"dockerfilePath,omitempty"`
 	TargetArchitectures              []string `json:"targetArchitectures,omitempty"`
 	ReadImageDigest                  bool     `json:"readImageDigest,omitempty"`
+	CreateBOM                        bool     `json:"createBOM,omitempty"`
+	SyftDownloadURL                  string   `json:"syftDownloadUrl,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
@@ -78,6 +86,42 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 	}
 }
 
+type kanikoExecuteReports struct {
+}
+
+func (p *kanikoExecuteReports) persist(stepConfig kanikoExecuteOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/bom-*.xml", ParamRef: "", StepResultType: "sbom"},
+	}
+	envVars := []gcs.EnvVar{
+		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
+	}
+	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // KanikoExecuteCommand Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
 func KanikoExecuteCommand() *cobra.Command {
 	const STEP_NAME = "kanikoExecute"
@@ -86,6 +130,7 @@ func KanikoExecuteCommand() *cobra.Command {
 	var stepConfig kanikoExecuteOptions
 	var startTime time.Time
 	var commonPipelineEnvironment kanikoExecuteCommonPipelineEnvironment
+	var reports kanikoExecuteReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -186,6 +231,10 @@ Following final image names will be built:
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -202,6 +251,7 @@ Following final image names will be built:
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -244,11 +294,15 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().StringVar(&stepConfig.ContainerMultiImageBuildTrimDir, "containerMultiImageBuildTrimDir", os.Getenv("PIPER_containerMultiImageBuildTrimDir"), "Defines a trailing directory part which should not be considered in the final image name.")
 	cmd.Flags().StringVar(&stepConfig.ContainerPreparationCommand, "containerPreparationCommand", `rm -f /kaniko/.docker/config.json`, "Defines the command to prepare the Kaniko container. By default the contained credentials are removed in order to allow anonymous access to container registries.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username of the Container registry where the image should be pushed to - which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON` , then the existing file will be enhanced")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password of the Container registry where the image should be pushed to -  which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON` , then the existing file will be enhanced")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.DockerfilePath, "dockerfilePath", `Dockerfile`, "Defines the location of the Dockerfile relative to the Jenkins workspace.")
 	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{``}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma. (EXPERIMENTAL)")
 	cmd.Flags().BoolVar(&stepConfig.ReadImageDigest, "readImageDigest", false, "")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
+	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
 
 }
 
@@ -381,6 +435,34 @@ func kanikoExecuteMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
+						Name: "containerRegistryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerRegistryUser"}},
+						Default:   os.Getenv("PIPER_containerRegistryUser"),
+					},
+					{
+						Name: "containerRegistryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerRegistryPassword"}},
+						Default:   os.Getenv("PIPER_containerRegistryPassword"),
+					},
+					{
 						Name:        "customTlsCertificateLinks",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -392,11 +474,6 @@ func kanikoExecuteMetadata() config.StepData {
 					{
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/dockerConfigJSON",
-							},
-
 							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
@@ -441,6 +518,24 @@ func kanikoExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     false,
 					},
+					{
+						Name:        "createBOM",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "syftDownloadUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -459,6 +554,13 @@ func kanikoExecuteMetadata() config.StepData {
 							{"name": "container/imageNameTags", "type": "[]string"},
 							{"name": "container/imageDigests", "type": "[]string"},
 							{"name": "custom/buildSettingsInfo"},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "**/bom-*.xml", "type": "sbom"},
 						},
 					},
 				},

@@ -100,7 +100,7 @@ class SnykExecuteTest extends BasePiperTest {
         )
 
         assertThat(withCredentialsParameters.credentialsId, is('myPassword'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:lts-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:lts-buster'))
         assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('buildDescriptor'))
         assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('opensourceConfiguration'))
     }
@@ -112,12 +112,12 @@ class SnykExecuteTest extends BasePiperTest {
         def expectedEnvVars = ['SNYK_TOKEN':'', 'env1': 'value1', 'env2': 'value2']
         def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
         def expectedWorkspace = '/path/to/workspace'
-        
-        
+
+
         nullScript.commonPipelineEnvironment.configuration = MapUtils.merge(
             nullScript.commonPipelineEnvironment.configuration,
             [steps:[snykExecute:[
-                dockerImage: expectedImage, 
+                dockerImage: expectedImage,
                 dockerOptions: expectedOptions,
                 dockerEnvVars: expectedEnvVars,
                 dockerWorkspace: expectedWorkspace
@@ -127,13 +127,13 @@ class SnykExecuteTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils
         )
-        
+
         assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
         assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
         assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
         assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
     }
-    
+
     @Test
     void testScanTypeNpm() throws Exception {
         stepRule.step.snykExecute(

@@ -28,7 +28,6 @@ type artifactVersioningMock struct {
 	newVersion       string
 	getVersionError  string
 	setVersionError  string
-	initCalled       bool
 	versioningScheme string
 	coordinates      versioning.Coordinates
 	coordinatesError error
@@ -799,6 +798,7 @@ func TestPropagateVersion(t *testing.T) {
 			VersioningType:              "cloud",
 			AdditionalTargetTools:       []string{"helm"},
 			AdditionalTargetDescriptors: []string{"myChart/Chart.yaml"},
+			IncludeCommitID:             true,
 		}
 
 		chartMetadata := chart.Metadata{Version: "1.2.3"}
@@ -811,6 +811,43 @@ func TestPropagateVersion(t *testing.T) {
 
 		err = propagateVersion(&config, utils, &artifactOpts, "1.2.4", gitCommitID, testTime)
 		assert.NoError(t, err)
+
+		chartContent, err := utils.FileRead("myChart/Chart.yaml")
+		assert.NoError(t, err)
+		chartMeta := chart.Metadata{}
+		err = yaml.Unmarshal(chartContent, &chartMeta)
+		assert.NoError(t, err)
+
+		assert.Equal(t, "1.2.4-20200101000000_theGitCommitId", chartMeta.AppVersion)
+		assert.Equal(t, "1.2.4-20200101000000+theGitCommitId", chartMeta.Version)
+	})
+
+	t.Run("success case - dedicated build descriptors / no cloud", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			VersioningType:              "library",
+			AdditionalTargetTools:       []string{"helm"},
+			AdditionalTargetDescriptors: []string{"myChart/Chart.yaml"},
+		}
+
+		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		content, err := yaml.Marshal(chartMetadata)
+		assert.NoError(t, err)
+
+		utils := newArtifactPrepareVersionMockUtils()
+		utils.AddFile("myChart/Chart.yaml", content)
+		artifactOpts := versioning.Options{}
+
+		err = propagateVersion(&config, utils, &artifactOpts, "1.2.4", gitCommitID, testTime)
+		assert.NoError(t, err)
+
+		chartContent, err := utils.FileRead("myChart/Chart.yaml")
+		assert.NoError(t, err)
+		chartMeta := chart.Metadata{}
+		err = yaml.Unmarshal(chartContent, &chartMeta)
+		assert.NoError(t, err)
+
+		assert.Equal(t, "1.2.4", chartMeta.AppVersion)
+		assert.Equal(t, "1.2.4", chartMeta.Version)
 	})
 
 	t.Run("success case - noop", func(t *testing.T) {

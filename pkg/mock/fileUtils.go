@@ -4,7 +4,11 @@
 package mock
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -20,8 +24,8 @@ import (
 var dirContent []byte
 
 const (
-	defaultFileMode os.FileMode = 0644
-	defaultDirMode  os.FileMode = 0755
+	defaultFileMode os.FileMode = 0o644
+	defaultDirMode  os.FileMode = 0o755
 )
 
 type fileInfoMock struct {
@@ -50,7 +54,7 @@ func (p *fileProperties) isDir() bool {
 	return p.content == &dirContent
 }
 
-//FilesMock implements the functions from piperutils.Files with an in-memory file system.
+// FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
 	files            map[string]*fileProperties
 	writtenFiles     []string
@@ -274,6 +278,11 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	return *props.content, nil
 }
 
+// ReadFile can be used as replacement for os.ReadFile in a compatible manner
+func (f *FilesMock) ReadFile(name string) ([]byte, error) {
+	return f.FileRead(name)
+}
+
 // FileWrite just forwards to AddFile(), i.e. the content is associated with the given path.
 func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) error {
 	if f.FileWriteError != nil {
@@ -286,6 +295,11 @@ func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) err
 	f.writtenFiles = append(f.writtenFiles, f.toAbsPath(path))
 	f.AddFileWithMode(path, content, mode)
 	return nil
+}
+
+// WriteFile can be used as replacement for os.WriteFile in a compatible manner
+func (f *FilesMock) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return f.FileWrite(filename, data, perm)
 }
 
 // RemoveAll is a proxy for FileRemove
@@ -378,7 +392,7 @@ func (f *FilesMock) TempDir(baseDir string, pattern string) (string, error) {
 		tmpDir = fmt.Sprintf("%s/%stest", baseDir, pattern)
 	}
 
-	err := f.MkdirAll(tmpDir, 0755)
+	err := f.MkdirAll(tmpDir, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -529,25 +543,58 @@ func (f *FilesMock) Symlink(oldname, newname string) error {
 	return nil
 }
 
+// CreateArchive creates in memory tar.gz archive, with the content provided.
+func (f *FilesMock) CreateArchive(content map[string][]byte) ([]byte, error) {
+	if len(content) == 0 {
+		return nil, errors.New("mock archive content must not be empty")
+	}
+
+	buf := bytes.NewBuffer(nil)
+	gw := gzip.NewWriter(buf)
+	tw := tar.NewWriter(gw)
+
+	for fileName, fileContent := range content {
+		err := tw.WriteHeader(&tar.Header{
+			Name:     fileName,
+			Size:     int64(len(fileContent)),
+			Typeflag: tar.TypeRegA,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = tw.Write(fileContent)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err := tw.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	err = gw.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
 // FileMock can be used in places where a io.Closer, io.StringWriter or io.Writer is expected.
 // It is the concrete type returned from FilesMock.OpenFile()
 type FileMock struct {
 	absPath string
 	files   *FilesMock
 	content []byte
+	buf     io.Reader
 }
 
 // Reads the content of the mock
 func (f *FileMock) Read(b []byte) (n int, err error) {
-	if len(b) == 0 {
-		return 0, nil
-	}
-
-	for i, p := range f.content {
-		b[i] = p
-	}
-
-	return len(f.content), io.EOF
+	return f.buf.Read(b)
 }
 
 // Close mocks freeing the associated OS resources.
@@ -598,20 +645,21 @@ func (f *FilesMock) OpenFile(path string, flag int, perm os.FileMode) (*FileMock
 	}
 	if !exists && flag&os.O_CREATE != 0 {
 		f.associateContentAbs(absPath, &[]byte{}, perm)
-		properties, _ = f.files[absPath]
+		properties = f.files[absPath]
 	}
 
 	file := FileMock{
 		absPath: absPath,
 		files:   f,
-		content: []byte{},
+		content: *properties.content,
 	}
 
-	if flag&os.O_APPEND != 0 {
-		file.content = *properties.content
-	} else if flag&os.O_TRUNC != 0 {
+	if flag&os.O_TRUNC != 0 || flag&os.O_CREATE != 0 {
+		file.content = []byte{}
 		properties.content = &file.content
 	}
+
+	file.buf = bytes.NewBuffer(file.content)
 
 	return &file, nil
 }
@@ -621,5 +669,5 @@ func (f *FilesMock) Open(name string) (io.ReadWriteCloser, error) {
 }
 
 func (f *FilesMock) Create(name string) (io.ReadWriteCloser, error) {
-	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
 }

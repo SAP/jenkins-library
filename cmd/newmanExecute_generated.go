@@ -148,6 +148,10 @@ func NewmanExecuteCommand() *cobra.Command {
 				log.RegisterHook(logCollector)
 			}
 
+			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
+				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+			}
+
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
@@ -296,7 +300,7 @@ func newmanExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "newman", Image: "node:lts-stretch", WorkingDir: "/home/node"},
+				{Name: "newman", Image: "node:lts-buster", WorkingDir: "/home/node"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

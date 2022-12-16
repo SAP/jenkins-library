@@ -118,8 +118,8 @@ func TestMtaBuild(t *testing.T) {
 
 		var result MtaResult
 		mtaContent, _ := utilsMock.FileRead("mta.yaml")
-		yaml.Unmarshal(mtaContent, &result)
-
+		err = yaml.Unmarshal(mtaContent, &result)
+		assert.NoError(t, err)
 		assert.Equal(t, "myName", result.ID)
 		assert.Equal(t, "1.2.3", result.Version)
 		assert.Equal(t, "myApp", result.Modules[0].Name)
@@ -366,13 +366,19 @@ func TestMtaBuildMtar(t *testing.T) {
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"nameFromMtar\""))
 
-			assert.Equal(t, filepath.FromSlash("nameFromMtar.mtar"), _ignoreError(getMtarName(mtaBuildOptions{MtarName: ""}, "mta.yaml", utilsMock)))
+			assert.Equal(t, filepath.FromSlash("nameFromMtar.mtar"), _ignoreErrorForGetMtarName(getMtarName(mtaBuildOptions{MtarName: ""}, "mta.yaml", utilsMock)))
+		})
+		t.Run("mtar name from yaml with suffixed value", func(t *testing.T) {
+			utilsMock := newMtaBuildTestUtilsBundle()
+			utilsMock.AddFile("mta.yaml", []byte("ID: \"nameFromMtar.mtar\""))
+
+			assert.Equal(t, filepath.FromSlash("nameFromMtar.mtar"), _ignoreErrorForGetMtarName(getMtarName(mtaBuildOptions{MtarName: ""}, "mta.yaml", utilsMock)))
 		})
 		t.Run("mtar name from config", func(t *testing.T) {
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"nameFromMtar\""))
 
-			assert.Equal(t, filepath.FromSlash("nameFromConfig.mtar"), _ignoreError(getMtarName(mtaBuildOptions{MtarName: "nameFromConfig.mtar"}, "mta.yaml", utilsMock)))
+			assert.Equal(t, filepath.FromSlash("nameFromConfig.mtar"), _ignoreErrorForGetMtarName(getMtarName(mtaBuildOptions{MtarName: "nameFromConfig.mtar"}, "mta.yaml", utilsMock)))
 		})
 	})
 
@@ -399,5 +405,9 @@ func TestMtaBuildMtar(t *testing.T) {
 }
 
 func _ignoreError(s string, e error) string {
+	return s
+}
+
+func _ignoreErrorForGetMtarName(s string, b bool, e error) string {
 	return s
 }

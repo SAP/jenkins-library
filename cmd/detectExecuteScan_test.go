@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +16,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 
+	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +26,14 @@ type detectTestUtilsBundle struct {
 	*mock.ShellMockRunner
 	*mock.FilesMock
 	customEnv []string
+}
+
+func (d *detectTestUtilsBundle) GetIssueService() *github.IssuesService {
+	return nil
+}
+
+func (d *detectTestUtilsBundle) GetSearchService() *github.SearchService {
+	return nil
 }
 
 type httpMockClient struct {
@@ -58,7 +68,7 @@ func newBlackduckMockSystem(config detectExecuteScanOptions) blackduckSystem {
 		responseBodyForURL: map[string]string{
 			"https://my.blackduck.system/api/tokens/authenticate":                                                                               authContent,
 			"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                   projectContent,
-			"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions":                                            projectVersionContent,
+			"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                         projectVersionContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?limit=999&offset=0":                                 componentsContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/vunlerable-bom-components?limit=999&offset=0":                  vulnerabilitiesContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?filter=policyCategory%3Alicense&limit=999&offset=0": componentsContent,
@@ -120,7 +130,7 @@ const (
 		]
 	}`
 	componentsContent = `{
-		"totalCount": 2,
+		"totalCount": 3,
 		"items" : [
 			{
 				"componentName": "Spring Framework",
@@ -130,20 +140,46 @@ const (
 				"componentName": "Apache Tomcat",
 				"componentVersionName": "9.0.52",
 				"policyStatus": "IN_VIOLATION"
+			}, {
+				"componentName": "Apache Log4j",
+				"componentVersionName": "4.5.16",
+				"policyStatus": "UNKNOWN"
 			}
 		]
 	}`
 	vulnerabilitiesContent = `{
-		"totalCount": 1,
+		"totalCount": 3,
 		"items": [
 			{
 				"componentName": "Spring Framework",
-				"componentVersionName": "5.3.2",
+				"componentVersionName": "5.3.9",
 				"vulnerabilityWithRemediation" : {
 					"vulnerabilityName" : "BDSA-2019-2021",
 					"baseScore" : 7.5,
 					"overallScore" : 7.5,
 					"severity" : "HIGH",
+					"remediationStatus" : "IGNORED",
+					"description" : "description"
+				}
+			}, {
+				"componentName": "Apache Log4j",
+				"componentVersionName": "4.5.16",
+				"vulnerabilityWithRemediation" : {
+					"vulnerabilityName" : "BDSA-2020-4711",
+					"baseScore" : 7.5,
+					"overallScore" : 7.5,
+					"severity" : "HIGH",
+					"remediationStatus" : "IGNORED",
+					"description" : "description"
+				}
+			}, {
+				"componentName": "Apache Log4j",
+				"componentVersionName": "4.5.16",
+				"vulnerabilityWithRemediation" : {
+					"vulnerabilityName" : "BDSA-2020-4712",
+					"baseScore" : 4.5,
+					"overallScore" : 4.5,
+					"severity" : "MEDIUM",
 					"remediationStatus" : "IGNORED",
 					"description" : "description"
 				}
@@ -164,7 +200,6 @@ func (c *detectTestUtilsBundle) RunExecutable(string, ...string) error {
 }
 
 func (c *detectTestUtilsBundle) SetOptions(piperhttp.ClientOptions) {
-
 }
 
 func (c *detectTestUtilsBundle) GetOsEnv() []string {
@@ -172,7 +207,6 @@ func (c *detectTestUtilsBundle) GetOsEnv() []string {
 }
 
 func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
-
 	if c.expectedError != nil {
 		return c.expectedError
 	}
@@ -200,9 +234,10 @@ func TestRunDetect(t *testing.T) {
 	t.Parallel()
 	t.Run("success case", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect7.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -215,12 +250,13 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("success case detect 6", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
 		options := detectExecuteScanOptions{
 			CustomEnvironmentVariables: []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"},
 		}
-		err := runDetect(options, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, options, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -233,10 +269,11 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("success case detect 6 from OS env", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
 		utilsMock.customEnv = []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"}
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -249,11 +286,12 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
+		err := runDetect(ctx, detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
 		assert.Equal(t, utilsMock.ExitCode, 3)
 		assert.Contains(t, err.Error(), "FAILURE_POLICY_VIOLATION => Detect found policy violations.")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -261,10 +299,11 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("maven parameters", func(t *testing.T) {
 		t.Parallel()
+		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.CurrentDir = "root_folder"
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{
+		err := runDetect(ctx, detectExecuteScanOptions{
 			M2Path:              ".pipeline/local_repo",
 			ProjectSettingsFile: "project-settings.xml",
 			GlobalSettingsFile:  "global-settings.xml",
@@ -582,6 +621,30 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.tools=DETECTOR",
 			},
 		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:       "https://server.url",
+				Token:           "apiToken",
+				ProjectName:     "testName",
+				Version:         "1.0",
+				VersioningModel: "major-minor",
+				CodeLocation:    "",
+				ScanPaths:       []string{"path1", "path2"},
+				MinScanInterval: 4,
+			},
+			expected: []string{
+				"--testProp1=1",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"\"--detect.project.name='testName'\"",
+				"\"--detect.project.version.name='1.0'\"",
+				"\"--detect.code.location.name='testName/1.0'\"",
+				"--detect.blackduck.signature.scanner.paths=path1,path2",
+				"--detect.source.path='.'",
+			},
+		},
 	}
 
 	for k, v := range testData {
@@ -597,7 +660,6 @@ func TestAddDetectArgs(t *testing.T) {
 
 // Testing exit code mapping method
 func TestExitCodeMapping(t *testing.T) {
-
 	cases := []struct {
 		exitCode int
 		expected string
@@ -617,10 +679,11 @@ func TestExitCodeMapping(t *testing.T) {
 func TestPostScanChecksAndReporting(t *testing.T) {
 	t.Parallel()
 	t.Run("Reporting after scan", func(t *testing.T) {
+		ctx := context.Background()
 		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
 		utils := newDetectTestUtilsBundle()
 		sys := newBlackduckMockSystem(config)
-		err := postScanChecksAndReporting(config, &detectExecuteScanInflux{}, utils, &sys)
+		err := postScanChecksAndReporting(ctx, config, &detectExecuteScanInflux{}, utils, &sys)
 
 		assert.EqualError(t, err, "License Policy Violations found")
 		content, err := utils.FileRead("blackduck-ip.json")
@@ -639,8 +702,21 @@ func TestIsMajorVulnerability(t *testing.T) {
 		v := bd.Vulnerability{
 			Name:                         "",
 			VulnerabilityWithRemediation: vr,
+			Ignored:                      false,
 		}
 		assert.True(t, isMajorVulnerability(v))
+	})
+	t.Run("Case Ignored Components", func(t *testing.T) {
+		vr := bd.VulnerabilityWithRemediation{
+			OverallScore: 7.5,
+			Severity:     "HIGH",
+		}
+		v := bd.Vulnerability{
+			Name:                         "",
+			VulnerabilityWithRemediation: vr,
+			Ignored:                      true,
+		}
+		assert.False(t, isMajorVulnerability(v))
 	})
 	t.Run("Case False", func(t *testing.T) {
 		vr := bd.VulnerabilityWithRemediation{
@@ -650,6 +726,7 @@ func TestIsMajorVulnerability(t *testing.T) {
 		v := bd.Vulnerability{
 			Name:                         "",
 			VulnerabilityWithRemediation: vr,
+			Ignored:                      false,
 		}
 		assert.False(t, isMajorVulnerability(v))
 	})
@@ -701,6 +778,44 @@ func TestGetActivePolicyViolations(t *testing.T) {
 
 		components, err := sys.Client.GetComponents("SHC-PiperTest", "1.0")
 		assert.NoError(t, err)
-		assert.Equal(t, getActivePolicyViolations(components), 2)
+		assert.Equal(t, 2, getActivePolicyViolations(components))
+	})
+}
+
+func TestGetVulnerabilitiesWithComponents(t *testing.T) {
+	t.Parallel()
+	t.Run("Case true", func(t *testing.T) {
+		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
+		sys := newBlackduckMockSystem(config)
+
+		vulns, err := getVulnerabilitiesWithComponents(config, &detectExecuteScanInflux{}, &sys)
+		assert.NoError(t, err)
+		vulnerabilitySpring := bd.Vulnerability{}
+		vulnerabilityLog4j1 := bd.Vulnerability{}
+		vulnerabilityLog4j2 := bd.Vulnerability{}
+		for _, v := range vulns.Items {
+			if v.VulnerabilityWithRemediation.VulnerabilityName == "BDSA-2019-2021" {
+				vulnerabilitySpring = v
+			}
+			if v.VulnerabilityWithRemediation.VulnerabilityName == "BDSA-2020-4711" {
+				vulnerabilityLog4j1 = v
+			}
+			if v.VulnerabilityWithRemediation.VulnerabilityName == "BDSA-2020-4712" {
+				vulnerabilityLog4j2 = v
+			}
+		}
+		vulnerableComponentSpring := &bd.Component{}
+		vulnerableComponentLog4j := &bd.Component{}
+		for i := 0; i < len(vulns.Items); i++ {
+			if vulns.Items[i].Component != nil && vulns.Items[i].Component.Name == "Spring Framework" {
+				vulnerableComponentSpring = vulns.Items[i].Component
+			}
+			if vulns.Items[i].Component != nil && vulns.Items[i].Component.Name == "Apache Log4j" {
+				vulnerableComponentLog4j = vulns.Items[i].Component
+			}
+		}
+		assert.Equal(t, vulnerableComponentSpring, vulnerabilitySpring.Component)
+		assert.Equal(t, vulnerableComponentLog4j, vulnerabilityLog4j1.Component)
+		assert.Equal(t, vulnerableComponentLog4j, vulnerabilityLog4j2.Component)
 	})
 }

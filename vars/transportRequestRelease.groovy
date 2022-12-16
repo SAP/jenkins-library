@@ -81,6 +81,8 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
+        addPipelineWarning(script, "Deprecation Warning", "The step ${STEP_NAME} is deprecated. Follow the documentation for options.")
+
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
@@ -187,4 +189,17 @@ void call(Map parameters = [:]) {
 
         echo "[INFO] Transport Request '${configuration.transportRequestId}' has been successfully closed."
     }
+}
+
+static void addPipelineWarning(Script script, String heading, String message) {
+    script.echo '[WARNING] ' + message
+    script.addBadge(icon: "warning.gif", text: message)
+
+    String html =
+        """
+            <h2>$heading</h2>
+            <p>$message</p>
+            """
+
+    script.createSummary(icon: "warning.gif", text: html)
 }

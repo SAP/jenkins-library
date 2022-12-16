@@ -2,12 +2,14 @@ package orchestrator
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"strings"
+	"time"
+
 	"github.com/Jeffail/gabs/v2"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"time"
 )
 
 type JenkinsConfigProvider struct {
@@ -86,6 +88,37 @@ func (j *JenkinsConfigProvider) GetBuildStatus() string {
 	return "FAILURE"
 }
 
+// GetChangeSet returns the commitIds and timestamp of the changeSet of the current run
+func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
+	j.fetchAPIInformation()
+
+	marshal, err := json.Marshal(j.apiInformation)
+	if err != nil {
+		log.Entry().WithError(err).Debugf("could not marshal apiInformation")
+		return []ChangeSet{}
+	}
+	jsonParsed, err := gabs.ParseJSON(marshal)
+	if err != nil {
+		log.Entry().WithError(err).Debugf("could not parse apiInformation")
+		return []ChangeSet{}
+	}
+
+	var changeSetList []ChangeSet
+	for _, child := range jsonParsed.Path("changeSets").Children() {
+		if child.Path("kind").Data().(string) == "git" {
+			for _, item := range child.S("items").Children() {
+				tmpChangeSet := ChangeSet{
+					CommitId:  item.Path("commitId").Data().(string),
+					Timestamp: item.Path("timestamp").String(),
+				}
+				changeSetList = append(changeSetList, tmpChangeSet)
+			}
+		}
+
+	}
+	return changeSetList
+}
+
 // GetLog returns the logfile from the current job as byte object
 func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 	URL := j.GetBuildURL() + "consoleText"
@@ -158,8 +191,11 @@ func (j *JenkinsConfigProvider) GetStageName() string {
 	return getEnv("STAGE_NAME", "n/a")
 }
 
-//GetBuildReason returns the build reason of the current build
+// GetBuildReason returns the build reason of the current build
 func (j *JenkinsConfigProvider) GetBuildReason() string {
+	// BuildReasons are unified with AzureDevOps build reasons,see
+	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
+	// ResourceTrigger, PullRequest, Manual, IndividualCI, Schedule
 	j.fetchAPIInformation()
 	marshal, err := json.Marshal(j.apiInformation)
 	if err != nil {
@@ -171,15 +207,23 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 		log.Entry().WithError(err).Debugf("could not parse apiInformation")
 		return "Unknown"
 	}
-	for _, child := range jsonParsed.S("actions").Children() {
+
+	for _, child := range jsonParsed.Path("actions").Children() {
 		class := child.S("_class")
-		if class.String() == "\"hudson.model.CauseAction\"" {
-			for _, val := range child.S("causes").Children() {
+		if class == nil {
+			continue
+		}
+		if class.Data().(string) == "hudson.model.CauseAction" {
+			for _, val := range child.Path("causes").Children() {
 				subclass := val.S("_class")
-				if subclass.String() == "\"hudson.model.Cause$UserIdCause\"" {
+				if subclass.Data().(string) == "hudson.model.Cause$UserIdCause" {
 					return "Manual"
-				} else if subclass.String() == "\"hudson.triggers.TimerTrigger$TimerTriggerCause\"" {
+				} else if subclass.Data().(string) == "hudson.triggers.TimerTrigger$TimerTriggerCause" {
 					return "Schedule"
+				} else if subclass.Data().(string) == "jenkins.branch.BranchEventCause" {
+					return "PullRequest"
+				} else if subclass.Data().(string) == "org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause" {
+					return "ResourceTrigger"
 				} else {
 					return "Unknown"
 				}
@@ -187,13 +231,24 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 		}
 
 	}
-
 	return "Unknown"
 }
 
 // GetBranch returns the branch name, only works with the git plugin enabled
 func (j *JenkinsConfigProvider) GetBranch() string {
 	return getEnv("BRANCH_NAME", "n/a")
+}
+
+// GetReference returns the git reference, only works with the git plugin enabled
+func (j *JenkinsConfigProvider) GetReference() string {
+	ref := getEnv("BRANCH_NAME", "n/a")
+	if ref == "n/a" {
+		return ref
+	} else if strings.Contains(ref, "PR") {
+		return "refs/pull/" + strings.Split(ref, "-")[1] + "/head"
+	} else {
+		return "refs/heads/" + ref
+	}
 }
 
 // GetBuildURL returns the build url, e.g. https://jaas.url/job/foo/job/bar/job/main/1234/

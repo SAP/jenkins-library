@@ -171,7 +171,7 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectController.ListProject(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	for _, project := range result.GetPayload().Data {
 		if *project.Name == projectName {
@@ -197,17 +197,17 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 // GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
 // projectName parameter is only used if autoCreate=true
 func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
-	nameParam := fmt.Sprintf("name=%v", versionName)
+	nameParam := fmt.Sprintf(`name:"%v"`, versionName)
 	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionOfProjectController.ListProjectVersionOfProject(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
-	for _, projectVersion := range result.GetPayload().Data {
-		if *projectVersion.Name == versionName {
-			return projectVersion, nil
-		}
+
+	if result.Payload.Count > 0 {
+		projectVersion := result.GetPayload().Data[0]
+		return projectVersion, nil
 	}
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if !autoCreate {
@@ -324,7 +324,7 @@ func (sys *SystemInstance) GetProjectVersionAttributesByProjectVersionID(id int6
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.AttributeOfProjectVersionController.ListAttributeOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -335,7 +335,7 @@ func (sys *SystemInstance) SetProjectVersionAttributesByProjectVersionID(id int6
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.AttributeOfProjectVersionController.UpdateCollectionAttributeOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -346,7 +346,7 @@ func (sys *SystemInstance) CreateProjectVersion(version *models.ProjectVersion) 
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionController.CreateProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -365,7 +365,7 @@ func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int6
 	params.WithTimeout(sys.timeout)
 	_, err := sys.client.ProjectVersionController.CopyProjectVersion(params, sys)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return nil
 }
@@ -380,7 +380,7 @@ func (sys *SystemInstance) ProjectVersionCopyCurrentState(sourceID, targetID int
 	params.WithTimeout(sys.timeout)
 	_, err := sys.client.ProjectVersionController.CopyCurrentStateForProjectVersion(params, sys)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return nil
 }
@@ -391,7 +391,7 @@ func (sys *SystemInstance) getAuthEntityOfProjectVersion(id int64) ([]*models.Au
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.AuthEntityOfProjectVersionController.ListAuthEntityOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -401,7 +401,7 @@ func (sys *SystemInstance) updateCollectionAuthEntityOfProjectVersion(id int64, 
 	params.WithTimeout(sys.timeout)
 	_, err := sys.client.AuthEntityOfProjectVersionController.UpdateCollectionAuthEntityOfProjectVersion(params, sys)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return nil
 }
@@ -424,7 +424,7 @@ func (sys *SystemInstance) updateProjectVersionDetails(id int64, details *models
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionController.UpdateProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -450,7 +450,7 @@ func (sys *SystemInstance) GetArtifactsOfProjectVersion(id int64) ([]*models.Art
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ArtifactOfProjectVersionController.ListArtifactOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -485,7 +485,7 @@ func (sys *SystemInstance) GetFilterSetOfProjectVersionByTitle(id int64, title s
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.FilterSetOfProjectVersionController.ListFilterSetOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	var defaultFilterSet *models.FilterSet
 	for _, filterSet := range result.GetPayload().Data {
@@ -511,7 +511,7 @@ func (sys *SystemInstance) GetIssueFilterSelectorOfProjectVersionByName(id int64
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueSelectorSetOfProjectVersionController.GetIssueSelectorSetOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return sys.ReduceIssueFilterSelectorSet(result.GetPayload().Data, names, options), nil
 }
@@ -553,7 +553,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 	return &models.IssueFilterSelectorSet{GroupBySet: groupingList, FilterBySet: filterList}
 }
 
-//GetFilterSetByDisplayName returns the set identified by the provided name or nil
+// GetFilterSetByDisplayName returns the set identified by the provided name or nil
 func (sys *SystemInstance) GetFilterSetByDisplayName(issueFilterSelectorSet *models.IssueFilterSelectorSet, name string) *models.IssueFilterSelector {
 	if issueFilterSelectorSet.FilterBySet != nil {
 		for _, filter := range issueFilterSelectorSet.FilterBySet {
@@ -574,7 +574,7 @@ func (sys *SystemInstance) getIssuesOfProjectVersion(id int64, filter, filterset
 	}
 	result, err := sys.client.IssueGroupOfProjectVersionController.ListIssueGroupOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -599,7 +599,7 @@ func (sys *SystemInstance) GetIssueStatisticsOfProjectVersion(id int64) ([]*mode
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueStatisticsOfProjectVersionController.ListIssueStatisticsOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -618,7 +618,7 @@ func (sys *SystemInstance) GenerateQGateReport(projectID, projectVersionID, repo
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.SavedReportController.CreateSavedReport(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -629,7 +629,7 @@ func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, erro
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.SavedReportController.ReadSavedReport(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -637,11 +637,12 @@ func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, erro
 // GetIssueDetails returns the details of an issue with its issueInstanceId and projectVersionId
 func (sys *SystemInstance) GetIssueDetails(projectVersionId int64, issueInstanceId string) ([]*models.ProjectVersionIssue, error) {
 	qmStr := "issues"
-	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Q: &issueInstanceId, Qm: &qmStr}
+	showSuppressed := true
+	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Q: &issueInstanceId, Qm: &qmStr, Showsuppressed: &showSuppressed}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueOfProjectVersionController.ListIssueOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -650,11 +651,12 @@ func (sys *SystemInstance) GetIssueDetails(projectVersionId int64, issueInstance
 func (sys *SystemInstance) GetAllIssueDetails(projectVersionId int64) ([]*models.ProjectVersionIssue, error) {
 	var limit int32
 	limit = -1
-	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Limit: &limit}
+	showSuppressed := true
+	params := &issue_of_project_version_controller.ListIssueOfProjectVersionParams{ParentID: projectVersionId, Limit: &limit, Showsuppressed: &showSuppressed}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueOfProjectVersionController.ListIssueOfProjectVersion(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -665,7 +667,7 @@ func (sys *SystemInstance) GetIssueComments(parentId int64) ([]*models.IssueAudi
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueAuditCommentOfIssueController.ListIssueAuditCommentOfIssue(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -675,7 +677,10 @@ func (sys *SystemInstance) invalidateFileTokens() error {
 	params := &file_token_controller.MultiDeleteFileTokenParams{}
 	params.WithTimeout(sys.timeout)
 	_, err := sys.client.FileTokenController.MultiDeleteFileToken(params, sys)
-	return err
+	if err != nil {
+		return fmt.Errorf("Error from url %s %w", sys.serverURL, err)
+	}
+	return nil
 }
 
 func (sys *SystemInstance) getFileToken(tokenType string) (*models.FileToken, error) {
@@ -685,7 +690,7 @@ func (sys *SystemInstance) getFileToken(tokenType string) (*models.FileToken, er
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.FileTokenController.CreateFileToken(params, sys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error from url %s %w", sys.serverURL, err)
 	}
 	return result.GetPayload().Data, nil
 }

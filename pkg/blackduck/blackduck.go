@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/package-url/packageurl-go"
 	"github.com/pkg/errors"
 )
 
@@ -65,10 +68,50 @@ type Components struct {
 }
 
 type Component struct {
-	Name         string `json:"componentName,omitempty"`
-	Version      string `json:"componentVersionName,omitempty"`
-	PolicyStatus string `json:"policyStatus,omitempty"`
-	Metadata     `json:"_meta,omitempty"`
+	Name                string            `json:"componentName,omitempty"`
+	Version             string            `json:"componentVersionName,omitempty"`
+	ComponentOriginName string            `json:"componentVersionOriginName,omitempty"`
+	PrimaryLanguage     string            `json:"primaryLanguage,omitempty"`
+	PolicyStatus        string            `json:"policyStatus,omitempty"`
+	MatchTypes          []string          `json:"matchTypes,omitempty"`
+	Origins             []ComponentOrigin `json:"origins,omitempty"`
+	Metadata            `json:"_meta,omitempty"`
+}
+
+type ComponentOrigin struct {
+	ExternalNamespace string `json:"externalNamespace,omitempty"`
+	ExternalID        string `json:"externalId,omitempty"`
+}
+
+// ToPackageUrl creates the package URL for the component
+func (c *Component) ToPackageUrl() *packageurl.PackageURL {
+	purlParts := transformComponentOriginToPurlParts(c)
+
+	// Namespace could not be in purlParts
+	var purlType, namespace, name, version string
+	if len(purlParts) >= 3 {
+		version = purlParts[len(purlParts)-1]
+		name = purlParts[len(purlParts)-2]
+		purlType = purlParts[0]
+	}
+	if len(purlParts) == 4 {
+		namespace = purlParts[1]
+	}
+
+	return packageurl.NewPackageURL(purlType, namespace, name, version, nil, "")
+}
+
+// MatchedType returns matched type of component: direct/transitive
+func (c *Component) MatchedType() string {
+	for _, matchedType := range c.MatchTypes {
+		if matchedType == "FILE_DEPENDENCY_DIRECT" {
+			return "direct"
+		} else if matchedType == "FILE_DEPENDENCY_TRANSITIVE" {
+			return "transitive"
+		}
+	}
+
+	return ""
 }
 
 type Vulnerabilities struct {
@@ -79,42 +122,64 @@ type Vulnerabilities struct {
 type Vulnerability struct {
 	Name                         string `json:"componentName,omitempty"`
 	Version                      string `json:"componentVersionName,omitempty"`
+	ComponentVersionOriginID     string `json:"componentVersionOriginId,omitempty"`
+	ComponentVersionOriginName   string `json:"componentVersionOriginName,omitempty"`
+	Ignored                      bool   `json:"ignored,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
+	Component                    *Component
+	projectName                  string
+	projectVersion               string
+	projectVersionLink           string
 }
 
 type VulnerabilityWithRemediation struct {
-	VulnerabilityName string  `json:"vulnerabilityName,omitempty"`
-	BaseScore         float32 `json:"baseScore,omitempty"`
-	Severity          string  `json:"severity,omitempty"`
-	RemediationStatus string  `json:"remediationStatus,omitempty"`
-	Description       string  `json:"description,omitempty"`
-	OverallScore      float32 `json:"overallScore,omitempty"`
+	VulnerabilityName      string  `json:"vulnerabilityName,omitempty"`
+	BaseScore              float32 `json:"baseScore,omitempty"`
+	Severity               string  `json:"severity,omitempty"`
+	RemediationStatus      string  `json:"remediationStatus,omitempty"`
+	Description            string  `json:"description,omitempty"`
+	OverallScore           float32 `json:"overallScore,omitempty"`
+	CweID                  string  `json:"cweId,omitempty"`
+	ExploitabilitySubscore float32 `json:"exploitabilitySubscore,omitempty"`
+	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
+	RelatedVulnerability   string  `json:"relatedVulnerability,omitempty"`
 }
 
 // Title returns the issue title representation of the contents
 func (v Vulnerability) Title() string {
-	return fmt.Sprintf("%v/%v/%v/%v-%v", "SECURITY_VULNERABILITY", v.VulnerabilityWithRemediation.Severity, v.VulnerabilityName, v.Name, v.Version)
+	return v.VulnerabilityWithRemediation.VulnerabilityName
 }
 
 // ToMarkdown returns the markdown representation of the contents
 func (v Vulnerability) ToMarkdown() ([]byte, error) {
-	return []byte(fmt.Sprintf(
-		`**Vulnerability %v**
-| Severity | Base (NVD) Score | Temporal Score | Package | Installed Version | Description | Fix Resolution | Link |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-|%v|%v|%v|%v|%v|%v|%v|[%v](%v)|
-`,
-		v.VulnerabilityWithRemediation.VulnerabilityName,
-		v.VulnerabilityWithRemediation.Severity,
-		v.VulnerabilityWithRemediation.BaseScore,
-		v.VulnerabilityWithRemediation.OverallScore,
-		v.Name,
-		v.Version,
-		v.Description,
-		"",
-		"",
-		"",
-	)), nil
+	vul := reporting.VulnerabilityReport{
+		ProjectName:          v.projectName,
+		ProjectVersion:       v.projectVersion,
+		BlackDuckProjectLink: v.projectVersionLink,
+		ArtifactID:           v.Component.Name,
+		Description:          v.Description,
+		DependencyType:       v.Component.MatchedType(),
+		Origin:               v.ComponentVersionOriginID,
+
+		// no information available about footer, yet
+		Footer: "",
+
+		// no information available about group, yet
+		Group: "",
+
+		// no information available about publish date and resolution yet
+		PublishDate: "",
+		Resolution:  "",
+
+		Score:             float64(v.VulnerabilityWithRemediation.BaseScore),
+		Severity:          v.VulnerabilityWithRemediation.Severity,
+		Version:           v.Version,
+		PackageURL:        v.Component.ToPackageUrl().ToString(),
+		VulnerabilityLink: v.RelatedVulnerability,
+		VulnerabilityName: v.VulnerabilityName,
+	}
+
+	return vul.ToMarkdown()
 }
 
 // ToTxt returns the textual representation of the contents
@@ -125,6 +190,7 @@ Base (NVD) Score: %v
 Temporal Score: %v
 Package: %v
 Installed Version: %v
+Package URL: %v
 Description: %v
 Fix Resolution: %v
 Link: [%v](%v)`,
@@ -134,6 +200,7 @@ Link: [%v](%v)`,
 		v.VulnerabilityWithRemediation.OverallScore,
 		v.Name,
 		v.Version,
+		v.Component.ToPackageUrl().ToString(),
 		v.Description,
 		"",
 		"",
@@ -164,6 +231,7 @@ type Client struct {
 	token                       string
 	httpClient                  piperhttp.Sender
 	serverURL                   string
+	projectVersion              *ProjectVersion
 }
 
 // NewClient creates a new BlackDuck client
@@ -209,6 +277,10 @@ func (b *Client) GetProject(projectName string) (*Project, error) {
 
 // GetProjectVersion returns a project version with a given name
 func (b *Client) GetProjectVersion(projectName, projectVersion string) (*ProjectVersion, error) {
+	// get version from cache if it is there
+	if b.projectVersion != nil {
+		return b.projectVersion, nil
+	}
 	project, err := b.GetProject(projectName)
 	if err != nil {
 		return nil, err
@@ -225,7 +297,9 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 		}
 	}
 
-	respBody, err := b.sendRequest("GET", versionPath, map[string]string{}, nil, headers)
+	//While sending a request to 'versions', get all 100 versions from that project by setting limit=100
+	//More than 100 project versions is currently not supported/recommended by Blackduck
+	respBody, err := b.sendRequest("GET", versionPath, map[string]string{"offset": "0", "limit": "100"}, nil, headers)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project version '%v:%v'", projectName, projectVersion)
 	}
@@ -241,6 +315,8 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 	// even if more than one projects found, let's return the first one with exact project name match
 	for _, version := range projectVersions.Items {
 		if version.Name == projectVersion {
+			// save version to cache in order not to do several same requests
+			b.projectVersion = &version
 			return &version, nil
 		}
 	}
@@ -458,7 +534,7 @@ func (b *Client) apiURL(apiEndpoint string) (*url.URL, error) {
 }
 
 func (b *Client) authenticationValid(now time.Time) bool {
-	// //check bearer token timeout
+	// check bearer token timeout
 	expiryTime := b.lastAuthentication.Add(time.Millisecond * time.Duration(b.BearerExpiresInMilliseconds))
 	return now.Sub(expiryTime) < 0
 }
@@ -466,4 +542,34 @@ func (b *Client) authenticationValid(now time.Time) bool {
 func urlPath(fullUrl string) string {
 	theUrl, _ := url.Parse(fullUrl)
 	return theUrl.Path
+}
+
+func transformComponentOriginToPurlParts(component *Component) []string {
+	result := []string{}
+	purlType := packageurl.TypeGeneric
+	gav := []string{"", component.Name, component.Version}
+	origins := component.Origins
+	if origins != nil && len(origins) > 0 {
+		// parts of npm origin are separated by "/"
+		if origins[0].ExternalNamespace == "npmjs" {
+			gav = strings.Split(origins[0].ExternalID, "/")
+		} else {
+			gav = strings.Split(origins[0].ExternalID, ":")
+		}
+		switch strings.ToLower(origins[0].ExternalNamespace) {
+		case "maven":
+			purlType = packageurl.TypeMaven
+		case "node":
+			purlType = packageurl.TypeNPM
+		case "npmjs":
+			purlType = packageurl.TypeNPM
+		case "golang":
+			purlType = packageurl.TypeGolang
+		case "docker":
+			purlType = packageurl.TypeDocker
+		}
+	}
+	result = append(result, purlType)
+	result = append(result, gav...)
+	return result
 }

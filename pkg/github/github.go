@@ -8,7 +8,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -27,18 +27,19 @@ type githubCreateCommentService interface {
 
 // CreateIssueOptions to configure the creation
 type CreateIssueOptions struct {
-	APIURL         string   `json:"apiUrl,omitempty"`
-	Assignees      []string `json:"assignees,omitempty"`
-	Body           []byte   `json:"body,omitempty"`
-	Owner          string   `json:"owner,omitempty"`
-	Repository     string   `json:"repository,omitempty"`
-	Title          string   `json:"title,omitempty"`
-	UpdateExisting bool     `json:"updateExisting,omitempty"`
-	Token          string   `json:"token,omitempty"`
-	TrustedCerts   []string `json:"trustedCerts,omitempty"`
+	APIURL         string        `json:"apiUrl,omitempty"`
+	Assignees      []string      `json:"assignees,omitempty"`
+	Body           []byte        `json:"body,omitempty"`
+	Owner          string        `json:"owner,omitempty"`
+	Repository     string        `json:"repository,omitempty"`
+	Title          string        `json:"title,omitempty"`
+	UpdateExisting bool          `json:"updateExisting,omitempty"`
+	Token          string        `json:"token,omitempty"`
+	TrustedCerts   []string      `json:"trustedCerts,omitempty"`
+	Issue          *github.Issue `json:"issue,omitempty"`
 }
 
-//NewClient creates a new GitHub client using an OAuth token for authentication
+// NewClient creates a new GitHub client using an OAuth token for authentication
 func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.Context, *github.Client, error) {
 	httpClient := piperhttp.Client{}
 	httpClient.SetOptions(piperhttp.ClientOptions{
@@ -74,16 +75,15 @@ func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.
 	return ctx, client, nil
 }
 
-func CreateIssue(ghCreateIssueOptions *CreateIssueOptions) error {
+func CreateIssue(ghCreateIssueOptions *CreateIssueOptions) (*github.Issue, error) {
 	ctx, client, err := NewClient(ghCreateIssueOptions.Token, ghCreateIssueOptions.APIURL, "", ghCreateIssueOptions.TrustedCerts)
 	if err != nil {
-		return errors.Wrap(err, "failed to get GitHub client")
+		return nil, errors.Wrap(err, "failed to get GitHub client")
 	}
 	return createIssueLocal(ctx, ghCreateIssueOptions, client.Issues, client.Search, client.Issues)
 }
 
-func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOptions, ghCreateIssueService githubCreateIssueService, ghSearchIssuesService githubSearchIssuesService, ghCreateCommentService githubCreateCommentService) error {
-
+func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOptions, ghCreateIssueService githubCreateIssueService, ghSearchIssuesService githubSearchIssuesService, ghCreateCommentService githubCreateCommentService) (*github.Issue, error) {
 	issue := github.IssueRequest{
 		Title: &ghCreateIssueOptions.Title,
 	}
@@ -103,17 +103,20 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 	var existingIssue *github.Issue = nil
 
 	if ghCreateIssueOptions.UpdateExisting {
-		queryString := fmt.Sprintf("is:open is:issue repo:%v/%v in:title %v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
-		searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, nil)
-		if err != nil {
-			if resp != nil {
-				log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
-			}
-			return errors.Wrap(err, "error occurred when looking for existing issue")
-		} else {
-			for _, value := range searchResult.Issues {
-				if value != nil && *value.Title == ghCreateIssueOptions.Title {
-					existingIssue = value
+		existingIssue = ghCreateIssueOptions.Issue
+		if existingIssue == nil {
+			queryString := fmt.Sprintf("is:open is:issue repo:%v/%v in:title %v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
+			searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, nil)
+			if err != nil {
+				if resp != nil {
+					log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
+				}
+				return nil, errors.Wrap(err, "error occurred when looking for existing issue")
+			} else {
+				for _, value := range searchResult.Issues {
+					if value != nil && *value.Title == ghCreateIssueOptions.Title {
+						existingIssue = value
+					}
 				}
 			}
 		}
@@ -125,7 +128,7 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 				if resp != nil {
 					log.Entry().Errorf("GitHub create comment returned response code %v", resp.Status)
 				}
-				return errors.Wrap(err, "error occurred when adding comment to existing issue")
+				return nil, errors.Wrap(err, "error occurred when adding comment to existing issue")
 			}
 		}
 	}
@@ -136,10 +139,11 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 			if resp != nil {
 				log.Entry().Errorf("GitHub create issue returned response code %v", resp.Status)
 			}
-			return errors.Wrap(err, "error occurred when creating issue")
+			return nil, errors.Wrap(err, "error occurred when creating issue")
 		}
 		log.Entry().Debugf("New issue created: %v", newIssue)
+		existingIssue = newIssue
 	}
 
-	return nil
+	return existingIssue, nil
 }

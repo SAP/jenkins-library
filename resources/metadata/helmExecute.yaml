@@ -27,10 +27,17 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: dockerCredentialsId
+      - name: kubeConfigFileCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
+        aliases:
+          - name: kubeCredentialsId
+            deprecated: true
         type: jenkins
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
+        type: jenkins
+      - name: targetRepositoryCredentialsId
+        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
         type: jenkins
     resources:
       - name: deployDescriptor
@@ -49,8 +56,7 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
-        mandatory: true
-        description: Defines the chart path for helm.
+        description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
         scope:
           - PARAMETERS
           - STAGES
@@ -69,17 +75,16 @@ spec:
             param: custom/repositoryUrl
       - name: targetRepositoryName
         type: string
-        description: set the chart repository
-        mandatoryIf:
-          - name: helmCommand
-            value: install
+        description: set the chart repository. The value is required for install/upgrade/uninstall commands.
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
       - name: targetRepositoryUser
-        description: "Username for the char repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
+        aliases:
+          - name: helmRepositoryUsername
+        description: "Username for the chart repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
           - PARAMETERS
@@ -87,11 +92,19 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: targetRepositoryCredentialsId
+            type: secret
+            param: username
+          - type: vaultSecret
+            name: targetRepositoryUserSecretName
+            default: publishing
           - name: commonPipelineEnvironment
             param: custom/helmRepositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
       - name: targetRepositoryPassword
+        aliases:
+          - name: helmRepositoryPassword
         description: "Password for the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string
         scope:
@@ -100,10 +113,61 @@ spec:
           - STEPS
         secret: true
         resourceRef:
+          - name: targetRepositoryCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: targetRepositoryPasswordSecret
+            default: publishing
           - name: commonPipelineEnvironment
             param: custom/helmRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+      - name: sourceRepositoryURL
+        description: "URL of the source repository where the dependencies can be downloaded."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceRepositoryName
+        type: string
+        description: Set the name of the chart repository. The value might be required for fetching dependencies.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceRepositoryUser
+        description: "Username for the chart repository for fetching the dependencies."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: sourceRepositoryCredentialsId
+            type: secret
+            param: username
+          - type: vaultSecret
+            name: sourceRepositoryUserSecretName
+            default: dependencies
+      - name: sourceRepositoryPassword
+        description: "Password for the chart repository for fetching the dependencies."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: sourceRepositoryCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: sourceRepositoryPasswordSecret
+            default: dependencies
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
@@ -264,9 +328,23 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: version
+        type: string
+        description: Defines the artifact version to use from helm package/publish commands.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3.8.0
       workingDir: /config
       options:
         - name: -u
           value: "0"
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/helmChartUrl

@@ -131,7 +131,7 @@ void call(Map parameters = [:]) {
 
         if (config.npmExecuteEndToEndTests) {
             durationMeasure(script: script, measurementName: 'npmExecuteEndToEndTests_duration') {
-                npmExecuteEndToEndTests script: script, stageName: stageName, runScript: 'ci-e2e'
+                npmExecuteEndToEndTests script: script, stageName: stageName
             }
         }
 

@@ -1,0 +1,94 @@
+metadata:
+  name: apiProviderList
+  description: Get a full List of all API providers from the API Portal
+  longDescription: |
+    With this step, you can get a list of all API providers from the API Portal using the OData API. Learn more about the API Management API for getting list of an API Providers [here](https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html).
+
+spec:
+  inputs:
+    secrets:
+      - name: apimApiServiceKeyCredentialsId
+        description: Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'
+        type: jenkins
+    params:
+      - name: apiServiceKey
+        type: string
+        description: Service key JSON string to access the API Management Runtime service instance of plan 'api'
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: apimApiServiceKeyCredentialsId
+            type: secret
+            param: apiServiceKey
+      - name: top
+        type: int
+        description: Show only the first n items.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: skip
+        type: int
+        description: Skip the first n items.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: filter
+        type: string
+        description: Filter items by property values.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: count
+        type: bool
+        description: Include count of items.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: search
+        type: string
+        description: Search items by search phrases.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: orderby
+        type: string
+        description: Order by property values.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: select
+        type: string
+        description: Select properties to be returned.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: expand
+        type: string
+        description: Expand related entities.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/apiProviderList

@@ -259,6 +259,21 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 				"first":{"href":"https://fortify/ssc/api/v1/projects/815/versions?start=0"}}}`))
 			return
 		}
+		if req.URL.Path == "/projects/8888/versions" && req.URL.RawQuery == "q=name%3A%221%22" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data":[{"id":9910,"project":{"id":8888,"name":"test","description":"Created by Go script","creationDate":"2022-06-24T04:44:12.344+0000",
+				"createdBy":"jajajajja","issueTemplateId":"asxasca-asff-b57aedaf41"},"name":"1","description":"","createdBy":"afsafa","creationDate":"2021-07-17T04:09:17.909+0000",
+				"sourceBasePath":null,"committed":true,"issueTemplateId":"asdawffbcad88eb041","issueTemplateName":"aiudfnwofn","loadProperties":null,"staleIssueTemplate":false,
+				"snapshotOutOfDate":false,"refreshRequired":false,"attachmentsOutOfDate":false,"migrationVersion":null,"masterAttrGuid":"akjnfkjsnfkj686b","tracesOutOfDate":false,
+				"issueTemplateModifiedTime":1556502937909,"active":true,"obfuscatedId":null,"owner":"","serverVersion":21.2,"siteId":null,"latestScanId":null,"mode":"BASIC",
+				"currentState":{"id":9910,"committed":true,"attentionRequired":false,"analysisResultsExist":false,"auditEnabled":false,"lastFprUploadDate":null,"extraMessage":null,
+				"analysisUploadEnabled":true,"batchBugSubmissionExists":false,"hasCustomIssues":false,"metricEvaluationDate":null,"deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0,
+				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0},"bugTrackerPluginId":null,"bugTrackerEnabled":false,"securityGroup":null,"status":null,
+				"assignedIssuesCount":0,"customTagValuesAutoApply":null,"autoPredict":null,"predictionPolicy":null,"_href":"https://fortify/ssc/api/v1/projectVersions/8888"}],"count":1,
+				"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/8888/versions?q=name%3A1&start=0"},"first":{"href":"https://fortify/ssc/api/v1/projects/8888/versions?q=name%3A1&start=0"}}}`))
+			return
+		}
 	})
 
 	// Close the server when test finishes
@@ -285,6 +300,11 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 		assert.NoError(t, err, "GetProjectVersionDetailsByNameAndProjectID call not successful")
 		assert.Equal(t, "0", *result.Name, "Expected to get project version with different name")
 		assert.Equal(t, "autocreate", *result.Project.Name, "Expected to get project with different name")
+	})
+	t.Run("test filter projectVersion", func(t *testing.T) {
+		result, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(8888, "1", true, "autocreate")
+		assert.NoError(t, err, "GetProjectVersionDetailsByNameAndProjectID call not successful")
+		assert.Equal(t, "1", *result.Name, "Expected to get exact project version")
 	})
 }
 
@@ -1323,6 +1343,7 @@ func TestCreateJSONReport(t *testing.T) {
 		fortifyReportData := FortifyReportData{CorporateAudited: 30, CorporateTotal: 30, AuditAllTotal: 1, AuditAllAudited: 1, ProjectVersionID: 4999}
 		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
 		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, true, jsonReport.IsSpotChecksPerCategoryAudited)
 		assert.Equal(t, 1, jsonReport.AuditAllAudited)
 		assert.Equal(t, 1, jsonReport.AuditAllTotal)
 		assert.Equal(t, 30, jsonReport.CorporateAudited)
@@ -1338,6 +1359,7 @@ func TestCreateJSONReport(t *testing.T) {
 		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
 		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
 		assert.Equal(t, false, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, false, jsonReport.IsSpotChecksPerCategoryAudited)
 	})
 
 	t.Run("no spot checks audited", func(t *testing.T) {
@@ -1345,5 +1367,42 @@ func TestCreateJSONReport(t *testing.T) {
 		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
 		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
 		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, true, jsonReport.IsSpotChecksPerCategoryAudited)
+	})
+
+	t.Run("isSpotChecksPerCategoryAudited passed spotchecks test 1", func(t *testing.T) {
+		spotChecksCountByCategory := []SpotChecksAuditCount{}
+		spotChecksCountByCategory = append(spotChecksCountByCategory, SpotChecksAuditCount{Audited: 10, Total: 100, Type: "J2EE Misconfiguration: Missing Error Handling"})
+		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
+		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
+		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, true, jsonReport.IsSpotChecksPerCategoryAudited)
+	})
+
+	t.Run("isSpotChecksPerCategoryAudited failed spotchecks test 2", func(t *testing.T) {
+		spotChecksCountByCategory := []SpotChecksAuditCount{}
+		spotChecksCountByCategory = append(spotChecksCountByCategory, SpotChecksAuditCount{Audited: 3, Total: 100, Type: "J2EE Misconfiguration: Missing Error Handling"})
+		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
+		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
+		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, false, jsonReport.IsSpotChecksPerCategoryAudited)
+	})
+
+	t.Run("isSpotChecksPerCategoryAudited failed spotchecks test 3", func(t *testing.T) {
+		spotChecksCountByCategory := []SpotChecksAuditCount{}
+		spotChecksCountByCategory = append(spotChecksCountByCategory, SpotChecksAuditCount{Audited: 9, Total: 200, Type: "J2EE Misconfiguration: Missing Error Handling"})
+		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
+		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
+		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, false, jsonReport.IsSpotChecksPerCategoryAudited)
+	})
+
+	t.Run("isSpotChecksPerCategoryAudited passed spotchecks test 4", func(t *testing.T) {
+		spotChecksCountByCategory := []SpotChecksAuditCount{}
+		spotChecksCountByCategory = append(spotChecksCountByCategory, SpotChecksAuditCount{Audited: 10, Total: 200, Type: "J2EE Misconfiguration: Missing Error Handling"})
+		fortifyReportData := FortifyReportData{CorporateAudited: 0, CorporateTotal: 0, AuditAllTotal: 0, AuditAllAudited: 0}
+		jsonReport := CreateJSONReport(fortifyReportData, spotChecksCountByCategory, "https://fortify-test.com/ssc")
+		assert.Equal(t, true, jsonReport.AtleastOneSpotChecksCategoryAudited)
+		assert.Equal(t, true, jsonReport.IsSpotChecksPerCategoryAudited)
 	})
 }

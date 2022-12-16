@@ -24,12 +24,20 @@ class commonPipelineEnvironment implements Serializable {
     //Stores the current buildResult
     String buildResult = 'SUCCESS'
 
-    //stores the gitCommitId as well as additional git information for the build during pipeline run
+    //stores the gitCommitId and gitRemoteCommitId as additional git information for the build during pipeline run
+    /*
+       Incase of 'Merging the pull request with the current target branch revision' stratergy in jenkins,
+       the jenkins creates its own local merge commit which is stored in gitCommitId.
+       gitRemoteCommitId will contain the actual remote merge commitId on git rather than local commitId
+    */
     String gitCommitId
+    String gitRemoteCommitId
+    String gitHeadCommitId
     String gitCommitMessage
     String gitSshUrl
     String gitHttpsUrl
     String gitBranch
+    String gitRef
 
     String xsDeploymentId
 
@@ -58,6 +66,10 @@ class commonPipelineEnvironment implements Serializable {
         valueMap[property] = value
     }
 
+    void removeValue(String property) {
+        valueMap.remove(property)
+    }
+
     def getValue(String property) {
         return valueMap.get(property)
     }
@@ -84,10 +96,13 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties = [:]
 
         gitCommitId = null
+        gitRemoteCommitId = null
+        gitHeadCommitId = null
         gitCommitMessage = null
         gitSshUrl = null
         gitHttpsUrl = null
         gitBranch = null
+        gitRef = null
 
         githubOrg = null
         githubRepo = null
@@ -198,7 +213,10 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/github/repository', property: 'githubRepo'],
         [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/remoteCommitId', property: 'gitRemoteCommitId'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/headCommitId', property: 'gitHeadCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/httpsUrl', property: 'gitHttpsUrl'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/ref', property: 'gitRef'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],

@@ -2,14 +2,14 @@ metadata:
   name: abapEnvironmentRunATCCheck
   description: Runs an ATC Check
   longDescription: |
-    This step is for triggering an [ATC](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/d8cec788fc104ff9ad9c3757b4dd13d4.html) test run on an SAP Cloud Platform ABAP Environment system.
+    This step is for triggering an [ATC](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/d8cec788fc104ff9ad9c3757b4dd13d4.html) test run on an SAP BTP ABAP Environment system.
     Please provide either of the following options:
 
-    * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
-    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+    * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0901](https://help.sap.com/docs/BTP/65de2977205c403bbc107264b8eccf4b/d8cec788fc104ff9ad9c3757b4dd13d4.html).
+    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0901.
     * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
-    Regardless of the option you chose, please make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.
+    Regardless of the option you chose, please make sure to provide the configuration the object set (e.g. with Software Components and Packages) that you want to be checked analog to the examples listed on this page.
 spec:
   inputs:
     secrets:
@@ -21,7 +21,7 @@ spec:
     params:
       - name: atcConfig
         type: string
-        description: Path to a YAML configuration file for Packages and/or Software Components to be checked during ATC run
+        description: Path to a YAML configuration file for the object set to be checked during ATC run
         scope:
           - PARAMETERS
           - STAGES
@@ -94,7 +94,7 @@ spec:
           - name: cloudFoundry/space
       - name: username
         type: string
-        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0901
         scope:
           - PARAMETERS
           - STAGES
@@ -107,7 +107,7 @@ spec:
             param: username
       - name: password
         type: string
-        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0901
         scope:
           - PARAMETERS
           - STAGES
@@ -120,7 +120,7 @@ spec:
             param: password
       - name: host
         type: string
-        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        description: Specifies the host address of the SAP BTP ABAP Environment system
         scope:
           - PARAMETERS
           - STAGES
@@ -139,6 +139,15 @@ spec:
       - name: generateHTML
         type: bool
         description: Specifies whether the ATC results should also be generated as an HTML document
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+      - name: failOnSeverity
+        type: string
+        description: Specifies the severity level, for which the ATC step should fail if at least one message with this severity (or "higher") level is returned by the ATC Check Run (possible values - error, warning, info). Initial value is default behavior and ATC findings of any severity do not fail the step
         scope:
           - PARAMETERS
           - STAGES

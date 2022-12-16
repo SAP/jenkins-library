@@ -40,6 +40,13 @@ func consolidateContextDefaults(stepData *config.StepData) {
 					}
 				}
 			}
+		} else {
+			for paramName, val := range containerParams {
+				if _, ok := paramConditions[paramName]; !ok {
+					paramConditions[paramName] = &conditionDefaults{}
+				}
+				paramConditions[paramName].equal = append(paramConditions[paramName].equal, conditionDefault{def: val})
+			}
 		}
 	}
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"net/url"
 	"reflect"
 	"strings"
 	"time"
@@ -19,8 +20,8 @@ import (
 type abapEnvironmentBuildUtils interface {
 	command.ExecRunner
 	abaputils.Communication
-	abapbuild.Publish
 	abapbuild.HTTPSendLoader
+	piperutils.FileUtils
 	getMaxRuntime() time.Duration
 	getPollingInterval() time.Duration
 	publish()
@@ -30,6 +31,7 @@ type abapEnvironmentBuildUtilsBundle struct {
 	*command.Command
 	*piperhttp.Client
 	*abaputils.AbapUtils
+	*piperutils.Files
 	maxRuntime      time.Duration
 	pollingInterval time.Duration
 	storePublish    publish
@@ -42,14 +44,14 @@ type publish struct {
 	links     []piperutils.Path
 }
 
-func (p *publish) publish() {
+func (p *publish) publish(utils piperutils.FileUtils) {
 	if p.stepName != "" {
-		abapbuild.PersistReportsAndLinks(p.stepName, p.workspace, p.reports, p.links)
+		piperutils.PersistReportsAndLinks(p.stepName, p.workspace, utils, p.reports, p.links)
 	}
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) publish() {
-	aEBUB.storePublish.publish()
+	aEBUB.storePublish.publish(aEBUB)
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) getMaxRuntime() time.Duration {
@@ -61,7 +63,7 @@ func (aEBUB *abapEnvironmentBuildUtilsBundle) getPollingInterval() time.Duration
 }
 
 func (aEBUB *abapEnvironmentBuildUtilsBundle) PersistReportsAndLinks(stepName, workspace string, reports, links []piperutils.Path) {
-	//abapbuild.PersistReportsAndLinks(stepName, workspace, reports, links)
+	// abapbuild.PersistReportsAndLinks(stepName, workspace, reports, links)
 	if aEBUB.storePublish.stepName == "" {
 		aEBUB.storePublish.stepName = stepName
 		aEBUB.storePublish.workspace = workspace
@@ -92,12 +94,18 @@ func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingInterval time
 
 func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentBuildCommonPipelineEnvironment) {
 	utils := newAbapEnvironmentBuildUtils(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
-	if err := runAbapEnvironmentBuild(&config, telemetryData, &utils, cpe); err != nil {
+	if err := runAbapEnvironmentBuild(&config, telemetryData, utils, cpe); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils *abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
+func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
+
+	log.Entry().Info("╔════════════════════════════════╗")
+	log.Entry().Info("║ abapEnvironmentBuild           ║")
+	log.Entry().Info("╠════════════════════════════════╣")
+	log.Entry().Infof("║ %-30v ║", config.Phase)
+	log.Entry().Info("╙────────────────────────────────╜")
 
 	conn := new(abapbuild.Connector)
 	if err := initConnection(conn, config, utils); err != nil {
@@ -110,8 +118,8 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	}
 
 	finalValues, err := runBuilds(conn, config, utils, valuesList)
-	//files should be published, even if an error occured
-	(*utils).publish()
+	// files should be published, even if an error occured
+	utils.publish()
 	if err != nil {
 		return err
 	}
@@ -123,9 +131,9 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData 
 	return nil
 }
 
-func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, valuesList [][]abapbuild.Value) ([]abapbuild.Value, error) {
+func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils, valuesList [][]abapbuild.Value) ([]abapbuild.Value, error) {
 	var finalValues []abapbuild.Value
-	//No addonDescriptor involved
+	// No addonDescriptor involved
 	if len(valuesList) == 0 {
 		values, err := generateValuesOnlyFromConfig(config)
 		if err != nil {
@@ -136,7 +144,7 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 			return finalValues, errors.Wrap(err, "Error during execution of build framework")
 		}
 	} else {
-		//Run several times for each repository in the addonDescriptor
+		// Run several times for each repository in the addonDescriptor
 		var errstrings []string
 		vE := valuesEvaluator{}
 		vE.m = make(map[string]string)
@@ -154,8 +162,10 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 				errstrings = append(errstrings, err.Error())
 			}
 			finalValuesForOneBuild = removeAddonDescriptorValues(finalValuesForOneBuild, values)
-			//This means: probably values are duplicated, but the first one wins -> perhaps change this in the future if needed
-			vE.appendValuesIfNotPresent(finalValuesForOneBuild, false)
+			// This means: probably values are duplicated, but the first one wins -> perhaps change this in the future if needed
+			if err := vE.appendValuesIfNotPresent(finalValuesForOneBuild, false); err != nil {
+				errstrings = append(errstrings, err.Error())
+			}
 		}
 		finalValues = vE.generateValueSlice()
 		if len(errstrings) > 0 {
@@ -166,7 +176,7 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 	return finalValues, nil
 }
 
-func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils) error {
+func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils) error {
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
 	connConfig.CfOrg = config.CfOrg
@@ -178,18 +188,22 @@ func initConnection(conn *abapbuild.Connector, config *abapEnvironmentBuildOptio
 	connConfig.Password = config.Password
 	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
 	connConfig.CertificateNames = config.CertificateNames
+	connConfig.Parameters = url.Values{}
+	if len(config.AbapSourceClient) != 0 {
+		connConfig.Parameters.Add("sap-client", config.AbapSourceClient)
+	}
 
-	if err := conn.InitBuildFramework(connConfig, *utils, *utils); err != nil {
+	if err := conn.InitBuildFramework(connConfig, utils, utils); err != nil {
 		return err
 	}
 
-	conn.MaxRuntime = (*utils).getMaxRuntime()
-	conn.PollingInterval = (*utils).getPollingInterval()
+	conn.MaxRuntime = utils.getMaxRuntime()
+	conn.PollingInterval = utils.getPollingInterval()
 	return nil
 }
 
 // ***********************************Run Build***************************************************************
-func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils *abapEnvironmentBuildUtils, values []abapbuild.Value) ([]abapbuild.Value, error) {
+func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils, values []abapbuild.Value) ([]abapbuild.Value, error) {
 	var finalValues []abapbuild.Value
 	var inputValues abapbuild.Values
 	inputValues.Values = values
@@ -264,11 +278,11 @@ func (b *myBuild) Download() error {
 	return nil
 }
 
-func (b *myBuild) Publish(utils *abapEnvironmentBuildUtils) error {
+func (b *myBuild) Publish(utils abapEnvironmentBuildUtils) error {
 	if b.PublishAllDownloadedResultFiles {
-		b.PublishAllDownloadedResults("abapEnvironmentBuild", *utils)
+		b.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
 	} else {
-		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, *utils); err != nil {
+		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, utils); err != nil {
 			return errors.Wrapf(err, "Error during the publish of the result files %s", b.PublishResultFilenames)
 		}
 	}
@@ -322,15 +336,15 @@ func removeAddonDescriptorValues(finalValuesFromBuild []abapbuild.Value, valuesF
 func generateValuesWithAddonDescriptor(config *abapEnvironmentBuildOptions, repoValues []abapbuild.Value) ([]abapbuild.Value, error) {
 	var values []abapbuild.Value
 	vE := valuesEvaluator{}
-	//values from config
+	// values from config
 	if err := vE.initialize(config.Values); err != nil {
 		return values, err
 	}
-	//values from addondescriptor
+	// values from addondescriptor
 	if err := vE.appendValuesIfNotPresent(repoValues, true); err != nil {
 		return values, err
 	}
-	//values from commonepipelineEnvironment
+	// values from commonepipelineEnvironment
 	if err := vE.appendStringValuesIfNotPresent(config.CpeValues, false); err != nil {
 		return values, err
 	}
@@ -382,7 +396,7 @@ func (vE *valuesEvaluator) appendStringValuesIfNotPresent(stringValues string, t
 	var values []abapbuild.Value
 	values, err := generateValuesFromString(stringValues)
 	if err != nil {
-		errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
+		return errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
 	}
 	if err := vE.appendValuesIfNotPresent(values, throwErrorIfPresent); err != nil {
 		return err
@@ -416,7 +430,7 @@ func (vE *valuesEvaluator) generateValueSlice() []abapbuild.Value {
 	return values
 }
 
-//**********************************Evaluate AddonDescriptor**************************************************************
+// **********************************Evaluate AddonDescriptor**************************************************************
 type myRepo struct {
 	abaputils.Repository
 }
