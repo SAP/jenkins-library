@@ -259,7 +259,7 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 				"first":{"href":"https://fortify/ssc/api/v1/projects/815/versions?start=0"}}}`))
 			return
 		}
-		if req.URL.Path == "/projects/8888/versions" && req.URL.RawQuery == "q=name%3A1" {
+		if req.URL.Path == "/projects/8888/versions" && req.URL.RawQuery == "q=name%3A%221%22" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(`{"data":[{"id":9910,"project":{"id":8888,"name":"test","description":"Created by Go script","creationDate":"2022-06-24T04:44:12.344+0000",
