@@ -21,7 +21,7 @@ func TestWriteReport(t *testing.T) {
 	parsedResult["cvss2GreaterOrEqualSeven"] = 4
 	parsedResult["vulnerabilities"] = 5
 
-	err := WriteReport(ReportData{ServerURL: "DUMMYURL", FailOnSevereVulnerabilities: false, ExcludeCVEs: "", Target: "REPORTFILENAME", ProductID: fmt.Sprintf("%v", 4711), Vulnerabilities: []Vuln{{"Vulnerability", 2.5, "5.5"}}}, ".", "report.json", parsedResult, &files)
+	err := WriteReport(ReportData{ServerURL: "DUMMYURL", FailOnSevereVulnerabilities: false, ExcludeCVEs: "", Target: "REPORTFILENAME", ProductID: fmt.Sprintf("%v", 4711), Vulnerabilities: []Vuln{{"Vulnerability", "2.5", "5.5"}}}, ".", "report.json", parsedResult, &files)
 
 	if assert.NoError(t, err) {
 		content, err := files.FileRead("report.json")
