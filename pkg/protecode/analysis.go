@@ -33,7 +33,8 @@ func isSevere(vulnerability Vulnerability) bool {
 		return true
 	}
 	// CVSS v3 not set, fallback to CVSS v2
-	if cvss3 == 0 && vulnerability.Vuln.Cvss >= vulnerabilitySeverityThreshold {
+	parsedCvss, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss, 64)
+	if cvss3 == 0 && parsedCvss >= vulnerabilitySeverityThreshold {
 		return true
 	}
 	return false
