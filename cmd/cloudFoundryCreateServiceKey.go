@@ -52,9 +52,9 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 
 	var cfCreateServiceKeyScript []string
 	if options.CfServiceKeyConfig == "" {
-		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName}
+		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, "--wait"}
 	} else {
-		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, "-c", options.CfServiceKeyConfig}
+		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, "-c", options.CfServiceKeyConfig, "--wait"}
 	}
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 	if err != nil {
