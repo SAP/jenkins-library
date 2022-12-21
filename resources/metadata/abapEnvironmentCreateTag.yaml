@@ -159,4 +159,4 @@ spec:
           - name: cfServiceKey
   containers:
     - name: cf
-      image: ppiper/cf-cli:v12
+      image: ppiper/cf-cli:7
