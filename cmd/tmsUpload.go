@@ -13,8 +13,8 @@ const DEFAULT_DESCRIPTION = "tmsUpload"
 func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newTmsUtils(stepUpload)
-	communicationInstance := communicationSetup(config)
+	utils := newTmsUtils()
+	communicationInstance := setupCommunication(config)
 
 	if err := runTmsUpload(config, communicationInstance, utils); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to run tmsUpload step")

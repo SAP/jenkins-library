@@ -10,6 +10,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/tms"
 )
 
+const DEFAULT_DESCRIPTION_EXPORT = "tmsExport"
+
 type tmsExportUtils interface {
 	command.ExecRunner
 
@@ -45,7 +47,7 @@ func newTmsExportUtils() tmsExportUtils {
 func tmsExport(config tmsExportOptions, telemetryData *telemetry.CustomData, influx *tmsExportInflux) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newTmsUtils(stepUpload)
+	utils := newTmsUtils()
 	var uploadConfig tmsUploadOptions
 	uploadConfig.TmsServiceKey = config.TmsServiceKey
 	uploadConfig.CustomDescription = config.CustomDescription
@@ -57,7 +59,7 @@ func tmsExport(config tmsExportOptions, telemetryData *telemetry.CustomData, inf
 	uploadConfig.Proxy = config.Proxy
 	uploadConfig.StashContent = config.StashContent
 
-	communicationInstance := communicationSetup(uploadConfig)
+	communicationInstance := setupCommunication(uploadConfig)
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -67,7 +69,7 @@ func tmsExport(config tmsExportOptions, telemetryData *telemetry.CustomData, inf
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err := runTmsExport(uploadConfig, communicationInstance, utils)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		log.Entry().WithError(err).Fatal("Failed to run tmsExport")
 	}
 }
 
@@ -82,7 +84,7 @@ func runTmsExport(config tmsUploadOptions, communicationInstance tms.Communicati
 		return errUploadDescriptors
 	}
 
-	description := DEFAULT_DESCRIPTION
+	description := DEFAULT_DESCRIPTION_EXPORT
 	if config.CustomDescription != "" {
 		description = config.CustomDescription
 	}

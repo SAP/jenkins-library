@@ -25,7 +25,7 @@ func newTmsExportTestsUtils() tmsExportMockUtils {
 func TestRunTmsExport(t *testing.T) {
 	t.Parallel()
 
-	t.Run("happy path: 1. get nodes 2. get MTA ext descriptor -> nothing obtained 3. upload MTA ext descriptor to node 4. upload file 5. upload file to node", func(t *testing.T) {
+	t.Run("happy path: 1. get nodes 2. get MTA ext descriptor -> nothing obtained 3. upload MTA ext descriptor to node 4. upload file 5. export file to node", func(t *testing.T) {
 		t.Parallel()
 
 		// init

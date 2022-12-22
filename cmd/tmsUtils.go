@@ -21,8 +21,6 @@ const (
 	stepExport = "tmsExport"
 )
 
-var tmsStep string
-
 type uaa struct {
 	Url          string `json:"url"`
 	ClientId     string `json:"clientid"`
@@ -62,7 +60,7 @@ type tmsUtilsBundle struct {
 	// tmsUploadUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newTmsUtils(step string) tmsUtils {
+func newTmsUtils() tmsUtils {
 	utils := tmsUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
@@ -70,7 +68,6 @@ func newTmsUtils(step string) tmsUtils {
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
-	tmsStep = step
 	return &utils
 }
 
@@ -158,7 +155,7 @@ func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err erro
 	}
 	return
 }
-func communicationSetup(config tmsUploadOptions) (communicationInstance tms.CommunicationInterface) {
+func setupCommunication(config tmsUploadOptions) (communicationInstance tms.CommunicationInterface) {
 	client := &piperHttp.Client{}
 	proxy := config.Proxy
 	if proxy != "" {
