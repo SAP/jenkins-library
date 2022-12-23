@@ -1,8 +1,8 @@
 metadata:
   name: abapEnvironmentAssembleConfirm
-  description: "Confirm the Delivery of Assembly for installation, support package or patch in SAP Cloud Platform ABAP Environment system"
+  description: "Confirm the Delivery of Assembly for installation, support package or patch in SAP BTP ABAP Environment system"
   longDescription: |
-    This step confirms the assemblies of provided [installations, support packages or patches] in SAP Cloud Platform ABAP Environment system
+    This step confirms the assemblies of provided [installations, support packages or patches] in SAP BTP ABAP Environment system
 spec:
   inputs:
     secrets:
@@ -71,7 +71,7 @@ spec:
           - name: cloudFoundry/serviceKeyName
           - name: cfServiceKey
       - name: host
-        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        description: Specifies the host address of the SAP BTP ABAP Environment system
         type: string
         mandatory: false
         scope:

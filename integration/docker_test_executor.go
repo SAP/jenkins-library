@@ -188,7 +188,10 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 	args = append(args, "/piper-wrapper", "/piper", command)
 	err := d.Runner.RunExecutable("docker", append(args, parameters...)...)
 	if err != nil {
-		stdOut, err := d.getPiperOutput()
+		stdOut, outputErr := d.getPiperOutput()
+		if outputErr != nil {
+			return errors.Wrap(outputErr, "unable to get output after Piper command failure")
+		}
 		return errors.Wrapf(err, "piper output: \n%s", stdOut.String())
 	}
 	return err

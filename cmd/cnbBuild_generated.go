@@ -38,7 +38,9 @@ type cnbBuildOptions struct {
 	PreserveFiles             []string                 `json:"preserveFiles,omitempty"`
 	BuildSettingsInfo         string                   `json:"buildSettingsInfo,omitempty"`
 	CreateBOM                 bool                     `json:"createBOM,omitempty"`
+	SyftDownloadURL           string                   `json:"syftDownloadUrl,omitempty"`
 	RunImage                  string                   `json:"runImage,omitempty"`
+	DefaultProcess            string                   `json:"defaultProcess,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -221,7 +223,7 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built\n`cnbBuild` step will try to identify a containerImageName using the following precedence:\n\n  1. `containerImageName` parameter.\n  2. `project.id` field of a `project.toml` file.\n  3. `git/repository` parameter of the `commonPipelineEnvironment`.\n  4. `github/repository` parameter of the `commonPipelineEnvironment`.\n\nIf none of the above was found - an error will be raised.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageAlias, "containerImageAlias", os.Getenv("PIPER_containerImageAlias"), "Logical name used for this image.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
-	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to.\n\n**Note**: `containerRegistryUrl` should include only the domain. If you want to publish an image under `docker.io/example/my-image`, you must set `containerRegistryUrl: \"docker.io\"` and `containerImageName: \"example/my-image\"`.\n")
 	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`.")
 
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Glob that should either point to a directory with your sources or one artifact in zip format.\nThis property determines the input to the buildpack.\n")
@@ -232,8 +234,10 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 
 	cmd.Flags().StringSliceVar(&stepConfig.PreserveFiles, "preserveFiles", []string{}, "List of globs, for keeping build results in the Jenkins workspace.\n\n*Note*: globs will be calculated relative to the [path](#path) property.\n")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
-	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "**EXPERIMENTAL:** Creates the bill of materials (BOM) using CycloneDX plugin.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
+	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
 	cmd.Flags().StringVar(&stepConfig.RunImage, "runImage", os.Getenv("PIPER_runImage"), "Base image from which application images are built. Will be defaulted to the image provided by the builder.")
+	cmd.Flags().StringVar(&stepConfig.DefaultProcess, "defaultProcess", os.Getenv("PIPER_defaultProcess"), "Process that should be started by default. See https://buildpacks.io/docs/app-developer-guide/run-an-app/")
 
 	cmd.MarkFlagRequired("containerImageTag")
 	cmd.MarkFlagRequired("containerRegistryUrl")
@@ -436,6 +440,15 @@ func cnbBuildMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "syftDownloadUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`,
+					},
+					{
 						Name:        "runImage",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
@@ -443,6 +456,15 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_runImage"),
+					},
+					{
+						Name:        "defaultProcess",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_defaultProcess"),
 					},
 				},
 			},

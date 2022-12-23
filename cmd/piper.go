@@ -194,6 +194,7 @@ func Execute() {
 	rootCmd.AddCommand(TmsUploadCommand())
 	rootCmd.AddCommand(PactVerifyContractCommand())
 	rootCmd.AddCommand(PactPublishContractCommand())
+	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
 
 	addRootFlags(rootCmd)
 

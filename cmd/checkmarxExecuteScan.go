@@ -77,7 +77,8 @@ func (c *checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
-	return piperGithub.CreateIssue(ghCreateIssueOptions)
+	_, err := piperGithub.CreateIssue(ghCreateIssueOptions)
+	return err
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) GetIssueService() *github.IssuesService {
@@ -133,7 +134,7 @@ func runScan(ctx context.Context, config checkmarxExecuteScanOptions, sys checkm
 	if err != nil {
 		return errors.Wrap(err, "error when trying to load project")
 	}
-	if project.Name == projectName {
+	if strings.EqualFold(project.Name, projectName) { // case insensitive string comparison
 		err = presetExistingProject(config, sys, projectName, project)
 		if err != nil {
 			return err
@@ -176,7 +177,7 @@ func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.Syst
 func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, teamID string) (checkmarx.Project, error) {
 	log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
 	presetID, _ := strconv.Atoi(config.Preset)
-	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
+	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.EngineConfigurationID)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 	}
@@ -187,7 +188,7 @@ func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.Sys
 	log.Entry().Infof("Project %v exists...", projectName)
 	if len(config.Preset) > 0 {
 		presetID, _ := strconv.Atoi(config.Preset)
-		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
+		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.EngineConfigurationID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
 		}
@@ -212,6 +213,9 @@ func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
 	var project checkmarx.Project
 	projectName := initialProjectName
+	if len(initialProjectName) == 0 {
+		return project, projectName, errors.New("You need to provide the Checkmarx project name, projectName parameter is mandatory")
+	}
 	if len(pullRequestName) > 0 {
 		projectName = fmt.Sprintf("%v_%v", initialProjectName, pullRequestName)
 		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
