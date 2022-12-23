@@ -134,7 +134,7 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
-		"syft packages localhost:5000/not-found:0.0.1 -o cyclonedx-xml --file bom-docker-0.xml -q",
+		"syft packages registry:localhost:5000/not-found:0.0.1 -o cyclonedx-xml --file bom-docker-0.xml -q",
 	)
 	container.assertHasFiles(t, "/project/bom-docker-0.xml")
 }
@@ -276,9 +276,9 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 		"Saving localhost:5000/go-app:v1.0.0...",
 		"Using cached buildpack",
 		"Saving localhost:5000/my-app2:latest...",
-		"syft packages localhost:5000/io-buildpacks-my-app:latest -o cyclonedx-xml --file bom-docker-0.xml -q",
-		"syft packages localhost:5000/go-app:v1.0.0 -o cyclonedx-xml --file bom-docker-1.xml -q",
-		"syft packages localhost:5000/my-app2:latest -o cyclonedx-xml --file bom-docker-2.xml -q",
+		"syft packages registry:localhost:5000/io-buildpacks-my-app:latest -o cyclonedx-xml --file bom-docker-0.xml -q",
+		"syft packages registry:localhost:5000/go-app:v1.0.0 -o cyclonedx-xml --file bom-docker-1.xml -q",
+		"syft packages registry:localhost:5000/my-app2:latest -o cyclonedx-xml --file bom-docker-2.xml -q",
 	)
 
 	container.assertHasFiles(t, "/project/bom-docker-0.xml")

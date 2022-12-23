@@ -56,11 +56,11 @@ type Vulnerability struct {
 	Triage []Triage `json:"triage,omitempty"`
 }
 
-// Vuln holds the inforamtion about the vulnerability
+// Vuln holds the information about the vulnerability
 type Vuln struct {
-	Cve        string  `json:"cve,omitempty"`
-	Cvss       float64 `json:"cvss,omitempty"`
-	Cvss3Score string  `json:"cvss3_score,omitempty"`
+	Cve        string `json:"cve,omitempty"`
+	Cvss       string `json:"cvss,omitempty"`
+	Cvss3Score string `json:"cvss3_score,omitempty"`
 }
 
 // Triage holds the triaging information
@@ -289,7 +289,8 @@ func isSevereCVSS3(vulnerability Vulnerability) bool {
 func isSevereCVSS2(vulnerability Vulnerability) bool {
 	threshold := 7.0
 	cvss3, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss3Score, 64)
-	return cvss3 == 0 && vulnerability.Vuln.Cvss >= threshold
+	parsedCvss, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss, 64)
+	return cvss3 == 0 && parsedCvss >= threshold
 }
 
 // DeleteScan deletes if configured the scan on the protecode server

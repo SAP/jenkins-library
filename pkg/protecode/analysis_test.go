@@ -14,7 +14,7 @@ func TestIsSevere(t *testing.T) {
 			Triage: []Triage{},
 			Vuln: Vuln{
 				Cve:        "Cve2",
-				Cvss:       8.0,
+				Cvss:       "8.0",
 				Cvss3Score: "7.3",
 			},
 		}
@@ -28,7 +28,7 @@ func TestIsSevere(t *testing.T) {
 			Triage: []Triage{},
 			Vuln: Vuln{
 				Cve:        "Cve2",
-				Cvss:       8.0,
+				Cvss:       "8.0",
 				Cvss3Score: "0.0",
 			},
 		}
@@ -42,7 +42,7 @@ func TestIsSevere(t *testing.T) {
 			Triage: []Triage{},
 			Vuln: Vuln{
 				Cve:        "Cve2",
-				Cvss:       4.0,
+				Cvss:       "4.0",
 				Cvss3Score: "4.0",
 			},
 		}
@@ -56,7 +56,7 @@ func TestIsSevere(t *testing.T) {
 			Triage: []Triage{},
 			Vuln: Vuln{
 				Cve:        "Cve2",
-				Cvss:       4.0,
+				Cvss:       "4.0",
 				Cvss3Score: "0.0",
 			},
 		}
@@ -70,7 +70,7 @@ func TestIsSevere(t *testing.T) {
 			Triage: []Triage{},
 			Vuln: Vuln{
 				Cve:        "Cve2",
-				Cvss:       4.0,
+				Cvss:       "4.0",
 				Cvss3Score: "",
 			},
 		}
@@ -80,13 +80,13 @@ func TestIsSevere(t *testing.T) {
 }
 
 func TestHasSevereVulnerabilities(t *testing.T) {
-	severeV3 := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve1", Cvss: 4.0, Cvss3Score: "8.0"}}
-	severeV2 := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve2", Cvss: 8.0, Cvss3Score: "0.0"}}
-	nonSevere1 := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve3", Cvss: 4.0, Cvss3Score: "4.0"}}
-	nonSevere2 := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve4", Cvss: 4.0, Cvss3Score: "4.0"}}
-	excluded := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve5", Cvss: 8.0, Cvss3Score: "8.0"}}
-	triaged := Vulnerability{Exact: true, Triage: []Triage{{ID: 1}}, Vuln: Vuln{Cve: "Cve6", Cvss: 8.0, Cvss3Score: "8.0"}}
-	historic := Vulnerability{Exact: false, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve7", Cvss: 8.0, Cvss3Score: "8.0"}}
+	severeV3 := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve1", Cvss: "4.0", Cvss3Score: "8.0"}}
+	severeV2 := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve2", Cvss: "8.0", Cvss3Score: "0.0"}}
+	nonSevere1 := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve3", Cvss: "4.0", Cvss3Score: "4.0"}}
+	nonSevere2 := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve4", Cvss: "4.0", Cvss3Score: "4.0"}}
+	excluded := Vulnerability{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve5", Cvss: "8.0", Cvss3Score: "8.0"}}
+	triaged := Vulnerability{Exact: true, Triage: []Triage{{ID: 1}}, Vuln: Vuln{Cve: "Cve6", Cvss: "8.0", Cvss3Score: "8.0"}}
+	historic := Vulnerability{Exact: false, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve7", Cvss: "8.0", Cvss3Score: "8.0"}}
 
 	t.Run("with severe v3 vulnerabilities", func(t *testing.T) {
 		// init

@@ -83,7 +83,10 @@ spec:
           - name: dockerRegistryUrl
         type: string
         mandatory: true
-        description: Container registry where the image should be pushed to
+        description: |
+          Container registry where the image should be pushed to.
+
+          **Note**: `containerRegistryUrl` should include only the domain. If you want to publish an image under `docker.io/example/my-image`, you must set `containerRegistryUrl: "docker.io"` and `containerImageName: "example/my-image"`.
         scope:
           - GENERAL
           - PARAMETERS
@@ -217,16 +220,16 @@ spec:
 
           ```yaml
           containerImageTag: latest
-          containerRegistryUrl: docker.io/example
+          containerRegistryUrl: docker.io
           dockerConfigJsonCredentialsId: CREDENTIALS
           multipleImages:
-          - containerImageName: java-app
-            alias: java
+          - containerImageName: example/java-app
+            containerImageAlias: java
             buildpacks:
             - "gcr.io/paketo-buildpacks/java"
             path: "source/java"
-          - containerImageName: nodejs-app
-            alias: nodejs
+          - containerImageName: example/nodejs-app
+            containerImageAlias: nodejs
             containerImageTag: v1.0.0
             buildpacks:
             - "gcr.io/paketo-buildpacks/nodejs"
