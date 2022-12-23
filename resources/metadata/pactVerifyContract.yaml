@@ -157,7 +157,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: 
+        default:
           - api/build/swagger.json
       - name: targetBranchName
         aliases:
