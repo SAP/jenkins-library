@@ -75,6 +75,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"integrationArtifactGetMplStatus":           integrationArtifactGetMplStatusMetadata(),
 		"integrationArtifactGetServiceEndpoint":     integrationArtifactGetServiceEndpointMetadata(),
 		"integrationArtifactResource":               integrationArtifactResourceMetadata(),
+		"integrationArtifactTransport":              integrationArtifactTransportMetadata(),
 		"integrationArtifactTriggerIntegrationTest": integrationArtifactTriggerIntegrationTestMetadata(),
 		"integrationArtifactUnDeploy":               integrationArtifactUnDeployMetadata(),
 		"integrationArtifactUpdateConfiguration":    integrationArtifactUpdateConfigurationMetadata(),
