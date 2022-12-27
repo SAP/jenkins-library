@@ -86,6 +86,21 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('credentialsId')
             .use()
 
+        if (config.useGoStep == true) {
+            List credentials = [
+                [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
+            ]
+
+            def namedUser = jenkinsUtils.getJobStartedByUserId()
+            if (namedUser) {
+                parameters.namedUser = namedUser
+            }
+
+            utils.unstashAll(config.stashContent)
+            piperExecuteBin(parameters, STEP_NAME, 'metadata/tmsUpload.yaml', credentials)
+            return
+        }
+
         // telemetry reporting
         new Utils().pushToSWA([
             step         : STEP_NAME,
