@@ -8,8 +8,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/tms"
 )
 
-const DEFAULT_DESCRIPTION = "tmsUpload"
-
 func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
@@ -32,7 +30,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		return errUploadDescriptors
 	}
 
-	description := DEFAULT_DESCRIPTION
+	description := DEFAULT_TR_DESCRIPTION
 	if config.CustomDescription != "" {
 		description = config.CustomDescription
 	}

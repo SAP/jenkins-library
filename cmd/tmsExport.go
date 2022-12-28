@@ -10,8 +10,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/tms"
 )
 
-const DEFAULT_DESCRIPTION_EXPORT = "tmsExport"
-
 type tmsExportUtils interface {
 	command.ExecRunner
 
@@ -84,7 +82,7 @@ func runTmsExport(config tmsUploadOptions, communicationInstance tms.Communicati
 		return errUploadDescriptors
 	}
 
-	description := DEFAULT_DESCRIPTION_EXPORT
+	description := DEFAULT_TR_DESCRIPTION
 	if config.CustomDescription != "" {
 		description = config.CustomDescription
 	}

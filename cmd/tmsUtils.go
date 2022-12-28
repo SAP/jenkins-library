@@ -17,8 +17,7 @@ import (
 )
 
 const (
-	stepUpload = "tmsUpload"
-	stepExport = "tmsExport"
+	DEFAULT_TR_DESCRIPTION = "Created by Piper"
 )
 
 type uaa struct {
@@ -191,7 +190,7 @@ func setupCommunication(config tmsUploadOptions) (communicationInstance tms.Comm
 }
 
 func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) error {
-	description := DEFAULT_DESCRIPTION
+	description := DEFAULT_TR_DESCRIPTION
 	if config.CustomDescription != "" {
 		description = config.CustomDescription
 	}
