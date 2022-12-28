@@ -275,7 +275,7 @@ func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.Commun
 	return nil
 }
 
-func fileUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) (string, error) {
+func tmsUploadFile(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) (string, error) {
 	mtaPath := config.MtaPath
 	exists, _ := utils.FileExists(mtaPath)
 	if !exists {
