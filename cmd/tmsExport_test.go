@@ -53,4 +53,89 @@ func TestRunTmsExport(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 	})
+
+	t.Run("error path: error while uploading file", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
+		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, isErrorOnUploadFile: true}
+
+		utils := newTmsTestsUtils()
+		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
+
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
+		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
+
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
+
+		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
+		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
+		assert.NoError(t, convErr)
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+
+		// test
+		err := runTmsExport(config, &communicationInstance, utils)
+
+		// assert
+		assert.EqualError(t, err, "failed to upload file: Something went wrong on uploading file")
+	})
+
+	t.Run("error path: error while uploading MTA extension descriptor to node", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
+		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, isErrorOnUploadMtaExtDescriptorToNode: true}
+
+		utils := newTmsTestsUtils()
+		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
+
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
+		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
+
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
+
+		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
+		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
+		assert.NoError(t, convErr)
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+
+		// test
+		err := runTmsExport(config, &communicationInstance, utils)
+
+		// assert
+		assert.EqualError(t, err, "failed to upload MTA extension descriptor to node: Something went wrong on uploading MTA extension descriptor to node")
+	})
+
+	t.Run("error path: error while exporting file to node", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
+		fileInfo := tms.FileInfo{Id: FILE_ID, Name: MTA_NAME}
+		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, uploadFileResponse: fileInfo, isErrorOnExportFileToNode: true}
+
+		utils := newTmsTestsUtils()
+		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
+
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
+		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
+
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
+
+		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
+		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
+		assert.NoError(t, convErr)
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+
+		// test
+		err := runTmsExport(config, &communicationInstance, utils)
+
+		// assert
+		assert.EqualError(t, err, "failed to export file to node: Something went wrong on exporting file to node")
+	})
 }
