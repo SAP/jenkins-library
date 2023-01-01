@@ -54,7 +54,6 @@ func (j *JSONfile) GetVersion() (string, error) {
 	version, _ := j.content.Get(j.versionField)
 
 	return fmt.Sprint(version), nil
-	// return fmt.Sprint(j.content[j.versionField]), nil
 }
 
 // SetVersion updates the version of the artifact with a JSON-based build descriptor
@@ -68,7 +67,6 @@ func (j *JSONfile) SetVersion(version string) error {
 		}
 	}
 	j.content.Set(j.versionField, version)
-	// j.content[j.versionField] = version
 
 	content, err := json.MarshalIndent(j.content, "", "  ")
 	if err != nil {
@@ -89,7 +87,6 @@ func (j *JSONfile) GetCoordinates() (Coordinates, error) {
 	if err != nil {
 		return result, err
 	}
-	// projectName := j.content["name"].(string)
 	projectName, _ := j.content.Get("name")
 
 	result.ArtifactID = fmt.Sprint(projectName)
