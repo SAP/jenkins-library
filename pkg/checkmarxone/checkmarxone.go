@@ -70,11 +70,18 @@ type ProjectConfigurationSetting struct {
 }
 
 
-type WorkflowLog struct {
-    Source              string              `json:"Source"`
-    Info                string              `json:"Info"`
-    Timestamp           string              `json:"Timestamp"`
+
+type Query struct {
+	QueryID             uint64      `json:"queryID,string"`
+	Name                string      `json:"queryName"`
+    Group               string
+    Language            string
+    Severity            string
+    CweID               uint64
+    QueryDescriptionID  uint
+    Custom              bool
 }
+
 
 // ReportStatus - ReportStatus Structure
 // Updated for Cx1
@@ -84,6 +91,16 @@ type ReportStatus struct {
     ReportURL           string              `json:"url"`
 }
 
+type ResultsPredicates struct {
+    PredicateID string              `json:"ID"`
+    SimilarityID int64              `json:"similarityId,string"`
+    ProjectID   string              `json:"projectId"`
+    State       string              `json:"state"`
+    Comment     string              `json:"comment"`
+    Severity    string              `json:"severity"`
+    CreatedBy   string
+    CreatedAt   string 
+}
 
 // Scan - Scan Structure
 // updated for Cx1
@@ -154,10 +171,10 @@ type ScanResultNodes struct {
     Definitions     string 
 }
 
-type ScanResults struct {
+type ScanResult struct {
     Type            string
     ResultID        string              `json:"id"`
-    SimilarityID    string
+    SimilarityID    int64               `json:"similarityId,string"`
     Status          string
     State           string
     Severity        string
@@ -182,6 +199,44 @@ type ScanStatusDetails struct {
     Details         string `json:"details"`
 }
 
+// Very simplified for now
+type ScanSummary struct {
+    TenantID            string
+    ScanID              string
+    SASTCounters        struct {
+        //QueriesCounters           []?
+        //SinkFileCounters          []?
+        LanguageCounters    []struct{
+            Language        string
+            Counter         uint64
+        }
+        ComplianceCounters  []struct{
+            Compliance      string
+            Counter         uint64
+        }
+        SeverityCounters    []struct{
+            Severity        string
+            Counter         uint64
+        }
+        StatusCounters      []struct{
+            Status          string
+            Counter         uint64
+        }
+        StateCounters       []struct{
+            State           string
+            Counter         uint64
+        }
+        TotalCounter        uint64
+        FilesScannedCounter uint64
+    }
+    // ignoring the other counters
+    // KICSCounters
+    // SCACounters
+    // SCAPackagesCounters
+    // SCAContainerCounters
+    // APISecCounters
+}
+
 // Status - Status Structure
 type Status struct {
     ID      int                 `json:"id"`
@@ -189,6 +244,12 @@ type Status struct {
     Details ScanStatusDetails   `json:"details"`
 }
 
+
+type WorkflowLog struct {
+    Source              string              `json:"Source"`
+    Info                string              `json:"Info"`
+    Timestamp           string              `json:"Timestamp"`
+}
 
 // Cx1 Group/Group - Group Structure
 type Group struct {
@@ -217,7 +278,9 @@ type System interface {
     
     GetScan(scanID string) (Scan, error)
     GetScanMetadata(scanID string) (ScanMetadata, error)
-    GetScanResults (scanID string) ([]ScanResults, error)
+    GetScanResults(scanID string, limit uint64) ([]ScanResult, error)    
+    GetScanSummary(scanID string) (ScanSummary, error)
+    GetResultsPredicates( SimilarityID int64, ProjectID string ) ([]ResultsPredicates, error)
     GetScanWorkflow(scanID string) ([]WorkflowLog, error)
     GetLastScans(projectID string, limit int) ([]Scan, error)
 
@@ -233,11 +296,11 @@ type System interface {
     GetProjectByID(projectID string) (Project, error)
     GetProjectsByNameAndGroup(projectName, groupID string) ([]Project, error)
     GetProjects() ([]Project, error)
+    GetQueries() ([]Query, error) 
     //GetShortDescription(scanID int, pathID int) (ShortDescription, error)
     GetGroups() ([]Group, error)
     GetGroupByName( groupName string ) (Group, error)
     GetGroupByID( groupID string ) (Group, error)
-
     SetProjectBranch( projectID, branch string, allowOverride bool ) error
     SetProjectPreset( projectID, presetName string, allowOverride bool ) error
     SetProjectLanguageMode( projectID, languageMode string, allowOverride bool ) error
@@ -943,32 +1006,120 @@ func (sys *SystemInstance) GetResults(scanID string) ResultsStatistics {
 }
 */
 
-func (sys *SystemInstance) GetScanResults (scanID string) ([]ScanResults, error) {
-	sys.logger.Debug( "Get Scan Results" )
+func (sys *SystemInstance) GetScanResults(scanID string, limit uint64) ([]ScanResult, error) {
+	sys.logger.Debug( "Get Cx1 Scan Results" )
     var resultResponse struct {
-        Results         []ScanResults
+        Results         []ScanResult
         TotalCount      int
     }
     
     params := url.Values{
         "scan-id":   {scanID},
+        "limit":    {fmt.Sprintf( "%d", limit )},
+        "state":    []string{},
+        "severity": []string{},
+        "status":   []string{},
     }
     	
     response, err := sendRequest( sys, http.MethodGet, fmt.Sprintf("/results/?%v", params.Encode()), nil, nil, []int{} )
     if err != nil && len(response) == 0 {
         sys.logger.Errorf( "Failed to retrieve scan results for scan ID %v", scanID )
-        return []ScanResults{}, err
+        return []ScanResult{}, err
     }
 
     err = json.Unmarshal( response, &resultResponse )
     if err != nil {
         sys.logger.Errorf( "Failed while parsing response: %s", err )
         sys.logger.Tracef( "Response contents: %s", string(response) )
-        return []ScanResults{}, err
+        return []ScanResult{}, err
     }
     sys.logger.Debugf( "Retrieved %d results", resultResponse.TotalCount )
+
+    if len(resultResponse.Results) != resultResponse.TotalCount {
+        sys.logger.Warnf( "Expected results total count %d but parsed only %d", resultResponse.TotalCount, len( resultResponse.Results ) )
+        sys.logger.Warnf( "Response was: %v", string(response) )
+    }
+
     return resultResponse.Results, nil	
 }
+
+func (s *ScanSummary) TotalCount() uint64 {
+    var count uint64
+    count = 0
+
+    for _, c := range s.SASTCounters.StateCounters{
+        count += c.Counter
+    }
+
+    return count
+}
+
+func (sys *SystemInstance) GetScanSummary(scanID string) (ScanSummary, error) {
+    var ScansSummaries struct {
+        ScanSum []ScanSummary               `json:"scansSummaries"`
+        TotalCount  uint64
+    }
+
+    params := url.Values {
+        "scan-ids" : {scanID},
+        "include-queries": {"false"},
+        "include-status-counters" : {"true"},
+        "include-files": {"false"},
+    }
+
+    data, err := sendRequest( sys, http.MethodGet, fmt.Sprintf("/scan-summary/?%v", params.Encode() ), nil, nil, []int{} )
+    if err != nil {
+        sys.logger.Errorf("Failed to fetch metadata for scan with ID %v: %s", scanID, err)
+        return ScanSummary{}, errors.Wrapf(err, "failed to fetch metadata for scan with ID %v", scanID)
+    }
+
+    err = json.Unmarshal(data, &ScansSummaries)
+
+    if err != nil {
+        return ScanSummary{}, err
+    }
+    if ScansSummaries.TotalCount == 0 {
+        return ScanSummary{}, errors.New( fmt.Sprintf( "Failed to retrieve scan summary for scan ID %v", scanID ) )
+    }
+
+    if len(ScansSummaries.ScanSum) == 0 {
+        sys.logger.Errorf( "Failed to parse data, 0-len ScanSum.\n%v", string(data) )
+        return ScanSummary{}, errors.New( "Fail" )
+    }
+
+    return ScansSummaries.ScanSum[0], nil
+}
+
+func (sys *SystemInstance) GetResultsPredicates( SimilarityID int64, ProjectID string ) ([]ResultsPredicates, error) {
+    sys.logger.Debugf( "Fetching results predicates for project %v similarityId %d", ProjectID, SimilarityID )
+
+    var Predicates struct {
+        PredicateHistoryPerProject []struct {
+            ProjectID       string
+            SimilarityID    int64           `json:"similarityId,string"`
+            Predicates      []ResultsPredicates
+            TotalCount      uint
+        }
+
+        TotalCount      uint
+    }
+    response, err := sendRequest( sys, http.MethodGet, fmt.Sprintf("/sast-results-predicates/%d?project-ids=%v", SimilarityID, ProjectID ), nil, nil, []int{} )
+    if err != nil {
+        return []ResultsPredicates{}, err
+    }
+
+    err = json.Unmarshal( response, &Predicates )
+    if err != nil {
+        return []ResultsPredicates{}, err
+    }
+
+    if Predicates.TotalCount == 0 {
+        return []ResultsPredicates{}, nil
+    }
+
+    return Predicates.PredicateHistoryPerProject[0].Predicates, err
+}
+
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 // TODO
@@ -1048,6 +1199,23 @@ func (sys *SystemInstance) GetReportStatus(reportID string) (ReportStatus, error
 
     json.Unmarshal(data, &response)
     return response, nil
+}
+
+func (sys *SystemInstance) GetQueries() ([]Query, error) {
+	sys.logger.Debug( "Get Cx1 Queries" )
+    var queries []Query
+
+	// Note: this list includes API Key/service account users from Cx1, remove the /admin/ for regular users only.	
+	response, err := sendRequest( sys, http.MethodGet, "/presets/queries", nil, nil, []int{} )
+    if err != nil {
+        return queries, err
+    }
+
+    err = json.Unmarshal( response, &queries )
+    if err != nil {
+        sys.logger.Errorf( "Failed to parse %v", string(response) )   
+    }
+	return queries, err
 }
 
 // GetShortDescription returns the short description for an issue with a scanID and pathID

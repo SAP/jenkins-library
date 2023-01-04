@@ -1,17 +1,17 @@
 package checkmarxOne
 
 import (
-//	"bytes"
+	"bytes"
 	"crypto/sha1"
-//	"encoding/json"
+	"encoding/json"
 	"fmt"
-//	"math"
+	"math"
 	"path/filepath"
-//	"strconv"
+	"strconv"
 	"strings"
 	"time"
 
-//	"github.com/SAP/jenkins-library/pkg/format"
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type checkmarxOneReportData struct {
+type CheckmarxOneReportData struct {
 	ToolName             string         `json:"toolName"`
 	ProjectName          string         `json:"projectName"`
 	ProjectID            int64          `json:"projectID"`
@@ -137,7 +137,7 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	return scanReport
 }
 
-/*
+
 func CreateJSONReport(data map[string]interface{}) CheckmarxOneReportData {
 	checkmarxReportData := CheckmarxOneReportData{
 		ToolName:         `checkmarxone`,
@@ -244,7 +244,7 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	return reportPaths, nil
 }
 
-*/
+
 
 func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID string) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}

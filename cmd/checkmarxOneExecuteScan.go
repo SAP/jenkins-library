@@ -403,8 +403,9 @@ func (cx1sh *checkmarxOneExecuteScanHelper) getNumCoherentIncrementalScans(scans
 	return count
 }
 
-func (cx1sh *checkmarxOneExecuteScanHelper) getDetailedResults(config checkmarxOneExecuteScanOptions, group checkmarxOne.Group, project checkmarxOne.Project, scan checkmarxOne.Scan, scanmeta checkmarxOne.ScanMetadata, results []checkmarxOne.ScanResults /*sys checkmarxOne.System, reportFileName string, scanID int,*/, utils checkmarxOneExecuteScanUtils) (map[string]interface{}, error) {
-	log.Entry().Infof("Test - getDetailedResults entry with %d results", len(results))
+func (cx1sh *checkmarxOneExecuteScanHelper) getDetailedResults(config checkmarxOneExecuteScanOptions, group checkmarxOne.Group, project checkmarxOne.Project, scan checkmarxOne.Scan, scanmeta checkmarxOne.ScanMetadata, results []checkmarxOne.ScanResult /*sys checkmarxOne.System, reportFileName string, scanID int,*/, utils checkmarxOneExecuteScanUtils) (map[string]interface{}, error) {
+	//log.Entry().Infof("Test - getDetailedResults entry with %d results", len(results))
+    // this converts the JSON format results from Cx1 into the "resultMap" structure used in other parts of this step (influx etc)
 
 	resultMap := map[string]interface{}{}
 	resultMap["InitiatorName"] = scan.Initiator
@@ -436,7 +437,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) getDetailedResults(config checkmarxO
 
 	log.Entry().Errorf("Test - LOC %d, files %d", resultMap["LinesOfCodeScanned"], resultMap["FilesScanned"])
 
-	resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this, bundle.js"
+	resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this"
 
 	if scanmeta.IsIncremental {
 		resultMap["ScanType"] = "Incremental"
@@ -713,15 +714,22 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		log.Entry().Debug("Report generation is disabled via configuration")
 	}
 
-	results, err := sys.GetScanResults(scan.ScanID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get detailed results")
-	}
 
 	scanmeta, err := sys.GetScanMetadata(scan.ScanID)
 	if err != nil {
 		log.Entry().Warnf("Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err)
 	}
+
+    scansummary, err := sys.GetScanSummary(scan.ScanID)
+    if err != nil {
+		log.Entry().Warnf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+	}
+
+	results, err := sys.GetScanResults(scan.ScanID, scansummary.TotalCount() )
+	if err != nil {
+		return errors.Wrap(err, "failed to get detailed results")
+	}
+
 
 	log.Entry().Errorf("ScanMeta LOC: %d, files: %d", scanmeta.LOC, scanmeta.FileCount)
 
@@ -729,6 +737,8 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
+
+    
 
 	// unclear if this step is required, currently
 	/*xmlReportName := cx1sh.createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
@@ -739,11 +749,11 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
 	*/
 
-	/* Also unclear if SARIF-style report should be created from XML, or wait for support in the platform.
+	// Also unclear if SARIF-style report should be created from XML, or wait for support in the platform.
 	// generate sarif report
 	if config.ConvertToSarif {
 		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := checkmarxOne.ConvertCxxmlToSarif(sys, xmlReportName, scanID)
+		sarif, err := checkmarxOne.ConvertCxJSONToSarif(sys, config.ServerURL, results, scanmeta, scan)
 		if err != nil {
 			return fmt.Errorf("failed to generate SARIF")
 		}
@@ -753,7 +763,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		}
 		reports = append(reports, paths...)
 	}
-	*/
+	
 
 	// create toolrecord
 	toolRecordFileName, err := cx1sh.createToolRecordCx(utils, utils.GetWorkspace(), config, detailedResults)
@@ -764,18 +774,18 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
-	/*
-		// create JSON report (regardless vulnerabilityThreshold enabled or not)
-		jsonReport := checkmarxOne.CreateJSONReport(results)
-		paths, err := checkmarxOne.WriteJSONReport(jsonReport)
-		if err != nil {
-			log.Entry().Warning("failed to write JSON report...", err)
-		} else {
-			// add JSON report to archiving list
-			reports = append(reports, paths...)
-		}
+	
+    // create JSON report (regardless vulnerabilityThreshold enabled or not)
+    jsonReport := checkmarxOne.CreateJSONReport(detailedResults)
+    paths, err := checkmarxOne.WriteJSONReport(jsonReport)
+    if err != nil {
+        log.Entry().Warning("failed to write JSON report...", err)
+    } else {
+        // add JSON report to archiving list
+        reports = append(reports, paths...)
+    }
 
-	*/
+	
 
 	links := []piperutils.Path{{Target: detailedResults["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
 
