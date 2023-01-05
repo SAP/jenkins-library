@@ -452,6 +452,8 @@ spec:
             type: blackduck-security
           - filePattern: "**/piper_detect_vulnerability.sarif"
             type: blackduck-security
+          - filePattern: "**/piper_detect_vulnerability_audited.sarif"
+            type: blackduck-security
           - filePattern: "**/piper_hub_detect_sbom.xml"
             type: blackduck-security
   containers:

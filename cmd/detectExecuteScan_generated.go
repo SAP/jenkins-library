@@ -125,6 +125,7 @@ func (p *detectExecuteScanReports) persist(stepConfig detectExecuteScanOptions, 
 		{FilePattern: "**/piper_detect_vulnerability_report.html", ParamRef: "", StepResultType: "blackduck-security"},
 		{FilePattern: "**/toolrun_detectExecute_*.json", ParamRef: "", StepResultType: "blackduck-security"},
 		{FilePattern: "**/piper_detect_vulnerability.sarif", ParamRef: "", StepResultType: "blackduck-security"},
+		{FilePattern: "**/piper_detect_vulnerability_audited.sarif", ParamRef: "", StepResultType: "blackduck-security"},
 		{FilePattern: "**/piper_hub_detect_sbom.xml", ParamRef: "", StepResultType: "blackduck-security"},
 	}
 	envVars := []gcs.EnvVar{
@@ -677,6 +678,7 @@ func detectExecuteScanMetadata() config.StepData {
 							{"filePattern": "**/piper_detect_vulnerability_report.html", "type": "blackduck-security"},
 							{"filePattern": "**/toolrun_detectExecute_*.json", "type": "blackduck-security"},
 							{"filePattern": "**/piper_detect_vulnerability.sarif", "type": "blackduck-security"},
+							{"filePattern": "**/piper_detect_vulnerability_audited.sarif", "type": "blackduck-security"},
 							{"filePattern": "**/piper_hub_detect_sbom.xml", "type": "blackduck-security"},
 						},
 					},

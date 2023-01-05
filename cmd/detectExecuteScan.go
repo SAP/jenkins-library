@@ -527,11 +527,17 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 		projectLink = projectVersion.Href
 	}
 
-	sarif := bd.CreateSarifResultFile(vulns, config.ProjectName, config.Version, projectLink)
-	paths, err := bd.WriteSarifFile(sarif, utils)
+	sarif, sarifAudited := bd.CreateSarifResultFile(vulns, config.ProjectName, config.Version, projectLink)
+	paths, err := bd.WriteSarifFile(sarif, utils, false)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))
 	}
+
+	sarifAuditedPaths, err := bd.WriteSarifFile(sarifAudited, utils, true)
+	if err != nil {
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+	}
+	paths = append(paths, sarifAuditedPaths...)
 
 	scanReport := createVulnerabilityReport(config, vulns, influx, sys)
 	vulnerabilityReportPaths, err := bd.WriteVulnerabilityReports(scanReport, utils)
