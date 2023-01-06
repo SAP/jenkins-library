@@ -662,9 +662,6 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 							tfloc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 							tfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 							tfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-							snippetSarif := new(format.SnippetSarif)
-							snippetSarif.Text = fvdl.Snippets[j].Text
-							tfloc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 							break
 						}
 					}
@@ -677,33 +674,6 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 						if !(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData == "") {
 							tfloc.Message = new(format.Message)
 							tfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
-
-							// Handle snippet
-							snippetTarget := handleSnippet(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData)
-
-							if tfloc.PhysicalLocation.ContextRegion != nil && tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
-								physLocationSnippetLines := strings.Split(tfloc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-								snippetText := ""
-								for j := 0; j < len(physLocationSnippetLines); j++ {
-									if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-										snippetText = physLocationSnippetLines[j]
-										break
-									}
-								}
-								snippetSarif := new(format.SnippetSarif)
-								if snippetText != "" {
-									snippetSarif.Text = snippetText
-								} else {
-									snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
-								}
-								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
-							}
-						} else {
-							if tfloc.PhysicalLocation.ContextRegion != nil && tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
-								snippetSarif := new(format.SnippetSarif)
-								snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
-								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
-							}
 						}
 					}
 					location = *tfloc
@@ -746,9 +716,6 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 									nintfloc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 									nintfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 									nintfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-									snippetSarif := new(format.SnippetSarif)
-									snippetSarif.Text = fvdl.Snippets[j].Text
-									nintfloc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 									break
 								}
 							}
@@ -1120,35 +1087,12 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 				loc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 				loc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 				loc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-				snippetSarif := new(format.SnippetSarif)
-				snippetSarif.Text = fvdl.Snippets[j].Text
-				loc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 				break
 			}
 		}
 		loc.Message = new(format.Message)
 		loc.Message.Text = fvdl.UnifiedNodePool.Node[i].Action.ActionData
 
-		// Handle snippet
-		snippetTarget := handleSnippet(fvdl.UnifiedNodePool.Node[i].Action.Type, fvdl.UnifiedNodePool.Node[i].Action.ActionData)
-
-		if loc.PhysicalLocation.ContextRegion != nil && loc.PhysicalLocation.ContextRegion.Snippet != nil {
-			physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-			snippetText := ""
-			for j := 0; j < len(physLocationSnippetLines); j++ {
-				if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-					snippetText = physLocationSnippetLines[j]
-					break
-				}
-			}
-			snippetSarif := new(format.SnippetSarif)
-			if snippetText != "" {
-				snippetSarif.Text = snippetText
-			} else {
-				snippetSarif.Text = loc.PhysicalLocation.ContextRegion.Snippet.Text
-			}
-			loc.PhysicalLocation.Region.Snippet = snippetSarif
-		}
 		log.Entry().Debug("Compute eventual sub-nodes")
 		threadFlowIndexMap[i+1] = computeLocationPath(fvdl, i+1) // Recursively traverse array
 		locs := format.Locations{Location: loc}
@@ -1331,6 +1275,8 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 }
 
 // Factorizes some code used to obtain the relevant value for a snippet based on the type given by Fortify
+// Note: snippet text is no longer part of .sarif due to size issue.
+// This function however is helpful to explain how to get snippet out of FPR 
 func handleSnippet(snippetType string, snippet string) string {
 	snippetTarget := ""
 	switch snippetType {
