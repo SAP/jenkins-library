@@ -41,6 +41,7 @@ void call(Map parameters = [:]) {
         if (!config.host) {
             cloudFoundryCreateServiceKey script: parameters.script
         }
+        input(message: 'Continue after Service Key Creation?')
         switch (config.strategy) {
             case 'Pull':
                 abapEnvironmentPullGitRepo script: parameters.script
