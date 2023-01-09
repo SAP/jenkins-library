@@ -1276,7 +1276,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 
 // Factorizes some code used to obtain the relevant value for a snippet based on the type given by Fortify
 // Note: snippet text is no longer part of .sarif due to size issue.
-// This function however is helpful to explain how to get snippet out of FPR 
+// This function however is helpful to explain how to get snippet out of FPR
 func handleSnippet(snippetType string, snippet string) string {
 	snippetTarget := ""
 	switch snippetType {
