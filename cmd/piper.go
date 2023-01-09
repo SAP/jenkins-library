@@ -192,6 +192,7 @@ func Execute() {
 	rootCmd.AddCommand(AnsSendEventCommand())
 	rootCmd.AddCommand(ApiProviderListCommand())
 	rootCmd.AddCommand(TmsUploadCommand())
+	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
 
 	addRootFlags(rootCmd)
 
