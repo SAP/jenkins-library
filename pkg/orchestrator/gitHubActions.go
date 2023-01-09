@@ -82,7 +82,7 @@ func (g *GitHubActionsConfigProvider) GetCommit() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetRepoURL() string {
-	return getEnv("GITHUB_SERVER_URL", "n/a") + getEnv("GITHUB_REPOSITORY", "n/a")
+	return getEnv("GITHUB_SERVER_URL", "n/a") + "/" + getEnv("GITHUB_REPOSITORY", "n/a")
 }
 
 func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {

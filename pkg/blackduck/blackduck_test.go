@@ -630,3 +630,106 @@ func TestAuthenticationValid(t *testing.T) {
 func TestUrlPath(t *testing.T) {
 	assert.Equal(t, "/this/is/the/path", urlPath("https://the.server.domain:8080/this/is/the/path"))
 }
+
+func TestTransformComponentOriginToPurlParts(t *testing.T) {
+	tt := []struct {
+		description string
+		component   *Component
+		expected    []string
+	}{
+		{
+			// pkg:maven/org.apache.cxf/cxf-rt-rs-client@3.1.2
+			description: "Origin with Url type, namespace, name, version",
+			component: &Component{
+				Name:    "Apache CXF",
+				Version: "3.1.2",
+				Origins: []ComponentOrigin{{
+					ExternalNamespace: "maven",
+					ExternalID:        "org.apache.cxf:cxf-rt-rs-client:3.1.2",
+				}},
+			},
+			expected: []string{"maven", "org.apache.cxf", "cxf-rt-rs-client", "3.1.2"},
+		},
+		{
+			// pkg:npm/minimist@0.0.8
+			description: "Origin with Url type, name, version",
+			component: &Component{
+				Name:    "Minimist",
+				Version: "0.0.8",
+				Origins: []ComponentOrigin{{
+					ExternalNamespace: "npmjs",
+					ExternalID:        "minimist/0.0.8",
+				}},
+			},
+			expected: []string{"npm", "minimist", "0.0.8"},
+		},
+		{
+			// pkg:maven/org.springframework/spring-expression@4.1.6.RELEASE
+			description: "Empty origin",
+			component: &Component{
+				Name:    "spring-expression",
+				Version: "4.1.6.RELEASE",
+				Origins: []ComponentOrigin{},
+			},
+			expected: []string{"generic", "", "spring-expression", "4.1.6.RELEASE"},
+		},
+	}
+
+	for _, test := range tt {
+		t.Run(test.description, func(t *testing.T) {
+			got := transformComponentOriginToPurlParts(test.component)
+
+			assert.Equal(t, test.expected, got)
+		})
+	}
+}
+
+func TestComponentToPackageUrl(t *testing.T) {
+	tt := []struct {
+		description string
+		component   *Component
+		expected    string
+	}{
+		{
+			description: "Origin with Url type, namespace, name, version",
+			component: &Component{
+				Name:    "Apache CXF",
+				Version: "3.1.2",
+				Origins: []ComponentOrigin{{
+					ExternalNamespace: "maven",
+					ExternalID:        "org.apache.cxf:cxf-rt-rs-client:3.1.2",
+				}},
+			},
+			expected: "pkg:maven/org.apache.cxf/cxf-rt-rs-client@3.1.2",
+		},
+		{
+			description: "Origin with Url type, name, version",
+			component: &Component{
+				Name:    "Minimist",
+				Version: "0.0.8",
+				Origins: []ComponentOrigin{{
+					ExternalNamespace: "npmjs",
+					ExternalID:        "minimist/0.0.8",
+				}},
+			},
+			expected: "pkg:npm/minimist@0.0.8",
+		},
+		{
+			description: "Empty origin",
+			component: &Component{
+				Name:    "spring-expression",
+				Version: "4.1.6.RELEASE",
+				Origins: []ComponentOrigin{},
+			},
+			expected: "pkg:generic/spring-expression@4.1.6.RELEASE",
+		},
+	}
+
+	for _, test := range tt {
+		t.Run(test.description, func(t *testing.T) {
+			got := test.component.ToPackageUrl().ToString()
+
+			assert.Equal(t, test.expected, got)
+		})
+	}
+}

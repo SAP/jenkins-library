@@ -236,7 +236,7 @@ type ToolComponent struct {
 	Guid string `json:"guid"`
 }
 
-//SarifRuleProperties
+// SarifRuleProperties
 type SarifRuleProperties struct {
 	Accuracy         string   `json:"accuracy,omitempty"`
 	Impact           string   `json:"impact,omitempty"`

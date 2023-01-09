@@ -263,6 +263,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: customDataJSONMap
+        type: string
+        description:
+          "The JSON map of key-value pairs to be included in this scan's Custom Data (See protecode API)."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: influx

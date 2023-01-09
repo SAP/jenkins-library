@@ -23,6 +23,7 @@ import (
 
 type fortifyExecuteScanOptions struct {
 	AdditionalScanParameters        []string `json:"additionalScanParameters,omitempty"`
+	AdditionalMvnParameters         []string `json:"additionalMvnParameters,omitempty"`
 	Assignees                       []string `json:"assignees,omitempty"`
 	AuthToken                       string   `json:"authToken,omitempty"`
 	BuildDescriptorExcludeList      []string `json:"buildDescriptorExcludeList,omitempty"`
@@ -304,6 +305,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalScanParameters, "additionalScanParameters", []string{}, "List of additional scan parameters to be used for Fortify sourceanalyzer command execution.")
+	cmd.Flags().StringSliceVar(&stepConfig.AdditionalMvnParameters, "additionalMvnParameters", []string{}, "List of additional maven parameters to be used for Fortify mvn command execution.")
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
@@ -392,6 +394,15 @@ func fortifyExecuteScanMetadata() config.StepData {
 				Parameters: []config.StepParameters{
 					{
 						Name:        "additionalScanParameters",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "additionalMvnParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",

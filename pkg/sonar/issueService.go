@@ -51,14 +51,14 @@ func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) 
 		Resolved:      "false",
 		Ps:            "1",
 	}
-	if len(service.Branch) > 0 {
-		options.Branch = service.Branch
-	}
 	if len(service.Organization) > 0 {
 		options.Organization = service.Organization
 	}
+	// if PR, ignore branch name and consider PR branch name. If not PR, consider branch name
 	if len(service.PullRequest) > 0 {
 		options.PullRequest = service.PullRequest
+	} else if len(service.Branch) > 0 {
+		options.Branch = service.Branch
 	}
 	result, _, err := service.SearchIssues(options)
 	if err != nil {

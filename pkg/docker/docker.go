@@ -96,7 +96,7 @@ type ClientOptions struct {
 	ImageFormat string
 }
 
-//Download interface for download an image to a local path
+// Download interface for download an image to a local path
 type Download interface {
 	DownloadImage(imageSource, targetFile string) (v1.Image, error)
 	DownloadImageContent(imageSource, targetDir string) (v1.Image, error)
@@ -111,7 +111,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.imageFormat = options.ImageFormat
 }
 
-//DownloadImageContent downloads the image content into the given targetDir. Returns with an error if the targetDir doesnt exist
+// DownloadImageContent downloads the image content into the given targetDir. Returns with an error if the targetDir doesnt exist
 func (c *Client) DownloadImageContent(imageSource, targetDir string) (v1.Image, error) {
 	if fileInfo, err := os.Stat(targetDir); err != nil {
 		return nil, err

@@ -12,31 +12,31 @@ import (
 	"github.com/pkg/errors"
 )
 
-//Utils for apim
+// Utils for apim
 type Utils interface {
 	InitAPIM() error
 	IsPayloadJSON() bool
 }
 
-//OdataUtils for apim
+// OdataUtils for apim
 type OdataUtils interface {
 	MakeOdataQuery() (string, error)
 }
 
-//OdataParameters struct
+// OdataParameters struct
 type OdataParameters struct {
 	Filter, Search          string
 	Top, Skip               int
 	Orderby, Select, Expand string
 }
 
-//Bundle struct
+// Bundle struct
 type Bundle struct {
 	APIServiceKey, Host, Payload string
 	Client                       piperhttp.Sender
 }
 
-//InitAPIM() fumnction initialize APIM bearer token for API access
+// InitAPIM() fumnction initialize APIM bearer token for API access
 func (apim *Bundle) InitAPIM() error {
 	serviceKey, err := cpi.ReadCpiServiceKey(apim.APIServiceKey)
 	if err != nil {
@@ -60,7 +60,7 @@ func (apim *Bundle) InitAPIM() error {
 	return nil
 }
 
-//IsJSON checks given string is valid json or not
+// IsJSON checks given string is valid json or not
 func (apim *Bundle) IsPayloadJSON() bool {
 	var js json.RawMessage
 	return json.Unmarshal([]byte(apim.Payload), &js) == nil

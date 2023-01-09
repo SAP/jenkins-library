@@ -59,7 +59,6 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
                                             'abapAddonAssemblyKitCreateTargetVector',
                                             'abapAddonAssemblyKitPublishTargetVector'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentCreateTag')))
-
     }
 
     @Test
@@ -78,6 +77,24 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
                                             'abapAddonAssemblyKitPublishTargetVector',
                                             'abapEnvironmentCreateTag'))
         assertThat(stepsCalled, not(hasItems('cloudFoundryCreateServiceKey')))
+    }
+
+    @Test
+    void testAbapEnvironmentRunTest4TestBuild() {
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Build': true
+        ]
+        jsr.step.abapEnvironmentPipelineStageBuild(script: nullScript, testBuild: true, generateTagForAddonComponentVersion: true)
+
+        assertThat(stepsCalled, hasItems('cloudFoundryCreateServiceKey',
+                                            'abapEnvironmentAssemblePackages',
+                                            'abapEnvironmentBuild',
+                                            'abapAddonAssemblyKitRegisterPackages',
+                                            'abapAddonAssemblyKitCreateTargetVector'))
+        assertThat(stepsCalled, not(hasItems('abapAddonAssemblyKitReleasePackages',
+                                                'abapEnvironmentAssembleConfirm',
+                                                'abapAddonAssemblyKitPublishTargetVector',
+                                                'abapEnvironmentCreateTag')))
     }
 
 }

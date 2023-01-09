@@ -8,7 +8,7 @@ import (
 
 const reportFileName = "sonarscan.json"
 
-//ReportData is representing the data of the step report JSON
+// ReportData is representing the data of the step report JSON
 type ReportData struct {
 	ServerURL      string            `json:"serverUrl"`
 	ProjectKey     string            `json:"projectKey"`

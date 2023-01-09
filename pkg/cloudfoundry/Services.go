@@ -59,7 +59,7 @@ func (cf *CFUtils) ReadServiceKey(options ServiceKeyOptions) (string, error) {
 	return serviceKeyJSON, err
 }
 
-//ServiceKeyOptions for reading CF Service Key
+// ServiceKeyOptions for reading CF Service Key
 type ServiceKeyOptions struct {
 	CfAPIEndpoint     string
 	CfOrg             string

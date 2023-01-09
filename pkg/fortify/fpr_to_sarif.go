@@ -1027,14 +1027,18 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 	sarif.Runs[0].Invocations = append(sarif.Runs[0].Invocations, invocation)
 
 	//handle originalUriBaseIds
-	oubi := new(format.OriginalUriBaseIds)
-	prefix := "file://"
-	if fvdl.Build.SourceBasePath[0] == '/' {
-		oubi.SrcRoot.Uri = prefix + fvdl.Build.SourceBasePath + "/"
+	if fvdl.Build.SourceBasePath != "" {
+		oubi := new(format.OriginalUriBaseIds)
+		prefix := "file://"
+		if fvdl.Build.SourceBasePath[0] == '/' {
+			oubi.SrcRoot.Uri = prefix + fvdl.Build.SourceBasePath + "/"
+		} else {
+			oubi.SrcRoot.Uri = prefix + "/" + fvdl.Build.SourceBasePath + "/"
+		}
+		sarif.Runs[0].OriginalUriBaseIds = oubi
 	} else {
-		oubi.SrcRoot.Uri = prefix + "/" + fvdl.Build.SourceBasePath + "/"
+		log.Entry().Warn("SourceBaesPath is empty")
 	}
-	sarif.Runs[0].OriginalUriBaseIds = oubi
 
 	//handle artifacts
 	log.Entry().Debug("[SARIF] Now handling artifacts.")

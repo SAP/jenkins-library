@@ -16,7 +16,7 @@ func TestGitHubActions(t *testing.T) {
 		os.Setenv("GITHUB_REF", "refs/heads/feat/test-gh-actions")
 		os.Setenv("GITHUB_RUN_ID", "42")
 		os.Setenv("GITHUB_SHA", "abcdef42713")
-		os.Setenv("GITHUB_SERVER_URL", "github.com/")
+		os.Setenv("GITHUB_SERVER_URL", "github.com")
 		os.Setenv("GITHUB_REPOSITORY", "foo/bar")
 
 		p, _ := NewOrchestratorSpecificConfigProvider()

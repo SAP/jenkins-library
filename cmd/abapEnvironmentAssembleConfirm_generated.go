@@ -59,7 +59,7 @@ func (p *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) persist(path, 
 	}
 }
 
-// AbapEnvironmentAssembleConfirmCommand Confirm the Delivery of Assembly for installation, support package or patch in SAP Cloud Platform ABAP Environment system
+// AbapEnvironmentAssembleConfirmCommand Confirm the Delivery of Assembly for installation, support package or patch in SAP BTP ABAP Environment system
 func AbapEnvironmentAssembleConfirmCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentAssembleConfirm"
 
@@ -73,8 +73,8 @@ func AbapEnvironmentAssembleConfirmCommand() *cobra.Command {
 
 	var createAbapEnvironmentAssembleConfirmCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Confirm the Delivery of Assembly for installation, support package or patch in SAP Cloud Platform ABAP Environment system",
-		Long:  `This step confirms the assemblies of provided [installations, support packages or patches] in SAP Cloud Platform ABAP Environment system`,
+		Short: "Confirm the Delivery of Assembly for installation, support package or patch in SAP BTP ABAP Environment system",
+		Long:  `This step confirms the assemblies of provided [installations, support packages or patches] in SAP BTP ABAP Environment system`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -161,7 +161,7 @@ func addAbapEnvironmentAssembleConfirmFlags(cmd *cobra.Command, stepConfig *abap
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
@@ -180,7 +180,7 @@ func abapEnvironmentAssembleConfirmMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapEnvironmentAssembleConfirm",
 			Aliases:     []config.Alias{},
-			Description: "Confirm the Delivery of Assembly for installation, support package or patch in SAP Cloud Platform ABAP Environment system",
+			Description: "Confirm the Delivery of Assembly for installation, support package or patch in SAP BTP ABAP Environment system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

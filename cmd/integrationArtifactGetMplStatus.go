@@ -106,7 +106,7 @@ func runIntegrationArtifactGetMplStatus(
 	return errors.Errorf("Unable to get integration flow MPL status, Response Status code: %v", mplStatusResp.StatusCode)
 }
 
-//getIntegrationArtifactMPLError - Get integration artifact MPL error details
+// getIntegrationArtifactMPLError - Get integration artifact MPL error details
 func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment, mplID string, httpClient piperhttp.Sender, apiHost string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)

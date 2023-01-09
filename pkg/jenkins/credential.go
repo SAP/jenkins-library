@@ -12,7 +12,7 @@ import (
 // StringCredentials store only secret text
 type StringCredentials = gojenkins.StringCredentials
 
-//UsernameCredentials struct representing credential for storing username-password pair
+// UsernameCredentials struct representing credential for storing username-password pair
 type UsernameCredentials = gojenkins.UsernameCredentials
 
 // SSHCredentials store credentials for ssh keys.

@@ -7,11 +7,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
-
 	"github.com/pkg/errors"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 // IssueDetail represents any content that can be transformed into the body of a GitHub issue
@@ -19,101 +15,6 @@ type IssueDetail interface {
 	Title() string
 	ToMarkdown() ([]byte, error)
 	ToTxt() string
-}
-
-// VulnerabilityReport represents metadata for a report on a vulnerability
-type VulnerabilityReport struct {
-	ArtifactID        string
-	Branch            string
-	CommitID          string
-	Description       string
-	DirectDependency  string
-	Footer            string
-	Group             string
-	PackageURL        string
-	PipelineName      string
-	PipelineLink      string
-	PublishDate       string
-	Resolution        string
-	Score             float64
-	Severity          string
-	Version           string
-	VulnerabilityLink string
-	VulnerabilityName string
-}
-
-const vulnerabilityMdTemplate string = `# {{title .Severity }} ({{ .Score }}) Vulnerability {{ .VulnerabilityName }} - {{ .ArtifactID }}
-
-**Vulnerability link:** [{{ .VulnerabilityLink }}]({{ .VulnerabilityLink }})
-
-## Fix
-
-**{{ .Resolution }}**
-
-## Context
-
-{{if .PipelineLink -}}
-### Pipeline
-
-Pipeline run: [{{ .PipelineName }}]({{ .PipelineLink }})
-{{- end}}
-
-### Detected in
-
-{{if .Branch}}**Branch:** {{ .Branch }}{{- end}}
-{{if .CommitID}}**CommitId:** {{ .CommitID }}{{- end}}
-{{if .DirectDependency}}**Dependency:** {{if (eq .DirectDependency "true")}}direct{{ else }}indirect{{ end }}{{- end}}
-{{if .ArtifactID}}**ArtifactId:** {{ .ArtifactID }}{{- end}}
-{{if .Group}}**Group:** {{ .Group }}{{- end}}
-{{if .Version}}**Version:** {{ .Version }}{{- end}}
-{{if .PackageURL}}**Package URL:** {{ .PackageURL }}{{- end}}
-{{if .PublishDate}}**Publishing date:** {{.PublishDate }}{{- end}}
-
-## Description
-
-{{ .Description }}
-
----
-
-{{.Footer}}
-`
-
-// ToMarkdown creates a vulnerability in markdown format which can be used in GitHub issues
-func (v *VulnerabilityReport) ToMarkdown() ([]byte, error) {
-	funcMap := template.FuncMap{
-		"date": func(t time.Time) string {
-			return t.Format("2006-01-02")
-		},
-		"title": func(s string) string {
-			caser := cases.Title(language.AmericanEnglish)
-			return caser.String(s)
-		},
-	}
-
-	// only fill with orchestrator information if orchestrator can be identified properly
-	if provider, err := orchestrator.NewOrchestratorSpecificConfigProvider(); err == nil {
-		// only add information if not yet provided
-		if len(v.CommitID) == 0 {
-			v.CommitID = provider.GetCommit()
-		}
-		if len(v.PipelineLink) == 0 {
-			v.PipelineLink = provider.GetJobURL()
-			v.PipelineName = provider.GetJobName()
-		}
-	}
-
-	md := []byte{}
-	tmpl, err := template.New("report").Funcs(funcMap).Parse(vulnerabilityMdTemplate)
-	if err != nil {
-		return md, fmt.Errorf("failed to create  markdown issue template: %w", err)
-	}
-	buf := new(bytes.Buffer)
-	err = tmpl.Execute(buf, v)
-	if err != nil {
-		return md, fmt.Errorf("failed to execute markdown issue template: %w", err)
-	}
-	md = buf.Bytes()
-	return md, nil
 }
 
 // ScanReport defines the elements of a scan report used by various scan steps

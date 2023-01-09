@@ -251,7 +251,7 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 	return body, resp.Status, nil
 }
 
-//GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
+// GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
 func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
 	if reflect.DeepEqual(RepositoriesConfig{}, config) {
@@ -429,7 +429,7 @@ type LogResults struct {
 	Timestamp   string `json:"timestamp"`
 }
 
-//RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
+// RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
 type RepositoriesConfig struct {
 	BranchName      string
 	CommitID        string

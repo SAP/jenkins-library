@@ -97,7 +97,7 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 	return "Azure"
 }
 
-//GetBuildStatus returns status of the build. Return variables are aligned with Jenkins build statuses.
+// GetBuildStatus returns status of the build. Return variables are aligned with Jenkins build statuses.
 func (a *AzureDevOpsConfigProvider) GetBuildStatus() string {
 	// cases to align with Jenkins: SUCCESS, FAILURE, NOT_BUILD, ABORTED
 	switch buildStatus := getEnv("AGENT_JOBSTATUS", "FAILURE"); buildStatus {

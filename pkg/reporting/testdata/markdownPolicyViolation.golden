@@ -1,0 +1,25 @@
+# Policy Violation - pkg:generic/the.group/theArtifact@1.2.3
+
+## Description
+
+This is the test description.
+
+## Context
+
+### Pipeline
+
+Pipeline run: [thePipelineName](https://the.link.to.the.pipeline)
+
+### Detected in
+
+**Branch:** main
+**CommitId:** acb123
+**Dependency:** direct
+**ArtifactId:** theArtifact
+**Group:** the.group
+**Version:** 1.2.3
+**Package URL:** pkg:generic/the.group/theArtifact@1.2.3
+
+---
+
+This is the test footer
