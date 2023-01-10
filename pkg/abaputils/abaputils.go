@@ -80,7 +80,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 // ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it. Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
 func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner) (AbapServiceKey, error) {
 
-	var abapServiceKey AbapServiceKey
+	var abapServiceKeyV8 AbapServiceKeyV8
 	var serviceKeyJSON string
 	var err error
 
@@ -100,18 +100,18 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 
 	if err != nil {
 		// Executing cfReadServiceKeyScript failed
-		return abapServiceKey, err
+		return abapServiceKeyV8.Credentials, err
 	}
 
 	// parse
-	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
-	if abapServiceKey == (AbapServiceKey{}) {
+	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKeyV8)
+	if abapServiceKeyV8 == (AbapServiceKeyV8{}) {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		return abapServiceKey, errors.New("Parsing the service key failed. Service key is empty")
+		return abapServiceKeyV8.Credentials, errors.New("Parsing the service key failed. Service key is empty")
 	}
 
 	log.Entry().Info("Service Key read successfully")
-	return abapServiceKey, nil
+	return abapServiceKeyV8.Credentials, nil
 }
 
 /*
@@ -285,6 +285,12 @@ type AbapError struct {
 type AbapErrorMessage struct {
 	Lang  string `json:"lang"`
 	Value string `json:"value"`
+}
+
+// AbapServiceKeyV8 contains the new format of an ABAP service key
+
+type AbapServiceKeyV8 struct {
+	Credentials AbapServiceKey `json:"credentials"`
 }
 
 // AbapServiceKey contains information about an ABAP service key
