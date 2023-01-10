@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"net/url"
-	"sort"
 	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -11,21 +10,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/tms"
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
-
-type tmsUtils interface {
-	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
-	FileRead(path string) ([]byte, error)
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The tmsUploadUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
 
 type tmsUtilsBundle struct {
 	*command.Command
@@ -37,7 +23,7 @@ type tmsUtilsBundle struct {
 	// tmsUploadUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newTmsUtils() tmsUtils {
+func newTmsUtils() tms.TmsUtils {
 	utils := tmsUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
@@ -46,83 +32,6 @@ func newTmsUtils() tmsUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
-}
-
-func formNodeIdExtDescriptorMappingWithValidation(utils tmsUtils, nodeNameExtDescriptorMapping map[string]interface{}, nodes []tms.Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[int64]string, error) {
-	var wrongMtaIdExtDescriptors []string
-	var wrongExtDescriptorPaths []string
-	var wrongNodeNames []string
-	var errorMessage string
-
-	nodeIdExtDescriptorMapping := make(map[int64]string)
-	for nodeName, mappedValue := range nodeNameExtDescriptorMapping {
-		mappedValueString := fmt.Sprintf("%v", mappedValue)
-		exists, _ := utils.FileExists(mappedValueString)
-		if exists {
-			extDescriptorMap, errGetYamlAsMap := getYamlAsMap(utils, mappedValueString)
-			if errGetYamlAsMap == nil {
-				if fmt.Sprintf("%v", mtaYamlMap["ID"]) != fmt.Sprintf("%v", extDescriptorMap["extends"]) {
-					wrongMtaIdExtDescriptors = append(wrongMtaIdExtDescriptors, mappedValueString)
-				}
-			} else {
-				wrappedErr := errors.Wrapf(errGetYamlAsMap, "tried to parse %v as yaml, but got an error", mappedValueString)
-				errorMessage += fmt.Sprintf("%v\n", wrappedErr)
-			}
-		} else {
-			wrongExtDescriptorPaths = append(wrongExtDescriptorPaths, mappedValueString)
-		}
-
-		isNodeFound := false
-		for _, node := range nodes {
-			if node.Name == nodeName {
-				nodeIdExtDescriptorMapping[node.Id] = mappedValueString
-				isNodeFound = true
-				break
-			}
-		}
-		if !isNodeFound {
-			wrongNodeNames = append(wrongNodeNames, nodeName)
-		}
-	}
-
-	if mtaVersion != "*" && mtaVersion != mtaYamlMap["version"] {
-		errorMessage += "parameter 'mtaVersion' does not match the MTA version in mta.yaml\n"
-	}
-
-	if len(wrongMtaIdExtDescriptors) > 0 || len(wrongExtDescriptorPaths) > 0 || len(wrongNodeNames) > 0 {
-		if len(wrongMtaIdExtDescriptors) > 0 {
-			sort.Strings(wrongMtaIdExtDescriptors)
-			errorMessage += fmt.Sprintf("parameter 'extends' in MTA extension descriptor files %v is not the same as MTA ID or is missing at all\n", wrongMtaIdExtDescriptors)
-		}
-		if len(wrongExtDescriptorPaths) > 0 {
-			sort.Strings(wrongExtDescriptorPaths)
-			errorMessage += fmt.Sprintf("MTA extension descriptor files %v do not exist\n", wrongExtDescriptorPaths)
-		}
-		if len(wrongNodeNames) > 0 {
-			sort.Strings(wrongNodeNames)
-			errorMessage += fmt.Sprintf("nodes %v do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n", wrongNodeNames)
-		}
-	}
-
-	if errorMessage == "" {
-		return nodeIdExtDescriptorMapping, nil
-	} else {
-		return nil, errors.New(errorMessage)
-	}
-}
-
-func getYamlAsMap(utils tmsUtils, yamlPath string) (map[string]interface{}, error) {
-	var result map[string]interface{}
-	bytes, err := utils.FileRead(yamlPath)
-	if err != nil {
-		return result, err
-	}
-	err = yaml.Unmarshal(bytes, &result)
-	if err != nil {
-		return result, err
-	}
-
-	return result, nil
 }
 
 func setupCommunication(config tmsUploadOptions) (communicationInstance tms.CommunicationInterface) {
@@ -160,7 +69,7 @@ func setupCommunication(config tmsUploadOptions) (communicationInstance tms.Comm
 	return commuInstance
 }
 
-func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) error {
+func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tms.TmsUtils) error {
 	description := tms.DEFAULT_TR_DESCRIPTION
 	if config.CustomDescription != "" {
 		description = config.CustomDescription
@@ -194,7 +103,7 @@ func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.Commun
 			return fmt.Errorf("failed to get nodes: %w", errGetNodes)
 		}
 
-		mtaYamlMap, errGetMtaYamlAsMap := getYamlAsMap(utils, "mta.yaml")
+		mtaYamlMap, errGetMtaYamlAsMap := tms.GetYamlAsMap(utils, "mta.yaml")
 		if errGetMtaYamlAsMap != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("failed to get mta.yaml as map: %w", errGetMtaYamlAsMap)
@@ -214,7 +123,7 @@ func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.Commun
 		}
 
 		// validate the whole mapping and then throw errors together, so that user can get them after a single pipeline run
-		nodeIdExtDescriptorMapping, errGetNodeIdExtDescriptorMapping := formNodeIdExtDescriptorMappingWithValidation(utils, nodeNameExtDescriptorMapping, nodes, mtaYamlMap, mtaVersion)
+		nodeIdExtDescriptorMapping, errGetNodeIdExtDescriptorMapping := tms.FormNodeIdExtDescriptorMappingWithValidation(utils, nodeNameExtDescriptorMapping, nodes, mtaYamlMap, mtaVersion)
 		if errGetNodeIdExtDescriptorMapping != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errGetNodeIdExtDescriptorMapping
@@ -245,7 +154,7 @@ func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.Commun
 	return nil
 }
 
-func tmsUploadFile(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) (string, error) {
+func tmsUploadFile(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tms.TmsUtils) (string, error) {
 	mtaPath := config.MtaPath
 	exists, _ := utils.FileExists(mtaPath)
 	if !exists {

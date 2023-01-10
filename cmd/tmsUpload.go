@@ -19,7 +19,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	}
 }
 
-func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) error {
+func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tms.TmsUtils) error {
 	fileId, errUploadFile := tmsUploadFile(config, communicationInstance, utils)
 	if errUploadFile != nil {
 		return errUploadFile

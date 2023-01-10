@@ -71,7 +71,7 @@ func tmsExport(config tmsExportOptions, telemetryData *telemetry.CustomData, inf
 	}
 }
 
-func runTmsExport(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) error {
+func runTmsExport(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tms.TmsUtils) error {
 	fileId, errUploadFile := tmsUploadFile(config, communicationInstance, utils)
 	if errUploadFile != nil {
 		return errUploadFile

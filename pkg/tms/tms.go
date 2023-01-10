@@ -11,16 +11,31 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sort"
 
+	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/ghodss/yaml"
 )
 
 const (
 	DEFAULT_TR_DESCRIPTION = "Created by Piper"
 )
+
+type TmsUtils interface {
+	command.ExecRunner
+
+	FileExists(filename string) (bool, error)
+	FileRead(path string) ([]byte, error)
+
+	// Add more methods here, or embed additional interfaces, or remove/replace as required.
+	// The tmsUploadUtils interface should be descriptive of your runtime dependencies,
+	// i.e. include everything you need to be able to mock in tests.
+	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
+}
 
 type uaa struct {
 	Url          string `json:"url"`
@@ -471,4 +486,81 @@ func JsonToMap(jsonStr string) map[string]interface{} {
 	result := make(map[string]interface{})
 	json.Unmarshal([]byte(jsonStr), &result)
 	return result
+}
+
+func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDescriptorMapping map[string]interface{}, nodes []Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[int64]string, error) {
+	var wrongMtaIdExtDescriptors []string
+	var wrongExtDescriptorPaths []string
+	var wrongNodeNames []string
+	var errorMessage string
+
+	nodeIdExtDescriptorMapping := make(map[int64]string)
+	for nodeName, mappedValue := range nodeNameExtDescriptorMapping {
+		mappedValueString := fmt.Sprintf("%v", mappedValue)
+		exists, _ := utils.FileExists(mappedValueString)
+		if exists {
+			extDescriptorMap, errGetYamlAsMap := GetYamlAsMap(utils, mappedValueString)
+			if errGetYamlAsMap == nil {
+				if fmt.Sprintf("%v", mtaYamlMap["ID"]) != fmt.Sprintf("%v", extDescriptorMap["extends"]) {
+					wrongMtaIdExtDescriptors = append(wrongMtaIdExtDescriptors, mappedValueString)
+				}
+			} else {
+				wrappedErr := errors.Wrapf(errGetYamlAsMap, "tried to parse %v as yaml, but got an error", mappedValueString)
+				errorMessage += fmt.Sprintf("%v\n", wrappedErr)
+			}
+		} else {
+			wrongExtDescriptorPaths = append(wrongExtDescriptorPaths, mappedValueString)
+		}
+
+		isNodeFound := false
+		for _, node := range nodes {
+			if node.Name == nodeName {
+				nodeIdExtDescriptorMapping[node.Id] = mappedValueString
+				isNodeFound = true
+				break
+			}
+		}
+		if !isNodeFound {
+			wrongNodeNames = append(wrongNodeNames, nodeName)
+		}
+	}
+
+	if mtaVersion != "*" && mtaVersion != mtaYamlMap["version"] {
+		errorMessage += "parameter 'mtaVersion' does not match the MTA version in mta.yaml\n"
+	}
+
+	if len(wrongMtaIdExtDescriptors) > 0 || len(wrongExtDescriptorPaths) > 0 || len(wrongNodeNames) > 0 {
+		if len(wrongMtaIdExtDescriptors) > 0 {
+			sort.Strings(wrongMtaIdExtDescriptors)
+			errorMessage += fmt.Sprintf("parameter 'extends' in MTA extension descriptor files %v is not the same as MTA ID or is missing at all\n", wrongMtaIdExtDescriptors)
+		}
+		if len(wrongExtDescriptorPaths) > 0 {
+			sort.Strings(wrongExtDescriptorPaths)
+			errorMessage += fmt.Sprintf("MTA extension descriptor files %v do not exist\n", wrongExtDescriptorPaths)
+		}
+		if len(wrongNodeNames) > 0 {
+			sort.Strings(wrongNodeNames)
+			errorMessage += fmt.Sprintf("nodes %v do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n", wrongNodeNames)
+		}
+	}
+
+	if errorMessage == "" {
+		return nodeIdExtDescriptorMapping, nil
+	} else {
+		return nil, errors.New(errorMessage)
+	}
+}
+
+func GetYamlAsMap(utils TmsUtils, yamlPath string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	bytes, err := utils.FileRead(yamlPath)
+	if err != nil {
+		return result, err
+	}
+	err = yaml.Unmarshal(bytes, &result)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
 }
