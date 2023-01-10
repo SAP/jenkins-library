@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"sort"
@@ -15,27 +14,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
-
-const (
-	DEFAULT_TR_DESCRIPTION = "Created by Piper"
-)
-
-type uaa struct {
-	Url          string `json:"url"`
-	ClientId     string `json:"clientid"`
-	ClientSecret string `json:"clientsecret"`
-}
-
-type serviceKey struct {
-	Uaa uaa    `json:"uaa"`
-	Uri string `json:"uri"`
-}
-
-func jsonToMap(jsonStr string) map[string]interface{} {
-	result := make(map[string]interface{})
-	json.Unmarshal([]byte(jsonStr), &result)
-	return result
-}
 
 type tmsUtils interface {
 	command.ExecRunner
@@ -147,13 +125,6 @@ func getYamlAsMap(utils tmsUtils, yamlPath string) (map[string]interface{}, erro
 	return result, nil
 }
 
-func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err error) {
-	err = json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
-	if err != nil {
-		return
-	}
-	return
-}
 func setupCommunication(config tmsUploadOptions) (communicationInstance tms.CommunicationInterface) {
 	client := &piperHttp.Client{}
 	proxy := config.Proxy
@@ -170,7 +141,7 @@ func setupCommunication(config tmsUploadOptions) (communicationInstance tms.Comm
 		}
 	}
 
-	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
+	serviceKey, err := tms.UnmarshalServiceKey(config.TmsServiceKey)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
@@ -190,7 +161,7 @@ func setupCommunication(config tmsUploadOptions) (communicationInstance tms.Comm
 }
 
 func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUtils) error {
-	description := DEFAULT_TR_DESCRIPTION
+	description := tms.DEFAULT_TR_DESCRIPTION
 	if config.CustomDescription != "" {
 		description = config.CustomDescription
 	}
@@ -198,7 +169,7 @@ func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.Commun
 	namedUser := config.NamedUser
 	nodeName := config.NodeName
 	mtaVersion := config.MtaVersion
-	nodeNameExtDescriptorMapping := jsonToMap(config.NodeExtDescriptorMapping)
+	nodeNameExtDescriptorMapping := tms.JsonToMap(config.NodeExtDescriptorMapping)
 	mtaPath := config.MtaPath
 
 	if GeneralConfig.Verbose {

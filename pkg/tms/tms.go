@@ -18,6 +18,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	DEFAULT_TR_DESCRIPTION = "Created by Piper"
+)
+
+type uaa struct {
+	Url          string `json:"url"`
+	ClientId     string `json:"clientid"`
+	ClientSecret string `json:"clientsecret"`
+}
+
+type serviceKey struct {
+	Uaa uaa    `json:"uaa"`
+	Uri string `json:"uri"`
+}
+
 type AuthToken struct {
 	TokenType   string `json:"token_type"`
 	AccessToken string `json:"access_token"`
@@ -442,4 +457,18 @@ func upload(communicationInstance *CommunicationInstance, uploadRequestData pipe
 	}
 	defer response.Body.Close()
 	return data, nil
+}
+
+func UnmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err error) {
+	err = json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func JsonToMap(jsonStr string) map[string]interface{} {
+	result := make(map[string]interface{})
+	json.Unmarshal([]byte(jsonStr), &result)
+	return result
 }

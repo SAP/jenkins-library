@@ -82,7 +82,7 @@ func runTmsExport(config tmsUploadOptions, communicationInstance tms.Communicati
 		return errUploadDescriptors
 	}
 
-	description := DEFAULT_TR_DESCRIPTION
+	description := tms.DEFAULT_TR_DESCRIPTION
 	if config.CustomDescription != "" {
 		description = config.CustomDescription
 	}
