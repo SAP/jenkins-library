@@ -10,15 +10,15 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"sort"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/ghodss/yaml"
 )
 
 const (
