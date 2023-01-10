@@ -244,4 +244,57 @@ user3@domain.com noreply+github@domain.com'''
         assertThat(credentials, hasItem(''))
         assertJobStatusSuccess()
     }
+
+    @Test
+    void testSendNotificationMailOnFirstBuild() throws Exception {
+        def emailExtCalls = []
+        def buildMock = [
+            fullProjectName: 'testProjectName',
+            displayName: 'testDisplayName',
+            result: 'SUCCESS',
+            getPreviousBuild: {
+                return null
+            }
+        ]
+        nullScript.currentBuild = buildMock
+        helper.registerAllowedMethod('emailext', [Map.class], { map ->
+            emailExtCalls.add(map)
+            return ''
+        })
+
+        stepRule.step.mailSendNotification(
+            script: nullScript,
+            notifyCulprits: false,
+            gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
+        )
+
+        assertThat(emailExtCalls, hasSize(0))
+    }
+
+    @Test
+    void testSendNotificationMailOnRecovery() throws Exception {
+        def emailExtCalls = []
+        def buildMock = [
+            fullProjectName: 'testProjectName',
+            displayName: 'testDisplayName',
+            result: 'SUCCESS',
+            getPreviousBuild: {
+                return [result: 'FAILURE']
+            }
+        ]
+        nullScript.currentBuild = buildMock
+        helper.registerAllowedMethod('emailext', [Map.class], { map ->
+            emailExtCalls.add(map)
+            return ''
+        })
+
+        stepRule.step.mailSendNotification(
+            script: nullScript,
+            notifyCulprits: false,
+            gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
+        )
+
+        assertThat(emailExtCalls, hasSize(1))
+        assertThat(emailExtCalls[0].subject, is("SUCCESS: Build testProjectName testDisplayName is back to normal"))
+    }
 }
