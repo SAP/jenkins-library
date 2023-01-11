@@ -76,7 +76,8 @@ func (c *checkmarxOneExecuteScanUtilsBundle) Open(name string) (*os.File, error)
 }
 
 func (c *checkmarxOneExecuteScanUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
-	return piperGithub.CreateIssue(ghCreateIssueOptions)
+	_, err := piperGithub.CreateIssue(ghCreateIssueOptions)
+	return err
 }
 
 func (c *checkmarxOneExecuteScanUtilsBundle) GetIssueService() *github.IssuesService {
