@@ -163,7 +163,11 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) ([]string,
 	}
 
 	for _, runOption := range config.RunOptions {
-		templ, err := template.New("template").Parse(runOption)
+		templ, err := template.New("template").Funcs(template.FuncMap{
+			"getenv": func(varName string) string {
+				return os.Getenv(varName)
+			},
+		}).Parse(runOption)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return nil, errors.Wrap(err, "could not parse newman command template")
