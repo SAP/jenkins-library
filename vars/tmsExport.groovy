@@ -51,12 +51,13 @@ void call(Map parameters = [:]) {
         [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
     ]
 
-    /**
-    def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-    def namedUser = jenkinsUtils.getJobStartedByUserId()
-    if (namedUser) {
-        parameters.namedUser = namedUser
-    }
-    */
+    if (!parameters.namedUser) {
+        def jenkinsUtils = new JenkinsUtils()
+        def namedUser = jenkinsUtils.getJobStartedByUserId()
+        if (namedUser) {
+            parameters.namedUser = namedUser
+        }
+    }    
+    
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
 }
