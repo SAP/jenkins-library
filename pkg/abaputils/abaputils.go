@@ -81,6 +81,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner) (AbapServiceKey, error) {
 
 	var abapServiceKeyV8 AbapServiceKeyV8
+	var abapServiceKey AbapServiceKey
 	var serviceKeyJSON string
 	var err error
 
@@ -103,15 +104,24 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 		return abapServiceKeyV8.Credentials, err
 	}
 
-	// parse
+	// Depending on the cf cli version, the service key may be returned in a different format. For compatibility reason, both formats are supported
 	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKeyV8)
 	if abapServiceKeyV8 == (AbapServiceKeyV8{}) {
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		return abapServiceKeyV8.Credentials, errors.New("Parsing the service key failed. Service key is empty")
+		log.Entry().Debug("Could not parse the service key in the cf cli v8 format.")
+	} else {
+		log.Entry().Info("Service Key read successfully")
+		return abapServiceKeyV8.Credentials, nil
 	}
 
-	log.Entry().Info("Service Key read successfully")
-	return abapServiceKeyV8.Credentials, nil
+	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
+	if abapServiceKey == (AbapServiceKey{}) {
+		log.Entry().Debug("Could not parse the service key in the cf cli v7 format.")
+	} else {
+		log.Entry().Info("Service Key read successfully")
+		return abapServiceKey, nil
+	}
+	log.SetErrorCategory(log.ErrorInfrastructure)
+	return abapServiceKeyV8.Credentials, errors.New("Parsing the service key failed for all supported formats. Service key is empty")
 }
 
 /*
