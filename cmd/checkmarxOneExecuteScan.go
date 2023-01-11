@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/checkmarxOne"
+	"github.com/SAP/jenkins-library/pkg/checkmarxone"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
