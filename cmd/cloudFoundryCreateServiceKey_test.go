@@ -29,7 +29,7 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
 		if error == nil {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "--wait"}, execRunner.Calls[0].Params)
+			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", cfCliSynchronousRequestFlag}, execRunner.Calls[0].Params)
 		}
 	})
 	t.Run("CF Create Service Key with service Key config: Success case", func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
 		if error == nil {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "testconfig.yml", "--wait"}, execRunner.Calls[0].Params)
+			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "testconfig.yml", cfCliSynchronousRequestFlag}, execRunner.Calls[0].Params)
 		}
 	})
 	t.Run("CF Create Service Key with service Key config: Success case", func(t *testing.T) {
@@ -71,7 +71,7 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
 		if error == nil {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}", "--wait"}, execRunner.Calls[0].Params)
+			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}", cfCliSynchronousRequestFlag}, execRunner.Calls[0].Params)
 		}
 	})
 }
