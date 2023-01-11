@@ -107,7 +107,9 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 	// Depending on the cf cli version, the service key may be returned in a different format. For compatibility reason, both formats are supported
 	unmarshalErrorV8 := json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKeyV8)
 	if abapServiceKeyV8 == (AbapServiceKeyV8{}) {
-		log.Entry().Debug(unmarshalErrorV8.Error())
+		if unmarshalErrorV8 != nil {
+			log.Entry().Debug(unmarshalErrorV8.Error())
+		}
 		log.Entry().Debug("Could not parse the service key in the cf cli v8 format.")
 	} else {
 		log.Entry().Info("Service Key read successfully")
@@ -116,7 +118,9 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 
 	unmarshalError := json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
 	if abapServiceKey == (AbapServiceKey{}) {
-		log.Entry().Debug(unmarshalError.Error())
+		if unmarshalError != nil {
+			log.Entry().Debug(unmarshalError.Error())
+		}
 		log.Entry().Debug("Could not parse the service key in the cf cli v7 format.")
 	} else {
 		log.Entry().Info("Service Key read successfully")
