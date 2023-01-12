@@ -328,12 +328,12 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
     if APIKey != "" {
         token, err = sys.getAPIToken()
         if err != nil {
-            return sys, errors.Wrap(err, "Error fetching oAuth token using API Key")
+            return sys, errors.Wrap(err, fmt.Sprintf( "Error fetching oAuth token using API Key: %v", shortenGUID( APIKey ) ) )
         }
     } else {
         token, err = sys.getOAuth2Token()
         if err != nil {
-            return sys, errors.Wrap(err, "Error fetching oAuth token using OIDC client")
+            return sys, errors.Wrap(err, fmt.Sprintf( "Error fetching oAuth token using OIDC client: %v/%v", client_id, shortenGUID( client_secret ) ))
         }
     }
 
@@ -527,8 +527,8 @@ func (sys *SystemInstance) GetGroupByName( groupName string ) (Group, error) {
     }
 
     if len(groups) == 0 {
-        err := errors.New("No matching group found")
-        sys.logger.Errorf( "Error fetching group: %s", err )
+        err := errors.New( fmt.Sprintf("No group matching %v", groupName) )
+        sys.logger.Errorf( "Error fetching group %v: %s", groupName, err )
         return Group{}, err
     }
 
@@ -866,32 +866,6 @@ func (sys *SystemInstance) SetProjectFileFilter( projectID, filter string, allow
     return sys.UpdateProjectConfiguration( projectID, []ProjectConfigurationSetting{setting} )
 }
 
-
-// ScanProject triggers a scan on the project addressed by projectID
-// TODO
-// In Cx1, the request to scan a project is similar to the Zip-Scan above. Example:
-/*
-{
-    "project": {
-        "id": "{{Cx1_ProjectId}}"
-    },
-    "type": "git",
-    "handler": {
-        "branch": "master",
-        "repoUrl": "https://github.com/michaelkubiaczyk/private_test"
-    },
-    "config": [
-        {
-            "type": "sast",
-            "value": {
-                "incremental": "false",
-                "presetName": "Checkmarx Default"
-            }
-        }
-    ]
-}
-*/
-
 // GetScans returns all scan status on the project addressed by projectID
 func (sys *SystemInstance) GetScan(scanID string) (Scan, error) {
     var scan Scan
@@ -1184,8 +1158,6 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
 
 
 // GetReportStatus returns the status of the report generation process
-// TODO - request is sent but the response is not yet stored, "ReportStatusResponse" structure not yet fully defined
-
 func (sys *SystemInstance) GetReportStatus(reportID string) (ReportStatus, error) {
     var response ReportStatus
 
@@ -1216,6 +1188,10 @@ func (sys *SystemInstance) GetQueries() ([]Query, error) {
         sys.logger.Errorf( "Failed to parse %v", string(response) )   
     }
 	return queries, err
+}
+
+func shortenGUID( guid string ) string {
+    return fmt.Sprintf( "%v..%v", guid[:2], guid[len(guid)-2:] )
 }
 
 // GetShortDescription returns the short description for an issue with a scanID and pathID

@@ -436,7 +436,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) getDetailedResults(config checkmarxO
 	resultMap["LinesOfCodeScanned"] = scanmeta.LOC
 	resultMap["FilesScanned"] = scanmeta.FileCount
 
-	log.Entry().Errorf("Test - LOC %d, files %d", resultMap["LinesOfCodeScanned"], resultMap["FilesScanned"])
+	//log.Entry().Errorf("Test - LOC %d, files %d", resultMap["LinesOfCodeScanned"], resultMap["FilesScanned"])
 
 	resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this"
 
@@ -700,7 +700,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) createToolRecordCx(utils checkmarxOn
 }
 
 func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx context.Context, config checkmarxOneExecuteScanOptions, sys checkmarxOne.System, group checkmarxOne.Group, project checkmarxOne.Project, scan checkmarxOne.Scan, influx *checkmarxOneExecuteScanInflux, utils checkmarxOneExecuteScanUtils) error {
-	log.Entry().Info("Test - verifyCxProjectCompliance entry")
+	//log.Entry().Info("Test - verifyCxProjectCompliance entry")
 
 	var reports []piperutils.Path
 	if config.GeneratePdfReport {
@@ -838,7 +838,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 }
 
 func (cx1sh *checkmarxOneExecuteScanHelper) enforceThresholds(config checkmarxOneExecuteScanOptions, results map[string]interface{}) (bool, []string, []string) {
-	log.Entry().Info("Test - enforceThresholds entry")
+	//log.Entry().Info("Test - enforceThresholds entry")
 	neutralResults := []string{}
 	insecureResults := []string{}
 	insecure := false
@@ -958,7 +958,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) enforceThresholds(config checkmarxOn
 }
 
 func (cx1sh *checkmarxOneExecuteScanHelper) reportToInflux(results map[string]interface{}, influx *checkmarxOneExecuteScanInflux) {
-	log.Entry().Info("Test - reportToInflux entry")
+	//log.Entry().Info("Test - reportToInflux entry")
 
 	influx.checkmarxOne_data.fields.high_issues = results["High"].(map[string]int)["Issues"]
 	influx.checkmarxOne_data.fields.high_not_false_postive = results["High"].(map[string]int)["NotFalsePositive"]
