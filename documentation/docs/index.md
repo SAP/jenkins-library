@@ -1,46 +1,51 @@
 # Project "Piper" User Documentation
 
-Continuous delivery is a method to develop software with short feedback cycles.
-It is applicable to projects both for SAP BTP and SAP on-premise platforms.
+Easily set up continuous delivery in your software development using SAP technologies.
+Continuous delivery is a method to develop software with short feedback cycles. It is applicable to projects both on the SAP Business Technology Platform (BTP) and on SAP on-premise platforms.
 SAP implements tooling for continuous delivery in project "Piper".
-The goal of project "Piper" is to substantially ease setting up continuous delivery in your project using SAP technologies.
 
 ## What you get
 
-To get you started quickly, project "Piper" offers you the following artifacts:
+To get started with project "Piper", you can choose from the following offerings:
 
-* A set of ready-made Continuous Delivery pipelines for direct use in your project
+* A set of predefined pipelines that build, test, and deploy your code changes
+
+  You can choose between the following use cases:
+  
   * [ABAP Environment Pipeline](pipelines/abapEnvironment/introduction/)
   * [General Purpose Pipeline](stages/introduction/)
-* [A shared library][piper-library] that contains reusable step implementations, which enable you to customize our preconfigured pipelines, or to even build your own customized ones
-* A standalone [command line utility](cli) for Linux and a [GitHub Action](https://github.com/SAP/project-piper-action)
-  * Note: This version is still in early development. Feel free to use it and [provide feedback](https://github.com/SAP/jenkins-library/issues), but don't expect all the features of the Jenkins library
-* A set of [Docker images][devops-docker-images] to setup a CI/CD environment in minutes using sophisticated life-cycle management
+  * [A shared library][piper-library] that contains reusable step implementations, which enable you to customize the  preconfigured pipelines or to build your own ones, if necessary
+  * A standalone [command line utility](cli) for Linux and a [GitHub Action](https://github.com/SAP/project-piper-action)
+  **Note:** This version is still in early development and might not contain all features of the Jenkins library, yet. Feel free to use it and [provide feedback](https://github.com/SAP/jenkins-library/issues).
 
-To find out which offering is right for you, we recommend to look at the ready-made pipelines first.
-In many cases, they should satisfy your requirements, and if this is the case, you don't need to build your own pipeline.
+* A set of [Docker images][devops-docker-images] to easily set up a CI/CD environment using sophisticated life-cycle management
 
-### The best-practice way: Ready-made pipelines
+To find out which offering is right for you, we recommend you to look at the preconfigured pipelines first. In most cases,  you don't need to build your own pipelines - you can use the ready-made ones and adapt them according to your needs, if necessary.
 
-**Are you building a standalone SAP BTP application, an application with the SAP Cloud SDK, or using the SAP Cloud Application Programming Model?<br>**
-Then continue reading about our [general purpose pipeline](stages/introduction/), which supports various technologies and programming languages.
+If you don't need to care about the underlying infrastructure of your pipelines, you can use the [SAP Continuous Integration and Delivery](https://help.sap.com/docs/CONTINUOUS_DELIVERY) service on SAP BTP. It offers an easy, UI-guided way to set up continuous integration and delivery without hosting your own Jenkins instance.
 
-Previously, project "Piper" included also the SAP Cloud SDK Pipeline designed specifically for SAP Cloud SDK and SAP Cloud Application Model (CAP) projects.
-SAP Cloud SDK pipeline and its features are merged into the General Purpose Pipeline as of November 2020.
-The reasoning as well as further information how to adopt the General Purpose Pipeline are described in our [guide](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/gpp-guide.md).
+ ![SAP CI/CD vs Project "Piper"](images/CICD_Piper.png "Solution Comparison")
 
-### The do-it-yourself way: Build with Library
+The support infrastructure for SAP Continuous Integration and Delivery is provided by SAP according to the Service Level Agreements (SLAs). Project "Piper" offers community support using GitHub issues and pull requests. Users are free to contribute to the repository independently. See [Contributing](https://github.com/SAP/jenkins-library/blob/master/.github/CONTRIBUTING.md).
 
-The shared library contains building blocks for your own pipeline, following our best practice Jenkins pipelines described in the Scenarios section.
+For more information about the CI/CD solutions offered by SAP, see [SAP Solutions for Continuous Integration and Delivery](https://help.sap.com/docs/CICD_OVERVIEW/8cacec64ed854b2a88e9a0973e0f97a2/e9fa320181124fa9808d4446a1bf69dd.html).
+
+To learn more about the continuous integration and delivery offerings by SAP, see [Continuous Integration and Delivery by SAP](https://help.sap.com/docs/CICD_OVERVIEW) and [Continuous Integration and Delivery by SAP Learning Journey](https://help.sap.com/learning-journeys/b76f0b2e5d534c449c1f3b0fa84ab697).
+
+### The Best-Practice Way: Ready-Made Pipelines
+
+Use the [general purpose pipeline](stages/introduction/) to build a standalone SAP BTP application or an SAP Cloud Application Programming Model application project. It supports various technologies and programming languages.
+
+### The Do-It-Yourself Way: Customized Pipelines
+
+The shared library contains building blocks for your own pipelines using Jenkins pipelines to implement best practice processes. For more information, see the **Scenarios** section from the navigation pane.
 
 The best practice pipelines are based on the general concepts of [Pipelines as Code, as introduced in Jenkins 2][jenkins-doc-pipelines].
-With that you have the power of the Jenkins community at hand to optimize your pipelines.
+This way, you can optimize your pipelines with the help of the Jenkins community.
 
-You can run the best practice Jenkins pipelines out of the box, take them as a
-starting point for project-specific adaptations or implement your own pipelines
-from scratch using the shared library.
+You can run the best practice Jenkins pipelines out-of-the-box, use them for project-specific adaptations, or create your own pipelines from scratch using the shared library.
 
-For an example, you might want to check out our ["Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Business Technology Platform (SAP BTP) with Jenkins" scenario][piper-library-scenario].
+For an example, see the [Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Business Technology Platform (SAP BTP) with Jenkins][piper-library-scenario] scenario.
 
 #### Extensibility
 

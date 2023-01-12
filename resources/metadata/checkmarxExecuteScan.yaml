@@ -208,7 +208,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "1"
         aliases:
           - name: sourceEncoding
       - name: teamId
