@@ -78,7 +78,7 @@ type Query struct {
     Language            string
     Severity            string
     CweID               uint64
-    QueryDescriptionID  uint
+    QueryDescriptionID  int64
     Custom              bool
 }
 
@@ -336,7 +336,7 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
             return sys, errors.Wrap(err, fmt.Sprintf( "Error fetching oAuth token using OIDC client: %v/%v", shortenGUID(client_id), shortenGUID( client_secret ) ))
         }
     } else {
-        return sys, errors.Wrap(err, "No APIKey or client_id+client_secret provided." )
+        return sys, errors.New( "No APIKey or client_id/client_secret provided." )
     }
 
     log.RegisterSecret(token)
