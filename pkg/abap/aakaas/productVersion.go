@@ -24,7 +24,6 @@ func (p *ProductVersion) ConstructProductversion(desc abaputils.AddonDescriptor,
 	if err := p.resolveNext(); err != nil {
 		return err
 	}
-	p.Version = desc.AddonVersionYAML
 	return nil
 }
 

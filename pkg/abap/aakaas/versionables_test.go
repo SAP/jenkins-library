@@ -23,6 +23,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "1", vers.TechRelease)
 		assert.Equal(t, "0002", vers.TechSpLevel)
 		assert.Equal(t, "0003", vers.TechPatchLevel)
+		assert.Equal(t, "1.2.3", vers.Version)
 	})
 	t.Run("Factory No Name", func(t *testing.T) {
 		err := vers.constructVersionable("", "1.2.3", *conn, "")
@@ -46,6 +47,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "2", vers.TechRelease)
 		assert.Equal(t, "0000", vers.TechSpLevel)
 		assert.Equal(t, "0000", vers.TechPatchLevel)
+		assert.Equal(t, "2.0.0", vers.Version)
 	})
 	t.Run("ComponentVersion NEXT Release Non Existing", func(t *testing.T) {
 		mc.AddData(testDataAakaasCVGetReleaseNonExisting)
@@ -56,6 +58,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "1", vers.TechRelease)
 		assert.Equal(t, "0000", vers.TechSpLevel)
 		assert.Equal(t, "0000", vers.TechPatchLevel)
+		assert.Equal(t, "1.0.0", vers.Version)
 	})
 	t.Run("ComponentVersion NEXT SP Level Existing", func(t *testing.T) {
 		mc.AddData(testDataAakaasCVGetSpLevelExisting)
@@ -66,6 +69,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "1", vers.TechRelease)
 		assert.Equal(t, "0008", vers.TechSpLevel)
 		assert.Equal(t, "0000", vers.TechPatchLevel)
+		assert.Equal(t, "1.8.0", vers.Version)
 	})
 	t.Run("ComponentVersion NEXT SP Level Non Existing", func(t *testing.T) {
 		//This one should lead to an error later on as AOI is needed - anyway we can't just produce a differen package then customized...
@@ -77,6 +81,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "1", vers.TechRelease)
 		assert.Equal(t, "0001", vers.TechSpLevel)
 		assert.Equal(t, "0000", vers.TechPatchLevel)
+		assert.Equal(t, "1.1.0", vers.Version)
 	})
 	t.Run("ComponentVersion NEXT Patch Level Existing", func(t *testing.T) {
 		mc.AddData(testDataAakaasCVGetPatchLevelExisting)
@@ -87,6 +92,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "1", vers.TechRelease)
 		assert.Equal(t, "0003", vers.TechSpLevel)
 		assert.Equal(t, "0047", vers.TechPatchLevel)
+		assert.Equal(t, "1.3.47", vers.Version)
 	})
 	t.Run("ComponentVersion NEXT Patch Level Non Existing", func(t *testing.T) {
 		//This one should lead to an error later on as AOI is needed - anyway we can't just produce a differen package then customized...
@@ -98,6 +104,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "1", vers.TechRelease)
 		assert.Equal(t, "0003", vers.TechSpLevel)
 		assert.Equal(t, "0001", vers.TechPatchLevel)
+		assert.Equal(t, "1.3.1", vers.Version)
 	})
 	t.Run("Product Version NEXT Release Existing", func(t *testing.T) {
 		mc.AddData(testDataAakaasPVGetReleaseExisting)
@@ -108,8 +115,9 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "2", vers.TechRelease)
 		assert.Equal(t, "0000", vers.TechSpLevel)
 		assert.Equal(t, "0000", vers.TechPatchLevel)
+		assert.Equal(t, "2.0.0", vers.Version)
 	})
-	t.Run("ComponentVersion NEXT Release Non Existing", func(t *testing.T) {
+	t.Run("Product Version NEXT Release Non Existing", func(t *testing.T) {
 		mc.AddData(testDataAakaasPVGetReleaseNonExisting)
 		err := vers.constructVersionable("DummyProd", wildCard+".0.0", *conn, pvQueryURL)
 		assert.NoError(t, err)
@@ -118,5 +126,6 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "1", vers.TechRelease)
 		assert.Equal(t, "0000", vers.TechSpLevel)
 		assert.Equal(t, "0000", vers.TechPatchLevel)
+		assert.Equal(t, "1.0.0", vers.Version)
 	})
 }

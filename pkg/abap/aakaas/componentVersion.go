@@ -24,7 +24,6 @@ func (c *ComponentVersion) ConstructComponentVersion(repo abaputils.Repository, 
 	if err := c.resolveNext(); err != nil {
 		return err
 	}
-	c.Version = repo.VersionYAML
 
 	return nil
 }

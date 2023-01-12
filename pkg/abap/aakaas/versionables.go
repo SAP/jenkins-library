@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -32,7 +33,7 @@ type versionables struct {
 
 func (v *versionable) constructVersionable(name string, dottedVersionString string, connector abapbuild.Connector, queryURL string) error {
 	if name == "" {
-		return errors.New("No Component Name provided")
+		return errors.New("No Component/Product Name provided")
 	}
 	subStrings := strings.Split(dottedVersionString, ".")
 	if len(subStrings) != 3 {
@@ -44,18 +45,36 @@ func (v *versionable) constructVersionable(name string, dottedVersionString stri
 	v.TechPatchLevel = fmt.Sprintf("%04s", subStrings[2])
 	v.connector = connector
 	v.queryUrl = queryURL
+	v.Version = dottedVersionString
 	return nil
 }
 
 func (v *versionable) resolveNext() error {
-	switch wildCard {
-	case v.TechRelease:
-		return v.resolveRelease()
-	case v.TechSpLevel:
-		return v.resolveSpLevel()
-	case v.TechPatchLevel:
-		return v.resolvePatchLevel()
+
+	switch strings.Count(v.Version, wildCard) {
+	case 0:
+		return nil
+	case 1:
+		log.Entry().Info("Wildcard detected in dotted-version-string. Looking up highest existing package in AAKaaS...")
+		var err error
+		switch wildCard {
+		case v.TechRelease:
+			err = v.resolveRelease()
+		case v.TechSpLevel:
+			err = v.resolveSpLevel()
+		case v.TechPatchLevel:
+			err = v.resolvePatchLevel()
+		}
+		if err != nil {
+			return err
+		}
+		if v.Version, err = v.getDottedVersionString(); err != nil {
+			return err
+		}
+	default:
+		return errors.New("The dotted-version-string must contain only one wildcard " + wildCard)
 	}
+
 	return nil
 }
 
@@ -141,4 +160,18 @@ func (v *versionable) queryVersion(filter string, orderBy string) (*versionable,
 		}
 	}
 	return &result, nil
+}
+
+func (v *versionable) getDottedVersionString() (string, error) {
+	var spLevelAsnumber int
+	var patchLevelAsNumber int
+	var err error
+	if spLevelAsnumber, err = strconv.Atoi(v.TechSpLevel); err != nil {
+		return "", err
+	}
+	if patchLevelAsNumber, err = strconv.Atoi(v.TechPatchLevel); err != nil {
+		return "", err
+	}
+	dottedVersionString := strings.Join([]string{v.TechRelease, strconv.Itoa(spLevelAsnumber), strconv.Itoa(patchLevelAsNumber)}, ".")
+	return dottedVersionString, nil
 }
