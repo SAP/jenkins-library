@@ -330,11 +330,13 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
         if err != nil {
             return sys, errors.Wrap(err, fmt.Sprintf( "Error fetching oAuth token using API Key: %v", shortenGUID( APIKey ) ) )
         }
-    } else {
+    } else if ( client_id != "" && client_secret != "" ) {
         token, err = sys.getOAuth2Token()
         if err != nil {
-            return sys, errors.Wrap(err, fmt.Sprintf( "Error fetching oAuth token using OIDC client: %v/%v", client_id, shortenGUID( client_secret ) ))
+            return sys, errors.Wrap(err, fmt.Sprintf( "Error fetching oAuth token using OIDC client: %v/%v", shortenGUID(client_id), shortenGUID( client_secret ) ))
         }
+    } else {
+        return sys, errors.Wrap(err, "No APIKey or client_id+client_secret provided." )
     }
 
     log.RegisterSecret(token)
