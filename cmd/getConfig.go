@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -17,15 +18,17 @@ import (
 )
 
 type configCommandOptions struct {
-	output                        string // output format, so far only JSON
-	outputFile                    string // if set: path to file where the output should be written to
-	parametersJSON                string // parameters to be considered in JSON format
-	stageConfig                   bool
-	stageConfigAcceptedParameters []string
-	stepMetadata                  string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	stepName                      string
-	contextConfig                 bool
-	openFile                      func(s string, t map[string]string) (io.ReadCloser, error)
+	output                          string // output format, so far only JSON
+	outputFile                      string // if set: path to file where the output should be written to
+	parametersJSON                  string // parameters to be considered in JSON format
+	stageConfig                     bool
+	stageConfigAcceptedParameters   []string
+	stepMetadata                    string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	stepName                        string
+	contextConfig                   bool
+	openFile                        func(s string, t map[string]string) (io.ReadCloser, error)
+	containerRegistryURL            string
+	containerRegistryCredsVaultPath string
 }
 
 var configOptions configCommandOptions
@@ -200,6 +203,9 @@ func getConfig() (config.StepConfig, error) {
 
 		if configOptions.contextConfig {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
+			// TODO: only do this if Docker image contains the configOptions.containerRegistryURL
+			getConfigParams := config.GetConfigParameters(configOptions.containerRegistryCredsVaultPath)
+			metadata.Spec.Inputs.Parameters = getConfigParams
 		}
 
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
@@ -210,6 +216,12 @@ func getConfig() (config.StepConfig, error) {
 		// apply context conditions if context configuration is requested
 		if configOptions.contextConfig {
 			applyContextConditions(metadata, &stepConfig)
+			if token, ok := stepConfig.Config["artifactoryToken"].(string); ok {
+				// write docker config
+				// TODO: also check if orchestrator is ADO and ensure it's deleted from its filesystem when not needed anymore?
+				password := "test"
+				docker.CreateDockerConfigJSON(configOptions.containerRegistryURL, token, password, "", "", &piperutils.Files{})
+			}
 		}
 	}
 	return stepConfig, nil
@@ -251,6 +263,8 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
 	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
+	cmd.Flags().StringVar(&configOptions.containerRegistryURL, "containerRegistryURL", "", "URL to Docker container registry for which credentials need to be fetched from Vault")
+	cmd.Flags().StringVar(&configOptions.containerRegistryURL, "containerRegistryCredsVaultPath", "", "Vault path for container registry credentials")
 
 }
 
