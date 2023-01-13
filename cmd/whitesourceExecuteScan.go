@@ -326,7 +326,8 @@ func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, err
 
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if len(scan.AggregateProjectName) > 0 && (len(config.Version)+len(config.CustomScanVersion) > 0) {
-		if config.Version == "" {
+		// if config.Version == "" {
+		if config.CustomScanVersion != "" {
 			config.Version = config.CustomScanVersion
 		}
 	} else {
