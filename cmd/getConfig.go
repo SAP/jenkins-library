@@ -205,6 +205,7 @@ func getConfig() (config.StepConfig, error) {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 			// by adding these parameters, the Docker registry secrets will be retrieved from Vault and written to a Docker config JSON
 			if configOptions.containerRegistryURL != "" && configOptions.containerRegistryCredsVaultPath != "" {
+				myConfig.SetVaultCredentials(os.Getenv("PIPER_vaultAppRoleID"), os.Getenv("PIPER_vaultAppRoleSecretID"), os.Getenv("PIPER_vaultToken"))
 				getConfigParams := getConfigParameters(configOptions.containerRegistryCredsVaultPath)
 				metadata.Spec.Inputs.Parameters = getConfigParams
 			}
@@ -326,21 +327,24 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 }
 
 func writeDockerRegistryCredentials(stepConfig config.StepConfig) {
-	dockerRegistryToken, ok := stepConfig.Config["token"].(string)
-	if !ok || dockerRegistryToken == "" {
+	dockerRegistryToken, tokenOk := stepConfig.Config["containerRegistryToken"].(string)
+	dockerRegistryUsername, usernameOk := stepConfig.Config["containerRegistryUsername"].(string)
+	if !tokenOk || !usernameOk {
 		return
 	}
-	dockerRegistryUsername, ok := stepConfig.Config["username"].(string)
-	if !ok || dockerRegistryUsername == "" {
-		return
+	if dockerRegistryUsername != "" && dockerRegistryToken != "" {
+		docker.CreateDockerConfigJSON(configOptions.containerRegistryURL, dockerRegistryToken, dockerRegistryUsername, "", ".docker/config.json", &piperutils.Files{})
 	}
-	docker.CreateDockerConfigJSON(configOptions.containerRegistryURL, dockerRegistryToken, dockerRegistryUsername, "", ".docker/config.json", &piperutils.Files{})
+
+	// they're secrets, so remove them, otherwise they get logged
+	delete(stepConfig.Config, "containerRegistryToken")
+	delete(stepConfig.Config, "containerRegistryUsername")
 }
 
 func getConfigParameters(containerRegistryCredsVaultPath string) []config.StepParameters {
 	return []config.StepParameters{
 		{
-			Name: "token",
+			Name: "containerRegistryToken",
 			ResourceRef: []config.ResourceReference{
 				{
 					Name:    "containerRegistryCredentialsVaultSecretName",
@@ -355,7 +359,7 @@ func getConfigParameters(containerRegistryCredsVaultPath string) []config.StepPa
 			Default:   "",
 		},
 		{
-			Name: "username",
+			Name: "containerRegistryUsername",
 			ResourceRef: []config.ResourceReference{
 				{
 					Name:    "containerRegistryCredentialsVaultSecretName",
