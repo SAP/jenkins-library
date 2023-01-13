@@ -337,8 +337,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 	t.Run("success - with version from default (projectName is filled)", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			BuildTool: "mta",
-			// CustomScanVersion: "latest",
+			BuildTool:       "mta",
 			VersioningModel: "major-minor",
 			ProductName:     "mock-product",
 			ProjectName:     "mock-project",
