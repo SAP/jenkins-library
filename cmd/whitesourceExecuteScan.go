@@ -183,6 +183,8 @@ func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *w
 			return errors.Wrapf(err, "failed to execute WhiteSource scan")
 		}
 	}
+	fmt.Printf("config: %+v\n", config)
+	fmt.Printf("scan: %+v\n", scan)
 	return nil
 }
 
