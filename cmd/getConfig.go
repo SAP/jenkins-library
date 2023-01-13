@@ -333,7 +333,7 @@ func writeDockerRegistryCredentials(stepConfig config.StepConfig) {
 		return
 	}
 	if dockerRegistryUsername != "" && dockerRegistryToken != "" {
-		docker.CreateDockerConfigJSON(configOptions.containerRegistryURL, dockerRegistryToken, dockerRegistryUsername, "", "/home/.docker/config.json", &piperutils.Files{})
+		docker.CreateDockerConfigJSON(configOptions.containerRegistryURL, dockerRegistryToken, dockerRegistryUsername, "", "~/.docker/config.json", &piperutils.Files{})
 	}
 
 	// they're secrets, so remove them, otherwise they get logged
