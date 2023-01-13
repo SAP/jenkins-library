@@ -530,39 +530,3 @@ func cloneConfig(config *Config) (*Config, error) {
 
 	return clone, nil
 }
-
-func GetConfigParameters(containerRegistryCredsVaultPath string) []StepParameters {
-	var theParams = []StepParameters{
-		{
-			Name: "containerRegistryToken",
-			ResourceRef: []ResourceReference{
-				{
-					Name:    "containerRegistryCredentialsVaultSecretName",
-					Type:    "vaultSecret",
-					Default: containerRegistryCredsVaultPath,
-				},
-			},
-			Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-			Type:      "string",
-			Mandatory: false,
-			Aliases:   []Alias{},
-			Default:   "",
-		},
-		{
-			Name: "containerRegistryUsername",
-			ResourceRef: []ResourceReference{
-				{
-					Name:    "containerRegistryCredentialsVaultSecretName",
-					Type:    "vaultSecret",
-					Default: containerRegistryCredsVaultPath,
-				},
-			},
-			Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-			Type:      "string",
-			Mandatory: false,
-			Aliases:   []Alias{},
-			Default:   "",
-		},
-	}
-	return theParams
-}

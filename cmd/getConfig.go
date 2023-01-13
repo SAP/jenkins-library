@@ -203,9 +203,11 @@ func getConfig() (config.StepConfig, error) {
 
 		if configOptions.contextConfig {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
-			// TODO: only do this if Docker image contains the configOptions.containerRegistryURL
-			getConfigParams := config.GetConfigParameters(configOptions.containerRegistryCredsVaultPath)
-			metadata.Spec.Inputs.Parameters = getConfigParams
+			// by adding these parameters, the Docker registry secrets will be retrieved from Vault and written to a Docker config JSON
+			if configOptions.containerRegistryURL != "" && configOptions.containerRegistryCredsVaultPath != "" {
+				getConfigParams := getConfigParameters(configOptions.containerRegistryCredsVaultPath)
+				metadata.Spec.Inputs.Parameters = getConfigParams
+			}
 		}
 
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
@@ -216,11 +218,8 @@ func getConfig() (config.StepConfig, error) {
 		// apply context conditions if context configuration is requested
 		if configOptions.contextConfig {
 			applyContextConditions(metadata, &stepConfig)
-			if token, ok := stepConfig.Config["artifactoryToken"].(string); ok {
-				// write docker config
-				// TODO: also check if orchestrator is ADO and ensure it's deleted from its filesystem when not needed anymore?
-				password := "test"
-				docker.CreateDockerConfigJSON(configOptions.containerRegistryURL, token, password, "", "", &piperutils.Files{})
+			if configOptions.containerRegistryURL != "" && configOptions.containerRegistryCredsVaultPath != "" {
+				writeDockerRegistryCredentials(stepConfig)
 			}
 		}
 	}
@@ -264,7 +263,7 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
 	cmd.Flags().StringVar(&configOptions.containerRegistryURL, "containerRegistryURL", "", "URL to Docker container registry for which credentials need to be fetched from Vault")
-	cmd.Flags().StringVar(&configOptions.containerRegistryURL, "containerRegistryCredsVaultPath", "", "Vault path for container registry credentials")
+	cmd.Flags().StringVar(&configOptions.containerRegistryCredsVaultPath, "containerRegistryCredsVaultPath", "", "Vault path for container registry credentials")
 
 }
 
@@ -323,5 +322,52 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			log.Entry().Debugf("Creating directory: %v", dir)
 			_ = os.MkdirAll(dir, 0777)
 		}
+	}
+}
+
+func writeDockerRegistryCredentials(stepConfig config.StepConfig) {
+	dockerRegistryToken, ok := stepConfig.Config["token"].(string)
+	if !ok || dockerRegistryToken == "" {
+		return
+	}
+	dockerRegistryUsername, ok := stepConfig.Config["username"].(string)
+	if !ok || dockerRegistryUsername == "" {
+		return
+	}
+	docker.CreateDockerConfigJSON(configOptions.containerRegistryURL, dockerRegistryToken, dockerRegistryUsername, "", ".docker/config.json", &piperutils.Files{})
+}
+
+func getConfigParameters(containerRegistryCredsVaultPath string) []config.StepParameters {
+	return []config.StepParameters{
+		{
+			Name: "token",
+			ResourceRef: []config.ResourceReference{
+				{
+					Name:    "containerRegistryCredentialsVaultSecretName",
+					Type:    "vaultSecret",
+					Default: containerRegistryCredsVaultPath,
+				},
+			},
+			Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+			Type:      "string",
+			Mandatory: false,
+			Aliases:   []config.Alias{{Name: "artifactoryToken", Deprecated: false}},
+			Default:   "",
+		},
+		{
+			Name: "username",
+			ResourceRef: []config.ResourceReference{
+				{
+					Name:    "containerRegistryCredentialsVaultSecretName",
+					Type:    "vaultSecret",
+					Default: containerRegistryCredsVaultPath,
+				},
+			},
+			Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+			Type:      "string",
+			Mandatory: false,
+			Aliases:   []config.Alias{{Name: "artifactoryUsername", Deprecated: false}},
+			Default:   "",
+		},
 	}
 }
