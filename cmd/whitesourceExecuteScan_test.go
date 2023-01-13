@@ -325,7 +325,6 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
-		fmt.Printf("%+v\n", scan)
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
