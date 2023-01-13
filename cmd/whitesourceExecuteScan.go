@@ -322,7 +322,12 @@ func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, err
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if len(scan.AggregateProjectName) > 0 && (len(config.Version)+len(config.CustomScanVersion) > 0) {
 		if config.CustomScanVersion != "" {
+			log.Entry().Infof("Using custom version: %v", config.CustomScanVersion)
 			config.Version = config.CustomScanVersion
+		} else if len(config.Version) > 0 {
+			log.Entry().Infof("Resolving product version from default provided '%s' with versioning '%s'", config.Version, config.VersioningModel)
+			config.Version = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+			log.Entry().Infof("Resolved product version '%s'", config.Version)
 		}
 	} else {
 		options := &versioning.Options{
