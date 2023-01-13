@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -18,17 +19,16 @@ import (
 )
 
 type configCommandOptions struct {
-	output                          string // output format, so far only JSON
-	outputFile                      string // if set: path to file where the output should be written to
-	parametersJSON                  string // parameters to be considered in JSON format
-	stageConfig                     bool
-	stageConfigAcceptedParameters   []string
-	stepMetadata                    string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	stepName                        string
-	contextConfig                   bool
-	openFile                        func(s string, t map[string]string) (io.ReadCloser, error)
-	containerRegistryURL            string
-	containerRegistryCredsVaultPath string
+	output                            string // output format, so far only JSON
+	outputFile                        string // if set: path to file where the output should be written to
+	parametersJSON                    string // parameters to be considered in JSON format
+	stageConfig                       bool
+	stageConfigAcceptedParameters     []string
+	stepMetadata                      string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	stepName                          string
+	contextConfig                     bool
+	openFile                          func(s string, t map[string]string) (io.ReadCloser, error)
+	containerRegistryCredsVaultFolder string
 }
 
 var configOptions configCommandOptions
@@ -204,9 +204,9 @@ func getConfig() (config.StepConfig, error) {
 		if configOptions.contextConfig {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 			// by adding these parameters, the Docker registry secrets will be retrieved from Vault and written to a Docker config JSON
-			if configOptions.containerRegistryURL != "" && configOptions.containerRegistryCredsVaultPath != "" {
+			if configOptions.containerRegistryCredsVaultFolder != "" {
 				myConfig.SetVaultCredentials(os.Getenv("PIPER_vaultAppRoleID"), os.Getenv("PIPER_vaultAppRoleSecretID"), os.Getenv("PIPER_vaultToken"))
-				getConfigParams := getConfigParameters(configOptions.containerRegistryCredsVaultPath)
+				getConfigParams := getConfigParameters(configOptions.containerRegistryCredsVaultFolder)
 				metadata.Spec.Inputs.Parameters = getConfigParams
 			}
 		}
@@ -219,7 +219,7 @@ func getConfig() (config.StepConfig, error) {
 		// apply context conditions if context configuration is requested
 		if configOptions.contextConfig {
 			applyContextConditions(metadata, &stepConfig)
-			if configOptions.containerRegistryURL != "" && configOptions.containerRegistryCredsVaultPath != "" {
+			if configOptions.containerRegistryCredsVaultFolder != "" {
 				writeDockerRegistryCredentials(stepConfig)
 			}
 		}
@@ -263,8 +263,7 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
 	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
-	cmd.Flags().StringVar(&configOptions.containerRegistryURL, "containerRegistryURL", "", "URL to Docker container registry for which credentials need to be fetched from Vault")
-	cmd.Flags().StringVar(&configOptions.containerRegistryCredsVaultPath, "containerRegistryCredsVaultPath", "", "Vault path for container registry credentials")
+	cmd.Flags().StringVar(&configOptions.containerRegistryCredsVaultFolder, "containerRegistryCredsVaultFolder", "", "Folder name for Docker container registry credentials in Vault")
 
 }
 
@@ -333,7 +332,10 @@ func writeDockerRegistryCredentials(stepConfig config.StepConfig) {
 		return
 	}
 	if dockerRegistryUsername != "" && dockerRegistryToken != "" {
-		docker.CreateDockerConfigJSON(configOptions.containerRegistryURL, dockerRegistryUsername, dockerRegistryToken, "", "~/.docker/config.json", &piperutils.Files{})
+		dockerImage := stepConfig.Config["dockerImage"].(string)
+		if strings.Contains(dockerImage, ".") {
+			docker.CreateDockerConfigJSON(dockerImage, dockerRegistryUsername, dockerRegistryToken, "", "~/.docker/config.json", &piperutils.Files{})
+		}
 	}
 
 	// they're secrets, so remove them, otherwise they get logged
@@ -341,7 +343,7 @@ func writeDockerRegistryCredentials(stepConfig config.StepConfig) {
 	delete(stepConfig.Config, "containerRegistryUsername")
 }
 
-func getConfigParameters(containerRegistryCredsVaultPath string) []config.StepParameters {
+func getConfigParameters(containerRegistryCredsVaultFolder string) []config.StepParameters {
 	return []config.StepParameters{
 		{
 			Name: "containerRegistryToken",
@@ -349,7 +351,7 @@ func getConfigParameters(containerRegistryCredsVaultPath string) []config.StepPa
 				{
 					Name:    "containerRegistryCredentialsVaultSecretName",
 					Type:    "vaultSecret",
-					Default: containerRegistryCredsVaultPath,
+					Default: containerRegistryCredsVaultFolder,
 				},
 			},
 			Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -364,7 +366,7 @@ func getConfigParameters(containerRegistryCredsVaultPath string) []config.StepPa
 				{
 					Name:    "containerRegistryCredentialsVaultSecretName",
 					Type:    "vaultSecret",
-					Default: containerRegistryCredsVaultPath,
+					Default: containerRegistryCredsVaultFolder,
 				},
 			},
 			Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
