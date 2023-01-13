@@ -153,9 +153,6 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 }
 
 func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
-	fmt.Printf("config: %+v\n", config)
-	fmt.Printf("scan: %+v\n", scan)
-
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
 		return errors.Wrapf(err, "failed to resolve and aggregate project name")
 	}
@@ -183,8 +180,6 @@ func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *w
 			return errors.Wrapf(err, "failed to execute WhiteSource scan")
 		}
 	}
-	fmt.Printf("config: %+v\n", config)
-	fmt.Printf("scan: %+v\n", scan)
 	return nil
 }
 
@@ -326,7 +321,6 @@ func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, err
 
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if len(scan.AggregateProjectName) > 0 && (len(config.Version)+len(config.CustomScanVersion) > 0) {
-		// if config.Version == "" {
 		if config.CustomScanVersion != "" {
 			config.Version = config.CustomScanVersion
 		}
@@ -404,7 +398,6 @@ func resolveProductToken(config *ScanOptions, sys whitesource) error {
 // project's name.
 func resolveAggregateProjectName(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
 	if config.ProjectToken == "" {
-		fmt.Println("project token: ", config.ProjectToken)
 		return nil
 	}
 	log.Entry().Infof("Attempting to resolve aggregate project name for token '%s'..", config.ProjectToken)
