@@ -409,9 +409,9 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 	}
 
-	// rapid scan on pull request
-	if utils.GetProvider().IsPullRequest() {
-		log.Entry().Debug("pull request detected")
+	// rapid scan
+	if config.ScanMode == "RAPID" || utils.GetProvider().IsPullRequest() {
+		log.Entry().Debug("scan mode has changed to 'RAPID'")
 		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
 		_, err := sys.Client.GetProjectVersion(config.ProjectName, config.Version)
 		if err == nil {
