@@ -112,8 +112,6 @@ func newDetectUtils(client *github.Client) detectUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 
-	// rapid scan on pull request
-	log.Entry().Debug("checking pull request or not")
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil {
 		log.Entry().WithError(err).Warning(err)
@@ -409,9 +407,9 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 	}
 
-	// rapid scan
-	if config.ScanMode == "RAPID" || utils.GetProvider().IsPullRequest() {
-		log.Entry().Debug("scan mode has changed to 'RAPID'")
+	// rapid scan on pull request
+	if utils.GetProvider().IsPullRequest() {
+		log.Entry().Debug("pull request detected")
 		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
 		_, err := sys.Client.GetProjectVersion(config.ProjectName, config.Version)
 		if err == nil {
@@ -419,6 +417,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		}
 		args = append(args, "--detect.cleanup=false")
 		args = append(args, "--detect.output.path='report'")
+	}
+
+	// scan mode = rapid
+	if config.ScanMode == "RAPID" {
+		log.Entry().Debug("scan mode has changed to 'RAPID'")
+		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
 	}
 
 	return args, nil
