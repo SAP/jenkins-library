@@ -508,7 +508,13 @@ func TestRunKanikoExecute(t *testing.T) {
 			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
 			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
 			{"packages", "registry:my.registry.com:50000/myImage:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-1.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-2.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage-sub1:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage-sub1:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-2.xml", "-q"},
 			{"packages", "registry:my.registry.com:50000/myImage-sub1:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-1.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage-sub2:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"},
+			{"packages", "registry:my.registry.com:50000/myImage-sub2:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-1.xml", "-q"},
 			{"packages", "registry:my.registry.com:50000/myImage-sub2:myTag", "-o", "cyclonedx-xml", "--file", "bom-docker-2.xml", "-q"},
 		}
 		// need to go this way since we cannot count on the correct order
