@@ -501,7 +501,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "/kaniko/executor", execRunner.Calls[0].Exec)
 		assert.Equal(t, "/kaniko/executor", execRunner.Calls[1].Exec)
 		assert.Equal(t, "/kaniko/executor", execRunner.Calls[2].Exec)
-		// test comment
+
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
 			{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
