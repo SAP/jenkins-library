@@ -515,7 +515,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		for index, call := range execRunner.Calls {
 			found := false
 			for _, expected := range expectedParams {
-				if strings.Contains(strings.Join(expected, " "), "packages") {
+				if expected[0] == "packages" {
 					expected = append(expected, fmt.Sprintf("bom-docker-%d.xml", index-3), "-q")
 				}
 				if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
