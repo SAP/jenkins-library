@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
+	"strconv"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -9,8 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/tms"
 	"github.com/pkg/errors"
-	"net/url"
-	"strconv"
 )
 
 type tmsUtilsBundle struct {
@@ -78,7 +79,7 @@ func uploadDescriptors(config tmsUploadOptions, communicationInstance tms.Commun
 	namedUser := config.NamedUser
 	nodeName := config.NodeName
 	mtaVersion := config.MtaVersion
-	nodeNameExtDescriptorMapping := tms.JsonToMap(config.NodeExtDescriptorMapping)
+	nodeNameExtDescriptorMapping := config.NodeExtDescriptorMapping
 	mtaPath := config.MtaPath
 
 	if GeneralConfig.Verbose {
