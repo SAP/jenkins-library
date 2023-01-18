@@ -49,15 +49,15 @@ func TestParseResultSuccess(t *testing.T) {
 		Status:    statusBusy,
 		Components: []Component{
 			{Vulns: []Vulnerability{
-				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve1", Cvss: 7.2, Cvss3Score: "0.0"}},
-				{Exact: true, Triage: []Triage{{ID: 1}}, Vuln: Vuln{Cve: "Cve2", Cvss: 2.2, Cvss3Score: "2.3"}},
-				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve2b", Cvss: 0.0, Cvss3Score: "0.0"}},
+				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve1", Cvss: "7.2", Cvss3Score: "0.0"}},
+				{Exact: true, Triage: []Triage{{ID: 1}}, Vuln: Vuln{Cve: "Cve2", Cvss: "2.2", Cvss3Score: "2.3"}},
+				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve2b", Cvss: "0.0", Cvss3Score: "0.0"}},
 			},
 			},
 			{Vulns: []Vulnerability{
-				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve3", Cvss: 3.2, Cvss3Score: "7.3"}},
-				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve4", Cvss: 8.0, Cvss3Score: "8.0"}},
-				{Exact: false, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve4b", Cvss: 8.0, Cvss3Score: "8.0"}},
+				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve3", Cvss: "3.2", Cvss3Score: "7.3"}},
+				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve4", Cvss: "8.0", Cvss3Score: "8.0"}},
+				{Exact: false, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve4b", Cvss: "8.0", Cvss3Score: "8.0"}},
 			},
 			},
 		},
