@@ -80,6 +80,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 // ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it. Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
 func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner) (AbapServiceKey, error) {
 
+	var abapServiceKeyV8 AbapServiceKeyV8
 	var abapServiceKey AbapServiceKey
 	var serviceKeyJSON string
 	var err error
@@ -100,18 +101,33 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 
 	if err != nil {
 		// Executing cfReadServiceKeyScript failed
-		return abapServiceKey, err
+		return abapServiceKeyV8.Credentials, err
 	}
 
-	// parse
-	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
+	// Depending on the cf cli version, the service key may be returned in a different format. For compatibility reason, both formats are supported
+	unmarshalErrorV8 := json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKeyV8)
+	if abapServiceKeyV8 == (AbapServiceKeyV8{}) {
+		if unmarshalErrorV8 != nil {
+			log.Entry().Debug(unmarshalErrorV8.Error())
+		}
+		log.Entry().Debug("Could not parse the service key in the cf cli v8 format.")
+	} else {
+		log.Entry().Info("Service Key read successfully")
+		return abapServiceKeyV8.Credentials, nil
+	}
+
+	unmarshalError := json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
 	if abapServiceKey == (AbapServiceKey{}) {
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		return abapServiceKey, errors.New("Parsing the service key failed. Service key is empty")
+		if unmarshalError != nil {
+			log.Entry().Debug(unmarshalError.Error())
+		}
+		log.Entry().Debug("Could not parse the service key in the cf cli v7 format.")
+	} else {
+		log.Entry().Info("Service Key read successfully")
+		return abapServiceKey, nil
 	}
-
-	log.Entry().Info("Service Key read successfully")
-	return abapServiceKey, nil
+	log.SetErrorCategory(log.ErrorInfrastructure)
+	return abapServiceKeyV8.Credentials, errors.New("Parsing the service key failed for all supported formats. Service key is empty")
 }
 
 /*
@@ -285,6 +301,12 @@ type AbapError struct {
 type AbapErrorMessage struct {
 	Lang  string `json:"lang"`
 	Value string `json:"value"`
+}
+
+// AbapServiceKeyV8 contains the new format of an ABAP service key
+
+type AbapServiceKeyV8 struct {
+	Credentials AbapServiceKey `json:"credentials"`
 }
 
 // AbapServiceKey contains information about an ABAP service key

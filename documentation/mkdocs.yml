@@ -126,6 +126,7 @@ nav:
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
         - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
         - integrationArtifactResource: steps/integrationArtifactResource.md
+        - integrationArtifactTransport: steps/integrationArtifactTransport.md        
         - integrationArtifactUnDeploy: steps/integrationArtifactUnDeploy.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - integrationArtifactUpload: steps/integrationArtifactUpload.md
