@@ -146,10 +146,7 @@ jobs:
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
           PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-          PIPER_tmsServiceKey: ${{secrets.PIPER_TMSSERVICEKEY}}
         run: |
-          echo Printing tmsServiceKey...
-          echo $PIPER_tmsServiceKey
           chmod +x piper
           cd ./integration
           chmod +x integration_tests
