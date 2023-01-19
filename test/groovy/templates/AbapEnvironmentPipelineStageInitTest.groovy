@@ -26,7 +26,7 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
     private List activeStages = []
     private ExpectedException thrown = new ExpectedException()
     private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
-    private PiperGoUtils piperGoUtils = new PiperGoUtils(utils) { void unstashPiperBin() { }}
+    private PiperGoUtils piperGoUtils = new PiperGoUtils(nullScript, utils) { void unstashPiperBin() { }}
 
     @Rule
     public RuleChain rules = Rules
@@ -69,6 +69,7 @@ class abapEnvironmentPipelineStageInitTest extends BasePiperTest {
             stepsCalled('activateStage')
             activeStages.add(m)
         })
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('./piper checkIfStepActive --stageConfig .pipeline/stage_conditions.yaml --useV1 --stageOutputFile .pipeline/stage_out.json --stepOutputFile .pipeline/step_out.json --stage _ --step _', 0)
         nullScript.prepareDefaultValues(script: nullScript)
     }
