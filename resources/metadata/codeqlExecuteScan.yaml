@@ -14,9 +14,6 @@ spec:
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
     resources:
-      - name: commonPipelineEnvironment
-        resourceSpec:
-          type: piperEnvironment
       - name: buildDescriptor
         type: stash
       - name: tests
