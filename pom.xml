@@ -16,7 +16,7 @@
 
     <name>SAP CP Piper Library</name>
     <description>Shared library containing steps and utilities to set up continuous deployment processes for SAP technologies.</description>
-    <url>https://sap.github.io/jenkins-library/</url>
+    <url>https://github.com/costae/jenkins-library/tree/dev/</url>
 
     <licenses>
         <license>
