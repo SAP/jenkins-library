@@ -19,7 +19,7 @@ jobs:
           java-version: '8'
       - name: Prepare Release
         run: |
-          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/costae/jenkins-library/releases/download/test2/piper
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.x86_64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.x86_64
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.arm64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.arm64
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-win.x86_64.exe https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-win.x86_64.exe
