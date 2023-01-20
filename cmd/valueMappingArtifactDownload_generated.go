@@ -23,7 +23,7 @@ type valueMappingArtifactDownloadOptions struct {
 }
 
 // IntegrationArtifactDownloadCommand Download value mapping runtime artefact
-func ValueMappingDownloadCommand() *cobra.Command {
+func ValueMappingArtifactDownloadCommand() *cobra.Command {
 	const STEP_NAME = "valueMappingArtifactDownload"
 
 	metadata := valueMappingArtifactDownloadMetadata()

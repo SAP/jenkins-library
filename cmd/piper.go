@@ -193,6 +193,7 @@ func Execute() {
 	rootCmd.AddCommand(ApiProviderListCommand())
 	rootCmd.AddCommand(TmsUploadCommand())
 	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
+	rootCmd.AddCommand(ValueMappingArtifactDownloadCommand())
 
 	addRootFlags(rootCmd)
 

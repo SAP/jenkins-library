@@ -48,7 +48,7 @@ class Telemetry implements Serializable{
         def swaEndpoint = 'https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log'
         Map swaPayload = [
             'idsite': '827e8025-1e21-ae84-c3a3-3f62b70b0130',
-            'url': 'https://github.com/costae/jenkins-library/tree/dev',
+            'url': 'https://github.com/SAP/jenkins-library',
             'action_name': payload.actionName,
             'event_type': payload.eventType,
             'custom3': payload.step,            // custom3 = step name (passed as parameter step)

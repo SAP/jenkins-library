@@ -31,7 +31,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
 	case "IntegrationArtifactGetServiceEndpoint":
 		return GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType)
-	case "IntegrationArtifactDownload", "APIProxyDownload":
+	case "IntegrationArtifactDownload", "APIProxyDownload", "ValueMappingArtifactDownload":
 		return IntegrationArtifactDownloadCommandMockResponse(testType)
 	case "GetIntegrationDesigntimeArtifact":
 		return GetIntegrationDesigntimeArtifactMockResponse(testType)
