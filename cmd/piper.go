@@ -194,6 +194,7 @@ func Execute() {
 	rootCmd.AddCommand(TmsUploadCommand())
 	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
 	rootCmd.AddCommand(ValueMappingArtifactDownloadCommand())
+	rootCmd.AddCommand(ValueMappingArtifactUploadCommand())
 
 	addRootFlags(rootCmd)
 
