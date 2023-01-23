@@ -8,6 +8,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String METADATA_FILE = 'metadata/artifactPrepareVersion.yaml'
 
 void call(Map parameters = [:]) {
+    echo "Testing changes"
     final script = checkScript(this, parameters) ?: this
 
     List credentials = [
