@@ -44,7 +44,7 @@ func runValueMappingArtifactUpload(config *valueMappingArtifactUploadOptions, te
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	vMapStatusServiceURL := fmt.Sprintf("%s/api/v1/ValueMappingDesigntimeArtifacts(Id='%s',Version='%s')", serviceKey.OAuth.Host, config.ValueMappingID, "Active")
+	vMapStatusServiceURL := fmt.Sprintf("%s/api/v1/ValueMappingDesigntimeArtifacts", serviceKey.OAuth.Host)
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
@@ -62,7 +62,7 @@ func runValueMappingArtifactUpload(config *valueMappingArtifactUploadOptions, te
 	}
 	if vMapStatusResp.StatusCode == 200 {
 		return UploadValueMappingArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
-	} else if httpErr != nilc && vMapStatusResp.StatusCode == 404 {
+	} else if httpErr != nil && vMapStatusResp.StatusCode == 404 {
 		return UploadValueMappingArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
 	}
 
