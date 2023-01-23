@@ -587,13 +587,12 @@ func checkPolicyViolations(ctx context.Context, config *ScanOptions, scan *ws.Sc
 }
 
 func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {
-	var reportPaths []piperutils.Path
 	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	// convert config.CvssSeverityLimit to float64
 	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
+		return []piperutils.Path{}, fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
 			"as floating point number: %w", config.CvssSeverityLimit, err)
 	}
 
@@ -646,7 +645,7 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		log.Entry().Debugf("Aggregated %v alerts for scanned projects", len(allAlerts))
 	}
 
-	paths, errors := reportGitHubIssuesAndCreateReports(
+	reportPaths, errors := reportGitHubIssuesAndCreateReports(
 		ctx,
 		config,
 		utils,
@@ -664,10 +663,10 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		if vulnerabilitiesCount > 0 {
 			log.SetErrorCategory(log.ErrorCompliance)
 		}
-		return paths, fmt.Errorf(strings.Join(errorsOccured, ": "))
+		return reportPaths, fmt.Errorf(strings.Join(errorsOccured, ": "))
 	}
 
-	return paths, nil
+	return reportPaths, nil
 }
 
 func reportGitHubIssuesAndCreateReports(
