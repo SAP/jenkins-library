@@ -600,25 +600,37 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 	// inhale assessments from file system
 	assessments := readAssessmentsFromFile(config.AssessmentFile, utils)
 
+	vulnerabilitiesCount := 0
+	var errorsOccured []string
+	allAlerts := []ws.Alert{}
+	allAssessedAlerts := []ws.Alert{}
+	allLibraries := []ws.Library{}
+
 	if config.ProjectToken != "" {
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
-		if _, _, _, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx); err != nil {
-			return reportPaths, err
+
+		if vulnerabilitiesCount, allAlerts, allAssessedAlerts, err = checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx); err != nil {
+			if err != nil {
+				errorsOccured = append(errorsOccured, fmt.Sprint(err))
+			}
+
+			// collect all libraries detected in all related projects and errors
+			allLibraries, err = sys.GetProjectHierarchy(project.Token, true)
+			if err != nil {
+				errorsOccured = append(errorsOccured, fmt.Sprint(err))
+			}
+			log.Entry().Debugf("Collected %v libraries for project %v", len(allLibraries), project.Name)
 		}
 	} else {
-		vulnerabilitiesCount := 0
-		var errorsOccured []string
-		allAlerts := []ws.Alert{}
-		allAssessedAlerts := []ws.Alert{}
-		allLibraries := []ws.Library{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
 			vulCount, alerts, assessedAlerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx)
 			if err != nil {
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
+
 			allAlerts = append(allAlerts, alerts...)
 			allAssessedAlerts = append(allAssessedAlerts, assessedAlerts...)
 			vulnerabilitiesCount += vulCount
@@ -632,55 +644,92 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 			allLibraries = append(allLibraries, libraries...)
 		}
 		log.Entry().Debugf("Aggregated %v alerts for scanned projects", len(allAlerts))
+	}
 
-		if config.CreateResultIssue && vulnerabilitiesCount > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
-			log.Entry().Debugf("Creating result issues for %v alert(s)", vulnerabilitiesCount)
-			issueDetails := make([]reporting.IssueDetail, len(allAlerts))
-			piperutils.CopyAtoB(allAlerts, issueDetails)
-			gh := reporting.GitHub{
-				Owner:         &config.Owner,
-				Repository:    &config.Repository,
-				Assignees:     &config.Assignees,
-				IssueService:  utils.GetIssueService(),
-				SearchService: utils.GetSearchService(),
-			}
-			if err := gh.UploadMultipleReports(ctx, &issueDetails); err != nil {
-				errorsOccured = append(errorsOccured, fmt.Sprint(err))
-			}
+	paths, errors := reportGitHubIssuesAndCreateReports(
+		ctx,
+		config,
+		utils,
+		scan,
+		allAlerts,
+		allLibraries,
+		allAssessedAlerts,
+		cvssSeverityLimit,
+		vulnerabilitiesCount,
+	)
+
+	errorsOccured = append(errorsOccured, errors...)
+
+	if len(errorsOccured) > 0 {
+		if vulnerabilitiesCount > 0 {
+			log.SetErrorCategory(log.ErrorCompliance)
+		}
+		return paths, fmt.Errorf(strings.Join(errorsOccured, ": "))
+	}
+
+	return paths, nil
+}
+
+func reportGitHubIssuesAndCreateReports(
+	ctx context.Context,
+	config *ScanOptions,
+	utils whitesourceUtils,
+	scan *ws.Scan,
+	allAlerts []ws.Alert,
+	allLibraries []ws.Library,
+	allAssessedAlerts []ws.Alert,
+	cvssSeverityLimit float64,
+	vulnerabilitiesCount int,
+) ([]piperutils.Path, []string) {
+	errorsOccured := make([]string, 0)
+	reportPaths := make([]piperutils.Path, 0)
+
+	if config.CreateResultIssue && vulnerabilitiesCount > 0 && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
+		log.Entry().Debugf("Creating result issues for %v alert(s)", vulnerabilitiesCount)
+		issueDetails := make([]reporting.IssueDetail, len(allAlerts))
+		piperutils.CopyAtoB(allAlerts, issueDetails)
+		gh := reporting.GitHub{
+			Owner:         &config.Owner,
+			Repository:    &config.Repository,
+			Assignees:     &config.Assignees,
+			IssueService:  utils.GetIssueService(),
+			SearchService: utils.GetSearchService(),
 		}
 
-		scanReport := ws.CreateCustomVulnerabilityReport(config.ProductName, scan, &allAlerts, cvssSeverityLimit)
-		paths, err := ws.WriteCustomVulnerabilityReports(config.ProductName, scan, scanReport, utils)
-		if err != nil {
+		if err := gh.UploadMultipleReports(ctx, &issueDetails); err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
-		}
-		reportPaths = append(reportPaths, paths...)
-
-		sarif := ws.CreateSarifResultFile(scan, &allAlerts)
-		paths, err = ws.WriteSarifFile(sarif, utils)
-		if err != nil {
-			errorsOccured = append(errorsOccured, fmt.Sprint(err))
-		}
-		reportPaths = append(reportPaths, paths...)
-
-		sbom, err := ws.CreateCycloneSBOM(scan, &allLibraries, &allAlerts, &allAssessedAlerts)
-		if err != nil {
-			errorsOccured = append(errorsOccured, fmt.Sprint(err))
-		}
-		paths, err = ws.WriteCycloneSBOM(sbom, utils)
-		if err != nil {
-			errorsOccured = append(errorsOccured, fmt.Sprint(err))
-		}
-		reportPaths = append(reportPaths, paths...)
-
-		if len(errorsOccured) > 0 {
-			if vulnerabilitiesCount > 0 {
-				log.SetErrorCategory(log.ErrorCompliance)
-			}
-			return reportPaths, fmt.Errorf(strings.Join(errorsOccured, ": "))
 		}
 	}
-	return reportPaths, nil
+
+	scanReport := ws.CreateCustomVulnerabilityReport(config.ProductName, scan, &allAlerts, cvssSeverityLimit)
+	paths, err := ws.WriteCustomVulnerabilityReports(config.ProductName, scan, scanReport, utils)
+	if err != nil {
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+	}
+
+	reportPaths = append(reportPaths, paths...)
+
+	sarif := ws.CreateSarifResultFile(scan, &allAlerts)
+	paths, err = ws.WriteSarifFile(sarif, utils)
+	if err != nil {
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+	}
+
+	reportPaths = append(reportPaths, paths...)
+
+	sbom, err := ws.CreateCycloneSBOM(scan, &allLibraries, &allAlerts, &allAssessedAlerts)
+	if err != nil {
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+	}
+
+	paths, err = ws.WriteCycloneSBOM(sbom, utils)
+	if err != nil {
+		errorsOccured = append(errorsOccured, fmt.Sprint(err))
+	}
+
+	reportPaths = append(reportPaths, paths...)
+
+	return reportPaths, errorsOccured
 }
 
 // read assessments from file and expose them to match alerts and filter them before processing
