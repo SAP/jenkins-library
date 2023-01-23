@@ -87,7 +87,7 @@ func UploadValueMappingArtifact(config *valueMappingArtifactUploadOptions, httpC
 	uploadVmapStatusURL := fmt.Sprintf("%s/api/v1/ValueMappingDesigntimeArtifacts", apiHost)
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
-	payload, jsonError := GetJSONPayloadAsByteArray(config, "create", fileUtils)
+	payload, jsonError := GetJSONPayloadAsByteArray2(config, "create", fileUtils)
 	if jsonError != nil {
 		return errors.Wrapf(jsonError, "Failed to get json payload for file %v, failed with error", config.FilePath)
 	}
@@ -125,7 +125,7 @@ func UpdateValueMappingArtifact(config *valueMappingArtifactUploadOptions, httpC
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
 	updateVmapStatusURL := fmt.Sprintf("%s/api/v1/ValueMappingDesigntimeArtifacts(Id='%s',Version='%s')", apiHost, config.ValueMappingID, "Active")
-	payload, jsonError := GetJSONPayloadAsByteArray(config, "update", fileUtils)
+	payload, jsonError := GetJSONPayloadAsByteArray2(config, "update", fileUtils)
 	if jsonError != nil {
 		return errors.Wrapf(jsonError, "Failed to get json payload for file %v, failed with error", config.FilePath)
 	}
@@ -156,8 +156,8 @@ func UpdateValueMappingArtifact(config *valueMappingArtifactUploadOptions, httpC
 	return errors.Errorf("Failed to update Value Mapping artifact, Response Status code: %v", updateVmapStatusResp.StatusCode)
 }
 
-// GetJSONPayloadAsByteArray -return http payload as byte array
-func GetJSONPayloadAsByteArray(config *valueMappingArtifactUploadOptions, mode string, fileUtils piperutils.FileUtils) (*bytes.Buffer, error) {
+// GetJSONPayloadAsByteArray2 -return http payload as byte array
+func GetJSONPayloadAsByteArray2(config *valueMappingArtifactUploadOptions, mode string, fileUtils piperutils.FileUtils) (*bytes.Buffer, error) {
 	fileContent, readError := fileUtils.FileRead(config.FilePath)
 	if readError != nil {
 		return nil, errors.Wrapf(readError, "Error reading file")
