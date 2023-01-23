@@ -61,8 +61,8 @@ func runValueMappingArtifactUpload(config *valueMappingArtifactUploadOptions, te
 		defer vMapStatusResp.Body.Close()
 	}
 	if vMapStatusResp.StatusCode == 200 {
-		return UpdateValueMappingArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
-	} else if httpErr != nil && vMapStatusResp.StatusCode == 404 {
+		return UploadValueMappingArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
+	} else if httpErr != nilc && vMapStatusResp.StatusCode == 404 {
 		return UploadValueMappingArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
 	}
 
