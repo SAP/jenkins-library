@@ -30,7 +30,8 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 		for _, v := range vulns.Items {
 
 			isAudited := true
-			if v.RemediationStatus == "NEW" {
+			if v.RemediationStatus == "NEW" || v.RemediationStatus == "REMEDIATION_REQUIRED" ||
+				v.RemediationStatus == "NEEDS_REVIEW" {
 				isAudited = false
 			}
 
