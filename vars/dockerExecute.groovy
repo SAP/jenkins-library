@@ -58,7 +58,7 @@ import groovy.transform.Field
       */
     'dockerRegistryUrl',
     /**
-      * The credentials for the docker registry. If left empty, images are pulled anonymously.
+      * The credentials for the docker registry of type username/password. If left empty, images are pulled anonymously.
       */
     'dockerRegistryCredentialsId',
     /**
