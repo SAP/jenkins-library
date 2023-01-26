@@ -111,7 +111,10 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		return fmt.Errorf("mta file %s not found", mtaPath)
 	}
 
-	description := config.CustomDescription
+	description := tms.DEFAULT_TR_DESCRIPTION
+	if config.CustomDescription != "" {
+		description = config.CustomDescription
+	}
 	namedUser := config.NamedUser
 	nodeName := config.NodeName
 	mtaVersion := config.MtaVersion
