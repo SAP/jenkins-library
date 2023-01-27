@@ -1,4 +1,8 @@
-// can be execute with go test -tags=integration ./integration/...
+//go:build integration
+// +build integration
+
+// can be executed with
+// go test -v -tags integration -run TestJenkinsIntegration ./integration/...
 
 package main
 
@@ -14,7 +18,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/jenkins"
 )
 
-func TestTriggerJob(t *testing.T) {
+func TestJenkinsIntegrationTriggerJob(t *testing.T) {
 	t.Skip("no Jenkins instance for testing available yet")
 	//TODO: check if testcontainers can be used
 	// init

@@ -95,5 +95,5 @@ steps:
       invalidateCache: true
       portalLandscape: "cloudnwcportal"
       oauthCredentialId: <OAUTH_CREDENTIAL_ID>
-      siteId: <PORTAL_SITE_ID> # not required, if the default site is already set in the portal service (SAP Cloud Platform)
+      siteId: <PORTAL_SITE_ID> # not required, if the default site is already set in the portal service (SAP BTP)
 ```

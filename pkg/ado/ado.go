@@ -29,7 +29,7 @@ type Variable struct {
 	AllowOverride bool
 }
 
-//UpdateVariables updates variables in build definition or creates them if they are missing
+// UpdateVariables updates variables in build definition or creates them if they are missing
 func (bc *BuildClientImpl) UpdateVariables(variables []Variable) error {
 	if len(variables) == 0 {
 		return errors.New("error: slice variables must not be empty")
@@ -74,7 +74,7 @@ func (bc *BuildClientImpl) UpdateVariables(variables []Variable) error {
 	return nil
 }
 
-//NewBuildClient Create a client to interact with the Build area
+// NewBuildClient Create a client to interact with the Build area
 func NewBuildClient(organization string, personalAccessToken string, project string, pipelineID int) (BuildClient, error) {
 	if organization == "" {
 		return nil, errors.New("error: organization must not be empty")

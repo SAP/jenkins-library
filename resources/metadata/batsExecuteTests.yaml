@@ -60,7 +60,7 @@ spec:
                 type: bool
   containers:
     - name: bats
-      image: node:lts-stretch
+      image: node:lts-buster
       workingDir: /home/node
       conditions:
         - conditionRef: strings-equal

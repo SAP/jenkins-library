@@ -38,10 +38,12 @@ type protecodeExecuteScanOptions struct {
 	ReplaceProductID            int    `json:"replaceProductId,omitempty"`
 	Username                    string `json:"username,omitempty"`
 	Password                    string `json:"password,omitempty"`
+	UserAPIKey                  string `json:"userAPIKey,omitempty"`
 	Version                     string `json:"version,omitempty"`
 	CustomScanVersion           string `json:"customScanVersion,omitempty"`
 	VersioningModel             string `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	PullRequestName             string `json:"pullRequestName,omitempty"`
+	CustomDataJSONMap           string `json:"customDataJSONMap,omitempty"`
 }
 
 type protecodeExecuteScanInflux struct {
@@ -174,6 +176,7 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.UserAPIKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -254,10 +257,12 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().IntVar(&stepConfig.ReplaceProductID, "replaceProductId", 0, "Specify <replaceProductId> which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds. If product id is not specified, then Piper starts auto detection mechanism, more precisely it searches a product id with scanned product name in that specified group, if there are several scans have been done with the same product name then the latest scan id will be fetched from BDBA backend. After obtaining product id, Piper re-uploads / replaces new binary without affecting already existing product id.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
+	cmd.Flags().StringVar(&stepConfig.UserAPIKey, "userAPIKey", os.Getenv("PIPER_userAPIKey"), "User API key which is used for API calls. Replacement for username and password / basic authentication.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The version of the artifact to allow identification in protecode backend")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
+	cmd.Flags().StringVar(&stepConfig.CustomDataJSONMap, "customDataJSONMap", os.Getenv("PIPER_customDataJSONMap"), "The JSON map of key-value pairs to be included in this scan's Custom Data (See protecode API).")
 
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("group")
@@ -277,6 +282,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "protecodeCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.", Type: "jenkins"},
+					{Name: "protecodeApiKeyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing API Key/token to authenticate to BDBA server.", Type: "jenkins"},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
 				},
 				Parameters: []config.StepParameters{
@@ -475,6 +481,27 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{
+						Name: "userAPIKey",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "protecodeApiKeyCredentialsId",
+								Param: "userAPIKey",
+								Type:  "secret",
+							},
+
+							{
+								Name:    "protecodeApiKeyVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "protecode",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_userAPIKey"),
+					},
+					{
 						Name: "version",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -514,6 +541,15 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pullRequestName"),
+					},
+					{
+						Name:        "customDataJSONMap",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customDataJSONMap"),
 					},
 				},
 			},

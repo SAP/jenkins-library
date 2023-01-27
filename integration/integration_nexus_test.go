@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestNexusIntegration ./integration/...
 
 package main
 
@@ -25,10 +26,10 @@ func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExec
 	if err != nil {
 		t.Fatalf("Attempting to download file %s failed: %s", url, err)
 	}
-	container.assertHasFile(t, "/project/"+path.Base(url))
+	container.assertHasFiles(t, "/project/"+path.Base(url))
 }
 
-func TestNexus3UploadMta(t *testing.T) {
+func TestNexusIntegrationV3UploadMta(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -42,6 +43,7 @@ func TestNexus3UploadMta(t *testing.T) {
 			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
 		},
 	})
+	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("nexusUpload", "--groupId=mygroup", "--artifactId=mymta",
 		"--username=admin", "--password=admin123", "--mavenRepository=maven-releases", "--url=http://localhost:8081")
@@ -54,7 +56,7 @@ func TestNexus3UploadMta(t *testing.T) {
 	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 }
 
-func TestNexus3UploadMaven(t *testing.T) {
+func TestNexusIntegrationV3UploadMaven(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -68,6 +70,7 @@ func TestNexus3UploadMaven(t *testing.T) {
 			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
 		},
 	})
+	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("nexusUpload", "--username=admin", "--password=admin123",
 		"--mavenRepository=maven-releases", "--url=http://localhost:8081")
@@ -80,7 +83,7 @@ func TestNexus3UploadMaven(t *testing.T) {
 	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
 }
 
-func TestNexus3UploadNpm(t *testing.T) {
+func TestNexusIntegrationV3UploadNpm(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
@@ -96,6 +99,7 @@ func TestNexus3UploadNpm(t *testing.T) {
 			"curl -u admin:admin123 -d '{\"name\": \"npm-repo\", \"online\": true, \"storage\": {\"blobStoreName\": \"default\", \"strictContentTypeValidation\": true, \"writePolicy\": \"ALLOW_ONCE\"}}' --header \"Content-Type: application/json\" -X POST http://localhost:8081/service/rest/beta/repositories/npm/hosted",
 		},
 	})
+	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("nexusUpload", "--username=admin", "--password=admin123",
 		"--npmRepository=npm-repo", "--url=http://localhost:8081")
@@ -107,7 +111,7 @@ func TestNexus3UploadNpm(t *testing.T) {
 	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/npm-repo/npm-nexus-upload-test/-/npm-nexus-upload-test-1.0.0.tgz")
 }
 
-func TestNexus2Upload(t *testing.T) {
+func TestNexusIntegrationV2Upload(t *testing.T) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "sonatype/nexus:2.14.18-01",

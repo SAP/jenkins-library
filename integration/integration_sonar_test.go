@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestSonarIntegration ./integration/...
 
 package main
 
@@ -16,7 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/sonar"
 )
 
-func TestSonarIssueSearch(t *testing.T) {
+func TestSonarIntegrationIssueSearch(t *testing.T) {
 	t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
@@ -50,7 +51,7 @@ func TestSonarIssueSearch(t *testing.T) {
 	// assert.NotEmpty(t, result.Organizations)
 }
 
-func TestSonarMeasuresComponentSearch(t *testing.T) {
+func TestSonarIntegrationMeasuresComponentSearch(t *testing.T) {
 	t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
@@ -75,7 +76,7 @@ func TestSonarMeasuresComponentSearch(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestSonarGetLinesOfCode(t *testing.T) {
+func TestSonarIntegrationGetLinesOfCode(t *testing.T) {
 	t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")

@@ -305,7 +305,7 @@ func mvnProjectExcludes(buildDescriptorExcludeList []string, utils Utils) []stri
 	return []string{}
 }
 
-//ToDo: Check if we want to optionally allow auto generation for unknown projects
+// ToDo: Check if we want to optionally allow auto generation for unknown projects
 func autoGenerateWhitesourceConfig(config *ScanOptions, utils Utils) error {
 	// TODO: Should we rely on -detect, or set the parameters manually?
 	if err := utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {

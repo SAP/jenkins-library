@@ -297,7 +297,7 @@ func (c *Client) initialize() *http.Client {
 	}
 
 	if len(c.trustedCerts) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
-		log.Entry().Info("adding certs for tls to trust")
+		log.Entry().Debug("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
 			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tsl config", err)
@@ -380,7 +380,7 @@ func handleAuthentication(req *http.Request, username, password, token string) {
 	// Handle authentication if not done already
 	if (len(username) > 0 || len(password) > 0) && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.SetBasicAuth(username, password)
-		log.Entry().Debug("Using Basic Authentication ****/****")
+		log.Entry().Debug("Using Basic Authentication ****/****\n")
 	}
 	if len(token) > 0 && len(req.Header.Get(authHeaderKey)) == 0 {
 		req.Header.Add(authHeaderKey, token)
@@ -611,7 +611,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
 			}
 		} else {
-			log.Entry().Infof("existing certificate file %v found, appending it to rootCA", target)
+			log.Entry().Debugf("existing certificate file %v found, appending it to rootCA", target)
 			certs, err := ioutil.ReadFile(target)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read cert file %v", certificate)
@@ -621,7 +621,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			if !ok {
 				return errors.Errorf("failed to append %v to root CA store", certificate)
 			}
-			log.Entry().Infof("%v appended to root CA successfully", certificate)
+			log.Entry().Debugf("%v appended to root CA successfully", certificate)
 		}
 
 	}

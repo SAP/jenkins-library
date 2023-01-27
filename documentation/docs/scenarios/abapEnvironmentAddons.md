@@ -192,7 +192,7 @@ As a rule of thumb, the `addonVersion` should be increased analogous to the `ver
 An exception can be the patch level in the `addonVersion` string: In case of an add-on product with a reuse software component, the patch level of the `addonVersion` might be higher than the patch level of the leading software component `version`.
 
 The leading software component is the software component that is, as opposed to a reuse software component, exclusively used as part of one add-on product.
-In the `repositories` section of the add-on descriptor file the leading software component should be the first, whereas a reuse software component would be the last in order.
+In the `repositories` section of the add-on descriptor file the reuse software component should be the first, whereas a leading software component would be the last in order.
 This is to make sure that that the software components are imported in the correct order, making sure to adhere to dependencies.
 
 The `version` of a software component influcences two aspects:

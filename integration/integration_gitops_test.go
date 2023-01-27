@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestGitOpsIntegration ./integration/...
 
 package main
 
@@ -9,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestGitopsUpdateDeploymentIT(t *testing.T) {
+func TestGitOpsIntegrationUpdateDeployment(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "nekottyo/kustomize-kubeval:kustomizev4",
 		TestDir: []string{"testdata", "TestGitopsUpdateIntegration", "kustomize", "workdir"},
@@ -27,8 +28,7 @@ func TestGitopsUpdateDeploymentIT(t *testing.T) {
 		t.Fatalf("Cloing of bare repo failed")
 	}
 
-	container.assertHasOutput(t, "SUCCESS")
-	container.assertHasOutput(t, "[kustomize] updating")
+	container.assertHasOutput(t, "SUCCESS", "[kustomize] updating")
 	container.assertFileContentEquals(t, "/tmp/repo/kustomization.yaml", `images:
 - name: test-project
   newName: image

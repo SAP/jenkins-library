@@ -122,6 +122,7 @@ func TestSendRequest(t *testing.T) {
 	passedCookies := []*http.Cookie{}
 	var passedUsername string
 	var passedPassword string
+
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		passedHeaders = map[string][]string{}
@@ -154,6 +155,7 @@ func TestSendRequest(t *testing.T) {
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, method: "GET", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "GET", expected: "OK"},
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http"), username: "TestUser", password: "TestPwd"}, method: "GET", expected: "OK"},
+		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http"), token: "api-token-string"}, method: "GET", expected: "OK"},
 	}
 
 	for key, test := range tt {
@@ -189,6 +191,14 @@ func TestSendRequest(t *testing.T) {
 				log := fmt.Sprintf("%s", logBuffer)
 				credentialsEncoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", test.client.username, test.client.password)))
 				assert.NotContains(t, log, fmt.Sprintf("Authorization:[Basic %s]", credentialsEncoded))
+				assert.Contains(t, log, "Authorization:[<set>]")
+			}
+
+			// Token authentication
+			if len(test.client.token) > 0 {
+				assert.Equal(t, test.client.token, "api-token-string")
+				log := fmt.Sprintf("%s", logBuffer)
+				assert.Contains(t, log, fmt.Sprintf("Using Token Authentication ****"))
 				assert.Contains(t, log, "Authorization:[<set>]")
 			}
 		})

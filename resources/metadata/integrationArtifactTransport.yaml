@@ -1,0 +1,60 @@
+metadata:
+  name: integrationArtifactTransport
+  description: Integration Package transport using the SAP Content Agent Service
+  longDescription: |
+    With this step you can trigger an Integration Package transport from SAP Integration Suite using SAP Content Agent Service and SAP Cloud Transport Management Service. For more information about doing an Integration Package transport using SAP Content Agent Service see the documentation [here](https://help.sap.com/docs/CONTENT_AGENT_SERVICE/ae1a4f2d150d468d9ff56e13f9898e07/8e274fdd41da45a69ff919c0af8c6127.html).
+
+spec:
+  inputs:
+    secrets:
+      - name: casApiServiceKeyCredentialsId
+        description: Jenkins secret text credential ID containing the service key to the CAS service instance
+        type: jenkins
+    params:
+      - name: casServiceKey
+        type: string
+        description: Service key JSON string to access the CAS service instance
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: casApiServiceKeyCredentialsId
+            type: secret
+            param: casServiceKey
+      - name: integrationPackageId
+        type: string
+        description: Specifies the ID of the integration package artifact.
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: resourceID
+        type: string
+        description: Specifies the technical ID of the integration package artifact.
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: name
+        type: string
+        description: Specifies the name of the integration package artifact.
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: version
+        type: string
+        description: Specifies the version of the Integration Package artifact.
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        mandatory: true

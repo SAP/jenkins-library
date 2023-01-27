@@ -348,6 +348,13 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 			apiInformation: []byte(`{}`),
 			want:           "Unknown",
 		},
+		{
+			name: "Empty action api",
+			apiInformation: []byte(`{
+				"actions": [{}]
+			}`),
+			want: "Unknown",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

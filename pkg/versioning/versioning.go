@@ -34,6 +34,7 @@ type Options struct {
 	DockerImage          string
 	GlobalSettingsFile   string
 	M2Path               string
+	Defines              []string
 	VersionSource        string
 	VersionSection       string
 	VersionField         string
@@ -140,6 +141,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 				ProjectSettingsFile: opts.ProjectSettingsFile,
 				GlobalSettingsFile:  opts.GlobalSettingsFile,
 				M2Path:              opts.M2Path,
+				Defines:             opts.Defines,
 			},
 		}
 	case "mta":

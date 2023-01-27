@@ -124,7 +124,7 @@ spec:
 
           You can use either a file name or a glob pattern like `**/package.json`.
 
-          For `helm` the default value is `**/Chart.yaml`, thus typically no adaptions are required.
+          For `helm` the default value is `**/Chart.yaml`, thus typically no adaptions are required, but if a helm chart contains nested chart(s), the parameter needs to be set explicitly.
         scope:
           - PARAMETERS
           - STAGES

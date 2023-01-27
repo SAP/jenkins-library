@@ -14,6 +14,7 @@ import (
 type Build interface {
 	GetArtifacts() []gojenkins.Artifact
 	IsRunning(ctx context.Context) bool
+	Poll(ctx context.Context, options ...interface{}) (int, error)
 }
 
 // WaitForBuildToFinish waits till a build is finished.
@@ -21,7 +22,7 @@ func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Du
 	//TODO: handle timeout?
 	for build.IsRunning(ctx) {
 		time.Sleep(pollInterval)
-		//TODO: build.Poll() needed?
+		build.Poll(ctx)
 	}
 }
 

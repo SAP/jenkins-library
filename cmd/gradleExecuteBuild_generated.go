@@ -5,6 +5,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -20,17 +22,20 @@ import (
 )
 
 type gradleExecuteBuildOptions struct {
-	Path               string `json:"path,omitempty"`
-	Task               string `json:"task,omitempty"`
-	Publish            bool   `json:"publish,omitempty"`
-	RepositoryURL      string `json:"repositoryUrl,omitempty"`
-	RepositoryPassword string `json:"repositoryPassword,omitempty"`
-	RepositoryUsername string `json:"repositoryUsername,omitempty"`
-	CreateBOM          bool   `json:"createBOM,omitempty"`
-	ArtifactVersion    string `json:"artifactVersion,omitempty"`
-	ArtifactGroupID    string `json:"artifactGroupId,omitempty"`
-	ArtifactID         string `json:"artifactId,omitempty"`
-	UseWrapper         bool   `json:"useWrapper,omitempty"`
+	Path                          string   `json:"path,omitempty"`
+	Task                          string   `json:"task,omitempty"`
+	Publish                       bool     `json:"publish,omitempty"`
+	RepositoryURL                 string   `json:"repositoryUrl,omitempty"`
+	RepositoryPassword            string   `json:"repositoryPassword,omitempty"`
+	RepositoryUsername            string   `json:"repositoryUsername,omitempty"`
+	CreateBOM                     bool     `json:"createBOM,omitempty"`
+	ArtifactVersion               string   `json:"artifactVersion,omitempty"`
+	ArtifactGroupID               string   `json:"artifactGroupId,omitempty"`
+	ArtifactID                    string   `json:"artifactId,omitempty"`
+	UseWrapper                    bool     `json:"useWrapper,omitempty"`
+	ApplyPublishingForAllProjects bool     `json:"applyPublishingForAllProjects,omitempty"`
+	ExcludeCreateBOMForProjects   []string `json:"excludeCreateBOMForProjects,omitempty"`
+	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -69,6 +74,34 @@ func (p *gradleExecuteBuildReports) persist(stepConfig gradleExecuteBuildOptions
 	}
 }
 
+type gradleExecuteBuildCommonPipelineEnvironment struct {
+	custom struct {
+		artifacts piperenv.Artifacts
+	}
+}
+
+func (p *gradleExecuteBuildCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "artifacts", value: p.custom.artifacts},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Piper environment")
+	}
+}
+
 // GradleExecuteBuildCommand This step runs a gradle build command with parameters provided to the step.
 func GradleExecuteBuildCommand() *cobra.Command {
 	const STEP_NAME = "gradleExecuteBuild"
@@ -77,6 +110,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 	var stepConfig gradleExecuteBuildOptions
 	var startTime time.Time
 	var reports gradleExecuteBuildReports
+	var commonPipelineEnvironment gradleExecuteBuildCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -135,6 +169,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -155,7 +190,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			gradleExecuteBuild(stepConfig, &stepTelemetryData)
+			gradleExecuteBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -177,6 +212,9 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringVar(&stepConfig.ArtifactGroupID, "artifactGroupId", os.Getenv("PIPER_artifactGroupId"), "The group of the artifact.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The name of the artifact.")
 	cmd.Flags().BoolVar(&stepConfig.UseWrapper, "useWrapper", false, "If set to false all commands are executed using 'gradle', otherwise 'gradlew' is executed.")
+	cmd.Flags().BoolVar(&stepConfig.ApplyPublishingForAllProjects, "applyPublishingForAllProjects", false, "If set to false publishing logic will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludeCreateBOMForProjects, "excludeCreateBOMForProjects", []string{}, "Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
 
 }
 
@@ -320,6 +358,33 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     false,
 					},
+					{
+						Name:        "applyPublishingForAllProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "excludeCreateBOMForProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "excludePublishingForProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -332,6 +397,13 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Type: "reports",
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/bom-gradle.xml", "type": "sbom"},
+						},
+					},
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
 						},
 					},
 				},

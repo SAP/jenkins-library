@@ -134,6 +134,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			}
 
 			downloadClient := &piperhttp.Client{}
+			downloadClient.SetOptions(piperhttp.ClientOptions{})
 			runner := &command.Command{
 				StepName: "mavenBuild",
 			}

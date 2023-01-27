@@ -13,6 +13,7 @@ void call(Map parameters = [:]) {
     List credentials = [
         [type: 'usernamePassword', id: 'protecodeCredentialsId', env: ['PIPER_username', 'PIPER_password']],
         [type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']],
+        [type: 'token', id: 'protecodeApiKeyCredentialsId', env: ['PIPER_userAPIKey']],
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

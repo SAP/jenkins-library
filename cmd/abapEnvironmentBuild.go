@@ -100,6 +100,13 @@ func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *tel
 }
 
 func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
+
+	log.Entry().Info("╔════════════════════════════════╗")
+	log.Entry().Info("║ abapEnvironmentBuild           ║")
+	log.Entry().Info("╠════════════════════════════════╣")
+	log.Entry().Infof("║ %-30v ║", config.Phase)
+	log.Entry().Info("╙────────────────────────────────╜")
+
 	conn := new(abapbuild.Connector)
 	if err := initConnection(conn, config, utils); err != nil {
 		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
@@ -423,7 +430,7 @@ func (vE *valuesEvaluator) generateValueSlice() []abapbuild.Value {
 	return values
 }
 
-//**********************************Evaluate AddonDescriptor**************************************************************
+// **********************************Evaluate AddonDescriptor**************************************************************
 type myRepo struct {
 	abaputils.Repository
 }

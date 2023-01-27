@@ -72,7 +72,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         }
         assertThat(bodyExecuted, is(true))
         assertThat(dockerExecuteRule.dockerParams.containerPortMappings, is(['selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]]))
-        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:lts-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:lts-buster'))
         assertThat(dockerExecuteRule.dockerParams.dockerName, is('npm'))
         assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
         assertThat(dockerExecuteRule.dockerParams.sidecarEnvVars, is(null))
@@ -127,9 +127,9 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
         def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
         def expectedWorkspace = '/path/to/workspace'
-        
+
         nullScript.commonPipelineEnvironment.configuration = [steps:[seleniumExecuteTests:[
-            dockerImage: expectedImage, 
+            dockerImage: expectedImage,
             dockerOptions: expectedOptions,
             dockerEnvVars: expectedEnvVars,
             dockerWorkspace: expectedWorkspace
@@ -148,7 +148,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             assert dockerExecuteRule.dockerParams.dockerEnvVars[key] == value
         }
     }
-    
+
     @Test
     void testExecuteSeleniumCustomBuildTool() {
         stepRule.step.seleniumExecuteTests(

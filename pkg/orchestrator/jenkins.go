@@ -191,7 +191,7 @@ func (j *JenkinsConfigProvider) GetStageName() string {
 	return getEnv("STAGE_NAME", "n/a")
 }
 
-//GetBuildReason returns the build reason of the current build
+// GetBuildReason returns the build reason of the current build
 func (j *JenkinsConfigProvider) GetBuildReason() string {
 	// BuildReasons are unified with AzureDevOps build reasons,see
 	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
@@ -210,6 +210,9 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 
 	for _, child := range jsonParsed.Path("actions").Children() {
 		class := child.S("_class")
+		if class == nil {
+			continue
+		}
 		if class.Data().(string) == "hudson.model.CauseAction" {
 			for _, val := range child.Path("causes").Children() {
 				subclass := val.S("_class")

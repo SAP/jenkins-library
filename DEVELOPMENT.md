@@ -604,11 +604,18 @@ Finally, set your breakpoints and use the `Launch` button in the VS code UI to s
 
 ## Release
 
-Releases are performed using [Project "Piper" Action](https://github.com/SAP/project-piper-action).
-We release on schedule (once a week) and on demand.
-To perform a release, the respective action must be invoked for which a convenience script is available in `contrib/perform-release.sh`.
-It requires a personal access token for GitHub with `repo` scope.
-Example usage `PIPER_RELEASE_TOKEN=THIS_IS_MY_TOKEN contrib/perform-release.sh`.
+Releases are performed using GitHub workflows and [Project "Piper" Action](https://github.com/SAP/project-piper-action).
+
+There are two different workflows:
+
+- [weekly release workflow](.github/workflows/release-go.yml) running every Monday at 09:00 UTC.
+- [commit-based workflow](.github/workflows/upload-go-master.yml) which releases the binary as `piper_master` on the [latest release](https://github.com/SAP/jenkins-library/releases/latest).
+
+It is also possible to release on demand using the `contrib/perform-release.sh` script with a personal access token (`repo` scope).
+
+```
+PIPER_RELEASE_TOKEN=<token> contrib/perform-release.sh
+```
 
 ## Pipeline Configuration
 

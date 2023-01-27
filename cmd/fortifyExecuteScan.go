@@ -78,7 +78,8 @@ func (f *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, 
 }
 
 func (f *fortifyUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
-	return piperGithub.CreateIssue(ghCreateIssueOptions)
+	_, err := piperGithub.CreateIssue(ghCreateIssueOptions)
+	return err
 }
 
 func (f *fortifyUtilsBundle) GetIssueService() *github.IssuesService {
@@ -137,6 +138,7 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 		M2Path:              config.M2Path,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
+		Defines:             config.AdditionalMvnParameters,
 	}
 
 	artifact, err := utils.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions)
@@ -304,14 +306,21 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	if config.ConvertToSarif {
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
 		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := fortify.ConvertFprToSarif(sys, projectVersion, resultFilePath, filterSet)
+		sarif, sarifSimplified, err := fortify.ConvertFprToSarif(sys, projectVersion, resultFilePath, filterSet)
 		if err != nil {
 			return reports, fmt.Errorf("failed to generate SARIF")
 		}
-		log.Entry().Debug("Writing sarif file to disk.")
-		paths, err := fortify.WriteSarif(sarif)
+		log.Entry().Debug("Writing simplified sarif file in plain text to disk.")
+		paths, err := fortify.WriteSarif(sarifSimplified, "result.sarif")
 		if err != nil {
-			return reports, fmt.Errorf("failed to write sarif")
+			return reports, fmt.Errorf("failed to write simplified sarif")
+		}
+		reports = append(reports, paths...)
+
+		log.Entry().Debug("Writing full sarif file to disk and gzip it.")
+		paths, err = fortify.WriteGzipSarif(sarif, "result.sarif.gz")
+		if err != nil {
+			return reports, fmt.Errorf("failed to write gzip sarif")
 		}
 		reports = append(reports, paths...)
 	}
@@ -688,7 +697,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 		artifacts, err = sys.GetArtifactsOfProjectVersion(projectVersionID)
 		log.Entry().Debugf("Received %v artifacts for project version ID %v", len(artifacts), projectVersionID)
 		if err != nil {
-			return fmt.Errorf("failed to fetch artifacts of project version ID %v", projectVersionID)
+			return fmt.Errorf("failed to fetch artifacts of project version ID %v: %w", projectVersionID, err)
 		}
 		if len(artifacts) == 0 {
 			return fmt.Errorf("no uploaded artifacts for assessment detected for project version with ID %v", projectVersionID)

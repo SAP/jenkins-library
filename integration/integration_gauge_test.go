@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestGaugeIntegration ./integration/...
 
 package main
 
@@ -80,12 +81,12 @@ cd /test
 	assert.Contains(t, output, "info  gaugeExecuteTests - SUCCESS")
 }
 
-func TestGaugeJava(t *testing.T) {
+func TestGaugeIntegrationJava(t *testing.T) {
 	t.Parallel()
 	runTest(t, "java")
 }
 
-func TestGaugeJS(t *testing.T) {
+func TestGaugeIntegrationJS(t *testing.T) {
 	t.Parallel()
 	runTest(t, "js")
 }

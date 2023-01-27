@@ -1,10 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -21,6 +17,11 @@ func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, te
 }
 
 func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
+
+	log.Entry().Info("╔══════════════════════════════╗")
+	log.Entry().Info("║ abapAddonAssemblyKitCheckCVs ║")
+	log.Entry().Info("╚══════════════════════════════╝")
+
 	conn := new(abapbuild.Connector)
 	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
 		return err
@@ -32,14 +33,22 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		return err
 	}
 
-	for i := range addonDescriptor.Repositories {
-		var c componentVersion
-		c.initCV(addonDescriptor.Repositories[i], *conn)
-		err := c.validate()
-		if err != nil {
+	for i, repo := range addonDescriptor.Repositories {
+		componentVersion := new(aakaas.ComponentVersion)
+		if err := componentVersion.ConstructComponentVersion(addonDescriptor.Repositories[i], *conn); err != nil {
 			return err
 		}
-		c.copyFieldsToRepo(&addonDescriptor.Repositories[i])
+		if err := componentVersion.Validate(); err != nil {
+			return err
+		}
+		componentVersion.CopyVersionFieldsToRepo(&addonDescriptor.Repositories[i])
+
+		log.Entry().Infof("Using cCTS %t", repo.UseClassicCTS)
+		log.Entry().Infof("CommitId %s", repo.CommitID)
+
+		if !repo.UseClassicCTS && repo.CommitID == "" {
+			return errors.Errorf("CommitID missing in repo '%s' of the addon.yml", repo.Name)
+		}
 	}
 
 	// now Software Component Versions fields are valid, but maybe Product Version was checked before, so copy that part from CPE
@@ -58,62 +67,8 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	return nil
 }
 
-//take the product part from CPE and the repositories part from the YAML file
+// take the product part from CPE and the repositories part from the YAML file
 func combineYAMLRepositoriesWithCPEProduct(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
 	addonDescriptorFromCPE.Repositories = addonDescriptor.Repositories
 	return addonDescriptorFromCPE
-}
-
-func (c *componentVersion) initCV(repo abaputils.Repository, conn abapbuild.Connector) {
-	c.Connector = conn
-	c.Name = repo.Name
-	c.VersionYAML = repo.VersionYAML
-	c.CommitID = repo.CommitID
-	c.UseClassicCTS = repo.UseClassicCTS
-}
-
-func (c *componentVersion) copyFieldsToRepo(initialRepo *abaputils.Repository) {
-	initialRepo.Version = c.Version
-	initialRepo.SpLevel = c.SpLevel
-	initialRepo.PatchLevel = c.PatchLevel
-}
-
-func (c *componentVersion) validate() error {
-	log.Entry().Infof("Validate component %s version %s and resolve version", c.Name, c.VersionYAML)
-	appendum := "/odata/aas_ocs_package/ValidateComponentVersion?Name='" + url.QueryEscape(c.Name) + "'&Version='" + url.QueryEscape(c.VersionYAML) + "'"
-	body, err := c.Connector.Get(appendum)
-	if err != nil {
-		return err
-	}
-	var jCV jsonComponentVersion
-	if err := json.Unmarshal(body, &jCV); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for Validate Component Version: "+string(body))
-	}
-	c.Name = jCV.ComponentVersion.Name
-	c.Version = jCV.ComponentVersion.Version
-	c.SpLevel = jCV.ComponentVersion.SpLevel
-	c.PatchLevel = jCV.ComponentVersion.PatchLevel
-	log.Entry().Infof("Resolved version %s, splevel %s, patchlevel %s", c.Version, c.SpLevel, c.PatchLevel)
-	log.Entry().Infof("Using cCTS %t", c.UseClassicCTS)
-
-	if !c.UseClassicCTS && c.CommitID == "" {
-		return fmt.Errorf("CommitID missing in repo '%s' of the addon.yml", c.Name)
-	}
-
-	return nil
-}
-
-type jsonComponentVersion struct {
-	ComponentVersion *componentVersion `json:"d"`
-}
-
-type componentVersion struct {
-	abapbuild.Connector
-	Name          string `json:"Name"`
-	VersionYAML   string
-	Version       string `json:"Version"`
-	SpLevel       string `json:"SpLevel"`
-	PatchLevel    string `json:"PatchLevel"`
-	UseClassicCTS bool
-	CommitID      string
 }

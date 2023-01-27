@@ -123,6 +123,51 @@ spec:
             param: custom/helmRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+      - name: sourceRepositoryURL
+        description: "URL of the source repository where the dependencies can be downloaded."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceRepositoryName
+        type: string
+        description: Set the name of the chart repository. The value might be required for fetching dependencies.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceRepositoryUser
+        description: "Username for the chart repository for fetching the dependencies."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: sourceRepositoryCredentialsId
+            type: secret
+            param: username
+          - type: vaultSecret
+            name: sourceRepositoryUserSecretName
+            default: dependencies
+      - name: sourceRepositoryPassword
+        description: "Password for the chart repository for fetching the dependencies."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: sourceRepositoryCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: sourceRepositoryPasswordSecret
+            default: dependencies
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.

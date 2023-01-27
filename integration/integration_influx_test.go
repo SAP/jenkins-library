@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestInfluxIntegration ./integration/...
 
 package main
 
@@ -17,7 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestWriteMetrics(t *testing.T) {
+func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	const authToken = "influx-token"

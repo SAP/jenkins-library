@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestGCSIntegration ./integration/...
 
 package main
 
@@ -25,7 +26,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-func Test_gcsClient(t *testing.T) {
+func TestGCSIntegrationClient(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	testdataPath, err := filepath.Abs("testdata/TestGCSIntegration")

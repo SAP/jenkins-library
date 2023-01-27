@@ -1,7 +1,8 @@
 //go:build integration
 // +build integration
 
-// can be execute with go test -tags=integration ./integration/...
+// can be executed with
+// go test -v -tags integration -run TestPiperIntegration ./integration/...
 
 package main
 
@@ -21,7 +22,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-func TestPiperHelp(t *testing.T) {
+func TestPiperIntegrationHelp(t *testing.T) {
 	t.Parallel()
 	piperHelpCmd := command.Command{}
 

@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     name: 'Format'
     steps:
+      - uses: styfle/cancel-workflow-action@0.10.0
       - uses: actions/checkout@v2
       - name: Markdown Linting
         uses: nosborn/github-action-markdown-cli@v1.1.1
