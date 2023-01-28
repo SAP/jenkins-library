@@ -224,6 +224,8 @@ spec:
         description: Whether to fail the step on severe vulnerabilties or not
         scope:
           - PARAMETERS
+          - STAGES
+          - STEPS
         default: true
       - name: includes
         type: "[]string"

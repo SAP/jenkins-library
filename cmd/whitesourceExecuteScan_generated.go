@@ -603,7 +603,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					{
 						Name:        "failOnSevereVulnerabilities",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
