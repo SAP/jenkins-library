@@ -160,6 +160,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
 	rootCmd.AddCommand(IntegrationArtifactGetServiceEndpointCommand())
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
+	rootCmd.AddCommand(IntegrationPackageDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(IntegrationArtifactTriggerIntegrationTestCommand())
