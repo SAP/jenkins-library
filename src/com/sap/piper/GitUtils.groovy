@@ -9,8 +9,8 @@ boolean isMergeCommit(){
     try{
         secondParentCommit = sh(returnStdout: true, script: "git rev-parse HEAD^2").trim()
     }catch(Exception e){
-        echo "Does not contain 2 parents or error running git rev-parse command: ${e}"
-        throw e
+        echo "Does not contain 2 parents. It is a head commit."
+        return false
     }
 
     String gitLog = ""
