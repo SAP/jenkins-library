@@ -5,23 +5,17 @@ boolean insideWorkTree() {
 }
 
 boolean isMergeCommit(){
-    String secondParentCommit = ""
-    try{
-        secondParentCommit = sh(returnStdout: true, script: "git rev-parse HEAD^2").trim()
-    }catch(Exception e){
-        echo "Does not contain 2 parents. It is a head commit."
-        return false
+    if(!scm){
+        throw new Exception('scm context not found')
     }
 
-    String gitLog = ""
-    try{
-        gitLog = sh(returnStdout: true, script: "git --no-pager log -1 -s --format='Commit Message: %s; Author: %an'").trim()
-    }catch(Exception e){
-        echo "Error running git log"
-        throw e
+    for (def extension : scm.getExtensions()) {
+        if(extension instanceof jenkins.plugins.git.MergeWithGitSCMExtension){
+            return true;
+        }
     }
 
-    return (gitLog == "Commit Message: Merge commit '${secondParentCommit}' into HEAD; Author: Jenkins")
+    return false;
 }
 
 String getMergeCommitSha(){
