@@ -166,3 +166,21 @@ spec:
           - STEPS
         mandatory: false
         default: "AUnitResults.xml"
+      - name: keyValue
+        type: "map[string]interface{}"
+        description: Specifies pairs of key and value query parameters for the api requests
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: skipVerification
+        type: bool
+        description: You can skip the ssl verification for the http client
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: false
+

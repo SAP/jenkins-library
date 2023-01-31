@@ -128,6 +128,8 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 
 		url := githubURL.Scheme + "://api." + githubURL.Host + "/repos" + githubURL.Path + "/commits/" + commit + "/status"
 
+		url = addQueryToURL(url, config.KeyValue)
+
 		resp, httpErr := httpClient.SendRequest("GET", url, nil, nil, nil)
 
 		defer func() {
@@ -170,6 +172,8 @@ func getCommits(config *gctsRollbackOptions, telemetryData *telemetry.CustomData
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/getCommit?sap-client=" + config.Client
+
+	url = addQueryToURL(url, config.KeyValue)
 
 	type commitsResponseBody struct {
 		Commits []struct {
@@ -217,6 +221,8 @@ func getRepoInfo(config *gctsRollbackOptions, telemetryData *telemetry.CustomDat
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"?sap-client=" + config.Client
+
+	url = addQueryToURL(url, config.KeyValue)
 
 	resp, httpErr := httpClient.SendRequest("GET", url, nil, nil, nil)
 
@@ -268,6 +274,8 @@ func getRepoHistory(config *gctsRollbackOptions, telemetryData *telemetry.Custom
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/getHistory?sap-client=" + config.Client
+
+	url = addQueryToURL(url, config.KeyValue)
 
 	resp, httpErr := httpClient.SendRequest("GET", url, nil, nil, nil)
 

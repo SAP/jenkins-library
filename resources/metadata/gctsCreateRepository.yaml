@@ -96,3 +96,11 @@ spec:
         default: GIT
         possibleValues:
           - GIT
+      - name: keyValue
+        type: "map[string]interface{}"
+        description: Specifies pairs of key and value query parameters for the api requests
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false

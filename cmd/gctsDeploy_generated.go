@@ -30,6 +30,7 @@ type gctsDeployOptions struct {
 	Scope               string                 `json:"scope,omitempty"`
 	Rollback            bool                   `json:"rollback,omitempty"`
 	Configuration       map[string]interface{} `json:"configuration,omitempty"`
+	KeyValue            map[string]interface{} `json:"keyValue,omitempty"`
 }
 
 // GctsDeployCommand Deploys a Git Repository to a local Repository and then to an ABAP System
@@ -303,6 +304,14 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "gctsRepositoryConfigurations"}},
+					},
+					{
+						Name:        "keyValue",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

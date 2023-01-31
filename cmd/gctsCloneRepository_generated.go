@@ -16,11 +16,12 @@ import (
 )
 
 type gctsCloneRepositoryOptions struct {
-	Username   string `json:"username,omitempty"`
-	Password   string `json:"password,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Host       string `json:"host,omitempty"`
-	Client     string `json:"client,omitempty"`
+	Username   string                 `json:"username,omitempty"`
+	Password   string                 `json:"password,omitempty"`
+	Repository string                 `json:"repository,omitempty"`
+	Host       string                 `json:"host,omitempty"`
+	Client     string                 `json:"client,omitempty"`
+	KeyValue   map[string]interface{} `json:"keyValue,omitempty"`
 }
 
 // GctsCloneRepositoryCommand Clones a Git repository
@@ -201,6 +202,14 @@ func gctsCloneRepositoryMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_client"),
+					},
+					{
+						Name:        "keyValue",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

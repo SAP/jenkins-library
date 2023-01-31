@@ -73,6 +73,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		Role:                config.Role,
 		VSID:                config.VSID,
 		Type:                config.Type,
+		KeyValue:            config.KeyValue,
 	}
 	log.Entry().Infof("gCTS Deploy : Checking if repository %v already exists", config.Repository)
 	repoMetadataInitState, getRepositoryErr := getRepository(config, httpClient)
@@ -102,6 +103,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			Repository: config.Repository,
 			Host:       config.Host,
 			Client:     config.Client,
+			KeyValue:   config.KeyValue,
 		}
 		// No Import has to be set when there is a commit or branch parameter set
 		// This is required so that during the clone of the repo it is not imported into the system
@@ -308,6 +310,9 @@ func switchBranch(config *gctsDeployOptions, httpClient piperhttp.Sender, curren
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository + "/branches/" + currentBranch +
 		"/switch?branch=" + targetBranch + "&sap-client=" + config.Client
+
+	requestURL = addQueryToURL(requestURL, config.KeyValue)
+
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
 		if resp != nil && resp.Body != nil {
@@ -340,6 +345,9 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/deploy?sap-client=" + config.Client
+
+	requestURL = addQueryToURL(requestURL, config.KeyValue)
+
 	reqBody := deployRequestBody
 	jsonBody, marshalErr := json.Marshal(reqBody)
 	if marshalErr != nil {
@@ -377,6 +385,8 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"?sap-client=" + config.Client
 
+	requestURL = addQueryToURL(requestURL, config.KeyValue)
+
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
 		if resp != nil && resp.Body != nil {
@@ -407,6 +417,9 @@ func deleteConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sende
 	requestURL := deployConfig.Host +
 		"/sap/bc/cts_abapvcs/repository/" + deployConfig.Repository +
 		"/config/" + configToDelete + "?sap-client=" + deployConfig.Client
+
+	requestURL = addQueryToURL(requestURL, deployConfig.KeyValue)
+
 	header := make(http.Header)
 	header.Set("Content-Type", "application/json")
 	header.Add("Accept", "application/json")
@@ -434,6 +447,8 @@ func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, 
 	requestURL := deployConfig.Host +
 		"/sap/bc/cts_abapvcs/repository/" + deployConfig.Repository +
 		"/config?sap-client=" + deployConfig.Client
+
+	requestURL = addQueryToURL(requestURL, deployConfig.KeyValue)
 
 	reqBody := configToSet
 	jsonBody, marshalErr := json.Marshal(reqBody)
@@ -480,6 +495,8 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/pullByCommit?sap-client=" + config.Client + "&request=" + config.Commit
+
+	requestURL = addQueryToURL(requestURL, config.KeyValue)
 
 	if config.Commit != "" {
 		log.Entry().Infof("preparing to deploy specified commit %v", config.Commit)
@@ -577,6 +594,8 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 
 	url := config.Host + "/sap/bc/cts_abapvcs/repository?sap-client=" + config.Client
 
+	url = addQueryToURL(url, config.KeyValue)
+
 	resp, httpErr := httpClient.SendRequest("POST", url, bytes.NewBuffer(jsonBody), header, nil)
 
 	defer func() {
@@ -617,6 +636,8 @@ func getConfigurationMetadata(config *gctsDeployOptions, httpClient piperhttp.Se
 	log.Entry().Infof("Starting to retrieve configuration metadata from the system")
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/config?sap-client=" + config.Client
+
+	requestURL = addQueryToURL(requestURL, config.KeyValue)
 
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
@@ -703,6 +724,32 @@ func parseErrorDumpFromResponseBody(responseBody *http.Response) (*errorLogBody,
 		}
 	}
 	return &errorDump, nil
+}
+
+func addQueryToURL(requestURL string, keyValue map[string]interface{}) string {
+
+	var formattedURL string
+	formattedURL = requestURL
+	if keyValue != nil {
+		if strings.Contains(requestURL, "?") {
+			for key, value := range keyValue {
+				configValue := fmt.Sprint(value)
+				formattedURL = formattedURL + "&" + key + "=" + configValue
+			}
+		} else {
+			i := 0
+			for key, value := range keyValue {
+				configValue := fmt.Sprint(value)
+				if i == 0 {
+					formattedURL = requestURL + "?" + key + "=" + configValue
+				} else {
+					formattedURL = formattedURL + "&" + key + "=" + configValue
+				}
+				i++
+			}
+		}
+	}
+	return formattedURL
 }
 
 type repositoryConfiguration struct {

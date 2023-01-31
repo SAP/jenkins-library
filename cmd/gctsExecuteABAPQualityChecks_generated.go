@@ -16,19 +16,21 @@ import (
 )
 
 type gctsExecuteABAPQualityChecksOptions struct {
-	Username             string `json:"username,omitempty"`
-	Password             string `json:"password,omitempty"`
-	Host                 string `json:"host,omitempty"`
-	Repository           string `json:"repository,omitempty"`
-	Client               string `json:"client,omitempty"`
-	AUnitTest            bool   `json:"aUnitTest,omitempty"`
-	AtcCheck             bool   `json:"atcCheck,omitempty"`
-	AtcVariant           string `json:"atcVariant,omitempty"`
-	Scope                string `json:"scope,omitempty"`
-	Commit               string `json:"commit,omitempty"`
-	Workspace            string `json:"workspace,omitempty"`
-	AtcResultsFileName   string `json:"atcResultsFileName,omitempty"`
-	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
+	Username             string                 `json:"username,omitempty"`
+	Password             string                 `json:"password,omitempty"`
+	Host                 string                 `json:"host,omitempty"`
+	Repository           string                 `json:"repository,omitempty"`
+	Client               string                 `json:"client,omitempty"`
+	AUnitTest            bool                   `json:"aUnitTest,omitempty"`
+	AtcCheck             bool                   `json:"atcCheck,omitempty"`
+	AtcVariant           string                 `json:"atcVariant,omitempty"`
+	Scope                string                 `json:"scope,omitempty"`
+	Commit               string                 `json:"commit,omitempty"`
+	Workspace            string                 `json:"workspace,omitempty"`
+	AtcResultsFileName   string                 `json:"atcResultsFileName,omitempty"`
+	AUnitResultsFileName string                 `json:"aUnitResultsFileName,omitempty"`
+	KeyValue             map[string]interface{} `json:"keyValue,omitempty"`
+	SkipVerification     bool                   `json:"skipVerification,omitempty"`
 }
 
 // GctsExecuteABAPQualityChecksCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
@@ -146,6 +148,8 @@ func addGctsExecuteABAPQualityChecksFlags(cmd *cobra.Command, stepConfig *gctsEx
 	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to the directory that contains the source code that your CI/CD tool checks out. For example, in Jenkins, the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable `WORKSPACE`.")
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies an output file name for the results of the ATC checks.")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies an output file name for the results of the ABAP Unit tests.")
+
+	cmd.Flags().BoolVar(&stepConfig.SkipVerification, "skipVerification", false, "You can skip the ssl verification for the http client")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -297,6 +301,23 @@ func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `AUnitResults.xml`,
+					},
+					{
+						Name:        "keyValue",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "skipVerification",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

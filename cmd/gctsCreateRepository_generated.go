@@ -16,15 +16,16 @@ import (
 )
 
 type gctsCreateRepositoryOptions struct {
-	Username            string `json:"username,omitempty"`
-	Password            string `json:"password,omitempty"`
-	Repository          string `json:"repository,omitempty"`
-	Host                string `json:"host,omitempty"`
-	Client              string `json:"client,omitempty"`
-	RemoteRepositoryURL string `json:"remoteRepositoryURL,omitempty"`
-	Role                string `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
-	VSID                string `json:"vSID,omitempty"`
-	Type                string `json:"type,omitempty" validate:"possible-values=GIT"`
+	Username            string                 `json:"username,omitempty"`
+	Password            string                 `json:"password,omitempty"`
+	Repository          string                 `json:"repository,omitempty"`
+	Host                string                 `json:"host,omitempty"`
+	Client              string                 `json:"client,omitempty"`
+	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
+	Role                string                 `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
+	VSID                string                 `json:"vSID,omitempty"`
+	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT"`
+	KeyValue            map[string]interface{} `json:"keyValue,omitempty"`
 }
 
 // GctsCreateRepositoryCommand Creates a Git repository on an ABAP system
@@ -245,6 +246,14 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `GIT`,
+					},
+					{
+						Name:        "keyValue",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

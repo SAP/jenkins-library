@@ -16,13 +16,14 @@ import (
 )
 
 type gctsRollbackOptions struct {
-	Username                  string `json:"username,omitempty"`
-	Password                  string `json:"password,omitempty"`
-	Repository                string `json:"repository,omitempty"`
-	Host                      string `json:"host,omitempty"`
-	Client                    string `json:"client,omitempty"`
-	Commit                    string `json:"commit,omitempty"`
-	GithubPersonalAccessToken string `json:"githubPersonalAccessToken,omitempty"`
+	Username                  string                 `json:"username,omitempty"`
+	Password                  string                 `json:"password,omitempty"`
+	Repository                string                 `json:"repository,omitempty"`
+	Host                      string                 `json:"host,omitempty"`
+	Client                    string                 `json:"client,omitempty"`
+	Commit                    string                 `json:"commit,omitempty"`
+	GithubPersonalAccessToken string                 `json:"githubPersonalAccessToken,omitempty"`
+	KeyValue                  map[string]interface{} `json:"keyValue,omitempty"`
 }
 
 // GctsRollbackCommand Perfoms a rollback of one (default) or several commits
@@ -232,6 +233,14 @@ func gctsRollbackMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_githubPersonalAccessToken"),
+					},
+					{
+						Name:        "keyValue",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
