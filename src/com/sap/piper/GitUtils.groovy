@@ -5,57 +5,35 @@ boolean insideWorkTree() {
 }
 
 boolean isMergeCommit(){
-    def cmd = 'git rev-parse --verify HEAD^2'
-    return sh(returnStatus: true, script: cmd) == 0
-}
-
-String getGitMergeCommitId(String gitChangeId){
-    if(!scm){
-        throw new Exception('scm content not found')
-    }
-
-    def remoteConfig = scm.getUserRemoteConfigs()
-    if(!remoteConfig || remoteConfig.size() == 0 || !remoteConfig[0].getCredentialsId()){
-        throw new Exception('scm remote configuration not found')
-    }
-
-
-    def scmCredId = remoteConfig[0].getCredentialsId()
+    String secondParentCommit = ""
     try{
-        withCredentials([gitUsernamePassword(credentialsId: scmCredId, gitToolName: 'git-tool')]) {
-            sh 'git fetch origin "+refs/pull/'+gitChangeId+'/*:refs/remotes/origin/pull/'+gitChangeId+'/*"'
-        }
-    } catch (Exception e) {
-        echo 'Error in running git fetch'
+        secondParentCommit = sh(returnStdout: true, script: "git rev-parse HEAD^2").trim()
+    }catch(Exception e){
+        echo "Does not contain 2 parents or error running git rev-parse command: ${e}"
         throw e
     }
 
-    String commitId
-    def cmd = "git rev-parse refs/remotes/origin/pull/"+gitChangeId+"/merge"
-    try {
-        commitId = sh(returnStdout: true, script: cmd).trim()
-    } catch (Exception e) {
-        echo 'Exception occurred getting the git merge commitId'
+    String gitLog = ""
+    try{
+        gitLog = sh(returnStdout: true, script: "git --no-pager log -1 -s --format='Commit Message: %s; Author: %an'").trim()
+    }catch(Exception e){
+        echo "Error running git log"
         throw e
     }
 
-    return commitId
+    return (gitLog == "Commit Message: Merge commit '${secondParentCommit}' into HEAD; Author: Jenkins")
 }
 
-boolean compareParentsOfMergeAndHead(String mergeCommitId){
+String getMergeCommitSha(){
     if(!pullRequest){
-        echo 'pullRequest context not found'
         throw new Exception('pullRequest context not found')
     }
 
-    if( pullRequest.mergeCommitSha.equals(mergeCommitId) ){
-        return true
+    if(!pullRequest.mergeCommitSha){
+        throw new Exception('pullRequest.mergeCommitSha not found')
     }
 
-    echo "Jenkins mergecommitsha: ${pullRequest.mergeCommitSha}"
-    echo "GH remote mergecommitsha: ${mergeCommitId}"
-    echo 'Jenkins mergecommitsha and GH remote mergecommitsha do not match; PR was updated since Jenkins job started. Try re-running the job.'
-    return false
+    return pullRequest.mergeCommitSha
 }
 
 boolean isWorkTreeDirty() {
