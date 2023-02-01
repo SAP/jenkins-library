@@ -167,9 +167,9 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
-      - name: skipVerification
+      - name: skipSSLVerification
         type: bool
-        description: You can skip the ssl verification for the http client
+        description: You can skip the SSL (Secure Socket Layer) verification for the http client
         scope:
           - PARAMETERS
           - STAGES

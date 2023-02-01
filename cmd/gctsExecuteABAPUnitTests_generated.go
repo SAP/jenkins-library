@@ -30,7 +30,7 @@ type gctsExecuteABAPUnitTestsOptions struct {
 	AtcResultsFileName   string                 `json:"atcResultsFileName,omitempty"`
 	AUnitResultsFileName string                 `json:"aUnitResultsFileName,omitempty"`
 	KeyValue             map[string]interface{} `json:"keyValue,omitempty"`
-	SkipVerification     bool                   `json:"skipVerification,omitempty"`
+	SkipSSLVerification  bool                   `json:"skipSSLVerification,omitempty"`
 }
 
 // GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
@@ -142,7 +142,7 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies an output file name for the results of the ATC checks.")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies an output file name for the results of the ABAP Unit tests.")
 
-	cmd.Flags().BoolVar(&stepConfig.SkipVerification, "skipVerification", false, "You can skip the ssl verification for the http client")
+	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "You can skip the SSL (Secure Socket Layer) verification for the http client")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -304,7 +304,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "skipVerification",
+						Name:        "skipSSLVerification",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",

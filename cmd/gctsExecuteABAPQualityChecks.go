@@ -66,7 +66,7 @@ func rungctsExecuteABAPQualityChecks(config *gctsExecuteABAPQualityChecksOptions
 		Username:                  config.Username,
 		Password:                  config.Password,
 		MaxRetries:                maxRetries,
-		TransportSkipVerification: config.SkipVerification,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 
 	httpClient.SetOptions(clientOptions)
@@ -741,7 +741,7 @@ func executeATCCheck(config *gctsExecuteABAPQualityChecksOptions, client piperht
 		case "INTF":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/interfaces/` + object.Object + `"/>`
 		case "DEVC":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/repository/informationsystem/virtualfolders?selection=package%3a` + url.QueryEscape(object.Object) + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/repository/informationsystem/virtualfolders?selection=package%3a` + url.QueryEscape(object.Object) + `"/>`
 		case "FUGR":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/functions/groups/` + object.Object + `/source/main"/>`
 		case "TABL":
