@@ -52,12 +52,18 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 	}()
 	log.Entry().Info("Creating Service Key")
 
+	// If a synchronous execution is requested, the "--wait" flag needs to be added
+	cfCliSynchronousString := ""
+	if !options.CfAsync {
+		cfCliSynchronousString = cfCliSynchronousRequestFlag
+	}
+
 	var cfCreateServiceKeyScript []string
 	// the --wait option was added for cf cli v8 in order to ensure a synchronous creation of the servie key that was default in v7 or earlier
 	if options.CfServiceKeyConfig == "" {
-		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, cfCliSynchronousRequestFlag}
+		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, cfCliSynchronousString}
 	} else {
-		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, "-c", options.CfServiceKeyConfig, cfCliSynchronousRequestFlag}
+		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, "-c", options.CfServiceKeyConfig, cfCliSynchronousString}
 	}
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 	if err != nil {
