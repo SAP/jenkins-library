@@ -20,6 +20,8 @@ boolean isMergeCommit(){
 
 String getMergeCommitSha(){
     if(!pullRequest){
+        echo "Merge commit cannot be retrieved from pull request"
+        echo "Please make sure you have 'Pipeline: GitHub' plugin installed in Jenkins and your Jenkins is running Java 8 or higher."
         throw new Exception('pullRequest context not found')
     }
 
