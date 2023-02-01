@@ -390,8 +390,8 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
                 return true
             }
 
-            String getMergeCommitSha(){
-                throw new Exception('pullRequest Context not found')
+            String getMergeCommitSha() throws MissingPropertyException{
+                throw new MissingPropertyException('pullRequest Context not found')
             }
         }
 

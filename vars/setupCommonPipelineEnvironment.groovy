@@ -282,10 +282,10 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     boolean isMergeCommit = false
     try{
         isMergeCommit = gitUtils.isMergeCommit()
-    }catch(Exception e){
+    }catch(MissingPropertyException e){
         script.commonPipelineEnvironment.setGitRemoteCommitId("NA")
         script.commonPipelineEnvironment.setGitRef("NA")
-        echo "Exception: ${e}"
+        echo "[${STEP_NAME}] ${e}"
         return
     }
 
@@ -300,8 +300,9 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
 
     try{
         script.commonPipelineEnvironment.setGitRemoteCommitId(gitUtils.getMergeCommitSha())
-    }catch(Exception e){
-        echo "Exception in getting mergeCommitSha: ${e}"
+    }catch(MissingPropertyException e){
+        echo "[${STEP_NAME}] ${e}"
+        echo "[${STEP_NAME}] Please make sure you have 'Pipeline: GitHub' plugin installed in Jenkins and your Jenkins is running Java 8 or higher."
         script.commonPipelineEnvironment.setGitRemoteCommitId("NA")
     }
 }

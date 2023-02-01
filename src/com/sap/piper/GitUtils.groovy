@@ -4,11 +4,7 @@ boolean insideWorkTree() {
     return sh(returnStatus: true, script: 'git rev-parse --is-inside-work-tree 1>/dev/null 2>&1') == 0
 }
 
-boolean isMergeCommit(){
-    if(!scm){
-        throw new Exception('scm context not found')
-    }
-
+boolean isMergeCommit() throws MissingPropertyException{
     for (def extension : scm.getExtensions()) {
         if(extension instanceof jenkins.plugins.git.MergeWithGitSCMExtension){
             return true;
@@ -18,17 +14,7 @@ boolean isMergeCommit(){
     return false;
 }
 
-String getMergeCommitSha(){
-    if(!pullRequest){
-        echo "Merge commit cannot be retrieved from pull request"
-        echo "Please make sure you have 'Pipeline: GitHub' plugin installed in Jenkins and your Jenkins is running Java 8 or higher."
-        throw new Exception('pullRequest context not found')
-    }
-
-    if(!pullRequest.mergeCommitSha){
-        throw new Exception('pullRequest.mergeCommitSha not found')
-    }
-
+String getMergeCommitSha() throws MissingPropertyException{
     return pullRequest.mergeCommitSha
 }
 
