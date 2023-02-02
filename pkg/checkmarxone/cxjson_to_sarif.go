@@ -51,7 +51,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 		if query == nil {
 			return sarif, errors.New(fmt.Sprintf("Unknown queryid in results: %d", r.Data.QueryID))
 		}
-		log.Entry().Infof(" - %d: %v -> %v", r.SimilarityID, query.Language, query.Name)
+		//log.Entry().Infof(" - %d: %v -> %v", r.SimilarityID, query.Language, query.Name)
 
 		_, haskey := cweIdsForTaxonomies[query.CweID]
 
