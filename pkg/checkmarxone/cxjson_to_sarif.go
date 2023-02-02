@@ -186,7 +186,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 		}
 
 		props.ToolAuditMessage = ""
-		predicates, err := sys.GetResultsPredicates(r.SimilarityID, scanMeta.ProjectID)
+		/*predicates, err := sys.GetResultsPredicates(r.SimilarityID, scanMeta.ProjectID)
 		if err == nil {
 			log.Entry().Infof("Retrieved %d results predicates", len(predicates))
 			messageCandidates := []string{}
@@ -197,7 +197,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 			props.ToolAuditMessage = strings.Join(messageCandidates, " \n ")
 		} else {
 			log.Entry().Warningf("Error while retrieving result predicates: %s", err)
-		}
+		}*/
 
 		props.RuleGUID = fmt.Sprintf("%d", r.Data.QueryID)
 		props.UnifiedAuditState = ""
