@@ -69,4 +69,13 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+      - name: skipSSLVerification
+        type: bool
+        description: You can skip the SSL (Secure Socket Layer) verification for the http client
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: false
 

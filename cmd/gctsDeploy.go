@@ -75,6 +75,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		VSID:                config.VSID,
 		Type:                config.Type,
 		KeyValue:            config.KeyValue,
+		SkipSSLVerification: config.SkipSSLVerification,
 	}
 	log.Entry().Infof("gCTS Deploy : Checking if repository %v already exists", config.Repository)
 	repoMetadataInitState, getRepositoryErr := getRepository(config, httpClient)
@@ -99,12 +100,13 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		}
 
 		cloneRepoOptions := gctsCloneRepositoryOptions{
-			Username:   config.Username,
-			Password:   config.Password,
-			Repository: config.Repository,
-			Host:       config.Host,
-			Client:     config.Client,
-			KeyValue:   config.KeyValue,
+			Username:            config.Username,
+			Password:            config.Password,
+			Repository:          config.Repository,
+			Host:                config.Host,
+			Client:              config.Client,
+			KeyValue:            config.KeyValue,
+			SkipSSLVerification: config.SkipSSLVerification,
 		}
 		// No Import has to be set when there is a commit or branch parameter set
 		// This is required so that during the clone of the repo it is not imported into the system
@@ -239,11 +241,12 @@ func pullByCommitWithRollback(config *gctsDeployOptions, telemetryData *telemetr
 		if config.Rollback {
 			//Rollback to last commit.
 			rollbackOptions := gctsRollbackOptions{
-				Username:   config.Username,
-				Password:   config.Password,
-				Repository: config.Repository,
-				Host:       config.Host,
-				Client:     config.Client,
+				Username:            config.Username,
+				Password:            config.Password,
+				Repository:          config.Repository,
+				Host:                config.Host,
+				Client:              config.Client,
+				SkipSSLVerification: config.SkipSSLVerification,
 			}
 			rollbackErr := rollback(&rollbackOptions, telemetryData, command, httpClient)
 			if rollbackErr != nil {
@@ -486,10 +489,11 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar:  cookieJar,
-		Username:   config.Username,
-		Password:   config.Password,
-		MaxRetries: -1,
+		CookieJar:                 cookieJar,
+		Username:                  config.Username,
+		Password:                  config.Password,
+		MaxRetries:                -1,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -549,10 +553,11 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 		return errors.Wrapf(cookieErr, "creating repository on the ABAP system %v failed", config.Host)
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar:  cookieJar,
-		Username:   config.Username,
-		Password:   config.Password,
-		MaxRetries: -1,
+		CookieJar:                 cookieJar,
+		Username:                  config.Username,
+		Password:                  config.Password,
+		MaxRetries:                -1,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 	httpClient.SetOptions(clientOptions)
 
