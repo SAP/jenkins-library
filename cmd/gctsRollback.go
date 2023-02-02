@@ -69,12 +69,13 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		log.Entry().Infof("rolling back to specified commit %v", config.Commit)
 
 		deployOptions = gctsDeployOptions{
-			Username:   config.Username,
-			Password:   config.Password,
-			Host:       config.Host,
-			Repository: config.Repository,
-			Client:     config.Client,
-			Commit:     config.Commit,
+			Username:            config.Username,
+			Password:            config.Password,
+			Host:                config.Host,
+			Repository:          config.Repository,
+			Client:              config.Client,
+			Commit:              config.Commit,
+			SkipSSLVerification: config.SkipSSLVerification,
 		}
 
 	} else {
@@ -86,12 +87,13 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 
 			log.Entry().WithField("repository", config.Repository).Infof("rolling back to last active commit %v", repoHistory.Result[0].FromCommit)
 			deployOptions = gctsDeployOptions{
-				Username:   config.Username,
-				Password:   config.Password,
-				Host:       config.Host,
-				Repository: config.Repository,
-				Client:     config.Client,
-				Commit:     repoHistory.Result[0].FromCommit,
+				Username:            config.Username,
+				Password:            config.Password,
+				Host:                config.Host,
+				Repository:          config.Repository,
+				Client:              config.Client,
+				Commit:              repoHistory.Result[0].FromCommit,
+				SkipSSLVerification: config.SkipSSLVerification,
 			}
 
 		} else {
