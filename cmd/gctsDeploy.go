@@ -49,10 +49,11 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar:  cookieJar,
-		Username:   config.Username,
-		Password:   config.Password,
-		MaxRetries: maxRetries,
+		CookieJar:                 cookieJar,
+		Username:                  config.Username,
+		Password:                  config.Password,
+		MaxRetries:                maxRetries,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 	httpClient.SetOptions(clientOptions)
 	log.Entry().Infof("Start of gCTS Deploy Step with Configuration Values: %v", config)

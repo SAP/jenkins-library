@@ -31,6 +31,7 @@ type gctsDeployOptions struct {
 	Rollback            bool                   `json:"rollback,omitempty"`
 	Configuration       map[string]interface{} `json:"configuration,omitempty"`
 	KeyValue            map[string]interface{} `json:"keyValue,omitempty"`
+	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
 }
 
 // GctsDeployCommand Deploys a Git Repository to a local Repository and then to an ABAP System
@@ -145,6 +146,8 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Name of a branch, if you want to deploy the content of a specific branch to the ABAP system.")
 	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Scope of objects to be deployed. Possible values are CRNTCOMMIT (current commit - Default) and LASTACTION (last repository action). The default option deploys all objects that existed in the repository when the commit was created. LASTACTION only deploys the object difference of the last action in the repository.")
 	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "Indication whether you want to roll back to the last working state of the repository, if any of the step actions *switch branch* or *pull commit* fail.")
+
+	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "You can skip the SSL (Secure Socket Layer) verification for the http client")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -312,6 +315,15 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "skipSSLVerification",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
