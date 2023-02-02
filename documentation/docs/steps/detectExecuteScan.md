@@ -20,7 +20,7 @@ Its main advantage is speed. In most cases, the scan is completed in less than 3
 The result can be found in console on pipeline. By default blackduck scans in 'FULL' mode, but you are able to change scan mode by parameter `scanMode`.
 When you set `scanMode='RAPID'` in the DetectExecution step, then Black Duck scans in 'Rapid' mode.
 
-![scanModeScheme](images/BDscanMode.png)
+![scanModeScheme](../images/BDscanMode.png)
 
 ### Rapid scan  on pull requests
 If the Jenkins orchestrator is configured to detect pull requests, then piper pipeline can recognize this
@@ -29,7 +29,7 @@ and change the Black Duck scan mode from 'FULL' to 'RAPID'. This does not effect
 #### Result of scan on pull request comment
 If `githubApi` and `githubToken` are provided, then pipeline adds the scan result to the comment of the opened pull request.
 
-![Pull request commnet](images/BDrapidScanPrs.png)
+![Pull request commnet](../images/BDrapidScanPrs.png)
 
 #### Steps to achieve this:
 1. Provide all needed parameters of DetectExecution step in .pipeline/config.yaml (inc.`githubApi`, `githubToken`)
