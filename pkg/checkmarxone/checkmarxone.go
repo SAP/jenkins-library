@@ -77,7 +77,7 @@ type Query struct {
 	Group              string
 	Language           string
 	Severity           string
-	CweID              uint64
+	CweID              int64
 	QueryDescriptionID int64
 	Custom             bool
 }
