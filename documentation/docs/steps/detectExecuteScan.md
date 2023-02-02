@@ -12,7 +12,6 @@ You need to store the API token for the Detect service as _'Secret text'_ creden
 
 ## ${docGenConfiguration}
 
-
 ## Rapid scan
 
 In addition to the full scan, Black Duck also offers a faster and easier scan option, called
@@ -32,8 +31,7 @@ If `githubApi` and `githubToken` are provided, then pipeline adds the scan resul
 
 ![Pull request commnet](images/BDrapidScanPrs.png)
 
-
-#### Steps to achive this:
+#### Steps to achieve this:
 1. Provide all needed parameters of DetectExecution step in .pipeline/config.yaml (inc.`githubApi`, `githubToken`)
    1. Note:
       1. for general purpose pipeline - add in the 'pr vouting' stage 'detectExecution: true' step
