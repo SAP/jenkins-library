@@ -1,11 +1,11 @@
 package checkmarxOne
 
 import (
-//	"bytes"
-//	"encoding/xml"
+	//	"bytes"
+	//	"encoding/xml"
 	"fmt"
-//	"io/ioutil"
-//	"strconv"
+	//	"io/ioutil"
+	//	"strconv"
 	"strings"
 	"time"
 
@@ -15,12 +15,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-
-
 // ConvertCxxmlToSarif is the entrypoint for the Parse function
 func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult, scanMeta ScanMetadata, scan Scan) (format.SARIF, error) {
 	// Process sarif
-    start := time.Now()
+	start := time.Now()
 
 	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
@@ -30,17 +28,17 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
 
-    queries, err := sys.GetQueries()
-    if err != nil {
-        return sarif, errors.Wrap( err, "Failed to retrieve list of queries" )
-    }
+	queries, err := sys.GetQueries()
+	if err != nil {
+		return sarif, errors.Wrap(err, "Failed to retrieve list of queries")
+	}
 
 	baseURL := "https://" + serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID // + "/sast/description/" + query.querydescriptionid + "/" + query.queryid
-    // eg: https://deu.ast.checkmarx.net/results/a129f465-35eb-4d8a-aecd-6ae985be4954/cf52a41c-aca1-4ed7-91de-b6fe16280867/sast/description/346/10631311445988470793
-    // https://deu.ast.checkmarx.net/results/8e49f814-96bc-4cae-b5d5-4600e299a5cf/efbde5c8-91d8-4d55-83cd-18af2800ad52/sast?result-id=pnhXEyVkh8rZqpLo3xPt0rTX4VI%3D
+	// eg: https://deu.ast.checkmarx.net/results/a129f465-35eb-4d8a-aecd-6ae985be4954/cf52a41c-aca1-4ed7-91de-b6fe16280867/sast/description/346/10631311445988470793
+	// https://deu.ast.checkmarx.net/results/8e49f814-96bc-4cae-b5d5-4600e299a5cf/efbde5c8-91d8-4d55-83cd-18af2800ad52/sast?result-id=pnhXEyVkh8rZqpLo3xPt0rTX4VI%3D
 
-	cweIdsForTaxonomies := make(map[uint64]int) //use a map to avoid duplicates
-    cweCounter := 0
+	cweIdsForTaxonomies := make(map[int64]int) //use a map to avoid duplicates
+	cweCounter := 0
 	//maxretries := 5
 
 	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
@@ -48,179 +46,177 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 	//Each Result object contains a ResultPath, which represents the exact location of the occurence (the "Snippet")
 	log.Entry().Debug("[SARIF] Now handling results.")
 
-    for _, r := range scanResults {
-        query := getQuery( queries, r.Data.QueryID )
-        if query == nil {
-            return sarif, errors.New( fmt.Sprintf( "Unknown queryid in results: %d", r.Data.QueryID ) )
-        }
-        log.Entry().Infof( " - %d: %v -> %v", r.SimilarityID, query.Language, query.Name )
+	for _, r := range scanResults {
+		query := getQuery(queries, r.Data.QueryID)
+		if query == nil {
+			return sarif, errors.New(fmt.Sprintf("Unknown queryid in results: %d", r.Data.QueryID))
+		}
+		log.Entry().Infof(" - %d: %v -> %v", r.SimilarityID, query.Language, query.Name)
 
-        _, haskey := cweIdsForTaxonomies[query.CweID]
+		_, haskey := cweIdsForTaxonomies[query.CweID]
 
-        if !haskey {
-            cweIdsForTaxonomies[query.CweID] = cweCounter
-            cweCounter++
-        }
+		if !haskey {
+			cweIdsForTaxonomies[query.CweID] = cweCounter
+			cweCounter++
+		}
 
-        simidString := fmt.Sprintf( "%d", r.SimilarityID )
+		simidString := fmt.Sprintf("%d", r.SimilarityID)
 
-        var apiDescription string
-        result := *new(format.Results)
-        
+		var apiDescription string
+		result := *new(format.Results)
 
-        //General
-        result.RuleID = fmt.Sprintf( "checkmarxOne-%v/%d", query.Language, query.QueryID )
-        result.RuleIndex = cweIdsForTaxonomies[query.CweID]
-        result.Level = "none"
-        msg := new(format.Message)
-        //msg.Text = cxxml.Query[i].Name + ": " + cxxml.Query[i].Categories
-        if apiDescription != "" {
-            msg.Text = apiDescription
-        } else {
-            msg.Text = query.Name
-        }
-        result.Message = msg
+		//General
+		result.RuleID = fmt.Sprintf("checkmarxOne-%v/%d", query.Language, query.QueryID)
+		result.RuleIndex = cweIdsForTaxonomies[query.CweID]
+		result.Level = "none"
+		msg := new(format.Message)
+		//msg.Text = cxxml.Query[i].Name + ": " + cxxml.Query[i].Categories
+		if apiDescription != "" {
+			msg.Text = apiDescription
+		} else {
+			msg.Text = query.Name
+		}
+		result.Message = msg
 
-        //Locations
-        codeflow := *new(format.CodeFlow)
-        threadflow := *new(format.ThreadFlow)
-        locationSaved := false
-        for k := 0; k < len(r.Data.Nodes); k++ {
-            loc := *new(format.Location)
-            loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
-            loc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
-            loc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
-            loc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
-            snip := new(format.SnippetSarif)
-            snip.Text = r.Data.Nodes[k].Name
-            loc.PhysicalLocation.Region.Snippet = snip
-            if !locationSaved { // To avoid overloading log file, we only save the 1st location, or source, as in the webview
-                result.Locations = append(result.Locations, loc)
-                locationSaved = true
-            }
+		//Locations
+		codeflow := *new(format.CodeFlow)
+		threadflow := *new(format.ThreadFlow)
+		locationSaved := false
+		for k := 0; k < len(r.Data.Nodes); k++ {
+			loc := *new(format.Location)
+			loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
+			loc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
+			loc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
+			loc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
+			snip := new(format.SnippetSarif)
+			snip.Text = r.Data.Nodes[k].Name
+			loc.PhysicalLocation.Region.Snippet = snip
+			if !locationSaved { // To avoid overloading log file, we only save the 1st location, or source, as in the webview
+				result.Locations = append(result.Locations, loc)
+				locationSaved = true
+			}
 
-            //Related Locations
-            relatedLocation := *new(format.RelatedLocation)
-            relatedLocation.ID = k + 1
-            relatedLocation.PhysicalLocation = *new(format.RelatedPhysicalLocation)
-            relatedLocation.PhysicalLocation.ArtifactLocation = loc.PhysicalLocation.ArtifactLocation
-            relatedLocation.PhysicalLocation.Region = *new(format.RelatedRegion)
-            relatedLocation.PhysicalLocation.Region.StartLine = loc.PhysicalLocation.Region.StartLine
-            relatedLocation.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
-            result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
+			//Related Locations
+			relatedLocation := *new(format.RelatedLocation)
+			relatedLocation.ID = k + 1
+			relatedLocation.PhysicalLocation = *new(format.RelatedPhysicalLocation)
+			relatedLocation.PhysicalLocation.ArtifactLocation = loc.PhysicalLocation.ArtifactLocation
+			relatedLocation.PhysicalLocation.Region = *new(format.RelatedRegion)
+			relatedLocation.PhysicalLocation.Region.StartLine = loc.PhysicalLocation.Region.StartLine
+			relatedLocation.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
+			result.RelatedLocations = append(result.RelatedLocations, relatedLocation)
 
-            threadFlowLocation := *new(format.Locations)
-            tfloc := new(format.Location)
-            tfloc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
-            tfloc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
-            tfloc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
-            tfloc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
-            tfloc.PhysicalLocation.Region.Snippet = snip
-            threadFlowLocation.Location = tfloc
-            threadflow.Locations = append(threadflow.Locations, threadFlowLocation)
+			threadFlowLocation := *new(format.Locations)
+			tfloc := new(format.Location)
+			tfloc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
+			tfloc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
+			tfloc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
+			tfloc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
+			tfloc.PhysicalLocation.Region.Snippet = snip
+			threadFlowLocation.Location = tfloc
+			threadflow.Locations = append(threadflow.Locations, threadFlowLocation)
 
-        }
-        codeflow.ThreadFlows = append(codeflow.ThreadFlows, threadflow)
-        result.CodeFlows = append(result.CodeFlows, codeflow)
+		}
+		codeflow.ThreadFlows = append(codeflow.ThreadFlows, threadflow)
+		result.CodeFlows = append(result.CodeFlows, codeflow)
 
-        result.PartialFingerprints.CheckmarxSimilarityID = simidString
-        result.PartialFingerprints.PrimaryLocationLineHash = simidString
+		result.PartialFingerprints.CheckmarxSimilarityID = simidString
+		result.PartialFingerprints.PrimaryLocationLineHash = simidString
 
-        //Properties
-        props := new(format.SarifProperties)
-        props.Audited = false
-        /*if cxxml.Query[i].Result[j].Remark != "" {
-            props.Audited = true
-        }*/
-        props.CheckmarxSimilarityID = simidString
-        props.InstanceID = r.ResultID // no more PathID in cx1
-        props.ToolSeverity = r.Severity
+		//Properties
+		props := new(format.SarifProperties)
+		props.Audited = false
+		/*if cxxml.Query[i].Result[j].Remark != "" {
+		    props.Audited = true
+		}*/
+		props.CheckmarxSimilarityID = simidString
+		props.InstanceID = r.ResultID // no more PathID in cx1
+		props.ToolSeverity = r.Severity
 
-        // classify into audit groups
-        switch r.Severity {
-        case "HIGH":
-            props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
-            props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
-            props.ToolSeverityIndex = 3
-            break
-        case "MEDIUM":
-            props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
-            props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
-            props.ToolSeverityIndex = 2
-            break
-        case "LOW":
-            props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_2_DESC
-            props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_2_INDEX
-            props.ToolSeverityIndex = 1
-            break
-        case "INFORMATION":
-            props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_3_DESC
-            props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_3_INDEX
-            props.ToolSeverityIndex = 0
-            break
-        }
+		// classify into audit groups
+		switch r.Severity {
+		case "HIGH":
+			props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
+			props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
+			props.ToolSeverityIndex = 3
+			break
+		case "MEDIUM":
+			props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
+			props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
+			props.ToolSeverityIndex = 2
+			break
+		case "LOW":
+			props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_2_DESC
+			props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_2_INDEX
+			props.ToolSeverityIndex = 1
+			break
+		case "INFORMATION":
+			props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_3_DESC
+			props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_3_INDEX
+			props.ToolSeverityIndex = 0
+			break
+		}
 
-        switch r.State {
-        case "NOT_EXPLOITABLE":
-            props.ToolState = "NOT_EXPLOITABLE"
-            props.ToolStateIndex = 1
-            props.Audited = true
-            break
-        case "CONFIRMED":
-            props.ToolState = "CONFIRMED"
-            props.ToolStateIndex  = 2
-            props.Audited = true
-            break
-        case "URGENT", "URGENT ":
-            props.ToolState = "URGENT"
-            props.ToolStateIndex = 3
-            props.Audited = true
-            break
-        case "PROPOSED_NOT_EXPLOITABLE":
-            props.ToolState = "PROPOSED_NOT_EXPLOITABLE"
-            props.ToolStateIndex = 4
-            props.Audited = true
-            break
-        default:
-            props.ToolState = "TO_VERIFY" // Includes case 0
-            props.ToolStateIndex = 0
+		switch r.State {
+		case "NOT_EXPLOITABLE":
+			props.ToolState = "NOT_EXPLOITABLE"
+			props.ToolStateIndex = 1
+			props.Audited = true
+			break
+		case "CONFIRMED":
+			props.ToolState = "CONFIRMED"
+			props.ToolStateIndex = 2
+			props.Audited = true
+			break
+		case "URGENT", "URGENT ":
+			props.ToolState = "URGENT"
+			props.ToolStateIndex = 3
+			props.Audited = true
+			break
+		case "PROPOSED_NOT_EXPLOITABLE":
+			props.ToolState = "PROPOSED_NOT_EXPLOITABLE"
+			props.ToolStateIndex = 4
+			props.Audited = true
+			break
+		default:
+			props.ToolState = "TO_VERIFY" // Includes case 0
+			props.ToolStateIndex = 0
 
-            break
-        }
+			break
+		}
 
-        props.ToolAuditMessage = ""
-        predicates, err := sys.GetResultsPredicates( r.SimilarityID, scanMeta.ProjectID )
-        if err == nil {
-            log.Entry().Infof( "Retrieved %d results predicates", len(predicates) )
-            messageCandidates := []string{}
-            for _, p := range predicates {
-                messageCandidates = append([]string{strings.Trim(p.Comment, "\r\n")}, messageCandidates...) //Append in reverse order, trim to remove extra \r
-            }
-            log.Entry().Info( strings.Join(messageCandidates, "; ") )
-            props.ToolAuditMessage = strings.Join(messageCandidates, " \n ")
-        } else {
-            log.Entry().Warningf( "Error while retrieving result predicates: %s", err )
-        }
+		props.ToolAuditMessage = ""
+		predicates, err := sys.GetResultsPredicates(r.SimilarityID, scanMeta.ProjectID)
+		if err == nil {
+			log.Entry().Infof("Retrieved %d results predicates", len(predicates))
+			messageCandidates := []string{}
+			for _, p := range predicates {
+				messageCandidates = append([]string{strings.Trim(p.Comment, "\r\n")}, messageCandidates...) //Append in reverse order, trim to remove extra \r
+			}
+			log.Entry().Info(strings.Join(messageCandidates, "; "))
+			props.ToolAuditMessage = strings.Join(messageCandidates, " \n ")
+		} else {
+			log.Entry().Warningf("Error while retrieving result predicates: %s", err)
+		}
 
-        props.RuleGUID = fmt.Sprintf( "%d", r.Data.QueryID )
-        props.UnifiedAuditState = ""
-        result.Properties = props
+		props.RuleGUID = fmt.Sprintf("%d", r.Data.QueryID)
+		props.UnifiedAuditState = ""
+		result.Properties = props
 
-        //Finalize
-        sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
-
+		//Finalize
+		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
 
 		//handle the rules array
 		rule := *new(format.SarifRule)
-        
-		rule.ID = fmt.Sprintf( "checkmarxOne-%v/%d", query.Language, query.QueryID )
+
+		rule.ID = fmt.Sprintf("checkmarxOne-%v/%d", query.Language, query.QueryID)
 		words := strings.Split(query.Name, "_")
 		for w := 0; w < len(words); w++ {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))
 		}
 		rule.Name = strings.Join(words, "")
 
-		rule.HelpURI = fmt.Sprintf( "%v/sast/description/%v/%v", baseURL, query.QueryDescriptionID, query.QueryID )
+		rule.HelpURI = fmt.Sprintf("%v/sast/description/%v/%v", baseURL, query.QueryDescriptionID, query.QueryID)
 		rule.Help = new(format.Help)
 		rule.Help.Text = rule.HelpURI
 		rule.ShortDescription = new(format.Message)
@@ -230,9 +226,9 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 			rule.FullDescription = new(format.Message)
 			rule.FullDescription.Text = apiDescription
 		} else */
-        if len(r.VulnerabilityDetails.Compliances) > 0 {
+		if len(r.VulnerabilityDetails.Compliances) > 0 {
 			rule.FullDescription = new(format.Message)
-			rule.FullDescription.Text = strings.Join( r.VulnerabilityDetails.Compliances[:], ";" )
+			rule.FullDescription.Text = strings.Join(r.VulnerabilityDetails.Compliances[:], ";")
 
 			for cat := 0; cat < len(r.VulnerabilityDetails.Compliances); cat++ {
 				rule.Properties.Tags = append(rule.Properties.Tags, r.VulnerabilityDetails.Compliances[cat])
@@ -252,7 +248,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 		}
 
 		if query.CweID != 0 {
-			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf( "external/cwe/cwe-%d", query.CweID ) )
+			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", query.CweID))
 		}
 		rulesArray = append(rulesArray, rule)
 	}
@@ -263,14 +259,14 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 	tool.Driver = *new(format.Driver)
 	tool.Driver.Name = "CheckmarxOne SCA"
 
-    // TODO: a way to fetch/store the version
+	// TODO: a way to fetch/store the version
 	tool.Driver.Version = "1" //strings.Split(cxxml.CheckmarxVersion, "V ")
 	tool.Driver.InformationUri = "https://checkmarx.com/resource/documents/en/34965-68571-viewing-results.html"
 	tool.Driver.Rules = rulesArray
 	sarif.Runs[0].Tool = tool
 
 	//handle automationDetails
-	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: fmt.Sprintf( "%v/sast", baseURL ) } // Use deeplink to pass a maximum of information
+	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: fmt.Sprintf("%v/sast", baseURL)} // Use deeplink to pass a maximum of information
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
@@ -280,7 +276,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
 	for key := range cweIdsForTaxonomies {
 		taxa := *new(format.Taxa)
-		taxa.Id = fmt.Sprintf( "%d", key )
+		taxa.Id = fmt.Sprintf("%d", key)
 		taxonomy.Taxa = append(taxonomy.Taxa, taxa)
 	}
 	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
@@ -297,12 +293,11 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 	return sarif, nil
 }
 
-
-func getQuery( queries []Query, queryID uint64 ) *Query {
-    for id, _ := range queries {
-        if queries[id].QueryID == queryID {
-            return &queries[id]
-        }
-    }
-    return nil
+func getQuery(queries []Query, queryID uint64) *Query {
+	for id, _ := range queries {
+		if queries[id].QueryID == queryID {
+			return &queries[id]
+		}
+	}
+	return nil
 }
