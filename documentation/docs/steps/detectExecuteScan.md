@@ -12,6 +12,7 @@ You need to store the API token for the Detect service as _'Secret text'_ creden
 
 ## ${docGenConfiguration}
 
+
 ## Rapid scan
 
 In addition to the full scan, Black Duck also offers a faster and easier scan option, called
@@ -41,4 +42,5 @@ If `githubApi` and `githubToken` are provided, then pipeline adds the scan resul
 
 Note: Despite rapid scans doing necessary security checks for daily development, it is not sufficient for production deployment and releases.
 Only use full scans for production deployment and releases.
+
 
