@@ -34,14 +34,19 @@ func gctsRollback(config gctsRollbackOptions, telemetryData *telemetry.CustomDat
 
 func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
 
+	maxRetries := -1
+
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
 		return cookieErr
 	}
+
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		CookieJar:                 cookieJar,
+		Username:                  config.Username,
+		Password:                  config.Password,
+		MaxRetries:                maxRetries,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 	httpClient.SetOptions(clientOptions)
 
