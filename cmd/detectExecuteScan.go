@@ -417,10 +417,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		}
 		args = append(args, "--detect.cleanup=false")
 		args = append(args, "--detect.output.path='report'")
-	}
-
-	// scan mode = rapid
-	if config.ScanMode == "RAPID" {
+	} else if config.ScanMode == "RAPID" { // scan mode = rapid
 		log.Entry().Debug("scan mode has changed to 'RAPID'")
 		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
 	}
