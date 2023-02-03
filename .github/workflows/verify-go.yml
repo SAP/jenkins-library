@@ -65,7 +65,6 @@ jobs:
         uses: dominikh/staticcheck-action@v1.3.0
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
-#          install-go: false
   generate:
     runs-on: ubuntu-latest
     steps:
