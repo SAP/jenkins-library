@@ -39,14 +39,14 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				".piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"package.json"},
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 		},
 		{
@@ -64,7 +64,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
 			},
 		},
 		{
@@ -72,7 +72,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				".piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"package.json"},
@@ -83,7 +83,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\nalways-auth=true\n",
+				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\nalways-auth=true\n",
 			},
 		},
 		{
@@ -91,7 +91,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				".piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"package.json"},
@@ -100,7 +100,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -121,7 +121,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -130,7 +130,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				".piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"package.json"},
@@ -143,7 +143,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\nalways-auth=true\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\nalways-auth=true\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -153,14 +153,14 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "@piper/project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n",
+				".piperNpmrc":  "my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"package.json"},
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n",
+				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n",
 			},
 		},
 		{
@@ -178,7 +178,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
 			},
 		},
 		{
@@ -186,7 +186,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "@piper/project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				".piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"package.json"},
@@ -197,7 +197,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\nalways-auth=true\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\nalways-auth=true\n",
 			},
 		},
 		{
@@ -205,7 +205,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "@piper/project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
+				".piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"package.json"},
@@ -214,7 +214,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
+				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -235,7 +235,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -244,7 +244,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"package.json": `{"name": "@piper/project", "version": "0.0.1"}`,
-				".piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				".piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"package.json"},
@@ -257,7 +257,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\nalways-auth=true\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\nalways-auth=true\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -267,14 +267,14 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				"sub/.piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"sub/package.json"},
 
 			wants: wants{
 				publishConfigPath: `sub/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 		},
 		{
@@ -292,7 +292,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `sub/\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
 			},
 		},
 		{
@@ -300,7 +300,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				"sub/.piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"sub/package.json"},
@@ -311,7 +311,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `sub/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\nalways-auth=true\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\nalways-auth=true\n",
 			},
 		},
 		{
@@ -319,7 +319,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				"sub/.piperNpmrc":  "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"sub/package.json"},
@@ -328,7 +328,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -349,7 +349,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -358,7 +358,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"sub/package.json": `{"name": "piper-project", "version": "0.0.1"}`,
-				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				"sub/.piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"sub/package.json"},
@@ -371,7 +371,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\nalways-auth=true\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\nalways-auth=true\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -381,14 +381,14 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"sub/package.json": `{"name": "@piper/project", "version": "0.0.1"}`,
-				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n",
+				"sub/.piperNpmrc":  "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"sub/package.json"},
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n",
 			},
 		},
 		{
@@ -406,7 +406,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
 			},
 		},
 		{
@@ -414,7 +414,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"sub/package.json": `{"name": "@piper/project", "version": "0.0.1"}`,
-				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				"sub/.piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"sub/package.json"},
@@ -425,7 +425,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\nalways-auth=true\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\nalways-auth=true\n",
 			},
 		},
 		{
@@ -433,7 +433,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"sub/package.json": `{"name": "@piper/project", "version": "0.0.1"}`,
-				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
+				"sub/.piperNpmrc":  "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"sub/package.json"},
@@ -442,7 +442,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -463,7 +463,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
@@ -472,7 +472,7 @@ func TestNpmPublish(t *testing.T) {
 
 			files: map[string]string{
 				"sub/package.json": `{"name": "@piper/project", "version": "0.0.1"}`,
-				"sub/.piperNpmrc":  "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
+				"sub/.piperNpmrc":  "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
 			},
 
 			packageDescriptors: []string{"sub/package.json"},
@@ -485,7 +485,7 @@ func TestNpmPublish(t *testing.T) {
 
 			wants: wants{
 				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
-				publishConfig:     "_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\nalways-auth=true\n",
+				publishConfig:     "//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\nalways-auth=true\n",
 				tarballPath:       "/temp-test/package.tgz",
 			},
 		},
