@@ -65,7 +65,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: staticcheck
-        uses: dominikh/staticcheck-action@v1.2.0
+        uses: dominikh/staticcheck-action@v1.3.0
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
           install-go: false
