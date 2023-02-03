@@ -44,7 +44,8 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 	// 0: Get attributes from orchestrator
 	provider, prov_err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if prov_err != nil {
-		log.Entry().WithError(prov_err).Error("Error with Credential Digger orchestrator.")
+		log.Entry().WithError(prov_err).Error(
+			"credentialdiggerScan: unable to load orchestrator specific configuration.")
 	}
 	if config.Repository == "" {
 		// Get current repository from orchestrator
@@ -68,7 +69,7 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 	log.Entry().Info("Load rules")
 	err := credentialdiggerAddRules(&config, telemetryData, utils)
 	if err != nil {
-		log.Entry().Error("Failed running credentialdigger add_rules")
+		log.Entry().Error("credentialdiggerScan: Failed running credentialdigger add_rules")
 		return err
 	}
 	log.Entry().Info("Rules added")
@@ -89,18 +90,6 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 		// The default case is the normal full scan
 		log.Entry().Debug("Full scan repo")
 		err = credentialdiggerFullScan(&config, telemetryData, utils) // full scan with CD
-	}
-	// err is an error exit number when there are findings
-	if err == nil {
-		log.Entry().Info("No discoveries found in this repo")
-		// If there are no findings, there is no need to export an empty report
-		return nil
-	}
-	// err is an error exit number when there are findings
-	if err == nil {
-		log.Entry().Info("No discoveries found in this repo")
-		// If there are no findings, there is no need to export an empty report
-		return nil
 	}
 	// err is an error exit number when there are findings
 	if err == nil {
@@ -162,7 +151,7 @@ func credentialdiggerGetDiscoveries(config *credentialdiggerScanOptions, telemet
 	}
 	err := executeCredentialDiggerProcess(service, cmd_list)
 	if err != nil {
-		log.Entry().Error("failed running credentialdigger get_discoveries")
+		log.Entry().Error("credentialdiggerScan: Failed running credentialdigger get_discoveries")
 		log.Entry().Error(err)
 		return err
 	}
