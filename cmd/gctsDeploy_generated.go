@@ -30,7 +30,7 @@ type gctsDeployOptions struct {
 	Scope               string                 `json:"scope,omitempty"`
 	Rollback            bool                   `json:"rollback,omitempty"`
 	Configuration       map[string]interface{} `json:"configuration,omitempty"`
-	KeyValue            map[string]interface{} `json:"keyValue,omitempty"`
+	QueryParameters     map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
 }
 
@@ -309,7 +309,7 @@ func gctsDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "gctsRepositoryConfigurations"}},
 					},
 					{
-						Name:        "keyValue",
+						Name:        "queryParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "map[string]interface{}",

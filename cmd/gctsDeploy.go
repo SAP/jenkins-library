@@ -74,7 +74,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		Role:                config.Role,
 		VSID:                config.VSID,
 		Type:                config.Type,
-		KeyValue:            config.KeyValue,
+		QueryParameters:     config.QueryParameters,
 		SkipSSLVerification: config.SkipSSLVerification,
 	}
 	log.Entry().Infof("gCTS Deploy : Checking if repository %v already exists", config.Repository)
@@ -105,7 +105,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			Repository:          config.Repository,
 			Host:                config.Host,
 			Client:              config.Client,
-			KeyValue:            config.KeyValue,
+			QueryParameters:     config.QueryParameters,
 			SkipSSLVerification: config.SkipSSLVerification,
 		}
 		// No Import has to be set when there is a commit or branch parameter set
@@ -315,7 +315,12 @@ func switchBranch(config *gctsDeployOptions, httpClient piperhttp.Sender, curren
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository + "/branches/" + currentBranch +
 		"/switch?branch=" + targetBranch + "&sap-client=" + config.Client
 
-	requestURL = addQueryToURL(requestURL, config.KeyValue)
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
@@ -350,7 +355,12 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/deploy?sap-client=" + config.Client
 
-	requestURL = addQueryToURL(requestURL, config.KeyValue)
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 
 	reqBody := deployRequestBody
 	jsonBody, marshalErr := json.Marshal(reqBody)
@@ -389,7 +399,12 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"?sap-client=" + config.Client
 
-	requestURL = addQueryToURL(requestURL, config.KeyValue)
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
@@ -422,7 +437,12 @@ func deleteConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sende
 		"/sap/bc/cts_abapvcs/repository/" + deployConfig.Repository +
 		"/config/" + configToDelete + "?sap-client=" + deployConfig.Client
 
-	requestURL = addQueryToURL(requestURL, deployConfig.KeyValue)
+	requestURL, urlErr := addQueryToURL(requestURL, deployConfig.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 
 	header := make(http.Header)
 	header.Set("Content-Type", "application/json")
@@ -452,7 +472,12 @@ func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, 
 		"/sap/bc/cts_abapvcs/repository/" + deployConfig.Repository +
 		"/config?sap-client=" + deployConfig.Client
 
-	requestURL = addQueryToURL(requestURL, deployConfig.KeyValue)
+	requestURL, urlErr := addQueryToURL(requestURL, deployConfig.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 
 	reqBody := configToSet
 	jsonBody, marshalErr := json.Marshal(reqBody)
@@ -501,7 +526,12 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/pullByCommit?sap-client=" + config.Client + "&request=" + config.Commit
 
-	requestURL = addQueryToURL(requestURL, config.KeyValue)
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 
 	if config.Commit != "" {
 		log.Entry().Infof("preparing to deploy specified commit %v", config.Commit)
@@ -600,7 +630,12 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 
 	url := config.Host + "/sap/bc/cts_abapvcs/repository?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 
 	resp, httpErr := httpClient.SendRequest("POST", url, bytes.NewBuffer(jsonBody), header, nil)
 
@@ -643,7 +678,12 @@ func getConfigurationMetadata(config *gctsDeployOptions, httpClient piperhttp.Se
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/config?sap-client=" + config.Client
 
-	requestURL = addQueryToURL(requestURL, config.KeyValue)
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
@@ -732,7 +772,7 @@ func parseErrorDumpFromResponseBody(responseBody *http.Response) (*errorLogBody,
 	return &errorDump, nil
 }
 
-func addQueryToURL(requestURL string, keyValue map[string]interface{}) string {
+func addQueryToURL(requestURL string, keyValue map[string]interface{}) (string, error) {
 
 	var formattedURL string
 	formattedURL = requestURL
@@ -755,7 +795,14 @@ func addQueryToURL(requestURL string, keyValue map[string]interface{}) string {
 			}
 		}
 	}
-	return formattedURL
+	if strings.Count(formattedURL, "") > 2001 {
+
+		log.Entry().Error("Url endpoint is longer than 2000 characters!")
+		return formattedURL, errors.New("Url endpoint is longer than 2000 characters!")
+
+	}
+
+	return formattedURL, nil
 }
 
 type repositoryConfiguration struct {

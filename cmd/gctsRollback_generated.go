@@ -23,7 +23,7 @@ type gctsRollbackOptions struct {
 	Client                    string                 `json:"client,omitempty"`
 	Commit                    string                 `json:"commit,omitempty"`
 	GithubPersonalAccessToken string                 `json:"githubPersonalAccessToken,omitempty"`
-	KeyValue                  map[string]interface{} `json:"keyValue,omitempty"`
+	QueryParameters           map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification       bool                   `json:"skipSSLVerification,omitempty"`
 }
 
@@ -238,7 +238,7 @@ func gctsRollbackMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_githubPersonalAccessToken"),
 					},
 					{
-						Name:        "keyValue",
+						Name:        "queryParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "map[string]interface{}",

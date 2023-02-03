@@ -379,7 +379,12 @@ func getRepositoryObjects(config *gctsExecuteABAPQualityChecksOptions, client pi
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/objects?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
 
@@ -430,7 +435,12 @@ func getPackages(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/objects?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
 
@@ -468,7 +478,12 @@ func discoverServer(config *gctsExecuteABAPQualityChecksOptions, client piperhtt
 	url := config.Host +
 		"/sap/bc/adt/core/discovery?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	header := make(http.Header)
 	header.Add("Accept", "application/atomsvc+xml")
@@ -561,7 +576,12 @@ func runAUnitTest(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.
 	url := config.Host +
 		"/sap/bc/adt/abapunit/testruns?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	discHeader, discError := discoverServer(config, client)
 
@@ -827,7 +847,12 @@ func startATCRun(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 	url := config.Host +
 		"/sap/bc/adt/atc/runs?worklistId=" + worklistID + "&sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 
 	resp, httpErr := client.SendRequest("POST", url, bytes.NewBuffer(xml), header, nil)
 
@@ -858,7 +883,12 @@ func getATCRun(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Sen
 	url := config.Host +
 		"/sap/bc/adt/atc/worklists/" + worklistID + "?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	header.Add("Accept", "application/atc.worklist.v1+xml")
 
@@ -880,7 +910,12 @@ func getWorklist(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 		"/sap/bc/adt/atc/worklists?checkVariant=" + config.AtcVariant + "&sap-client=" + config.Client
 	discHeader, discError := discoverServer(config, client)
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return worklistID, urlErr
+	}
 
 	if discError != nil {
 		return worklistID, errors.Wrap(discError, "get worklist failed")
@@ -1434,7 +1469,12 @@ func getRepo(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Sende
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return repositoryResp, urlErr
+	}
 
 	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
 	defer func() {
@@ -1465,7 +1505,12 @@ func getRepositoryLayout(config *gctsExecuteABAPQualityChecksOptions, client pip
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/layout?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return repoLayoutResponse, urlErr
+	}
 
 	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
 
@@ -1496,7 +1541,11 @@ func getCommitList(config *gctsExecuteABAPQualityChecksOptions, client piperhttp
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/getCommit?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+	if urlErr != nil {
+
+		return commitResp, urlErr
+	}
 
 	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
 
@@ -1527,7 +1576,12 @@ func getObjectDifference(config *gctsExecuteABAPQualityChecksOptions, fromCommit
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/compareCommits?fromCommit=" + fromCommit + "&toCommit=" + toCommit + "&sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return objectResponse, urlErr
+	}
 
 	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
 
@@ -1558,7 +1612,12 @@ func getObjectInfo(config *gctsExecuteABAPQualityChecksOptions, client piperhttp
 		"/sap/bc/cts_abapvcs/objects/" + objectType + "/" + objectName +
 		"?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return objectMetInfoResponse, urlErr
+	}
 
 	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
 
@@ -1588,7 +1647,12 @@ func getHistory(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Se
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository + "/getHistory?sap-client=" + config.Client
 
-	url = addQueryToURL(url, config.KeyValue)
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return historyResp, urlErr
+	}
 
 	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
 

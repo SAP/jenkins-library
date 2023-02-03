@@ -29,7 +29,7 @@ type gctsExecuteABAPQualityChecksOptions struct {
 	Workspace            string                 `json:"workspace,omitempty"`
 	AtcResultsFileName   string                 `json:"atcResultsFileName,omitempty"`
 	AUnitResultsFileName string                 `json:"aUnitResultsFileName,omitempty"`
-	KeyValue             map[string]interface{} `json:"keyValue,omitempty"`
+	QueryParameters      map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification  bool                   `json:"skipSSLVerification,omitempty"`
 }
 
@@ -303,7 +303,7 @@ func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 						Default:     `AUnitResults.xml`,
 					},
 					{
-						Name:        "keyValue",
+						Name:        "queryParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "map[string]interface{}",

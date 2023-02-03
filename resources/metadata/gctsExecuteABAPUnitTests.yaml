@@ -159,7 +159,7 @@ spec:
           - STEPS
         mandatory: false
         default: "AUnitResults.xml"
-      - name: keyValue
+      - name: queryParameters
         type: "map[string]interface{}"
         description: Specifies pairs of key and value query parameters for the api requests
         scope:

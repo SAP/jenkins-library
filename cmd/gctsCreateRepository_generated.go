@@ -25,7 +25,7 @@ type gctsCreateRepositoryOptions struct {
 	Role                string                 `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
 	VSID                string                 `json:"vSID,omitempty"`
 	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT"`
-	KeyValue            map[string]interface{} `json:"keyValue,omitempty"`
+	QueryParameters     map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
 }
 
@@ -251,7 +251,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Default:     `GIT`,
 					},
 					{
-						Name:        "keyValue",
+						Name:        "queryParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "map[string]interface{}",
