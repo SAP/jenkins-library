@@ -78,4 +78,3 @@ spec:
           - STEPS
         mandatory: false
         default: false
-
