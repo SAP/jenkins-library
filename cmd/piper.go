@@ -155,6 +155,7 @@ func Execute() {
 	rootCmd.AddCommand(TransportRequestUploadRFCCommand())
 	rootCmd.AddCommand(NewmanExecuteCommand())
 	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
+	rootCmd.AddCommand(ValueMappingDeployCommand())
 	rootCmd.AddCommand(TransportRequestUploadSOLMANCommand())
 	rootCmd.AddCommand(IntegrationArtifactUpdateConfigurationCommand())
 	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
