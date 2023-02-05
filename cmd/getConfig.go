@@ -44,6 +44,7 @@ func newGetConfigUtilsUtils() getConfigUtils {
 	utils := getConfigUtilsBundle{
 		Files: &piperutils.Files{},
 	}
+	log.Entry().Infof("utils:", utils)
 	return &utils
 }
 
