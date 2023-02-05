@@ -68,6 +68,7 @@ func runValueMappingDeploy(config *valueMappingDeployOptions, telemetryData *tel
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
+	log.Entry().Info(config.APIServiceKey, "serviceKey")
 	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
 
 	if err != nil {
