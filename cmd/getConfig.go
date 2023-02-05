@@ -58,12 +58,14 @@ func ConfigCommand() *cobra.Command {
 		PreRun: func(cmd *cobra.Command, args []string) {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			
 			log.RegisterHook(fatalHook)
 			initStageName(false)
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			utils := newGetConfigUtilsUtils()
+			log.Entry().Infof("utils2", utils)
 			err := generateConfig(utils)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
