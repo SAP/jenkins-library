@@ -37,6 +37,7 @@ func runValueMappingArtifactDownload(config *valueMappingArtifactDownloadOptions
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/zip")
+	log.Entry().Info(config.APIServiceKey, "serviceKey")
 	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
 	if err != nil {
 		return err
