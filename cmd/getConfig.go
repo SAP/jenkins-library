@@ -116,6 +116,8 @@ func GetStageConfig() (config.StepConfig, error) {
 	stepConfig := config.StepConfig{}
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
+	log.Entry().Infof("project config file", projectConfigFile, GeneralConfig.CustomConfig)
+	fmt.Println("test")
 	customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
