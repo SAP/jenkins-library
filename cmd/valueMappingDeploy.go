@@ -69,7 +69,7 @@ func runValueMappingDeploy(config *valueMappingDeployOptions, telemetryData *tel
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
-	
+
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func runValueMappingDeploy(config *valueMappingDeployOptions, telemetryData *tel
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	fmt.Println(token, "token")
-	
+
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
 	}

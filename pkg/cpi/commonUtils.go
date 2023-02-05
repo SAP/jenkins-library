@@ -67,6 +67,8 @@ type OAuth struct {
 
 // ReadCpiServiceKey unmarshalls the give json service key string.
 func ReadCpiServiceKey(serviceKeyJSON string) (cpiServiceKey ServiceKey, err error) {
+	//fmt.Println(serviceKeyJSON, "serviceKeyJSON")
+	log.Entry().Info(serviceKeyJSON, "serviceKeyJSON")
 	// parse
 	err = json.Unmarshal([]byte(serviceKeyJSON), &cpiServiceKey)
 	if err != nil {
