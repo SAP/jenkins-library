@@ -16,14 +16,14 @@ import (
 )
 
 type valueMappingArtifactUploadOptions struct {
-	APIServiceKey       string `json:"apiServiceKey,omitempty"`
+	APIServiceKey    string `json:"apiServiceKey,omitempty"`
 	ValueMappingID   string `json:"valueMappingId,omitempty"`
 	ValueMappingName string `json:"valueMappingName,omitempty"`
-	PackageID           string `json:"packageId,omitempty"`
-	FilePath            string `json:"filePath,omitempty"`
+	PackageID        string `json:"packageId,omitempty"`
+	FilePath         string `json:"filePath,omitempty"`
 }
 
-// ValueMappingArtifactUploadCommand Upload or Update a value mapping designtime artifact
+// ValueMappingArtifactUploadCommand Upload or Update an value mapping designtime artifact
 func ValueMappingArtifactUploadCommand() *cobra.Command {
 	const STEP_NAME = "valueMappingArtifactUpload"
 
@@ -118,7 +118,7 @@ func ValueMappingArtifactUploadCommand() *cobra.Command {
 
 func addValueMappingArtifactUploadFlags(cmd *cobra.Command, stepConfig *valueMappingArtifactUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.ValueMappingID, "valueMappingId", os.Getenv("PIPER_valueMappingId"), "Specifies the ID of the Value mapping artifact")
+	cmd.Flags().StringVar(&stepConfig.ValueMappingID, "valueMappingId", os.Getenv("PIPER_valueMappingId"), "Specifies the ID of the Value Mapping artifact")
 	cmd.Flags().StringVar(&stepConfig.ValueMappingName, "valueMappingName", os.Getenv("PIPER_valueMappingName"), "Specifies the Name of the Value Mapping artifact")
 	cmd.Flags().StringVar(&stepConfig.PackageID, "packageId", os.Getenv("PIPER_packageId"), "Specifies the ID of the Integration Package")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies value mapping artifact relative file path.")

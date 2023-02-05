@@ -16,11 +16,11 @@ import (
 )
 
 type valueMappingDeployOptions struct {
-	APIServiceKey     string `json:"apiServiceKey,omitempty"`
+	APIServiceKey  string `json:"apiServiceKey,omitempty"`
 	ValueMappingID string `json:"valueMappingId,omitempty"`
 }
 
-// ValueMappingtDeployCommand Deploy a CPI value mapping
+// ValueMappingDeployCommand Deploy a CPI value Mapping
 func ValueMappingDeployCommand() *cobra.Command {
 	const STEP_NAME = "valueMappingDeploy"
 
@@ -33,7 +33,7 @@ func ValueMappingDeployCommand() *cobra.Command {
 
 	var createValueMappingDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Deploy a CPI value mapping",
+		Short: "Deploy a CPI value Mapping",
 		Long:  `With this step you can deploy a value mapping artifact in to SAP BTP integration runtime using OData API. Learn more about the SAP Cloud Integration remote API for deploying an integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -115,7 +115,7 @@ func ValueMappingDeployCommand() *cobra.Command {
 
 func addValueMappingDeployFlags(cmd *cobra.Command, stepConfig *valueMappingDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.ValueMappingID, "valueMappingId", os.Getenv("PIPER_valueMappingId"), "Specifies the ID of the Value Mapping artifact")
+	cmd.Flags().StringVar(&stepConfig.ValueMappingID, "valueMappingId", os.Getenv("PIPER_valueMappingId"), "Specifies the ID of the Value mapping artifact")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("valueMappingId")
@@ -127,7 +127,7 @@ func valueMappingDeployMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "valueMappingDeploy",
 			Aliases:     []config.Alias{},
-			Description: "Deploy a CPI value mapping",
+			Description: "Deploy a CPI value Mapping",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

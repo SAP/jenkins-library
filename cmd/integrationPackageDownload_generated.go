@@ -16,9 +16,9 @@ import (
 )
 
 type integrationPackageDownloadOptions struct {
-	APIServiceKey          string `json:"apiServiceKey,omitempty"`
-	IntegrationPackageID      string `json:"integrationPackageId,omitempty"`
-	DownloadPath           string `json:"downloadPath,omitempty"`
+	APIServiceKey        string `json:"apiServiceKey,omitempty"`
+	IntegrationPackageID string `json:"integrationPackageId,omitempty"`
+	DownloadPath         string `json:"downloadPath,omitempty"`
 }
 
 // IntegrationPackageDownloadCommand Download integration package runtime artefact
@@ -34,8 +34,8 @@ func IntegrationPackageDownloadCommand() *cobra.Command {
 
 	var createIntegrationPackageDownloadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Download integration package artefact",
-		Long:  `With this step you can download a integration package, which returns a zip file with the integration package contents in to current workspace using the OData API. Learn more about the SAP Cloud Integration remote API for downloading an integration package [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Short: "Download integration package runtime artefact",
+		Long:  `With this step you can download a integration package runtime artifact, which returns a zip file with the integration package contents in to current workspace using the OData API. Learn more about the SAP Cloud Integration remote API for downloading an integration package artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -116,13 +116,11 @@ func IntegrationPackageDownloadCommand() *cobra.Command {
 
 func addIntegrationPackageDownloadFlags(cmd *cobra.Command, stepConfig *integrationPackageDownloadOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
-	cmd.Flags().StringVar(&stepConfig.IntegrationPackageID, "integrationPackageId", os.Getenv("PIPER_integrationPackageId"), "Specifies the ID of the Integration package")
-	// cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the Integration package")
+	cmd.Flags().StringVar(&stepConfig.IntegrationPackageID, "integrationPackageId", os.Getenv("PIPER_integrationPackageId"), "Specifies the ID of the Integration Package artifact")
 	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies integration package download location.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationPackageId")
-	// cmd.MarkFlagRequired("integrationFlowVersion")
 	cmd.MarkFlagRequired("downloadPath")
 }
 
@@ -132,7 +130,7 @@ func integrationPackageDownloadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationPackageDownload",
 			Aliases:     []config.Alias{},
-			Description: "Download integration package",
+			Description: "Download integration package runtime artefact",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

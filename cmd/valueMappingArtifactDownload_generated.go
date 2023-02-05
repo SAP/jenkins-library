@@ -16,13 +16,13 @@ import (
 )
 
 type valueMappingArtifactDownloadOptions struct {
-	APIServiceKey          string `json:"apiServiceKey,omitempty"`
+	APIServiceKey       string `json:"apiServiceKey,omitempty"`
 	ValueMappingID      string `json:"valueMappingId,omitempty"`
 	ValueMappingVersion string `json:"valueMappingVersion,omitempty"`
-	DownloadPath           string `json:"downloadPath,omitempty"`
+	DownloadPath        string `json:"downloadPath,omitempty"`
 }
 
-// IntegrationArtifactDownloadCommand Download value mapping runtime artefact
+// ValueMappingArtifactDownloadCommand Download value mapping runtime artefact
 func ValueMappingArtifactDownloadCommand() *cobra.Command {
 	const STEP_NAME = "valueMappingArtifactDownload"
 
@@ -35,7 +35,7 @@ func ValueMappingArtifactDownloadCommand() *cobra.Command {
 
 	var createValueMappingArtifactDownloadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Download Value mapping runtime artefact",
+		Short: "Download value mapping runtime artefact",
 		Long:  `With this step you can download a value mapping runtime artifact, which returns a zip file with the value mapping contents in to current workspace using the OData API. Learn more about the SAP Cloud Integration remote API for downloading an value mapping artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -119,7 +119,7 @@ func addValueMappingArtifactDownloadFlags(cmd *cobra.Command, stepConfig *valueM
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.ValueMappingID, "valueMappingId", os.Getenv("PIPER_valueMappingId"), "Specifies the ID of the Value Mapping artifact")
 	cmd.Flags().StringVar(&stepConfig.ValueMappingVersion, "valueMappingVersion", os.Getenv("PIPER_valueMappingVersion"), "Specifies the version of the Value Mapping artifact")
-	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies integration artifact download location.")
+	cmd.Flags().StringVar(&stepConfig.DownloadPath, "downloadPath", os.Getenv("PIPER_downloadPath"), "Specifies value mapping artifact download location.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("valueMappingId")
@@ -133,7 +133,7 @@ func valueMappingArtifactDownloadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "valueMappingArtifactDownload",
 			Aliases:     []config.Alias{},
-			Description: "Download value mapping runtime artifact",
+			Description: "Download value mapping runtime artefact",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
