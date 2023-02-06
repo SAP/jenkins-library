@@ -159,7 +159,7 @@ func (v *versionable) queryVersion(filter string, orderBy string) (*versionable,
 			return &result, errors.New("Unexpected Number of CVs in result: " + fmt.Sprint(len(Versions.Wrapper.Vs)))
 		}
 	}
-	log.Entry().Infof("... Looked up highest existing package in AAKaaS for the codeline: %s.%s.%s", result.TechRelease, result.TechSpLevel, result.TechPatchLevel)
+	log.Entry().Infof("... looked up highest existing package in AAKaaS for the codeline: %s.%s.%s", result.TechRelease, result.TechSpLevel, result.TechPatchLevel)
 	return &result, nil
 }
 
