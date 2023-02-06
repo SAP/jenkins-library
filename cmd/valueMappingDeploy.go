@@ -147,14 +147,14 @@ func pollValueMappingDeploymentStatus(taskId string, retryCountVM int, config *v
 	}
 
 	//if error return immediately with error details
-	// if deployStatus == "FAIL" || deployStatus == "FAIL_ON_LICENSE_ERROR" {
-	// 	// resp, err := getIntegrationArtifactDeployError(config, httpClient, apiHost)
-	// 	// if err != nil {
-	// 	// 	return err
-	// 	// }
-	// 	resp = "Error"
-	// 	return errors.New(resp)
-	// }
+	if deployStatus == "FAIL" || deployStatus == "FAIL_ON_LICENSE_ERROR" {
+		resp, err := getValueMappingDeployError(config, httpClient, apiHost)
+		if err != nil {
+			return err
+		}
+		resp = "Error"
+		return errors.New(resp)
+	}
 	return nil
 }
 
@@ -208,35 +208,35 @@ func getValueMappingDeployStatus(config *valueMappingDeployOptions, httpClient p
 }
 
 // getIntegrationArtifactDeployError - Get integration artifact deploy error details
-// func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) (string, error) {
-// 	httpMethod := "GET"
-// 	header := make(http.Header)
-// 	header.Add("content-type", "application/json")
-// 	errorStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')/ErrorInformation/$value", apiHost, config.IntegrationFlowID)
-// 	errorStatusResp, httpErr := httpClient.SendRequest(httpMethod, errorStatusURL, nil, header, nil)
+func getValueMappingDeployError(config *valueMappingDeployOptions, httpClient piperhttp.Sender, apiHost string) (string, error) {
+	httpMethod := "GET"
+	header := make(http.Header)
+	header.Add("content-type", "application/json")
+	errorStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')/ErrorInformation/$value", apiHost, config.ValueMappingID)
+	errorStatusResp, httpErr := httpClient.SendRequest(httpMethod, errorStatusURL, nil, header, nil)
 
-// 	if errorStatusResp != nil && errorStatusResp.Body != nil {
-// 		defer errorStatusResp.Body.Close()
-// 	}
+	if errorStatusResp != nil && errorStatusResp.Body != nil {
+		defer errorStatusResp.Body.Close()
+	}
 
-// 	if errorStatusResp == nil {
-// 		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
-// 	}
+	if errorStatusResp == nil {
+		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
 
-// 	if errorStatusResp.StatusCode == http.StatusOK {
-// 		log.Entry().
-// 			WithField("IntegrationFlowID", config.IntegrationFlowID).
-// 			Info("Successfully retrieved Integration Flow artefact deploy error details")
-// 		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
-// 		if readErr != nil {
-// 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
-// 		}
-// 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), errorStatusResp.StatusCode)
-// 		errorDetails := string(responseBody)
-// 		return errorDetails, nil
-// 	}
-// 	if httpErr != nil {
-// 		return getHTTPErrorMessage(httpErr, errorStatusResp, httpMethod, errorStatusURL)
-// 	}
-// 	return "", errors.Errorf("failed to get Integration Flow artefact deploy error details, response Status code: %v", errorStatusResp.StatusCode)
-// }
+	if errorStatusResp.StatusCode == http.StatusOK {
+		log.Entry().
+			WithField("ValueMappingID", config.ValueMappingID).
+			Info("Successfully retrieved value mapping artefact deploy error details")
+		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
+		if readErr != nil {
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), errorStatusResp.StatusCode)
+		errorDetails := string(responseBody)
+		return errorDetails, nil
+	}
+	if httpErr != nil {
+		return getHTTPErrorMessage(httpErr, errorStatusResp, httpMethod, errorStatusURL)
+	}
+	return "", errors.Errorf("failed to get value mapping artefact deploy error details, response Status code: %v", errorStatusResp.StatusCode)
+}
