@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // PipelineDefaults defines the structure of the pipeline defaults
@@ -28,6 +29,7 @@ func (d *PipelineDefaults) ReadPipelineDefaults(defaultSources []io.ReadCloser) 
 		var err error
 
 		content, err := ioutil.ReadAll(def)
+		log.Entry().Info(content, "weirdContent")
 		if err != nil {
 			return errors.Wrapf(err, "error reading %v", def)
 		}
