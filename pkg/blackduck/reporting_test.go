@@ -24,7 +24,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
 				CweID:             "CWE-45456543",
 				VulnerabilityName: "CVE-1",
-				Severity:          "Critical",
+				Severity:          "CRITICAL",
 				Description:       "Some vulnerability that can be exploited by peeling the glue off.",
 				BaseScore:         9.8, OverallScore: 10,
 				RemediationStatus:  "IGNORED",
@@ -38,7 +38,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
 				CweID:              "CWE-45456542",
 				VulnerabilityName:  "CVE-2",
-				Severity:           "Critical",
+				Severity:           "CRITICAL",
 				Description:        "Some other vulnerability that can be exploited by filling the glass.",
 				BaseScore:          9,
 				OverallScore:       9,
@@ -102,6 +102,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 	assert.Equal(t, "unknown", sarif.Runs[0].Tool.Driver.Version)
 	assert.Equal(t, 4, len(sarif.Runs[0].Tool.Driver.Rules))
 	assert.Equal(t, 5, len(sarif.Runs[0].Results))
+	assert.Equal(t, "CRITICAL", sarif.Runs[0].Results[0].Properties.ToolSeverity)
 
 	// Test correctness of audit information
 	assert.Equal(t, true, sarif.Runs[0].Results[0].Properties.Audited)
