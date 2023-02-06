@@ -36,6 +36,7 @@ type sonarExecuteScanOptions struct {
 	InferJavaBinaries         bool     `json:"inferJavaBinaries,omitempty"`
 	InferJavaLibraries        bool     `json:"inferJavaLibraries,omitempty"`
 	Options                   []string `json:"options,omitempty"`
+	WaitForQualityGate        bool     `json:"waitForQualityGate,omitempty"`
 	BranchName                string   `json:"branchName,omitempty"`
 	InferBranchName           bool     `json:"inferBranchName,omitempty"`
 	ChangeID                  string   `json:"changeId,omitempty"`
@@ -250,6 +251,7 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().BoolVar(&stepConfig.InferJavaBinaries, "inferJavaBinaries", false, "Find the location of generated Java class files in all modules and pass the option `sonar.java.binaries to the sonar tool.")
 	cmd.Flags().BoolVar(&stepConfig.InferJavaLibraries, "inferJavaLibraries", false, "If the parameter `m2Path` is configured for the step `mavenExecute` in the general section of the configuration, pass it as option `sonar.java.libraries` to the sonar tool.")
 	cmd.Flags().StringSliceVar(&stepConfig.Options, "options", []string{}, "A list of options which are passed to the sonar-scanner.")
+	cmd.Flags().BoolVar(&stepConfig.WaitForQualityGate, "waitForQualityGate", false, "Whether the scan should wait for and consider the result of the quality gate.")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to. Automatically inferred from environment variables on supported orchestrators if `inferBranchName` is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.InferBranchName, "inferBranchName", false, "Whether to infer the `branchName` parameter automatically based on the orchestrator-specific environment variable in runs of the pipeline.")
 	cmd.Flags().StringVar(&stepConfig.ChangeID, "changeId", os.Getenv("PIPER_changeId"), "Pull-Request only: The id of the pull-request. Automatically inferred from environment variables on supported orchestrators.")
@@ -422,6 +424,15 @@ func sonarExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "sonarProperties", Deprecated: true}},
 						Default:     []string{},
+					},
+					{
+						Name:        "waitForQualityGate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "branchName",
