@@ -151,6 +151,7 @@ func getConfig() (config.StepConfig, error) {
 
 	if configOptions.stageConfig {
 		stepConfig, err = GetStageConfig()
+		log.Entry().Info(stepConfig, "stepConfig2")
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting stage config failed")
 		}
@@ -160,6 +161,7 @@ func getConfig() (config.StepConfig, error) {
 			GeneralConfig.MetaDataResolver = GetAllStepMetadata
 		}
 		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GeneralConfig.MetaDataResolver, configOptions.stepMetadata, configOptions.stepName)
+		log.Entry().Info(GeneralConfig, "general config")
 		if err != nil {
 			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
 		}
@@ -223,11 +225,13 @@ func getConfig() (config.StepConfig, error) {
 func generateConfig(utils getConfigUtils) error {
 
 	stepConfig, err := getConfig()
+	log.Entry().Info(stepConfig, "stepConfig")
 	if err != nil {
 		return err
 	}
 
 	myConfigJSON, err := config.GetJSON(stepConfig.Config)
+	log.Entry().Info(myConfigJSON, "myConfigJSON")
 	if err != nil {
 		return fmt.Errorf("failed to get JSON from config: %w", err)
 	}

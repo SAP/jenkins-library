@@ -493,6 +493,7 @@ func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map
 
 	if stepMetadata != "" {
 		metadataFile, err := OpenPiperFile(stepMetadata, gitHubTokens)
+		log.Entry().Info(metadataFile, "metadataFile")
 		if err != nil {
 			return metadata, errors.Wrap(err, "open failed")
 		}
