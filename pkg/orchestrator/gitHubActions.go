@@ -1,7 +1,6 @@
 package orchestrator
 
 import (
-	"os"
 	"strings"
 	"time"
 
@@ -94,8 +93,7 @@ func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 }
 
 func (g *GitHubActionsConfigProvider) IsPullRequest() bool {
-	_, exists := os.LookupEnv("GITHUB_HEAD_REF")
-	return exists
+	return truthy("GITHUB_HEAD_REF")
 }
 
 func isGitHubActions() bool {

@@ -335,14 +335,14 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
-    void "sets gitReference and gitRemoteCommit for pull request"() {
+    void "sets gitReference and gitRemoteCommit for pull request, head strategy"() {
 
         def GitUtils gitUtils = new GitUtils() {
             boolean isMergeCommit(){
                 return false
             }
 
-            String getGitMergeCommitId(String gitChangeId){
+            String getMergeCommitSha(){
                 return "dummy_merge_git_commit_id"
             }
         }
@@ -359,19 +359,15 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
-    void "sets gitReference and gitRemoteCommit for pull request for merge strategy"() {
+    void "sets gitReference and gitRemoteCommit for pull request, merge strategy"() {
 
         def GitUtils gitUtils = new GitUtils() {
             boolean isMergeCommit(){
                 return true
             }
 
-            String getGitMergeCommitId(String gitChangeId){
+            String getMergeCommitSha(){
                 return "dummy_merge_git_commit_id"
-            }
-
-            boolean compareParentsOfMergeAndHead(String gitMergeCommitId){
-                return true
             }
         }
 
@@ -387,19 +383,15 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
-    void "Set merge commit id as NA"() {
+    void "Set merge commit id as NA on exception"() {
 
         def GitUtils gitUtils = new GitUtils() {
             boolean isMergeCommit(){
                 return true
             }
 
-            String getGitMergeCommitId(String gitChangeId){
-                return "dummy_merge_git_commit_id"
-            }
-
-            boolean compareParentsOfMergeAndHead(String gitMergeCommitId){
-                return false
+            String getMergeCommitSha() throws MissingPropertyException{
+                throw new MissingPropertyException('pullRequest Context not found')
             }
         }
 
