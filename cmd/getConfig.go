@@ -212,7 +212,8 @@ func getConfig() (config.StepConfig, error) {
 		if configOptions.contextConfig {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
-
+		log.Entry().Info(metadata, "DAmetadaDA")
+		log.Entry().Info(myConfig, "DAmconDA")
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		log.Entry().Info(stepConfig, "stepConfignu")
 		if err != nil {
