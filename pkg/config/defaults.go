@@ -35,6 +35,8 @@ func (d *PipelineDefaults) ReadPipelineDefaults(defaultSources []io.ReadCloser) 
 		}
 
 		err = yaml.Unmarshal(content, &c)
+		log.Entry().Info(c, "CCCCCCConfig")
+		log.Entry().Info(err, "DAerrorDA")
 		if err != nil {
 			return NewParseError(fmt.Sprintf("error unmarshalling %q: %v", content, err))
 		}
