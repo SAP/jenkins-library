@@ -51,7 +51,9 @@ func valueMappingDeploy(config valueMappingDeployOptions, telemetryData *telemet
 	utils := newValueMappingDeployUtils()
 	utils.Stdout(log.Writer())
 	httpClient := &piperhttp.Client{}
-
+	log.Entry().Info(httpClient, "httpClient")
+	log.Entry().Info(config, "config")
+	log.Entry().Info(utils, "utils")
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go

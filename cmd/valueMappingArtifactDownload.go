@@ -20,6 +20,8 @@ func valueMappingArtifactDownload(config valueMappingArtifactDownloadOptions, te
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	httpClient := &piperhttp.Client{}
+	log.Entry().Info(httpClient, "httpClient")
+	log.Entry().Info(config, "config")
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
