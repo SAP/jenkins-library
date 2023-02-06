@@ -600,7 +600,7 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 	assessments := readAssessmentsFromFile(config.AssessmentFile, utils)
 
 	vulnerabilitiesCount := 0
-	var errorsOccured []string
+	var allOccurredErrors []string
 	allAlerts := []ws.Alert{}
 	allAssessedAlerts := []ws.Alert{}
 	allLibraries := []ws.Library{}
@@ -610,36 +610,35 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
 
-		if vulnerabilitiesCount, allAlerts, allAssessedAlerts, err = checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx); err != nil {
-			if err != nil {
-				errorsOccured = append(errorsOccured, fmt.Sprint(err))
-			}
+		vulnerabilitiesCount, allAlerts, allAssessedAlerts, allLibraries, allOccurredErrors = collectVulnsAndLibsForProject(
+			config,
+			cvssSeverityLimit,
+			project,
+			sys,
+			assessments,
+			influx,
+		)
 
-			// collect all libraries detected in all related projects and errors
-			allLibraries, err = sys.GetProjectHierarchy(project.Token, true)
-			if err != nil {
-				errorsOccured = append(errorsOccured, fmt.Sprint(err))
-			}
-			log.Entry().Debugf("Collected %v libraries for project %v", len(allLibraries), project.Name)
-		}
+		log.Entry().Debugf("Collected %v libraries for project %v", len(allLibraries), project.Name)
+
 	} else {
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			vulCount, alerts, assessedAlerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx)
-			if err != nil {
-				errorsOccured = append(errorsOccured, fmt.Sprint(err))
+			vulCount, alerts, assessedAlerts, libraries, occurredErrors := collectVulnsAndLibsForProject(
+				config,
+				cvssSeverityLimit,
+				project,
+				sys,
+				assessments,
+				influx,
+			)
+			if len(occurredErrors) != 0 {
+				allOccurredErrors = append(allOccurredErrors, occurredErrors...)
 			}
 
 			allAlerts = append(allAlerts, alerts...)
 			allAssessedAlerts = append(allAssessedAlerts, assessedAlerts...)
 			vulnerabilitiesCount += vulCount
-
-			// collect all libraries detected in all related projects and errors
-			libraries, err := sys.GetProjectHierarchy(project.Token, true)
-			if err != nil {
-				errorsOccured = append(errorsOccured, fmt.Sprint(err))
-			}
-			log.Entry().Debugf("Collected %v libraries for project %v", len(libraries), project.Name)
 			allLibraries = append(allLibraries, libraries...)
 		}
 		log.Entry().Debugf("Aggregated %v alerts for scanned projects", len(allAlerts))
@@ -657,16 +656,46 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		vulnerabilitiesCount,
 	)
 
-	errorsOccured = append(errorsOccured, errors...)
+	allOccurredErrors = append(allOccurredErrors, errors...)
 
-	if len(errorsOccured) > 0 {
+	if len(allOccurredErrors) > 0 {
 		if vulnerabilitiesCount > 0 {
 			log.SetErrorCategory(log.ErrorCompliance)
 		}
-		return reportPaths, fmt.Errorf(strings.Join(errorsOccured, ": "))
+		return reportPaths, fmt.Errorf(strings.Join(allOccurredErrors, ": "))
 	}
 
 	return reportPaths, nil
+}
+
+func collectVulnsAndLibsForProject(
+	config *ScanOptions,
+	cvssSeverityLimit float64,
+	project ws.Project,
+	sys whitesource,
+	assessments *[]format.Assessment,
+	influx *whitesourceExecuteScanInflux,
+) (
+	int,
+	[]ws.Alert,
+	[]ws.Alert,
+	[]ws.Library,
+	[]string,
+) {
+	var errorsOccurred []string
+	vulCount, alerts, assessedAlerts, err := checkProjectSecurityViolations(config, cvssSeverityLimit, project, sys, assessments, influx)
+	if err != nil {
+		errorsOccurred = append(errorsOccurred, fmt.Sprint(err))
+	}
+
+	// collect all libraries detected in all related projects and errors
+	libraries, err := sys.GetProjectHierarchy(project.Token, true)
+	if err != nil {
+		errorsOccurred = append(errorsOccurred, fmt.Sprint(err))
+	}
+	log.Entry().Debugf("Collected %v libraries for project %v", len(libraries), project.Name)
+
+	return vulCount, alerts, assessedAlerts, libraries, errorsOccurred
 }
 
 func reportGitHubIssuesAndCreateReports(
