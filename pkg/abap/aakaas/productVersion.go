@@ -31,6 +31,7 @@ func (p *ProductVersion) CopyVersionFieldsToDescriptor(desc *abaputils.AddonDesc
 	desc.AddonVersion = p.TechRelease
 	desc.AddonSpsLevel = p.TechSpLevel
 	desc.AddonPatchLevel = p.TechPatchLevel
+	desc.AddonVersionYAML = p.Version
 }
 
 func (p *ProductVersion) ValidateAndResolveVersionFields() error {

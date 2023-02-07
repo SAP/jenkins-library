@@ -18,7 +18,7 @@ type ComponentVersion struct {
 }
 
 func (c *ComponentVersion) ConstructComponentVersion(repo abaputils.Repository, conn abapbuild.Connector) error {
-	if err := c.constructVersionable(repo.Name, repo.VersionYAML, conn, pvQueryURL); err != nil {
+	if err := c.constructVersionable(repo.Name, repo.VersionYAML, conn, cvQueryURL); err != nil {
 		return err
 	}
 	if err := c.resolveNext(); err != nil {
@@ -32,6 +32,7 @@ func (c *ComponentVersion) CopyVersionFieldsToRepo(repo *abaputils.Repository) {
 	repo.Version = c.TechRelease
 	repo.SpLevel = c.TechSpLevel
 	repo.PatchLevel = c.TechPatchLevel
+	repo.VersionYAML = c.Version
 }
 
 func (c *ComponentVersion) Validate() error {
