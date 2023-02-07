@@ -53,7 +53,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
 				CweID:             "CWE-45456541",
 				VulnerabilityName: "CVE-3",
-				Severity:          "High",
+				Severity:          "HIGH",
 				Description:       "Some vulnerability that can be exploited by turning it upside down.",
 				BaseScore:         6.5,
 				OverallScore:      7,
@@ -66,7 +66,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
 				CweID:             "CWE-45789754",
 				VulnerabilityName: "CVE-4",
-				Severity:          "High",
+				Severity:          "HIGH",
 				Description:       "Some vulnerability that can be exploited by turning it upside down.",
 				BaseScore:         6.5,
 				OverallScore:      7,
@@ -79,7 +79,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
 				CweID:             "CWE-45456541",
 				VulnerabilityName: "CVE-3",
-				Severity:          "High",
+				Severity:          "HIGH",
 				Description:       "Some vulnerability that can be exploited by turning it upside down.",
 				BaseScore:         6.5,
 				OverallScore:      7,
@@ -111,6 +111,8 @@ func TestCreateSarifResultFile(t *testing.T) {
 		"CWE-45456543 Auto-remediated: CWE-45456543 is related to CVE-1, but the CWE team has determined that this component version is not affected.",
 		sarif.Runs[0].Results[0].Properties.ToolAuditMessage,
 	)
+	assert.Equal(t, 4, sarif.Runs[0].Results[0].Properties.ToolSeverityIndex)
+	assert.Equal(t, 3, sarif.Runs[0].Results[2].Properties.ToolSeverityIndex)
 
 	assert.Equal(t, false, sarif.Runs[0].Results[1].Properties.Audited)
 	assert.Equal(t, "NEW", sarif.Runs[0].Results[1].Properties.ToolState)

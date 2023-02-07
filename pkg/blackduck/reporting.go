@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var severityIndex = map[string]int{"Low": 1, "Medium": 2, "High": 3, "Urgent": 4, "Critical": 5}
+var severityIndex = map[string]int{"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
 func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, projectLink string) *format.SARIF {
