@@ -86,7 +86,8 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	if httpErr != nil {
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, deployURL)
 	}
-
+	log.Entry().Info(deployResp, "deployResponse1")
+	log.Entry().Info(deployResp.Body, "deployBodyResponse1")
 	if deployResp != nil && deployResp.Body != nil {
 		defer deployResp.Body.Close()
 	}
