@@ -43,6 +43,7 @@ class MavenExecuteIntegrationTest extends BasePiperTest {
             }
             return closure()
         })
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue(
             './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenExecuteIntegration.yaml\'',
             '{"verbose": false}'
@@ -68,6 +69,6 @@ class MavenExecuteIntegrationTest extends BasePiperTest {
             containsString('name: mavenExecuteIntegration'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'),
             containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1] as String, is('./piper mavenExecuteIntegration'))
+        assertThat(shellCallRule.shell[2] as String, is('./piper mavenExecuteIntegration'))
     }
 }
