@@ -215,10 +215,13 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 		log.Entry().Info(stepConfig, "stepConfigGSC8")
 		stepConfig.mixInHookConfig(def.Hooks)
+		log.Entry().Info(stepConfig, "stepConfigGSC81")
 	}
 
 	// read config & merge - general -> steps -> stages
+	log.Entry().Info(stepConfig, "stepConfigGSC82")
 	stepConfig.mixIn(c.General, filters.General)
+	log.Entry().Info(stepConfig, "stepConfigGSC83")
 	stepConfig.mixIn(c.Steps[stepName], filters.Steps)
 	log.Entry().Info(stepConfig, "stepConfigGSC9")
 	stepConfig.mixIn(c.Stages[stageName], filters.Stages)
