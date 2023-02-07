@@ -93,7 +93,7 @@ func runValueMappingDeploy(config *valueMappingDeployOptions, telemetryData *tel
 	if httpErr != nil {
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, deployURL)
 	}
-
+	log.Entry().Info(deployResp.Body, "deployBodyResponse1")
 	if deployResp != nil && deployResp.Body != nil {
 		defer deployResp.Body.Close()
 	}
