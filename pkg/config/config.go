@@ -179,6 +179,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	if !c.initialized {
 		err = c.InitializeConfig(configuration, defaults, ignoreCustomDefaults)
+		log.Entry().Info(err, "ERRORGSC")
 		if err != nil {
 			return StepConfig{}, err
 		}
