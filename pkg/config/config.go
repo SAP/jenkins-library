@@ -222,6 +222,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	log.Entry().Info(stepConfig, "stepConfigGSC82")
 	stepConfig.mixIn(c.General, filters.General)
 	log.Entry().Info(stepConfig, "stepConfigGSC83")
+	log.Entry().Info(c, "CstepConfigGSC8")
 	stepConfig.mixIn(c.Steps[stepName], filters.Steps)
 	log.Entry().Info(stepConfig, "stepConfigGSC9")
 	stepConfig.mixIn(c.Stages[stageName], filters.Stages)
