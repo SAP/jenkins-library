@@ -163,6 +163,7 @@ func getConfig() (config.StepConfig, error) {
 		}
 		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GeneralConfig.MetaDataResolver, configOptions.stepMetadata, configOptions.stepName)
 		log.Entry().Info(GeneralConfig, "general config")
+		log.Entry().Info(metadata, "DmetadataDA")
 		if err != nil {
 			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
 		}
