@@ -107,6 +107,8 @@ func runValueMappingDeploy(config *valueMappingDeployOptions, telemetryData *tel
 			WithField("ValueMappingID", config.ValueMappingID).
 			Info("successfully deployed into CPI runtime")
 		taskId, readErr := ioutil.ReadAll(deployResp.Body)
+		log.Entry().Info(deployResp.Body, "deployBodyResponse")
+		log.Entry().Info(taskId, "taskId")
 		if readErr != nil {
 			return errors.Wrap(readErr, "Task Id not found. HTTP response body could not be read.")
 		}
