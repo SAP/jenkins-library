@@ -101,6 +101,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully deployed into CPI runtime")
 		taskId, readErr := ioutil.ReadAll(deployResp.Body)
+		log.Entry().Info(taskId, "taskIDResponse1")
 		if readErr != nil {
 			return errors.Wrap(readErr, "Task Id not found. HTTP response body could not be read.")
 		}
