@@ -199,17 +199,19 @@ func getConfig() (config.StepConfig, error) {
 
 		for _, f := range GeneralConfig.DefaultConfig {
 			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
+			log.Entry().Info(fc, "HZfcHZ")
 			// only create error for non-default values
 			if err != nil && f != ".pipeline/defaults.yaml" {
 				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
+				log.Entry().Info(defaultConfig, "defaultConfigFC")
 			}
 		}
 
 		var flags map[string]interface{}
-
+		log.Entry().Info([]config.StepParameters{}, "stepParameters")
 		if configOptions.contextConfig {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
@@ -217,6 +219,7 @@ func getConfig() (config.StepConfig, error) {
 		log.Entry().Info(myConfig, "DAmconDA")
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		log.Entry().Info(stepConfig, "stepConfignu")
+		log.Entry().Info(err, "ERRstepConfignu")
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting step config failed")
 		}
