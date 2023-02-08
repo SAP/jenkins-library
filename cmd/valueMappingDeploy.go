@@ -117,7 +117,7 @@ func runValueMappingDeploy(config *valueMappingDeployOptions, telemetryData *tel
 		// return deploymentError
 	}
 	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
-
+	log.Entry().Info(readErr, "REEEEEEEEEEAAAAAAAAAAAADDDDDDD")
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", deployResp.StatusCode)
 	}
