@@ -114,7 +114,7 @@ func runValueMappingDeploy(config *valueMappingDeployOptions, telemetryData *tel
 		// 	return errors.Wrap(readErr, "Task Id not found. HTTP response body could not be read.")
 		// }
 		// deploymentError := pollValueMappingDeploymentStatus(string(taskId), retryCountVM, config, httpClient, serviceKey.OAuth.Host)
-		// return deploymentError
+		return nil
 	}
 	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
 	log.Entry().Info(readErr, "REEEEEEEEEEAAAAAAAAAAAADDDDDDD")
