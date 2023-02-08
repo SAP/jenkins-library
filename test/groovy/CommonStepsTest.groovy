@@ -198,9 +198,16 @@ public class CommonStepsTest extends BasePiperTest{
         'integrationArtifactUnDeploy', //implementing new golang pattern without fields
         'integrationArtifactResource', //implementing new golang pattern without fields
         'integrationPackageDownload',  //implementing new golang pattern without fields
+        'integrationPackageUpload',     //implementing new golang pattern without fields
         'valueMappingArtifactDownload', //implementing new golang pattern without fields
         'valueMappingArtifactUpload', //implementing new golang pattern without fields
         'valueMappingDeploy',  //implementing new golang pattern without fields
+        'messageMappingDownload',   //implementing new golang pattern without fields
+        'messageMappingUpload',     //implementing new golang pattern without fields
+        'messageMappingDeploy',     //implementing new golang pattern without fields
+        'scriptCollectionDownload', //implementing new golang pattern without fields
+        'scriptCollectionUpload',     //implementing new golang pattern without fields 
+        'scriptCollectionDeploy',   //implementing new golang pattern without fields 
         'containerExecuteStructureTests', //implementing new golang pattern without fields
         'transportRequestUploadSOLMAN', //implementing new golang pattern without fields
         'transportRequestReqIDFromGit', //implementing new golang pattern without fields

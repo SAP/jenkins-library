@@ -162,6 +162,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactGetServiceEndpointCommand())
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(IntegrationPackageDownloadCommand())
+	rootCmd.AddCommand(IntegrationPackageUploadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(IntegrationArtifactTriggerIntegrationTestCommand())
@@ -197,6 +198,12 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
 	rootCmd.AddCommand(ValueMappingArtifactDownloadCommand())
 	rootCmd.AddCommand(ValueMappingArtifactUploadCommand())
+	rootCmd.AddCommand(MessageMappingDownloadCommand())
+	rootCmd.AddCommand(MessageMappingUploadCommand())
+	rootCmd.AddCommand(MessageMappingDeployCommand())
+	rootCmd.AddCommand(ScriptCollectionDownloadCommand())
+	rootCmd.AddCommand(ScriptCollectionUploadCommand())
+	rootCmd.AddCommand(ScriptCollectionDeployCommand())
 
 	addRootFlags(rootCmd)
 
