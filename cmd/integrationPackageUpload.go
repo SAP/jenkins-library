@@ -84,7 +84,7 @@ func runIntegrationPackageUpload(config *integrationPackageUploadOptions, teleme
 // UploadIntegrationPackage - Upload new value mapping artifact
 func UploadIntegrationPackage(config *integrationPackageUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "POST"
-	uploadVmapStatusURL := fmt.Sprintf("%s/api/v1/IntegrationPackages?Overwrite='%s'", apiHost, "true")
+	uploadVmapStatusURL := fmt.Sprintf("%s/api/v1/IntegrationPackages", apiHost)
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
 	payload, jsonError := GetJSONPayloadAsByteArrayIP(config, "create", fileUtils)
