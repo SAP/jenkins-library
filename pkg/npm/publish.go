@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -111,7 +112,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
 			log.Entry().Debug("adding registry credentials")
-			npmrc.Set("_auth", CredentialUtils.EncodeUsernamePassword(username, password))
+			// See https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
+			// where it states: the presence of auth related settings that are not scoped to a specific registry found in a config file
+			// is no longer supported and will throw errors
+			npmrc.Set(fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"), CredentialUtils.EncodeUsernamePassword(username, password))
 			npmrc.Set("always-auth", "true")
 		}
 		// update .npmrc
