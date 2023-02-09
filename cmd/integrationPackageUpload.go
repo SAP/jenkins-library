@@ -84,7 +84,7 @@ func runIntegrationPackageUpload(config *integrationPackageUploadOptions, teleme
 // UploadIntegrationPackage - Upload new value mapping artifact
 func UploadIntegrationPackage(config *integrationPackageUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "POST"
-	uploadVmapStatusURL := fmt.Sprintf("%s/api/v1/IntegrationPackages", apiHost)
+	uploadVmapStatusURL := fmt.Sprintf("%s/api/v1/IntegrationPackages?Overwrite=true", apiHost)
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
 	payload, jsonError := GetJSONPayloadAsByteArrayIP(config, "create", fileUtils)
@@ -167,10 +167,10 @@ func GetJSONPayloadAsByteArrayIP(config *integrationPackageUploadOptions, mode s
 		jsonObj.Set(config.IntegrationPackageName, "Name")
 		jsonObj.Set(config.IntegrationPackageID, "Id")
 		// jsonObj.Set(config.PackageID, "PackageId")
-		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "ArtifactContent")
+		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "PackageContent")
 	} else if mode == "update" {
 		jsonObj.Set(config.IntegrationPackageName, "Name")
-		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "ArtifactContent")
+		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "PackageContent")
 	} else {
 		return nil, fmt.Errorf("Unkown node: '%s'", mode)
 	}
@@ -178,7 +178,7 @@ func GetJSONPayloadAsByteArrayIP(config *integrationPackageUploadOptions, mode s
 	jsonBody, jsonErr := json.Marshal(jsonObj)
 
 	if jsonErr != nil {
-		return nil, errors.Wrapf(jsonErr, "json payload is invalid for value mapping artifact %q", config.IntegrationPackageID)
+		return nil, errors.Wrapf(jsonErr, "json payload is invalid for integration package artifact %q", config.IntegrationPackageID)
 	}
 	return bytes.NewBuffer(jsonBody), nil
 }
