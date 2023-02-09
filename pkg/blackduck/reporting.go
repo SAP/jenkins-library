@@ -14,8 +14,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+var severityIndex = map[string]int{"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
-func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *format.SARIF {
+func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, projectLink string) *format.SARIF {
 	log.Entry().Debug("Creating SARIF file for data transfer")
 
 	// Handle results/vulnerabilities
@@ -23,8 +25,16 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	collectedRules := []string{}
 	cweIdsForTaxonomies := []string{}
 	results := []format.Results{}
+
 	if vulns != nil && vulns.Items != nil {
 		for _, v := range vulns.Items {
+
+			isAudited := true
+			if v.RemediationStatus == "NEW" || v.RemediationStatus == "REMEDIATION_REQUIRED" ||
+				v.RemediationStatus == "NEEDS_REVIEW" {
+				isAudited = false
+			}
+
 			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", v.VulnerabilityWithRemediation.VulnerabilityName, v.Component.Name, v.Component.Version)
 			result := format.Results{
 				RuleID:  v.VulnerabilityWithRemediation.VulnerabilityName,
@@ -38,7 +48,15 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 				PartialFingerprints: format.PartialFingerprints{
 					PackageURLPlusCVEHash: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID))),
 				},
+				Properties: &format.SarifProperties{
+					Audited:           isAudited,
+					ToolSeverity:      v.Severity,
+					ToolSeverityIndex: severityIndex[v.Severity],
+					ToolAuditMessage:  v.VulnerabilityWithRemediation.RemediationComment,
+					ToolState:         v.RemediationStatus,
+				},
 			}
+
 			// append the result
 			results = append(results, result)
 
@@ -51,12 +69,26 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			if !piperutils.ContainsString(collectedRules, result.RuleID) {
 				collectedRules = append(collectedRules, result.RuleID)
 
+				// set information about BlackDuck project
+				v.projectVersionLink = projectLink
+				v.projectName = projectName
+				v.projectVersion = projectVersion
+
 				markdown, _ := v.ToMarkdown()
+
 				tags := []string{
 					"SECURITY_VULNERABILITY",
 					v.Component.ToPackageUrl().ToString(),
-					v.VulnerabilityWithRemediation.CweID,
 				}
+
+				if CweID := v.VulnerabilityWithRemediation.CweID; CweID != "" {
+					tags = append(tags, CweID)
+				}
+
+				if matchedType := v.Component.MatchedType(); matchedType != "" {
+					tags = append(tags, matchedType)
+				}
+
 				ruleProp := format.SarifRuleProperties{
 					Tags:             tags,
 					Precision:        "very-high",
@@ -76,8 +108,10 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 				// append the rule
 				rules = append(rules, sarifRule)
 			}
+
 		}
 	}
+
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
 	taxas := []format.Taxa{}
@@ -95,7 +129,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 	//handle the tool object
 	tool := format.Tool{
 		Driver: format.Driver{
-			Name:           "Blackduck Hub Detect",
+			Name:           "Black Duck",
 			Version:        "unknown",
 			InformationUri: "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus",
 			Rules:          rules,
@@ -125,6 +159,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, components *Components) *form
 			},
 		},
 	}
+
 	return &sarif
 }
 
@@ -180,6 +215,7 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to create report directory")
 	}
+
 	sarifReportPath := filepath.Join(ReportsDirectory, "piper_detect_vulnerability.sarif")
 	if err := utils.FileWrite(sarifReportPath, sarifReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)

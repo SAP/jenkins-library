@@ -51,6 +51,26 @@ type ProjectCreateResult struct {
 	Link Link `json:"link"`
 }
 
+// ProjectBranchingResponse - ProjectBranchingResponse Structure
+type ProjectBranchingResponse struct {
+	ID   int  `json:"id"`
+	Link Link `json:"link"`
+}
+
+type BranchingStatus struct {
+	ID    int    `json:"id"`
+	Value string `json:"value"`
+}
+
+// ProjectBranchingStatusResponse - ProjectBranchingStatusResponse Structure
+type ProjectBranchingStatusResponse struct {
+	ID                int             `json:"id"`
+	OriginalProjectId int             `json:"originalProjectId"`
+	BranchedProjectId int             `json:"branchedProjectId"`
+	Status            BranchingStatus `json:"status"`
+	ErrorMessage      string          `json:"errorMessage"`
+}
+
 // Report - Report Structure
 type Report struct {
 	ReportID int   `json:"reportId"`
@@ -432,10 +452,39 @@ func (sys *SystemInstance) CreateBranch(projectID int, branchName string) int {
 		return 0
 	}
 
-	var scan Scan
+	var branchingResponse ProjectBranchingResponse
+	json.Unmarshal(data, &branchingResponse)
+	branchedProjectId := branchingResponse.ID
 
-	json.Unmarshal(data, &scan)
-	return scan.ID
+	branchingStatusId := 0 // 0 Started, 1 InProgress, 2 Completed, 3 Failed
+	i := 0
+	for branchingStatusId != 2 {
+		dataBranchingStatus, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/branch/%v", branchedProjectId), nil, header)
+		if err != nil {
+			sys.logger.Warnf("Failed to poll status of branching process: %s", err)
+		} else {
+			var branchingStatusResponse ProjectBranchingStatusResponse
+			json.Unmarshal(dataBranchingStatus, &branchingStatusResponse)
+			branchingStatusId = branchingStatusResponse.Status.ID
+			branchingStatusValue := branchingStatusResponse.Status.Value
+			sys.logger.Debugf("Branching process status: %s", branchingStatusValue)
+			if branchingStatusId == 2 {
+				sys.logger.Debug("Branching process completed successfuly")
+				break
+			} else if branchingStatusId == 3 {
+				sys.logger.Errorf("Branching process failed. Error is: %s", branchingStatusResponse.ErrorMessage)
+				return 0
+			}
+		}
+		if i >= 30 {
+			// time out after 5 minutes
+			sys.logger.Errorf("Branching process timed out.")
+			return 0
+		}
+		i++
+		time.Sleep(10 * time.Second)
+	}
+	return branchedProjectId
 }
 
 // UploadProjectSourceCode zips and uploads the project sources for scanning
@@ -518,10 +567,15 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 	} else {
 		// Check if the current project config needs to be updated
 		json.Unmarshal(data, &projectScanSettings)
-		if projectScanSettings.Preset.PresetID == presetID && projectScanSettings.EngineConfiguration.EngineConfigurationID == engineConfigID {
+		if projectScanSettings.Preset.PresetID == presetID && (projectScanSettings.EngineConfiguration.EngineConfigurationID == engineConfigID || engineConfigID == 0) {
 			sys.logger.Debugf("Project configuration does not need to be updated")
 			return nil
 		}
+	}
+
+	// use the project-level value to configure the project if no value was provided in piper config
+	if engineConfigID == 0 {
+		engineConfigID = projectScanSettings.EngineConfiguration.EngineConfigurationID
 	}
 
 	jsonData := map[string]interface{}{

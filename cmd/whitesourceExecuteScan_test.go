@@ -312,6 +312,49 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			assert.Equal(t, "m2/path", utilsMock.usedOptions.M2Path)
 		}
 	})
+	t.Run("success - with custom scan version (projectName is filled)", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildTool:         "mta",
+			CustomScanVersion: "latest",
+			VersioningModel:   "major",
+			ProductName:       "mock-product",
+			ProjectName:       "mock-project",
+			Version:           "0.0.1",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		// test
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
+		// assert
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mock-project", scan.AggregateProjectName)
+			assert.Equal(t, "latest", config.Version)
+			assert.Equal(t, "mock-product-token", config.ProductToken)
+		}
+	})
+	t.Run("success - with version from default (projectName is filled)", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildTool:       "mta",
+			VersioningModel: "major-minor",
+			ProductName:     "mock-product",
+			ProjectName:     "mock-project",
+			Version:         "1.2.3",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		// test
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
+		// assert
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mock-project", scan.AggregateProjectName)
+			assert.Equal(t, "1.2", config.Version)
+			assert.Equal(t, "mock-product-token", config.ProductToken)
+		}
+	})
 	t.Run("retrieves token for configured project name", func(t *testing.T) {
 		// init
 		config := ScanOptions{
@@ -552,7 +595,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 
 		reportPaths, err := checkSecurityViolations(ctx, &config, scan, systemMock, utilsMock, &influx)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(reportPaths))
+		assert.Equal(t, 3, len(reportPaths))
 	})
 
 	t.Run("error - wrong limit", func(t *testing.T) {
@@ -608,7 +651,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 
 		reportPaths, err := checkSecurityViolations(ctx, &config, scan, systemMock, utilsMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
-		assert.Equal(t, 0, len(reportPaths))
+		assert.Equal(t, 3, len(reportPaths))
 	})
 }
 

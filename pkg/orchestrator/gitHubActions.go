@@ -1,7 +1,6 @@
 package orchestrator
 
 import (
-	"os"
 	"strings"
 	"time"
 
@@ -82,7 +81,7 @@ func (g *GitHubActionsConfigProvider) GetCommit() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetRepoURL() string {
-	return getEnv("GITHUB_SERVER_URL", "n/a") + getEnv("GITHUB_REPOSITORY", "n/a")
+	return getEnv("GITHUB_SERVER_URL", "n/a") + "/" + getEnv("GITHUB_REPOSITORY", "n/a")
 }
 
 func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
@@ -94,8 +93,7 @@ func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 }
 
 func (g *GitHubActionsConfigProvider) IsPullRequest() bool {
-	_, exists := os.LookupEnv("GITHUB_HEAD_REF")
-	return exists
+	return truthy("GITHUB_HEAD_REF")
 }
 
 func isGitHubActions() bool {

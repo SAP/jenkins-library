@@ -53,14 +53,12 @@ jobs:
       - name: Generate Golang Docs
         run: go run pkg/documentation/generator.go --docuDir=documentation/docs/steps/ --customDefaultFile resources/default_pipeline_environment.yml
 
-      - run: docker pull squidfunk/mkdocs-material:8.3.6
-
       - name: Build
         run: |
           docker run \
             -u $(id -u):$(id -g) \
             -v ${GITHUB_WORKSPACE}/documentation:/docs \
-            squidfunk/mkdocs-material:latest build --clean --strict
+            squidfunk/mkdocs-material:8.5.11 build --clean --strict
 
       - name: Provide Docs Metadata
         run: |

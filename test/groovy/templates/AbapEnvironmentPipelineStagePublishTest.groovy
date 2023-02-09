@@ -48,4 +48,11 @@ class abapEnvironmentPipelineStagePublishTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItem('abapAddonAssemblyKitPublishTargetVector'))
     }
+
+    @Test
+    void testPublishSkipped4testBuild() {
+        nullScript.commonPipelineEnvironment.configuration.runStage = []
+        jsr.step.abapEnvironmentPipelineStagePublish(script: nullScript, testBuild: true)
+        assertThat(stepsCalled, not(hasItem('abapAddonAssemblyKitPublishTargetVector')))
+    }
 }

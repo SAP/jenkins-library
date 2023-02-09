@@ -338,7 +338,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 			assert.Equal(t, 1125, influxData.protecode_data.fields.historical_vulnerabilities)
 			assert.Equal(t, 0, influxData.protecode_data.fields.triaged_vulnerabilities)
 			assert.Equal(t, 1, influxData.protecode_data.fields.excluded_vulnerabilities)
-			assert.Equal(t, 142, influxData.protecode_data.fields.major_vulnerabilities)
+			assert.Equal(t, 129, influxData.protecode_data.fields.major_vulnerabilities)
 			assert.Equal(t, 226, influxData.protecode_data.fields.vulnerabilities)
 		})
 	}
