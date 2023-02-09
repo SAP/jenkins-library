@@ -166,7 +166,7 @@ func GetJSONPayloadAsByteArrayIP(config *integrationPackageUploadOptions, mode s
 	if mode == "create" {
 		jsonObj.Set(config.IntegrationPackageName, "Name")
 		jsonObj.Set(config.IntegrationPackageID, "Id")
-		// jsonObj.Set(config.PackageID, "PackageId")
+		jsonObj.Set("Test package -> Test 3 package", "ShortText")
 		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "PackageContent")
 	} else if mode == "update" {
 		jsonObj.Set(config.IntegrationPackageName, "Name")
