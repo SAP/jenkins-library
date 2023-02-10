@@ -72,6 +72,7 @@ void call(Map parameters = [:]) {
                                                 withSonarQubeEnv(stepConfig.instance) {
                                                     echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
                                                     sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                                    archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
                                                 }
                                             } else {
                                                 sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
