@@ -64,23 +64,28 @@ void call(Map parameters = [:]) {
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
                         writePipelineEnv(script: script, piperGoPath: piperGoPath)
                         withEnv(environment) {
-                            influxWrapper(script) {
-                                piperExecuteBin.credentialWrapper(config, credentialInfo) {
-                                    if (stepConfig.instance) {
-                                        withSonarQubeEnv(stepConfig.instance) {
-                                            echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
-                                            sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-                                            archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
-                                            jenkinsUtils.handleStepResults(STEP_NAME, false, false)
-                                            readPipelineEnv(script: script, piperGoPath: piperGoPath)
+                            try {
+                                try {
+                                    try {
+                                        piperExecuteBin.credentialWrapper(config, credentialInfo) {
+                                            if (stepConfig.instance) {
+                                                withSonarQubeEnv(stepConfig.instance) {
+                                                    echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
+                                                    sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                                }
+                                            } else {
+                                                sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                            }
                                         }
-                                    } else {
-                                        sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-                                        archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
+                                    } finally {
                                         jenkinsUtils.handleStepResults(STEP_NAME, false, false)
-                                        readPipelineEnv(script: script, piperGoPath: piperGoPath)
                                     }
+                                } finally {
+                                    readPipelineEnv(script: script, piperGoPath: piperGoPath)
                                 }
+                            } finally {
+                                InfluxData.readFromDisk(script)
+                                stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
                             }
                         }
                     }
@@ -89,14 +94,6 @@ void call(Map parameters = [:]) {
                 def ignore = sh script: 'rm -rf .sonar-scanner .certificates', returnStatus: true
             }
         }
-    }
-}
-
-private void influxWrapper(Script script, body){
-    try {
-        body()
-    } finally {
-        InfluxData.readFromDisk(script)
     }
 }
 
