@@ -74,13 +74,14 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 		for _, child := range jsonResponse.S("d", "results").Children() {
 			// iflowID := strings.ReplaceAll(child.Path("Name").String(), "\"", "")
 			// if iflowID == config.IntegrationFlowID {
-			entryPoints := child.S("EntryPoints")
-			finalEndpoint := entryPoints.Path("results.0.Url").Data().(string)
+			entryPoints := child.S("Id")
+			finalEndpoint := entryPoints.Data().(string)
 			commonPipelineEnvironment.custom.integrationPackageList = finalEndpoint
 			return nil
 
 		}
 	}
+
 	responseBody, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
 
 	if readErr != nil {
