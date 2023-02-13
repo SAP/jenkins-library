@@ -76,7 +76,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 			// if iflowID == config.IntegrationFlowID {
 			entryPoints := child.S("Id")
 			finalEndpoint := entryPoints.Data().(string)
-			commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint + "\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint + "\": [\n{\n"
 			iFlowURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/IntegrationDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
 			vMapURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/ValueMappingDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
 			mMapURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/MessageMappingDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
@@ -154,7 +154,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				}
 			}
 
-			commonPipelineEnvironment.custom.integrationPackageList += "}]"
+			commonPipelineEnvironment.custom.integrationPackageList += "}\n}]\n"
 			// return nil
 
 		}
