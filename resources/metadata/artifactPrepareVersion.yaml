@@ -357,9 +357,3 @@ spec:
           params:
             - name: buildTool
               value: maven
-    - image: gradle:6-jdk11-alpine
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: buildTool
-              value: gradle
