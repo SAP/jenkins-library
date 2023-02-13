@@ -21,6 +21,7 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 			Password:          "testPassword",
 			CfServiceInstance: "testInstance",
 			CfServiceKeyName:  "testKey",
+			CfAsync:           true,
 		}
 		execRunner := mock.ExecMockRunner{}
 		cfUtilsMock := cloudfoundry.CfUtilsMock{}
@@ -29,10 +30,10 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
 		if error == nil {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", cfCliSynchronousRequestFlag}, execRunner.Calls[0].Params)
+			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey"}, execRunner.Calls[0].Params)
 		}
 	})
-	t.Run("CF Create Service Key with service Key config: Success case", func(t *testing.T) {
+	t.Run("CF Create Service Key asynchronous with service Key config: Success case", func(t *testing.T) {
 		config := cloudFoundryCreateServiceKeyOptions{
 			CfAPIEndpoint:      "https://api.endpoint.com",
 			CfOrg:              "testOrg",
@@ -42,6 +43,7 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 			CfServiceInstance:  "testInstance",
 			CfServiceKeyName:   "testKey",
 			CfServiceKeyConfig: "testconfig.yml",
+			CfAsync:            true,
 		}
 		execRunner := mock.ExecMockRunner{}
 		cfUtilsMock := cloudfoundry.CfUtilsMock{}
@@ -50,10 +52,10 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
 		if error == nil {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
-			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "testconfig.yml", cfCliSynchronousRequestFlag}, execRunner.Calls[0].Params)
+			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "testconfig.yml"}, execRunner.Calls[0].Params)
 		}
 	})
-	t.Run("CF Create Service Key with service Key config: Success case", func(t *testing.T) {
+	t.Run("CF Create Service Key synchronous with service Key config: Success case", func(t *testing.T) {
 		config := cloudFoundryCreateServiceKeyOptions{
 			CfAPIEndpoint:      "https://api.endpoint.com",
 			CfOrg:              "testOrg",
@@ -63,6 +65,7 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 			CfServiceInstance:  "testInstance",
 			CfServiceKeyName:   "testKey",
 			CfServiceKeyConfig: "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}",
+			CfAsync:            false,
 		}
 		execRunner := mock.ExecMockRunner{}
 		cfUtilsMock := cloudfoundry.CfUtilsMock{}
@@ -89,6 +92,7 @@ func TestCloudFoundryCreateServiceKeyErrorMessages(t *testing.T) {
 			CfServiceInstance:  "testInstance",
 			CfServiceKeyName:   "testKey",
 			CfServiceKeyConfig: "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}",
+			CfAsync:            true,
 		}
 		execRunner := mock.ExecMockRunner{}
 		cfUtilsMock := cloudfoundry.CfUtilsMock{
@@ -110,6 +114,7 @@ func TestCloudFoundryCreateServiceKeyErrorMessages(t *testing.T) {
 			CfServiceInstance:  "testInstance",
 			CfServiceKeyName:   "testKey",
 			CfServiceKeyConfig: "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}",
+			CfAsync:            true,
 		}
 		execRunner := mock.ExecMockRunner{}
 		cfUtilsMock := cloudfoundry.CfUtilsMock{
@@ -132,6 +137,7 @@ func TestCloudFoundryCreateServiceKeyErrorMessages(t *testing.T) {
 			CfServiceInstance:  "testInstance",
 			CfServiceKeyName:   "testKey",
 			CfServiceKeyConfig: "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}",
+			CfAsync:            false,
 		}
 		m := make(map[string]error)
 		m["cf create-service-key testInstance testKey -c {\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"} --wait"] = errors.New(errorMessage)
