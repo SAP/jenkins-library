@@ -76,8 +76,8 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 			// if iflowID == config.IntegrationFlowID {
 			entryPoints := child.S("Id")
 			finalEndpoint := entryPoints.Data().(string)
-			commonPipelineEnvironment.custom.integrationPackageList = finalEndpoint
-			return nil
+			commonPipelineEnvironment.custom.integrationPackageList = finalEndpoint + "\n"
+			// return nil
 
 		}
 	}
