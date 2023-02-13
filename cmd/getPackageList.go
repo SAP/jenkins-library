@@ -47,22 +47,22 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := "GET"
-	serviceEndpointResp, httpErr := httpClient.SendRequest(httpMethod, servieEndpointURL, nil, header, nil)
+	integrationPackageResp, httpErr := httpClient.SendRequest(httpMethod, servieEndpointURL, nil, header, nil)
 
 	if httpErr != nil {
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, servieEndpointURL)
 	}
 
-	if serviceEndpointResp != nil && serviceEndpointResp.Body != nil {
-		defer serviceEndpointResp.Body.Close()
+	if integrationPackageResp != nil && integrationPackageResp.Body != nil {
+		defer integrationPackageResp.Body.Close()
 	}
 
-	if serviceEndpointResp == nil {
+	if integrationPackageResp == nil {
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
-	if serviceEndpointResp.StatusCode == 200 {
-		bodyText, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
+	if integrationPackageResp.StatusCode == 200 {
+		bodyText, readErr := ioutil.ReadAll(integrationPackageResp.Body)
 		if readErr != nil {
 			return errors.Wrap(readErr, "HTTP response body could not be read")
 		}
@@ -76,19 +76,97 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 			// if iflowID == config.IntegrationFlowID {
 			entryPoints := child.S("Id")
 			finalEndpoint := entryPoints.Data().(string)
-			commonPipelineEnvironment.custom.integrationPackageList += finalEndpoint + "\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint + "\": [\n"
+			iFlowURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/IntegrationDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
+			vMapURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/ValueMappingDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
+			mMapURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/MessageMappingDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
+			sCollURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/ScriptCollectionDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
+			iFlowResp, httpErr1 := httpClient.SendRequest(httpMethod, iFlowURL, nil, header, nil)
+			vMapResp, httpErr2 := httpClient.SendRequest(httpMethod, vMapURL, nil, header, nil)
+			mMapResp, httpErr3 := httpClient.SendRequest(httpMethod, mMapURL, nil, header, nil)
+			sCollResp, httpErr4 := httpClient.SendRequest(httpMethod, sCollURL, nil, header, nil)
+			if httpErr1 != nil && httpErr2 != nil && httpErr3 != nil && httpErr4 != nil {
+				return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, servieEndpointURL)
+			}
+
+			commonPipelineEnvironment.custom.integrationPackageList += "\"IntegrationDesigntimeArtifacts\": {\n"
+			if iFlowResp.StatusCode == 200 {
+				bodyText1, readErr1 := ioutil.ReadAll(iFlowResp.Body)
+				jsonResponse1, parsingErr1 := gabs.ParseJSON([]byte(bodyText1))
+				if readErr1 != nil {
+					return errors.Wrap(readErr1, "HTTP response body could not be read")
+				}
+				if parsingErr1 != nil {
+					return errors.Wrapf(parsingErr1, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+				}
+				for _, child1 := range jsonResponse1.S("d", "results").Children() {
+					entryPoints1 := child1.S("Id")
+					finalEndpoint1 := entryPoints1.Data().(string)
+					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint1 + "\", \n"
+				}
+			}
+			commonPipelineEnvironment.custom.integrationPackageList += "},\n\"ValueMappingDesigntimeArtifacts\": {\n"
+			if vMapResp.StatusCode == 200 {
+				bodyText2, readErr2 := ioutil.ReadAll(vMapResp.Body)
+				jsonResponse2, parsingErr2 := gabs.ParseJSON([]byte(bodyText2))
+				if readErr2 != nil {
+					return errors.Wrap(readErr2, "HTTP response body could not be read")
+				}
+				if parsingErr2 != nil {
+					return errors.Wrapf(parsingErr2, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+				}
+				for _, child2 := range jsonResponse2.S("d", "results").Children() {
+					entryPoints2 := child2.S("Id")
+					finalEndpoint2 := entryPoints2.Data().(string)
+					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint2 + "\", \n"
+				}
+			}
+			commonPipelineEnvironment.custom.integrationPackageList += "},\n\"MessageMappingDesigntimeArtifacts\": {\n"
+			if mMapResp.StatusCode == 200 {
+				bodyText3, readErr3 := ioutil.ReadAll(mMapResp.Body)
+				jsonResponse3, parsingErr3 := gabs.ParseJSON([]byte(bodyText3))
+				if readErr3 != nil {
+					return errors.Wrap(readErr3, "HTTP response body could not be read")
+				}
+				if parsingErr3 != nil {
+					return errors.Wrapf(parsingErr3, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+				}
+				for _, child3 := range jsonResponse3.S("d", "results").Children() {
+					entryPoints3 := child3.S("Id")
+					finalEndpoint3 := entryPoints3.Data().(string)
+					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint3 + "\", \n"
+				}
+			}
+			commonPipelineEnvironment.custom.integrationPackageList += "},\n\"ScriptCollectionDesigntimeArtifacts\": {\n"
+			if sCollResp.StatusCode == 200 {
+				bodyText4, readErr4 := ioutil.ReadAll(sCollResp.Body)
+				jsonResponse4, parsingErr4 := gabs.ParseJSON([]byte(bodyText4))
+				if readErr4 != nil {
+					return errors.Wrap(readErr4, "HTTP response body could not be read")
+				}
+				if parsingErr4 != nil {
+					return errors.Wrapf(parsingErr4, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+				}
+				for _, child4 := range jsonResponse4.S("d", "results").Children() {
+					entryPoints4 := child4.S("Id")
+					finalEndpoint4 := entryPoints4.Data().(string)
+					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint4 + "\", \n"
+				}
+			}
+
+			commonPipelineEnvironment.custom.integrationPackageList += "}]"
 			// return nil
 
 		}
 		return nil
 	}
 
-	responseBody, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
+	responseBody, readErr := ioutil.ReadAll(integrationPackageResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", serviceEndpointResp.StatusCode)
+		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", integrationPackageResp.StatusCode)
 	}
 
-	log.Entry().Errorf("a HTTP error occurred!  Response body: %v, Response status code: %v", string(responseBody), serviceEndpointResp.StatusCode)
-	return errors.Errorf("Unable to get integration flow service endpoint, Response Status code: %v", serviceEndpointResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred!  Response body: %v, Response status code: %v", string(responseBody), integrationPackageResp.StatusCode)
+	return errors.Errorf("Unable to get integration packages, Response Status code: %v", integrationPackageResp.StatusCode)
 }
