@@ -236,6 +236,7 @@ public class CommonStepsTest extends BasePiperTest{
         'awsS3Upload',
         'ansSendEvent',
         'apiProviderList', //implementing new golang pattern without fields    
+        'getPackageList',   //implementing new golang pattern without fields    
     ]
 
     @Test

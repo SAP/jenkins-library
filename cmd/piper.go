@@ -204,6 +204,7 @@ func Execute() {
 	rootCmd.AddCommand(ScriptCollectionDownloadCommand())
 	rootCmd.AddCommand(ScriptCollectionUploadCommand())
 	rootCmd.AddCommand(ScriptCollectionDeployCommand())
+	rootCmd.AddCommand(GetPackageListCommand())
 
 	addRootFlags(rootCmd)
 
