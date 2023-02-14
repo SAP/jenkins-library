@@ -105,7 +105,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint1 + "\", \n"
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"ValueMappingDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "\b\b],\n\"ValueMappingDesigntimeArtifacts\": [\n"
 			if vMapResp.StatusCode == 200 {
 				bodyText2, readErr2 := ioutil.ReadAll(vMapResp.Body)
 				jsonResponse2, parsingErr2 := gabs.ParseJSON([]byte(bodyText2))
@@ -121,7 +121,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint2 + "\", \n"
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"MessageMappingDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "\b\b],\n\"MessageMappingDesigntimeArtifacts\": [\n"
 			if mMapResp.StatusCode == 200 {
 				bodyText3, readErr3 := ioutil.ReadAll(mMapResp.Body)
 				jsonResponse3, parsingErr3 := gabs.ParseJSON([]byte(bodyText3))
@@ -137,7 +137,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint3 + "\", \n"
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"ScriptCollectionDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "\b\b],\n\"ScriptCollectionDesigntimeArtifacts\": [\n"
 			if sCollResp.StatusCode == 200 {
 				bodyText4, readErr4 := ioutil.ReadAll(sCollResp.Body)
 				jsonResponse4, parsingErr4 := gabs.ParseJSON([]byte(bodyText4))
@@ -154,11 +154,11 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				}
 			}
 
-			commonPipelineEnvironment.custom.integrationPackageList += "]\n},\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "\b\b]\n},\n"
 			// return nil
 
 		}
-		commonPipelineEnvironment.custom.integrationPackageList += "}}\n"
+		commonPipelineEnvironment.custom.integrationPackageList += "\b\b}}\n"
 		return nil
 	}
 
