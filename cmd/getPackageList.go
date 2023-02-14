@@ -76,7 +76,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 			// if iflowID == config.IntegrationFlowID {
 			entryPoints := child.S("Id")
 			finalEndpoint := entryPoints.Data().(string)
-			lastChar := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+			lastChar := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 			if lastChar == '{' {
 				commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint + "\": {\n"
 			} else {
@@ -107,7 +107,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child1 := range jsonResponse1.S("d", "results").Children() {
 					entryPoints1 := child1.S("Id")
 					finalEndpoint1 := entryPoints1.Data().(string)
-					lastChar2 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+					lastChar2 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar2 == '[' {
 						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint1 + "\""
 					} else {
@@ -128,7 +128,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child2 := range jsonResponse2.S("d", "results").Children() {
 					entryPoints2 := child2.S("Id")
 					finalEndpoint2 := entryPoints2.Data().(string)
-					lastChar3 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+					lastChar3 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar3 == '[' {
 						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint2 + "\""
 					} else {
@@ -149,7 +149,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child3 := range jsonResponse3.S("d", "results").Children() {
 					entryPoints3 := child3.S("Id")
 					finalEndpoint3 := entryPoints3.Data().(string)
-					lastChar4 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+					lastChar4 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar4 == '[' {
 						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint3 + "\""
 					} else {
@@ -170,7 +170,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child4 := range jsonResponse4.S("d", "results").Children() {
 					entryPoints4 := child4.S("Id")
 					finalEndpoint4 := entryPoints4.Data().(string)
-					lastChar5 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+					lastChar5 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar5 == '[' {
 						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint4 + "\""
 					} else {
