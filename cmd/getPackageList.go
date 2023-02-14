@@ -154,7 +154,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				}
 			}
 
-			commonPipelineEnvironment.custom.integrationPackageList += "]\n}\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "]\n},\n"
 			// return nil
 
 		}
