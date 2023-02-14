@@ -171,7 +171,7 @@ func toTyped(rawData interface{}) (bindings, error) {
 func fromDeprecatedTyped(rawData interface{}) (bindings, error) {
 	typedBindings := bindings{}
 
-	oldBindings := map[string]oldBinding{}
+	var oldBindings map[string]oldBinding
 
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		ErrorUnused: true,
