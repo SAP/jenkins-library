@@ -183,7 +183,7 @@ func TestProcessBindings(t *testing.T) {
 	t.Run("fails with the key being invalid", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
-			"binding": map[string]interface{}{
+			"my-binding": map[string]interface{}{
 				"type": "inline",
 				"data": []map[string]interface{}{
 					{
@@ -195,14 +195,14 @@ func TestProcessBindings(t *testing.T) {
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "invalid key: 'test/test.yaml'", err.Error())
+			assert.Equal(t, "failed to validate binding 'my-binding': invalid key: 'test/test.yaml'", err.Error())
 		}
 	})
 
 	t.Run("fails with both content and file being specified", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
-			"binding": map[string]interface{}{
+			"my-binding": map[string]interface{}{
 				"type": "both",
 				"data": []map[string]interface{}{
 					{
@@ -215,36 +215,35 @@ func TestProcessBindings(t *testing.T) {
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "only one of 'content', 'file' or 'fromUrl' can be set for binding 'test.yaml'", err.Error())
+			assert.Equal(t, "failed to validate binding 'my-binding': only one of 'content', 'file' or 'fromUrl' can be set", err.Error())
 		}
 	})
 
 	t.Run("fails with no content or file being specified", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
-			"binding": map[string]interface{}{
-				"key":  "test.yaml",
+			"my-binding": map[string]interface{}{
 				"type": "none",
+				"data": []map[string]interface{}{{"key": "test.yaml"}},
 			},
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "'data' must be specified for binding 'test.yaml'", err.Error())
+			assert.Equal(t, "failed to validate binding 'my-binding': one of 'file', 'content' or 'fromUrl' properties must be specified", err.Error())
 		}
 	})
 
 	t.Run("fails with empty data being specified", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
-			"binding": map[string]interface{}{
-				"key":  "test.yaml",
+			"my-binding": map[string]interface{}{
 				"type": "none",
 				"data": []map[string]interface{}{},
 			},
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "one of 'file', 'content' or 'fromUrl' properties must be specified for binding 'test.yaml'", err.Error())
+			assert.Equal(t, "empty binding: 'my-binding'", err.Error())
 		}
 	})
 
@@ -264,8 +263,10 @@ func TestProcessBindings(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
 			"test": map[string]interface{}{
-				"key":  "test.yaml",
 				"typo": "test",
+				"data": []map[string]interface{}{{
+					"key": "test.yaml",
+				}},
 			},
 		})
 
