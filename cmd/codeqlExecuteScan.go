@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -170,6 +171,14 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 }
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) error {
+	if len(config.Prestepcommand) > 0 {
+		preCommand := strings.Split(config.Prestepcommand, " ")
+
+		if err := utils.RunExecutable(preCommand[0], preCommand[1:]...); err != nil {
+			return errors.Wrap(err, "failed to run preStepCommand")
+		}
+	}
+
 	var reports []piperutils.Path
 	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", config.ModulePath}
 

@@ -20,17 +20,18 @@ import (
 )
 
 type codeqlExecuteScanOptions struct {
-	GithubToken   string `json:"githubToken,omitempty"`
-	BuildTool     string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
-	BuildCommand  string `json:"buildCommand,omitempty"`
-	Language      string `json:"language,omitempty"`
-	ModulePath    string `json:"modulePath,omitempty"`
-	Database      string `json:"database,omitempty"`
-	QuerySuite    string `json:"querySuite,omitempty"`
-	UploadResults bool   `json:"uploadResults,omitempty"`
-	AnalyzedRef   string `json:"analyzedRef,omitempty"`
-	Repository    string `json:"repository,omitempty"`
-	CommitID      string `json:"commitId,omitempty"`
+	GithubToken    string `json:"githubToken,omitempty"`
+	BuildTool      string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
+	BuildCommand   string `json:"buildCommand,omitempty"`
+	Language       string `json:"language,omitempty"`
+	ModulePath     string `json:"modulePath,omitempty"`
+	Database       string `json:"database,omitempty"`
+	QuerySuite     string `json:"querySuite,omitempty"`
+	UploadResults  bool   `json:"uploadResults,omitempty"`
+	AnalyzedRef    string `json:"analyzedRef,omitempty"`
+	Repository     string `json:"repository,omitempty"`
+	CommitID       string `json:"commitId,omitempty"`
+	Prestepcommand string `json:"prestepcommand,omitempty"`
 }
 
 type codeqlExecuteScanReports struct {
@@ -180,6 +181,7 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "URL of the GitHub instance")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
+	cmd.Flags().StringVar(&stepConfig.Prestepcommand, "prestepcommand", os.Getenv("PIPER_prestepcommand"), "Testing purpose: Command to test before the codeql step")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -327,6 +329,15 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_commitId"),
+					},
+					{
+						Name:        "prestepcommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_prestepcommand"),
 					},
 				},
 			},

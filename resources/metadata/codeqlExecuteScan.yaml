@@ -128,6 +128,13 @@ spec:
           - name: commonPipelineEnvironment
             param: git/remoteCommitId
         type: string
+      - name: prestepcommand
+        type: string
+        description: "Testing purpose: Command to test before the codeql step"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: ""
   outputs:
