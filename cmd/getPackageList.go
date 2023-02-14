@@ -70,13 +70,13 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 		if parsingErr != nil {
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 		}
-
+		commonPipelineEnvironment.custom.integrationPackageList += "{\"Packages\" : {\n"
 		for _, child := range jsonResponse.S("d", "results").Children() {
 			// iflowID := strings.ReplaceAll(child.Path("Name").String(), "\"", "")
 			// if iflowID == config.IntegrationFlowID {
 			entryPoints := child.S("Id")
 			finalEndpoint := entryPoints.Data().(string)
-			commonPipelineEnvironment.custom.integrationPackageList += "\n{\"" + finalEndpoint + "\": {\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint + "\": {\n"
 			iFlowURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/IntegrationDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
 			vMapURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/ValueMappingDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
 			mMapURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/MessageMappingDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
@@ -154,10 +154,11 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				}
 			}
 
-			commonPipelineEnvironment.custom.integrationPackageList += "]\n}\n}\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "]\n}\n"
 			// return nil
 
 		}
+		commonPipelineEnvironment.custom.integrationPackageList += "}}\n"
 		return nil
 	}
 
