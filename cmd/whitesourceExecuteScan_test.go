@@ -595,7 +595,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 
 		reportPaths, err := checkSecurityViolations(ctx, &config, scan, systemMock, utilsMock, &influx)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(reportPaths))
+		assert.Equal(t, 3, len(reportPaths))
 	})
 
 	t.Run("error - wrong limit", func(t *testing.T) {
@@ -651,7 +651,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 
 		reportPaths, err := checkSecurityViolations(ctx, &config, scan, systemMock, utilsMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
-		assert.Equal(t, 0, len(reportPaths))
+		assert.Equal(t, 3, len(reportPaths))
 	})
 }
 
