@@ -115,7 +115,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					}
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"ValueMappingDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"ValueMappingDesigntimeArtifacts\": ["
 			if vMapResp.StatusCode == 200 {
 				bodyText2, readErr2 := ioutil.ReadAll(vMapResp.Body)
 				jsonResponse2, parsingErr2 := gabs.ParseJSON([]byte(bodyText2))
@@ -136,7 +136,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					}
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"MessageMappingDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"MessageMappingDesigntimeArtifacts\": ["
 			if mMapResp.StatusCode == 200 {
 				bodyText3, readErr3 := ioutil.ReadAll(mMapResp.Body)
 				jsonResponse3, parsingErr3 := gabs.ParseJSON([]byte(bodyText3))
@@ -157,7 +157,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					}
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"ScriptCollectionDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"ScriptCollectionDesigntimeArtifacts\": ["
 			if sCollResp.StatusCode == 200 {
 				bodyText4, readErr4 := ioutil.ReadAll(sCollResp.Body)
 				jsonResponse4, parsingErr4 := gabs.ParseJSON([]byte(bodyText4))
