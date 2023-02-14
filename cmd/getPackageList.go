@@ -70,13 +70,18 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 		if parsingErr != nil {
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 		}
-		commonPipelineEnvironment.custom.integrationPackageList += "{\"Packages\" : {\n"
+		commonPipelineEnvironment.custom.integrationPackageList += "{\"Packages\" : {"
 		for _, child := range jsonResponse.S("d", "results").Children() {
 			// iflowID := strings.ReplaceAll(child.Path("Name").String(), "\"", "")
 			// if iflowID == config.IntegrationFlowID {
 			entryPoints := child.S("Id")
 			finalEndpoint := entryPoints.Data().(string)
-			commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint + "\": {\n"
+			lastChar := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+			if lastChar == '{' {
+				commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint + "\": {\n"
+			} else {
+				commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint + "\": {\n"
+			}
 			iFlowURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/IntegrationDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
 			vMapURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/ValueMappingDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
 			mMapURL := fmt.Sprintf("%s/api/v1/IntegrationPackages('%s')/MessageMappingDesigntimeArtifacts", serviceKey.OAuth.Host, finalEndpoint)
@@ -89,7 +94,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, servieEndpointURL)
 			}
 
-			commonPipelineEnvironment.custom.integrationPackageList += "\"IntegrationDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "\"IntegrationDesigntimeArtifacts\": ["
 			if iFlowResp.StatusCode == 200 {
 				bodyText1, readErr1 := ioutil.ReadAll(iFlowResp.Body)
 				jsonResponse1, parsingErr1 := gabs.ParseJSON([]byte(bodyText1))
@@ -102,10 +107,15 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child1 := range jsonResponse1.S("d", "results").Children() {
 					entryPoints1 := child1.S("Id")
 					finalEndpoint1 := entryPoints1.Data().(string)
-					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint1 + "\", \n"
+					lastChar2 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+					if lastChar2 == '[' {
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint1 + "\""
+					} else {
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint1 + "\""
+					}
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "\b\b],\n\"ValueMappingDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"ValueMappingDesigntimeArtifacts\": [\n"
 			if vMapResp.StatusCode == 200 {
 				bodyText2, readErr2 := ioutil.ReadAll(vMapResp.Body)
 				jsonResponse2, parsingErr2 := gabs.ParseJSON([]byte(bodyText2))
@@ -118,10 +128,15 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child2 := range jsonResponse2.S("d", "results").Children() {
 					entryPoints2 := child2.S("Id")
 					finalEndpoint2 := entryPoints2.Data().(string)
-					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint2 + "\", \n"
+					lastChar3 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+					if lastChar3 == '[' {
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint2 + "\""
+					} else {
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint2 + "\""
+					}
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "\b\b],\n\"MessageMappingDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"MessageMappingDesigntimeArtifacts\": [\n"
 			if mMapResp.StatusCode == 200 {
 				bodyText3, readErr3 := ioutil.ReadAll(mMapResp.Body)
 				jsonResponse3, parsingErr3 := gabs.ParseJSON([]byte(bodyText3))
@@ -134,10 +149,15 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child3 := range jsonResponse3.S("d", "results").Children() {
 					entryPoints3 := child3.S("Id")
 					finalEndpoint3 := entryPoints3.Data().(string)
-					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint3 + "\", \n"
+					lastChar4 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+					if lastChar4 == '[' {
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint3 + "\""
+					} else {
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint3 + "\""
+					}
 				}
 			}
-			commonPipelineEnvironment.custom.integrationPackageList += "\b\b],\n\"ScriptCollectionDesigntimeArtifacts\": [\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "],\n\"ScriptCollectionDesigntimeArtifacts\": [\n"
 			if sCollResp.StatusCode == 200 {
 				bodyText4, readErr4 := ioutil.ReadAll(sCollResp.Body)
 				jsonResponse4, parsingErr4 := gabs.ParseJSON([]byte(bodyText4))
@@ -150,15 +170,20 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child4 := range jsonResponse4.S("d", "results").Children() {
 					entryPoints4 := child4.S("Id")
 					finalEndpoint4 := entryPoints4.Data().(string)
-					commonPipelineEnvironment.custom.integrationPackageList += "\"" + finalEndpoint4 + "\", \n"
+					lastChar5 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)]
+					if lastChar5 == '[' {
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint4 + "\""
+					} else {
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint4 + "\""
+					}
 				}
 			}
 
-			commonPipelineEnvironment.custom.integrationPackageList += "\b\b]\n},\n"
+			commonPipelineEnvironment.custom.integrationPackageList += "]\n}"
 			// return nil
 
 		}
-		commonPipelineEnvironment.custom.integrationPackageList += "\b\b}}\n"
+		commonPipelineEnvironment.custom.integrationPackageList += "}}\n"
 		return nil
 	}
 
