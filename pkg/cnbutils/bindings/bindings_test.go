@@ -44,6 +44,15 @@ func TestProcessBindings(t *testing.T) {
 				"type":    "url",
 				"fromUrl": "http://test-url.com/binding",
 			},
+			"new": map[string]interface{}{
+				"type": "mixin",
+				"data": []map[string]interface{}{
+					{
+						"key":     "file",
+						"content": "content",
+					},
+				},
+			},
 		})
 
 		if assert.NoError(t, err) {
@@ -161,7 +170,7 @@ func TestProcessBindings(t *testing.T) {
 		}
 	})
 
-	t.Run("fails with the name being invalid", func(t *testing.T) {
+	t.Run("fails if the name being invalid", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
 			"..": map[string]interface{}{
@@ -180,7 +189,7 @@ func TestProcessBindings(t *testing.T) {
 		}
 	})
 
-	t.Run("fails with the key being invalid", func(t *testing.T) {
+	t.Run("fails if the key being invalid", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
 			"my-binding": map[string]interface{}{
@@ -199,7 +208,7 @@ func TestProcessBindings(t *testing.T) {
 		}
 	})
 
-	t.Run("fails with both content and file being specified", func(t *testing.T) {
+	t.Run("fails if both content and file being specified", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
 			"my-binding": map[string]interface{}{
@@ -219,7 +228,7 @@ func TestProcessBindings(t *testing.T) {
 		}
 	})
 
-	t.Run("fails with no content or file being specified", func(t *testing.T) {
+	t.Run("fails if no content or file being specified", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
 			"my-binding": map[string]interface{}{
@@ -233,7 +242,7 @@ func TestProcessBindings(t *testing.T) {
 		}
 	})
 
-	t.Run("fails with empty data being specified", func(t *testing.T) {
+	t.Run("fails if binding has no data specified", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
 			"my-binding": map[string]interface{}{
@@ -247,22 +256,21 @@ func TestProcessBindings(t *testing.T) {
 		}
 	})
 
-	t.Run("fails with not a map", func(t *testing.T) {
+	t.Run("fails if binding is not a map", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
-			"binding": 42,
+			"my-binding": 42,
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "failed to convert map to struct: 1 error(s) decoding:\n\n* '[binding]' expected a map, got 'int'", err.Error())
-
+			assert.Equal(t, "error while reading bindings: could not process binding 'my-binding'", err.Error())
 		}
 	})
 
-	t.Run("fails with invalid map", func(t *testing.T) {
+	t.Run("fails if binding is an invalid map", func(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
-			"test": map[string]interface{}{
+			"my-binding": map[string]interface{}{
 				"typo": "test",
 				"data": []map[string]interface{}{{
 					"key": "test.yaml",
@@ -271,7 +279,7 @@ func TestProcessBindings(t *testing.T) {
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "failed to convert map to struct: 1 error(s) decoding:\n\n* '[test]' has invalid keys: typo", err.Error())
+			assert.Equal(t, "error while reading bindings: could not process binding 'my-binding'", err.Error())
 		}
 	})
 }

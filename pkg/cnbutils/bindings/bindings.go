@@ -67,7 +67,7 @@ func ProcessBindings(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, pla
 
 	typedBindings, err := toTyped(bindings)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert map to struct")
+		return errors.Wrap(err, "error while reading bindings")
 	}
 
 	for name, binding := range typedBindings {
@@ -146,50 +146,60 @@ func validateBinding(name string, data bindingData) error {
 	return nil
 }
 
-func toTyped(rawData interface{}) (bindings, error) {
-	var typedBindings bindings
-	typedBindings, err := fromDeprecatedTyped(rawData)
-	if err == nil {
-		return typedBindings, nil
-	}
+func toTyped(rawMap map[string]interface{}) (bindings, error) {
+	typedBindings := bindings{}
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		ErrorUnused: true,
-		Result:      &typedBindings,
-	})
-	if err != nil {
-		return nil, err
-	}
-	err = decoder.Decode(rawData)
-	if err != nil {
-		return nil, err
+	for name, rawBinding := range rawMap {
+		var b binding
+
+		b, err := fromRaw(rawBinding)
+		if err != nil {
+			b, err = fromDeprecatedRaw(rawBinding)
+			if err != nil {
+				return nil, fmt.Errorf("could not process binding '%s'", name)
+			}
+		}
+
+		typedBindings[name] = b
 	}
 
 	return typedBindings, nil
 }
 
-func fromDeprecatedTyped(rawData interface{}) (bindings, error) {
-	typedBindings := bindings{}
-
-	var oldBindings map[string]oldBinding
+func fromDeprecatedRaw(rawData interface{}) (binding, error) {
+	var old oldBinding
 
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		ErrorUnused: true,
-		Result:      &oldBindings,
+		Result:      &old,
 	})
 	if err != nil {
-		return nil, err
+		return binding{}, err
 	}
 	err = decoder.Decode(rawData)
 	if err != nil {
-		return nil, err
+		return binding{}, err
 	}
 
-	for name, old := range oldBindings {
-		typedBindings[name] = binding{Type: old.Type, Data: []bindingData{{Key: old.Key, Content: old.Content, File: old.File, FromURL: old.FromURL}}}
+	return binding{Type: old.Type, Data: []bindingData{{Key: old.Key, Content: old.Content, File: old.File, FromURL: old.FromURL}}}, nil
+}
+
+func fromRaw(rawData interface{}) (binding, error) {
+	var new binding
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		ErrorUnused: true,
+		Result:      &new,
+	})
+	if err != nil {
+		return binding{}, err
+	}
+	err = decoder.Decode(rawData)
+	if err != nil {
+		return binding{}, err
 	}
 
-	return typedBindings, nil
+	return new, nil
 }
 
 func validName(name string) bool {
