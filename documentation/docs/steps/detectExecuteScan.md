@@ -21,6 +21,7 @@ The result can be found in console on pipeline. By default, black duck scans in 
 ### Rapid scan on pull requests
 
 If the orchestrator is configured to detect pull requests, then piper pipeline in detecExecuationScan step can recognize the pull request and change the Black Duck scan mode from 'FULL' to 'RAPID'. This does not affect to usual branch scans.
+
 - **Note**
   1. In GPP (General Purpose Pipeline) for pull requests, detecExecutionScan is disabled. And so in PR Vouting detecExecuationScan skips.
   2. In all other pipelines where the detecExecuationScan step is enabled in the orchestrator, this function will work.
