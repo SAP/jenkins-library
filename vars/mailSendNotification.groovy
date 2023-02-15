@@ -170,6 +170,7 @@ def getCulpritCommitters(config, currentBuild) {
     }
     def numberOfCommits = getNumberOfCommits(buildList)
     if(config.wrapInNode){
+        echo "[${STEP_NAME}] running step in separate node"
         node('mail'){
             try{
                 recipients = getCulprits(config, env.BRANCH_NAME, numberOfCommits)
