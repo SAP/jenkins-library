@@ -170,7 +170,7 @@ def getCulpritCommitters(config, currentBuild) {
     }
     def numberOfCommits = getNumberOfCommits(buildList)
     if(config.wrapInNode){
-        node(){
+        node('mail'){
             try{
                 recipients = getCulprits(config, env.BRANCH_NAME, numberOfCommits)
             }finally{
