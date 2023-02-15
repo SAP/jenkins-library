@@ -119,7 +119,7 @@ InfluxDB data map tags: ${config.customDataMapTags}
 [${STEP_NAME}]----------------------------------------------------------"""
 
         if(config.wrapInNode){
-            node(''){
+            node('influx'){
                 try{
                     writeToInflux(config, jenkinsUtils, script)
                 }finally{
