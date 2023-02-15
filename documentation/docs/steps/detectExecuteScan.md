@@ -24,6 +24,7 @@ If the orchestrator is configured to detect pull requests, then piper pipeline i
 - **Note**
   1. In GPP (General Purpose Pipeline) for pull requests, detecExecutionScan is disabled. And so in PR Vouting detecExecuationScan skips.
   2. In all other pipelines where the detecExecuationScan step is enabled in the orchestrator, this function will work.
+
 #### Result of scan on pull request comment
 
 If `githubApi` and `githubToken` are provided, then pipeline adds the scan result to the comment of the opened pull request.
@@ -31,13 +32,16 @@ If `githubApi` and `githubToken` are provided, then pipeline adds the scan resul
 ![blackDuckPullRequestComment](../images/BDRapidScanPrs.png)
 
 #### Steps to achieve this
+
 1. Specify all required parameters of the DetectExecution step in .pipeline/config.yaml (`githubApi`, `githubToken` optional)
 2. Enable detecExecuationScan in the orchestrator
 3. Open a pull request with some changes to main branch
 4. Specify `githubApi` and `githubToken` in the DetectExecution step to get the result in the pull request comment. (optional)
 
 #### Example for jenkins orchestrator
-1.In Jenkinsfile
+
+In Jenkinsfile
+
 ```
 @Library('piper-lib') _
 @Library('piper-lib-os') __
@@ -53,7 +57,9 @@ node {
   ...
 }
 ```
-2. In config.yml
+
+In config.yml
+
 ```
 ...
 steps:
