@@ -55,7 +55,6 @@ type detectExecuteScanOptions struct {
 	Assignees                   []string `json:"assignees,omitempty"`
 	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
 	FailOnSevereVulnerabilities bool     `json:"failOnSevereVulnerabilities,omitempty"`
-	ScanMode                    string   `json:"scanMode,omitempty" validate:"possible-values=FULL RAPID"`
 }
 
 type detectExecuteScanInflux struct {
@@ -286,7 +285,6 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the step on severe vulnerabilties or not")
-	cmd.Flags().StringVar(&stepConfig.ScanMode, "scanMode", `FULL`, "changing mode of scan")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -650,15 +648,6 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
-					},
-					{
-						Name:        "scanMode",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `FULL`,
 					},
 				},
 			},

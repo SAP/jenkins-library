@@ -16,15 +16,14 @@ You need to store the API token for the Detect service as _'Secret text'_ creden
 
 In addition to the full scan, Black Duck also offers a faster and easier scan option, called <a href="https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=downloadingandrunning%2Frapidscan.html&_LANG=enus" target="_blank">Rapid Scan</a>.
 Its main advantage is speed. In most cases, the scan is completed in less than 30 seconds. It doesn't save any information in Black Duck side.
-The result can be found in console on pipeline. By default, black duck scans in 'FULL' mode, but you are able to change scan mode by parameter `scanMode`.
-When you set `scanMode='RAPID'` in the DetectExecution step, then Black Duck scans in 'Rapid' mode.
-
-![scanModeScheme](../images/BDscanMode.png)
+The result can be found in console on pipeline. By default, black duck scans in 'FULL' mode.
 
 ### Rapid scan on pull requests
 
-If the Jenkins orchestrator is configured to detect pull requests, then piper pipeline can recognize this and change the Black Duck scan mode from 'FULL' to 'RAPID'. This does not affect to usual branch scans.
-
+If the orchestrator is configured to detect pull requests, then piper pipeline in detecExecuationScan step can recognize the pull request and change the Black Duck scan mode from 'FULL' to 'RAPID'. This does not affect to usual branch scans.
+- **Note**
+  1. In GPP (General Purpose Pipeline) for pull requests, detecExecutionScan is disabled. And so in PR Vouting detecExecuationScan skips.
+  2. In all other pipelines where the detecExecuationScan step is enabled in the orchestrator, this function will work.
 #### Result of scan on pull request comment
 
 If `githubApi` and `githubToken` are provided, then pipeline adds the scan result to the comment of the opened pull request.
@@ -32,12 +31,43 @@ If `githubApi` and `githubToken` are provided, then pipeline adds the scan resul
 ![blackDuckPullRequestComment](../images/BDRapidScanPrs.png)
 
 #### Steps to achieve this
+1. Specify all required parameters of the DetectExecution step in .pipeline/config.yaml (`githubApi`, `githubToken` optional)
+2. Enable detecExecuationScan in the orchestrator
+3. Open a pull request with some changes to main branch
+4. Specify `githubApi` and `githubToken` in the DetectExecution step to get the result in the pull request comment. (optional)
 
-1. Provide all needed parameters of DetectExecution step in .pipeline/config.yaml (inc.`githubApi`, `githubToken`)
-   - **Note**
-      1. for general purpose pipeline - add in the 'Pull-Request Voting' stage 'detectExecution: true' step
-      2. for custom detect invocation pr scan will be started automatically
-2. Open a pull request with some changes to main branch
+#### Example for jenkins orchestrator
+1.In Jenkinsfile
+```
+@Library('piper-lib') _
+@Library('piper-lib-os') __
 
-Note: Despite rapid scans doing necessary security checks for daily development, it is not sufficient for production deployment and releases.
+node {
+  stage('Init') {
+    checkout scm
+    setupPipelineEnvironment script: this
+  }
+  stage('detectExecuteScan') {
+     detectExecuteScan script: this
+  }
+  ...
+}
+```
+2. In config.yml
+```
+...
+steps:
+  ...
+  detectExecuteScan:
+    serverUrl: 'https://sap-staging.app.blackduck.com/'
+    detectTokenCredentialsId: 'JenkinsCredentialsIdForBlackDuckToken'
+    projectName: 'projectNameInBlackDuckUI'
+    version: 'v1.0'
+    githubApiUrl: 'https://github.wdf.sap.corp/api/v3'
+    githubToken: 'JenkinsCredentialsIdForGithub'
+  ...
+...
+```
+
+**Note**: Despite rapid scans doing necessary security checks for daily development, it is not sufficient for production deployment and releases.
 Only use full scans for production deployment and releases.

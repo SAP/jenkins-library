@@ -410,17 +410,6 @@ spec:
         scope:
           - PARAMETERS
         default: true
-      - name: scanMode
-        type: string
-        description: changing mode of scan
-        default: FULL
-        possibleValues:
-          - FULL
-          - RAPID
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
   outputs:
     resources:
       - name: influx

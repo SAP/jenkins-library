@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -15,20 +14,20 @@ import (
 	"time"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	"github.com/SAP/jenkins-library/pkg/command"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/reporting"
-	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/pkg/errors"
-
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/google/go-github/v45/github"
+	"github.com/pkg/errors"
 )
 
 type detectUtils interface {
@@ -417,9 +416,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		}
 		args = append(args, "--detect.cleanup=false")
 		args = append(args, "--detect.output.path='report'")
-	} else if config.ScanMode == "RAPID" { // scan mode = rapid
-		log.Entry().Debug("scan mode has changed to 'RAPID'")
-		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
 	}
 
 	return args, nil
