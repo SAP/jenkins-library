@@ -119,6 +119,7 @@ InfluxDB data map tags: ${config.customDataMapTags}
 [${STEP_NAME}]----------------------------------------------------------"""
 
         if(config.wrapInNode){
+            echo "[${STEP_NAME}] running step in separate node"
             node('influx'){
                 try{
                     writeToInflux(config, jenkinsUtils, script)
