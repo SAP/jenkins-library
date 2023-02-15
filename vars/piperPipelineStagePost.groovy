@@ -49,14 +49,14 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        influxWriteData script: script //, wrapInNode: false
+        influxWriteData script: script, wrapInNode: false
         if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch) {
             if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Post Actions')?.slackSendNotification) {
                 slackSendNotification script: parameters.script
             }
         }
 
-        mailSendNotification script: script //, wrapInNode: false
+        mailSendNotification script: script, wrapInNode: false
         debugReportArchive script: script
         piperPublishWarnings script: script
     }
