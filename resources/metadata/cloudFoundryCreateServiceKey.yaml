@@ -109,6 +109,16 @@ spec:
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceKeyConfig
+      - name: cfAsync
+        type: bool
+        description: Decides if the service key creation runs asynchronously
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: true
   containers:
     - name: cf
       image: ppiper/cf-cli:latest

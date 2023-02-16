@@ -16,11 +16,13 @@ import (
 )
 
 type gctsCloneRepositoryOptions struct {
-	Username   string `json:"username,omitempty"`
-	Password   string `json:"password,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Host       string `json:"host,omitempty"`
-	Client     string `json:"client,omitempty"`
+	Username            string                 `json:"username,omitempty"`
+	Password            string                 `json:"password,omitempty"`
+	Repository          string                 `json:"repository,omitempty"`
+	Host                string                 `json:"host,omitempty"`
+	Client              string                 `json:"client,omitempty"`
+	QueryParameters     map[string]interface{} `json:"queryParameters,omitempty"`
+	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
 }
 
 // GctsCloneRepositoryCommand Clones a Git repository
@@ -124,6 +126,8 @@ func addGctsCloneRepositoryFlags(cmd *cobra.Command, stepConfig *gctsCloneReposi
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be addressed")
 
+	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "You can skip the SSL (Secure Socket Layer) verification for the http client")
+
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("repository")
@@ -201,6 +205,23 @@ func gctsCloneRepositoryMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_client"),
+					},
+					{
+						Name:        "queryParameters",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "skipSSLVerification",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
