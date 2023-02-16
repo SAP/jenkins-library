@@ -263,7 +263,7 @@ func TestProcessBindings(t *testing.T) {
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "error while reading bindings: could not process binding 'my-binding'", err.Error())
+			assert.Contains(t, err.Error(), "error while reading bindings: could not process binding 'my-binding':")
 		}
 	})
 
@@ -271,7 +271,9 @@ func TestProcessBindings(t *testing.T) {
 		var utils = mockUtils()
 		err := bindings.ProcessBindings(utils, &piperhttp.Client{}, "/tmp/platform", map[string]interface{}{
 			"my-binding": map[string]interface{}{
-				"typo": "test",
+				"typo":  "test",
+				"typo2": "test",
+				"typo3": "test",
 				"data": []map[string]interface{}{{
 					"key": "test.yaml",
 				}},
@@ -279,7 +281,8 @@ func TestProcessBindings(t *testing.T) {
 		})
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "error while reading bindings: could not process binding 'my-binding'", err.Error())
+			assert.Contains(t, err.Error(), "error while reading bindings: could not process binding 'my-binding'", err.Error())
+			assert.Contains(t, err.Error(), "validation error", err.Error())
 		}
 	})
 }

@@ -2,6 +2,7 @@
 package bindings
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -9,23 +10,16 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	k8sjson "sigs.k8s.io/json"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/mitchellh/mapstructure"
 )
 
-type oldBinding struct {
-	Type    string  `json:"type"`
-	Key     string  `json:"key"`
-	Content *string `json:"content,omitempty"`
-	File    *string `json:"file,omitempty"`
-	FromURL *string `json:"fromUrl,omitempty"`
-}
-
 type binding struct {
-	Type string        `json:"type"`
-	Data []bindingData `json:"data"`
+	bindingData `json:",inline"`
+	Type        string        `json:"type"`
+	Data        []bindingData `json:"data"`
 }
 
 type bindingData struct {
@@ -34,6 +28,8 @@ type bindingData struct {
 	File    *string `json:"file,omitempty"`
 	FromURL *string `json:"fromUrl,omitempty"`
 }
+
+type bindings map[string]binding
 
 // Return error if:
 // 1. Content is set + File or FromURL
@@ -60,11 +56,8 @@ func (b *bindingData) validate() error {
 	return nil
 }
 
-type bindings map[string]binding
-
 // ProcessBindings creates the given bindings in the platform directory
 func ProcessBindings(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, platformPath string, bindings map[string]interface{}) error {
-
 	typedBindings, err := toTyped(bindings)
 	if err != nil {
 		return errors.Wrap(err, "error while reading bindings")
@@ -154,10 +147,16 @@ func toTyped(rawMap map[string]interface{}) (bindings, error) {
 
 		b, err := fromRaw(rawBinding)
 		if err != nil {
-			b, err = fromDeprecatedRaw(rawBinding)
-			if err != nil {
-				return nil, fmt.Errorf("could not process binding '%s'", name)
-			}
+			return nil, errors.Wrapf(err, "could not process binding '%s'", name)
+		}
+
+		if b.Key != "" {
+			b.Data = append(b.Data, bindingData{
+				Key:     b.Key,
+				Content: b.Content,
+				File:    b.File,
+				FromURL: b.FromURL,
+			})
 		}
 
 		typedBindings[name] = b
@@ -166,36 +165,28 @@ func toTyped(rawMap map[string]interface{}) (bindings, error) {
 	return typedBindings, nil
 }
 
-func fromDeprecatedRaw(rawData interface{}) (binding, error) {
-	var old oldBinding
-
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		ErrorUnused: true,
-		Result:      &old,
-	})
-	if err != nil {
-		return binding{}, err
-	}
-	err = decoder.Decode(rawData)
-	if err != nil {
-		return binding{}, err
-	}
-
-	return binding{Type: old.Type, Data: []bindingData{{Key: old.Key, Content: old.Content, File: old.File, FromURL: old.FromURL}}}, nil
-}
-
 func fromRaw(rawData interface{}) (binding, error) {
 	var new binding
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		ErrorUnused: true,
-		Result:      &new,
-	})
+	jsonValue, err := json.Marshal(rawData)
 	if err != nil {
 		return binding{}, err
 	}
-	err = decoder.Decode(rawData)
+
+	errs, err := k8sjson.UnmarshalStrict(jsonValue, &new, k8sjson.DisallowUnknownFields)
 	if err != nil {
+		return binding{}, err
+	}
+
+	if len(errs) != 0 {
+		for _, e := range errs {
+			if err == nil {
+				err = e
+			} else {
+				err = errors.Wrap(err, e.Error())
+			}
+		}
+		err = errors.Wrap(err, "validation error")
 		return binding{}, err
 	}
 
