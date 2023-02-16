@@ -383,12 +383,12 @@ func sendRequestIAM(sys *SystemInstance, method, base, url string, body io.Reade
 // Updated for Cx1
 func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader, header http.Header, acceptedErrorCodes []int) ([]byte, error) {
 	var requestBody io.Reader
-	var requestBodyCopy io.Reader
+	var reqBody string
 	if body != nil {
 		closer := ioutil.NopCloser(body)
 		bodyBytes, _ := ioutil.ReadAll(closer)
+		reqBody = string(bodyBytes)
 		requestBody = bytes.NewBuffer(bodyBytes)
-		requestBodyCopy = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
 	}
 
@@ -400,9 +400,53 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 
 	response, err := sys.client.SendRequest(method, url, requestBody, header, nil)
 	if err != nil && (response == nil || !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode)) {
-		sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
-		sys.logger.Errorf("HTTP request failed with error: %s", err)
-		return nil, err
+
+		var resBodyBytes []byte
+		if response != nil && response.Body != nil {
+			resBodyBytes, _ = io.ReadAll(response.Body)
+			defer response.Body.Close()
+			resBody := string(resBodyBytes)
+			sys.recordRequestDetailsInErrorCase(reqBody, resBody)
+		}
+
+		var str string
+		if len(resBodyBytes) > 0 {
+			var msg map[string]interface{}
+			_ = json.Unmarshal(resBodyBytes, &msg)
+
+			if msg["message"] != nil {
+				str = msg["message"].(string)
+			} else if msg["error_description"] != nil {
+				str = msg["error_description"].(string)
+			} else if msg["error"] != nil {
+				str = msg["error"].(string)
+			} else {
+				if len(str) > 20 {
+					str = string(resBodyBytes[:20])
+				} else {
+					str = string(resBodyBytes)
+				}
+			}
+		}
+
+		if err != nil {
+			if str != "" {
+				err = fmt.Errorf("%s: %v", err, str)
+			} else {
+				err = fmt.Errorf("%s", err)
+			}
+			sys.logger.Errorf("HTTP request failed with error: %s", err)
+			return resBodyBytes, err
+		} else {
+			if str != "" {
+				err = fmt.Errorf("HTTP %v: %v", response.Status, str)
+			} else {
+				err = fmt.Errorf("HTTP %v", response.Status)
+			}
+
+			sys.logger.Errorf("HTTP response indicates error: %s", err)
+			return resBodyBytes, err
+		}
 	}
 
 	data, _ := ioutil.ReadAll(response.Body)
@@ -411,15 +455,12 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	return data, nil
 }
 
-func (sys *SystemInstance) recordRequestDetailsInErrorCase(requestBody io.Reader, response *http.Response) {
-	if requestBody != nil {
-		data, _ := ioutil.ReadAll(ioutil.NopCloser(requestBody))
-		sys.logger.Errorf("Request body: %s", data)
+func (sys *SystemInstance) recordRequestDetailsInErrorCase(requestBody string, responseBody string) {
+	if requestBody != "" {
+		sys.logger.Errorf("Request body: %s", requestBody)
 	}
-	if response != nil && response.Body != nil {
-		data, _ := ioutil.ReadAll(response.Body)
-		sys.logger.Errorf("Response body: %s", data)
-		response.Body.Close()
+	if responseBody != "" {
+		sys.logger.Errorf("Response body: %s", responseBody)
 	}
 }
 
