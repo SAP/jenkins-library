@@ -182,8 +182,9 @@ spec:
           bindings:
             maven-settings:
               type: maven
-              key: settings.xml
-              file: path/to/settings.xml
+              data:
+              - key: settings.xml
+                file: path/to/settings.xml
           ```
 
           inline:
@@ -191,8 +192,9 @@ spec:
           bindings:
             maven-settings:
               type: maven
-              key: settings.xml
-              content: "inline settings.xml"
+              data:
+              - key: settings.xml
+                content: "inline settings.xml"
           ```
 
           from url:
@@ -200,9 +202,21 @@ spec:
           bindings:
             maven-settings:
               type: maven
-              key: settings.xml
-              fromUrl: https://url-to/setting.xml
+              data:
+              - key: settings.xml
+                fromUrl: https://url-to/setting.xml
           ```
+
+          Deprecated: A binding with a single key, could be written like this:
+
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              file: path/to/settings.xml
+          ```
+
         scope:
           - PARAMETERS
           - STAGES
