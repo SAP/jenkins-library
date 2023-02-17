@@ -23,8 +23,8 @@ The result can be found in console on pipeline. By default, black duck scans in 
 If the orchestrator is configured to detect pull requests, then piper pipeline in detecExecuationScan step can recognize the pull request and change the Black Duck scan mode from 'FULL' to 'RAPID'. This does not affect to usual branch scans.
 
 - **Note**
-  1. In GPP (General Purpose Pipeline) for pull requests, detecExecutionScan is disabled. And so in PR Vouting detecExecuationScan skips.
-  2. In all other pipelines where the detecExecuationScan step is enabled in the orchestrator, this function will work.
+  1. This functionality is not applicable to GPP (General Purpose Pipeline)
+  2. This can be used only for custom pipelines based on Jenkins piper library
 
 #### Result of scan on pull request comment
 
@@ -36,8 +36,8 @@ If `githubApi` and `githubToken` are provided, then pipeline adds the scan resul
 
 1. Specify all required parameters of the DetectExecution step in .pipeline/config.yaml (`githubApi`, `githubToken` optional)
 2. Enable detecExecuationScan in the orchestrator
-3. Open a pull request with some changes to main branch
-4. Specify `githubApi` and `githubToken` in the DetectExecution step to get the result in the pull request comment. (optional)
+3. Specify `githubApi` and `githubToken` in the DetectExecution step to get the result in the pull request comment. (optional)
+4. Open a pull request with some changes to main branch
 
 #### Example for jenkins orchestrator
 
