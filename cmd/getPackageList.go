@@ -114,15 +114,15 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					finalEndpoint12 := entryPoints12.Data().(string)
 					lastChar2 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar2 == '{' {
-						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint1 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\nversion\": " + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint1 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\n\"version\": \"" + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint1 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\nversion\": " + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint1 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\n\"version\": \"" + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
 					}
 					lastChar21 := commonPipelineEnvironment.custom.integrationArtifactList[len(commonPipelineEnvironment.custom.integrationArtifactList)-1]
 					if lastChar21 == '[' {
-						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\nversion\": " + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
+						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\n\"version\": \"" + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\nversion\": " + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
+						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\n\"version\": \"" + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
 					}
 				}
 			}
@@ -145,15 +145,15 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					finalEndpoint22 := entryPoints22.Data().(string)
 					lastChar3 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar3 == '{' {
-						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint2 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\nversion\": " + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint2 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\n\"version\": \"" + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint2 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\nversion\": " + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint2 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\n\"version\": \"" + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
 					}
 					lastChar31 := commonPipelineEnvironment.custom.integrationArtifactList[len(commonPipelineEnvironment.custom.integrationArtifactList)-1]
 					if lastChar31 == '[' {
-						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\nversion\": " + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
+						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\n\"version\": \"" + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\nversion\": " + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
+						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\n\"version\": \"" + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
 					}
 				}
 			}
@@ -176,15 +176,15 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					finalEndpoint32 := entryPoints32.Data().(string)
 					lastChar4 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar4 == '{' {
-						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint3 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\nversion\": " + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint3 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\n\"version\": \"" + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint3 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\nversion\": " + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint3 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\n\"version\": \"" + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
 					}
 					lastChar41 := commonPipelineEnvironment.custom.integrationArtifactList[len(commonPipelineEnvironment.custom.integrationArtifactList)-1]
 					if lastChar41 == '[' {
-						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\nversion\": " + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
+						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\n\"version\": \"" + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\nversion\": " + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
+						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\n\"version\": \"" + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
 					}
 				}
 			}
@@ -207,15 +207,15 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 					finalEndpoint42 := entryPoints42.Data().(string)
 					lastChar5 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar5 == '{' {
-						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint4 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\nversion\": " + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint4 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\n\"version\": \"" + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint4 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\nversion\": " + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint4 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\n\"version\": \"" + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
 					}
 					lastChar51 := commonPipelineEnvironment.custom.integrationArtifactList[len(commonPipelineEnvironment.custom.integrationArtifactList)-1]
 					if lastChar51 == '[' {
-						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\nversion\": " + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
+						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\n\"version\": \"" + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\nversion\": " + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
+						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\n\"version\": \"" + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
 					}
 				}
 			}
