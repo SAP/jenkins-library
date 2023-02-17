@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -142,14 +141,6 @@ func (cim *communicationInstanceMock) UploadFileToNode(nodeName, fileId, descrip
 	}
 }
 
-func mapToJson(m map[string]interface{}) (string, error) {
-	b, err := json.Marshal(m)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
 func TestRunTmsUpload(t *testing.T) {
 	t.Parallel()
 
@@ -171,9 +162,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -220,9 +209,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -239,9 +226,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils := newTmsUploadTestsUtils()
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -259,9 +244,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -280,9 +263,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -304,9 +285,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -328,9 +307,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -368,9 +345,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3, invalidMtaExtDescriptorBytes3)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL, "UNEXISTING_NODE": "unexisting.mtaext", "ONE_MORE_UNEXISTING_NODE": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL, "ONE_MORE_UNEXISTING_NODE_2": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2, "ONE_MORE_UNEXISTING_NODE_3": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: WRONG_MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: WRONG_MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -401,9 +376,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -430,9 +403,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -458,9 +429,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -486,9 +455,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)
@@ -515,9 +482,7 @@ func TestRunTmsUpload(t *testing.T) {
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
-		nodeNameExtDescriptorMapStr, convErr := mapToJson(nodeNameExtDescriptorMapping)
-		assert.NoError(t, convErr)
-		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapStr}
+		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
 
 		// test
 		err := runTmsUpload(config, &communicationInstance, utils)

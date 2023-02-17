@@ -126,7 +126,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 	namedUser := config.NamedUser
 	nodeName := config.NodeName
 	mtaVersion := config.MtaVersion
-	nodeNameExtDescriptorMapping := jsonToMap(config.NodeExtDescriptorMapping)
+	nodeNameExtDescriptorMapping := config.NodeExtDescriptorMapping
 
 	if GeneralConfig.Verbose {
 		log.Entry().Info("The step will use the following values:")
