@@ -77,6 +77,7 @@ type Licenses struct {
 	PolicyViolationName string
 	Values              []License
 }
+
 type License struct {
 	LicenseName   string
 	ComponentName string
@@ -412,10 +413,8 @@ func scoreLogicSort(iStr, jStr string) bool {
 	} else if strings.Contains(jStr, "10.0") {
 		return false
 	}
-	if iStr > jStr {
+	if iStr >= jStr {
 		return true
-	} else if iStr < jStr {
-		return false
 	}
-	return iStr < jStr
+	return false
 }
