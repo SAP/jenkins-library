@@ -70,6 +70,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 		if parsingErr != nil {
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 		}
+		commonPipelineEnvironment.custom.integrationArtifactList += "["
 		commonPipelineEnvironment.custom.integrationPackageList += "{\"Packages\" : {"
 		for _, child := range jsonResponse.S("d", "results").Children() {
 			// iflowID := strings.ReplaceAll(child.Path("Name").String(), "\"", "")
@@ -107,13 +108,21 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child1 := range jsonResponse1.S("d", "results").Children() {
 					entryPoints1 := child1.S("Id")
 					entryPoints11 := child1.S("Version")
+					entryPoints12 := child1.S("Name")
 					finalEndpoint1 := entryPoints1.Data().(string)
 					finalEndpoint11 := entryPoints11.Data().(string)
+					finalEndpoint12 := entryPoints12.Data().(string)
 					lastChar2 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar2 == '{' {
-						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint1 + "\" : \"" + finalEndpoint11 + "\""
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint1 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\nversion\": " + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint1 + "\" : \"" + finalEndpoint11 + "\""
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint1 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\nversion\": " + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
+					}
+					lastChar21 := commonPipelineEnvironment.custom.integrationArtifactList[len(commonPipelineEnvironment.custom.integrationArtifactList)-1]
+					if lastChar21 == '[' {
+						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\nversion\": " + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
+					} else {
+						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint1 + "\",\nversion\": " + finalEndpoint11 + "\",\n\"artifact_name\" : \"" + finalEndpoint12 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"iflow\"}"
 					}
 				}
 			}
@@ -130,13 +139,21 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child2 := range jsonResponse2.S("d", "results").Children() {
 					entryPoints2 := child2.S("Id")
 					entryPoints21 := child2.S("Version")
+					entryPoints22 := child2.S("Name")
 					finalEndpoint2 := entryPoints2.Data().(string)
 					finalEndpoint21 := entryPoints21.Data().(string)
+					finalEndpoint22 := entryPoints22.Data().(string)
 					lastChar3 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar3 == '{' {
-						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint2 + "\" : \"" + finalEndpoint21 + "\""
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint2 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\nversion\": " + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint2 + "\" : \"" + finalEndpoint21 + "\""
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint2 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\nversion\": " + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
+					}
+					lastChar31 := commonPipelineEnvironment.custom.integrationArtifactList[len(commonPipelineEnvironment.custom.integrationArtifactList)-1]
+					if lastChar31 == '[' {
+						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\nversion\": " + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
+					} else {
+						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint2 + "\",\nversion\": " + finalEndpoint21 + "\",\n\"artifact_name\" : \"" + finalEndpoint22 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"vmap\"}"
 					}
 				}
 			}
@@ -153,13 +170,21 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child3 := range jsonResponse3.S("d", "results").Children() {
 					entryPoints3 := child3.S("Id")
 					entryPoints31 := child3.S("Version")
+					entryPoints32 := child3.S("Name")
 					finalEndpoint3 := entryPoints3.Data().(string)
 					finalEndpoint31 := entryPoints31.Data().(string)
+					finalEndpoint32 := entryPoints32.Data().(string)
 					lastChar4 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar4 == '{' {
-						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint3 + "\" : \"" + finalEndpoint31 + "\""
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint3 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\nversion\": " + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint3 + "\" : \"" + finalEndpoint31 + "\""
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint3 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\nversion\": " + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
+					}
+					lastChar41 := commonPipelineEnvironment.custom.integrationArtifactList[len(commonPipelineEnvironment.custom.integrationArtifactList)-1]
+					if lastChar41 == '[' {
+						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\nversion\": " + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
+					} else {
+						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint3 + "\",\nversion\": " + finalEndpoint31 + "\",\n\"artifact_name\" : \"" + finalEndpoint32 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"mmap\"}"
 					}
 				}
 			}
@@ -176,13 +201,21 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 				for _, child4 := range jsonResponse4.S("d", "results").Children() {
 					entryPoints4 := child4.S("Id")
 					entryPoints41 := child4.S("Version")
+					entryPoints42 := child4.S("Name")
 					finalEndpoint4 := entryPoints4.Data().(string)
 					finalEndpoint41 := entryPoints41.Data().(string)
+					finalEndpoint42 := entryPoints42.Data().(string)
 					lastChar5 := commonPipelineEnvironment.custom.integrationPackageList[len(commonPipelineEnvironment.custom.integrationPackageList)-1]
 					if lastChar5 == '{' {
-						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint4 + "\" : \"" + finalEndpoint41 + "\""
+						commonPipelineEnvironment.custom.integrationPackageList += "\n\"" + finalEndpoint4 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\nversion\": " + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
 					} else {
-						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint4 + "\" : \"" + finalEndpoint41 + "\""
+						commonPipelineEnvironment.custom.integrationPackageList += ",\n\"" + finalEndpoint4 + "\" : {\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\nversion\": " + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
+					}
+					lastChar51 := commonPipelineEnvironment.custom.integrationArtifactList[len(commonPipelineEnvironment.custom.integrationArtifactList)-1]
+					if lastChar51 == '[' {
+						commonPipelineEnvironment.custom.integrationArtifactList += "\n{\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\nversion\": " + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
+					} else {
+						commonPipelineEnvironment.custom.integrationArtifactList += ",\n{\n\"artifact_id\" : \"" + finalEndpoint4 + "\",\nversion\": " + finalEndpoint41 + "\",\n\"artifact_name\" : \"" + finalEndpoint42 + "\",\n\"package_id\" : \"" + finalEndpoint + "\",\n\"type\" : \"scol\"}"
 					}
 				}
 			}
@@ -192,6 +225,7 @@ func runGetPackageList(config *getPackageListOptions, telemetryData *telemetry.C
 
 		}
 		commonPipelineEnvironment.custom.integrationPackageList += "}}\n"
+		commonPipelineEnvironment.custom.integrationArtifactList += "]"
 		return nil
 	}
 

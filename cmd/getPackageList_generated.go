@@ -23,7 +23,8 @@ type getPackageListOptions struct {
 
 type getPackageListCommonPipelineEnvironment struct {
 	custom struct {
-		integrationPackageList string
+		integrationPackageList  string
+		integrationArtifactList string
 	}
 }
 
@@ -34,6 +35,7 @@ func (p *getPackageListCommonPipelineEnvironment) persist(path, resourceName str
 		value    interface{}
 	}{
 		{category: "custom", name: "integrationPackageList", value: p.custom.integrationPackageList},
+		{category: "custom", name: "integrationArtifactList", value: p.custom.integrationArtifactList},
 	}
 
 	errCount := 0
@@ -188,6 +190,7 @@ func getPackageListMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/integrationPackageList"},
+							{"name": "custom/integrationArtifactList"},
 						},
 					},
 				},

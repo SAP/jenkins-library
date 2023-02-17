@@ -28,3 +28,4 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/integrationPackageList
+          - name: custom/integrationArtifactList
