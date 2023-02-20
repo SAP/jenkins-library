@@ -61,7 +61,7 @@ func runValueMappingArtifactUpload(config *valueMappingArtifactUploadOptions, te
 		defer vMapStatusResp.Body.Close()
 	}
 	if vMapStatusResp.StatusCode == 200 {
-		return UploadValueMappingArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
+		return UpdateValueMappingArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
 	} else if httpErr != nil && vMapStatusResp.StatusCode == 404 {
 		return UploadValueMappingArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
 	}
@@ -121,7 +121,7 @@ func UploadValueMappingArtifact(config *valueMappingArtifactUploadOptions, httpC
 
 // UpdateValueMappingArtifact - Update existing value mapping artifact
 func UpdateValueMappingArtifact(config *valueMappingArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
-	httpMethod := "PUT"
+	httpMethod := "DELETE"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
 	updateVmapStatusURL := fmt.Sprintf("%s/api/v1/ValueMappingDesigntimeArtifacts(Id='%s',Version='%s')", apiHost, config.ValueMappingID, "Active")
@@ -142,8 +142,8 @@ func UpdateValueMappingArtifact(config *valueMappingArtifactUploadOptions, httpC
 	if updateVmapStatusResp.StatusCode == http.StatusOK {
 		log.Entry().
 			WithField("ValueMappingID", config.ValueMappingID).
-			Info("Successfully updated Value Mapping artifact in CPI designtime")
-		return nil
+			Info("Successfully deleted Value Mapping artifact in CPI designtime")
+		return UploadValueMappingArtifact(config, httpClient, fileUtils, apiHost)
 	}
 	if httpErr != nil {
 		responseBody, readErr := ioutil.ReadAll(updateVmapStatusResp.Body)
