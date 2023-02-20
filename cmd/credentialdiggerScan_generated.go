@@ -134,7 +134,7 @@ func addCredentialdiggerScanFlags(cmd *cobra.Command, stepConfig *credentialdigg
 	cmd.Flags().StringVar(&stepConfig.RulesDownloadURL, "rulesDownloadUrl", os.Getenv("PIPER_rulesDownloadUrl"), "URL where to download custom rules. The file published at this URL must be formatted as the default ruleset https://raw.githubusercontent.com/SAP/credential-digger/main/ui/backend/rules.yml")
 	cmd.Flags().StringSliceVar(&stepConfig.Models, "models", []string{}, "Machine learning models to automatically verify the findings.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringVar(&stepConfig.RulesFile, "rulesFile", `inputs/rules.yml`, "Name of the rules file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.")
+	cmd.Flags().StringVar(&stepConfig.RulesFile, "rulesFile", `inputs/rules.yml`, "Name of the rules file used locally within the step. If a remote files for rules is declared as `rulesDownloadUrl`, the stashed file is ignored. If you change the file's name make sure your stashing configuration also reflects this.")
 
 	cmd.MarkFlagRequired("apiUrl")
 	cmd.MarkFlagRequired("token")
