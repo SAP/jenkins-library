@@ -118,24 +118,43 @@ func executeCredentialDiggerProcess(utils credentialdiggerUtils, args []string) 
 	return utils.RunExecutable("credentialdigger", args...)
 }
 
+// hasConfigurationFile checks if the given file exists
+func hasRulesFile(file string, utils credentialdiggerUtils) bool {
+	exists, err := utils.FileExists(file)
+	if err != nil {
+		log.Entry().WithError(err).Error()
+	}
+	return exists
+}
+
 func credentialdiggerAddRules(config *credentialdiggerScanOptions, telemetryData *telemetry.CustomData, service credentialdiggerUtils) error {
 	// Credentialdigger home can be changed with local forks (e.g., for local piper runs)
-	cdHome := "/credential-digger-ui" // cdHome as in docker container
+	cdHome := "/credential-digger-ui" // cdHome path as in docker container
 	if cdh := os.Getenv("CREDENTIALDIGGER_HOME"); cdh != "" {
 		cdHome = cdh
 	}
 	log.Entry().Debug("Use credentialdigger home ", cdHome)
-	// Set the rule file to the standard ruleset shipped withing credential
-	// digger
+	// Set the rule file to the standard ruleset shipped within credential
+	// digger container
 	ruleFile := filepath.Join(cdHome, "backend", "rules.yml")
+
 	if config.RulesDownloadURL != "" {
 		// Download custom rule file from this URL
 		log.Entry().Debugf("Download custom ruleset from %v", config.RulesDownloadURL)
 		dlClient := piperhttp.Client{}
 		ruleFile := filepath.Join(cdHome, "backend", "custom-rules.yml")
 		dlClient.DownloadFile(config.RulesDownloadURL, ruleFile, nil, nil)
+		log.Entry().Info("Download and use remote rules")
 	} else {
-		log.Entry().Debug("Use standard ruleset")
+		log.Entry().Debug("Use a local ruleset")
+		// Use rules defined in stashed file
+		if hasRulesFile(config.RulesFile, service) {
+			log.Entry().WithField("file", config.RulesFile).Info("Use stashed rules file from repository")
+			ruleFile = config.RulesFile
+		} else {
+			log.Entry().Info("Use standard pre-defined rules")
+		}
+
 	}
 	cmd_list := []string{"add_rules", "--sqlite", piperDbName, ruleFile}
 	return executeCredentialDiggerProcess(service, cmd_list)
