@@ -96,3 +96,20 @@ spec:
         default: GIT
         possibleValues:
           - GIT
+      - name: queryParameters
+        type: "map[string]interface{}"
+        description: Specifies pairs of key and value query parameters for the api requests
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: skipSSLVerification
+        type: bool
+        description: You can skip the SSL (Secure Socket Layer) verification for the http client
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: false
