@@ -83,7 +83,10 @@ spec:
           - name: dockerRegistryUrl
         type: string
         mandatory: true
-        description: Container registry where the image should be pushed to
+        description: |
+          Container registry where the image should be pushed to.
+
+          **Note**: `containerRegistryUrl` should include only the domain. If you want to publish an image under `docker.io/example/my-image`, you must set `containerRegistryUrl: "docker.io"` and `containerImageName: "example/my-image"`.
         scope:
           - GENERAL
           - PARAMETERS
@@ -179,8 +182,9 @@ spec:
           bindings:
             maven-settings:
               type: maven
-              key: settings.xml
-              file: path/to/settings.xml
+              data:
+              - key: settings.xml
+                file: path/to/settings.xml
           ```
 
           inline:
@@ -188,8 +192,9 @@ spec:
           bindings:
             maven-settings:
               type: maven
-              key: settings.xml
-              content: "inline settings.xml"
+              data:
+              - key: settings.xml
+                content: "inline settings.xml"
           ```
 
           from url:
@@ -197,9 +202,21 @@ spec:
           bindings:
             maven-settings:
               type: maven
-              key: settings.xml
-              fromUrl: https://url-to/setting.xml
+              data:
+              - key: settings.xml
+                fromUrl: https://url-to/setting.xml
           ```
+
+          Deprecated: A binding with a single key, could be written like this:
+
+          ```yaml
+          bindings:
+            maven-settings:
+              type: maven
+              key: settings.xml
+              file: path/to/settings.xml
+          ```
+
         scope:
           - PARAMETERS
           - STAGES
@@ -217,16 +234,16 @@ spec:
 
           ```yaml
           containerImageTag: latest
-          containerRegistryUrl: docker.io/example
+          containerRegistryUrl: docker.io
           dockerConfigJsonCredentialsId: CREDENTIALS
           multipleImages:
-          - containerImageName: java-app
-            alias: java
+          - containerImageName: example/java-app
+            containerImageAlias: java
             buildpacks:
             - "gcr.io/paketo-buildpacks/java"
             path: "source/java"
-          - containerImageName: nodejs-app
-            alias: nodejs
+          - containerImageName: example/nodejs-app
+            containerImageAlias: nodejs
             containerImageTag: v1.0.0
             buildpacks:
             - "gcr.io/paketo-buildpacks/nodejs"

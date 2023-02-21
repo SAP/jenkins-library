@@ -673,6 +673,21 @@ func TestTransformComponentOriginToPurlParts(t *testing.T) {
 			},
 			expected: []string{"generic", "", "spring-expression", "4.1.6.RELEASE"},
 		},
+		{
+			// pkg:debian/libpython3.9-stdlib@3.9.2-1
+			description: "Component with specified architecture",
+			component: &Component{
+				Name:    "Python programming language",
+				Version: "3.9.2",
+				Origins: []ComponentOrigin{
+					{
+						ExternalNamespace: "debian",
+						ExternalID:        "libpython3.9-stdlib/3.9.2-1/amd64",
+					},
+				},
+			},
+			expected: []string{"debian", "libpython3.9-stdlib", "3.9.2-1"},
+		},
 	}
 
 	for _, test := range tt {

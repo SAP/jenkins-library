@@ -183,8 +183,9 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 	}
 
-	cmd = append(cmd, "--language="+language)
-	if len(config.Language) > 0 {
+	if len(language) > 0 {
+		cmd = append(cmd, "--language="+language)
+	} else if len(config.Language) > 0 {
 		cmd = append(cmd, "--language="+config.Language)
 	}
 

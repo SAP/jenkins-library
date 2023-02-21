@@ -233,7 +233,7 @@ func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 }
 
 func (g *GitHubActionsConfigProvider) IsPullRequest() bool {
-	return getEnv("GITHUB_HEAD_REF", "") != ""
+	return truthy("GITHUB_HEAD_REF")
 }
 
 func isGitHubActions() bool {

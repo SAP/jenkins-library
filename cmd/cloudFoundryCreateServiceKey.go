@@ -9,6 +9,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+const cfCliSynchronousRequestFlag = "--wait"
+
 func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
 	c := command.Command{}
@@ -51,11 +53,18 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 	log.Entry().Info("Creating Service Key")
 
 	var cfCreateServiceKeyScript []string
+	// the --wait option was added for cf cli v8 in order to ensure a synchronous creation of the servie key that was default in v7 or earlier
 	if options.CfServiceKeyConfig == "" {
 		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName}
 	} else {
 		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, "-c", options.CfServiceKeyConfig}
 	}
+
+	// If a synchronous execution is requested, the "--wait" flag needs to be added
+	if !options.CfAsync {
+		cfCreateServiceKeyScript = append(cfCreateServiceKeyScript, cfCliSynchronousRequestFlag)
+	}
+
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 	if err != nil {
 		return fmt.Errorf("Failed to Create Service Key: %w", err)
