@@ -21,7 +21,6 @@ The result can be found in the pipeline console.
 - **Note**
   By default, Black Duck scans run in 'FULL' mode. Although rapid scans do appropriate security checks for early detection of issues during daily developments, they are not sufficient for production deployment and releases: Only use 'FULL' scans for production deployment and releases.
 
-
 ### Running rapid scans on pull requests
 
 If you have configured your orchestrator to detect pull requests, then the `detecExecuationScan` step in the Piper pipeline can recognize this and change the Black Duck scan mode from 'FULL' to 'RAPID'. This does not affect the usual branch scans.
@@ -35,45 +34,45 @@ If you have configured your orchestrator to detect pull requests, then the `dete
 1. Specify all the required parameters for the detectExecution step in .pipeline/config.yml
    Optionally you can specify `githubApi` and `githubToken` in the detectExecution step to get the result in the pull request comment.
    For example:
-```
-...
-steps:
-  ...
-  detectExecuteScan:
-    serverUrl: 'https://sap-staging.app.blackduck.com/'
-    detectTokenCredentialsId: 'JenkinsCredentialsIdForBlackDuckToken'
-    projectName: 'projectNameInBlackDuckUI'
-    version: 'v1.0'
-    githubApiUrl: 'https://github.wdf.sap.corp/api/v3'
-    githubToken: 'JenkinsCredentialsIdForGithub'
-  ...
-...
-```
+
+    ```
+    ...
+    steps:
+      ...
+      detectExecuteScan:
+        serverUrl: 'https://sap-staging.app.blackduck.com/'
+        detectTokenCredentialsId: 'JenkinsCredentialsIdForBlackDuckToken'
+        projectName: 'projectNameInBlackDuckUI'
+        version: 'v1.0'
+        githubApiUrl: 'https://github.wdf.sap.corp/api/v3'
+        githubToken: 'JenkinsCredentialsIdForGithub'
+      ...
+    ...
+    ```
 
 2. Enable detecExecuationScan in the orchestrator.
-   For example:
-```
-@Library('piper-lib') _
-@Library('piper-lib-os') __
+  For example:
 
-node {
-  stage('Init') {
-    checkout scm
-    setupPipelineEnvironment script: this
-  }
-  stage('detectExecuteScan') {
-     detectExecuteScan script: this
-  }
-  ...
-}
-```
+    ```
+    @Library('piper-lib') _
+    @Library('piper-lib-os') __
 
-3.To run the rapid scan, open a pull request with your changes to the main branch.
+    node {
+      stage('Init') {
+        checkout scm
+        setupPipelineEnvironment script: this
+      }
+      stage('detectExecuteScan') {
+         detectExecuteScan script: this
+      }
+      ...
+    }
+    ```
+
+3. To run the rapid scan, open a pull request with your changes to the main branch.
 
 #### Result of the rapid scan
 
 If you provide `githubApi` and `githubToken`, then the pipeline adds the scan result to the comment of the opened pull request.
 
 ![blackDuckPullRequestComment](../images/BDRapidScanPrs.png)
-
-
