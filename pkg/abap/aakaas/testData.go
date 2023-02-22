@@ -9,6 +9,9 @@ package aakaas
 
 import abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 
+const statusFilterCVEscaped string = "DeliveryStatus+eq+%27R%27"
+const statusFilterPVEscaped string = "DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27"
+
 var ResponseCheckPV = `{
     "d": {
         "Name": "/DRNMSPC/PRD01",
@@ -39,7 +42,7 @@ var emptyResultBody = `{
 
 var testDataAakaasCVGetReleaseExisting = abapbuild.MockData{
 	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechSpLevel+eq+%270000%27+and+TechPatchLevel+eq+%270000%27+and+%28+DeliveryStatus+eq+%27R%27+or+DeliveryStatus+eq+%27C%27+or+DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27+%29&%24format=json&%24orderby=TechRelease+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel&%24top=1`,
+	Url:    `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechSpLevel+eq+%270000%27+and+TechPatchLevel+eq+%270000%27+and+%28+` + statusFilterCVEscaped + `+%29&%24format=json&%24orderby=TechRelease+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel%2CNamespace&%24top=1`,
 	Body: `{
 		"d": {
 			"results": [
@@ -58,14 +61,14 @@ var testDataAakaasCVGetReleaseExisting = abapbuild.MockData{
 
 var testDataAakaasCVGetReleaseNonExisting = abapbuild.MockData{
 	Method:     `GET`,
-	Url:        `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechSpLevel+eq+%270000%27+and+TechPatchLevel+eq+%270000%27+and+%28+DeliveryStatus+eq+%27R%27+or+DeliveryStatus+eq+%27C%27+or+DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27+%29&%24format=json&%24orderby=TechRelease+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel&%24top=1`,
+	Url:        `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechSpLevel+eq+%270000%27+and+TechPatchLevel+eq+%270000%27+and+%28+` + statusFilterCVEscaped + `+%29&%24format=json&%24orderby=TechRelease+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel%2CNamespace&%24top=1`,
 	Body:       emptyResultBody,
 	StatusCode: 200,
 }
 
 var testDataAakaasCVGetSpLevelExisting = abapbuild.MockData{
 	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechRelease+eq+%271%27+and+TechPatchLevel+eq+%270000%27++and+%28+DeliveryStatus+eq+%27R%27+or+DeliveryStatus+eq+%27C%27+or+DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27+%29&%24format=json&%24orderby=TechSpLevel+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel&%24top=1`,
+	Url:    `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechRelease+eq+%271%27+and+TechPatchLevel+eq+%270000%27++and+%28+` + statusFilterCVEscaped + `+%29&%24format=json&%24orderby=TechSpLevel+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel%2CNamespace&%24top=1`,
 	Body: `{
 		"d": {
 			"results": [
@@ -84,14 +87,14 @@ var testDataAakaasCVGetSpLevelExisting = abapbuild.MockData{
 
 var testDataAakaasCVGetSpLevelNonExisting = abapbuild.MockData{
 	Method:     `GET`,
-	Url:        `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechRelease+eq+%271%27+and+TechPatchLevel+eq+%270000%27++and+%28+DeliveryStatus+eq+%27R%27+or+DeliveryStatus+eq+%27C%27+or+DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27+%29&%24format=json&%24orderby=TechSpLevel+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel&%24top=1`,
+	Url:        `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechRelease+eq+%271%27+and+TechPatchLevel+eq+%270000%27++and+%28+` + statusFilterCVEscaped + `+%29&%24format=json&%24orderby=TechSpLevel+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel%2CNamespace&%24top=1`,
 	Body:       emptyResultBody,
 	StatusCode: 200,
 }
 
 var testDataAakaasCVGetPatchLevelExisting = abapbuild.MockData{
 	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechRelease+eq+%271%27+and+TechSpLevel+eq+%270003%27+and+%28+DeliveryStatus+eq+%27R%27+or+DeliveryStatus+eq+%27C%27+or+DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27+%29&%24format=json&%24orderby=TechPatchLevel+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel&%24top=1`,
+	Url:    `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechRelease+eq+%271%27+and+TechSpLevel+eq+%270003%27+and+%28+` + statusFilterCVEscaped + `+%29&%24format=json&%24orderby=TechPatchLevel+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel%2CNamespace&%24top=1`,
 	Body: `{
 		"d": {
 			"results": [
@@ -110,14 +113,14 @@ var testDataAakaasCVGetPatchLevelExisting = abapbuild.MockData{
 
 var testDataAakaasCVGetPatchLevelNonExisting = abapbuild.MockData{
 	Method:     `GET`,
-	Url:        `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechRelease+eq+%271%27+and+TechSpLevel+eq+%270003%27+and+%28+DeliveryStatus+eq+%27R%27+or+DeliveryStatus+eq+%27C%27+or+DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27+%29&%24format=json&%24orderby=TechPatchLevel+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel&%24top=1`,
+	Url:        `/odata/aas_ocs_package/xSSDAxC_Component_Version?%24filter=Name+eq+%27DummyComp%27+and+TechRelease+eq+%271%27+and+TechSpLevel+eq+%270003%27+and+%28+` + statusFilterCVEscaped + `+%29&%24format=json&%24orderby=TechPatchLevel+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel%2CNamespace&%24top=1`,
 	Body:       emptyResultBody,
 	StatusCode: 200,
 }
 
 var testDataAakaasPVGetReleaseExisting = abapbuild.MockData{
 	Method: `GET`,
-	Url:    `/odata/aas_ocs_package/xSSDAxC_Product_Version?%24filter=Name+eq+%27DummyProd%27+and+TechSpLevel+eq+%270000%27+and+TechPatchLevel+eq+%270000%27+and+%28+DeliveryStatus+eq+%27R%27+or+DeliveryStatus+eq+%27C%27+or+DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27+%29&%24format=json&%24orderby=TechRelease+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel&%24top=1`,
+	Url:    `/odata/aas_ocs_package/xSSDAxC_Product_Version?%24filter=Name+eq+%27DummyProd%27+and+TechSpLevel+eq+%270000%27+and+TechPatchLevel+eq+%270000%27+and+%28+` + statusFilterPVEscaped + `+%29&%24format=json&%24orderby=TechRelease+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel%2CNamespace&%24top=1`,
 	Body: `{
         "d": {
             "results": [
@@ -136,7 +139,7 @@ var testDataAakaasPVGetReleaseExisting = abapbuild.MockData{
 
 var testDataAakaasPVGetReleaseNonExisting = abapbuild.MockData{
 	Method:     `GET`,
-	Url:        `/odata/aas_ocs_package/xSSDAxC_Product_Version?%24filter=Name+eq+%27DummyProd%27+and+TechSpLevel+eq+%270000%27+and+TechPatchLevel+eq+%270000%27+and+%28+DeliveryStatus+eq+%27R%27+or+DeliveryStatus+eq+%27C%27+or+DeliveryStatus+eq+%27T%27+or+DeliveryStatus+eq+%27P%27+%29&%24format=json&%24orderby=TechRelease+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel&%24top=1`,
+	Url:        `/odata/aas_ocs_package/xSSDAxC_Product_Version?%24filter=Name+eq+%27DummyProd%27+and+TechSpLevel+eq+%270000%27+and+TechPatchLevel+eq+%270000%27+and+%28+` + statusFilterPVEscaped + `+%29&%24format=json&%24orderby=TechRelease+desc&%24select=Name%2CVersion%2CTechRelease%2CTechSpLevel%2CTechPatchLevel%2CNamespace&%24top=1`,
 	Body:       emptyResultBody,
 	StatusCode: 200,
 }
