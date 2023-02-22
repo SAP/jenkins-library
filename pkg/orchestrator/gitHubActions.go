@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"golang.org/x/sync/errgroup"
-	"golang.org/x/sync/semaphore"
 	"io"
 	"strings"
 	"sync"
 	"time"
+
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
