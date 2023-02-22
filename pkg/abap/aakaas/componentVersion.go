@@ -21,7 +21,7 @@ func (c *ComponentVersion) ConstructComponentVersion(repo abaputils.Repository, 
 	if err := c.constructVersionable(repo.Name, repo.VersionYAML, conn, cvQueryURL); err != nil {
 		return err
 	}
-	if err := c.resolveNext(); err != nil {
+	if err := c.resolveNext(statusFilterCV); err != nil {
 		return err
 	}
 
