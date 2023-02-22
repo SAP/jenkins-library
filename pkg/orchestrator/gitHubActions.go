@@ -85,10 +85,13 @@ func (g *GitHubActionsConfigProvider) GetRepoURL() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
+	// See https://docs.github.com/en/enterprise-server@3.6/actions/learn-github-actions/variables#default-environment-variables
+	githubRef := getEnv("GITHUB_REF", "n/a")
+	prNumber := strings.TrimSuffix(strings.TrimPrefix(githubRef, "refs/pull/"), "/merge")
 	return PullRequestConfig{
 		Branch: getEnv("GITHUB_HEAD_REF", "n/a"),
 		Base:   getEnv("GITHUB_BASE_REF", "n/a"),
-		Key:    getEnv("GITHUB_EVENT_PULL_REQUEST_NUMBER", "n/a"),
+		Key:    prNumber,
 	}
 }
 
