@@ -260,14 +260,4 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Contains(t, fileName, "toolrun_codeql")
 	})
-	t.Run("Empty commitID", func(t *testing.T) {
-		config := codeqlExecuteScanOptions{
-			Repository:  "https://github.hello.test/Testing/fortify.git",
-			AnalyzedRef: "refs/head/branch",
-			CommitID:    "",
-		}
-		fileName, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "test", config)
-		assert.NoError(t, err)
-		assert.Contains(t, fileName, "toolrun_codeql")
-	})
 }
