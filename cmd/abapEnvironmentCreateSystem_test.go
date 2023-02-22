@@ -226,7 +226,8 @@ repositories:
 		}
 	})
 
-	t.Run("Create service with generated manifest - with addon", func(t *testing.T) {
+	t.Run("Create service with generated manifest - with addon 2", func(t *testing.T) {
+		dir := t.TempDir()
 		config := abapEnvironmentCreateSystemOptions{
 			CfAPIEndpoint:                  "https://api.endpoint.com",
 			CfOrg:                          "testOrg",
@@ -240,12 +241,12 @@ repositories:
 			AbapSystemID:                   "H02",
 			AbapSystemIsDevelopmentAllowed: false,
 			AbapSystemSizeOfPersistence:    4,
-			AbapSystemSizeOfRuntime:        6,
+			AbapSystemSizeOfRuntime:        4,
 			AddonDescriptorFileName:        "addon.yml",
 			IncludeAddon:                   true,
 		}
 
-		dir := t.TempDir()
+		// dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
@@ -262,7 +263,7 @@ repositories:
 		addonYMLBytes := []byte(addonYML)
 		err := ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
 
-		expectedResult := "{\"admin_email\":\"user@example.com\",\"is_development_allowed\":true,\"sapsystemname\":\"H02\",\"size_of_persistence\":4,\"size_of_runtime\":4,\"addon_product_name\":\"myProduct\",\"addon_product_version\":\"1.2.3\",\"parent_saas_appname\":\"addon_test\"}"
+		expectedResult := "{\"admin_email\":\"user@example.com\",\"is_development_allowed\":false,\"sapsystemname\":\"H02\",\"size_of_persistence\":4,\"size_of_runtime\":4,\"addon_product_name\":\"myProduct\",\"addon_product_version\":\"1.2.3\",\"parent_saas_appname\":\"addon_test\"}"
 
 		result, err := generateServiceParameterString(&config)
 
