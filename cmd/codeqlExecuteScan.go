@@ -309,6 +309,10 @@ func parseRepositoryURL(repository string) (toolInstance, orgName, repoName stri
 
 func makePathWithBranch(repository, analyzedRef string) string {
 	ref := strings.Split(analyzedRef, "/")
+	if len(ref) < 3 {
+		log.Entry().Warn("Wrong analyzedRef format")
+		return ""
+	}
 	if strings.Contains(analyzedRef, "pull") {
 		return fmt.Sprintf("%s/pull/%s", repository, ref[2])
 	}
