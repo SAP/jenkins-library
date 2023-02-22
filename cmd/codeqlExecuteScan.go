@@ -228,6 +228,14 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/codeqlReport.csv", config.ModulePath)})
+	
+	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
+
+	err = uploadResults(config, utils)
+	if err != nil {
+		log.Entry().Error("failed to upload results")
+		return err
+	}
 
 	// create toolrecord file
 	toolRecordFileName, err := createToolRecordCodeql(utils, "./", *config)
@@ -236,14 +244,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		log.Entry().Warning("TR_CODEQL: Failed to create toolrecord file ...", err)
 	} else {
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
-	}
-
-	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
-
-	err = uploadResults(config, utils)
-	if err != nil {
-		log.Entry().Error("failed to upload results")
-		return err
 	}
 
 	return nil
