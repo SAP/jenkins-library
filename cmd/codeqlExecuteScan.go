@@ -228,7 +228,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/codeqlReport.csv", config.ModulePath)})
-	
+
 	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
 
 	err = uploadResults(config, utils)
@@ -251,12 +251,15 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 func createToolRecordCodeql(utils codeqlExecuteScanUtils, workspace string, config codeqlExecuteScanOptions) (string, error) {
 	repoURL := strings.TrimSuffix(config.Repository, ".git")
-	toolInstance, orgName, repoName := parseRepositoryURL(repoURL)
+	toolInstance, orgName, repoName, err := parseRepositoryURL(repoURL)
+	if err != nil {
+		return "", err
+	}
 	record := toolrecord.New(utils, workspace, "codeql", toolInstance)
 	record.DisplayName = fmt.Sprintf("%s %s - %s %s", orgName, repoName, config.AnalyzedRef, config.CommitID)
 	record.DisplayURL = fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoURL, config.AnalyzedRef)
 	// Repository
-	err := record.AddKeyData("repository",
+	err = record.AddKeyData("repository",
 		fmt.Sprintf("%s/%s", orgName, repoName),
 		fmt.Sprintf("%s %s", orgName, repoName),
 		config.Repository)
@@ -264,10 +267,14 @@ func createToolRecordCodeql(utils codeqlExecuteScanUtils, workspace string, conf
 		return "", err
 	}
 	// Repository Reference
+	repoReference, err := buildRepoReference(repoURL, config.AnalyzedRef)
+	if err != nil {
+		log.Entry().WithError(err).Warn("Failed to build repository reference")
+	}
 	err = record.AddKeyData("repositoryReference",
 		config.AnalyzedRef,
 		fmt.Sprintf("%s - %s", repoName, config.AnalyzedRef),
-		makePathWithBranch(repoURL, config.AnalyzedRef))
+		repoReference)
 	if err != nil {
 		return "", err
 	}
@@ -286,35 +293,44 @@ func createToolRecordCodeql(utils codeqlExecuteScanUtils, workspace string, conf
 	return record.GetFileName(), nil
 }
 
-func parseRepositoryURL(repository string) (toolInstance, orgName, repoName string) {
+func parseRepositoryURL(repository string) (toolInstance, orgName, repoName string, err error) {
+	if repository == "" {
+		err = errors.New("Repository param is not set")
+		return
+	}
 	fullRepo := strings.TrimSuffix(repository, ".git")
 	// regexp for toolInstance
 	re := regexp.MustCompile(`^[a-zA-Z0-9]+://[a-zA-Z0-9-_.]+/`)
 	matchedHost := re.FindAllString(fullRepo, -1)
 	if len(matchedHost) == 0 {
-		log.Entry().Warn("Unable to parse tool instance from repository url")
+		err = errors.New("Unable to parse tool instance from repository url")
 		return
 	}
-	toolInstance = strings.Trim(matchedHost[0], "/")
-
 	orgRepoNames := strings.Split(strings.TrimPrefix(fullRepo, matchedHost[0]), "/")
 	if len(orgRepoNames) < 2 {
-		log.Entry().Warn("Unable to parse organization and repo names from repository url")
+		err = errors.New("Unable to parse organization and repo names from repository url")
 		return
 	}
+
+	toolInstance = strings.Trim(matchedHost[0], "/")
 	orgName = orgRepoNames[0]
 	repoName = orgRepoNames[1]
 	return
 }
 
-func makePathWithBranch(repository, analyzedRef string) string {
+func buildRepoReference(repository, analyzedRef string) (string, error) {
+	if repository == "" || analyzedRef == "" {
+		return "", errors.New("Repository or analyzedRef param is not set")
+	}
 	ref := strings.Split(analyzedRef, "/")
 	if len(ref) < 3 {
-		log.Entry().Warn("Wrong analyzedRef format")
-		return ""
+		return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
 	}
 	if strings.Contains(analyzedRef, "pull") {
-		return fmt.Sprintf("%s/pull/%s", repository, ref[2])
+		if len(ref) < 4 {
+			return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
+		}
+		return fmt.Sprintf("%s/pull/%s", repository, ref[2]), nil
 	}
-	return fmt.Sprintf("%s/tree/%s", repository, ref[2])
+	return fmt.Sprintf("%s/tree/%s", repository, ref[2]), nil
 }
