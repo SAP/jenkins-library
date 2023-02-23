@@ -19,6 +19,7 @@ type GitHubActionsConfigProvider struct {
 }
 
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
+	g.Token = settings.GitHubActionToken
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 

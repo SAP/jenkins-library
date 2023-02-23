@@ -53,9 +53,10 @@ type ChangeSet struct {
 
 // OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
 type OrchestratorSettings struct {
-	JenkinsUser  string
-	JenkinsToken string
-	AzureToken   string
+	JenkinsUser       string
+	JenkinsToken      string
+	AzureToken        string
+	GitHubActionToken string
 }
 
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
