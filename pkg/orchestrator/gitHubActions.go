@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 
 type GitHubActionsConfigProvider struct {
 	client piperHttp.Client
+	Token  string
 }
 
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
@@ -62,52 +64,25 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	// get logs of all job IDs
 	// merge them
 
-	ghToken := getEnv("GITHUB_TOKEN", "")
-
-	resp, err := g.client.GetRequest(
-		fmt.Sprintf(
-			"%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", ""),
-		),
-		map[string][]string{
-			"Accept":        {"application/vnd.github+json"},
-			"Authorization": {fmt.Sprintf("Bearer %s", ghToken)},
-		}, nil)
+	ids, err := g.GetStageIds()
 	if err != nil {
-		return nil, fmt.Errorf("can't get API data: %w", err)
+		return nil, err
+	}
 
-	}
-	var ids struct {
-		Jobs []struct {
-			Id int64 `json:"id"`
-		} `json:"jobs"`
-	}
-	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &ids)
-	if err != nil {
-		return nil, fmt.Errorf("can't parse JSON data: %w", err)
-	}
-	ids = struct {
-		Jobs []struct {
-			Id int64 `json:"id"`
-		} `json:"jobs"`
-		// we cant get the log for the last(current) job
-	}{Jobs: ids.Jobs[:len(ids.Jobs)-1]}
-	if len(ids.Jobs) == 0 {
-		return nil, fmt.Errorf("can't get the log form the last(current) job")
-	}
 	logs := struct {
 		b [][]byte
 		// sync.Mutex
 	}{
-		b: make([][]byte, len(ids.Jobs)),
+		b: make([][]byte, len(ids)),
 	}
-	for i := range ids.Jobs {
+	for i, id := range ids {
 		resp, err := g.client.GetRequest(
 			fmt.Sprintf(
-				"%s/jobs/%d/logs", getActionsURL(), ids.Jobs[i].Id,
+				"%s/jobs/%d/logs", getActionsURL(), id,
 			),
 			map[string][]string{
 				"Accept":        {"application/vnd.github+json"},
-				"Authorization": {fmt.Sprintf("Bearer %s", ghToken)},
+				"Authorization": {fmt.Sprintf("Bearer %s", g.Token)},
 			}, nil)
 		if err != nil {
 			return nil, fmt.Errorf("can't get API data: %w", err)
@@ -140,7 +115,7 @@ func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 	return time.Time{}.UTC()
 }
 func (g *GitHubActionsConfigProvider) GetStageName() string {
-	return "GITHUB_WORKFLOW" //TODO: is there something like is "stage" in GH Actions?
+	return "GITHUB_WORKFLOW" // TODO: is there something like is "stage" in GH Actions?
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildReason() string {
@@ -196,4 +171,45 @@ func (g *GitHubActionsConfigProvider) IsPullRequest() bool {
 func isGitHubActions() bool {
 	envVars := []string{"GITHUB_ACTION", "GITHUB_ACTIONS"}
 	return areIndicatingEnvVarsSet(envVars)
+}
+
+func (g *GitHubActionsConfigProvider) GetStageIds() ([]int64, error) {
+	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", "")),
+		g.getHeader(),
+		nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("can't get API data: %w", err)
+	}
+
+	var ids struct {
+		Jobs []struct {
+			Id int64 `json:"id"`
+		} `json:"jobs"`
+	}
+
+	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &ids)
+	if err != nil {
+		return nil, fmt.Errorf("can't parse JSON data: %w", err)
+	}
+
+	result := make([]int64, 0)
+
+	for _, job := range ids.Jobs {
+		result = append(result, job.Id)
+	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("can't get the log form the last(current) job")
+	}
+
+	// last stage hasn't finished yet
+	return result[:len(ids.Jobs)-1], nil
+}
+
+func (g *GitHubActionsConfigProvider) getHeader() http.Header {
+	header := http.Header{
+		"Accept":        {"application/vnd.github+json"},
+		"Authorization": {fmt.Sprintf("Bearer %s", g.Token)},
+	}
+	return header
 }
