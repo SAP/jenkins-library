@@ -36,7 +36,7 @@ parameters:
 
 modules:
   - name: {{.ApplicationName}}
-    type: html5
+    type: com.sap.hcp.html5
     path: .
     parameters:
       version: {{.Version}}-${timestamp}
