@@ -1,19 +1,49 @@
 package orchestrator
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"strings"
 	"time"
+
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type GitHubActionsConfigProvider struct{}
+type GitHubActionsConfigProvider struct {
+	client piperHttp.Client
+}
 
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 
+func getActionsURL() string {
+	ghURL := getEnv("GITHUB_URL", "")
+	switch ghURL {
+	case "https://github.com/":
+		ghURL = "https://api.github.com"
+	default:
+		ghURL += "api/v3"
+	}
+	return fmt.Sprintf("%s/repos/%s/actions", ghURL, getEnv("GITHUB_REPOSITORY", ""))
+}
+
+// func initGHProvider(settings *OrchestratorSettings) (*GitHubActionsConfigProvider, error) {
+// 	g := GitHubActionsConfigProvider{}
+// 	g.client = piperHttp.Client{}
+// 	g.client.SetOptions(piperHttp.ClientOptions{
+// 		Password:         settings.GitHubToken,
+// 		MaxRetries:       3,
+// 		TransportTimeout: time.Second * 10,
+// 	})
+// 	return &g, nil
+// }
+
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
+	log.Entry().Debugf("OrchestratorVersion() for GitHub Actions is not applicable.")
 	return "n/a"
 }
 
@@ -27,8 +57,72 @@ func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
-	log.Entry().Infof("GetLog() for GitHub Actions not yet implemented.")
-	return []byte{}, nil
+	// token needs to be available in g
+	// get IDs of all jobs
+	// get logs of all job IDs
+	// merge them
+
+	ghToken := getEnv("GITHUB_TOKEN", "")
+
+	resp, err := g.client.GetRequest(
+		fmt.Sprintf(
+			"%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", ""),
+		),
+		map[string][]string{
+			"Accept":        {"application/vnd.github+json"},
+			"Authorization": {fmt.Sprintf("Bearer %s", ghToken)},
+		}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("can't get API data: %w", err)
+
+	}
+	var ids struct {
+		Jobs []struct {
+			Id int64 `json:"id"`
+		} `json:"jobs"`
+	}
+	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &ids)
+	if err != nil {
+		return nil, fmt.Errorf("can't parse JSON data: %w", err)
+	}
+	ids = struct {
+		Jobs []struct {
+			Id int64 `json:"id"`
+		} `json:"jobs"`
+		// we cant get the log for the last(current) job
+	}{Jobs: ids.Jobs[:len(ids.Jobs)-1]}
+	if len(ids.Jobs) == 0 {
+		return nil, fmt.Errorf("can't get the log form the last(current) job")
+	}
+	logs := struct {
+		b [][]byte
+		// sync.Mutex
+	}{
+		b: make([][]byte, len(ids.Jobs)),
+	}
+	for i := range ids.Jobs {
+		resp, err := g.client.GetRequest(
+			fmt.Sprintf(
+				"%s/jobs/%d/logs", getActionsURL(), ids.Jobs[i].Id,
+			),
+			map[string][]string{
+				"Accept":        {"application/vnd.github+json"},
+				"Authorization": {fmt.Sprintf("Bearer %s", ghToken)},
+			}, nil)
+		if err != nil {
+			return nil, fmt.Errorf("can't get API data: %w", err)
+
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("can't read response body: %w", err)
+		}
+		defer resp.Body.Close()
+		fmt.Println(string(body))
+		logs.b[i] = append([]byte{}, body...)
+		fmt.Println(string(logs.b[i]))
+	}
+	return bytes.Join(logs.b, []byte("")), nil
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildID() string {

@@ -1,9 +1,15 @@
 package orchestrator
 
 import (
+	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,5 +50,101 @@ func TestGitHubActions(t *testing.T) {
 		assert.Equal(t, "feat/test-gh-actions", c.Branch)
 		assert.Equal(t, "main", c.Base)
 		assert.Equal(t, "42", c.Key)
+	})
+
+	t.Run("Test log receiving", func(t *testing.T) {
+		defer resetEnv(os.Environ())
+		os.Clearenv()
+		os.Unsetenv("GITHUB_HEAD_REF")
+		os.Setenv("GITHUB_ACTIONS", "true")
+		os.Setenv("GITHUB_REF_NAME", "feat/test-gh-actions")
+		os.Setenv("GITHUB_REF", "refs/heads/feat/test-gh-actions")
+		os.Setenv("GITHUB_RUN_ID", "42")
+		os.Setenv("GITHUB_SHA", "abcdef42713")
+		os.Setenv("GITHUB_REPOSITORY", "foo/bar")
+		os.Setenv("GITHUB_URL", "https://github.com/")
+		p := func() OrchestratorSpecificConfigProviding {
+			g := GitHubActionsConfigProvider{}
+			g.client = piperHttp.Client{}
+			g.client.SetOptions(piperHttp.ClientOptions{
+				MaxRequestDuration:        5 * time.Second,
+				Token:                     "TOKEN",
+				TransportSkipVerification: true,
+				UseDefaultTransport:       true, // need to use default transport for http mock
+				MaxRetries:                -1,
+			})
+			return &g
+		}()
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder("GET", "https://api.github.com/repos/foo/bar/actions/runs/42/jobs",
+			func(req *http.Request) (*http.Response, error) {
+				return httpmock.NewJsonResponse(200, struct {
+					Jobs []struct {
+						Id string `json:"id"`
+					} `json:"jobs"`
+				}{
+					Jobs: []struct {
+						Id string `json:"id"`
+					}{
+						{
+							Id: "123",
+						},
+						{
+							Id: "124",
+						},
+						{
+							Id: "125",
+						},
+					},
+				})
+			},
+		)
+		logs := []string{
+			"log_record1\n",
+			"log_record2\n",
+		}
+		httpmock.RegisterResponder("GET", "https://api.github.com/repos/foo/bar/actions/jobs/123/logs",
+			func(req *http.Request) (*http.Response, error) {
+				return httpmock.NewStringResponse(200, logs[0]), nil
+			},
+		)
+		httpmock.RegisterResponder("GET", "https://api.github.com/repos/foo/bar/actions/jobs/124/logs",
+			func(req *http.Request) (*http.Response, error) {
+				return httpmock.NewStringResponse(200, logs[1]), nil
+			},
+		)
+		actual, _ := p.GetLog()
+		fmt.Println(string(actual))
+		assert.Equal(t, strings.Join(logs, ""), string(actual))
+	})
+
+	t.Run("Test log receiving 2", func(t *testing.T) {
+		defer resetEnv(os.Environ())
+		os.Clearenv()
+		os.Unsetenv("GITHUB_HEAD_REF")
+		os.Setenv("GITHUB_ACTIONS", "true")
+		os.Setenv("GITHUB_REF_NAME", "feat/test-gh-actions")
+		os.Setenv("GITHUB_REF", "refs/heads/feat/test-gh-actions")
+		os.Setenv("GITHUB_SHA", "abcdef42713")
+		os.Setenv("GITHUB_REPOSITORY", "project-piper/azure-demo-k8s-node")
+		os.Setenv("GITHUB_URL", "https://github.tools.sap/")
+		os.Setenv("GITHUB_TOKEN", "")
+		os.Setenv("GITHUB_RUN_ID", "1738520")
+		p := func() OrchestratorSpecificConfigProviding {
+			g := GitHubActionsConfigProvider{}
+			g.client = piperHttp.Client{}
+			g.client.SetOptions(piperHttp.ClientOptions{
+				MaxRequestDuration:        60 * time.Second,
+				Token:                     "TOKEN",
+				TransportSkipVerification: true,
+				UseDefaultTransport:       true, // need to use default transport for http mock
+				MaxRetries:                -1,
+			})
+			return &g
+		}()
+
+		_, _ = p.GetLog()
+
 	})
 }
