@@ -39,8 +39,8 @@ modules:
     type: html5
     path: .
     parameters:
-       version: {{.Version}}-${timestamp}
-       name: {{.ApplicationName}}
+      version: {{.Version}}-${timestamp}
+      name: {{.ApplicationName}}
     build-parameters:
       builder: grunt
       build-result: dist`
