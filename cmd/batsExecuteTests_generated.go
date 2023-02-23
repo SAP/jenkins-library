@@ -91,11 +91,6 @@ func BatsExecuteTestsCommand() *cobra.Command {
 				return err
 			}
 
-			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
-				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
-				log.RegisterHook(&sentryHook)
-			}
-
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}

@@ -244,11 +244,6 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 			log.RegisterSecret(stepConfig.UserToken)
 			log.RegisterSecret(stepConfig.GithubToken)
 
-			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
-				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
-				log.RegisterHook(&sentryHook)
-			}
-
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}

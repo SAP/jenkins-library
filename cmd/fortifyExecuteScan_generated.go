@@ -241,11 +241,6 @@ Besides triggering a scan the step verifies the results after they have been upl
 			log.RegisterSecret(stepConfig.AuthToken)
 			log.RegisterSecret(stepConfig.GithubToken)
 
-			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
-				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
-				log.RegisterHook(&sentryHook)
-			}
-
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}

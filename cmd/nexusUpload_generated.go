@@ -82,11 +82,6 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
-			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
-				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
-				log.RegisterHook(&sentryHook)
-			}
-
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}

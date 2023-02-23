@@ -159,11 +159,6 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			log.RegisterSecret(stepConfig.TargetRepositoryUser)
 			log.RegisterSecret(stepConfig.PrivateModulesGitToken)
 
-			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
-				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
-				log.RegisterHook(&sentryHook)
-			}
-
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
