@@ -21,7 +21,7 @@ func (p *ProductVersion) ConstructProductversion(desc abaputils.AddonDescriptor,
 	if err := p.constructVersionable(desc.AddonProduct, desc.AddonVersionYAML, conn, pvQueryURL); err != nil {
 		return err
 	}
-	if err := p.resolveNext(); err != nil {
+	if err := p.resolveNext(statusFilterPV); err != nil {
 		return err
 	}
 	return nil
