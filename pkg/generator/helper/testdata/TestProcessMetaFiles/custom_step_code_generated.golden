@@ -176,11 +176,6 @@ func TestStepCommand() *cobra.Command {
 				return err
 			}
 
-			if len(piperOsCmd.GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
-				sentryHook := log.NewSentryHook(piperOsCmd.GeneralConfig.HookConfig.SentryConfig.Dsn, piperOsCmd.GeneralConfig.CorrelationID)
-				log.RegisterHook(&sentryHook)
-			}
-
 			if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID}
