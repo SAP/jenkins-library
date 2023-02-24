@@ -104,12 +104,6 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	}
 }
 
-func jsonToMap(jsonStr string) map[string]interface{} {
-	result := make(map[string]interface{})
-	json.Unmarshal([]byte(jsonStr), &result)
-	return result
-}
-
 func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tmsUploadUtils) error {
 	mtaPath := config.MtaPath
 	exists, _ := utils.FileExists(mtaPath)
