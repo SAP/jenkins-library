@@ -242,7 +242,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	} else {
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
-	
+
 	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
 
 	return nil
