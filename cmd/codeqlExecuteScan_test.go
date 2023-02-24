@@ -90,3 +90,174 @@ func TestGetGitRepoInfo(t *testing.T) {
 		assert.Error(t, getGitRepoInfo("github.hello.test/Testing/fortify", &repoInfo))
 	})
 }
+
+func TestParseRepositoryURL(t *testing.T) {
+	t.Run("Valid repository", func(t *testing.T) {
+		repository := "https://github.hello.test/Testing/fortify.git"
+		toolInstance, orgName, repoName, err := parseRepositoryURL(repository)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://github.hello.test", toolInstance)
+		assert.Equal(t, "Testing", orgName)
+		assert.Equal(t, "fortify", repoName)
+	})
+	t.Run("valid repository 2", func(t *testing.T) {
+		repository := "https://github.hello.test/Testing/fortify"
+		toolInstance, orgName, repoName, err := parseRepositoryURL(repository)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://github.hello.test", toolInstance)
+		assert.Equal(t, "Testing", orgName)
+		assert.Equal(t, "fortify", repoName)
+	})
+	t.Run("Invalid repository without repo name", func(t *testing.T) {
+		repository := "https://github.hello.test/Testing"
+		toolInstance, orgName, repoName, err := parseRepositoryURL(repository)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Unable to parse organization and repo names")
+		assert.Equal(t, "", toolInstance)
+		assert.Equal(t, "", orgName)
+		assert.Equal(t, "", repoName)
+	})
+	t.Run("Invalid repository without organization name", func(t *testing.T) {
+		repository := "https://github.hello.test/fortify"
+		toolInstance, orgName, repoName, err := parseRepositoryURL(repository)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Unable to parse organization and repo names")
+		assert.Equal(t, "", toolInstance)
+		assert.Equal(t, "", orgName)
+		assert.Equal(t, "", repoName)
+	})
+	t.Run("Invalid repository without tool instance", func(t *testing.T) {
+		repository := "/Testing/fortify"
+		toolInstance, orgName, repoName, err := parseRepositoryURL(repository)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Unable to parse tool instance")
+		assert.Equal(t, "", toolInstance)
+		assert.Equal(t, "", orgName)
+		assert.Equal(t, "", repoName)
+	})
+	t.Run("Empty repository", func(t *testing.T) {
+		repository := ""
+		toolInstance, orgName, repoName, err := parseRepositoryURL(repository)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Repository param is not set")
+		assert.Equal(t, "", toolInstance)
+		assert.Equal(t, "", orgName)
+		assert.Equal(t, "", repoName)
+	})
+}
+
+func TestBuildRepoReference(t *testing.T) {
+	t.Run("Valid ref with branch", func(t *testing.T) {
+		repository := "https://github.hello.test/Testing/fortify"
+		analyzedRef := "refs/head/branch"
+		ref, err := buildRepoReference(repository, analyzedRef)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://github.hello.test/Testing/fortify/tree/branch", ref)
+	})
+	t.Run("Valid ref with PR", func(t *testing.T) {
+		repository := "https://github.hello.test/Testing/fortify"
+		analyzedRef := "refs/pull/1/merge"
+		ref, err := buildRepoReference(repository, analyzedRef)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://github.hello.test/Testing/fortify/pull/1", ref)
+	})
+	t.Run("Invalid ref without branch name", func(t *testing.T) {
+		repository := "https://github.hello.test/Testing/fortify"
+		analyzedRef := "refs/head"
+		ref, err := buildRepoReference(repository, analyzedRef)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Wrong analyzedRef format")
+		assert.Equal(t, "", ref)
+	})
+	t.Run("Invalid ref without PR id", func(t *testing.T) {
+		repository := "https://github.hello.test/Testing/fortify"
+		analyzedRef := "refs/pull/merge"
+		ref, err := buildRepoReference(repository, analyzedRef)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Wrong analyzedRef format")
+		assert.Equal(t, "", ref)
+	})
+	t.Run("Empty repository", func(t *testing.T) {
+		repository := ""
+		analyzedRef := "refs/pull/merge"
+		ref, err := buildRepoReference(repository, analyzedRef)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Repository or analyzedRef param is not set")
+		assert.Equal(t, "", ref)
+	})
+	t.Run("Empty analyzedRef", func(t *testing.T) {
+		repository := "https://github.hello.test/Testing/fortify"
+		analyzedRef := ""
+		ref, err := buildRepoReference(repository, analyzedRef)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Repository or analyzedRef param is not set")
+		assert.Equal(t, "", ref)
+	})
+}
+
+func TestCreateToolRecordCodeql(t *testing.T) {
+	t.Run("Valid toolrun file", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{
+			Repository:  "https://github.hello.test/Testing/fortify.git",
+			AnalyzedRef: "refs/head/branch",
+			CommitID:    "test",
+		}
+		fileName, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "test", config)
+		assert.NoError(t, err)
+		assert.Contains(t, fileName, "toolrun_codeql")
+	})
+	t.Run("Empty repository URL", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{
+			Repository:  "",
+			AnalyzedRef: "refs/head/branch",
+			CommitID:    "test",
+		}
+		fileName, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "", config)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "Repository param is not set")
+		assert.Empty(t, fileName)
+	})
+	t.Run("Invalid repository URL", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{
+			Repository:  "https://github.hello.test/Testing",
+			AnalyzedRef: "refs/head/branch",
+			CommitID:    "test",
+		}
+		fileName, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "test", config)
+		assert.Error(t, err)
+		assert.Regexp(t, "^Unable to parse [a-z ]+ from repository url$", err.Error())
+		assert.Empty(t, fileName)
+	})
+	t.Run("Empty workspace", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{
+			Repository:  "https://github.hello.test/Testing/fortify.git",
+			AnalyzedRef: "refs/head/branch",
+			CommitID:    "test",
+		}
+		fileName, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "", config)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "TR_PERSIST: empty workspace")
+		assert.Empty(t, fileName)
+	})
+	t.Run("Empty analyzedRef", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{
+			Repository:  "https://github.hello.test/Testing/fortify.git",
+			AnalyzedRef: "",
+			CommitID:    "test",
+		}
+		fileName, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "test", config)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "TR_ADD_KEY: empty keyvalue")
+		assert.Empty(t, fileName, "toolrun_codeql")
+	})
+	t.Run("Invalid analyzedRef", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{
+			Repository:  "https://github.hello.test/Testing/fortify.git",
+			AnalyzedRef: "refs/head",
+			CommitID:    "test",
+		}
+		fileName, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "test", config)
+		assert.NoError(t, err)
+		assert.Contains(t, fileName, "toolrun_codeql")
+	})
+}
