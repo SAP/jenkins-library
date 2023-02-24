@@ -217,7 +217,7 @@ func (g *GitHubActionsConfigProvider) GetStageIds() ([]int, error) {
 func (g *GitHubActionsConfigProvider) getHeader() http.Header {
 	header := http.Header{
 		"Accept":        {"application/vnd.github+json"},
-		"Authorization": {fmt.Sprintf("Bearer %s", getEnv("GITHUB_TOKEN", ""))},
+		"Authorization": {fmt.Sprintf("Bearer %s", getEnv("PIPER_ACTION_GITHUB_TOOLS_TOKEN", ""))},
 	}
 	return header
 }

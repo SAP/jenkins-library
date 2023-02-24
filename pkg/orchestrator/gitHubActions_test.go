@@ -115,37 +115,37 @@ func TestGitHubActions(t *testing.T) {
 	// })
 
 	// to be deleted
-	// 	t.Run("Test log receiving 2", func(t *testing.T) {
-	// 		defer resetEnv(os.Environ())
-	// 		os.Clearenv()
-	// 		os.Unsetenv("GITHUB_HEAD_REF")
-	// 		os.Setenv("GITHUB_ACTIONS", "true")
-	// 		os.Setenv("GITHUB_REF_NAME", "feat/test-gh-actions")
-	// 		os.Setenv("GITHUB_REF", "refs/heads/feat/test-gh-actions")
-	// 		os.Setenv("GITHUB_SHA", "abcdef42713")
-	// 		os.Setenv("GITHUB_REPOSITORY", "project-piper/azure-demo-k8s-node")
-	// 		os.Setenv("GITHUB_URL", "https://github.tools.sap/")
-	// 		os.Setenv("GITHUB_TOKEN", "")
-	// 		os.Setenv("GITHUB_RUN_ID", "1738520")
-	// 		p := func() OrchestratorSpecificConfigProviding {
-	// 			g := GitHubActionsConfigProvider{}
-	// 			g.client = piperHttp.Client{}
-	// 			g.client.SetOptions(piperHttp.ClientOptions{
-	// 				MaxRequestDuration:        60 * time.Second,
-	// 				Token:                     "TOKEN",
-	// 				TransportSkipVerification: true,
-	// 				UseDefaultTransport:       true, // need to use default transport for http mock
-	// 				MaxRetries:                -1,
-	// 			})
-	// 			return &g
-	// 		}()
+	// t.Run("Test log receiving 2", func(t *testing.T) {
+	// 	defer resetEnv(os.Environ())
+	// 	os.Clearenv()
+	// 	os.Unsetenv("GITHUB_HEAD_REF")
+	// 	os.Setenv("GITHUB_ACTIONS", "true")
+	// 	os.Setenv("GITHUB_REF_NAME", "feat/test-gh-actions")
+	// 	os.Setenv("GITHUB_REF", "refs/heads/feat/test-gh-actions")
+	// 	os.Setenv("GITHUB_SHA", "abcdef42713")
+	// 	os.Setenv("GITHUB_REPOSITORY", "project-piper/azure-demo-k8s-node")
+	// 	os.Setenv("GITHUB_URL", "https://github.tools.sap/")
+	// 	os.Setenv("GITHUB_TOKEN", "")
+	// 	os.Setenv("GITHUB_RUN_ID", "1738520")
+	// 	p := func() OrchestratorSpecificConfigProviding {
+	// 		g := GitHubActionsConfigProvider{}
+	// 		g.client = piperHttp.Client{}
+	// 		g.client.SetOptions(piperHttp.ClientOptions{
+	// 			MaxRequestDuration:        60 * time.Second,
+	// 			Token:                     "TOKEN",
+	// 			TransportSkipVerification: true,
+	// 			UseDefaultTransport:       true, // need to use default transport for http mock
+	// 			MaxRetries:                -1,
+	// 		})
+	// 		return &g
+	// 	}()
 
-	// 		b, err := p.GetLog()
-	// 		if err != nil {
-	// 			log.Fatal(err)
-	// 		}
-	// 		if err := os.WriteFile("test_log.log", b, 777); err != nil {
-	// 			log.Fatal(err)
-	// 		}
-	// 	})
+	// 	b, err := p.GetLog()
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	if err := os.WriteFile("test_log.log", b, 777); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// })
 }
