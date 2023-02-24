@@ -37,11 +37,19 @@ class DockerUtils implements Serializable {
         def targetImageFullName = targetDockerRegistry + target.image
 
         if (!withDockerDaemon()) {
-            script.withCredentials([
-                script.usernamePassword(credentialsId: source.credentialsId, passwordVariable: 'src_password', usernameVariable: 'src_userid'), 
-                script.usernamePassword(credentialsId: target.credentialsId, passwordVariable: 'password', usernameVariable: 'userid')
-            ]) {
-                skopeoMoveImage(sourceImageFullName, script.src_userid, script.src_password, targetImageFullName, script.userid, script.password)
+            if (source.credentialsId) {
+                script.withCredentials([
+                    script.usernamePassword(credentialsId: source.credentialsId, passwordVariable: 'src_password', usernameVariable: 'src_userid'), 
+                    script.usernamePassword(credentialsId: target.credentialsId, passwordVariable: 'password', usernameVariable: 'userid')
+                ]) {
+                    skopeoMoveImage(sourceImageFullName, script.src_userid, script.src_password, targetImageFullName, script.userid, script.password)
+                }
+            } else {
+                script.withCredentials([
+                    script.usernamePassword(credentialsId: target.credentialsId, passwordVariable: 'password', usernameVariable: 'userid')
+                ]) {
+                    skopeoMoveImage(sourceImageFullName, '', '', targetImageFullName, script.userid, script.password)
+                }
             }
         }
         //else not yet implemented here - available directly via containerPushToRegistry
@@ -49,7 +57,11 @@ class DockerUtils implements Serializable {
     }
 
     private void skopeoMoveImage(sourceImageFullName, sourceUserId, sourcePassword, targetImageFullName, targetUserId, targetPassword) {
-        script.sh "skopeo copy --src-tls-verify=false --src-creds=${BashUtils.quoteAndEscape(sourceUserId)}:${BashUtils.quoteAndEscape(sourcePassword)} --dest-tls-verify=false --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
+        if (sourceUserId && sourcePassword) {
+            script.sh "skopeo copy --src-tls-verify=false --src-creds=${BashUtils.quoteAndEscape(sourceUserId)}:${BashUtils.quoteAndEscape(sourcePassword)} --dest-tls-verify=false --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
+        } else {
+            script.sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
+        }
     }
 
 
