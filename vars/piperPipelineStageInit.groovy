@@ -302,7 +302,7 @@ private String inferProjectName(Script script, String buildTool, String buildToo
 }
 
 private checkBuildTool(String buildTool, String buildDescriptorPattern) {
-    if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
+    if (buildTool != "mta" && !findFiles(glob: buildDescriptorPattern)) {
         error "[${STEP_NAME}] buildTool configuration '${buildTool}' does not fit to your project (buildDescriptorPattern: '${buildDescriptorPattern}'), please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
     }
 }
