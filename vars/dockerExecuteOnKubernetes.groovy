@@ -410,7 +410,7 @@ chown -R ${runAsUser}:${fsGroup} ."""
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
     } catch (Throwable e) {
-        echo "Unstash workspace failed with throwable ${e.getMessage()}"
+        echo "Stash workspace failed with throwable ${e.getMessage()}"
         throw e
     }
     return null
