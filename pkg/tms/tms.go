@@ -95,6 +95,10 @@ type CommunicationInterface interface {
 	UploadFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
 }
 
+const (
+	DEFAULT_TR_DESCRIPTION = "Created by Piper"
+)
+
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
 func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, clientId, clientSecret string, isVerbose bool) (*CommunicationInstance, error) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms")

@@ -17,8 +17,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const DEFAULT_DESCRIPTION = "tmsUpload"
-
 type uaa struct {
 	Url          string `json:"url"`
 	ClientId     string `json:"clientid"`
@@ -112,7 +110,7 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		return fmt.Errorf("mta file %s not found", mtaPath)
 	}
 
-	description := DEFAULT_DESCRIPTION
+	description := tms.DEFAULT_TR_DESCRIPTION
 	if config.CustomDescription != "" {
 		description = config.CustomDescription
 	}
