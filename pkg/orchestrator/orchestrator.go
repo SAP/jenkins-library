@@ -65,7 +65,7 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 		return &AzureDevOpsConfigProvider{}, nil
 	case GitHubActions:
 		return gitHubActionsConfigProvider(&OrchestratorSettings{
-			GitHubToken: getEnv("GITHUB_TOKEN", ""),
+			GitHubToken: getEnv("PIPER_ACTION_GITHUB_TOOLS_TOKEN", ""),
 		})
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
