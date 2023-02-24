@@ -105,7 +105,7 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 			defer resp.Body.Close()
 			logs.Lock()
 			defer logs.Unlock()
-			logs.b[i] = append([]byte{}, b...)
+			logs.b[i] = b
 
 			return nil
 		})
