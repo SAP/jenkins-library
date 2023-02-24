@@ -2,24 +2,39 @@ package orchestrator
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 type GitHubActionsConfigProvider struct {
 	client piperHttp.Client
-	Token  string
+}
+
+type Job struct {
+	ID int `json:"id"`
+}
+
+type StagesID struct {
+	Jobs []Job `json:"jobs"`
+}
+
+type Logs struct {
+	sync.Mutex
+	b [][]byte
 }
 
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
-	g.Token = settings.GitHubActionToken
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 
@@ -34,16 +49,16 @@ func getActionsURL() string {
 	return fmt.Sprintf("%s/repos/%s/actions", ghURL, getEnv("GITHUB_REPOSITORY", ""))
 }
 
-// func initGHProvider(settings *OrchestratorSettings) (*GitHubActionsConfigProvider, error) {
-// 	g := GitHubActionsConfigProvider{}
-// 	g.client = piperHttp.Client{}
-// 	g.client.SetOptions(piperHttp.ClientOptions{
-// 		Password:         settings.GitHubToken,
-// 		MaxRetries:       3,
-// 		TransportTimeout: time.Second * 10,
-// 	})
-// 	return &g, nil
-// }
+func gitHubActionsConfigProvider(settings *OrchestratorSettings) (*GitHubActionsConfigProvider, error) {
+	g := GitHubActionsConfigProvider{}
+	g.client = piperHttp.Client{}
+	g.client.SetOptions(piperHttp.ClientOptions{
+		Password:         settings.GitHubToken,
+		MaxRetries:       3,
+		TransportTimeout: time.Second * 10,
+	})
+	return &g, nil
+}
 
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
 	log.Entry().Debugf("OrchestratorVersion() for GitHub Actions is not applicable.")
@@ -60,44 +75,46 @@ func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
 }
 
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
-	// token needs to be available in g
-	// get IDs of all jobs
-	// get logs of all job IDs
-	// merge them
-
 	ids, err := g.GetStageIds()
 	if err != nil {
 		return nil, err
 	}
 
-	logs := struct {
-		b [][]byte
-		// sync.Mutex
-	}{
+	logs := Logs{
 		b: make([][]byte, len(ids)),
 	}
-	for i, id := range ids {
-		resp, err := g.client.GetRequest(
-			fmt.Sprintf(
-				"%s/jobs/%d/logs", getActionsURL(), id,
-			),
-			map[string][]string{
-				"Accept":        {"application/vnd.github+json"},
-				"Authorization": {fmt.Sprintf("Bearer %s", g.Token)},
-			}, nil)
-		if err != nil {
-			return nil, fmt.Errorf("can't get API data: %w", err)
 
+	ctx := context.Background()
+	sem := semaphore.NewWeighted(10)
+	wg := errgroup.Group{}
+	for i := range ids {
+		i := i // https://golang.org/doc/faq#closures_and_goroutines
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return nil, fmt.Errorf("failed to acquire semaphore: %w", err)
 		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("can't read response body: %w", err)
-		}
-		defer resp.Body.Close()
-		fmt.Println(string(body))
-		logs.b[i] = append([]byte{}, body...)
-		fmt.Println(string(logs.b[i]))
+		wg.Go(func() error {
+			defer sem.Release(1)
+			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", getActionsURL(), ids[i]), g.getHeader(), nil)
+			if err != nil {
+				return fmt.Errorf("failed to get API data: %w", err)
+			}
+
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return fmt.Errorf("failed to read response body: %w", err)
+			}
+			defer resp.Body.Close()
+			logs.Lock()
+			defer logs.Unlock()
+			logs.b[i] = append([]byte{}, b...)
+
+			return nil
+		})
 	}
+	if err = wg.Wait(); err != nil {
+		return nil, fmt.Errorf("failed to get logs: %w", err)
+	}
+
 	return bytes.Join(logs.b, []byte("")), nil
 }
 
@@ -174,43 +191,34 @@ func isGitHubActions() bool {
 	return areIndicatingEnvVarsSet(envVars)
 }
 
-func (g *GitHubActionsConfigProvider) GetStageIds() ([]int64, error) {
-	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", "")),
-		g.getHeader(),
-		nil)
-
+func (g *GitHubActionsConfigProvider) GetStageIds() ([]int, error) {
+	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", "")), g.getHeader(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("can't get API data: %w", err)
+		return nil, fmt.Errorf("failed to get API data: %w", err)
 	}
 
-	var ids struct {
-		Jobs []struct {
-			Id int64 `json:"id"`
-		} `json:"jobs"`
-	}
-
-	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &ids)
+	var stagesID StagesID
+	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &stagesID)
 	if err != nil {
-		return nil, fmt.Errorf("can't parse JSON data: %w", err)
+		return nil, fmt.Errorf("failed to parse JSON data: %w", err)
 	}
 
-	result := make([]int64, 0)
-
-	for _, job := range ids.Jobs {
-		result = append(result, job.Id)
+	ids := make([]int, len(stagesID.Jobs))
+	for i, job := range stagesID.Jobs {
+		ids[i] = job.ID
 	}
-	if len(result) == 0 {
-		return nil, fmt.Errorf("can't get the log form the last(current) job")
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("failed to get logs")
 	}
 
-	// last stage hasn't finished yet
-	return result[:len(ids.Jobs)-1], nil
+	// execution of the last stage hasn't finished yet - we can't get logs of the last stage
+	return ids[:len(stagesID.Jobs)-1], nil
 }
 
 func (g *GitHubActionsConfigProvider) getHeader() http.Header {
 	header := http.Header{
 		"Accept":        {"application/vnd.github+json"},
-		"Authorization": {fmt.Sprintf("Bearer %s", g.Token)},
+		"Authorization": {fmt.Sprintf("Bearer %s", getEnv("GITHUB_TOKEN", ""))},
 	}
 	return header
 }

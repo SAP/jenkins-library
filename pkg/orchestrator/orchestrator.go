@@ -53,10 +53,10 @@ type ChangeSet struct {
 
 // OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
 type OrchestratorSettings struct {
-	JenkinsUser       string
-	JenkinsToken      string
-	AzureToken        string
-	GitHubActionToken string
+	JenkinsUser  string
+	JenkinsToken string
+	AzureToken   string
+	GitHubToken  string
 }
 
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
@@ -64,7 +64,9 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	case AzureDevOps:
 		return &AzureDevOpsConfigProvider{}, nil
 	case GitHubActions:
-		return &GitHubActionsConfigProvider{}, nil
+		return gitHubActionsConfigProvider(&OrchestratorSettings{
+			GitHubToken: getEnv("GITHUB_TOKEN", ""),
+		})
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
 	default:
