@@ -1,21 +1,12 @@
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.hasItem
-import static org.hamcrest.Matchers.allOf
-
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.RuleChain
 import org.junit.rules.ExpectedException
-import static org.junit.Assert.assertThat
+import org.junit.rules.RuleChain
+import util.*
 
-import util.BasePiperTest
-import util.JenkinsDockerExecuteRule
-import util.JenkinsShellCallRule
-import util.JenkinsReadYamlRule
-import util.JenkinsStepRule
-import util.JenkinsLoggingRule
-import util.Rules
+import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertThat
 
 class SonarExecuteScanTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
@@ -36,10 +27,11 @@ class SonarExecuteScanTest extends BasePiperTest {
         .around(jsr)
 
     def sonarInstance
-
+    def archiveStepPatterns
     @Before
     void init() throws Exception {
         sonarInstance = null
+        archiveStepPatterns = []
         helper.registerAllowedMethod("withSonarQubeEnv", [String.class, Closure.class], { string, closure ->
             sonarInstance = string
             return closure()
@@ -47,6 +39,9 @@ class SonarExecuteScanTest extends BasePiperTest {
         helper.registerAllowedMethod("unstash", [String.class], { stashInput -> return [] })
         helper.registerAllowedMethod("fileExists", [String.class], { file -> return file })
         helper.registerAllowedMethod('string', [Map], { m -> m })
+        helper.registerAllowedMethod("archiveArtifacts", [Map.class], {
+            parameters -> archiveStepPatterns.push(parameters.artifacts)
+        })
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
             try {
                 binding.setProperty(l[0].variable, 'TOKEN_' + l[0].credentialsId)
@@ -74,5 +69,31 @@ class SonarExecuteScanTest extends BasePiperTest {
             hasItem(containsString('keytool -import -noprompt -storepass changeit -keystore .certificates/cacerts -alias \'my.cert\' -file \'.certificates/my.cert\''))
         ))
         assertJobStatusSuccess()
+    }
+
+    @Test
+    void testExecuteScript() {
+        def piperGoPath = "/usr/local/bin/piper"
+        def stepName = "my-step"
+        def customDefaultConfig = "--config=custom"
+        def customConfigArg = "-Dfoo=bar"
+        def shouldArchiveArtifacts = true
+
+        jsr.step.executeScript(
+            piperGoPath: piperGoPath,
+            stepName: stepName,
+            customDefaultConfig: customDefaultConfig,
+            customConfigArg: customConfigArg,
+            shouldArchiveArtifacts: shouldArchiveArtifacts
+        )
+        // check that the expected arguments were passed to the shell command
+        def shellCommand = jscr.shell.join(" ")
+        assertThat(shellCommand, containsString("-Dfoo=bar"))
+        // check that the expected artifact was archived
+        // Check that the expected artifact was archived
+        if (shouldArchiveArtifacts) {
+            assertThat(archiveStepPatterns, hasSize(1))
+            assertThat(archiveStepPatterns, hasItem('sonarscan.json'))
+        }
     }
 }
