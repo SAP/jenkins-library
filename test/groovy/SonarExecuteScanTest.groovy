@@ -86,11 +86,8 @@ class SonarExecuteScanTest extends BasePiperTest {
             customConfigArg: customConfigArg,
             shouldArchiveArtifacts: shouldArchiveArtifacts
         )
-        // check that the expected arguments were passed to the shell command
         def shellCommand = jscr.shell.join(" ")
         assertThat(shellCommand, containsString("-Dfoo=bar"))
-        // check that the expected artifact was archived
-        // Check that the expected artifact was archived
         if (shouldArchiveArtifacts) {
             assertThat(archiveStepPatterns, hasSize(1))
             assertThat(archiveStepPatterns, hasItem('sonarscan.json'))
