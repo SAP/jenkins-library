@@ -69,6 +69,7 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
+	container.assertHasOutput(t, "description: tmsUpload")
 	container.assertHasOutput(t, "tmsUpload - File uploaded successfully")
 	container.assertHasOutput(t, "tmsUpload - Node upload executed successfully")
 	container.assertHasOutput(t, "tmsUpload - SUCCESS")
@@ -116,4 +117,6 @@ func TestTmsUploadIntegrationYaml(t *testing.T) {
 	container.assertHasOutput(t, "tmsUpload - MTA extension descriptor updated successfully")
 	container.assertHasOutput(t, "tmsUpload - Node upload executed successfully")
 	container.assertHasOutput(t, "tmsUpload - SUCCESS")
+	//  test that oauth token is not exposed
+	container.assertHasNoOutput(t, "eyJ")
 }
