@@ -61,7 +61,6 @@ func gitHubActionsConfigProvider(settings *OrchestratorSettings) (*GitHubActions
 }
 
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
-	log.Entry().Debugf("OrchestratorVersion() for GitHub Actions is not applicable.")
 	return "n/a"
 }
 
