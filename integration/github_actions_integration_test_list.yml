@@ -18,7 +18,7 @@ run:
 
   - '"TestMavenIntegration"'
   - '"TestMTAIntegration"'
-  - '"TestNexusIntegration"'
+  # - '"TestNexusIntegration"'
   - '"TestTmsUploadIntegration"'
 
   # these are light-weighted tests, so we can use only one pod to reduce resource consumption

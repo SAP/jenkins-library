@@ -36,7 +36,7 @@ func TestSonarIntegrationIssueSearch(t *testing.T) {
 	}
 	options := &sonar.IssuesSearchOption{
 		ComponentKeys: componentKey,
-		Severities:    "INFO",
+		Severities:    "MINOR",
 		Resolved:      "false",
 		Ps:            "1",
 		Organization:  organization,

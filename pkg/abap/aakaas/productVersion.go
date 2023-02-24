@@ -21,7 +21,7 @@ func (p *ProductVersion) ConstructProductversion(desc abaputils.AddonDescriptor,
 	if err := p.constructVersionable(desc.AddonProduct, desc.AddonVersionYAML, conn, pvQueryURL); err != nil {
 		return err
 	}
-	if err := p.resolveNext(); err != nil {
+	if err := p.resolveNext(statusFilterPV); err != nil {
 		return err
 	}
 	return nil
@@ -31,6 +31,7 @@ func (p *ProductVersion) CopyVersionFieldsToDescriptor(desc *abaputils.AddonDesc
 	desc.AddonVersion = p.TechRelease
 	desc.AddonSpsLevel = p.TechSpLevel
 	desc.AddonPatchLevel = p.TechPatchLevel
+	desc.AddonVersionYAML = p.Version
 }
 
 func (p *ProductVersion) ValidateAndResolveVersionFields() error {
