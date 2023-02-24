@@ -45,6 +45,7 @@ func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
+	container.assertHasOutput(t, "description: Piper integration test")
 	container.assertHasOutput(t, "tmsUpload - File uploaded successfully")
 	container.assertHasOutput(t, "tmsUpload - Node upload executed successfully")
 	container.assertHasOutput(t, "tmsUpload - SUCCESS")
