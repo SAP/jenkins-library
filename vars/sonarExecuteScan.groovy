@@ -59,40 +59,61 @@ void call(Map parameters = [:]) {
                     loadCertificates(customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose)
                 }
                 // execute step
-                piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
-                    if(!fileExists('.git')) utils.unstash('git')
+                piperExecuteBin.dockerWrapper(script, STEP_NAME, config) {
+                    // Check if the Git repository is present and unstash it if it isn't
+                    if (!fileExists('.git')) {
+                        utils.unstash('git')
+                    }
+                    // Set up environment variables and execute the script
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
                         writePipelineEnv(script: script, piperGoPath: piperGoPath)
                         withEnv(environment) {
-                            influxWrapper(script) {
-                                piperExecuteBin.credentialWrapper(config, credentialInfo) {
-                                    if (stepConfig.instance) {
+                            piperExecuteBin.credentialWrapper(config, credentialInfo) {
+                                    // Check if SonarQube is being used
+                                    if (stepConfig.instance || env.SONARQUBE_SERVER) {
                                         withSonarQubeEnv(stepConfig.instance) {
-                                            echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
-                                            sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-                                            jenkinsUtils.handleStepResults(STEP_NAME, false, false)
-                                            readPipelineEnv(script: script, piperGoPath: piperGoPath)
+                                            // Print a message if the 'instance' parameter is used
+                                            if (stepConfig.instance) {
+                                                echo "The 'instance' parameter is deprecated - please use the 'serverUrl' parameter to set the URL to the Sonar backend."
+                                            }
+                                            // Execute the script and archive artifacts
+                                            executeScript([
+                                                piperGoPath: piperGoPath,
+                                                stepName: STEP_NAME,
+                                                customDefaultConfig: customDefaultConfig,
+                                                customConfigArg: customConfigArg,
+                                                shouldArchiveArtifacts: true
+                                            ])
                                         }
                                     } else {
-                                        sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                        // Execute the script without SonarQube and archive artifacts
+                                        executeScript([
+                                            piperGoPath: piperGoPath,
+                                            stepName: STEP_NAME,
+                                            customDefaultConfig: customDefaultConfig,
+                                            customConfigArg: customConfigArg,
+                                            shouldArchiveArtifacts: true
+                                        ])
                                     }
                                 }
                             }
                         }
+                    // Handle step results if the 'instance' parameter is used
+                    if (stepConfig.instance) {
+                        jenkinsUtils.handleStepResults(STEP_NAME, false, false)
                     }
+
+                    // Read pipeline environment and Influx data
+                    readPipelineEnv(script: script, piperGoPath: piperGoPath)
+                    InfluxData.readFromDisk(script)
+
+                    // Stash step reports
+                    stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
                 }
             } finally {
                 def ignore = sh script: 'rm -rf .sonar-scanner .certificates', returnStatus: true
             }
         }
-    }
-}
-
-private void influxWrapper(Script script, body){
-    try {
-        body()
-    } finally {
-        InfluxData.readFromDisk(script)
     }
 }
 
@@ -135,5 +156,19 @@ private void loadCertificates(Map config) {
             sh "wget ${wgetOptions.join(' ')} ${url}"
             sh "keytool ${keytoolOptions.join(' ')} -alias '${filename}' -file '${certificateFolder}${filename}'"
         }
+    }
+}
+
+def executeScript(Map<String, Object> inputParams) {
+    def piperGoPath = inputParams.piperGoPath
+    def stepName = inputParams.stepName
+    def customDefaultConfig = inputParams.customDefaultConfig
+    def customConfigArg = inputParams.customConfigArg
+    def shouldArchiveArtifacts = inputParams.shouldArchiveArtifacts
+
+    def command = "${piperGoPath} ${stepName}${customDefaultConfig}${customConfigArg}"
+    sh command
+    if (shouldArchiveArtifacts) {
+        archiveArtifacts artifacts: 'sonarscan.json', allowEmptyArchive: true
     }
 }
