@@ -35,6 +35,12 @@ type Logs struct {
 }
 
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
+	g.client = piperHttp.Client{}
+	g.client.SetOptions(piperHttp.ClientOptions{
+		Password:         settings.GitHubToken,
+		MaxRetries:       3,
+		TransportTimeout: time.Second * 10,
+	})
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 
@@ -47,17 +53,6 @@ func getActionsURL() string {
 		ghURL += "api/v3"
 	}
 	return fmt.Sprintf("%s/repos/%s/actions", ghURL, getEnv("GITHUB_REPOSITORY", ""))
-}
-
-func gitHubActionsConfigProvider(settings *OrchestratorSettings) (*GitHubActionsConfigProvider, error) {
-	g := GitHubActionsConfigProvider{}
-	g.client = piperHttp.Client{}
-	g.client.SetOptions(piperHttp.ClientOptions{
-		Password:         settings.GitHubToken,
-		MaxRetries:       3,
-		TransportTimeout: time.Second * 10,
-	})
-	return &g, nil
 }
 
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
@@ -215,9 +210,7 @@ func (g *GitHubActionsConfigProvider) GetStageIds() ([]int, error) {
 }
 
 func (g *GitHubActionsConfigProvider) getHeader() http.Header {
-	header := http.Header{
-		"Accept":        {"application/vnd.github+json"},
-		"Authorization": {fmt.Sprintf("Bearer %s", getEnv("PIPER_ACTION_GITHUB_TOOLS_TOKEN", ""))},
+	return http.Header{
+		"Accept": {"application/vnd.github+json"},
 	}
-	return header
 }
