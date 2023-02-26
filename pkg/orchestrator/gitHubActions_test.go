@@ -9,6 +9,7 @@ import (
 	"time"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
