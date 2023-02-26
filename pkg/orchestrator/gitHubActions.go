@@ -202,7 +202,7 @@ func (g *GitHubActionsConfigProvider) GetStageIds() ([]int, error) {
 		ids[i] = job.ID
 	}
 	if len(ids) == 0 {
-		return nil, fmt.Errorf("failed to get logs")
+		return nil, fmt.Errorf("failed to get IDs")
 	}
 
 	// execution of the last stage hasn't finished yet - we can't get logs of the last stage
