@@ -127,6 +127,18 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         )
 
     }
+    
+    @Test
+    void testInitMtaBuildToolDoesNotThrowException() {
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'mta',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml'
+        )
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+    }
 
     @Test
     void testInitDefault() {
