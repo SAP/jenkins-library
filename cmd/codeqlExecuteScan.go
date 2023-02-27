@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -173,6 +174,9 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 }
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) error {
+
+	log.Entry().Infof("NumCPU: %q", runtime.NumCPU())
+
 	var reports []piperutils.Path
 	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", config.ModulePath}
 
