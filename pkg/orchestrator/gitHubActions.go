@@ -17,6 +17,10 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+var httpHeader = http.Header{
+	"Accept": {"application/vnd.github+json"},
+}
+
 type GitHubActionsConfigProvider struct {
 	client piperHttp.Client
 }
@@ -71,7 +75,7 @@ func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
 
 // GetLog returns the whole logfile for the current pipeline run
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
-	ids, err := g.GetStageIds()
+	ids, err := g.getStageIds()
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +94,7 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 		}
 		wg.Go(func() error {
 			defer sem.Release(1)
-			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", getActionsURL(), ids[i]), g.getHeader(), nil)
+			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", getActionsURL(), ids[i]), httpHeader, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get API data: %w", err)
 			}
@@ -188,7 +192,7 @@ func isGitHubActions() bool {
 }
 
 func (g *GitHubActionsConfigProvider) getStageIds() ([]int, error) {
-	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", "")), g.getHeader(), nil)
+	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", "")), httpHeader, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get API data: %w", err)
 	}
@@ -209,10 +213,4 @@ func (g *GitHubActionsConfigProvider) getStageIds() ([]int, error) {
 
 	// execution of the last stage hasn't finished yet - we can't get logs of the last stage
 	return ids[:len(stagesID.Jobs)-1], nil
-}
-
-func (g *GitHubActionsConfigProvider) getHeader() http.Header {
-	return http.Header{
-		"Accept": {"application/vnd.github+json"},
-	}
 }
