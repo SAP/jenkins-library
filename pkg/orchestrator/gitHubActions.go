@@ -34,6 +34,7 @@ type Logs struct {
 	b [][]byte
 }
 
+// InitOrchestratorProvider initializes http client for GitHubActionsDevopsConfigProvider
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	g.client = piperHttp.Client{}
 	g.client.SetOptions(piperHttp.ClientOptions{
