@@ -128,6 +128,27 @@ spec:
           - name: commonPipelineEnvironment
             param: git/remoteCommitId
         type: string
+      - name: ram
+        type: string
+        description: "Testing purpose: Flag --ram for codeql commands"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: threads
+        type: string
+        description: "Testing purpose: Flag --threads for codeql commands"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: javaOptions
+        type: string
+        description: "Testing purpose: Flag -J for codeql commands"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: ""
   outputs:
