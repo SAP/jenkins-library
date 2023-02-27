@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -205,12 +206,14 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	if len(config.BuildCommand) > 0 {
 		cmd = append(cmd, "--command="+config.BuildCommand)
 	}
-
+	start := time.Now()
 	err := execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database create")
 		return err
 	}
+	t := time.Now()
+	log.Entry().Infof("database create duration: %q", t.Sub(start))
 
 	err = os.MkdirAll(fmt.Sprintf("%vtarget", config.ModulePath), os.ModePerm)
 	if err != nil {
@@ -231,11 +234,14 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	cmd = codeqlQuery(cmd, config.QuerySuite)
+	start = time.Now()
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database analyze for sarif generation")
 		return err
 	}
+	t = time.Now()
+	log.Entry().Infof("database analyze sarif duration: %q", t.Sub(start))
 
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/codeqlReport.sarif", config.ModulePath)})
 
@@ -253,11 +259,14 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	cmd = codeqlQuery(cmd, config.QuerySuite)
+	start = time.Now()
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database analyze for csv generation")
 		return err
 	}
+	t = time.Now()
+	log.Entry().Infof("database analyze csv duration: %q", t.Sub(start))
 
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/codeqlReport.csv", config.ModulePath)})
 	err = uploadResults(config, utils)
