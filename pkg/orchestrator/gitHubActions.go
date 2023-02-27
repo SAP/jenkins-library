@@ -187,7 +187,7 @@ func isGitHubActions() bool {
 	return areIndicatingEnvVarsSet(envVars)
 }
 
-func (g *GitHubActionsConfigProvider) GetStageIds() ([]int, error) {
+func (g *GitHubActionsConfigProvider) getStageIds() ([]int, error) {
 	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", "")), g.getHeader(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get API data: %w", err)
