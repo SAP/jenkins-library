@@ -69,6 +69,7 @@ func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
 	return "FAILURE"
 }
 
+// GetLog returns the whole logfile for the current pipeline run
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	ids, err := g.GetStageIds()
 	if err != nil {
