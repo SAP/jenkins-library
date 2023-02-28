@@ -25,15 +25,15 @@ type GitHubActionsConfigProvider struct {
 	client piperHttp.Client
 }
 
-type Job struct {
+type job struct {
 	ID int `json:"id"`
 }
 
-type StagesID struct {
-	Jobs []Job `json:"jobs"`
+type stagesID struct {
+	Jobs []job `json:"jobs"`
 }
 
-type Logs struct {
+type logs struct {
 	sync.Mutex
 	b [][]byte
 }
@@ -80,7 +80,7 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 		return nil, err
 	}
 
-	logs := Logs{
+	logs := logs{
 		b: make([][]byte, len(ids)),
 	}
 
@@ -197,7 +197,7 @@ func (g *GitHubActionsConfigProvider) getStageIds() ([]int, error) {
 		return nil, fmt.Errorf("failed to get API data: %w", err)
 	}
 
-	var stagesID StagesID
+	var stagesID stagesID
 	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &stagesID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse JSON data: %w", err)

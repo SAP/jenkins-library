@@ -76,8 +76,8 @@ func TestGitHubActions(t *testing.T) {
 			})
 			return &g
 		}()
-		stagesID := StagesID{
-			Jobs: []Job{
+		stagesID := stagesID{
+			Jobs: []job{
 				{ID: 123},
 				{ID: 124},
 				{ID: 125},
@@ -170,8 +170,8 @@ func TestGitHubActions(t *testing.T) {
 			})
 			return &g
 		}()
-		stagesID := StagesID{
-			Jobs: []Job{
+		stagesID := stagesID{
+			Jobs: []job{
 				{ID: 123},
 				{ID: 124},
 				{ID: 125},
