@@ -195,39 +195,4 @@ func TestGitHubActions(t *testing.T) {
 		assert.Nil(t, actual)
 		assert.EqualError(t, err, "failed to get logs: failed to get API data: HTTP request to https://api.github.com/repos/foo/bar/actions/jobs/124/logs failed with error: HTTP GET request to https://api.github.com/repos/foo/bar/actions/jobs/124/logs failed: Get \"https://api.github.com/repos/foo/bar/actions/jobs/124/logs\": no responder found")
 	})
-
-	// to be deleted
-	// t.Run("Test log receiving 2", func(t *testing.T) {
-	// 	defer resetEnv(os.Environ())
-	// 	os.Clearenv()
-	// 	os.Unsetenv("GITHUB_HEAD_REF")
-	// 	os.Setenv("GITHUB_ACTIONS", "true")
-	// 	os.Setenv("GITHUB_REF_NAME", "feat/test-gh-actions")
-	// 	os.Setenv("GITHUB_REF", "refs/heads/feat/test-gh-actions")
-	// 	os.Setenv("GITHUB_SHA", "abcdef42713")
-	// 	os.Setenv("GITHUB_REPOSITORY", "project-piper/azure-demo-k8s-node")
-	// 	os.Setenv("GITHUB_URL", "https://github.tools.sap/")
-	// 	// os.Setenv("PIPER_ACTION_GITHUB_TOOLS_TOKEN", "")
-	// 	os.Setenv("GITHUB_RUN_ID", "1738520")
-	// 	p := func() OrchestratorSpecificConfigProviding {
-	// 		g := GitHubActionsConfigProvider{}
-	// 		g.client = piperHttp.Client{}
-	// 		g.client.SetOptions(piperHttp.ClientOptions{
-	// 			MaxRequestDuration: 60 * time.Second,
-	// 			Password:        "",
-	// 			TransportSkipVerification: true,
-	// 			UseDefaultTransport: true, // need to use default transport for http mock
-	// 			MaxRetries:          -1,
-	// 		})
-	// 		return &g
-	// 	}()
-
-	// 	b, err := p.GetLog()
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	if err := os.WriteFile("test_log.log", b, 777); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// })
 }
