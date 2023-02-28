@@ -20,20 +20,20 @@ import (
 )
 
 type codeqlExecuteScanOptions struct {
-	GithubToken   string `json:"githubToken,omitempty"`
-	BuildTool     string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
-	BuildCommand  string `json:"buildCommand,omitempty"`
-	Language      string `json:"language,omitempty"`
-	ModulePath    string `json:"modulePath,omitempty"`
-	Database      string `json:"database,omitempty"`
-	QuerySuite    string `json:"querySuite,omitempty"`
-	UploadResults bool   `json:"uploadResults,omitempty"`
-	AnalyzedRef   string `json:"analyzedRef,omitempty"`
-	Repository    string `json:"repository,omitempty"`
-	CommitID      string `json:"commitId,omitempty"`
-	Ram           string `json:"ram,omitempty"`
-	Threads       string `json:"threads,omitempty"`
-	JavaOptions   string `json:"javaOptions,omitempty"`
+	GithubToken    string `json:"githubToken,omitempty"`
+	BuildTool      string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
+	BuildCommand   string `json:"buildCommand,omitempty"`
+	Language       string `json:"language,omitempty"`
+	ModulePath     string `json:"modulePath,omitempty"`
+	Database       string `json:"database,omitempty"`
+	QuerySuite     string `json:"querySuite,omitempty"`
+	UploadResults  bool   `json:"uploadResults,omitempty"`
+	AnalyzedRef    string `json:"analyzedRef,omitempty"`
+	Repository     string `json:"repository,omitempty"`
+	CommitID       string `json:"commitId,omitempty"`
+	Ram            string `json:"ram,omitempty"`
+	Threads        string `json:"threads,omitempty"`
+	JavaOptions    string `json:"javaOptions,omitempty"`
 	Prestepcommand string `json:"prestepcommand,omitempty"`
 }
 
@@ -338,16 +338,6 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_commitId"),
 					},
 					{
-						Name:        "prestepcommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_prestepcommand"),
-						Default:     os.Getenv("PIPER_ram"),
-					},
-					{
 						Name:        "ram",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -373,6 +363,15 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_javaOptions"),
+					},
+					{
+						Name:        "prestepcommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_prestepcommand"),
 					},
 				},
 			},
