@@ -34,6 +34,7 @@ type codeqlExecuteScanOptions struct {
 	Ram           string `json:"ram,omitempty"`
 	Threads       string `json:"threads,omitempty"`
 	JavaOptions   string `json:"javaOptions,omitempty"`
+	Prestepcommand string `json:"prestepcommand,omitempty"`
 }
 
 type codeqlExecuteScanReports struct {
@@ -187,6 +188,7 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.Ram, "ram", os.Getenv("PIPER_ram"), "Testing purpose: Flag --ram for codeql commands")
 	cmd.Flags().StringVar(&stepConfig.Threads, "threads", os.Getenv("PIPER_threads"), "Testing purpose: Flag --threads for codeql commands")
 	cmd.Flags().StringVar(&stepConfig.JavaOptions, "javaOptions", os.Getenv("PIPER_javaOptions"), "Testing purpose: Flag -J for codeql commands")
+	cmd.Flags().StringVar(&stepConfig.Prestepcommand, "prestepcommand", os.Getenv("PIPER_prestepcommand"), "Testing purpose: Command to test before the codeql step")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -334,6 +336,16 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_commitId"),
+					},
+					{
+						Name:        "prestepcommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_prestepcommand"),
+						Default:     os.Getenv("PIPER_ram"),
 					},
 					{
 						Name:        "ram",

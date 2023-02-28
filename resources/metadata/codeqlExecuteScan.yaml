@@ -149,6 +149,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: prestepcommand
+        type: string
+        description: "Testing purpose: Command to test before the codeql step"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: ""
   outputs:
