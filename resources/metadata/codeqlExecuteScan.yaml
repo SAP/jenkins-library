@@ -139,3 +139,5 @@ spec:
             type: codeql
           - filePattern: "**/*.sarif"
             type: codeql
+          - filePattern: "**/toolrun_codeql_*.json"
+            type: codeql

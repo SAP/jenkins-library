@@ -72,7 +72,7 @@ func TestGitHubActions(t *testing.T) {
 		os.Clearenv()
 		os.Setenv("GITHUB_HEAD_REF", "feat/test-gh-actions")
 		os.Setenv("GITHUB_BASE_REF", "main")
-		os.Setenv("GITHUB_EVENT_PULL_REQUEST_NUMBER", "42")
+		os.Setenv("GITHUB_REF", "refs/pull/42/merge")
 
 		p := GitHubActionsConfigProvider{}
 		c := p.GetPullRequestConfig()
