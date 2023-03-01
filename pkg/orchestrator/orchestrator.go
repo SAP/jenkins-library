@@ -56,6 +56,7 @@ type OrchestratorSettings struct {
 	JenkinsUser  string
 	JenkinsToken string
 	AzureToken   string
+	GitHubToken  string
 }
 
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
