@@ -117,8 +117,6 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, cli
 	if err != nil {
 		return communicationInstance, errors.Wrap(err, "Error fetching OAuth token")
 	}
-	log.RegisterSecret(token)
-	log.RegisterSecret(clientSecret)
 
 	options := piperHttp.ClientOptions{
 		Token: token,
@@ -156,6 +154,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("OAuth Token retrieved successfully")
 	}
+	log.RegisterSecret(token.AccessToken)
 	return token.TokenType + " " + token.AccessToken, nil
 }
 

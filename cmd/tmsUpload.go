@@ -84,6 +84,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
+	log.RegisterSecret(serviceKey.Uaa.ClientSecret)
 
 	if GeneralConfig.Verbose {
 		log.Entry().Info("Will be used for communication:")
