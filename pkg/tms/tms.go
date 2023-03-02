@@ -118,6 +118,7 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, cli
 		return communicationInstance, errors.Wrap(err, "Error fetching OAuth token")
 	}
 	log.RegisterSecret(token)
+	log.RegisterSecret(clientSecret)
 
 	options := piperHttp.ClientOptions{
 		Token: token,
