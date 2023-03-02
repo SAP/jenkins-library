@@ -51,8 +51,8 @@ If you have configured your orchestrator to detect pull requests, then the `dete
     ```
 
 2. Enable detecExecuationScan in the orchestrator.
-   For example:
-   
+  For example:
+
     ```
     @Library('piper-lib') _
     @Library('piper-lib-os') __
