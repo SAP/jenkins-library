@@ -25,21 +25,21 @@ jobs:
       - name: Get pull request URL
         id: pull_request
         run: |
-          echo "::set-output name=pull_request::$(curl ${{ github.event.comment.issue_url }} |
+          echo "pull_request=$(curl ${{ github.event.comment.issue_url }} |
           jq '.pull_request.url' |
-          sed 's/\"//g')"
+          sed 's/\"//g')" >> "$GITHUB_OUTPUT"
       - name: Get repository
         id: repository
         run: |
-          echo "::set-output name=repository::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          echo "repository=$(curl ${{ steps.pull_request.outputs.pull_request }} |
           jq '.head.repo.full_name' |
-          sed 's/\"//g')"
+          sed 's/\"//g')" >> "$GITHUB_OUTPUT"
       - name: Get branch name
         id: branch_name
         run: |
-          echo "::set-output name=branch_name::$(curl ${{ steps.pull_request.outputs.pull_request }} |
+          echo "branch_name=$(curl ${{ steps.pull_request.outputs.pull_request }} |
           jq '.head.ref' |
-          sed 's/\"//g')"
+          sed 's/\"//g')" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v3
         with:
           repository: ${{ steps.repository.outputs.repository }}

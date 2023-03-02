@@ -13,6 +13,8 @@ import (
 )
 
 const wildCard string = "NEXT"
+const statusFilterCV string = "DeliveryStatus eq 'R'"
+const statusFilterPV string = "DeliveryStatus eq 'T' or DeliveryStatus eq 'P'"
 
 type versionable struct {
 	Name           string
@@ -49,7 +51,7 @@ func (v *versionable) constructVersionable(name string, dottedVersionString stri
 	return nil
 }
 
-func (v *versionable) resolveNext() error {
+func (v *versionable) resolveNext(statusFilter string) error {
 
 	switch strings.Count(v.Version, wildCard) {
 	case 0:
@@ -59,11 +61,11 @@ func (v *versionable) resolveNext() error {
 		var err error
 		switch wildCard {
 		case v.TechRelease:
-			err = v.resolveRelease()
+			err = v.resolveRelease(statusFilter)
 		case v.TechSpLevel:
-			err = v.resolveSpLevel()
+			err = v.resolveSpLevel(statusFilter)
 		case v.TechPatchLevel:
-			err = v.resolvePatchLevel()
+			err = v.resolvePatchLevel(statusFilter)
 		}
 		if err != nil {
 			return err
@@ -78,9 +80,8 @@ func (v *versionable) resolveNext() error {
 	return nil
 }
 
-func (v *versionable) resolveRelease() error {
-	//take only unrevertable status R/C for packages and T/P for TargetVectors
-	filter := "Name eq '" + v.Name + "' and TechSpLevel eq '0000' and TechPatchLevel eq '0000' and ( DeliveryStatus eq 'R' or DeliveryStatus eq 'C' or DeliveryStatus eq 'T' or DeliveryStatus eq 'P' )"
+func (v *versionable) resolveRelease(statusFilter string) error {
+	filter := "Name eq '" + v.Name + "' and TechSpLevel eq '0000' and TechPatchLevel eq '0000' and ( " + statusFilter + " )"
 	orderBy := "TechRelease desc"
 
 	if queryResuult, err := v.queryVersion(filter, orderBy); err != nil {
@@ -95,8 +96,8 @@ func (v *versionable) resolveRelease() error {
 	}
 }
 
-func (v *versionable) resolveSpLevel() error {
-	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechPatchLevel eq '0000'  and ( DeliveryStatus eq 'R' or DeliveryStatus eq 'C' or DeliveryStatus eq 'T' or DeliveryStatus eq 'P' )"
+func (v *versionable) resolveSpLevel(statusFilter string) error {
+	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechPatchLevel eq '0000'  and ( " + statusFilter + " )"
 	orderBy := "TechSpLevel desc"
 
 	if queryResuult, err := v.queryVersion(filter, orderBy); err != nil {
@@ -111,8 +112,8 @@ func (v *versionable) resolveSpLevel() error {
 	}
 }
 
-func (v *versionable) resolvePatchLevel() error {
-	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechSpLevel eq '" + v.TechSpLevel + "' and ( DeliveryStatus eq 'R' or DeliveryStatus eq 'C' or DeliveryStatus eq 'T' or DeliveryStatus eq 'P' )"
+func (v *versionable) resolvePatchLevel(statusFilter string) error {
+	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechSpLevel eq '" + v.TechSpLevel + "' and ( " + statusFilter + " )"
 	orderBy := "TechPatchLevel desc"
 
 	if queryResuult, err := v.queryVersion(filter, orderBy); err != nil {
@@ -133,7 +134,7 @@ func (v *versionable) queryVersion(filter string, orderBy string) (*versionable,
 	values := url.Values{}
 	values.Set("$filter", filter)
 	values.Set("$orderby", orderBy)
-	values.Set("$select", "Name,Version,TechRelease,TechSpLevel,TechPatchLevel")
+	values.Set("$select", "Name,Version,TechRelease,TechSpLevel,TechPatchLevel,Namespace") //Namespace needed otherwise empty result - will be fixed by OCS shortly
 	values.Set("$format", "json")
 	values.Set("$top", "1")
 
@@ -159,6 +160,7 @@ func (v *versionable) queryVersion(filter string, orderBy string) (*versionable,
 			return &result, errors.New("Unexpected Number of CVs in result: " + fmt.Sprint(len(Versions.Wrapper.Vs)))
 		}
 	}
+	log.Entry().Infof("... looked up highest existing package in AAKaaS of the codeline: %s.%s.%s", result.TechRelease, result.TechSpLevel, result.TechPatchLevel)
 	return &result, nil
 }
 
