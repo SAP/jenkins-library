@@ -133,6 +133,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	}
 
 	encodedUsernameColonPassword := b64.StdEncoding.EncodeToString([]byte(communicationInstance.clientId + ":" + communicationInstance.clientSecret))
+	log.RegisterSecret(encodedUsernameColonPassword)
 	header := http.Header{}
 	header.Add("Content-Type", "application/x-www-form-urlencoded")
 	header.Add("Authorization", "Basic "+encodedUsernameColonPassword)
