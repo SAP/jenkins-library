@@ -284,8 +284,6 @@ type System interface {
 	ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration) (Scan, error)
 	ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration) (Scan, error)
 
-	UpdateProjectConfiguration(projectID string, settings []ProjectConfigurationSetting) error
-
 	UploadProjectSourceCode(projectID string, zipFile string) (string, error)
 	CreateProject(projectName string, groupIDs []string) (Project, error)
 	GetPresets() ([]Preset, error)
@@ -301,6 +299,9 @@ type System interface {
 	SetProjectPreset(projectID, presetName string, allowOverride bool) error
 	SetProjectLanguageMode(projectID, languageMode string, allowOverride bool) error
 	SetProjectFileFilter(projectID, filter string, allowOverride bool) error
+
+	GetProjectConfiguration(projectID string) ([]ProjectConfigurationSetting, error)
+	UpdateProjectConfiguration(projectID string, settings []ProjectConfigurationSetting) error
 }
 
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend

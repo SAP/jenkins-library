@@ -180,7 +180,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "Checkmarx Default"
       - name: languageMode
         type: string
         description: Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'

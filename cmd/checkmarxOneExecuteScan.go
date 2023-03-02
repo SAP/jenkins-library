@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/checkmarxone"
+	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -179,6 +179,8 @@ func (cx1sh *checkmarxOneExecuteScanHelper) RunScan(ctx context.Context, config 
 			} else {
 				log.Entry().Infof("Project preset updated to %v", config.Preset)
 			}
+		} else {
+			return scan, errors.New("no preset defined in the configuration")
 		}
 		if len(config.LanguageMode) != 0 {
 			err = sys.SetProjectLanguageMode(project.ProjectID, config.LanguageMode, true)
@@ -210,7 +212,23 @@ func (cx1sh *checkmarxOneExecuteScanHelper) RunScan(ctx context.Context, config 
 		project = projects[0]
 	}
 
-	log.Entry().Infof("Project %v (ID %v)", project.ProjectID, project.Name)
+	log.Entry().Infof("Project %v (ID %v)", project.Name, project.ProjectID)
+
+	projectConf, err := sys.GetProjectConfiguration(project.ProjectID)
+	currentPreset := ""
+	for _, conf := range projectConf {
+		if conf.Key == "scan.config.sast.presetName" {
+			currentPreset = conf.Value
+		}
+	}
+
+	if config.Preset == "" {
+		log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		config.Preset = currentPreset
+	} else {
+		log.Entry().Infof("Project configured preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentPreset, config.Preset)
+		sys.SetProjectPreset(project.ProjectID, config.Preset, true)
+	}
 
 	scan, err = cx1sh.uploadAndScan(ctx, config, sys, group, project, influx, utils)
 	if err != nil {
@@ -278,9 +296,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) uploadAndScan(ctx context.Context, c
 		sastConfig.Values = make(map[string]string, 0)
 		sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
 
-		if len(config.Preset) > 0 {
-			sastConfig.Values["presetName"] = config.Preset
-		}
+		sastConfig.Values["presetName"] = config.Preset // always set, either coming from config or coming from Cx1 configuration
 
 		if len(config.LanguageMode) > 0 {
 			sastConfig.Values["languageMode"] = config.LanguageMode
@@ -406,7 +422,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) getNumCoherentIncrementalScans(scans
 
 func (cx1sh *checkmarxOneExecuteScanHelper) getDetailedResults(config checkmarxOneExecuteScanOptions, group checkmarxOne.Group, project checkmarxOne.Project, scan checkmarxOne.Scan, scanmeta checkmarxOne.ScanMetadata, results []checkmarxOne.ScanResult /*sys checkmarxOne.System, reportFileName string, scanID int,*/, utils checkmarxOneExecuteScanUtils) (map[string]interface{}, error) {
 	//log.Entry().Infof("Test - getDetailedResults entry with %d results", len(results))
-    // this converts the JSON format results from Cx1 into the "resultMap" structure used in other parts of this step (influx etc)
+	// this converts the JSON format results from Cx1 into the "resultMap" structure used in other parts of this step (influx etc)
 
 	resultMap := map[string]interface{}{}
 	resultMap["InitiatorName"] = scan.Initiator
@@ -715,22 +731,20 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		log.Entry().Debug("Report generation is disabled via configuration")
 	}
 
-
 	scanmeta, err := sys.GetScanMetadata(scan.ScanID)
 	if err != nil {
 		log.Entry().Warnf("Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err)
 	}
 
-    scansummary, err := sys.GetScanSummary(scan.ScanID)
-    if err != nil {
+	scansummary, err := sys.GetScanSummary(scan.ScanID)
+	if err != nil {
 		log.Entry().Warnf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
 	}
 
-	results, err := sys.GetScanResults(scan.ScanID, scansummary.TotalCount() )
+	results, err := sys.GetScanResults(scan.ScanID, scansummary.TotalCount())
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
-
 
 	log.Entry().Errorf("ScanMeta LOC: %d, files: %d", scanmeta.LOC, scanmeta.FileCount)
 
@@ -738,8 +752,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
-
-    
 
 	// unclear if this step is required, currently
 	/*xmlReportName := cx1sh.createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
@@ -764,7 +776,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		}
 		reports = append(reports, paths...)
 	}
-	
 
 	// create toolrecord
 	toolRecordFileName, err := cx1sh.createToolRecordCx(utils, utils.GetWorkspace(), config, detailedResults)
@@ -775,18 +786,15 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
-	
-    // create JSON report (regardless vulnerabilityThreshold enabled or not)
-    jsonReport := checkmarxOne.CreateJSONReport(detailedResults)
-    paths, err := checkmarxOne.WriteJSONReport(jsonReport)
-    if err != nil {
-        log.Entry().Warning("failed to write JSON report...", err)
-    } else {
-        // add JSON report to archiving list
-        reports = append(reports, paths...)
-    }
-
-	
+	// create JSON report (regardless vulnerabilityThreshold enabled or not)
+	jsonReport := checkmarxOne.CreateJSONReport(detailedResults)
+	paths, err := checkmarxOne.WriteJSONReport(jsonReport)
+	if err != nil {
+		log.Entry().Warning("failed to write JSON report...", err)
+	} else {
+		// add JSON report to archiving list
+		reports = append(reports, paths...)
+	}
 
 	links := []piperutils.Path{{Target: detailedResults["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
 
