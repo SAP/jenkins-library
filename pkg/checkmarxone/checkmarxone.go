@@ -681,8 +681,6 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 		return "", err
 	}
 
-	// PUT request to uri
-	// TODO - does this work?
 	header := http.Header{}
 	header.Add("Accept-Encoding", "gzip,deflate")
 	header.Add("Content-Type", "application/zip")
@@ -961,25 +959,6 @@ func (s *Scan) IsIncremental() (bool, error) {
 	return false, errors.New(fmt.Sprintf("Scan %v did not have a sast-engine incremental flag set", s.ScanID))
 }
 
-/*
-// GetResults returns the results of the scan addressed by scanID
-// Two options:
-//   1. /results/?scan-id= &offset=0&limit=20&sort=%2Bstatus&sort=%2Bseverity
-//   2. /sast-results/?scan-id=
-// TODO - results are different in Cx1 and it is not a "ResultStatistics" object
-func (sys *SystemInstance) GetResults(scanID string) ResultsStatistics {
-    var results ResultsStatistics
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/results/?%v", scanID), nil, nil)
-    if err != nil {
-        sys.logger.Errorf("Failed to fetch scan results for scanID %v: %s", scanID, err)
-        return results
-    }
-
-    json.Unmarshal(data, &results)
-    return results
-}
-*/
-
 func (sys *SystemInstance) GetScanResults(scanID string, limit uint64) ([]ScanResult, error) {
 	sys.logger.Debug("Get Cx1 Scan Results")
 	var resultResponse struct {
@@ -1095,28 +1074,7 @@ func (sys *SystemInstance) GetResultsPredicates(SimilarityID int64, ProjectID st
 }
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
-// TODO
 func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
-	/* Example
-	   {
-	       "fileFormat": "pdf",
-	       "reportType": "ui",
-	       "reportName": "scan-report",
-	       "data": {
-	           "scanId": "{{Cx1_ScanId}}",
-	           "projectId": "{{Cx1_ProjectId}}",
-	           "branchName": "master",
-	           "sections": [
-	               "ScanSummary",
-	               "ExecutiveSummary",
-	               "ScanResults"
-	           ],
-	           "scanners": [
-	               "SAST"
-	           ],
-	           "host": ""
-	       }
-	   } // */
 	jsonData := map[string]interface{}{
 		"fileFormat": reportType,
 		"reportType": "ui",
@@ -1175,7 +1133,6 @@ func (sys *SystemInstance) GetQueries() ([]Query, error) {
 	sys.logger.Debug("Get Cx1 Queries")
 	var queries []Query
 
-	// Note: this list includes API Key/service account users from Cx1, remove the /admin/ for regular users only.
 	response, err := sendRequest(sys, http.MethodGet, "/presets/queries", nil, nil, []int{})
 	if err != nil {
 		return queries, err

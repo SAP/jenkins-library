@@ -289,7 +289,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) uploadAndScan(ctx context.Context, c
 			incremental = false
 		}
 
-		// TODO: need to define the engines somewhere also.
 		sastConfig := checkmarxOne.ScanConfiguration{}
 		sastConfig.ScanType = "sast"
 
@@ -421,7 +420,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) getNumCoherentIncrementalScans(scans
 }
 
 func (cx1sh *checkmarxOneExecuteScanHelper) getDetailedResults(config checkmarxOneExecuteScanOptions, group checkmarxOne.Group, project checkmarxOne.Project, scan checkmarxOne.Scan, scanmeta checkmarxOne.ScanMetadata, results []checkmarxOne.ScanResult /*sys checkmarxOne.System, reportFileName string, scanID int,*/, utils checkmarxOneExecuteScanUtils) (map[string]interface{}, error) {
-	//log.Entry().Infof("Test - getDetailedResults entry with %d results", len(results))
 	// this converts the JSON format results from Cx1 into the "resultMap" structure used in other parts of this step (influx etc)
 
 	resultMap := map[string]interface{}{}
@@ -451,8 +449,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) getDetailedResults(config checkmarxO
 
 	resultMap["LinesOfCodeScanned"] = scanmeta.LOC
 	resultMap["FilesScanned"] = scanmeta.FileCount
-
-	//log.Entry().Errorf("Test - LOC %d, files %d", resultMap["LinesOfCodeScanned"], resultMap["FilesScanned"])
 
 	resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this"
 
@@ -510,9 +506,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) getDetailedResults(config checkmarxO
 			}
 			submap[auditState]++
 
-			//TODO
-			// Review the change below - how does .FalsePositive work in old SAST XML, original line:
-			//if result.FalsePositive != "True" {
 			if auditState != "NotExploitable" {
 				submap["NotFalsePositive"]++
 			}
@@ -611,19 +604,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.
 			return err
 		}
 
-		/*header, err := utils.FileInfoHeader(info)
-		if err != nil {
-			return err
-		}
-
-		if baseDir != "" {
-			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
-		}
-
-		cx1sh.adaptHeader(info, header)
-
-		writer, err := archive.CreateHeader(header) */
-
 		fileName := strings.TrimPrefix(path, baseDir)
 		writer, err := archive.Create(fileName)
 		if err != nil {
@@ -690,7 +670,7 @@ func (cx1sh *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []
 
 func (cx1sh *checkmarxOneExecuteScanHelper) createToolRecordCx(utils checkmarxOneExecuteScanUtils, workspace string, config checkmarxOneExecuteScanOptions, results map[string]interface{}) (string, error) {
 	record := toolrecord.New(utils, workspace, "checkmarx", config.ServerURL)
-	// Todo GroupId - see run_scan()
+
 	// record.AddKeyData("team", XXX, resultMap["Group"], "")
 	// Project
 	err := record.AddKeyData("project",
@@ -716,8 +696,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) createToolRecordCx(utils checkmarxOn
 }
 
 func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx context.Context, config checkmarxOneExecuteScanOptions, sys checkmarxOne.System, group checkmarxOne.Group, project checkmarxOne.Project, scan checkmarxOne.Scan, influx *checkmarxOneExecuteScanInflux, utils checkmarxOneExecuteScanUtils) error {
-	//log.Entry().Info("Test - verifyCxProjectCompliance entry")
-
 	var reports []piperutils.Path
 	if config.GeneratePdfReport {
 		pdfReportName := cx1sh.createReportName(utils.GetWorkspace(), "Cx1_SASTReport_%v.pdf")
@@ -846,7 +824,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) verifyCxProjectCompliance(ctx contex
 }
 
 func (cx1sh *checkmarxOneExecuteScanHelper) enforceThresholds(config checkmarxOneExecuteScanOptions, results map[string]interface{}) (bool, []string, []string) {
-	//log.Entry().Info("Test - enforceThresholds entry")
 	neutralResults := []string{}
 	insecureResults := []string{}
 	insecure := false
@@ -966,8 +943,6 @@ func (cx1sh *checkmarxOneExecuteScanHelper) enforceThresholds(config checkmarxOn
 }
 
 func (cx1sh *checkmarxOneExecuteScanHelper) reportToInflux(results map[string]interface{}, influx *checkmarxOneExecuteScanInflux) {
-	//log.Entry().Info("Test - reportToInflux entry")
-
 	influx.checkmarxOne_data.fields.high_issues = results["High"].(map[string]int)["Issues"]
 	influx.checkmarxOne_data.fields.high_not_false_postive = results["High"].(map[string]int)["NotFalsePositive"]
 	influx.checkmarxOne_data.fields.high_not_exploitable = results["High"].(map[string]int)["NotExploitable"]

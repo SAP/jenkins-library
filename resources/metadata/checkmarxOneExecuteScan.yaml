@@ -30,7 +30,7 @@ spec:
         type: stash
     params:
       - name: assignees
-        description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.
+        description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names. [Not yet supported]
         scope:
           - PARAMETERS
           - STAGES
@@ -39,7 +39,7 @@ spec:
         default: []
       - name: avoidDuplicateProjectScans
         type: bool
-        description: Whether duplicate scans of the same project state shall be avoided or not
+        description: Whether duplicate scans of the same project state shall be avoided or not  [Not yet supported]
         scope:
           - PARAMETERS
           - STAGES
@@ -267,7 +267,7 @@ spec:
           - STEPS
       - name: sourceEncoding
         type: string
-        description: The source encoding to be used, if not set explicitly the project's default will be used
+        description: The source encoding to be used, if not set explicitly the project's default will be used  [Not yet supported]
         scope:
           - PARAMETERS
           - STAGES
