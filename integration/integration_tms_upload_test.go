@@ -77,7 +77,7 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
-	// run cmd with nodeExtDescriptorMapping
+	// error case: run cmd with nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
