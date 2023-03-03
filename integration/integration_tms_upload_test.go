@@ -31,7 +31,7 @@ func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
-		TestDir:     []string{"testdata", "TestTmsUploadIntegration/bin_param"},
+		TestDir:     []string{"testdata", "TestTmsUploadIntegration"},
 		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
@@ -57,7 +57,7 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
-		TestDir:     []string{"testdata", "TestTmsUploadIntegration/bin_param"},
+		TestDir:     []string{"testdata", "TestTmsUploadIntegration"},
 		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
@@ -82,7 +82,7 @@ func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
 		User:    "root",
-		TestDir: []string{"testdata", "TestTmsUploadIntegration/bin_param"},
+		TestDir: []string{"testdata", "TestTmsUploadIntegration"},
 	})
 	defer container.terminate(t)
 
@@ -99,17 +99,17 @@ func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationYaml(t *testing.T) {
-	// success case: run with config.yaml
+	// success case: run with custom config
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
-		TestDir:     []string{"testdata", "TestTmsUploadIntegration/yaml"},
+		TestDir:     []string{"testdata", "TestTmsUploadIntegration"},
 		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("tmsUpload")
+	err := container.whenRunningPiperCommand("tmsUpload", "--customConfig=.pipeline/tms_integration_test_config.yaml")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
