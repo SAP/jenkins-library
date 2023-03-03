@@ -98,6 +98,27 @@ func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
 	container.assertHasOutput(t, "Error: unknown flag: --nodeExtDescriptorMapping")
 }
 
+func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
+	// error case: run cmd with invalid description
+	readEnv()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:       "devxci/mbtci-java11-node14",
+		User:        "root",
+		TestDir:     []string{"testdata", "TestTmsUploadIntegration"},
+		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+	})
+	defer container.terminate(t)
+
+	err := container.whenRunningPiperCommand("tmsUpload",
+		"--mtaPath=scv_x.mtar",
+		"--nodeName=PIPER-TEST",
+		"--customDescription={Bad description}")
+
+	assert.Error(t, err, "Did expect error")
+	container.assertHasOutput(t, "error tmsUpload - HTTP request failed with error")
+	container.assertHasOutput(t, "Failed to run tmsUpload step - failed to upload file to node")
+}
+
 func TestTmsUploadIntegrationYaml(t *testing.T) {
 	// success case: run with custom config
 	readEnv()
