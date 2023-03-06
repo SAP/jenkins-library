@@ -599,7 +599,7 @@ func TestSendRequest(t *testing.T) {
 func TestNewCommunicationInstance(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: http.StatusOK}
-		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false)
+		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false, piperHttp.ClientOptions{})
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://dummy.sap.com", communicationInstance.uaaUrl, "uaaUrl field of communication instance incorrect")
@@ -611,7 +611,7 @@ func TestNewCommunicationInstance(t *testing.T) {
 
 	t.Run("test error", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
-		_, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false)
+		_, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false, piperHttp.ClientOptions{})
 
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "Error fetching OAuth token: http error 400", err.Error(), "Error text incorrect")
