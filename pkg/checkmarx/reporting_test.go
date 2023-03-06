@@ -288,7 +288,7 @@ func TestCreateCustomReport(t *testing.T) {
 	insecure := []string{"insecure"}
 	neutral := []string{"neutral"}
 
-	reportingData := CreateCustomReport(resultMap, insecure, neutral)
+	reportingData := CreateCustomReport(resultMap, true, insecure, neutral)
 	assert.Equal(t, "Checkmarx SAST Report", reportingData.ReportTitle)
 	assert.Equal(t, 15, len(reportingData.Subheaders))
 	assert.Equal(t, 2, len(reportingData.Overview))
