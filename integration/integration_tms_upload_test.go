@@ -130,7 +130,7 @@ func TestTmsUploadIntegrationYaml(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("tmsUpload", "--customConfig=.pipeline/tms_integration_test_config.yaml")
+	err := container.whenRunningPiperCommand("tmsUpload", "--customConfig=.pipeline/tms_integration_test_config.yml")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
