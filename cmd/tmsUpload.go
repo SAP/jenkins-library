@@ -67,13 +67,14 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	utils := newTmsUploadUtils()
 	client := &piperHttp.Client{}
 	proxy := config.Proxy
+	options := piperHttp.ClientOptions{}
 	if proxy != "" {
 		transportProxy, err := url.Parse(proxy)
 		if err != nil {
 			log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
 		}
 
-		options := piperHttp.ClientOptions{TransportProxy: transportProxy}
+		options = piperHttp.ClientOptions{TransportProxy: transportProxy}
 		client.SetOptions(options)
 		if GeneralConfig.Verbose {
 			log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
@@ -92,7 +93,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 		log.Entry().Infof("- UAA URL: %v", serviceKey.Uaa.Url)
 	}
 
-	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
+	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose, options)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}
@@ -110,7 +111,10 @@ func runTmsUpload(config tmsUploadOptions, communicationInstance tms.Communicati
 		return fmt.Errorf("mta file %s not found", mtaPath)
 	}
 
-	description := config.CustomDescription
+	description := tms.DEFAULT_TR_DESCRIPTION
+	if config.CustomDescription != "" {
+		description = config.CustomDescription
+	}
 	namedUser := config.NamedUser
 	nodeName := config.NodeName
 	mtaVersion := config.MtaVersion
