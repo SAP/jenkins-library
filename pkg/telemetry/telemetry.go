@@ -1,18 +1,20 @@
 package telemetry
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
-	"net/http"
-	"net/url"
+	"go.opentelemetry.io/otel/metric/global"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 )
 
 // eventType
@@ -26,23 +28,26 @@ var LibraryRepository string
 
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
-	baseData             BaseData
-	baseMetaData         BaseMetaData
-	data                 Data
-	provider             orchestrator.OrchestratorSpecificConfigProviding
-	disabled             bool
-	client               *piperhttp.Client
-	CustomReportingDsn   string
-	CustomReportingToken string
-	customClient         *piperhttp.Client
-	BaseURL              string
-	Endpoint             string
-	SiteID               string
+	baseData              BaseData
+	baseMetaData          BaseMetaData
+	data                  Data
+	provider              orchestrator.OrchestratorSpecificConfigProviding
+	disabled              bool
+	client                *piperhttp.Client
+	CustomReportingDsn    string
+	CustomReportingToken  string
+	customClient          *piperhttp.Client
+	BaseURL               string
+	Endpoint              string
+	SiteID                string
+	ctx                   context.Context
+	shutdownOpenTelemetry func(context.Context) error
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
-func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
+func (t *Telemetry) Initialize(ctx context.Context, telemetryDisabled bool, stepName string) {
 	t.disabled = telemetryDisabled
+	t.ctx = ctx
 
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil || provider == nil {
@@ -85,6 +90,8 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
 	}
 	t.baseMetaData = baseMetaData
+	// OpenTelemetry
+	t.shutdownOpenTelemetry, _ = InitMeter()
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
@@ -120,6 +127,7 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
+	defer t.shutdownOpenTelemetry(t.ctx)
 	// always log step telemetry data to logfile used for internal use-case
 	t.logStepTelemetryData()
 
@@ -127,6 +135,10 @@ func (t *Telemetry) Send() {
 	if t.disabled {
 		return
 	}
+	// sent telemetry data using OpenTelemetry
+	meter := global.Meter("piper-go")
+	counter, _ := meter.Int64Counter("execution")
+	counter.Add(t.ctx, 1)
 
 	request, _ := url.Parse(t.BaseURL)
 	request.Path = t.Endpoint
