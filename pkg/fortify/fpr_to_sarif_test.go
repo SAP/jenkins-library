@@ -1,13 +1,12 @@
 package fortify
 
 import (
-	"net/http"
-	"strings"
-	"testing"
-
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/piper-validation/fortify-client-go/models"
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"strings"
+	"testing"
 )
 
 func TestParse(t *testing.T) {
@@ -361,30 +360,56 @@ If you are concerned about leaking system data via NFC on an Android device, you
 
 	t.Run("Valid config", func(t *testing.T) {
 		projectVersion := models.ProjectVersion{ID: 11037}
-		sarif, err := Parse(sys, &projectVersion, []byte(testFvdl), filterSet)
+		sarif, sarifSimplified, err := Parse(sys, &projectVersion, []byte(testFvdl), filterSet)
 		assert.NoError(t, err, "error")
 		assert.Equal(t, len(sarif.Runs[0].Results), 2)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].Locations), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].CodeFlows), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].RelatedLocations), 1)
 		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Exploitable")
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Dummy comment.")
 		assert.Equal(t, sarif.Runs[0].OriginalUriBaseIds, &format.OriginalUriBaseIds{SrcRoot: format.SrcRoot{Uri: "file:///C:/fortify-reference-pipeline/"}})
+
+		//test simplified structure
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results), 2)                     // same results
+		assert.Equal(t, len(sarifSimplified.Runs[0].Tool.Driver.Rules), 1)           // same rules
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].Locations), 0)        // without location
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].CodeFlows), 0)        // without code flows
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].RelatedLocations), 0) // without related location
+		assert.Equal(t, sarifSimplified.Runs[0].Results[0].Properties.ToolState, "Exploitable")
+		assert.Equal(t, sarifSimplified.Runs[0].Results[0].Properties.ToolAuditMessage, "Dummy comment.")
+		assert.Equal(t, sarifSimplified.Runs[0].OriginalUriBaseIds, (*format.OriginalUriBaseIds)(nil)) // without OriginalUriBaseIds
 	})
 
 	t.Run("Missing data", func(t *testing.T) {
 		projectVersion := models.ProjectVersion{ID: 11037}
-		_, err := Parse(sys, &projectVersion, []byte{}, filterSet)
+		_, _, err := Parse(sys, &projectVersion, []byte{}, filterSet)
 		assert.Error(t, err, "EOF")
 	})
 
 	t.Run("No system instance", func(t *testing.T) {
 		projectVersion := models.ProjectVersion{ID: 11037}
-		sarif, err := Parse(nil, &projectVersion, []byte(testFvdl), filterSet)
+		sarif, sarifSimplified, err := Parse(nil, &projectVersion, []byte(testFvdl), filterSet)
 		assert.NoError(t, err, "error")
 		assert.Equal(t, len(sarif.Runs[0].Results), 2)
 		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].Locations), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].CodeFlows), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].RelatedLocations), 1)
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Unknown")
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Cannot fetch audit state: no sys instance")
 		assert.Equal(t, sarif.Runs[0].OriginalUriBaseIds, &format.OriginalUriBaseIds{SrcRoot: format.SrcRoot{Uri: "file:///C:/fortify-reference-pipeline/"}})
+
+		//test simplified structure
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results), 2)                     // same results
+		assert.Equal(t, len(sarifSimplified.Runs[0].Tool.Driver.Rules), 1)           // same rules
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].Locations), 0)        // without location
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].CodeFlows), 0)        // without code flows
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].RelatedLocations), 0) // without related location
+		assert.Equal(t, sarifSimplified.Runs[0].Results[0].Properties.ToolState, "Unknown")
+		assert.Equal(t, sarifSimplified.Runs[0].Results[0].Properties.ToolAuditMessage, "Cannot fetch audit state: no sys instance")
+		assert.Equal(t, sarifSimplified.Runs[0].OriginalUriBaseIds, (*format.OriginalUriBaseIds)(nil)) // without OriginalUriBaseIds
 	})
 }
 
@@ -739,30 +764,55 @@ If you are concerned about leaking system data via NFC on an Android device, you
 
 	t.Run("Valid config", func(t *testing.T) {
 		projectVersion := models.ProjectVersion{ID: 11037}
-		sarif, err := Parse(sys, &projectVersion, []byte(testFvdl), filterSet)
+		sarif, sarifSimplified, err := Parse(sys, &projectVersion, []byte(testFvdl), filterSet)
 		assert.NoError(t, err, "error")
 		assert.Equal(t, len(sarif.Runs[0].Results), 2)
 		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].Locations), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].CodeFlows), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].RelatedLocations), 1)
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Exploitable")
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Dummy comment.")
 		assert.Equal(t, sarif.Runs[0].OriginalUriBaseIds, (*format.OriginalUriBaseIds)(nil))
+
+		// test simplified sarif structure
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results), 2)
+		assert.Equal(t, len(sarifSimplified.Runs[0].Tool.Driver.Rules), 1)
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].Locations), 0)
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].CodeFlows), 0)
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].RelatedLocations), 0)
+		assert.Equal(t, sarifSimplified.Runs[0].Results[0].Properties.ToolState, "Exploitable")
+		assert.Equal(t, sarifSimplified.Runs[0].Results[0].Properties.ToolAuditMessage, "Dummy comment.")
+		assert.Equal(t, sarifSimplified.Runs[0].OriginalUriBaseIds, (*format.OriginalUriBaseIds)(nil))
 	})
 
 	t.Run("Missing data", func(t *testing.T) {
 		projectVersion := models.ProjectVersion{ID: 11037}
-		_, err := Parse(sys, &projectVersion, []byte{}, filterSet)
+		_, _, err := Parse(sys, &projectVersion, []byte{}, filterSet)
 		assert.Error(t, err, "EOF")
 	})
 
 	t.Run("No system instance", func(t *testing.T) {
 		projectVersion := models.ProjectVersion{ID: 11037}
-		sarif, err := Parse(nil, &projectVersion, []byte(testFvdl), filterSet)
+		sarif, sarifSimplified, err := Parse(nil, &projectVersion, []byte(testFvdl), filterSet)
 		assert.NoError(t, err, "error")
 		assert.Equal(t, len(sarif.Runs[0].Results), 2)
 		assert.Equal(t, len(sarif.Runs[0].Tool.Driver.Rules), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].Locations), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].CodeFlows), 1)
+		assert.Equal(t, len(sarif.Runs[0].Results[0].RelatedLocations), 1)
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolState, "Unknown")
 		assert.Equal(t, sarif.Runs[0].Results[0].Properties.ToolAuditMessage, "Cannot fetch audit state: no sys instance")
 		assert.Equal(t, sarif.Runs[0].OriginalUriBaseIds, (*format.OriginalUriBaseIds)(nil))
+
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results), 2)
+		assert.Equal(t, len(sarifSimplified.Runs[0].Tool.Driver.Rules), 1)
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].Locations), 0)
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].CodeFlows), 0)
+		assert.Equal(t, len(sarifSimplified.Runs[0].Results[0].RelatedLocations), 0)
+		assert.Equal(t, sarifSimplified.Runs[0].Results[0].Properties.ToolState, "Unknown")
+		assert.Equal(t, sarifSimplified.Runs[0].Results[0].Properties.ToolAuditMessage, "Cannot fetch audit state: no sys instance")
+		assert.Equal(t, sarifSimplified.Runs[0].OriginalUriBaseIds, (*format.OriginalUriBaseIds)(nil))
 	})
 }
 

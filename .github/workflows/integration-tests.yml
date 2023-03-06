@@ -19,11 +19,11 @@ jobs:
       - name: Get GO version
         id: go_version
         run: |
-          echo "::set-output name=go_version::$(cat go.mod | grep go | head -1 | awk '{print $2}')"
+          echo "go_version=$(cat go.mod | grep go | head -1 | awk '{print $2}')" >> "$GITHUB_OUTPUT"
       - name: Get commit SHA
         id: sha
         run: |
-          echo "::set-output name=sha::$(git log --format=%H -n 1)"
+          echo "sha=$(git log --format=%H -n 1)" >> "$GITHUB_OUTPUT"
       - name: Update status
         run: |
           curl \
@@ -79,7 +79,7 @@ jobs:
         if: success()
         id: matrix
         run: |
-          echo "::set-output name=matrix::$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)"
+          echo "matrix=$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)" >> "$GITHUB_OUTPUT"
       - name: Upload integration tests binary
         if: success()
         uses: actions/upload-artifact@v3
@@ -92,6 +92,7 @@ jobs:
     needs:
       - build_piper
       - build_integration_tests
+      - start
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.build_integration_tests.outputs.matrix) }}
@@ -117,6 +118,7 @@ jobs:
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
           PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
+          PIPER_tmsServiceKey: ${{secrets.PIPER_TMSSERVICEKEY}}
         run: |
           chmod +x piper
           cd ./integration

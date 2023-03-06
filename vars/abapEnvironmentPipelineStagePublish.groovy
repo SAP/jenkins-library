@@ -13,7 +13,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
- * This stage publishes an AddOn for the SAP Cloud Platform ABAP Environment
+ * This stage publishes an AddOn for the SAP BTP ABAP Environment
  */
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this

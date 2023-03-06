@@ -77,7 +77,8 @@ func (c *checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.CreateIssueOptions) error {
-	return piperGithub.CreateIssue(ghCreateIssueOptions)
+	_, err := piperGithub.CreateIssue(ghCreateIssueOptions)
+	return err
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) GetIssueService() *github.IssuesService {
@@ -176,7 +177,7 @@ func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.Syst
 func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, teamID string) (checkmarx.Project, error) {
 	log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
 	presetID, _ := strconv.Atoi(config.Preset)
-	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
+	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.EngineConfigurationID)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 	}
@@ -187,7 +188,7 @@ func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.Sys
 	log.Entry().Infof("Project %v exists...", projectName)
 	if len(config.Preset) > 0 {
 		presetID, _ := strconv.Atoi(config.Preset)
-		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
+		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.EngineConfigurationID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
 		}
@@ -315,11 +316,27 @@ func uploadAndScan(ctx context.Context, config checkmarxExecuteScanOptions, sys 
 			incremental = false
 		} else if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
 			incremental = false
+		} else if incremental && isLastScanFailedIncremental(previousScans) { // if the last incremental scan failed, trigger a full scan instead
+			incremental = false
+			log.Entry().Infof("Last incremental scan for project %v failed, triggering full scan instead", project.Name)
 		}
 
 		return triggerScan(ctx, config, sys, project, incremental, influx, utils)
 	}
 	return nil
+}
+
+func isLastScanFailedIncremental(scans []checkmarx.ScanStatus) bool {
+	if len(scans) == 0 {
+		return false
+	}
+
+	scan := scans[0]
+	if scan.IsIncremental && scan.Status.Name == "Failed" {
+		return true
+	} else {
+		return false
+	}
 }
 
 func triggerScan(ctx context.Context, config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {

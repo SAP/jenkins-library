@@ -127,14 +127,14 @@ void call(Map parameters = [:]) {
             ) {
 
                 if (!config.dockerArchive && !config.dockerBuildImage) {
-                    dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: config.dockerImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
+                    dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl, credentialsId: config.sourceCredentialsId], [image: config.dockerImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     if (config.tagLatest) {
                         def latestImage = "${config.dockerImage.split(':')[0]}:latest"
-                        dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: latestImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
+                        dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl, credentialsId: config.sourceCredentialsId], [image: latestImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     }
                     if (config.tagArtifactVersion) {
                         def imageName = "${config.dockerImage.split(':')[0]}:${config.artifactVersion}"
-                        dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: imageName, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
+                        dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl, credentialsId: config.sourceCredentialsId], [image: imageName, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     }
                 } else {
                     error "[${STEP_NAME}] Running on Kubernetes: Only moving images from one registry to another supported."
