@@ -177,7 +177,7 @@ repositories:
 	})
 
 	t.Run("Create service with addon - no development", func(t *testing.T) {
-		dir := t.TempDir()
+
 		config := abapEnvironmentCreateSystemOptions{
 			CfAPIEndpoint:                  "https://api.endpoint.com",
 			CfOrg:                          "testOrg",
@@ -196,7 +196,7 @@ repositories:
 			IncludeAddon:                   true,
 		}
 
-		// dir := t.TempDir()
+		dir := t.TempDir()
 		oldCWD, _ := os.Getwd()
 		_ = os.Chdir(dir)
 		// clean up tmp dir
