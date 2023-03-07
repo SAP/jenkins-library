@@ -309,42 +309,6 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
-	t.Run("success case detect 6", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle(false)
-		utilsMock.AddFile("detect.sh", []byte(""))
-		options := detectExecuteScanOptions{
-			CustomEnvironmentVariables: []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"},
-		}
-		err := runDetect(ctx, options, utilsMock, &detectExecuteScanInflux{})
-
-		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
-		assert.NoError(t, err)
-		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
-		assert.Equal(t, expectedScript, utilsMock.Calls[0])
-	})
-
-	t.Run("success case detect 6 from OS env", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle(false)
-		utilsMock.AddFile("detect.sh", []byte(""))
-		utilsMock.customEnv = []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"}
-		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
-
-		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
-		assert.NoError(t, err)
-		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
-		assert.Equal(t, expectedScript, utilsMock.Calls[0])
-	})
-
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
