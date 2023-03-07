@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/global"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -91,7 +92,11 @@ func (t *Telemetry) Initialize(ctx context.Context, telemetryDisabled bool, step
 	}
 	t.baseMetaData = baseMetaData
 	// OpenTelemetry
-	t.shutdownOpenTelemetry, _ = InitMeter()
+	t.shutdownOpenTelemetry, _ = InitMeter([]attribute.KeyValue{
+		attribute.String("piper.orchestrator", t.baseData.Orchestrator),
+		attribute.String("piper.correlationID", t.provider.GetBuildURL()),
+		attribute.String("piper.step.name", t.baseData.StepName),
+	})
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
