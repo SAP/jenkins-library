@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/uptrace/uptrace-go/uptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
@@ -15,6 +16,7 @@ import (
 )
 
 func InitMeter(resAttributes []attribute.KeyValue) (func(context.Context) error, error) {
+	var err error
 	var meterProvider *metric.MeterProvider
 	resAttributes = append(resAttributes, semconv.ServiceName("piper-go"))
 	res := resource.NewWithAttributes(
@@ -22,19 +24,28 @@ func InitMeter(resAttributes []attribute.KeyValue) (func(context.Context) error,
 		resAttributes...,
 	)
 
-	if url := os.Getenv("UPTRACE_DSN"); url != "" {
-		return initUptraceMeter(res, url)
+	if _, ok := os.LookupEnv("UPTRACE_DSN"); ok {
+		return initUptraceMeter(res)
 	} else {
-		meterProvider, _ = initStdoutMeter(res)
+		meterProvider, err = initStdoutMeter(res)
+		if err != nil {
+			log.Entry().WithError(err).Warning("failed to initialize stdout telemetry meter")
+			return nil, err
+		}
 	}
 	global.SetMeterProvider(meterProvider)
 	return meterProvider.Shutdown, nil
 }
 
 func initStdoutMeter(res *resource.Resource) (*metric.MeterProvider, error) {
+	log.Entry().Debug("initializing metering to stdout")
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	exporter, _ := stdoutmetric.New(stdoutmetric.WithEncoder(encoder))
+	exporter, err := stdoutmetric.New(stdoutmetric.WithEncoder(encoder))
+	if err != nil {
+		log.Entry().WithError(err).Warning("failed to initialize stdout telemetry meter")
+		return nil, err
+	}
 
 	return metric.NewMeterProvider(
 		metric.WithReader(metric.NewPeriodicReader(exporter)),
@@ -42,9 +53,10 @@ func initStdoutMeter(res *resource.Resource) (*metric.MeterProvider, error) {
 	), nil
 }
 
-func initUptraceMeter(res *resource.Resource, url string) (func(context.Context) error, error) {
+func initUptraceMeter(res *resource.Resource) (func(context.Context) error, error) {
+	log.Entry().Debug("initializing metering to Uptrace")
 	uptrace.ConfigureOpentelemetry(
-		uptrace.WithDSN(url),
+		// uptrace.WithDSN(url), // UPTRACE_DSN is checked by default
 		uptrace.WithTracingDisabled(), // only init otel fror metrics
 		uptrace.WithMetricsEnabled(true),
 		uptrace.WithResource(res),

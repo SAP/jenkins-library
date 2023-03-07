@@ -92,11 +92,14 @@ func (t *Telemetry) Initialize(ctx context.Context, telemetryDisabled bool, step
 	}
 	t.baseMetaData = baseMetaData
 	// OpenTelemetry
-	t.shutdownOpenTelemetry, _ = InitMeter([]attribute.KeyValue{
+	t.shutdownOpenTelemetry, err = InitMeter([]attribute.KeyValue{
 		attribute.String("piper.orchestrator", t.baseData.Orchestrator),
 		attribute.String("piper.correlationID", t.provider.GetBuildURL()),
 		attribute.String("piper.step.name", t.baseData.StepName),
 	})
+	if err != nil {
+		log.Entry().WithError(err).Warning("failed to initialize telemetry")
+	}
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
