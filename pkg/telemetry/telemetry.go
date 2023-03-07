@@ -142,7 +142,7 @@ func (t *Telemetry) Send() {
 	}
 	// sent telemetry data using OpenTelemetry
 	meter := global.Meter("piper-go")
-	counter, _ := meter.Int64Counter("execution")
+	counter, _ := meter.Int64Counter("piper.step.execution")
 	counter.Add(t.ctx, 1)
 
 	request, _ := url.Parse(t.BaseURL)
