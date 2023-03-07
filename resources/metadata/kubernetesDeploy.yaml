@@ -522,7 +522,7 @@ spec:
           - STAGES
           - STEPS
   containers:
-    - image: dtzar/helm-kubectl:3.9.0
+    - image: dtzar/helm-kubectl:3
       workingDir: /config
       options:
         - name: -u
