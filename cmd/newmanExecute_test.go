@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/google/uuid"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -228,6 +230,19 @@ func TestResolveTemplate(t *testing.T) {
 		cmd, err := resolveTemplate(&config, "theDisplayName")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"this", "is", "my", "fancy", "command", "theDisplayName"}, cmd)
+	})
+
+	t.Run("get environment variable", func(t *testing.T) {
+		t.Parallel()
+
+		temporaryEnvVarName := uuid.New().String()
+		os.Setenv(temporaryEnvVarName, "myEnvVar")
+		defer os.Unsetenv(temporaryEnvVarName)
+		config := newmanExecuteOptions{RunOptions: []string{"this", "is", "my", "fancy", "command", "with", "--env-var", "{{getenv \"" + temporaryEnvVarName + "\"}}"}}
+
+		cmd, err := resolveTemplate(&config, "collectionsDisplayName")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"this", "is", "my", "fancy", "command", "with", "--env-var", "myEnvVar"}, cmd)
 	})
 
 	t.Run("error when parameter cannot be resolved", func(t *testing.T) {

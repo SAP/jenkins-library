@@ -252,5 +252,11 @@ def getDistinctRecipients(recipients){
 }
 
 def hasRecovered(buildResult, currentBuild){
-    return buildResult == 'SUCCESS' && currentBuild.getPreviousBuild()?.result != 'SUCCESS'
+    def previousBuild = currentBuild.getPreviousBuild()
+
+    if (previousBuild) {
+        return buildResult == 'SUCCESS' && previousBuild.result != 'SUCCESS'
+    }
+
+    return false
 }

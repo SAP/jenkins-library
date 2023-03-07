@@ -1,6 +1,7 @@
 package piperenv
 
 type Artifact struct {
+	Id   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
 }
 

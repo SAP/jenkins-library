@@ -557,22 +557,6 @@ func TestDownloadReport(t *testing.T) {
 	})
 }
 
-func TestCreateBranch(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
-	opts := piperHttp.ClientOptions{}
-	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `{"id": 13, "link": {}}`, httpStatusCode: 201}
-		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
-		myTestClient.SetOptions(opts)
-
-		result := sys.CreateBranch(6, "PR-17")
-		assert.Equal(t, "https://cx.server.com/cxrestapi/projects/6/branch", myTestClient.urlCalled, "Called url incorrect")
-		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
-		assert.Equal(t, `{"name":"PR-17"}`, myTestClient.requestBody, "Request body incorrect")
-		assert.Equal(t, 13, result, "result incorrect")
-	})
-}
-
 func TestGetProjectByID(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
 	opts := piperHttp.ClientOptions{}

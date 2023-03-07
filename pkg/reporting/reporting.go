@@ -327,7 +327,10 @@ func drawCell(cell ScanCell) string {
 }
 
 func shouldDrawTable(table ScanDetailTable) bool {
-	return len(table.Headers) > 0
+	if len(table.Headers) > 0 {
+		return true
+	}
+	return false
 }
 
 func drawOverviewRow(row OverviewRow) string {
