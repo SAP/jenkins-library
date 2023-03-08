@@ -45,6 +45,7 @@ func (p *codeqlExecuteScanReports) persist(stepConfig codeqlExecuteScanOptions, 
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/*.csv", ParamRef: "", StepResultType: "codeql"},
 		{FilePattern: "**/*.sarif", ParamRef: "", StepResultType: "codeql"},
+		{FilePattern: "**/toolrun_codeql_*.json", ParamRef: "", StepResultType: "codeql"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -197,6 +198,11 @@ func codeqlExecuteScanMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
 				},
+				Resources: []config.StepResources{
+					{Name: "commonPipelineEnvironment"},
+					{Name: "buildDescriptor", Type: "stash"},
+					{Name: "tests", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "githubToken",
@@ -336,6 +342,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/*.csv", "type": "codeql"},
 							{"filePattern": "**/*.sarif", "type": "codeql"},
+							{"filePattern": "**/toolrun_codeql_*.json", "type": "codeql"},
 						},
 					},
 				},

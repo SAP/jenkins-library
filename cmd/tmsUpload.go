@@ -38,13 +38,14 @@ func newTmsUtils() tms.TmsUtils {
 func setupCommunication(config tmsUploadOptions) (communicationInstance tms.CommunicationInterface) {
 	client := &piperHttp.Client{}
 	proxy := config.Proxy
+	options := piperHttp.ClientOptions{}
 	if proxy != "" {
 		transportProxy, err := url.Parse(proxy)
 		if err != nil {
 			log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
 		}
 
-		options := piperHttp.ClientOptions{TransportProxy: transportProxy}
+		options = piperHttp.ClientOptions{TransportProxy: transportProxy}
 		client.SetOptions(options)
 		if GeneralConfig.Verbose {
 			log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
@@ -55,6 +56,7 @@ func setupCommunication(config tmsUploadOptions) (communicationInstance tms.Comm
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
+	log.RegisterSecret(serviceKey.Uaa.ClientSecret)
 
 	if GeneralConfig.Verbose {
 		log.Entry().Info("Will be used for communication:")
@@ -63,7 +65,7 @@ func setupCommunication(config tmsUploadOptions) (communicationInstance tms.Comm
 		log.Entry().Infof("- UAA URL: %v", serviceKey.Uaa.Url)
 	}
 
-	commuInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
+	commuInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose, options)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}

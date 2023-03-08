@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 
 	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +27,12 @@ type detectTestUtilsBundle struct {
 	downloadedFiles map[string]string // src, dest
 	*mock.ShellMockRunner
 	*mock.FilesMock
-	customEnv []string
+	customEnv    []string
+	orchestrator *orchestratorConfigProviderMock
+}
+
+func (d *detectTestUtilsBundle) GetProvider() orchestrator.OrchestratorSpecificConfigProviding {
+	return d.orchestrator
 }
 
 func (d *detectTestUtilsBundle) GetIssueService() *github.IssuesService {
@@ -34,6 +41,15 @@ func (d *detectTestUtilsBundle) GetIssueService() *github.IssuesService {
 
 func (d *detectTestUtilsBundle) GetSearchService() *github.SearchService {
 	return nil
+}
+
+type orchestratorConfigProviderMock struct {
+	orchestrator.UnknownOrchestratorConfigProvider
+	isPullRequest bool
+}
+
+func (o *orchestratorConfigProviderMock) IsPullRequest() bool {
+	return o.isPullRequest
 }
 
 type httpMockClient struct {
@@ -73,6 +89,8 @@ func newBlackduckMockSystem(config detectExecuteScanOptions) blackduckSystem {
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/vunlerable-bom-components?limit=999&offset=0":                  vulnerabilitiesContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?filter=policyCategory%3Alicense&limit=999&offset=0": componentsContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/policy-status":                                                 policyStatusContent,
+			"https://my.blackduck.system/api/projects?q=name%3ARapid_scan_on_PRs":                                                               projectContentRapidScan,
+			"https://my.blackduck.system/api/projects/654ggfdgf-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                        projectVersionContentRapid,
 		},
 		header: map[string]http.Header{},
 	}
@@ -193,6 +211,48 @@ const (
 			"severityLevels": [{"name":"BLOCKER", "value": 1}, {"name": "CRITICAL", "value": 1}]
 		}
 	}`
+	projectContentRapidScan = `{
+		"totalCount": 1,
+		"items": [
+			{
+				"name": "Rapid_scan_on_PRs",
+				"_meta": {
+					"href": "https://my.blackduck.system/api/projects/654ggfdgf-1983-4e7b-97d4-eb1a0aeffbbf",
+					"links": [
+						{
+							"rel": "versions",
+							"href": "https://my.blackduck.system/api/projects/654ggfdgf-1983-4e7b-97d4-eb1a0aeffbbf/versions"
+						}
+					]
+				}
+			}
+		]
+	}`
+	projectVersionContentRapid = `{
+		"totalCount": 1,
+		"items": [
+			{
+				"versionName": "1.0",
+				"_meta": {
+					"href": "https://my.blackduck.system/api/projects/654ggfdgf-1983-4e7b-97d4-eb1a0aeffbbf/versions/54357fds-0ee6-414f-9054-90d549c69c36",
+					"links": [
+						{
+							"rel": "components",
+							"href": "https://my.blackduck.system/api/projects/5ca86e11/versions/654784382/components"
+						},
+						{
+							"rel": "vulnerable-components",
+							"href": "https://my.blackduck.system/api/projects/5ca86e11/versions/654784382/vunlerable-bom-components"
+						},
+						{
+							"rel": "policy-status",
+							"href": "https://my.blackduck.system/api/projects/5ca86e11/versions/654784382/policy-status"
+						}
+					]
+				}
+			}
+		]
+	}`
 )
 
 func (c *detectTestUtilsBundle) RunExecutable(string, ...string) error {
@@ -222,10 +282,11 @@ func (w *detectTestUtilsBundle) CreateIssue(ghCreateIssueOptions *piperGithub.Cr
 	return nil
 }
 
-func newDetectTestUtilsBundle() *detectTestUtilsBundle {
+func newDetectTestUtilsBundle(isPullRequest bool) *detectTestUtilsBundle {
 	utilsBundle := detectTestUtilsBundle{
 		ShellMockRunner: &mock.ShellMockRunner{},
 		FilesMock:       &mock.FilesMock{},
+		orchestrator:    &orchestratorConfigProviderMock{isPullRequest: isPullRequest},
 	}
 	return &utilsBundle
 }
@@ -235,7 +296,7 @@ func TestRunDetect(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle()
+		utilsMock := newDetectTestUtilsBundle(false)
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
@@ -248,46 +309,10 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
-	t.Run("success case detect 6", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle()
-		utilsMock.AddFile("detect.sh", []byte(""))
-		options := detectExecuteScanOptions{
-			CustomEnvironmentVariables: []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"},
-		}
-		err := runDetect(ctx, options, utilsMock, &detectExecuteScanInflux{})
-
-		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
-		assert.NoError(t, err)
-		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
-		assert.Equal(t, expectedScript, utilsMock.Calls[0])
-	})
-
-	t.Run("success case detect 6 from OS env", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle()
-		utilsMock.AddFile("detect.sh", []byte(""))
-		utilsMock.customEnv = []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"}
-		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
-
-		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
-		assert.NoError(t, err)
-		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
-		assert.Equal(t, expectedScript, utilsMock.Calls[0])
-	})
-
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle()
+		utilsMock := newDetectTestUtilsBundle(false)
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
@@ -300,7 +325,7 @@ func TestRunDetect(t *testing.T) {
 	t.Run("maven parameters", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle()
+		utilsMock := newDetectTestUtilsBundle(false)
 		utilsMock.CurrentDir = "root_folder"
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(ctx, detectExecuteScanOptions{
@@ -322,9 +347,10 @@ func TestRunDetect(t *testing.T) {
 func TestAddDetectArgs(t *testing.T) {
 	t.Parallel()
 	testData := []struct {
-		args     []string
-		options  detectExecuteScanOptions
-		expected []string
+		args          []string
+		options       detectExecuteScanOptions
+		isPullRequest bool
+		expected      []string
 	}{
 		{
 			args: []string{"--testProp1=1"},
@@ -645,13 +671,76 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.source.path='.'",
 			},
 		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:         "https://server.url",
+				Token:             "apiToken",
+				ProjectName:       "Rapid_scan_on_PRs",
+				Version:           "1.0",
+				VersioningModel:   "major-minor",
+				CodeLocation:      "",
+				ScanPaths:         []string{"path1", "path2"},
+				MinScanInterval:   4,
+				CustomScanVersion: "1.0",
+			},
+			isPullRequest: true,
+			expected: []string{
+				"--testProp1=1",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"\"--detect.project.name='Rapid_scan_on_PRs'\"",
+				"\"--detect.project.version.name='1.0'\"",
+				"\"--detect.code.location.name='Rapid_scan_on_PRs/1.0'\"",
+				"--detect.blackduck.signature.scanner.paths=path1,path2",
+				"--detect.source.path='.'",
+				"--detect.blackduck.scan.mode='RAPID'",
+				"--detect.blackduck.rapid.compare.mode='BOM_COMPARE_STRICT'",
+				"--detect.cleanup=false",
+				"--detect.output.path='report'",
+			},
+		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:         "https://server.url",
+				Token:             "apiToken",
+				ProjectName:       "Rapid_scan_on_PRs",
+				Version:           "2.0",
+				VersioningModel:   "major-minor",
+				CodeLocation:      "",
+				ScanPaths:         []string{"path1", "path2"},
+				MinScanInterval:   4,
+				CustomScanVersion: "2.0",
+			},
+			isPullRequest: true,
+			expected: []string{
+				"--testProp1=1",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"\"--detect.project.name='Rapid_scan_on_PRs'\"",
+				"\"--detect.project.version.name='2.0'\"",
+				"\"--detect.code.location.name='Rapid_scan_on_PRs/2.0'\"",
+				"--detect.blackduck.signature.scanner.paths=path1,path2",
+				"--detect.source.path='.'",
+				"--detect.blackduck.scan.mode='RAPID'",
+				"--detect.cleanup=false",
+				"--detect.output.path='report'",
+			},
+		},
 	}
 
 	for k, v := range testData {
 		v := v
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
 			t.Parallel()
-			got, err := addDetectArgs(v.args, v.options, newDetectTestUtilsBundle())
+
+			config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: v.options.ProjectName, Version: v.options.Version, CustomScanVersion: v.options.CustomScanVersion}
+			sys := newBlackduckMockSystem(config)
+
+			got, err := addDetectArgs(v.args, v.options, newDetectTestUtilsBundle(v.isPullRequest), &sys)
 			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
 		})
@@ -681,7 +770,7 @@ func TestPostScanChecksAndReporting(t *testing.T) {
 	t.Run("Reporting after scan", func(t *testing.T) {
 		ctx := context.Background()
 		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
-		utils := newDetectTestUtilsBundle()
+		utils := newDetectTestUtilsBundle(false)
 		sys := newBlackduckMockSystem(config)
 		err := postScanChecksAndReporting(ctx, config, &detectExecuteScanInflux{}, utils, &sys)
 

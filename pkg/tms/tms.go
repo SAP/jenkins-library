@@ -21,10 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	DEFAULT_TR_DESCRIPTION = "Created by Piper"
-)
-
 type TmsUtils interface {
 	command.ExecRunner
 
@@ -126,8 +122,10 @@ type CommunicationInterface interface {
 	ExportFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
 }
 
+const DEFAULT_TR_DESCRIPTION = "Created by Piper"
+
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
-func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, clientId, clientSecret string, isVerbose bool) (*CommunicationInstance, error) {
+func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, clientId, clientSecret string, isVerbose bool, clientOptions piperHttp.ClientOptions) (*CommunicationInstance, error) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms")
 
 	communicationInstance := &CommunicationInstance{
@@ -144,12 +142,9 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, cli
 	if err != nil {
 		return communicationInstance, errors.Wrap(err, "Error fetching OAuth token")
 	}
-	log.RegisterSecret(token)
 
-	options := piperHttp.ClientOptions{
-		Token: token,
-	}
-	communicationInstance.httpClient.SetOptions(options)
+	clientOptions.Token = token
+	communicationInstance.httpClient.SetOptions(clientOptions)
 
 	return communicationInstance, nil
 }
@@ -161,6 +156,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	}
 
 	encodedUsernameColonPassword := b64.StdEncoding.EncodeToString([]byte(communicationInstance.clientId + ":" + communicationInstance.clientSecret))
+	log.RegisterSecret(encodedUsernameColonPassword)
 	header := http.Header{}
 	header.Add("Content-Type", "application/x-www-form-urlencoded")
 	header.Add("Authorization", "Basic "+encodedUsernameColonPassword)
@@ -182,6 +178,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("OAuth Token retrieved successfully")
 	}
+	log.RegisterSecret(token.AccessToken)
 	return token.TokenType + " " + token.AccessToken, nil
 }
 
