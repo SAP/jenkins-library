@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -185,8 +184,8 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAndQuery string, body io.Reader, header http.Header, expectedStatusCode int, isTowardsUaa bool) ([]byte, error) {
 	var requestBody io.Reader
 	if body != nil {
-		closer := ioutil.NopCloser(body)
-		bodyBytes, _ := ioutil.ReadAll(closer)
+		closer := io.NopCloser(body)
+		bodyBytes, _ := io.ReadAll(closer)
 		requestBody = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
 	}
@@ -210,7 +209,7 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 		return nil, fmt.Errorf("unexpected positive HTTP status code %v, while it was expected %v", response.StatusCode, expectedStatusCode)
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	if !isTowardsUaa && communicationInstance.isVerbose {
 		communicationInstance.logger.Debugf("Valid response body: %v", string(data))
 	}
@@ -220,7 +219,7 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 
 func (communicationInstance *CommunicationInstance) logResponseBody(response *http.Response) {
 	if response != nil && response.Body != nil {
-		data, _ := ioutil.ReadAll(response.Body)
+		data, _ := io.ReadAll(response.Body)
 		communicationInstance.logger.Errorf("Response body: %s", data)
 		response.Body.Close()
 	}
@@ -463,7 +462,7 @@ func upload(communicationInstance *CommunicationInstance, uploadRequestData pipe
 		return nil, fmt.Errorf("unexpected positive HTTP status code %v, while it was expected %v", response.StatusCode, expectedStatusCode)
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Debugf("Valid response body: %v", string(data))
 	}
