@@ -26,6 +26,27 @@ func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Du
 	}
 }
 
+func WaitForBuildToFinishWithRetry(ctx context.Context, build Build, pollInterval, retryInterval time.Duration, maxRetries int) error {
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		for build.IsRunning(ctx) {
+			time.Sleep(pollInterval)
+			_, err = build.Poll(ctx)
+			if err != nil {
+				break
+			}
+		}
+		if err == nil {
+			return nil
+		}
+		fmt.Printf("Error occurred while waiting for build to finish: %v. Retrying after %v\n", err, retryInterval)
+		// Sleep for the retry interval before trying again.
+		time.Sleep(retryInterval)
+	}
+	fmt.Printf("Max retries (%v) exceeded while waiting for build to finish. Last error: %v\n", maxRetries, err)
+	return err
+}
+
 // FetchBuildArtifact is fetching a build artifact from a finished build with a certain name.
 // Fails if build is running or no artifact is with the given name is found.
 func FetchBuildArtifact(ctx context.Context, build Build, fileName string) (Artifact, error) {
