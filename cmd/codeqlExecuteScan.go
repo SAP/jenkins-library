@@ -172,6 +172,16 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 }
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) error {
+	//if file /etc/image-version exists then
+	//print “CodeQL image version: “ + content of the file
+	//else
+	//print “CodeQL image version: unknown“
+	version, err := os.ReadFile("/etc/image-version")
+	if err != nil {
+		log.Entry().Infof("CodeQL image version: unknown")
+	}
+	log.Entry().Infof("CodeQL image version: %s", string(version))
+
 	var reports []piperutils.Path
 	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", config.ModulePath}
 
@@ -196,7 +206,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		cmd = append(cmd, "--command="+config.BuildCommand)
 	}
 
-	err := execute(utils, cmd, GeneralConfig.Verbose)
+	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database create")
 		return err
