@@ -197,8 +197,16 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	if len(language) > 0 {
 		cmd = append(cmd, "--language="+language)
-	} else if len(config.Language) > 0 {
+	} else {
 		cmd = append(cmd, "--language="+config.Language)
+	}
+
+	if len(config.Threads) > 0 {
+		cmd = append(cmd, "--threads="+config.Threads)
+	}
+
+	if len(config.Ram) > 0 {
+		cmd = append(cmd, "--ram="+config.Ram)
 	}
 
 	//codeql has an autobuilder which tries to build the project based on specified programming language
@@ -219,6 +227,12 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = nil
 	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%vtarget/codeqlReport.sarif", config.ModulePath), config.Database)
+	if len(config.Threads) > 0 {
+		cmd = append(cmd, "--threads="+config.Threads)
+	}
+	if len(config.Ram) > 0 {
+		cmd = append(cmd, "--ram="+config.Ram)
+	}
 	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
@@ -230,6 +244,12 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = nil
 	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%vtarget/codeqlReport.csv", config.ModulePath), config.Database)
+	if len(config.Threads) > 0 {
+		cmd = append(cmd, "--threads="+config.Threads)
+	}
+	if len(config.Ram) > 0 {
+		cmd = append(cmd, "--ram="+config.Ram)
+	}
 	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
