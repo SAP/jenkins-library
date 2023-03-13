@@ -193,8 +193,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	if len(config.Threads) > 0 {
 		cmd = append(cmd, "--threads="+config.Threads)
-	} else {
-		cmd = append(cmd, "--threads=0")
 	}
 
 	if len(config.Ram) > 0 {
@@ -221,10 +219,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%vtarget/codeqlReport.sarif", config.ModulePath), config.Database)
 	if len(config.Threads) > 0 {
 		cmd = append(cmd, "--threads="+config.Threads)
-	} else {
-		cmd = append(cmd, "--threads=0")
 	}
-
 	if len(config.Ram) > 0 {
 		cmd = append(cmd, "--ram="+config.Ram)
 	}
@@ -241,10 +236,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%vtarget/codeqlReport.csv", config.ModulePath), config.Database)
 	if len(config.Threads) > 0 {
 		cmd = append(cmd, "--threads="+config.Threads)
-	} else {
-		cmd = append(cmd, "--threads=0")
 	}
-
 	if len(config.Ram) > 0 {
 		cmd = append(cmd, "--ram="+config.Ram)
 	}
