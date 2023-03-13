@@ -28,6 +28,8 @@ type codeqlExecuteScanOptions struct {
 	Database      string `json:"database,omitempty"`
 	QuerySuite    string `json:"querySuite,omitempty"`
 	UploadResults bool   `json:"uploadResults,omitempty"`
+	Threads       string `json:"threads,omitempty"`
+	Ram           string `json:"ram,omitempty"`
 	AnalyzedRef   string `json:"analyzedRef,omitempty"`
 	Repository    string `json:"repository,omitempty"`
 	CommitID      string `json:"commitId,omitempty"`
@@ -178,6 +180,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.Database, "database", `codeqlDB`, "Path to the CodeQL database to create. This directory will be created, and must not already exist.")
 	cmd.Flags().StringVar(&stepConfig.QuerySuite, "querySuite", os.Getenv("PIPER_querySuite"), "The name of a CodeQL query suite. If omitted, the default query suite for the language of the database being analyzed will be used.")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
+	cmd.Flags().StringVar(&stepConfig.Threads, "threads", os.Getenv("PIPER_threads"), "Use this many threads for the codeql operations. Default - 0, to use one thread per core on the machine.")
+	cmd.Flags().StringVar(&stepConfig.Ram, "ram", os.Getenv("PIPER_ram"), "Use this much ram (Mb) for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "URL of the GitHub instance")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
@@ -286,6 +290,24 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "threads",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_threads"),
+					},
+					{
+						Name:        "ram",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_ram"),
 					},
 					{
 						Name: "analyzedRef",
