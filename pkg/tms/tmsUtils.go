@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -117,20 +118,30 @@ type Options struct {
 	Verbose                  bool
 }
 
+type tmsUtilsBundle struct {
+	*command.Command
+	*piperutils.Files
+}
+
 const DEFAULT_TR_DESCRIPTION = "Created by Piper"
 
-func UnmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err error) {
+func NewTmsUtils() TmsUtils {
+	utils := tmsUtilsBundle{
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+	}
+	// Reroute command output to logging framework
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
+}
+
+func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err error) {
 	err = json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
 	if err != nil {
 		return
 	}
 	return
-}
-
-func JsonToMap(jsonStr string) map[string]interface{} {
-	result := make(map[string]interface{})
-	json.Unmarshal([]byte(jsonStr), &result)
-	return result
 }
 
 func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDescriptorMapping map[string]interface{}, nodes []Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[int64]string, error) {
@@ -227,7 +238,7 @@ func SetupCommunication(config Options) (communicationInstance CommunicationInte
 		}
 	}
 
-	serviceKey, err := UnmarshalServiceKey(config.TmsServiceKey)
+	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}

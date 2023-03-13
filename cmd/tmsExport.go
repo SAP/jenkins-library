@@ -15,19 +15,8 @@ type tmsExportUtilsBundle struct {
 	*piperutils.Files
 }
 
-func newTmsExportUtils() tms.TmsUtils {
-	utils := tmsExportUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
 func tmsExport(exportConfig tmsExportOptions, telemetryData *telemetry.CustomData, influx *tmsExportInflux) {
-	utils := newTmsUtils()
+	utils := tms.NewTmsUtils()
 	config := convertExportOptions(exportConfig)
 	communicationInstance := tms.SetupCommunication(config)
 

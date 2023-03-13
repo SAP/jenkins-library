@@ -3,31 +3,13 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/tms"
 )
 
-type tmsUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-}
-
-func newTmsUtils() tms.TmsUtils {
-	utils := tmsUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
 func tmsUpload(uploadConfig tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux) {
-	utils := newTmsUtils()
+	utils := tms.NewTmsUtils()
 	config := convertUploadOptions(uploadConfig)
 	communicationInstance := tms.SetupCommunication(config)
 
