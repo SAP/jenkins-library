@@ -107,14 +107,15 @@ spec:
         default: false
       - name: threads
         type: string
-        description: "Use this many threads for the codeql operations. Default - 0, to use one thread per core on the machine."
+        description: "Use this many threads for the codeql operations."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: "0"
       - name: ram
         type: string
-        description: "Use this much ram (Mb) for the codeql operations."
+        description: "Use this much ram (MB) for the codeql operations."
         scope:
           - PARAMETERS
           - STAGES
