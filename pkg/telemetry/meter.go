@@ -19,7 +19,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-func InitMeter(resAttributes []attribute.KeyValue) (func(context.Context) error, error) {
+func InitMeter(ctx context.Context, resAttributes []attribute.KeyValue) (func(context.Context) error, error) {
 	var err error
 	var meterProvider *metric.MeterProvider
 	resAttributes = append(resAttributes, semconv.ServiceName("piper-go"))
@@ -29,13 +29,13 @@ func InitMeter(resAttributes []attribute.KeyValue) (func(context.Context) error,
 	)
 
 	if _, ok := os.LookupEnv("UPTRACE_DSN"); ok {
-		return initUptraceMeter(res)
+		return initUptraceMeter(ctx, res)
 	} else if token, ok := os.LookupEnv("LIGHTSTEP_TOKEN"); ok {
-		meterProvider, err = initLightstepMeter(res, token)
+		meterProvider, err = initLightstepMeter(ctx, res, token)
 	} else if token, ok := os.LookupEnv("TELEMETRYHUB_TOKEN"); ok {
-		meterProvider, err = initTelemetryHubMeter(res, token)
+		meterProvider, err = initTelemetryHubMeter(ctx, res, token)
 	} else {
-		meterProvider, err = initStdoutMeter(res)
+		meterProvider, err = initStdoutMeter(ctx, res)
 	}
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func InitMeter(resAttributes []attribute.KeyValue) (func(context.Context) error,
 }
 
 // Inits metric reporting to https://app.uptrace.dev/
-func initUptraceMeter(res *resource.Resource) (func(context.Context) error, error) {
+func initUptraceMeter(_ context.Context, res *resource.Resource) (func(context.Context) error, error) {
 	log.Entry().Debug("initializing metering to Uptrace")
 	//FIXME: runs with context.TODO(), use ctx from cmd
 	uptrace.ConfigureOpentelemetry(
@@ -57,22 +57,22 @@ func initUptraceMeter(res *resource.Resource) (func(context.Context) error, erro
 }
 
 // Inits metric reporting to https://app.lightstep.com/
-func initLightstepMeter(res *resource.Resource, token string) (*metric.MeterProvider, error) {
+func initLightstepMeter(ctx context.Context, res *resource.Resource, token string) (*metric.MeterProvider, error) {
 	log.Entry().Debug("initializing metering to Lightstep")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "https://ingest.lightstep.com:443")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "lightstep-access-token="+token)
-	return initGRPCMeter(res)
+	return initGRPCMeter(ctx, res)
 }
 
 // Inits metric reporting to https://app.telemetryhub.com/
-func initTelemetryHubMeter(res *resource.Resource, token string) (*metric.MeterProvider, error) {
+func initTelemetryHubMeter(ctx context.Context, res *resource.Resource, token string) (*metric.MeterProvider, error) {
 	log.Entry().Debug("initializing metering to TelemetryHub")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "https://otlp.telemetryhub.com:4317")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "x-telemetryhub-key="+token)
-	return initGRPCMeter(res)
+	return initGRPCMeter(ctx, res)
 }
 
-func initGRPCMeter(res *resource.Resource) (*metric.MeterProvider, error) {
+func initGRPCMeter(ctx context.Context, res *resource.Resource) (*metric.MeterProvider, error) {
 	// 	u, _ := url.Parse(endpoint)
 	// 	if u.Scheme == "https" {
 	// 		// Create credentials using system certificates.
@@ -87,8 +87,7 @@ func initGRPCMeter(res *resource.Resource) (*metric.MeterProvider, error) {
 		otlpmetricgrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, "")),
 	}
 
-	//FIXME: runs with context.TODO(), use ctx from cmd
-	exporter, err := otlpmetricgrpc.New(context.TODO(), options...)
+	exporter, err := otlpmetricgrpc.New(ctx, options...)
 	if err != nil {
 		log.Entry().WithError(err).Error("failed to initialize exporter")
 		return nil, errors.Wrap(err, "failed to initialize exporter")
@@ -101,7 +100,7 @@ func initGRPCMeter(res *resource.Resource) (*metric.MeterProvider, error) {
 	), nil
 }
 
-func initStdoutMeter(res *resource.Resource) (*metric.MeterProvider, error) {
+func initStdoutMeter(_ context.Context, res *resource.Resource) (*metric.MeterProvider, error) {
 	log.Entry().Debug("initializing metering to stdout")
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")

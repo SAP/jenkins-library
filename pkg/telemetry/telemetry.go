@@ -95,7 +95,7 @@ func (t *Telemetry) Initialize(ctx context.Context, telemetryDisabled bool, step
 	}
 	t.baseMetaData = baseMetaData
 	// OpenTelemetry
-	t.shutdownOpenTelemetry, err = InitMeter([]attribute.KeyValue{
+	t.shutdownOpenTelemetry, err = InitMeter(t.ctx, []attribute.KeyValue{
 		//TODO: use global parameter to distinguish between envs
 		attribute.String("environment", Environment),
 		attribute.String("piper.orchestrator", t.baseData.Orchestrator),
