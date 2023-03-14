@@ -27,6 +27,9 @@ const actionName = "Piper Library OS"
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
 
+// LibraryRepository that is passed into with -ldflags
+var Environment string = "development"
+
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
 	baseData              BaseData
@@ -93,12 +96,14 @@ func (t *Telemetry) Initialize(ctx context.Context, telemetryDisabled bool, step
 	t.baseMetaData = baseMetaData
 	// OpenTelemetry
 	t.shutdownOpenTelemetry, err = InitMeter([]attribute.KeyValue{
+		//TODO: use global parameter to distinguish between envs
+		attribute.String("environment", Environment),
 		attribute.String("piper.orchestrator", t.baseData.Orchestrator),
 		attribute.String("piper.correlationID", t.provider.GetBuildURL()),
 		attribute.String("piper.step.name", t.baseData.StepName),
 	})
 	if err != nil {
-		log.Entry().WithError(err).Warning("failed to initialize telemetry")
+		log.Entry().WithError(err).Error("failed to initialize telemetry")
 	}
 }
 
@@ -135,7 +140,11 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
-	defer t.shutdownOpenTelemetry(t.ctx)
+	defer func() {
+		if t.shutdownOpenTelemetry != nil {
+			t.shutdownOpenTelemetry(t.ctx)
+		}
+	}()
 	// always log step telemetry data to logfile used for internal use-case
 	t.logStepTelemetryData()
 
