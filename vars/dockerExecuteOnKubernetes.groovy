@@ -10,7 +10,6 @@ import com.sap.piper.k8s.SystemEnv
 import com.sap.piper.JsonUtils
 
 import groovy.transform.Field
-import hudson.AbortException
 
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
@@ -407,8 +406,6 @@ chown -R ${runAsUser}:${fsGroup} ."""
             allowEmpty: true
         )
         return stashName
-    } catch (AbortException | IOException e) {
-        echo "${e.getMessage()}"
     } catch (Throwable e) {
         echo "Unstash workspace failed with throwable ${e.getMessage()}"
         throw e
@@ -437,8 +434,6 @@ private Map getSecurityContext(Map config) {
 private void unstashWorkspace(config, prefix) {
     try {
         unstash "${prefix}-${config.uniqueId}"
-    } catch (AbortException | IOException e) {
-        echo "${e.getMessage()}\n${e.getCause()}"
     } catch (Throwable e) {
         echo "Unstash workspace failed with throwable ${e.getMessage()}"
         throw e
