@@ -172,6 +172,13 @@ func uploadResults(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtil
 }
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) error {
+	codeqlVersion, err := os.ReadFile("/etc/image-version")
+	if err != nil {
+		log.Entry().Infof("CodeQL image version: unknown")
+	} else {
+		log.Entry().Infof("CodeQL image version: %s", string(codeqlVersion))
+	}
+
 	var reports []piperutils.Path
 	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", config.ModulePath}
 
@@ -184,27 +191,20 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return fmt.Errorf("the step could not recognize the specified buildTool %s. please specify valid buildtool", config.BuildTool)
 		}
 	}
-
 	if len(language) > 0 {
 		cmd = append(cmd, "--language="+language)
 	} else {
 		cmd = append(cmd, "--language="+config.Language)
 	}
 
-	if len(config.Threads) > 0 {
-		cmd = append(cmd, "--threads="+config.Threads)
-	}
-
-	if len(config.Ram) > 0 {
-		cmd = append(cmd, "--ram="+config.Ram)
-	}
+	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 
 	//codeql has an autobuilder which tries to build the project based on specified programming language
 	if len(config.BuildCommand) > 0 {
 		cmd = append(cmd, "--command="+config.BuildCommand)
 	}
 
-	err := execute(utils, cmd, GeneralConfig.Verbose)
+	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database create")
 		return err
@@ -217,12 +217,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = nil
 	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%vtarget/codeqlReport.sarif", config.ModulePath), config.Database)
-	if len(config.Threads) > 0 {
-		cmd = append(cmd, "--threads="+config.Threads)
-	}
-	if len(config.Ram) > 0 {
-		cmd = append(cmd, "--ram="+config.Ram)
-	}
+	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
@@ -234,12 +229,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = nil
 	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%vtarget/codeqlReport.csv", config.ModulePath), config.Database)
-	if len(config.Threads) > 0 {
-		cmd = append(cmd, "--threads="+config.Threads)
-	}
-	if len(config.Ram) > 0 {
-		cmd = append(cmd, "--ram="+config.Ram)
-	}
+	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
@@ -352,4 +342,15 @@ func buildRepoReference(repository, analyzedRef string) (string, error) {
 		return fmt.Sprintf("%s/pull/%s", repository, ref[2]), nil
 	}
 	return fmt.Sprintf("%s/tree/%s", repository, ref[2]), nil
+}
+
+func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
+	params := make([]string, 0, 2)
+	if len(config.Threads) > 0 {
+		params = append(params, "--threads="+config.Threads)
+	}
+	if len(config.Ram) > 0 {
+		params = append(params, "--ram="+config.Ram)
+	}
+	return params
 }
