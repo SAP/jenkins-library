@@ -325,8 +325,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                         try {
                             utils.unstashAll(stashContent)
                             if (defaultStashCreated) {
-                                echo "invalidate stash workspace-${config.uniqueId}"
-                                stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+                                invalidateStash(config, 'workspace')
                             }
                             body()
                         } finally {
@@ -447,8 +446,7 @@ private void unstashWorkspace(config, prefix) {
         echo "Unstash workspace failed with throwable ${e.getMessage()}"
         throw e
     } finally {
-        echo "invalidate stash ${prefix}-${config.uniqueId}"
-        stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+        invalidateStash(config, prefix)
     }
 }
 
@@ -622,4 +620,10 @@ private List getContainerEnvs(config, imageName, defaultEnvVars, defaultConfig) 
     }
 
     return containerEnv
+}
+
+private void invalidateStash(def config, String prefix) {
+ String name = "${prefix}-${config.uniqueId}"
+ echo "invalidate stash ${name}"
+ stash name: name, excludes: '**/*', allowEmpty: true
 }
