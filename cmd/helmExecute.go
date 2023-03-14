@@ -41,6 +41,8 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData,
 		CustomTLSCertificateLinks: config.CustomTLSCertificateLinks,
 		Version:                   config.Version,
 		PublishVersion:            config.Version,
+		GCPJsonKeyFilePath:        GeneralConfig.GCPJsonKeyFilePath,
+		GCSBucketId:               GeneralConfig.GCSBucketId,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
