@@ -175,8 +175,9 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	codeqlVersion, err := os.ReadFile("/etc/image-version")
 	if err != nil {
 		log.Entry().Infof("CodeQL image version: unknown")
+	} else {
+		log.Entry().Infof("CodeQL image version: %s", string(codeqlVersion))
 	}
-	log.Entry().Infof("CodeQL image version: %s", string(codeqlVersion))
 
 	var reports []piperutils.Path
 	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", config.ModulePath}
