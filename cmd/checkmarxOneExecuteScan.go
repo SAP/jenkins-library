@@ -247,7 +247,7 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	}
 
 	// new project, set the defaults per pipeline config
-	err = c.sys.SetProjectPreset(c.Project.ProjectID, c.config.Preset, true)
+	err = c.sys.SetProjectPreset(project.ProjectID, c.config.Preset, true)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to set preset for project %v to %v: %s", project.ProjectID, c.config.Preset, err)
 	} else {
