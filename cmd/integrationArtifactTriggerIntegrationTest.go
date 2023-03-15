@@ -47,7 +47,7 @@ func newIntegrationArtifactTriggerIntegrationTestUtils() integrationArtifactTrig
 	return &utils
 }
 
-func integrationArtifactTriggerIntegrationTest(config integrationArtifactTriggerIntegrationTestOptions, telemetryData *telemetry.CustomData) {
+func integrationArtifactTriggerIntegrationTest(config integrationArtifactTriggerIntegrationTestOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newIntegrationArtifactTriggerIntegrationTestUtils()
@@ -58,19 +58,19 @@ func integrationArtifactTriggerIntegrationTest(config integrationArtifactTrigger
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runIntegrationArtifactTriggerIntegrationTest(&config, telemetryData, utils, httpClient)
+	err := runIntegrationArtifactTriggerIntegrationTest(&config, utils, httpClient, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runIntegrationArtifactTriggerIntegrationTest(config *integrationArtifactTriggerIntegrationTestOptions, telemetryData *telemetry.CustomData, utils integrationArtifactTriggerIntegrationTestUtils, httpClient piperhttp.Sender) error {
-	var commonPipelineEnvironment integrationArtifactGetServiceEndpointCommonPipelineEnvironment
+func runIntegrationArtifactTriggerIntegrationTest(config *integrationArtifactTriggerIntegrationTestOptions, utils integrationArtifactTriggerIntegrationTestUtils, httpClient piperhttp.Sender, commonPipelineEnvironment *integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment) error {
+	var getServiceEndpointCommonPipelineEnvironment integrationArtifactGetServiceEndpointCommonPipelineEnvironment
 	var serviceEndpointUrl string
 	if len(config.IntegrationFlowServiceEndpointURL) > 0 {
 		serviceEndpointUrl = config.IntegrationFlowServiceEndpointURL
 	} else {
-		serviceEndpointUrl = commonPipelineEnvironment.custom.integrationFlowServiceEndpoint
+		serviceEndpointUrl = getServiceEndpointCommonPipelineEnvironment.custom.integrationFlowServiceEndpoint
 		if len(serviceEndpointUrl) == 0 {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("IFlowServiceEndpointURL not set")
@@ -79,7 +79,7 @@ func runIntegrationArtifactTriggerIntegrationTest(config *integrationArtifactTri
 	log.Entry().Info("The Service URL : ", serviceEndpointUrl)
 
 	// Here we trigger the iFlow Service Endpoint.
-	IFlowErr := callIFlowURL(config, telemetryData, utils, httpClient, serviceEndpointUrl)
+	IFlowErr := callIFlowURL(config, utils, httpClient, serviceEndpointUrl, commonPipelineEnvironment)
 	if IFlowErr != nil {
 		log.SetErrorCategory(log.ErrorService)
 		return fmt.Errorf("failed to execute iFlow: %w", IFlowErr)
@@ -88,7 +88,12 @@ func runIntegrationArtifactTriggerIntegrationTest(config *integrationArtifactTri
 	return nil
 }
 
-func callIFlowURL(config *integrationArtifactTriggerIntegrationTestOptions, telemetryData *telemetry.CustomData, utils integrationArtifactTriggerIntegrationTestUtils, httpIFlowClient piperhttp.Sender, serviceEndpointUrl string) error {
+func callIFlowURL(
+	config *integrationArtifactTriggerIntegrationTestOptions,
+	utils integrationArtifactTriggerIntegrationTestUtils,
+	httpIFlowClient piperhttp.Sender,
+	serviceEndpointUrl string,
+	commonPipelineEnvironment *integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment) error {
 
 	var fileBody []byte
 	var httpMethod string
@@ -149,6 +154,12 @@ func callIFlowURL(config *integrationArtifactTriggerIntegrationTestOptions, tele
 		log.Entry().
 			WithField(config.IntegrationFlowID, serviceEndpointUrl).
 			Infof("successfully triggered %s with status code %d", serviceEndpointUrl, iFlowResp.StatusCode)
+		bodyText, readErr := ioutil.ReadAll(iFlowResp.Body)
+		if readErr != nil {
+			log.Entry().Warnf("HTTP response body could not be read. Error: %s", readErr.Error())
+		} else if len(bodyText) > 0 {
+			commonPipelineEnvironment.custom.integrationFlowTriggerIntegrationTestResponseBody = string(bodyText)
+		}
 	} else {
 		return fmt.Errorf("request %s failed with response code %d", serviceEndpointUrl, iFlowResp.StatusCode)
 	}

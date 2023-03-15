@@ -43,9 +43,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		utils.AddFile("file.txt", []byte("dummycontent"))
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
+		cpe := integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment{}
 
 		//test
-		err := callIFlowURL(&config, nil, utils, &httpClient, "")
+		err := callIFlowURL(&config, utils, &httpClient, "", &cpe)
 
 		//assert
 		assert.Error(t, err)
@@ -71,9 +72,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		//no file created here. error expected
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
+		cpe := integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment{}
 
 		//test
-		err := callIFlowURL(&config, nil, utils, &httpClient, "")
+		err := callIFlowURL(&config, utils, &httpClient, "", &cpe)
 
 		//assert
 		assert.Error(t, err)
@@ -103,9 +105,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 			t.Fail()
 		}
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
+		cpe := integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment{}
 
 		//test
-		err := callIFlowURL(&config, nil, utils, &httpClient, "https://my-service.com/endpoint")
+		err := callIFlowURL(&config, utils, &httpClient, "https://my-service.com/endpoint", &cpe)
 
 		//assert
 		assert.NoError(t, err)
@@ -134,9 +137,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		//utils.AddFile(config.MessageBodyPath, []byte("dummycontent1")) //have to add a file here to see in utils
 		//ioutil.WriteFile(config.MessageBodyPath, []byte("dummycontent2"), 0755)
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
+		cpe := integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment{}
 
 		//test
-		err := callIFlowURL(&config, nil, utils, &httpClient, "https://my-service.com/endpoint")
+		err := callIFlowURL(&config, utils, &httpClient, "https://my-service.com/endpoint", &cpe)
 
 		//assert
 		assert.NoError(t, err)
@@ -169,9 +173,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 			t.Fail()
 		}
 		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
+		cpe := integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment{}
 
 		//test
-		err := callIFlowURL(&config, nil, utils, &httpClient, "")
+		err := callIFlowURL(&config, utils, &httpClient, "", &cpe)
 
 		//assert
 		assert.NoError(t, err)

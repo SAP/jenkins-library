@@ -56,3 +56,9 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/integrationFlowTriggerIntegrationTestResponseBody
