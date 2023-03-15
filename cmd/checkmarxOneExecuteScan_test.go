@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type checkmarxoneExecuteScanMockUtils struct {
@@ -25,13 +26,10 @@ func TestRunCheckmarxoneExecuteScan(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 		// init
-		config := checkmarxoneExecuteScanOptions{}
-
-		utils := newCheckmarxoneExecuteScanTestsUtils()
-		utils.AddFile("file.txt", []byte("dummy content"))
+		config := checkmarxOneExecuteScanOptions{}
 
 		// test
-		err := runCheckmarxoneExecuteScan(&config, nil, utils)
+		err := runStep(config, nil)
 
 		// assert
 		assert.NoError(t, err)

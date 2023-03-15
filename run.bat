@@ -1,1 +1,0 @@
-c:\work\code\jenkins-library\piper.exe checkmarxOneExecuteScan --customConfig="c:\work\code\piper-pipelines\michael_config.yml"

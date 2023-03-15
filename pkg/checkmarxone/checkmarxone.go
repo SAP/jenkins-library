@@ -36,6 +36,22 @@ type AuthToken struct {
 	//   Scope                   string `json:"scope"`
 }
 
+type Application struct {
+	ApplicationID string            `json:"id"`
+	Name          string            `json:"name"`
+	Description   string            `json:"description"`
+	Criticality   uint              `json:"criticality"`
+	Rules         []ApplicationRule `json:"rules"`
+	Tags          map[string]string `json:"tags"`
+	CreatedAt     string            `json:"createdAt"`
+	UpdatedAt     string            `json:"updatedAt"`
+}
+
+type ApplicationRule struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
 // Preset - Project's Preset
 // Updated for Cx1
 type Preset struct {
@@ -272,6 +288,10 @@ type System interface {
 	GetReportStatus(reportID string) (ReportStatus, error)
 	RequestNewReport(scanID, projectID, branch, reportType string) (string, error)
 
+	CreateApplication(appname string) (Application, error)
+	GetApplicationByName(appname string) (Application, error)
+	UpdateApplication(app *Application) error
+
 	GetScan(scanID string) (Scan, error)
 	GetScanMetadata(scanID string) (ScanMetadata, error)
 	GetScanResults(scanID string, limit uint64) ([]ScanResult, error)
@@ -288,6 +308,7 @@ type System interface {
 	CreateProject(projectName string, groupIDs []string) (Project, error)
 	GetPresets() ([]Preset, error)
 	GetProjectByID(projectID string) (Project, error)
+	GetProjectsByName(projectName string) ([]Project, error)
 	GetProjectsByNameAndGroup(projectName, groupID string) ([]Project, error)
 	GetProjects() ([]Project, error)
 	GetQueries() ([]Query, error)
@@ -512,6 +533,119 @@ func (sys *SystemInstance) getAPIToken() (string, error) {
 	return token.TokenType + " " + token.AccessToken, nil
 }
 
+func (sys *SystemInstance) GetApplicationsByName(name string, limit uint64) ([]Application, error) {
+	sys.logger.Debugf("Get Cx1 Applications by name: %v", name)
+
+	var ApplicationResponse struct {
+		TotalCount    uint64
+		FilteredCount uint64
+		Applications  []Application
+	}
+
+	body := url.Values{
+		//"offset":     {fmt.Sprintf("%d", 0)},
+		"limit": {fmt.Sprintf("%d", limit)},
+		"name":  {name},
+	}
+
+	response, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/applications?%v", body.Encode()), nil, nil, []int{})
+
+	if err != nil {
+		return ApplicationResponse.Applications, err
+	}
+
+	err = json.Unmarshal(response, &ApplicationResponse)
+	sys.logger.Tracef("Retrieved %d applications", len(ApplicationResponse.Applications))
+	return ApplicationResponse.Applications, err
+}
+
+func (sys *SystemInstance) GetApplicationByName(name string) (Application, error) {
+	apps, err := sys.GetApplicationsByName(name, 0)
+	if err != nil {
+		return Application{}, err
+	}
+
+	for _, a := range apps {
+		if a.Name == name {
+			return a, nil
+		}
+	}
+
+	return Application{}, fmt.Errorf("no application found named %v", name)
+}
+
+func (sys *SystemInstance) CreateApplication(appname string) (Application, error) {
+	sys.logger.Debugf("Create Application: %v", appname)
+	data := map[string]interface{}{
+		"name":        appname,
+		"description": "",
+		"criticality": 3,
+		"rules":       []ApplicationRule{},
+		"tags":        map[string]string{},
+	}
+
+	var app Application
+
+	jsonBody, err := json.Marshal(data)
+	if err != nil {
+		return app, err
+	}
+
+	response, err := sendRequest(sys, http.MethodPost, "/applications", bytes.NewReader(jsonBody), nil, []int{})
+	if err != nil {
+		sys.logger.Tracef("Error while creating application: %s", err)
+		return app, err
+	}
+
+	err = json.Unmarshal(response, &app)
+
+	return app, err
+}
+
+func (a *Application) GetRuleByType(ruletype string) *ApplicationRule {
+	for id := range a.Rules {
+		if a.Rules[id].Type == ruletype {
+			return &(a.Rules[id])
+		}
+	}
+	return nil
+}
+
+func (a *Application) AddRule(ruletype, value string) {
+	rule := a.GetRuleByType(ruletype)
+	if rule == nil {
+		var newrule ApplicationRule
+		newrule.Type = ruletype
+		newrule.Value = value
+		a.Rules = append(a.Rules, newrule)
+	} else {
+		if rule.Value == value || strings.Contains(rule.Value, fmt.Sprintf(";%v;", value)) || rule.Value[len(rule.Value)-len(value)-1:] == fmt.Sprintf(";%v", value) || rule.Value[:len(value)+1] == fmt.Sprintf("%v;", value) {
+			return // rule value already contains this value
+		}
+		rule.Value = fmt.Sprintf("%v;%v", rule.Value, value)
+	}
+}
+
+func (a *Application) AssignProject(project *Project) {
+	a.AddRule("project.name.in", project.Name)
+}
+
+func (sys *SystemInstance) UpdateApplication(app *Application) error {
+	sys.logger.Debugf("Updating application: %v", app.Name)
+	jsonBody, err := json.Marshal(*app)
+	if err != nil {
+		return err
+	}
+
+	_, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/applications/%v", app.ApplicationID), bytes.NewReader(jsonBody), nil, []int{})
+	if err != nil {
+		sys.logger.Tracef("Error while updating application: %s", err)
+		return err
+	}
+
+	return nil
+}
+
 // Updated for Cx1
 func (sys *SystemInstance) GetGroups() ([]Group, error) {
 	sys.logger.Debug("Getting Groups...")
@@ -588,7 +722,36 @@ func (sys *SystemInstance) GetProjectByID(projectID string) (Project, error) {
 	return project, err
 }
 
-// GetProjectsByNameAndGroup returns the project addressed by projectID from the Checkmarx backend which the user has access to
+// GetProjectsByNameAndGroup returns the project addressed by project name from the Checkmarx backend which the user has access to
+// Updated for Cx1
+func (sys *SystemInstance) GetProjectsByName(projectName string) ([]Project, error) {
+	sys.logger.Debugf("Getting projects with name %v", projectName)
+
+	var projectResponse struct {
+		TotalCount    int       `json:"totalCount"`
+		FilteredCount int       `json:"filteredCount"`
+		Projects      []Project `json:"projects"`
+	}
+
+	header := http.Header{}
+	header.Set("Accept-Type", "application/json")
+	var data []byte
+	var err error
+
+	body := url.Values{}
+	body.Add("name", projectName)
+
+	data, err = sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/?%v", body.Encode()), nil, header, []int{404})
+
+	if err != nil {
+		return []Project{}, errors.Wrapf(err, "fetching project %v failed", projectName)
+	}
+
+	err = json.Unmarshal(data, &projectResponse)
+	return projectResponse.Projects, err
+}
+
+// GetProjectsByNameAndGroup returns the project addressed by project name from the Checkmarx backend which the user has access to
 // Updated for Cx1
 func (sys *SystemInstance) GetProjectsByNameAndGroup(projectName, groupID string) ([]Project, error) {
 	sys.logger.Debugf("Getting projects with name %v of group %v...", projectName, groupID)
@@ -1149,24 +1312,7 @@ func shortenGUID(guid string) string {
 	return fmt.Sprintf("%v..%v", guid[:2], guid[len(guid)-2:])
 }
 
-// GetShortDescription returns the short description for an issue with a scanID and pathID
-// TODO - I believe this is quite different in Cx1 as it is a per-query description rather than using the specific Scan & Path ID.
-/*
-func (sys *SystemInstance) GetShortDescription(scanID int, pathID int) (ShortDescription, error) {
-    var shortDescription ShortDescription
-
-    data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v/results/%v/shortDescription", scanID, pathID), nil, nil)
-    if err != nil {
-        sys.logger.Errorf("Failed to get short description for scanID %v and pathID %v: %s", scanID, pathID, err)
-        return shortDescription, err
-    }
-
-    json.Unmarshal(data, &shortDescription)
-    return shortDescription, nil
-} */
-
 // DownloadReport downloads the report addressed by reportID and returns the XML contents
-// TODO
 func (sys *SystemInstance) DownloadReport(reportUrl string) ([]byte, error) {
 	header := http.Header{}
 	header.Set("Accept", "application/json")

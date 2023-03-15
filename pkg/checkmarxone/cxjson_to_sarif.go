@@ -16,7 +16,7 @@ import (
 )
 
 // ConvertCxxmlToSarif is the entrypoint for the Parse function
-func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult, scanMeta ScanMetadata, scan Scan) (format.SARIF, error) {
+func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scanMeta *ScanMetadata, scan *Scan) (format.SARIF, error) {
 	// Process sarif
 	start := time.Now()
 
@@ -46,7 +46,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 	//Each Result object contains a ResultPath, which represents the exact location of the occurence (the "Snippet")
 	log.Entry().Debug("[SARIF] Now handling results.")
 
-	for _, r := range scanResults {
+	for _, r := range *scanResults {
 		query := getQuery(queries, r.Data.QueryID)
 		if query == nil {
 			return sarif, errors.New(fmt.Sprintf("Unknown queryid in results: %d", r.Data.QueryID))
@@ -294,7 +294,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults []ScanResult
 }
 
 func getQuery(queries []Query, queryID uint64) *Query {
-	for id, _ := range queries {
+	for id := range queries {
 		if queries[id].QueryID == queryID {
 			return &queries[id]
 		}

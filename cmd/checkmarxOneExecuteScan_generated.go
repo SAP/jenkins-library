@@ -40,6 +40,7 @@ type checkmarxOneExecuteScanOptions struct {
 	ProjectCriticality                   string   `json:"projectCriticality,omitempty"`
 	ProjectName                          string   `json:"projectName,omitempty"`
 	Branch                               string   `json:"branch,omitempty"`
+	PullRequestName                      string   `json:"pullRequestName,omitempty"`
 	Repository                           string   `json:"repository,omitempty"`
 	ServerURL                            string   `json:"serverUrl,omitempty"`
 	IamURL                               string   `json:"iamUrl,omitempty"`
@@ -47,6 +48,7 @@ type checkmarxOneExecuteScanOptions struct {
 	SourceEncoding                       string   `json:"sourceEncoding,omitempty"`
 	GroupID                              string   `json:"groupId,omitempty"`
 	GroupName                            string   `json:"groupName,omitempty"`
+	ApplicationName                      string   `json:"applicationName,omitempty"`
 	ClientID                             string   `json:"clientId,omitempty"`
 	VerifyOnly                           bool     `json:"verifyOnly,omitempty"`
 	VulnerabilityThresholdEnabled        bool     `json:"vulnerabilityThresholdEnabled,omitempty"`
@@ -339,8 +341,8 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 }
 
 func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOneExecuteScanOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
-	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not")
+	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names. [Not yet supported]")
+	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not  [Not yet supported]")
 	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
 	cmd.Flags().StringVar(&stepConfig.FullScanCycle, "fullScanCycle", `5`, "Indicates how often a full scan should happen between the incremental scans when activated")
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
@@ -356,14 +358,16 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
 	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", os.Getenv("PIPER_projectCriticality"), "The criticality of the checkmarxOne project, used during project creation")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the checkmarxOne project to scan into")
-	cmd.Flags().StringVar(&stepConfig.Branch, "branch", `zip`, "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
+	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Used to supply the branch scanned in the repository, or a friendly-name set by the user")
+	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios. This is supplied by the orchestrator.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the checkmarxOne server to be used")
 	cmd.Flags().StringVar(&stepConfig.IamURL, "iamUrl", os.Getenv("PIPER_iamUrl"), "The URL pointing to the access control root of the checkmarxOne IAM server to be used")
 	cmd.Flags().StringVar(&stepConfig.Tenant, "tenant", os.Getenv("PIPER_tenant"), "The name of the checkmarxOne tenant to be used")
-	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used")
+	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used  [Not yet supported]")
 	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to assign newly created projects to which is preferred to groupId")
+	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The full name of the Checkmarx One application to assign newly created projects to")
 	cmd.Flags().StringVar(&stepConfig.ClientID, "clientId", os.Getenv("PIPER_clientId"), "The username to authenticate")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
@@ -382,6 +386,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.MarkFlagRequired("APIKey")
 	cmd.MarkFlagRequired("projectCriticality")
 	cmd.MarkFlagRequired("projectName")
+	cmd.MarkFlagRequired("branch")
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("iamUrl")
 	cmd.MarkFlagRequired("tenant")
@@ -605,9 +610,18 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_branch"),
+					},
+					{
+						Name:        "pullRequestName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "pullRequestName"}},
-						Default:     `zip`,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pullRequestName"),
 					},
 					{
 						Name: "repository",
@@ -676,6 +690,15 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "checkmarxOneGroupName"}, {Name: "teamName"}},
 						Default:     os.Getenv("PIPER_groupName"),
+					},
+					{
+						Name:        "applicationName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "checkmarxOneApplicationName"}},
+						Default:     os.Getenv("PIPER_applicationName"),
 					},
 					{
 						Name: "clientId",

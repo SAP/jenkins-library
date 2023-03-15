@@ -75,7 +75,7 @@ func TestSendRequest(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		_, err := sendRequest(&sys, "GET", "/test", nil, nil)
+		_, err := sendRequest(&sys, "GET", "/test", nil, nil, []int{})
 
 		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/test", myTestClient.urlCalled, "Called url incorrect")
@@ -85,7 +85,7 @@ func TestSendRequest(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 400}
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
-		_, err := sendRequest(&sys, "GET", "/test", nil, nil)
+		_, err := sendRequest(&sys, "GET", "/test", nil, nil, []int{})
 
 		assert.Error(t, err, "Error expected but none occurred")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/test", myTestClient.urlCalled, "Called url incorrect")
@@ -95,7 +95,7 @@ func TestSendRequest(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 400}
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
-		_, err := sendRequest(&sys, "error", "/test", nil, nil)
+		_, err := sendRequest(&sys, "error", "/test", nil, nil, []int{})
 
 		assert.Error(t, err, "Error expected but none occurred")
 	})

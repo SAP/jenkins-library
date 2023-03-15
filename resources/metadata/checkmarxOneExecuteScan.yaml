@@ -210,15 +210,20 @@ spec:
           - STAGES
           - STEPS
       - name: branch
-        aliases:
-          - name: pullRequestName
         type: string
-        description: Used to supply the name for the newly created PR project branch when being used in pull request scenarios
+        description: Used to supply the branch scanned in the repository, or a friendly-name set by the user
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "zip"
+        mandatory: true
+      - name: pullRequestName
+        type: string
+        description: Used to supply the name for the newly created PR project branch when being used in pull request scenarios. This is supplied by the orchestrator.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: repository
         aliases:
           - name: githubRepo
@@ -290,6 +295,15 @@ spec:
           - name: teamName
         type: string
         description: The full name of the group to assign newly created projects to which is preferred to groupId
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: applicationName
+        aliases:
+          - name: checkmarxOneApplicationName
+        type: string
+        description: The full name of the Checkmarx One application to assign newly created projects to
         scope:
           - PARAMETERS
           - STAGES
