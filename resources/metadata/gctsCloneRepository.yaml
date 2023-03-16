@@ -71,7 +71,7 @@ spec:
         mandatory: false
       - name: skipSSLVerification
         type: bool
-        description: Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments. 
+        description: Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.
         scope:
           - PARAMETERS
           - STAGES
