@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/vault/api"
 
 	"github.com/SAP/jenkins-library/pkg/ado"
+	"github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/jenkins"
 	"github.com/SAP/jenkins-library/pkg/vault"
 
@@ -129,6 +130,30 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		}
 		if err := adoBuildClient.UpdateVariables(variables); err != nil {
 			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
+			return err
+		}
+	case "github":
+		ctx, client, err := github.NewClient(config.GithubPersonalAccessToken, config.GithubAPIURL, "", []string{})
+		if err != nil {
+			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
+			return err
+		}
+
+		publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, config.RepoOwner, config.RepoName)
+		if err != nil {
+			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
+			return err
+		}
+
+		encryptedSecret, err := github.CreateSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
+		if err != nil {
+			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
+			return err
+		}
+
+		_, err = client.Actions.CreateOrUpdateRepoSecret(ctx, config.RepoOwner, config.RepoName, encryptedSecret)
+		if err != nil {
+			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
 			return err
 		}
 	default:

@@ -67,6 +67,8 @@ require (
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2
 )
 
+require github.com/jamesruan/sodium v1.0.14 // indirect
+
 require (
 	cloud.google.com/go v0.102.0 // indirect
 	cloud.google.com/go/compute v1.7.0 // indirect

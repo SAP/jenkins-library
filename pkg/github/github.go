@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/google/go-github/v45/github"
+	"github.com/jamesruan/sodium"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -146,4 +148,23 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 	}
 
 	return existingIssue, nil
+}
+
+func CreateSecret(secretName, secretValue string, publicKey *github.PublicKey) (*github.EncryptedSecret, error) {
+	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey.GetKey())
+	if err != nil {
+		log.Entry().Warn("Could not decode public key from base64")
+		return nil, err
+	}
+
+	secretBytes := sodium.Bytes(secretValue)
+	encryptedSecret := secretBytes.SealedBox(sodium.BoxPublicKey{Bytes: decodedPublicKey})
+	encryptedSecretB64 := base64.StdEncoding.EncodeToString(encryptedSecret)
+
+	secret := &github.EncryptedSecret{
+		Name:           secretName,
+		KeyID:          publicKey.GetKeyID(),
+		EncryptedValue: encryptedSecretB64,
+	}
+	return secret, nil
 }
