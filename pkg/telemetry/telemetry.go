@@ -57,20 +57,8 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 
 	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
 
-	if t.BaseURL == "" {
-		//SWA baseURL
-		t.BaseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
-	}
-	if t.Endpoint == "" {
-		// SWA endpoint
-		t.Endpoint = "/tracker/log"
-	}
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
-	}
-
-	if t.SiteID == "" {
-		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 	}
 
 	t.baseData = BaseData{
@@ -127,12 +115,6 @@ func (t *Telemetry) Send() {
 	if t.disabled {
 		return
 	}
-
-	request, _ := url.Parse(t.BaseURL)
-	request.Path = t.Endpoint
-	request.RawQuery = t.data.toPayloadString()
-	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
-	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
 }
 
 func (t *Telemetry) logStepTelemetryData() {
