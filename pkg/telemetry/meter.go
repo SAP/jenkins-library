@@ -8,7 +8,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
-	"github.com/uptrace/uptrace-go/uptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
@@ -28,8 +27,9 @@ func InitMeter(ctx context.Context, resAttributes []attribute.KeyValue) (func(co
 		resAttributes...,
 	)
 
-	if _, ok := os.LookupEnv("UPTRACE_DSN"); ok {
-		return initUptraceMeter(ctx, res)
+	if dsn, ok := os.LookupEnv("UPTRACE_DSN"); ok {
+		// return initUptraceMeter(ctx, res)
+		meterProvider, err = initUptraceMeter(ctx, res, dsn)
 	} else if token, ok := os.LookupEnv("LIGHTSTEP_TOKEN"); ok {
 		meterProvider, err = initLightstepMeter(ctx, res, token)
 	} else if token, ok := os.LookupEnv("TELEMETRYHUB_TOKEN"); ok {
@@ -45,15 +45,25 @@ func InitMeter(ctx context.Context, resAttributes []attribute.KeyValue) (func(co
 }
 
 // Inits metric reporting to https://app.uptrace.dev/
-func initUptraceMeter(_ context.Context, res *resource.Resource) (func(context.Context) error, error) {
+// func initUptraceMeter(_ context.Context, res *resource.Resource) (func(context.Context) error, error) {
+// 	log.Entry().Debug("initializing metering to Uptrace")
+// 	//FIXME: runs with context.TODO(), use ctx from cmd
+// 	uptrace.ConfigureOpentelemetry(
+// 		uptrace.WithTracingDisabled(), // only init otel for metrics
+// 		uptrace.WithMetricsEnabled(true),
+// 		uptrace.WithResource(res),
+// 	)
+// 	return uptrace.Shutdown, nil
+// }
+
+// Inits metric reporting to https://app.uptrace.dev/
+func initUptraceMeter(ctx context.Context, res *resource.Resource, dsn string) (*metric.MeterProvider, error) {
+	// 	otlpmetricgrpc.WithCompressor(gzip.Name),
+	// 	otlpmetricgrpc.WithTemporalitySelector(preferDeltaTemporalitySelector),
 	log.Entry().Debug("initializing metering to Uptrace")
-	//FIXME: runs with context.TODO(), use ctx from cmd
-	uptrace.ConfigureOpentelemetry(
-		uptrace.WithTracingDisabled(), // only init otel for metrics
-		uptrace.WithMetricsEnabled(true),
-		uptrace.WithResource(res),
-	)
-	return uptrace.Shutdown, nil
+	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "https://otlp.uptrace.dev:4317")
+	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "uptrace-dsn="+dsn)
+	return initGRPCMeter(ctx, res)
 }
 
 // Inits metric reporting to https://app.lightstep.com/
