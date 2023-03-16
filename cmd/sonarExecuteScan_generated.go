@@ -19,6 +19,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type sonarExecuteScanOptions struct {
@@ -160,15 +162,39 @@ func SonarExecuteScanCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			// initialize tracability
+			resAttributes := []attribute.KeyValue{
+				attribute.String("piper.stepName", STEP_NAME),
+				attribute.String("environment", "development"),
+				attribute.String("piper.orchestrator", "n/a"),
+			}
+			tracerProvider, err := telemetry.InitTracer(resAttributes, GeneralConfig.Tracability)
+			if err != nil {
+				log.Entry().Errorf("TRACING FAILED: %w", err)
+			}
+			log.DeferExitHandler(func ()  {
+				tracerProvider.Shutdown(cmd.Context())
+			})
+
+			// add spans
+			tracer := otel.Tracer("cobra")
+			newCtx, span := tracer.Start(cmd.Context(), STEP_NAME)
+			cmd.SetContext(newCtx)
+			log.DeferExitHandler(func () {span.End()})
+
+			_, prespan := tracer.Start(cmd.Context(), "PreRunE")
+			defer prespan.End()
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
+				prespan.RecordError(err)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Token)
@@ -187,20 +213,26 @@ func SonarExecuteScanCommand() *cobra.Command {
 
 			if err = log.RegisterANSHookIfConfigured(GeneralConfig.CorrelationID); err != nil {
 				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
+				prespan.RecordError(err)
 			}
 
 			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
+				prespan.RecordError(err)
 				return err
 			}
 			if err = validation.ValidateStruct(stepConfig); err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
+				prespan.RecordError(err)
 				return err
 			}
-
 			return nil
 		},
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
+			tracer := otel.Tracer("cobra")
+			runSpanCtx, runSpan := tracer.Start(cmd.Context(), "Run")
+			log.DeferExitHandler(func () {runSpan.End()})
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -226,12 +258,14 @@ func SonarExecuteScanCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
+			_, stepSpan := tracer.Start(runSpanCtx, "step")
+			log.DeferExitHandler(func () {stepSpan.End()})
 			sonarExecuteScan(stepConfig, &stepTelemetryData, &influx)
+			log.DeferExitHandler(func () {stepSpan.End()})
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
-
 	addSonarExecuteScanFlags(createSonarExecuteScanCmd, &stepConfig)
 	return createSonarExecuteScanCmd
 }
