@@ -239,6 +239,9 @@ func TestCNBIntegrationBindings(t *testing.T) {
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+		Environment: map[string]string{
+			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
+		},
 	})
 	defer container.terminate(t)
 
@@ -250,6 +253,8 @@ func TestCNBIntegrationBindings(t *testing.T) {
 		"/tmp/platform/bindings/dummy-binding/type",
 		"/tmp/platform/bindings/dummy-binding/dummy.yml",
 	)
+	container.assertFileContentEquals(t, "/tmp/platform/bindings/maven-settings/settings.xml", "invalid xml")
+	container.assertFileContentEquals(t, "/tmp/platform/bindings/dynatrace/api-key", "api-key-content")
 }
 
 func TestCNBIntegrationMultiImage(t *testing.T) {
