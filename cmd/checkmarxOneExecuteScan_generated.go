@@ -31,7 +31,6 @@ type checkmarxOneExecuteScanOptions struct {
 	GithubAPIURL                         string   `json:"githubApiUrl,omitempty"`
 	GithubToken                          string   `json:"githubToken,omitempty"`
 	Incremental                          bool     `json:"incremental,omitempty"`
-	MaxRetries                           int      `json:"maxRetries,omitempty"`
 	Owner                                string   `json:"owner,omitempty"`
 	ClientSecret                         string   `json:"clientSecret,omitempty"`
 	APIKey                               string   `json:"APIKey,omitempty"`
@@ -350,7 +349,6 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
-	cmd.Flags().IntVar(&stepConfig.MaxRetries, "maxRetries", 3, "Maximum number of HTTP request retries upon intermittend connetion interrupts")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.ClientSecret, "clientSecret", os.Getenv("PIPER_clientSecret"), "The clientSecret to authenticate using a service account")
 	cmd.Flags().StringVar(&stepConfig.APIKey, "APIKey", os.Getenv("PIPER_APIKey"), "The APIKey to authenticate")
@@ -503,15 +501,6 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
-					},
-					{
-						Name:        "maxRetries",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     3,
 					},
 					{
 						Name: "owner",

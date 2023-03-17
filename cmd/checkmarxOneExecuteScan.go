@@ -171,8 +171,8 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) (checkmarxOneExecuteScanHelper, error) {
 	client := &piperHttp.Client{}
-	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
-	client.SetOptions(options)
+	//options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
+	//client.SetOptions(options)
 
 	// TODO provide parameter for trusted certs
 	ctx, ghClient, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})

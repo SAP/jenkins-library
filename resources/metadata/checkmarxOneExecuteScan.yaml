@@ -114,14 +114,6 @@ spec:
           - STAGES
           - STEPS
         default: true
-      - name: maxRetries
-        type: int
-        description: Maximum number of HTTP request retries upon intermittend connetion interrupts
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: 3
       - name: owner
         aliases:
           - name: githubOrg

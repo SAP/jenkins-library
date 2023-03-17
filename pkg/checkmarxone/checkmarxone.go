@@ -359,13 +359,7 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 
 	log.RegisterSecret(token)
 
-	loggerInstance.Infof("resetting options??")
-
-	//proxyURL, err := url.Parse("http://127.0.0.1:8080")
 	options := piperHttp.ClientOptions{
-		MaxRetries: 0, // setting it explicitly for now
-		//	TransportProxy:            proxyURL,
-		//	TransportSkipVerification: true,
 		Token:            token,
 		TransportTimeout: time.Minute * 15,
 	}
@@ -374,30 +368,12 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 	return sys, nil
 }
 
-/*
-   Different API calls:
-
-   {{Cx1_URL}}/api/projects
-   {{Cx1_URL}}/api/applications
-   {{Cx1_URL}}/api/presets?limit=100
-*/
 // Updated for Cx1
 func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header, acceptedErrorCodes []int) ([]byte, error) {
 	cx1url := fmt.Sprintf("%v/api%v", sys.serverURL, url)
 	return sendRequestInternal(sys, method, cx1url, body, header, acceptedErrorCodes)
 }
 
-/*
-   Different IAM calls:
-
-   {{Cx1_IAM}}/auth/admin/realms/{{Cx1_Tenant}}/users?first=0&max=20&briefRepresentation=true
-   {{Cx1_IAM}}/auth/realms/{{Cx1_Tenant}}/users
-
-   {{Cx1_IAM}}/auth/admin/realms/{{Cx1_Tenant}}/groups?briefRepresentation=true
-   {{Cx1_IAM}}/auth/realms/{{Cx1_Tenant}}/pip/groups
-
-   Note: some have /auth/admin, others just /auth
-*/
 // Updated for Cx1
 func sendRequestIAM(sys *SystemInstance, method, base, url string, body io.Reader, header http.Header, acceptedErrorCodes []int) ([]byte, error) {
 	iamurl := fmt.Sprintf("%v%v/realms/%v%v", sys.iamURL, base, sys.tenant, url)
