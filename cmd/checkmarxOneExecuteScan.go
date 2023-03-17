@@ -60,7 +60,7 @@ type checkmarxOneExecuteScanUtilsBundle struct {
 func checkmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxOneExecuteScanInflux) {
 	err := runStep(config, influx)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Failed to run CheckmarxOne scan")
+		log.Entry().WithError(err).Fatalf("Failed to run CheckmarxOne scan.")
 	}
 	influx.step_data.fields.checkmarxOne = true
 }
@@ -115,6 +115,8 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 				log.SetErrorCategory(log.ErrorCompliance)
 				return fmt.Errorf("project %v not compliant: %s", cx1sh.Project.Name, err)
 			}
+
+			return nil
 		} else {
 			log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", cx1sh.Project.Name)
 		}
@@ -162,13 +164,16 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("project %v not compliant: %s", cx1sh.Project.Name, err)
 	}
 	// upload logs to Splunk, influxDB?
+	// */
 	return nil
+
 }
 
 func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) (checkmarxOneExecuteScanHelper, error) {
 	client := &piperHttp.Client{}
 	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
 	client.SetOptions(options)
+
 	// TODO provide parameter for trusted certs
 	ctx, ghClient, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err != nil {
@@ -309,9 +314,11 @@ func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.S
 		return false, fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", c.config.FullScanCycle)
 	}
 
+	coherentIncrementalScans := c.getNumCoherentIncrementalScans(scans)
+
 	if c.config.IsOptimizedAndScheduled {
 		incremental = false
-	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (c.getNumCoherentIncrementalScans(scans)+1)%fullScanCycle == 0 {
+	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (coherentIncrementalScans+1) > fullScanCycle {
 		incremental = false
 	}
 

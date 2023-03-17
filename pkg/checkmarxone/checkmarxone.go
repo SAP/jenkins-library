@@ -359,13 +359,15 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 
 	log.RegisterSecret(token)
 
-	//url, err := url.Parse("http://127.0.0.1:8080")
+	loggerInstance.Infof("resetting options??")
 
+	//proxyURL, err := url.Parse("http://127.0.0.1:8080")
 	options := piperHttp.ClientOptions{
+		MaxRetries: 0, // setting it explicitly for now
+		//	TransportProxy:            proxyURL,
+		//	TransportSkipVerification: true,
 		Token:            token,
 		TransportTimeout: time.Minute * 15,
-		//TransportProxy:          url,
-		//TransportSkipVerification:  true,
 	}
 	sys.client.SetOptions(options)
 
@@ -418,7 +420,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 		header = http.Header{}
 	}
 	header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0")
-	//header.Set( "User-Agent", "Project-Piper.io cicd pipeline" )
+	//header.Set("User-Agent", "Project-Piper.io cicd pipeline") // currently this causes some requests to fail due to unknown UA validation in the backend.
 
 	response, err := sys.client.SendRequest(method, url, requestBody, header, nil)
 	if err != nil && (response == nil || !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode)) {
@@ -855,11 +857,13 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 		return "", err
 	}
 
-	_, err = sendRequestInternal(sys, http.MethodPut, uploadUri, bytes.NewReader(zipContents), header, []int{})
+	response, err := sendRequestInternal(sys, http.MethodPut, uploadUri, bytes.NewReader(zipContents), header, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to upload file %v: s", zipFile, err)
 		return uploadUri, err
 	}
+
+	sys.logger.Debugf("Upload request response: %v", string(response))
 
 	return uploadUri, nil
 }
@@ -872,7 +876,7 @@ func (sys *SystemInstance) scanProject(scanConfig map[string]interface{}) (Scan,
 	header.Set("Content-Type", "application/json")
 	sys.logger.Tracef("Starting scan with settings: " + string(jsonValue))
 
-	data, err := sendRequest(sys, http.MethodPost, "/scans", bytes.NewBuffer(jsonValue), header, []int{})
+	data, err := sendRequest(sys, http.MethodPost, "/scans/", bytes.NewBuffer(jsonValue), header, []int{})
 	if err != nil {
 		return scan, err
 	}
@@ -1071,7 +1075,12 @@ func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error)
 
 // GetScans returns all scan status on the project addressed by projectID
 func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, error) {
-	scans := []Scan{}
+	var scanResponse struct {
+		TotalCount         uint64
+		FilteredTotalCount uint64
+		Scans              []Scan
+	}
+
 	body := url.Values{
 		"project-id": {projectID},
 		"offset":     {fmt.Sprintf("%v", 0)},
@@ -1081,18 +1090,23 @@ func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, er
 
 	header := http.Header{}
 	header.Set("Accept-Type", "application/json")
-	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans?%v", body.Encode()), nil, header, []int{})
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/?%v", body.Encode()), nil, header, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
-		return scans, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
+		return []Scan{}, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
 	}
 
-	json.Unmarshal(data, &scans)
-	return scans, nil
+	err = json.Unmarshal(data, &scanResponse)
+	return scanResponse.Scans, err
 }
 
 func (sys *SystemInstance) GetLastScansByStatus(projectID string, limit int, status []string) ([]Scan, error) {
-	scans := []Scan{}
+	var scanResponse struct {
+		TotalCount         uint64
+		FilteredTotalCount uint64
+		Scans              []Scan
+	}
+
 	body := url.Values{
 		"project-id": {projectID},
 		"offset":     {fmt.Sprintf("%d", 0)},
@@ -1101,14 +1115,15 @@ func (sys *SystemInstance) GetLastScansByStatus(projectID string, limit int, sta
 		"statuses":   status,
 	}
 
-	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans?%v", body.Encode()), nil, nil, []int{})
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/?%v", body.Encode()), nil, nil, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
-		return scans, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
+		return []Scan{}, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
 	}
 
-	json.Unmarshal(data, &scans)
-	return scans, nil
+	err = json.Unmarshal(data, &scanResponse)
+
+	return scanResponse.Scans, err
 }
 
 func (s *Scan) IsIncremental() (bool, error) {
