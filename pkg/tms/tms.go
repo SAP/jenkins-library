@@ -117,7 +117,6 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, cli
 	if err != nil {
 		return communicationInstance, errors.Wrap(err, "Error fetching OAuth token")
 	}
-	log.RegisterSecret(token)
 
 	clientOptions.Token = token
 	communicationInstance.httpClient.SetOptions(clientOptions)
@@ -132,6 +131,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	}
 
 	encodedUsernameColonPassword := b64.StdEncoding.EncodeToString([]byte(communicationInstance.clientId + ":" + communicationInstance.clientSecret))
+	log.RegisterSecret(encodedUsernameColonPassword)
 	header := http.Header{}
 	header.Add("Content-Type", "application/x-www-form-urlencoded")
 	header.Add("Authorization", "Basic "+encodedUsernameColonPassword)
@@ -153,6 +153,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("OAuth Token retrieved successfully")
 	}
+	log.RegisterSecret(token.AccessToken)
 	return token.TokenType + " " + token.AccessToken, nil
 }
 
