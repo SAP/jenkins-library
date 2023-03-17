@@ -42,7 +42,8 @@ func AscAppUploadCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Upload an app to ASC",
 		Long: `With this step you can upload an app to ASC.
-It creates a new release note in ASC and uploads the binary to ASC and therewith to Jamf.`,
+It creates a new release note in ASC and uploads the binary to ASC and therewith to Jamf.
+For more information about ASC, check out [Application Support Center](https://github.com/SAP/application-support-center).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
