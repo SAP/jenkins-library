@@ -14,8 +14,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // GeneralConfigOptions contains all global configuration options for piper binary
@@ -76,6 +78,22 @@ var rootCmd = &cobra.Command{
 This project 'Piper' binary provides a CI/CD step library.
 It contains many steps which can be used within CI/CD systems as well as directly on e.g. a developer's machine.
 `,
+	PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+		// initialize tracability
+		resAttributes := []attribute.KeyValue{
+			// attribute.String("piper.stepName", STEP_NAME),
+			attribute.String("environment", "development"),
+			attribute.String("piper.orchestrator", "n/a"),
+			attribute.String("piper.correlationID", GeneralConfig.CorrelationID),
+		}
+		tracerProvider, err := telemetry.InitTracer(resAttributes, GeneralConfig.Tracability)
+		if err != nil {
+			log.Entry().WithContext(cmd.Context()).WithError(err).Errorf("failed to initialize tracability: %w", err)
+		}
+		log.DeferExitHandler(func() {
+			tracerProvider.Shutdown(cmd.Context())
+		})
+	},
 }
 
 // GeneralConfig contains global configuration flags for piper binary

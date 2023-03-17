@@ -20,7 +20,6 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 type sonarExecuteScanOptions struct {
@@ -162,19 +161,19 @@ func SonarExecuteScanCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			// initialize tracability
-			resAttributes := []attribute.KeyValue{
-				attribute.String("piper.stepName", STEP_NAME),
-				attribute.String("environment", "development"),
-				attribute.String("piper.orchestrator", "n/a"),
-			}
-			tracerProvider, err := telemetry.InitTracer(resAttributes, GeneralConfig.Tracability)
-			if err != nil {
-				log.Entry().Errorf("TRACING FAILED: %w", err)
-			}
-			log.DeferExitHandler(func ()  {
-				tracerProvider.Shutdown(cmd.Context())
-			})
+			// // initialize tracability
+			// resAttributes := []attribute.KeyValue{
+			// 	attribute.String("piper.stepName", STEP_NAME),
+			// 	attribute.String("environment", "development"),
+			// 	attribute.String("piper.orchestrator", "n/a"),
+			// }
+			// tracerProvider, err := telemetry.InitTracer(resAttributes, GeneralConfig.Tracability)
+			// if err != nil {
+			// 	log.Entry().Errorf("TRACING FAILED: %w", err)
+			// }
+			// log.DeferExitHandler(func ()  {
+			// 	tracerProvider.Shutdown(cmd.Context())
+			// })
 
 			// add spans
 			tracer := otel.Tracer("cobra")
@@ -191,7 +190,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				prespan.RecordError(err)

@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -15,6 +14,7 @@ import (
 
 func InitTracer(resAttributes []attribute.KeyValue, enabled bool) (*trace.TracerProvider, error) {
 	if !enabled {
+		log.Entry().Debug("tracability disabled")
 		return nil, nil
 	}
 	log.Entry().Info("tracability enabled")
@@ -26,6 +26,7 @@ func InitTracer(resAttributes []attribute.KeyValue, enabled bool) (*trace.Tracer
 	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
 		resAttributes...,
+	//TODO use detectors
 	)
 
 	if url, ok := os.LookupEnv("OTEL_EXPORTER_JAEGER_ENDPOINT"); ok {
@@ -38,8 +39,7 @@ func InitTracer(resAttributes []attribute.KeyValue, enabled bool) (*trace.Tracer
 		tracerProvider = trace.NewTracerProvider()
 	}
 	if err != nil {
-		log.Entry().WithError(err).Error("failed to set up tracing")
-		return nil, errors.Wrap(err, "failed to set up tracing")
+		return nil, err
 	}
 
 	otel.SetTracerProvider(tracerProvider)
