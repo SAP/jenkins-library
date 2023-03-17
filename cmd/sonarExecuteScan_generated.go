@@ -20,6 +20,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type sonarExecuteScanOptions struct {
@@ -161,23 +162,10 @@ func SonarExecuteScanCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			// // initialize tracability
-			// resAttributes := []attribute.KeyValue{
-			// 	attribute.String("piper.stepName", STEP_NAME),
-			// 	attribute.String("environment", "development"),
-			// 	attribute.String("piper.orchestrator", "n/a"),
-			// }
-			// tracerProvider, err := telemetry.InitTracer(resAttributes, GeneralConfig.Tracability)
-			// if err != nil {
-			// 	log.Entry().Errorf("TRACING FAILED: %w", err)
-			// }
-			// log.DeferExitHandler(func ()  {
-			// 	tracerProvider.Shutdown(cmd.Context())
-			// })
-
 			// add spans
 			tracer := otel.Tracer("cobra")
 			newCtx, span := tracer.Start(cmd.Context(), STEP_NAME)
+			span.SetAttributes(attribute.String("piper.stepName", STEP_NAME))
 			cmd.SetContext(newCtx)
 			log.DeferExitHandler(func () {span.End()})
 
@@ -298,7 +286,6 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().BoolVar(&stepConfig.LegacyPRHandling, "legacyPRHandling", false, "Pull-Request only: Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin). DEPRECATED: only supported in SonarQube < 7.2")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Pull-Request only: The URL to the Github API. See [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage) DEPRECATED: only supported in SonarQube < 7.2")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
-
 }
 
 // retrieve step metadata
