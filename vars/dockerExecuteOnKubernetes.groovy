@@ -305,8 +305,10 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
     try {
         SidecarUtils sidecarUtils = new SidecarUtils(script)
         def stashContent = config.stashContent
+        boolean defaultStashCreated = false
         if (config.containerName && stashContent.isEmpty()) {
             stashContent = [stashWorkspace(config, 'workspace')]
+            defaultStashCreated = true
         }
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
@@ -322,8 +324,10 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                     container(containerParams) {
                         try {
                             utils.unstashAll(stashContent)
-                            echo "invalidate stash workspace-${config.uniqueId}"
-                            stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+                            if (defaultStashCreated) {
+                                echo "invalidate stash workspace-${config.uniqueId}"
+                                stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+                            }
                             body()
                         } finally {
                             stashWorkspace(config, 'container', true, true)
