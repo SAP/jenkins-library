@@ -62,3 +62,4 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/integrationFlowTriggerIntegrationTestResponseBody
+          - name: custom/integrationFlowTriggerIntegrationTestResponseHeaders

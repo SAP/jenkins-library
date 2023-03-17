@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -159,6 +160,12 @@ func callIFlowURL(
 			log.Entry().Warnf("HTTP response body could not be read. Error: %s", readErr.Error())
 		} else if len(bodyText) > 0 {
 			commonPipelineEnvironment.custom.integrationFlowTriggerIntegrationTestResponseBody = string(bodyText)
+		}
+		headersJson, err := json.Marshal(iFlowResp.Header)
+		if err != nil {
+			log.Entry().Warnf("HTTP response headers could not be marshalled. Error: %s", err.Error())
+		} else {
+			commonPipelineEnvironment.custom.integrationFlowTriggerIntegrationTestResponseHeaders = string(headersJson)
 		}
 	} else {
 		return fmt.Errorf("request %s failed with response code %d", serviceEndpointUrl, iFlowResp.StatusCode)

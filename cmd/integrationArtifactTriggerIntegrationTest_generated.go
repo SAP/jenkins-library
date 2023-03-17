@@ -27,7 +27,8 @@ type integrationArtifactTriggerIntegrationTestOptions struct {
 
 type integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment struct {
 	custom struct {
-		integrationFlowTriggerIntegrationTestResponseBody string
+		integrationFlowTriggerIntegrationTestResponseBody    string
+		integrationFlowTriggerIntegrationTestResponseHeaders string
 	}
 }
 
@@ -38,6 +39,7 @@ func (p *integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment) per
 		value    interface{}
 	}{
 		{category: "custom", name: "integrationFlowTriggerIntegrationTestResponseBody", value: p.custom.integrationFlowTriggerIntegrationTestResponseBody},
+		{category: "custom", name: "integrationFlowTriggerIntegrationTestResponseHeaders", value: p.custom.integrationFlowTriggerIntegrationTestResponseHeaders},
 	}
 
 	errCount := 0
@@ -239,6 +241,7 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/integrationFlowTriggerIntegrationTestResponseBody"},
+							{"name": "custom/integrationFlowTriggerIntegrationTestResponseHeaders"},
 						},
 					},
 				},

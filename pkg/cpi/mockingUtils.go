@@ -191,6 +191,9 @@ func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, er
 						"#text": "valid"
 					}
 				}`))),
+			Header: map[string][]string{
+				"test": []string{"this is a test"},
+			},
 		}, nil
 	}
 	res := http.Response{
