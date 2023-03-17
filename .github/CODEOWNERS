@@ -60,6 +60,8 @@ AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 abapEnvironment*                                @SAP/jenkins-library-abap
 AbapEnvironment*                                @SAP/jenkins-library-abap
 
+ascAppUload*                                    @Mau04
+AscAppUload*                                    @Mau04
 
 #####################
 # Integration tests #
