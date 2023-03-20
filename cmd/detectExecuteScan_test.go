@@ -355,6 +355,8 @@ func TestAddDetectArgs(t *testing.T) {
 		{
 			args: []string{"--testProp1=1"},
 			options: detectExecuteScanOptions{
+				BuildTool: "mta",
+				ExcludedDirectories: []string{"dir1", "dir2"},
 				ScanProperties:  []string{"--scan1=1", "--scan2=2"},
 				ServerURL:       "https://server.url",
 				Token:           "apiToken",
@@ -367,6 +369,9 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.detector.search.depth=100",
+				"--detect.detector.search.continue=true",
+				"--detect.excluded.directories=dir1,dir2",
 				"--scan1=1",
 				"--scan2=2",
 				"--blackduck.url=https://server.url",
