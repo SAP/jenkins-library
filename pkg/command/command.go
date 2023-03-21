@@ -100,7 +100,6 @@ var ExecCommand = exec.Command
 
 // RunShell runs the specified command on the shell
 func (c *Command) RunShell(shell, script string) error {
-
 	c.prepareOut()
 
 	cmd := ExecCommand(shell)
@@ -128,7 +127,6 @@ func (c *Command) RunShell(shell, script string) error {
 //
 //	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
-
 	c.prepareOut()
 
 	cmd := ExecCommand(executable, params...)
@@ -156,7 +154,6 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 //
 //	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutableInBackground(executable string, params ...string) (Execution, error) {
-
 	c.prepareOut()
 
 	cmd := ExecCommand(executable, params...)
@@ -174,7 +171,6 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 	}
 
 	execution, err := c.startCmd(cmd)
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "starting command '%v' failed", executable)
 	}
@@ -188,7 +184,6 @@ func (c *Command) GetExitCode() int {
 }
 
 func appendEnvironment(cmd *exec.Cmd, env []string) {
-
 	if len(env) > 0 {
 
 		// When cmd.Env is nil the environment variables from the current
@@ -215,9 +210,7 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 }
 
 func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
-
 	stdout, stderr, err := cmdPipes(cmd)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "getting command pipes failed")
 	}
@@ -348,7 +341,6 @@ func matchPattern(text, pattern string) bool {
 }
 
 func (c *Command) runCmd(cmd *exec.Cmd) error {
-
 	execution, err := c.startCmd(cmd)
 	if err != nil {
 		return err
@@ -376,10 +368,9 @@ func (c *Command) runCmd(cmd *exec.Cmd) error {
 }
 
 func (c *Command) prepareOut() {
-
-	//ToDo: check use of multiwriter instead to always write into os.Stdout and os.Stdin?
-	//stdout := io.MultiWriter(os.Stdout, &stdoutBuf)
-	//stderr := io.MultiWriter(os.Stderr, &stderrBuf)
+	// ToDo: check use of multiwriter instead to always write into os.Stdout and os.Stdin?
+	// stdout := io.MultiWriter(os.Stdout, &stdoutBuf)
+	// stderr := io.MultiWriter(os.Stderr, &stderrBuf)
 
 	if c.stdout == nil {
 		c.stdout = os.Stdout
