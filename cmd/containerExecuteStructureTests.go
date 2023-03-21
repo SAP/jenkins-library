@@ -52,7 +52,7 @@ func findConfigFiles(pattern string, utils containerExecuteStructureTestsUtils) 
 }
 
 func runContainerExecuteStructureTests(config *containerExecuteStructureTestsOptions, utils containerExecuteStructureTestsUtils) error {
-	containerStructureTestsExecutable := "container-structure-test"
+	containerStructureTestsExecutable := "./container-structure-test"
 	var parameters []string
 	parameters = append(parameters, "test")
 	configFiles, err := findConfigFiles(config.TestConfiguration, utils)
