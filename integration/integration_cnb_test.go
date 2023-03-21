@@ -46,6 +46,9 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+		Environment: map[string]string{
+			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
+		},
 	})
 	defer container.terminate(t)
 
@@ -54,6 +57,9 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 		User:    "cnb",
 		TestDir: []string{"testdata"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+		Environment: map[string]string{
+			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
+		},
 	})
 	defer container2.terminate(t)
 
