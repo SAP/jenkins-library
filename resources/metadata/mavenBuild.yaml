@@ -74,6 +74,7 @@ spec:
         description: Defines if the pom files should be flattened to support ci friendly maven versioning.
         scope:
           - PARAMETERS
+          - STEPS
         default: true
       - name: verify
         type: bool
