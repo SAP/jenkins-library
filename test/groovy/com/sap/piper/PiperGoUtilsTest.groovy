@@ -124,8 +124,8 @@ class PiperGoUtilsTest extends BasePiperTest {
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
         shellCallRule.setReturnValue('[ -x ./piper ]', 1)
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
+        shellCallRule.setReturnValue('curl --insecure --retry 5 --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --retry 5 --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
 
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
@@ -141,8 +141,8 @@ class PiperGoUtilsTest extends BasePiperTest {
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
         shellCallRule.setReturnValue('[ -x ./piper ]', 1)
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
+        shellCallRule.setReturnValue('curl --insecure --retry 5 --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --retry 5 --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
 
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
