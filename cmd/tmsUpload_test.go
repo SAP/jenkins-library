@@ -144,19 +144,6 @@ func (cim *communicationInstanceMock) UploadFileToNode(nodeName, fileId, descrip
 	}
 }
 
-func (cim *communicationInstanceMock) ExportFileToNode(nodeName, fileId, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
-	var nodeUploadResponseEntity tms.NodeUploadResponseEntity
-	if description != CUSTOM_DESCRIPTION || nodeName != NODE_NAME || fileId != strconv.FormatInt(FILE_ID, 10) || namedUser != NAMED_USER {
-		return nodeUploadResponseEntity, errors.New(INVALID_INPUT_MSG)
-	}
-
-	if cim.isErrorOnExportFileToNode {
-		return nodeUploadResponseEntity, errors.New("Something went wrong on exporting file to node")
-	} else {
-		return cim.exportFileToNodeResponse, nil
-	}
-}
-
 func mapToJson(m map[string]interface{}) (string, error) {
 	b, err := json.Marshal(m)
 	if err != nil {

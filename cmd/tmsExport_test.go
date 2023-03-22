@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/tms"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,6 +22,19 @@ func newTmsExportTestsUtils() tmsExportMockUtils {
 		FilesMock:      &mock.FilesMock{},
 	}
 	return utils
+}
+
+func (cim *communicationInstanceMock) ExportFileToNode(nodeName, fileId, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
+	var nodeUploadResponseEntity tms.NodeUploadResponseEntity
+	if description != CUSTOM_DESCRIPTION || nodeName != NODE_NAME || fileId != strconv.FormatInt(FILE_ID, 10) || namedUser != NAMED_USER {
+		return nodeUploadResponseEntity, errors.New(INVALID_INPUT_MSG)
+	}
+
+	if cim.isErrorOnExportFileToNode {
+		return nodeUploadResponseEntity, errors.New("Something went wrong on exporting file to node")
+	} else {
+		return cim.exportFileToNodeResponse, nil
+	}
 }
 
 func TestRunTmsExport(t *testing.T) {
