@@ -91,7 +91,7 @@ void call(Map parameters = [:]) {
             List credentials = [
                 [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
             ]
-            utils.unstashAll(config.stashContent)
+            //utils.unstashAll(config.stashContent)
             piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
             return
         }
