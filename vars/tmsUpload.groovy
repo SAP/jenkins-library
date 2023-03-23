@@ -9,6 +9,7 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/tmsUpload.yaml'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
@@ -85,6 +86,14 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('nodeName')
             .withMandatoryProperty('credentialsId')
             .use()
+
+        if (config.useGoStep == true) {
+            List credentials = [
+                [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
+            ]
+            piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+            return
+        }
 
         // telemetry reporting
         new Utils().pushToSWA([
