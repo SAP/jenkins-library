@@ -60,6 +60,9 @@ AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 abapEnvironment*                                @SAP/jenkins-library-abap
 AbapEnvironment*                                @SAP/jenkins-library-abap
 
+integrationArtifact*                            @SAP/jenkins-library-integration-suite
+IntegrationArtifact*                            @SAP/jenkins-library-integration-suite
+
 
 #####################
 # Integration tests #
@@ -83,6 +86,9 @@ integration/testdata/TestCnbIntegration/        @SAP/jenkins-library-cnb
 
 /pkg/abap/                                      @SAP/jenkins-library-abap
 /pkg/abaputils/                                 @SAP/jenkins-library-abap
+
+/pkg/cpi/                                       @SAP/jenkins-library-integration-suite
+/pkg/apim/                                      @SAP/jenkins-library-integration-suite
 
 ####################
 # Misc             #
