@@ -50,7 +50,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Proxy which should be used for the communication with the Transport Management Service Backend.
      */
-    'proxy'
+    'proxy',
+    'useGoStep'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + GENERAL_CONFIG_KEYS
 
