@@ -26,7 +26,6 @@ type tmsExportOptions struct {
 	MtaVersion               string                 `json:"mtaVersion,omitempty"`
 	NodeExtDescriptorMapping map[string]interface{} `json:"nodeExtDescriptorMapping,omitempty"`
 	Proxy                    string                 `json:"proxy,omitempty"`
-	StashContent             []string               `json:"stashContent,omitempty"`
 }
 
 type tmsExportInflux struct {
@@ -173,7 +172,6 @@ func addTmsExportFlags(cmd *cobra.Command, stepConfig *tmsExportOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtaVersion, "mtaVersion", `*`, "Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.")
 
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.")
-	cmd.Flags().StringSliceVar(&stepConfig.StashContent, "stashContent", []string{`buildResult`}, "If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: [\"deployDescriptor\", \"buildResult\"]. By default, the build result is considered.")
 
 	cmd.MarkFlagRequired("tmsServiceKey")
 	cmd.MarkFlagRequired("nodeName")
@@ -282,15 +280,6 @@ func tmsExportMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_proxy"),
-					},
-					{
-						Name:        "stashContent",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{`buildResult`},
 					},
 				},
 			},

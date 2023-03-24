@@ -60,7 +60,6 @@ func convertExportOptions(exportConfig tmsExportOptions) tms.Options {
 	config.MtaVersion = exportConfig.MtaVersion
 	config.NodeExtDescriptorMapping = exportConfig.NodeExtDescriptorMapping
 	config.Proxy = exportConfig.Proxy
-	config.StashContent = exportConfig.StashContent
 	config.Verbose = GeneralConfig.Verbose
 	return config
 }
