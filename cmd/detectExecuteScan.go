@@ -817,12 +817,15 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	projectVersionName := getVersionName(config)
-	projectVersion := sys.Client.GetProjectVersion(config.ProjectName, projectVersionName)
+	projectVersion, err := sys.Client.GetProjectVersion(config.ProjectName, projectVersionName)
+	if err != nil {
+		return "", err
+	}
 	projectVersionUrl := projectVersion.Href
 	err = record.AddKeyData("version",
 		projectVersion.Name,
-		projectVersion.Href,
-		projectVersion.Href)
+		projectVersionUrl,
+		projectVersionUrl)
 	if err != nil {
 		return "", err
 	}
