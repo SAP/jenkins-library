@@ -406,6 +406,27 @@ spec:
         scope:
           - PARAMETERS
         default: true
+      - name: buildTool
+        type: string
+        description: "Defines the tool which is used for building the artifact."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: buildTool
+      - name: excludedDirectories
+        description:
+          "List of directories which should be excluded from the scan."
+        aliases:
+          - name: detect/excludedDirectories
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: influx
