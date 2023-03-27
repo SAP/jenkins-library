@@ -331,10 +331,11 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                                 echo "invalidate stash workspace-${config.uniqueId}"
                                 stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
                             }
-                            body()
+                            def result = body()
                             if (config.verbose) {
                                 lsDir('Directory content after body execution')
                             }
+                            return result
                         } finally {
                             stashWorkspace(config, 'container', true, true)
                         }
