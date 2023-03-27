@@ -34,7 +34,7 @@ func runIntegrationArtifactTransport(config *integrationArtifactTransportOptions
 	return CreateIntegrationArtifactTransportRequest(config, apimData)
 }
 
-// CreateIntegrationArtifactTransportRequest - Create a transport request for Integration Package
+//CreateIntegrationArtifactTransportRequest - Create a transport request for Integration Package
 func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransportOptions, apistruct apim.Bundle) error {
 	httpMethod := http.MethodPost
 	httpClient := apistruct.Client
@@ -90,7 +90,7 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 	return errors.Errorf("integration flow deployment failed, response Status code: %v", createTransportRequestResp.StatusCode)
 }
 
-// pollTransportStatus - Poll the integration package transport processing, return status or error details
+//pollTransportStatus - Poll the integration package transport processing, return status or error details
 func pollTransportStatus(processId string, remainingRetries int, config *integrationArtifactTransportOptions, httpClient piperhttp.Sender, apiHost string) error {
 
 	if remainingRetries <= 0 {
@@ -126,7 +126,7 @@ func pollTransportStatus(processId string, remainingRetries int, config *integra
 	return nil
 }
 
-// GetJSONPayload -return http payload as byte array
+//GetJSONPayload -return http payload as byte array
 func GetCPITransportReqPayload(config *integrationArtifactTransportOptions) (*bytes.Buffer, error) {
 	jsonObj := gabs.New()
 	jsonObj.Set(rand.Intn(5000), "id")
@@ -153,7 +153,7 @@ func GetCPITransportReqPayload(config *integrationArtifactTransportOptions) (*by
 	return bytes.NewBuffer(jsonBody), nil
 }
 
-// getIntegrationTransportProcessingStatus - Get integration package transport request processing Status
+//getIntegrationTransportProcessingStatus - Get integration package transport request processing Status
 func getIntegrationTransportProcessingStatus(config *integrationArtifactTransportOptions, httpClient piperhttp.Sender, apiHost string, processId string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
@@ -192,7 +192,7 @@ func getIntegrationTransportProcessingStatus(config *integrationArtifactTranspor
 	return "", errors.Errorf("failed to get transport request processing status, response Status code: %v", transportProcStatusResp.StatusCode)
 }
 
-// getTransportError - Get integration package transport failures error details
+//getTransportError - Get integration package transport failures error details
 func getIntegrationTransportError(config *integrationArtifactTransportOptions, httpClient piperhttp.Sender, apiHost string, processId string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
