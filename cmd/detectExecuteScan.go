@@ -301,6 +301,15 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	// instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
 
+	if config.BuildTool == "mta" {
+		args = append(args, "--detect.detector.search.depth=100")
+		args = append(args, "--detect.detector.search.continue=true")
+	}
+
+	if len(config.ExcludedDirectories) != 0 {
+		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
+
 	if config.ScanOnChanges {
 		args = append(args, "--report")
 		config.Unmap = false
