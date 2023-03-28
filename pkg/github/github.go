@@ -7,10 +7,10 @@ import (
 	"net/url"
 	"strings"
 
+	sodium "github.com/GoKillers/libsodium-go/cryptobox"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/google/go-github/v45/github"
-	"github.com/jamesruan/sodium"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -157,14 +157,11 @@ func CreateSecret(secretName, secretValue string, publicKey *github.PublicKey) (
 		return nil, err
 	}
 
-	secretBytes := sodium.Bytes(secretValue)
-	encryptedSecret := secretBytes.SealedBox(sodium.BoxPublicKey{Bytes: decodedPublicKey})
-	encryptedSecretB64 := base64.StdEncoding.EncodeToString(encryptedSecret)
-
-	secret := &github.EncryptedSecret{
-		Name:           secretName,
-		KeyID:          publicKey.GetKeyID(),
-		EncryptedValue: encryptedSecretB64,
+	secretBytes := []byte(secretValue)
+	_, exit := sodium.CryptoBoxSeal(secretBytes, decodedPublicKey)
+	if exit != 0 {
+		log.Entry().Warn("Could not encode secret")
+		return nil, err
 	}
-	return secret, nil
+	return nil, nil
 }
