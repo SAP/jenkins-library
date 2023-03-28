@@ -314,20 +314,36 @@ func TestGetClosedIssuesText(t *testing.T) {
 }
 
 func TestGetReleaseDeltaText(t *testing.T) {
-	myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-		Owner:      "TEST",
-		Repository: "test",
-		ServerURL:  "https://github.com",
-		Version:    "1.1",
-	}
-	lastTag := "1.0"
-	lastRelease := github.RepositoryRelease{
-		TagName: &lastTag,
-	}
+	t.Run("test case without TagPrefix for new release", func(t *testing.T) {
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "TEST",
+			Repository: "test",
+			ServerURL:  "https://github.com",
+			Version:    "1.1",
+		}
+		lastTag := "1.0"
+		lastRelease := github.RepositoryRelease{
+			TagName: &lastTag,
+		}
+		res := getReleaseDeltaText(&myGithubPublishReleaseOptions, &lastRelease)
+		assert.Equal(t, "\n**Changes**\n[1.0...1.1](https://github.com/TEST/test/compare/1.0...1.1)\n", res)
+	})
 
-	res := getReleaseDeltaText(&myGithubPublishReleaseOptions, &lastRelease)
-
-	assert.Equal(t, "\n**Changes**\n[1.0...1.1](https://github.com/TEST/test/compare/1.0...1.1)\n", res)
+	t.Run("test case with TagPrefix for new release", func(t *testing.T) {
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "TEST",
+			Repository: "test",
+			ServerURL:  "https://github.com",
+			Version:    "1.1",
+			TagPrefix:  "release/",
+		}
+		lastTag := "1.0"
+		lastRelease := github.RepositoryRelease{
+			TagName: &lastTag,
+		}
+		res := getReleaseDeltaText(&myGithubPublishReleaseOptions, &lastRelease)
+		assert.Equal(t, "\n**Changes**\n[1.0...release/1.1](https://github.com/TEST/test/compare/1.0...release/1.1)\n", res)
+	})
 }
 
 func TestUploadReleaseAsset(t *testing.T) {

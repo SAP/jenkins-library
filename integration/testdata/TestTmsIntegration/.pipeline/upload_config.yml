@@ -4,6 +4,7 @@ steps:
   tmsUpload:
     useGoStep: true
     nodeName: PIPER-TEST
+    namedUser: Piper-Upload
     mtaPath: scv_x.mtar
     verbose: true
     mtaVersion: 1.0.0
