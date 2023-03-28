@@ -184,7 +184,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "ppiper/container-structure-test", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
+				{Image: "gcr.io/gcp-runtimes/container-structure-test:debug", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 		},
 	}

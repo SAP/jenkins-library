@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type tmsUploadOptions struct {
+type tmsExportOptions struct {
 	TmsServiceKey            string                 `json:"tmsServiceKey,omitempty"`
 	CustomDescription        string                 `json:"customDescription,omitempty"`
 	NamedUser                string                 `json:"namedUser,omitempty"`
@@ -26,10 +26,9 @@ type tmsUploadOptions struct {
 	MtaVersion               string                 `json:"mtaVersion,omitempty"`
 	NodeExtDescriptorMapping map[string]interface{} `json:"nodeExtDescriptorMapping,omitempty"`
 	Proxy                    string                 `json:"proxy,omitempty"`
-	StashContent             []string               `json:"stashContent,omitempty"`
 }
 
-type tmsUploadInflux struct {
+type tmsExportInflux struct {
 	step_data struct {
 		fields struct {
 			tms bool
@@ -39,7 +38,7 @@ type tmsUploadInflux struct {
 	}
 }
 
-func (i *tmsUploadInflux) persist(path, resourceName string) {
+func (i *tmsExportInflux) persist(path, resourceName string) {
 	measurementContent := []struct {
 		measurement string
 		valType     string
@@ -62,28 +61,28 @@ func (i *tmsUploadInflux) persist(path, resourceName string) {
 	}
 }
 
-// TmsUploadCommand This step allows you to upload an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
-func TmsUploadCommand() *cobra.Command {
-	const STEP_NAME = "tmsUpload"
+// TmsExportCommand This step allows you to export an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
+func TmsExportCommand() *cobra.Command {
+	const STEP_NAME = "tmsExport"
 
-	metadata := tmsUploadMetadata()
-	var stepConfig tmsUploadOptions
+	metadata := tmsExportMetadata()
+	var stepConfig tmsExportOptions
 	var startTime time.Time
-	var influx tmsUploadInflux
+	var influx tmsExportInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createTmsUploadCmd = &cobra.Command{
+	var createTmsExportCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This step allows you to upload an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.",
-		Long: `This step allows you to upload an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape. The MTA file is attached to a new transport request which is added directly to the import queue of the specified transport node.
+		Short: "This step allows you to export an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.",
+		Long: `This step allows you to export an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape. The MTA file is attached to a new transport request which is added to the import queues of the follow-on transport nodes of the specified export node.
 
 TMS lets you manage transports between SAP Business Technology Platform accounts in Neo and Cloud Foundry, such as from DEV to TEST and PROD accounts.
 For more information, see [official documentation of SAP Cloud Transport Management service](https://help.sap.com/viewer/p/TRANSPORT_MANAGEMENT_SERVICE)
 
 !!! note "Prerequisites"
-* You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of a node to be used for uploading an MTA file.
+* You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of your transport landscape.
 * A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of tmsServiceKey parameter.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -102,6 +101,11 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 				return err
 			}
 			log.RegisterSecret(stepConfig.TmsServiceKey)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient = &splunk.Splunk{}
@@ -149,38 +153,37 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			tmsUpload(stepConfig, &stepTelemetryData, &influx)
+			tmsExport(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addTmsUploadFlags(createTmsUploadCmd, &stepConfig)
-	return createTmsUploadCmd
+	addTmsExportFlags(createTmsExportCmd, &stepConfig)
+	return createTmsExportCmd
 }
 
-func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
+func addTmsExportFlags(cmd *cobra.Command, stepConfig *tmsExportOptions) {
 	cmd.Flags().StringVar(&stepConfig.TmsServiceKey, "tmsServiceKey", os.Getenv("PIPER_tmsServiceKey"), "Service key JSON string to access the SAP Cloud Transport Management service instance APIs. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.")
 	cmd.Flags().StringVar(&stepConfig.CustomDescription, "customDescription", os.Getenv("PIPER_customDescription"), "Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit ID.")
 	cmd.Flags().StringVar(&stepConfig.NamedUser, "namedUser", `Piper-Pipeline`, "Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'. If pipeline is running on Jenkins, the name of the user, who started the job, is tried to be used at first.")
-	cmd.Flags().StringVar(&stepConfig.NodeName, "nodeName", os.Getenv("PIPER_nodeName"), "Defines the name of the node to which the *.mtar file should be uploaded.")
-	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the relative path to *.mtar file for the upload to the SAP Cloud Transport Management service. If not specified, it will use the *.mtar file created in mtaBuild.")
+	cmd.Flags().StringVar(&stepConfig.NodeName, "nodeName", os.Getenv("PIPER_nodeName"), "Defines the name of the export node - starting node in TMS landscape. The transport request is added to the queues of the follow-on nodes of export node.")
+	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the relative path to *.mtar file for the export to the SAP Cloud Transport Management service. If not specified, it will use the *.mtar file created in mtaBuild.")
 	cmd.Flags().StringVar(&stepConfig.MtaVersion, "mtaVersion", `*`, "Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.")
 
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.")
-	cmd.Flags().StringSliceVar(&stepConfig.StashContent, "stashContent", []string{`buildResult`}, "If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: [\"deployDescriptor\", \"buildResult\"]. By default, the build result is considered.")
 
 	cmd.MarkFlagRequired("tmsServiceKey")
 	cmd.MarkFlagRequired("nodeName")
 }
 
 // retrieve step metadata
-func tmsUploadMetadata() config.StepData {
+func tmsExportMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "tmsUpload",
+			Name:        "tmsExport",
 			Aliases:     []config.Alias{},
-			Description: "This step allows you to upload an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.",
+			Description: "This step allows you to export an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -277,15 +280,6 @@ func tmsUploadMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_proxy"),
-					},
-					{
-						Name:        "stashContent",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{`buildResult`},
 					},
 				},
 			},

@@ -294,7 +294,7 @@ func mavenBuildMetadata() config.StepData {
 					{
 						Name:        "flatten",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"PARAMETERS", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
