@@ -303,17 +303,17 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if config.BuildTool == "mta" {
 
-		if !CheckIfArgumentIsInScanProperties(config, "detect.detector.search.depth") {
+		if !checkIfArgumentIsInScanProperties(config, "detect.detector.search.depth") {
 			args = append(args, "--detect.detector.search.depth=100")
 		}
 
-		if !CheckIfArgumentIsInScanProperties(config, "detect.detector.search.continue") {
+		if !checkIfArgumentIsInScanProperties(config, "detect.detector.search.continue") {
 			args = append(args, "--detect.detector.search.continue=true")
 		}
 
 	}
 
-	if len(config.ExcludedDirectories) != 0 && !CheckIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
+	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
 		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
 	}
 
@@ -431,7 +431,7 @@ func getVersionName(config detectExecuteScanOptions) string {
 	return detectVersionName
 }
 
-func CheckIfArgumentIsInScanProperties(config detectExecuteScanOptions, argumentName string) bool {
+func checkIfArgumentIsInScanProperties(config detectExecuteScanOptions, argumentName string) bool {
 	for _, argument := range config.ScanProperties {
 		if strings.Contains(argument, argumentName) {
 			return true
