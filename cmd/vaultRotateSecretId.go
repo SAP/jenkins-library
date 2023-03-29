@@ -133,6 +133,9 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 			return err
 		}
 	case "github":
+		// Additional info:
+		// https://github.com/google/go-github/blob/master/example/newreposecretwithxcrypto/main.go
+
 		ctx, client, err := github.NewClient(config.GithubPersonalAccessToken, config.GithubAPIURL, "", []string{})
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to GitHub Actions")

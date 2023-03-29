@@ -7,11 +7,13 @@ import (
 	"net/url"
 	"strings"
 
-	sodium "github.com/GoKillers/libsodium-go/cryptobox"
+	"crypto/rand"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/google/go-github/v45/github"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/oauth2"
 )
 
@@ -150,6 +152,8 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 	return existingIssue, nil
 }
 
+// CreateSecret creates an encrypted secret using a public key from a GitHub repository, which can be sent through the GitHub API
+// https://github.com/google/go-github/blob/master/example/newreposecretwithxcrypto/main.go
 func CreateSecret(secretName, secretValue string, publicKey *github.PublicKey) (*github.EncryptedSecret, error) {
 	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey.GetKey())
 	if err != nil {
@@ -157,11 +161,21 @@ func CreateSecret(secretName, secretValue string, publicKey *github.PublicKey) (
 		return nil, err
 	}
 
+	var boxKey [32]byte
+	copy(boxKey[:], decodedPublicKey)
 	secretBytes := []byte(secretValue)
-	_, exit := sodium.CryptoBoxSeal(secretBytes, decodedPublicKey)
-	if exit != 0 {
-		log.Entry().Warn("Could not encode secret")
+	encryptedSecretBytes, err := box.SealAnonymous([]byte{}, secretBytes, &boxKey, rand.Reader)
+	if err != nil {
+		log.Entry().Warn("Could not encrypt secret")
 		return nil, err
 	}
-	return nil, nil
+
+	encryptedSecretString := base64.StdEncoding.EncodeToString(encryptedSecretBytes)
+
+	githubSecret := &github.EncryptedSecret{
+		Name:           secretName,
+		KeyID:          publicKey.GetKeyID(),
+		EncryptedValue: encryptedSecretString,
+	}
+	return githubSecret, nil
 }
