@@ -253,7 +253,9 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd}
+	// kaniko build context needs a proper prefix, for local directory it is 'dir://'
+	// for more details see https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", "dir://" + cwd}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
 	tmpDir, err := fileUtils.TempDir("", "*-kanikoExecute")
