@@ -1,14 +1,14 @@
 metadata:
-  name: tmsUpload
-  description: This step allows you to upload an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
+  name: tmsExport
+  description: This step allows you to export an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
   longDescription: |-
-    This step allows you to upload an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape. The MTA file is attached to a new transport request which is added directly to the import queue of the specified transport node.
+    This step allows you to export an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape. The MTA file is attached to a new transport request which is added to the import queues of the follow-on transport nodes of the specified export node.
 
     TMS lets you manage transports between SAP Business Technology Platform accounts in Neo and Cloud Foundry, such as from DEV to TEST and PROD accounts.
     For more information, see [official documentation of SAP Cloud Transport Management service](https://help.sap.com/viewer/p/TRANSPORT_MANAGEMENT_SERVICE)
 
     !!! note "Prerequisites"
-    * You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of a node to be used for uploading an MTA file.
+    * You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of your transport landscape.
     * A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of tmsServiceKey parameter.
 spec:
   inputs:
@@ -53,7 +53,7 @@ spec:
           - STAGES
       - name: nodeName
         type: string
-        description: Defines the name of the node to which the *.mtar file should be uploaded.
+        description: Defines the name of the export node - starting node in TMS landscape. The transport request is added to the queues of the follow-on nodes of export node.
         scope:
           - PARAMETERS
           - STEPS
@@ -61,7 +61,7 @@ spec:
         mandatory: true
       - name: mtaPath
         type: string
-        description: Defines the relative path to *.mtar file for the upload to the SAP Cloud Transport Management service. If not specified, it will use the *.mtar file created in mtaBuild.
+        description: Defines the relative path to *.mtar file for the export to the SAP Cloud Transport Management service. If not specified, it will use the *.mtar file created in mtaBuild.
         scope:
           - PARAMETERS
           - STEPS
@@ -87,23 +87,6 @@ spec:
       - name: proxy
         type: string
         description: Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.
-        scope:
-          - PARAMETERS
-          - STEPS
-          - STAGES
-      - name: stashContent
-        type: '[]string'
-        description: 'If specific stashes should be considered during Jenkins execution, their names need to be passed as a list via this parameter, e.g. stashContent: ["deployDescriptor", "buildResult"]. By default, the build result is considered.'
-        default: ["buildResult"]
-        scope:
-          - PARAMETERS
-          - STEPS
-          - STAGES
-      - name: useGoStep
-        type: bool
-        mandatory: false
-        default: false
-        description: 'Use Go implementation.'
         scope:
           - PARAMETERS
           - STEPS
