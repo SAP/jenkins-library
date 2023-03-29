@@ -82,7 +82,7 @@ spec:
           - STEPS
       - name: role
         type: string
-        description: Role of the local repository. Possible values are 'SOURCE' (for repositories on development systems - Default) and 'TARGET' (for repositories on target systems). Local repositories with a TARGET role cannot be the source of code changes.
+        description: Role of the local repository. Possible values are `SOURCE` (for repositories on development systems - Default) and `TARGET` (for repositories on target systems). Local repositories with a `TARGET` role cannot be the source of code changes.
         scope:
           - PARAMETERS
           - STAGES
@@ -93,7 +93,7 @@ spec:
         default: SOURCE
       - name: vSID
         type: string
-        description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository. For more information, see [Background Information - vSID](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/8edc17edfc374908bd8a1615ea5ab7b7.html) on SAP Help Portal.
+        description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository. For more information, see [Background Information - vSID](https://help.sap.com/docs/ABAP_PLATFORM_NEW/4a368c163b08418890a406d413933ba7/8edc17edfc374908bd8a1615ea5ab7b7.html) on SAP Help Portal.
         scope:
           - PARAMETERS
           - STAGES
@@ -119,7 +119,7 @@ spec:
           - STEPS
       - name: scope
         type: string
-        description: Scope of objects to be deployed. Possible values are CRNTCOMMIT (current commit - Default) and LASTACTION (last repository action). The default option deploys all objects that existed in the repository when the commit was created. LASTACTION only deploys the object difference of the last action in the repository.
+        description: Scope of objects to be deployed. Possible values are `CRNTCOMMIT` (current commit - Default) and `LASTACTION` (last repository action). The default option deploys all objects that existed in the repository when the commit was created. `LASTACTION` only deploys the object difference of the last action in the repository.
         scope:
           - PARAMETERS
           - STAGES
@@ -133,7 +133,7 @@ spec:
           - STEPS
       - name: configuration
         type: "map[string]interface{}"
-        description: "Configuration parameters for the repository. Provide the parameters as a key-value pair map in the following format: `<configuration parameter>`:`<Value>`. For a list of available configuration parameters, see [Configuration Parameters for Repositories](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/99e471efcbee4a0faec82f9dd15897e1.html)."
+        description: "Configuration parameters for the repository. Provide the parameters as a key-value pair map in the following format: `<configuration parameter>`:`<Value>`. For a list of available configuration parameters, see [Configuration Parameters for Repositories](https://help.sap.com/docs/ABAP_PLATFORM_NEW/4a368c163b08418890a406d413933ba7/99e471efcbee4a0faec82f9dd15897e1.html)."
         scope:
           - PARAMETERS
           - STAGES
@@ -144,7 +144,7 @@ spec:
           - name: gctsRepositoryConfigurations
       - name: queryParameters
         type: "map[string]interface{}"
-        description: Specifies pairs of key and value query parameters for the api requests
+        description: Add query parameters (for API requests) that apply to all endpoints of the step. Provide the parameters as key-value pair map in the format `<query parameter>:<value>`.
         scope:
           - PARAMETERS
           - STAGES
@@ -152,7 +152,7 @@ spec:
         mandatory: false
       - name: skipSSLVerification
         type: bool
-        description: You can skip the SSL (Secure Socket Layer) verification for the http client
+        description: Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.
         scope:
           - PARAMETERS
           - STAGES
