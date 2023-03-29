@@ -2,7 +2,7 @@
 // +build integration
 
 // can be executed with
-// go test -v -tags integration -run TestTmsUploadIntegration ./integration
+// go test -v -tags integration -run TestTmsIntegration ./integration
 
 package main
 
@@ -31,7 +31,7 @@ func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
-		TestDir:     []string{"testdata", "TestTmsUploadIntegration"},
+		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
@@ -57,7 +57,7 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
-		TestDir:     []string{"testdata", "TestTmsUploadIntegration"},
+		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
@@ -82,7 +82,7 @@ func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
 		User:    "root",
-		TestDir: []string{"testdata", "TestTmsUploadIntegration"},
+		TestDir: []string{"testdata", "TestTmsIntegration"},
 	})
 	defer container.terminate(t)
 
@@ -104,7 +104,7 @@ func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
-		TestDir:     []string{"testdata", "TestTmsUploadIntegration"},
+		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
@@ -125,12 +125,12 @@ func TestTmsUploadIntegrationYaml(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
-		TestDir:     []string{"testdata", "TestTmsUploadIntegration"},
+		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("tmsUpload", "--customConfig=.pipeline/tms_integration_test_config.yml")
+	err := container.whenRunningPiperCommand("tmsUpload", "--customConfig=.pipeline/upload_config.yml")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
