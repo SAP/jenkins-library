@@ -41,6 +41,8 @@ func runTmsUpload(uploadConfig tmsUploadOptions, communicationInstance tms.Commu
 }
 
 func convertUploadOptions(uploadConfig tmsUploadOptions) tms.Options {
+	log.Entry().Infof("- named user: %v", uploadConfig.NamedUser)
+
 	var config tms.Options
 	config.TmsServiceKey = uploadConfig.TmsServiceKey
 	config.CustomDescription = uploadConfig.CustomDescription
