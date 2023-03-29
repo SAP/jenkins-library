@@ -301,6 +301,22 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	// instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
 
+	if config.BuildTool == "mta" {
+
+		if !checkIfArgumentIsInScanProperties(config, "detect.detector.search.depth") {
+			args = append(args, "--detect.detector.search.depth=100")
+		}
+
+		if !checkIfArgumentIsInScanProperties(config, "detect.detector.search.continue") {
+			args = append(args, "--detect.detector.search.continue=true")
+		}
+
+	}
+
+	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
+		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
+
 	if config.ScanOnChanges {
 		args = append(args, "--report")
 		config.Unmap = false
@@ -413,6 +429,16 @@ func getVersionName(config detectExecuteScanOptions) string {
 		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
 	}
 	return detectVersionName
+}
+
+func checkIfArgumentIsInScanProperties(config detectExecuteScanOptions, argumentName string) bool {
+	for _, argument := range config.ScanProperties {
+		if strings.Contains(argument, argumentName) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulnerabilities, influx *detectExecuteScanInflux, sys *blackduckSystem) reporting.ScanReport {
