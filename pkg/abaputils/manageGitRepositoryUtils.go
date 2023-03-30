@@ -30,51 +30,13 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		status = pullEntity.Status
 		log.Entry().WithField("StatusCode", responseStatus).Info("Status: " + pullEntity.StatusDescription)
 		if pullEntity.Status != "R" {
-			printTransportLogs := true
-			if serviceContainsNewLogEntities(connectionDetails, client) {
-				PrintLogs(repositoryName, connectionDetails, client)
-				printTransportLogs = false
-			}
-			if pullEntity.Status == "E" {
-				log.SetErrorCategory(log.ErrorUndefined)
-				PrintLegacyLogs(repositoryName, connectionDetails, client, true, printTransportLogs)
-			} else {
-				PrintLegacyLogs(repositoryName, connectionDetails, client, false, printTransportLogs)
-			}
+
+			PrintLogs(repositoryName, connectionDetails, client)
 			break
 		}
 		time.Sleep(pollIntervall)
 	}
 	return status, nil
-}
-
-func serviceContainsNewLogEntities(connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (newLogEntitiesAvailable bool) {
-
-	newLogEntitiesAvailable = false
-	details := connectionDetails
-	details.URL = details.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/"
-	resp, err := GetHTTPResponse("GET", details, nil, client)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	var entitySet EntitySetsForManageGitRepository
-
-	// Parse response
-	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
-
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &entitySet)
-
-	for _, entitySet := range entitySet.EntitySets {
-		if entitySet == "LogOverviews" || entitySet == "LogProtocols" {
-			return true
-		}
-	}
-	return
-
 }
 
 func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
@@ -155,64 +117,6 @@ func printLog(logEntry LogResultsV2) {
 		for _, entry := range logEntry.ToLogProtocol.Results {
 			log.Entry().Debug(entry.Description)
 		}
-	}
-
-}
-
-// PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
-func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool, includeTransportLog bool) {
-
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_log,to_Execution_log"
-	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
-	if err != nil {
-		return
-	}
-	// Sort logs
-	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
-		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
-	})
-
-	sort.SliceStable(entity.ToTransportLog.Results, func(i, j int) bool {
-		return entity.ToTransportLog.Results[i].Index < entity.ToTransportLog.Results[j].Index
-	})
-
-	// Show transport and execution log if either the action was erroenous on the system or the log level is set to "debug" (verbose = true)
-	if errorOnSystem {
-		if includeTransportLog {
-			log.Entry().Info("-------------------------")
-			log.Entry().Info("Transport Log")
-			log.Entry().Info("-------------------------")
-			for _, logEntry := range entity.ToTransportLog.Results {
-
-				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
-			}
-		}
-
-		log.Entry().Info("-------------------------")
-		log.Entry().Info("Execution Log")
-		log.Entry().Info("-------------------------")
-		for _, logEntry := range entity.ToExecutionLog.Results {
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
-		}
-		log.Entry().Info("-------------------------")
-	} else {
-		if includeTransportLog {
-			log.Entry().Debug("-------------------------")
-			log.Entry().Debug("Transport Log")
-			log.Entry().Debug("-------------------------")
-			for _, logEntry := range entity.ToTransportLog.Results {
-
-				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
-			}
-		}
-
-		log.Entry().Debug("-------------------------")
-		log.Entry().Debug("Execution Log")
-		log.Entry().Debug("-------------------------")
-		for _, logEntry := range entity.ToExecutionLog.Results {
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
-		}
-		log.Entry().Debug("-------------------------")
 	}
 
 }
