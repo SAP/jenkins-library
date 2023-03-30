@@ -481,6 +481,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			DockerConfigJSON:          ".pipeline/docker/config.json",
 			RunHelmTests:              true,
 			ShowTestLogs:              true,
+			HelmTestWaitSeconds:       300,
 		}
 
 		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
@@ -538,6 +539,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--timeout",
+			"300",
 			"--logs",
 		}, mockUtils.Calls[2].Params, "Wrong test parameters")
 	})
