@@ -99,15 +99,6 @@ spec:
           - PARAMETERS
           - STEPS
           - STAGES
-      - name: useGoStep
-        type: bool
-        mandatory: false
-        default: false
-        description: 'Use Go implementation.'
-        scope:
-          - PARAMETERS
-          - STEPS
-          - STAGES
   outputs:
     resources:
       - name: influx

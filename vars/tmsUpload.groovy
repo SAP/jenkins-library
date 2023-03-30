@@ -88,6 +88,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('credentialsId')
             .use()
 
+        echo "[TransportManagementService] useGoStep: '${config.useGoStep}'"
         if (config.useGoStep == true) {
             List credentials = [
                 [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
