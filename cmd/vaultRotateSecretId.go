@@ -83,9 +83,9 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 
 	log.Entry().Debugf("Your secret ID is about to expire in %.0f", ttl.Round(time.Hour*24).Hours()/24)
 
-	// if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
-	// 	return nil
-	// }
+	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
+		return nil
+	}
 
 	newSecretID, err := utils.GenerateNewAppRoleSecret(GeneralConfig.VaultRoleSecretID, roleName)
 
