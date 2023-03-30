@@ -51,6 +51,10 @@ import static com.sap.piper.Prerequisites.checkScript
      * Proxy which should be used for the communication with the Transport Management Service Backend.
      */
     'proxy',
+    /**
+     * Toggle to activate a new Golang implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
     'useGoStep'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + GENERAL_CONFIG_KEYS
