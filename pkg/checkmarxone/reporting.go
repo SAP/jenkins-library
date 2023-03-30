@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -22,8 +21,8 @@ import (
 type CheckmarxOneReportData struct {
 	ToolName             string         `json:"toolName"`
 	ProjectName          string         `json:"projectName"`
-	ProjectID            int64          `json:"projectID"`
-	ScanID               int64          `json:"scanID"`
+	ProjectID            string         `json:"projectID"`
+	ScanID               string         `json:"scanID"`
 	GroupName            string         `json:"groupName"`
 	GroupPath            string         `json:"groupPath"`
 	DeepLink             string         `json:"deepLink"`
@@ -137,7 +136,7 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 	return scanReport
 }
 
-func CreateJSONReport(data *map[string]interface{}) CheckmarxOneReportData {
+func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData {
 	checkmarxReportData := CheckmarxOneReportData{
 		ToolName:         `checkmarxone`,
 		ProjectName:      fmt.Sprint((*data)["ProjectName"]),
@@ -147,14 +146,8 @@ func CreateJSONReport(data *map[string]interface{}) CheckmarxOneReportData {
 		Preset:           fmt.Sprint((*data)["Preset"]),
 		CheckmarxVersion: fmt.Sprint((*data)["CheckmarxVersion"]),
 		ScanType:         fmt.Sprint((*data)["ScanType"]),
-	}
-
-	if s, err := strconv.ParseInt(fmt.Sprint((*data)["ProjectId"]), 10, 64); err == nil {
-		checkmarxReportData.ProjectID = s
-	}
-
-	if s, err := strconv.ParseInt(fmt.Sprint((*data)["ScanId"]), 10, 64); err == nil {
-		checkmarxReportData.ScanID = s
+		ProjectID:        fmt.Sprint((*data)["ProjectId"]),
+		ScanID:           fmt.Sprint((*data)["ScanId"]),
 	}
 
 	checkmarxReportData.HighAudited = (*data)["High"].(map[string]int)["Issues"] - (*data)["High"].(map[string]int)["NotFalsePositive"]
@@ -192,7 +185,7 @@ func CreateJSONReport(data *map[string]interface{}) CheckmarxOneReportData {
 	return checkmarxReportData
 }
 
-func WriteJSONReport(jsonReport CheckmarxOneReportData) ([]piperutils.Path, error) {
+func WriteJSONHeaderReport(jsonReport CheckmarxOneReportData) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 

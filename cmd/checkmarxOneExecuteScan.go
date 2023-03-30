@@ -137,22 +137,19 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to get upload URL: %s", err)
 	}
 
-	// TODO : The step structure should allow to enable diffferent scanners: SAST, KICKS, SCA
+	// TODO : The step structure should allow to enable different scanners: SAST, KICKS, SCA
 
 	scan, err := cx1sh.CreateScanRequest(incremental, uploadLink) // create SAST/KICKS/SCA/... scan request based on config; requires: uploadLink, projectID, presetName, incremental POST /api/scans
 	if err != nil {
 		return fmt.Errorf("failed to create scan: %s", err)
 	}
 
-	// Maybe we can set the branch even for zipUpload scans, Michael will check.
-	// Question: how to provide other scan parameters like engineConfiguration? file exclusions for git?
-	// It can be done by updating the project level configuration, Michael will check if we can overide them at scan request level
-	err = cx1sh.PollScanStatus(scan) // GET /api/scans/{scanId}
+	// TODO: how to provide other scan parameters like engineConfiguration?
+	// TODO: potential to persist file exclusions for git?
+	err = cx1sh.PollScanStatus(scan)
 	if err != nil {
 		return fmt.Errorf("failed while polling scan status: %s", err)
 	}
-	//results := cx1sh.getResults(scan) // GET {{Cx1_URL}}/api/sast-results/?scan-id={{Cx1_ScanId}}&include-nodes=false OR {{Cx1_URL}}/api/scan-summary/?scan-ids={{Cx1_ScanId}}
-	// generate report -> not needed, Results API sufficient
 
 	results, err := cx1sh.ParseResults(scan) // incl report-gen
 	if err != nil {
@@ -171,10 +168,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) (checkmarxOneExecuteScanHelper, error) {
 	client := &piperHttp.Client{}
-	//options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
-	//client.SetOptions(options)
 
-	// TODO provide parameter for trusted certs
 	ctx, ghClient, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
@@ -318,7 +312,7 @@ func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.S
 
 	if c.config.IsOptimizedAndScheduled {
 		incremental = false
-	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (coherentIncrementalScans+1) > fullScanCycle {
+	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (coherentIncrementalScans+1) >= fullScanCycle {
 		incremental = false
 	}
 
@@ -363,7 +357,7 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 
 	branch := c.config.Branch
 	if len(c.config.PullRequestName) > 0 {
-		branch = fmt.Sprintf("PR-%v-%v", c.config.PullRequestName, c.config.Branch)
+		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
 	}
 
 	sastConfigString = fmt.Sprintf("Cx1 Branch name %v, ", branch) + sastConfigString
@@ -516,11 +510,24 @@ func (c *checkmarxOneExecuteScanHelper) GetReportSARIF(scan *checkmarxOne.Scan, 
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetReportJSON(detailedResults *map[string]interface{}) error {
-	// create JSON report (regardless vulnerabilityThreshold enabled or not)
+	// TODO: Fetch JSON format report from platform -> put into root location alongside PDF
 	jsonReport := checkmarxOne.CreateJSONReport(detailedResults)
 	paths, err := checkmarxOne.WriteJSONReport(jsonReport)
 	if err != nil {
 		return fmt.Errorf("Failed to write JSON: %s", err)
+	} else {
+		// add JSON report to archiving list
+		c.reports = append(c.reports, paths...)
+	}
+	return nil
+}
+
+func (c *checkmarxOneExecuteScanHelper) GetHeaderReportJSON(detailedResults *map[string]interface{}) error {
+	// This is for the SAP-piper-format short-form JSON report
+	jsonReport := checkmarxOne.CreateJSONHeaderReport(detailedResults)
+	paths, err := checkmarxOne.WriteJSONHeaderReport(jsonReport)
+	if err != nil {
+		return fmt.Errorf("Failed to write JSON header report: %s", err)
 	} else {
 		// add JSON report to archiving list
 		c.reports = append(c.reports, paths...)
@@ -878,7 +885,7 @@ func (c *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []stri
 
 func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]interface{}) (string, error) {
 	workspace := c.utils.GetWorkspace()
-	record := toolrecord.New(c.utils, workspace, "checkmarx", c.config.ServerURL)
+	record := toolrecord.New(c.utils, workspace, "checkmarxOne", c.config.ServerURL)
 
 	// Project
 	err := record.AddKeyData("project",
