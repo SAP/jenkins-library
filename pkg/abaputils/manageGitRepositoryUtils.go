@@ -15,6 +15,7 @@ import (
 )
 
 const failureMessageClonePull = "Could not pull the Repository / Software Component "
+const numberOfEntriesPerPage = 100
 
 // PollEntity periodically polls the pull/import entity to get the status. Check if the import is still running
 func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
@@ -40,7 +41,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 }
 
 func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview,to_Log_Overview/to_Log_Protocol"
+	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
 	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
 	if err != nil {
 		return
@@ -81,7 +82,7 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 
 	// Print Details
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
-		printLog(logEntryForDetails)
+		printLog(logEntryForDetails, connectionDetails, client)
 	}
 	log.Entry().Infof("-------------------------")
 
@@ -92,33 +93,61 @@ func dashedLine(i int) {
 	log.Entry().Infof(strings.Repeat("-", i))
 }
 
-func printLog(logEntry LogResultsV2) {
+func printLog(logEntry LogResultsV2, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
 
-	sort.SliceStable(logEntry.ToLogProtocol.Results, func(i, j int) bool {
-		return logEntry.ToLogProtocol.Results[i].ProtocolLine < logEntry.ToLogProtocol.Results[j].ProtocolLine
-	})
+	readNextLogEntries := true
+	page := 0
 
+	printHeader(logEntry)
+
+	for {
+		query := getLogProtocolQuery(page)
+		connectionDetails.URL = logEntry.ToLogProtocol.Deferred.URI + query
+		entity, err := GetProtocol(failureMessageClonePull, connectionDetails, client)
+		if (err == nil || reflect.DeepEqual(entity, LogProtocolResults{})) {
+			readNextLogEntries = false
+		}
+		sort.SliceStable(entity.Results, func(i, j int) bool {
+			return entity.Results[i].ProtocolLine < entity.Results[j].ProtocolLine
+		})
+
+		if logEntry.Status != `Success` {
+			for _, entry := range entity.Results {
+				log.Entry().Info(entry.Description)
+			}
+
+		} else {
+			for _, entry := range entity.Results {
+				log.Entry().Debug(entry.Description)
+			}
+		}
+		page += 1
+		if !readNextLogEntries {
+			break
+		}
+	}
+
+}
+
+func printHeader(logEntry LogResultsV2) {
 	if logEntry.Status != `Success` {
 		log.Entry().Infof("\n")
 		log.Entry().Infof("-------------------------")
 		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
 		log.Entry().Infof("-------------------------")
-
-		for _, entry := range logEntry.ToLogProtocol.Results {
-			log.Entry().Info(entry.Description)
-		}
-
 	} else {
 		log.Entry().Debugf("\n")
 		log.Entry().Debugf("-------------------------")
 		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
 		log.Entry().Debugf("-------------------------")
-
-		for _, entry := range logEntry.ToLogProtocol.Results {
-			log.Entry().Debug(entry.Description)
-		}
 	}
+}
 
+func getLogProtocolQuery(page int) string {
+	skip := page * numberOfEntriesPerPage
+	top := numberOfEntriesPerPage
+
+	return fmt.Sprintf("?$skip=%s&$top=%s", fmt.Sprint(skip), fmt.Sprint(top))
 }
 
 func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
@@ -153,6 +182,31 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 		return body, resp.Status, err
 	}
 	return body, resp.Status, nil
+}
+
+func GetProtocol(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body LogProtocolResults, err error) {
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		err = HandleHTTPError(resp, err, failureMessage, connectionDetails)
+		return body, err
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	var abapResp map[string]*json.RawMessage
+	bodyText, _ := ioutil.ReadAll(resp.Body)
+
+	marshallError := json.Unmarshal(bodyText, &abapResp)
+	if marshallError != nil {
+		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
+	marshallError = json.Unmarshal(*abapResp["d"], &body)
+	if marshallError != nil {
+		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
+
+	return body, nil
 }
 
 // GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
@@ -305,12 +359,20 @@ type AbapLogsV2 struct {
 }
 
 type LogResultsV2 struct {
-	Metadata      AbapMetadata       `json:"__metadata"`
-	Index         int                `json:"log_index"`
-	Name          string             `json:"log_name"`
-	Status        string             `json:"type_of_found_issues"`
-	Timestamp     string             `json:"timestamp"`
-	ToLogProtocol LogProtocolResults `json:"to_Log_Protocol"`
+	Metadata      AbapMetadata        `json:"__metadata"`
+	Index         int                 `json:"log_index"`
+	Name          string              `json:"log_name"`
+	Status        string              `json:"type_of_found_issues"`
+	Timestamp     string              `json:"timestamp"`
+	ToLogProtocol LogProtocolDeferred `json:"to_Log_Protocol"`
+}
+
+type LogProtocolDeferred struct {
+	Deferred URI `json:"__deferred"`
+}
+
+type URI struct {
+	URI string `json:"uri"`
 }
 
 type LogProtocolResults struct {

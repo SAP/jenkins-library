@@ -29,6 +29,7 @@ func init() {
 	executionLogResponse, _ := json.Marshal(executionLog)
 	executionLogString = string(executionLogResponse)
 }
+
 func TestPollEntity(t *testing.T) {
 
 	t.Run("Test poll entity - success case", func(t *testing.T) {
