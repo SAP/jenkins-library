@@ -148,7 +148,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 			return err
 		}
 
-		encryptedSecret, err := github.CreateSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
+		encryptedSecret, err := github.CreateEncryptedSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
 			return err

@@ -152,9 +152,9 @@ func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOpti
 	return existingIssue, nil
 }
 
-// CreateSecret creates an encrypted secret using a public key from a GitHub repository, which can be sent through the GitHub API
+// CreateEncryptedSecret creates an encrypted secret using a public key from a GitHub repository, which can be sent through the GitHub API
 // https://github.com/google/go-github/blob/master/example/newreposecretwithxcrypto/main.go
-func CreateSecret(secretName, secretValue string, publicKey *github.PublicKey) (*github.EncryptedSecret, error) {
+func CreateEncryptedSecret(secretName, secretValue string, publicKey *github.PublicKey) (*github.EncryptedSecret, error) {
 	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey.GetKey())
 	if err != nil {
 		log.Entry().Warn("Could not decode public key from base64")
@@ -166,7 +166,7 @@ func CreateSecret(secretName, secretValue string, publicKey *github.PublicKey) (
 	secretBytes := []byte(secretValue)
 	encryptedSecretBytes, err := box.SealAnonymous([]byte{}, secretBytes, &boxKey, rand.Reader)
 	if err != nil {
-		log.Entry().Warn("Could not encrypt secret")
+		log.Entry().Warn("Could not encrypt secret using public key")
 		return nil, err
 	}
 
