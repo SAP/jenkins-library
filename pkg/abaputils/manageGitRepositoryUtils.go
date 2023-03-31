@@ -16,6 +16,8 @@ import (
 
 const failureMessageClonePull = "Could not pull the Repository / Software Component "
 const numberOfEntriesPerPage = 100
+const logOutputStatusLength = 10
+const logOutputTimestampLength = 29
 
 // PollEntity periodically polls the pull/import entity to get the status. Check if the import is still running
 func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
@@ -57,28 +59,11 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
 	})
 
-	// Get Lengths
-	phaseLength := 22 // minimum default length
-	for _, logEntry := range entity.ToLogOverview.Results {
-		if l := len(logEntry.Name); l > phaseLength {
-			phaseLength = l
-		}
-	}
-	statusLength := 10
-	timestampLength := 29
+	logOutputPhaseLength, logOutputLineLength := calculateLenghts(entity)
 
-	// Dashed Line Length
-	lineLength := 10 + phaseLength + statusLength + timestampLength
+	printOverview(logOutputLineLength, logOutputPhaseLength, entity)
 
-	// Print Overview
-	log.Entry().Infof("\n")
-	dashedLine(lineLength)
-	log.Entry().Infof("| %-"+fmt.Sprint(phaseLength)+"s | %"+fmt.Sprint(statusLength)+"s | %-"+fmt.Sprint(timestampLength)+"s |", "Phase", "Status", "Timestamp")
-	dashedLine(lineLength)
-	for _, logEntry := range entity.ToLogOverview.Results {
-		log.Entry().Infof("| %-"+fmt.Sprint(phaseLength)+"s | %"+fmt.Sprint(statusLength)+"s | %-"+fmt.Sprint(timestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
-	}
-	dashedLine(lineLength)
+	dashedLine(logOutputLineLength)
 
 	// Print Details
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
@@ -87,6 +72,28 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	log.Entry().Infof("-------------------------")
 
 	return
+}
+
+func printOverview(logOutputLineLength int, logOutputPhaseLength int, entity PullEntity) {
+	log.Entry().Infof("\n")
+	dashedLine(logOutputLineLength)
+	log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", "Phase", "Status", "Timestamp")
+	dashedLine(logOutputLineLength)
+	for _, logEntry := range entity.ToLogOverview.Results {
+		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+	}
+}
+
+func calculateLenghts(entity PullEntity) (int, int) {
+	phaseLength := 22
+	for _, logEntry := range entity.ToLogOverview.Results {
+		if l := len(logEntry.Name); l > phaseLength {
+			phaseLength = l
+		}
+	}
+
+	lineLength := 10 + phaseLength + logOutputStatusLength + logOutputTimestampLength
+	return phaseLength, lineLength
 }
 
 func dashedLine(i int) {
