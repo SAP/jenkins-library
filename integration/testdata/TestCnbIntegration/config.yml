@@ -13,3 +13,8 @@ steps:
         data:
         - key: dummy.yml
           file: TestCnbIntegration/config.yml
+      dynatrace:
+        type: Dynatrace
+        data:
+        - key: api-key
+          vaultCredentialKey: dynatrace-api-key
