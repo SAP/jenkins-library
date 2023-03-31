@@ -92,12 +92,13 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('credentialsId')
             .use()
 
+        def namedUser = jenkinsUtils.getJobStartedByUserId()
+
         if (config.useGoStep == true) {
             List credentials = [
                 [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
             ]
 
-            def namedUser = jenkinsUtils.getJobStartedByUserId()
             if (namedUser) {
                 parameters.namedUser = namedUser
             }
@@ -124,7 +125,9 @@ void call(Map parameters = [:]) {
         def customDescription = config.customDescription ? "${config.customDescription}" : "Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
         def description = customDescription
 
-        def namedUser = jenkinsUtils.getJobStartedByUserId() ?: config.namedUser
+        if (!namedUser) {
+            namedUser = config.namedUser
+        }
 
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
