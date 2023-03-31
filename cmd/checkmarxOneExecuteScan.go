@@ -66,7 +66,7 @@ func checkmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, _ *telemetry
 }
 
 func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) error {
-	// Setup connection with Splunk, influxDB?
+	// TODO: Setup connection with Splunk, influxDB?
 	cx1sh, err := Authenticate(config, influx)
 	if err != nil {
 		return fmt.Errorf("failed to create Cx1 client: %s", err)
@@ -138,8 +138,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	// TODO : The step structure should allow to enable different scanners: SAST, KICKS, SCA
-
-	scan, err := cx1sh.CreateScanRequest(incremental, uploadLink) // create SAST/KICKS/SCA/... scan request based on config; requires: uploadLink, projectID, presetName, incremental POST /api/scans
+	scan, err := cx1sh.CreateScanRequest(incremental, uploadLink)
 	if err != nil {
 		return fmt.Errorf("failed to create scan: %s", err)
 	}
@@ -160,8 +159,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		log.SetErrorCategory(log.ErrorCompliance)
 		return fmt.Errorf("project %v not compliant: %s", cx1sh.Project.Name, err)
 	}
-	// upload logs to Splunk, influxDB?
-	// */
+	// TODO: upload logs to Splunk, influxDB?
 	return nil
 
 }
@@ -480,7 +478,7 @@ func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan,
 func (c *checkmarxOneExecuteScanHelper) GetReportPDF(scan *checkmarxOne.Scan) error {
 	if c.config.GeneratePdfReport {
 		pdfReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_SASTReport_%v.pdf")
-		err := c.downloadAndSaveReport(pdfReportName, scan)
+		err := c.downloadAndSaveReport(pdfReportName, scan, "pdf")
 		if err != nil {
 			return fmt.Errorf("Report download failed: %s", err)
 		} else {
@@ -509,15 +507,13 @@ func (c *checkmarxOneExecuteScanHelper) GetReportSARIF(scan *checkmarxOne.Scan, 
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetReportJSON(detailedResults *map[string]interface{}) error {
-	// TODO: Fetch JSON format report from platform -> put into root location alongside PDF
-	jsonReport := checkmarxOne.CreateJSONReport(detailedResults)
-	paths, err := checkmarxOne.WriteJSONReport(jsonReport)
+func (c *checkmarxOneExecuteScanHelper) GetReportJSON(scan *checkmarxOne.Scan) error {
+	jsonReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_SASTReport_%v.json")
+	err := c.downloadAndSaveReport(jsonReportName, scan, "json")
 	if err != nil {
-		return fmt.Errorf("Failed to write JSON: %s", err)
+		return fmt.Errorf("Report download failed: %s", err)
 	} else {
-		// add JSON report to archiving list
-		c.reports = append(c.reports, paths...)
+		c.reports = append(c.reports, piperutils.Path{Target: jsonReportName, Mandatory: true})
 	}
 	return nil
 }
@@ -558,6 +554,10 @@ func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (m
 		return detailedResults, fmt.Errorf("Unable to fetch detailed results for scan %v: %s", scan.ScanID, err)
 	}
 
+	err = c.GetReportJSON(scan)
+	if err != nil {
+		log.Entry().WithError(err).Warnf("Failed to get JSON report")
+	}
 	err = c.GetReportPDF(scan)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Failed to get PDF report")
@@ -566,9 +566,9 @@ func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (m
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Failed to get SARIF report")
 	}
-	err = c.GetReportJSON(&detailedResults)
+	err = c.GetHeaderReportJSON(&detailedResults)
 	if err != nil {
-		log.Entry().WithError(err).Warnf("Failed to get JSON report")
+		log.Entry().WithError(err).Warnf("Failed to generate JSON Header report")
 	}
 
 	// create toolrecord
@@ -589,8 +589,8 @@ func (c *checkmarxOneExecuteScanHelper) createReportName(workspace, reportFileNa
 	return filepath.Join(workspace, fmt.Sprintf(reportFileNameTemplate, regExpFileName.ReplaceAllString(string(timeStamp), "_")))
 }
 
-func (c *checkmarxOneExecuteScanHelper) downloadAndSaveReport(reportFileName string, scan *checkmarxOne.Scan) error {
-	report, err := c.generateAndDownloadReport(scan, "pdf")
+func (c *checkmarxOneExecuteScanHelper) downloadAndSaveReport(reportFileName string, scan *checkmarxOne.Scan, reportType string) error {
+	report, err := c.generateAndDownloadReport(scan, reportType)
 	if err != nil {
 		return errors.Wrap(err, "failed to download the report")
 	}
@@ -639,7 +639,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 
 	resultMap := map[string]interface{}{}
 	resultMap["InitiatorName"] = scan.Initiator
-	resultMap["Owner"] = "Cx1 Gap: no project owner" //xmlResult.Owner
+	resultMap["Owner"] = "Cx1 Gap: no project owner" // TODO: check for functionality
 	resultMap["ScanId"] = scan.ScanID
 	resultMap["ProjectId"] = c.Project.ProjectID
 	resultMap["ProjectName"] = c.Project.Name

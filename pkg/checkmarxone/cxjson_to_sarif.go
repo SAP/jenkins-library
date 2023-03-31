@@ -1,11 +1,7 @@
 package checkmarxOne
 
 import (
-	//	"bytes"
-	//	"encoding/xml"
 	"fmt"
-	//	"io/ioutil"
-	//	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ConvertCxxmlToSarif is the entrypoint for the Parse function
+// ConvertCxJSONToSarif is the entrypoint for the Parse function
 func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scanMeta *ScanMetadata, scan *Scan) (format.SARIF, error) {
 	// Process sarif
 	start := time.Now()
@@ -33,15 +29,13 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		return sarif, errors.Wrap(err, "Failed to retrieve list of queries")
 	}
 
-	baseURL := "https://" + serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID // + "/sast/description/" + query.querydescriptionid + "/" + query.queryid
-	// eg: https://deu.ast.checkmarx.net/results/a129f465-35eb-4d8a-aecd-6ae985be4954/cf52a41c-aca1-4ed7-91de-b6fe16280867/sast/description/346/10631311445988470793
-	// https://deu.ast.checkmarx.net/results/8e49f814-96bc-4cae-b5d5-4600e299a5cf/efbde5c8-91d8-4d55-83cd-18af2800ad52/sast?result-id=pnhXEyVkh8rZqpLo3xPt0rTX4VI%3D
+	baseURL := "https://" + serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID
 
 	cweIdsForTaxonomies := make(map[int64]int) //use a map to avoid duplicates
 	cweCounter := 0
 	//maxretries := 5
 
-	//CxXML files contain a CxXMLResults > Query object, which represents a broken rule or type of vuln
+	//JSON contains a ScanResultData > Query object, which represents a broken rule or type of vuln
 	//This Query object contains a list of Result objects, each representing an occurence
 	//Each Result object contains a ResultPath, which represents the exact location of the occurence (the "Snippet")
 	log.Entry().Debug("[SARIF] Now handling results.")
@@ -51,7 +45,6 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		if query == nil {
 			return sarif, errors.New(fmt.Sprintf("Unknown queryid in results: %d", r.Data.QueryID))
 		}
-		//log.Entry().Infof(" - %d: %v -> %v", r.SimilarityID, query.Language, query.Name)
 
 		_, haskey := cweIdsForTaxonomies[query.CweID]
 
@@ -70,7 +63,6 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		result.RuleIndex = cweIdsForTaxonomies[query.CweID]
 		result.Level = "none"
 		msg := new(format.Message)
-		//msg.Text = cxxml.Query[i].Name + ": " + cxxml.Query[i].Categories
 		if apiDescription != "" {
 			msg.Text = apiDescription
 		} else {
@@ -126,9 +118,6 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		//Properties
 		props := new(format.SarifProperties)
 		props.Audited = false
-		/*if cxxml.Query[i].Result[j].Remark != "" {
-		    props.Audited = true
-		}*/
 		props.CheckmarxSimilarityID = simidString
 		props.InstanceID = r.ResultID // no more PathID in cx1
 		props.ToolSeverity = r.Severity
@@ -186,6 +175,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		}
 
 		props.ToolAuditMessage = ""
+		// currently disabled due to the extra load (one api call per finding)
 		/*predicates, err := sys.GetResultsPredicates(r.SimilarityID, scanMeta.ProjectID)
 		if err == nil {
 			log.Entry().Infof("Retrieved %d results predicates", len(predicates))
@@ -222,10 +212,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		rule.ShortDescription = new(format.Message)
 		rule.ShortDescription.Text = query.Name
 		rule.Properties = new(format.SarifRuleProperties)
-		/*if apiDescription != "" {
-			rule.FullDescription = new(format.Message)
-			rule.FullDescription.Text = apiDescription
-		} else */
+
 		if len(r.VulnerabilityDetails.Compliances) > 0 {
 			rule.FullDescription = new(format.Message)
 			rule.FullDescription.Text = strings.Join(r.VulnerabilityDetails.Compliances[:], ";")
