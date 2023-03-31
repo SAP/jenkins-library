@@ -104,7 +104,7 @@ func printLog(logEntry LogResultsV2, connectionDetails ConnectionDetailsHTTP, cl
 		query := getLogProtocolQuery(page)
 		connectionDetails.URL = logEntry.ToLogProtocol.Deferred.URI + query
 		entity, err := GetProtocol(failureMessageClonePull, connectionDetails, client)
-		if (err == nil || reflect.DeepEqual(entity, LogProtocolResults{})) {
+		if (err != nil || reflect.DeepEqual(entity, LogProtocolResults{})) {
 			readNextLogEntries = false
 		}
 		sort.SliceStable(entity.Results, func(i, j int) bool {
@@ -385,6 +385,7 @@ type LogProtocol struct {
 	ProtocolLine  int          `json:"index_no"`
 	Type          string       `json:"type"`
 	Description   string       `json:"descr"`
+	Timestamp     string       `json:"timestamp"`
 }
 
 // LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
