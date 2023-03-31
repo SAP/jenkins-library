@@ -207,6 +207,18 @@ spec:
                 fromUrl: https://url-to/setting.xml
           ```
 
+          using [Vault general purpose credentials](https://www.project-piper.io/infrastructure/vault/#using-vault-for-general-purpose-and-test-credentials):
+          ```yaml
+          bindings:
+            dynatrace:
+              type: Dynatrace
+              data:
+              - key: api-token
+                vaultCredentialKey: dynatrace-api-token
+          vaultCredentialPath: cnb-bindings
+          vaultCredentialKeys: ['dynatrace-api-token']
+          ```
+
           Deprecated: A binding with a single key, could be written like this:
 
           ```yaml
