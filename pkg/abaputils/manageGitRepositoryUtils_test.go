@@ -70,6 +70,7 @@ func TestPollEntity(t *testing.T) {
 		}
 		status, _ := PollEntity(config.RepositoryName, con, client, 0)
 		assert.Equal(t, "S", status)
+		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
 
 	t.Run("Test poll entity - error case", func(t *testing.T) {
@@ -109,6 +110,7 @@ func TestPollEntity(t *testing.T) {
 		}
 		status, _ := PollEntity(config.RepositoryName, con, client, 0)
 		assert.Equal(t, "E", status)
+		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
 }
 
