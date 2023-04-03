@@ -247,6 +247,7 @@ func TestRunGithubCreateEncryptedSecret(t *testing.T) {
 		mockName := "testSecret"
 		mockValue := "testValue"
 
+		// test
 		githubSecret, err := CreateEncryptedSecret(mockName, mockValue, &mockPubKey)
 
 		// assert
