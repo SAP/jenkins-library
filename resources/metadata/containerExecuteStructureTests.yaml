@@ -49,7 +49,7 @@ spec:
           - PARAMETERS
         default: cst-report.json
   containers:
-    - image: ppiper/container-structure-test
+    - image: gcr.io/gcp-runtimes/container-structure-test:debug
       command:
         - /busybox/tail -f /dev/null
       shell: /busybox/sh

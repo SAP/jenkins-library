@@ -1,0 +1,12 @@
+general:
+    verbose: true
+steps:
+  tmsExport:
+    nodeName: PIPER-TEST
+    namedUser: Piper-Export
+    mtaPath: scv_x.mtar
+    verbose: true
+    mtaVersion: 1.0.0
+    nodeExtDescriptorMapping:
+      PIPER-TEST: 'scv_x.mtaext'
+      PIPER-PROD: 'scv_x.mtaext'
