@@ -31,8 +31,8 @@ type vaultRotateSecretIdOptions struct {
 	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
 	GithubPersonalAccessToken            string `json:"githubPersonalAccessToken,omitempty" validate:"required_if=SecretStore ghactions"`
 	GithubAPIURL                         string `json:"githubApiUrl,omitempty"`
-	RepoOwner                            string `json:"repoOwner,omitempty"`
-	RepoName                             string `json:"repoName,omitempty"`
+	Owner                                string `json:"owner,omitempty"`
+	Repository                           string `json:"repository,omitempty"`
 }
 
 // VaultRotateSecretIdCommand Rotate Vault AppRole Secret ID
@@ -147,9 +147,9 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 	cmd.Flags().StringVar(&stepConfig.AdoProject, "adoProject", os.Getenv("PIPER_adoProject"), "The Azure DevOps project ID. Project name also can be used")
 	cmd.Flags().IntVar(&stepConfig.AdoPipelineID, "adoPipelineId", 0, "The Azure DevOps pipeline ID. Also called as definition ID")
 	cmd.Flags().StringVar(&stepConfig.GithubPersonalAccessToken, "githubPersonalAccessToken", os.Getenv("PIPER_githubPersonalAccessToken"), "The GitHub Actions personal access token")
-	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
-	cmd.Flags().StringVar(&stepConfig.RepoOwner, "repoOwner", os.Getenv("PIPER_repoOwner"), "")
-	cmd.Flags().StringVar(&stepConfig.RepoName, "repoName", os.Getenv("PIPER_repoName"), "")
+	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL that corresponds to the pipeline repository")
+	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Owner of the pipeline GitHub repository")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the pipeline GitHub repository")
 
 	cmd.MarkFlagRequired("vaultAppRoleSecretTokenCredentialsId")
 	cmd.MarkFlagRequired("vaultServerUrl")
@@ -332,22 +332,22 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Default:     `https://api.github.com`,
 					},
 					{
-						Name:        "repoOwner",
+						Name:        "owner",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_repoOwner"),
+						Default:     os.Getenv("PIPER_owner"),
 					},
 					{
-						Name:        "repoName",
+						Name:        "repository",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_repoName"),
+						Default:     os.Getenv("PIPER_repository"),
 					},
 				},
 			},
