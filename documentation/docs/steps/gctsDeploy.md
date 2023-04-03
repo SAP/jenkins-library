@@ -5,7 +5,7 @@
 ## Prerequisites
 
 If you provide a `commit ID`, the step deploys the content of the specified commit to the ABAP system. If you provide a `branch`, the step deploys the content of the specified branch. If you set the `rollback` parameter to *true*, the step returns to a working state of the repository, if the deployment of the specified commit or branch fails.
-Learn more about the SAP Git-enabled Change & Transport System (gCTS) [here](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/f319b168e87e42149e25e13c08d002b9.html). With gCTS, ABAP developments on ABAP servers can be maintained in Git repositories.
+More information about the [Git-enabled Change and Transport System (gCTS)](https://help.sap.com/docs/ABAP_PLATFORM_NEW/4a368c163b08418890a406d413933ba7/f319b168e87e42149e25e13c08d002b9.html).
 
 ## ${docGenParameters}
 
@@ -31,7 +31,8 @@ gctsDeploy(
   commit: '95952ec',
   scope: 'LASTACTION',
   rollback: true,
-  configuration: [VCS_AUTOMATIC_PULL: 'FALSE',VCS_AUTOMATIC_PUSH: 'FALSE',CLIENT_VCS_LOGLVL: 'debug']
+  configuration: [VCS_AUTOMATIC_PULL: 'FALSE',VCS_AUTOMATIC_PUSH: 'FALSE',CLIENT_VCS_LOGLVL: 'debug'],
+  queryparameters: [saml2: 'disabled']
 )
 ```
 
@@ -56,4 +57,6 @@ steps:
         VCS_AUTOMATIC_PULL: "FALSE"
         VCS_AUTOMATIC_PUSH: "FALSE"
         CLIENT_VCS_LOGLVL: "debug"
+    queryparameters:
+        saml2: "disabled"
 ```
