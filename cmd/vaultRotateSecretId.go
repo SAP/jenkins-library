@@ -142,7 +142,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 			return err
 		}
 
-		publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, config.RepoOwner, config.RepoName)
+		publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, config.Owner, config.Repository)
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
 			return err
@@ -154,7 +154,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 			return err
 		}
 
-		_, err = client.Actions.CreateOrUpdateRepoSecret(ctx, config.RepoOwner, config.RepoName, encryptedSecret)
+		_, err = client.Actions.CreateOrUpdateRepoSecret(ctx, config.Owner, config.Repository, encryptedSecret)
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
 			return err
