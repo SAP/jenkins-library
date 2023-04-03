@@ -31,8 +31,8 @@ class PiperGoUtils implements Serializable {
         if (steps.env.REPOSITORY_UNDER_TEST && steps.env.LIBRARY_VERSION_UNDER_TEST) {
             steps.echo("Running in a consumer test, building unit-under-test binary for verification.")
             steps.dockerExecute(script: steps, dockerImage: 'golang:1.18', dockerOptions: '-u 0', dockerEnvVars: [
-                REPOSITORY_UNDER_TEST: steps.env.REPOSITORY_UNDER_TEST,
-                LIBRARY_VERSION_UNDER_TEST: steps.env.LIBRARY_VERSION_UNDER_TEST
+                    REPOSITORY_UNDER_TEST: steps.env.REPOSITORY_UNDER_TEST,
+                    LIBRARY_VERSION_UNDER_TEST: steps.env.LIBRARY_VERSION_UNDER_TEST
             ]) {
                 def piperTar = 'piper-go.tar.gz'
                 def piperTmp = 'piper-tmp'
@@ -84,7 +84,7 @@ class PiperGoUtils implements Serializable {
     private boolean downloadGoBinary(url) {
 
         try {
-            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
+            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --retry 5 --retry-max-time 240 --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
 
             if (httpStatus == '200') {
                 steps.sh(script: "chmod +x ${piperExecutable}")
@@ -93,7 +93,7 @@ class PiperGoUtils implements Serializable {
         } catch(err) {
             //nothing to do since error should just result in downloaded=false
             steps.echo "Failed downloading Piper go binary with error '${err}'. " +
-                "If curl is missing, please ensure that curl is available in the Jenkins master and the agents. It is a prerequisite to run piper."
+                    "If curl is missing, please ensure that curl is available in the Jenkins master and the agents. It is a prerequisite to run piper."
         }
         return false
     }
