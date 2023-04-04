@@ -16,7 +16,7 @@ import (
 )
 
 const failureMessageClonePull = "Could not pull the Repository / Software Component "
-const numberOfEntriesPerPage = 1000
+const numberOfEntriesPerPage = 100000
 const logOutputStatusLength = 10
 const logOutputTimestampLength = 29
 
