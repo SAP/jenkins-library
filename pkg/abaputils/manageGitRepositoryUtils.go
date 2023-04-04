@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 )
 
 const failureMessageClonePull = "Could not pull the Repository / Software Component "
+const numberOfEntriesPerPage = 100000
+const logOutputStatusLength = 10
+const logOutputTimestampLength = 29
 
 // PollEntity periodically polls the pull/import entity to get the status. Check if the import is still running
 func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
@@ -30,17 +34,8 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		status = pullEntity.Status
 		log.Entry().WithField("StatusCode", responseStatus).Info("Status: " + pullEntity.StatusDescription)
 		if pullEntity.Status != "R" {
-			printTransportLogs := true
-			if serviceContainsNewLogEntities(connectionDetails, client) {
-				PrintLogs(repositoryName, connectionDetails, client)
-				printTransportLogs = false
-			}
-			if pullEntity.Status == "E" {
-				log.SetErrorCategory(log.ErrorUndefined)
-				PrintLegacyLogs(repositoryName, connectionDetails, client, true, printTransportLogs)
-			} else {
-				PrintLegacyLogs(repositoryName, connectionDetails, client, false, printTransportLogs)
-			}
+
+			PrintLogs(repositoryName, connectionDetails, client)
 			break
 		}
 		time.Sleep(pollIntervall)
@@ -48,43 +43,10 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	return status, nil
 }
 
-func serviceContainsNewLogEntities(connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (newLogEntitiesAvailable bool) {
-
-	newLogEntitiesAvailable = false
-	details := connectionDetails
-	details.URL = details.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/"
-	resp, err := GetHTTPResponse("GET", details, nil, client)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	var entitySet EntitySetsForManageGitRepository
-
-	// Parse response
-	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
-
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &entitySet)
-
-	for _, entitySet := range entitySet.EntitySets {
-		if entitySet == "LogOverviews" || entitySet == "LogProtocols" {
-			return true
-		}
-	}
-	return
-
-}
-
 func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview,to_Log_Overview/to_Log_Protocol"
+	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
 	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
-	if err != nil {
-		return
-	}
-
-	if len(entity.ToLogOverview.Results) == 0 {
+	if err != nil || len(entity.ToLogOverview.Results) == 0 {
 		// return if no logs are available
 		return
 	}
@@ -94,127 +56,117 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
 	})
 
-	// Get Lengths
-	phaseLength := 22 // minimum default length
-	for _, logEntry := range entity.ToLogOverview.Results {
-		if l := len(logEntry.Name); l > phaseLength {
-			phaseLength = l
-		}
-	}
-	statusLength := 10
-	timestampLength := 29
-
-	// Dashed Line Length
-	lineLength := 10 + phaseLength + statusLength + timestampLength
-
-	// Print Overview
-	log.Entry().Infof("\n")
-	dashedLine(lineLength)
-	log.Entry().Infof("| %-"+fmt.Sprint(phaseLength)+"s | %"+fmt.Sprint(statusLength)+"s | %-"+fmt.Sprint(timestampLength)+"s |", "Phase", "Status", "Timestamp")
-	dashedLine(lineLength)
-	for _, logEntry := range entity.ToLogOverview.Results {
-		log.Entry().Infof("| %-"+fmt.Sprint(phaseLength)+"s | %"+fmt.Sprint(statusLength)+"s | %-"+fmt.Sprint(timestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
-	}
-	dashedLine(lineLength)
+	printOverview(entity)
 
 	// Print Details
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
-		printLog(logEntryForDetails)
+		printLog(logEntryForDetails, connectionDetails, client)
 	}
 	log.Entry().Infof("-------------------------")
 
 	return
 }
 
-func dashedLine(i int) {
+func printOverview(entity PullEntity) {
+
+	logOutputPhaseLength, logOutputLineLength := calculateLenghts(entity)
+
+	log.Entry().Infof("\n")
+
+	printDashedLine(logOutputLineLength)
+
+	log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", "Phase", "Status", "Timestamp")
+
+	printDashedLine(logOutputLineLength)
+
+	for _, logEntry := range entity.ToLogOverview.Results {
+		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+	}
+	printDashedLine(logOutputLineLength)
+}
+
+func calculateLenghts(entity PullEntity) (int, int) {
+	phaseLength := 22
+	for _, logEntry := range entity.ToLogOverview.Results {
+		if l := len(logEntry.Name); l > phaseLength {
+			phaseLength = l
+		}
+	}
+
+	lineLength := 10 + phaseLength + logOutputStatusLength + logOutputTimestampLength
+	return phaseLength, lineLength
+}
+
+func printDashedLine(i int) {
 	log.Entry().Infof(strings.Repeat("-", i))
 }
 
-func printLog(logEntry LogResultsV2) {
+func printLog(logOverviewEntry LogResultsV2, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
 
-	sort.SliceStable(logEntry.ToLogProtocol.Results, func(i, j int) bool {
-		return logEntry.ToLogProtocol.Results[i].ProtocolLine < logEntry.ToLogProtocol.Results[j].ProtocolLine
+	page := 0
+
+	printHeader(logOverviewEntry)
+
+	for {
+		connectionDetails.URL = logOverviewEntry.ToLogProtocol.Deferred.URI + getLogProtocolQuery(page)
+		entity, err := GetProtocol(failureMessageClonePull, connectionDetails, client)
+
+		printLogProtocolEntries(logOverviewEntry, entity)
+
+		page += 1
+		if allLogsHaveBeenPrinted(entity, page, err) {
+			break
+		}
+	}
+
+}
+
+func printLogProtocolEntries(logEntry LogResultsV2, entity LogProtocolResults) {
+
+	sort.SliceStable(entity.Results, func(i, j int) bool {
+		return entity.Results[i].ProtocolLine < entity.Results[j].ProtocolLine
 	})
 
+	if logEntry.Status != `Success` {
+		for _, entry := range entity.Results {
+			log.Entry().Info(entry.Description)
+		}
+
+	} else {
+		for _, entry := range entity.Results {
+			log.Entry().Debug(entry.Description)
+		}
+	}
+}
+
+func allLogsHaveBeenPrinted(entity LogProtocolResults, page int, err error) bool {
+	allPagesHaveBeenRead := false
+	numberOfProtocols, errConversion := strconv.Atoi(entity.Count)
+	if errConversion == nil {
+		allPagesHaveBeenRead = numberOfProtocols <= page*numberOfEntriesPerPage
+	}
+	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(entity.Results, LogProtocolResults{}))
+}
+
+func printHeader(logEntry LogResultsV2) {
 	if logEntry.Status != `Success` {
 		log.Entry().Infof("\n")
 		log.Entry().Infof("-------------------------")
 		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
 		log.Entry().Infof("-------------------------")
-
-		for _, entry := range logEntry.ToLogProtocol.Results {
-			log.Entry().Info(entry.Description)
-		}
-
 	} else {
 		log.Entry().Debugf("\n")
 		log.Entry().Debugf("-------------------------")
 		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
 		log.Entry().Debugf("-------------------------")
-
-		for _, entry := range logEntry.ToLogProtocol.Results {
-			log.Entry().Debug(entry.Description)
-		}
 	}
-
 }
 
-// PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
-func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool, includeTransportLog bool) {
+func getLogProtocolQuery(page int) string {
+	skip := page * numberOfEntriesPerPage
+	top := numberOfEntriesPerPage
 
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_log,to_Execution_log"
-	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
-	if err != nil {
-		return
-	}
-	// Sort logs
-	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
-		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
-	})
-
-	sort.SliceStable(entity.ToTransportLog.Results, func(i, j int) bool {
-		return entity.ToTransportLog.Results[i].Index < entity.ToTransportLog.Results[j].Index
-	})
-
-	// Show transport and execution log if either the action was erroenous on the system or the log level is set to "debug" (verbose = true)
-	if errorOnSystem {
-		if includeTransportLog {
-			log.Entry().Info("-------------------------")
-			log.Entry().Info("Transport Log")
-			log.Entry().Info("-------------------------")
-			for _, logEntry := range entity.ToTransportLog.Results {
-
-				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
-			}
-		}
-
-		log.Entry().Info("-------------------------")
-		log.Entry().Info("Execution Log")
-		log.Entry().Info("-------------------------")
-		for _, logEntry := range entity.ToExecutionLog.Results {
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
-		}
-		log.Entry().Info("-------------------------")
-	} else {
-		if includeTransportLog {
-			log.Entry().Debug("-------------------------")
-			log.Entry().Debug("Transport Log")
-			log.Entry().Debug("-------------------------")
-			for _, logEntry := range entity.ToTransportLog.Results {
-
-				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
-			}
-		}
-
-		log.Entry().Debug("-------------------------")
-		log.Entry().Debug("Execution Log")
-		log.Entry().Debug("-------------------------")
-		for _, logEntry := range entity.ToExecutionLog.Results {
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
-		}
-		log.Entry().Debug("-------------------------")
-	}
-
+	return fmt.Sprintf("?$skip=%s&$top=%s&$inlinecount=allpages", fmt.Sprint(skip), fmt.Sprint(top))
 }
 
 func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
@@ -249,6 +201,31 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 		return body, resp.Status, err
 	}
 	return body, resp.Status, nil
+}
+
+func GetProtocol(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body LogProtocolResults, err error) {
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		err = HandleHTTPError(resp, err, failureMessage, connectionDetails)
+		return body, err
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	var abapResp map[string]*json.RawMessage
+	bodyText, _ := ioutil.ReadAll(resp.Body)
+
+	marshallError := json.Unmarshal(bodyText, &abapResp)
+	if marshallError != nil {
+		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
+	marshallError = json.Unmarshal(*abapResp["d"], &body)
+	if marshallError != nil {
+		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
+
+	return body, nil
 }
 
 // GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
@@ -401,16 +378,25 @@ type AbapLogsV2 struct {
 }
 
 type LogResultsV2 struct {
-	Metadata      AbapMetadata       `json:"__metadata"`
-	Index         int                `json:"log_index"`
-	Name          string             `json:"log_name"`
-	Status        string             `json:"type_of_found_issues"`
-	Timestamp     string             `json:"timestamp"`
-	ToLogProtocol LogProtocolResults `json:"to_Log_Protocol"`
+	Metadata      AbapMetadata        `json:"__metadata"`
+	Index         int                 `json:"log_index"`
+	Name          string              `json:"log_name"`
+	Status        string              `json:"type_of_found_issues"`
+	Timestamp     string              `json:"timestamp"`
+	ToLogProtocol LogProtocolDeferred `json:"to_Log_Protocol"`
+}
+
+type LogProtocolDeferred struct {
+	Deferred URI `json:"__deferred"`
+}
+
+type URI struct {
+	URI string `json:"uri"`
 }
 
 type LogProtocolResults struct {
 	Results []LogProtocol `json:"results"`
+	Count   string        `json:"__count"`
 }
 
 type LogProtocol struct {
@@ -419,6 +405,7 @@ type LogProtocol struct {
 	ProtocolLine  int          `json:"index_no"`
 	Type          string       `json:"type"`
 	Description   string       `json:"descr"`
+	Timestamp     string       `json:"timestamp"`
 }
 
 // LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
