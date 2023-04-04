@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 )
 
 const failureMessageClonePull = "Could not pull the Repository / Software Component "
-const numberOfEntriesPerPage = 100
+const numberOfEntriesPerPage = 100000
 const logOutputStatusLength = 10
 const logOutputTimestampLength = 29
 
@@ -45,11 +46,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
 	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
 	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
-	if err != nil {
-		return
-	}
-
-	if len(entity.ToLogOverview.Results) == 0 {
+	if err != nil || len(entity.ToLogOverview.Results) == 0 {
 		// return if no logs are available
 		return
 	}
@@ -59,11 +56,7 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
 	})
 
-	logOutputPhaseLength, logOutputLineLength := calculateLenghts(entity)
-
-	printOverview(logOutputLineLength, logOutputPhaseLength, entity)
-
-	dashedLine(logOutputLineLength)
+	printOverview(entity)
 
 	// Print Details
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
@@ -74,14 +67,22 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	return
 }
 
-func printOverview(logOutputLineLength int, logOutputPhaseLength int, entity PullEntity) {
+func printOverview(entity PullEntity) {
+
+	logOutputPhaseLength, logOutputLineLength := calculateLenghts(entity)
+
 	log.Entry().Infof("\n")
-	dashedLine(logOutputLineLength)
+
+	printDashedLine(logOutputLineLength)
+
 	log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", "Phase", "Status", "Timestamp")
-	dashedLine(logOutputLineLength)
+
+	printDashedLine(logOutputLineLength)
+
 	for _, logEntry := range entity.ToLogOverview.Results {
 		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
 	}
+	printDashedLine(logOutputLineLength)
 }
 
 func calculateLenghts(entity PullEntity) (int, int) {
@@ -96,44 +97,55 @@ func calculateLenghts(entity PullEntity) (int, int) {
 	return phaseLength, lineLength
 }
 
-func dashedLine(i int) {
+func printDashedLine(i int) {
 	log.Entry().Infof(strings.Repeat("-", i))
 }
 
-func printLog(logEntry LogResultsV2, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
+func printLog(logOverviewEntry LogResultsV2, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
 
-	readNextLogEntries := true
 	page := 0
 
-	printHeader(logEntry)
+	printHeader(logOverviewEntry)
 
 	for {
-		query := getLogProtocolQuery(page)
-		connectionDetails.URL = logEntry.ToLogProtocol.Deferred.URI + query
+		connectionDetails.URL = logOverviewEntry.ToLogProtocol.Deferred.URI + getLogProtocolQuery(page)
 		entity, err := GetProtocol(failureMessageClonePull, connectionDetails, client)
-		if (err != nil || reflect.DeepEqual(entity, LogProtocolResults{})) {
-			readNextLogEntries = false
-		}
-		sort.SliceStable(entity.Results, func(i, j int) bool {
-			return entity.Results[i].ProtocolLine < entity.Results[j].ProtocolLine
-		})
 
-		if logEntry.Status != `Success` {
-			for _, entry := range entity.Results {
-				log.Entry().Info(entry.Description)
-			}
+		printLogProtocolEntries(logOverviewEntry, entity)
 
-		} else {
-			for _, entry := range entity.Results {
-				log.Entry().Debug(entry.Description)
-			}
-		}
 		page += 1
-		if !readNextLogEntries {
+		if allLogsHaveBeenPrinted(entity, page, err) {
 			break
 		}
 	}
 
+}
+
+func printLogProtocolEntries(logEntry LogResultsV2, entity LogProtocolResults) {
+
+	sort.SliceStable(entity.Results, func(i, j int) bool {
+		return entity.Results[i].ProtocolLine < entity.Results[j].ProtocolLine
+	})
+
+	if logEntry.Status != `Success` {
+		for _, entry := range entity.Results {
+			log.Entry().Info(entry.Description)
+		}
+
+	} else {
+		for _, entry := range entity.Results {
+			log.Entry().Debug(entry.Description)
+		}
+	}
+}
+
+func allLogsHaveBeenPrinted(entity LogProtocolResults, page int, err error) bool {
+	allPagesHaveBeenRead := false
+	numberOfProtocols, errConversion := strconv.Atoi(entity.Count)
+	if errConversion == nil {
+		allPagesHaveBeenRead = numberOfProtocols <= page*numberOfEntriesPerPage
+	}
+	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(entity.Results, LogProtocolResults{}))
 }
 
 func printHeader(logEntry LogResultsV2) {
@@ -154,7 +166,7 @@ func getLogProtocolQuery(page int) string {
 	skip := page * numberOfEntriesPerPage
 	top := numberOfEntriesPerPage
 
-	return fmt.Sprintf("?$skip=%s&$top=%s", fmt.Sprint(skip), fmt.Sprint(top))
+	return fmt.Sprintf("?$skip=%s&$top=%s&$inlinecount=allpages", fmt.Sprint(skip), fmt.Sprint(top))
 }
 
 func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
@@ -384,6 +396,7 @@ type URI struct {
 
 type LogProtocolResults struct {
 	Results []LogProtocol `json:"results"`
+	Count   string        `json:"__count"`
 }
 
 type LogProtocol struct {
