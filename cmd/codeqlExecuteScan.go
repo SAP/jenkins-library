@@ -91,12 +91,12 @@ func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 		return errors.New("repository param is not set or it cannot be auto populated")
 	}
 
-	pat := regexp.MustCompile(`^(https|git)(:\/\/|@)([^\/:]+)[\/:]([^\/:.]+\/[\S]+)(.git)$`)
+	pat := regexp.MustCompile(`^(https|git)(:\/\/|@)([^\/:]+)[\/:]([^\/:.]+\/[\S]+)$`)
 	matches := pat.FindAllStringSubmatch(repoUri, -1)
 	if len(matches) > 0 {
 		match := matches[0]
 		repoInfo.serverUrl = "https://" + match[3]
-		repoInfo.repo = match[4]
+		repoInfo.repo = strings.TrimSuffix(match[4], ".git")
 		return nil
 	}
 
