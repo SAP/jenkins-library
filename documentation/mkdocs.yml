@@ -169,6 +169,7 @@ nav:
         - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
+        - tmsExport: steps/tmsExport.md
         - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadCTS: steps/transportRequestUploadCTS.md

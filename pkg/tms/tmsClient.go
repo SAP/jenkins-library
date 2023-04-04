@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,89 +13,8 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-)
-
-type AuthToken struct {
-	TokenType   string `json:"token_type"`
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int    `json:"expires_in"`
-}
-
-type CommunicationInstance struct {
-	tmsUrl       string
-	uaaUrl       string
-	clientId     string
-	clientSecret string
-	httpClient   piperHttp.Uploader
-	logger       *logrus.Entry
-	isVerbose    bool
-}
-
-type Node struct {
-	Id   int64  `json:"id"`
-	Name string `json:"name"`
-}
-
-type nodes struct {
-	Nodes []Node `json:"nodes"`
-}
-
-type MtaExtDescriptor struct {
-	Id            int64  `json:"id"`
-	Description   string `json:"description"`
-	MtaId         string `json:"mtaId"`
-	MtaExtId      string `json:"mtaExtId"`
-	MtaVersion    string `json:"mtaVersion"`
-	LastChangedAt string `json:"lastChangedAt"`
-}
-
-type mtaExtDescriptors struct {
-	MtaExtDescriptors []MtaExtDescriptor `json:"mtaExtDescriptors"`
-}
-
-type FileInfo struct {
-	Id   int64  `json:"fileId"`
-	Name string `json:"fileName"`
-}
-
-type NodeUploadResponseEntity struct {
-	TransportRequestId          int64        `json:"transportRequestId"`
-	TransportRequestDescription string       `json:"transportRequestDescription"`
-	QueueEntries                []QueueEntry `json:"queueEntries"`
-}
-
-type QueueEntry struct {
-	Id       int64  `json:"queueId"`
-	NodeId   int64  `json:"nodeId"`
-	NodeName string `json:"nodeName"`
-}
-
-type NodeUploadRequestEntity struct {
-	ContentType string  `json:"contentType"`
-	StorageType string  `json:"storageType"`
-	NodeName    string  `json:"nodeName"`
-	Description string  `json:"description"`
-	NamedUser   string  `json:"namedUser"`
-	Entries     []Entry `json:"entries"`
-}
-
-type Entry struct {
-	Uri string `json:"uri"`
-}
-
-type CommunicationInterface interface {
-	GetNodes() ([]Node, error)
-	GetMtaExtDescriptor(nodeId int64, mtaId, mtaVersion string) (MtaExtDescriptor, error)
-	UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
-	UploadMtaExtDescriptorToNode(nodeId int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
-	UploadFile(file, namedUser string) (FileInfo, error)
-	UploadFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
-}
-
-const (
-	DEFAULT_TR_DESCRIPTION = "Created by Piper"
 )
 
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
@@ -117,7 +35,6 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, cli
 	if err != nil {
 		return communicationInstance, errors.Wrap(err, "Error fetching OAuth token")
 	}
-	log.RegisterSecret(token)
 
 	clientOptions.Token = token
 	communicationInstance.httpClient.SetOptions(clientOptions)
@@ -132,6 +49,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	}
 
 	encodedUsernameColonPassword := b64.StdEncoding.EncodeToString([]byte(communicationInstance.clientId + ":" + communicationInstance.clientSecret))
+	log.RegisterSecret(encodedUsernameColonPassword)
 	header := http.Header{}
 	header.Add("Content-Type", "application/x-www-form-urlencoded")
 	header.Add("Authorization", "Basic "+encodedUsernameColonPassword)
@@ -147,20 +65,21 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 		return "", err
 	}
 
-	var token AuthToken
+	var token xsuaa.AuthToken
 	json.Unmarshal(data, &token)
 
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("OAuth Token retrieved successfully")
 	}
+	log.RegisterSecret(token.AccessToken)
 	return token.TokenType + " " + token.AccessToken, nil
 }
 
 func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAndQuery string, body io.Reader, header http.Header, expectedStatusCode int, isTowardsUaa bool) ([]byte, error) {
 	var requestBody io.Reader
 	if body != nil {
-		closer := ioutil.NopCloser(body)
-		bodyBytes, _ := ioutil.ReadAll(closer)
+		closer := io.NopCloser(body)
+		bodyBytes, _ := io.ReadAll(closer)
 		requestBody = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
 	}
@@ -184,7 +103,7 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 		return nil, fmt.Errorf("unexpected positive HTTP status code %v, while it was expected %v", response.StatusCode, expectedStatusCode)
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	if !isTowardsUaa && communicationInstance.isVerbose {
 		communicationInstance.logger.Debugf("Valid response body: %v", string(data))
 	}
@@ -194,7 +113,7 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 
 func (communicationInstance *CommunicationInstance) logResponseBody(response *http.Response) {
 	if response != nil && response.Body != nil {
-		data, _ := ioutil.ReadAll(response.Body)
+		data, _ := io.ReadAll(response.Body)
 		communicationInstance.logger.Errorf("Response body: %s", data)
 		response.Body.Close()
 	}
@@ -283,6 +202,36 @@ func (communicationInstance *CommunicationInstance) UploadFileToNode(nodeName, f
 	json.Unmarshal(data, &nodeUploadResponseEntity)
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("Node upload executed successfully")
+	}
+	return nodeUploadResponseEntity, nil
+
+}
+
+func (communicationInstance *CommunicationInstance) ExportFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error) {
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Node export started")
+		communicationInstance.logger.Infof("tmsUrl: %v, nodeName: %v, fileId: %v, description: %v, namedUser: %v", communicationInstance.tmsUrl, nodeName, fileId, description, namedUser)
+	}
+
+	header := http.Header{}
+	header.Add("Content-Type", "application/json")
+
+	var nodeUploadResponseEntity NodeUploadResponseEntity
+	entry := Entry{Uri: fileId}
+	body := NodeUploadRequestEntity{ContentType: "MTA", StorageType: "FILE", NodeName: nodeName, Description: description, NamedUser: namedUser, Entries: []Entry{entry}}
+	bodyBytes, errMarshaling := json.Marshal(body)
+	if errMarshaling != nil {
+		return nodeUploadResponseEntity, errors.Wrapf(errMarshaling, "unable to marshal request body %v", body)
+	}
+
+	data, errSendRequest := sendRequest(communicationInstance, http.MethodPost, "/v2/nodes/export", bytes.NewReader(bodyBytes), header, http.StatusOK, false)
+	if errSendRequest != nil {
+		return nodeUploadResponseEntity, errSendRequest
+	}
+
+	json.Unmarshal(data, &nodeUploadResponseEntity)
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Node export executed successfully")
 	}
 	return nodeUploadResponseEntity, nil
 
@@ -407,7 +356,7 @@ func upload(communicationInstance *CommunicationInstance, uploadRequestData pipe
 		return nil, fmt.Errorf("unexpected positive HTTP status code %v, while it was expected %v", response.StatusCode, expectedStatusCode)
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Debugf("Valid response body: %v", string(data))
 	}

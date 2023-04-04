@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -291,22 +290,7 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 		log.Entry().Infof("Using Detect Rescan script")
 		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
 	}
-	env := utils.GetOsEnv()
-	env = append(env, config.CustomEnvironmentVariables...)
-	if piperutils.ContainsStringPart(env, "DETECT_LATEST_RELEASE_VERSION") {
-		releaseVersion := ""
-		for _, i := range env {
-			if strings.Contains(i, "DETECT_LATEST_RELEASE_VERSION") {
-				releaseVersion = strings.Split(i, "=")[1]
-			}
-		}
-		log.Entry().Infof("Using detect script Version %v ", releaseVersion)
-		detect6, _ := regexp.MatchString("6\\.\\d\\.\\d", releaseVersion)
-		if detect6 {
-			log.Entry().Infof("Downloading Detect 6.x")
-			return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
-		}
-	}
+
 	log.Entry().Infof("Downloading Detect7")
 	return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
 }
@@ -316,6 +300,22 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	// Split on spaces, the scanPropeties, so that each property is available as a single string
 	// instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
+
+	if config.BuildTool == "mta" {
+
+		if !checkIfArgumentIsInScanProperties(config, "detect.detector.search.depth") {
+			args = append(args, "--detect.detector.search.depth=100")
+		}
+
+		if !checkIfArgumentIsInScanProperties(config, "detect.detector.search.continue") {
+			args = append(args, "--detect.detector.search.continue=true")
+		}
+
+	}
+
+	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
+		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
 
 	if config.ScanOnChanges {
 		args = append(args, "--report")
@@ -429,6 +429,16 @@ func getVersionName(config detectExecuteScanOptions) string {
 		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
 	}
 	return detectVersionName
+}
+
+func checkIfArgumentIsInScanProperties(config detectExecuteScanOptions, argumentName string) bool {
+	for _, argument := range config.ScanProperties {
+		if strings.Contains(argument, argumentName) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulnerabilities, influx *detectExecuteScanInflux, sys *blackduckSystem) reporting.ScanReport {
@@ -820,6 +830,19 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		projectId,
 		config.ProjectName,
 		projectURL)
+	if err != nil {
+		return "", err
+	}
+	projectVersionName := getVersionName(config)
+	projectVersion, err := sys.Client.GetProjectVersion(config.ProjectName, projectVersionName)
+	if err != nil {
+		return "", err
+	}
+	projectVersionUrl := projectVersion.Href
+	err = record.AddKeyData("version",
+		projectVersion.Name,
+		projectVersionUrl,
+		projectVersionUrl)
 	if err != nil {
 		return "", err
 	}

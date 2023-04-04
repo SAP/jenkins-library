@@ -309,42 +309,6 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
-	t.Run("success case detect 6", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle(false)
-		utilsMock.AddFile("detect.sh", []byte(""))
-		options := detectExecuteScanOptions{
-			CustomEnvironmentVariables: []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"},
-		}
-		err := runDetect(ctx, options, utilsMock, &detectExecuteScanInflux{})
-
-		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
-		assert.NoError(t, err)
-		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
-		assert.Equal(t, expectedScript, utilsMock.Calls[0])
-	})
-
-	t.Run("success case detect 6 from OS env", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		utilsMock := newDetectTestUtilsBundle(false)
-		utilsMock.AddFile("detect.sh", []byte(""))
-		utilsMock.customEnv = []string{"DETECT_LATEST_RELEASE_VERSION=6.8.0"}
-		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
-
-		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
-		assert.NoError(t, err)
-		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
-		assert.Equal(t, expectedScript, utilsMock.Calls[0])
-	})
-
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
@@ -391,18 +355,23 @@ func TestAddDetectArgs(t *testing.T) {
 		{
 			args: []string{"--testProp1=1"},
 			options: detectExecuteScanOptions{
-				ScanProperties:  []string{"--scan1=1", "--scan2=2"},
-				ServerURL:       "https://server.url",
-				Token:           "apiToken",
-				ProjectName:     "testName",
-				Version:         "1.0",
-				VersioningModel: "major-minor",
-				CodeLocation:    "",
-				Scanners:        []string{"signature"},
-				ScanPaths:       []string{"path1", "path2"},
+				BuildTool:           "mta",
+				ExcludedDirectories: []string{"dir1", "dir2"},
+				ScanProperties:      []string{"--scan1=1", "--scan2=2"},
+				ServerURL:           "https://server.url",
+				Token:               "apiToken",
+				ProjectName:         "testName",
+				Version:             "1.0",
+				VersioningModel:     "major-minor",
+				CodeLocation:        "",
+				Scanners:            []string{"signature"},
+				ScanPaths:           []string{"path1", "path2"},
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.detector.search.depth=100",
+				"--detect.detector.search.continue=true",
+				"--detect.excluded.directories=dir1,dir2",
 				"--scan1=1",
 				"--scan2=2",
 				"--blackduck.url=https://server.url",
@@ -740,20 +709,30 @@ func TestAddDetectArgs(t *testing.T) {
 		{
 			args: []string{"--testProp1=1"},
 			options: detectExecuteScanOptions{
-				ServerURL:         "https://server.url",
-				Token:             "apiToken",
-				ProjectName:       "Rapid_scan_on_PRs",
-				Version:           "2.0",
-				VersioningModel:   "major-minor",
-				CodeLocation:      "",
-				ScanPaths:         []string{"path1", "path2"},
-				MinScanInterval:   4,
-				CustomScanVersion: "2.0",
+				ServerURL:       "https://server.url",
+				BuildTool:       "mta",
+				Token:           "apiToken",
+				ProjectName:     "Rapid_scan_on_PRs",
+				Version:         "2.0",
+				VersioningModel: "major-minor",
+				CodeLocation:    "",
+				ScanPaths:       []string{"path1", "path2"},
+				ScanProperties: []string{
+					"--detect.detector.search.depth=5",
+					"--detect.detector.search.continue=false",
+					"--detect.excluded.directories=dir1,dir2",
+				},
+				ExcludedDirectories: []string{"dir3,dir4"},
+				MinScanInterval:     4,
+				CustomScanVersion:   "2.0",
 			},
 			isPullRequest: true,
 			expected: []string{
 				"--testProp1=1",
 				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
+				"--detect.detector.search.depth=5",
+				"--detect.detector.search.continue=false",
+				"--detect.excluded.directories=dir1,dir2",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='Rapid_scan_on_PRs'\"",

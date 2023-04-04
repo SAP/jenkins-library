@@ -1,0 +1,13 @@
+general:
+    verbose: true
+steps:
+  tmsUpload:
+    useGoStep: true
+    nodeName: PIPER-TEST
+    namedUser: Piper-Upload
+    mtaPath: scv_x.mtar
+    verbose: true
+    mtaVersion: 1.0.0
+    nodeExtDescriptorMapping:
+      PIPER-TEST: 'scv_x.mtaext'
+      PIPER-PROD: 'scv_x.mtaext'
