@@ -65,7 +65,7 @@ func TestGolangIntegrationBuildProject1MultiPackage(t *testing.T) {
 
 	container.assertHasOutput(t, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest",
 		"info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest",
-		"info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile test-report.json -- -coverprofile=cover.out ./...",
+		"info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out ./...",
 		"info  golangBuild - DONE 8 tests",
 		"info  golangBuild - running command: go tool cover -html cover.out -o coverage.html",
 		"info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...",
