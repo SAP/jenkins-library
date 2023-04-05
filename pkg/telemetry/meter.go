@@ -28,15 +28,19 @@ func InitMeter(ctx context.Context, resAttributes []attribute.KeyValue) (func(co
 	)
 
 	if dsn, ok := os.LookupEnv("UPTRACE_DSN"); ok {
-		// return initUptraceMeter(ctx, res)
-		meterProvider, err = initUptraceMeter(ctx, res, dsn)
+		prepareUptraceMeter(ctx, res, dsn)
 	} else if token, ok := os.LookupEnv("LIGHTSTEP_TOKEN"); ok {
-		meterProvider, err = initLightstepMeter(ctx, res, token)
+		prepareLightstepMeter(ctx, res, token)
 	} else if token, ok := os.LookupEnv("TELEMETRYHUB_TOKEN"); ok {
-		meterProvider, err = initTelemetryHubMeter(ctx, res, token)
+		prepareTelemetryHubMeter(ctx, res, token)
+	}
+
+	if _, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"); ok {
+		meterProvider, err = initGRPCMeter(ctx, res)
 	} else {
 		meterProvider, err = initStdoutMeter(ctx, res)
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -57,32 +61,30 @@ func InitMeter(ctx context.Context, resAttributes []attribute.KeyValue) (func(co
 // }
 
 // Inits metric reporting to https://app.uptrace.dev/
-func initUptraceMeter(ctx context.Context, res *resource.Resource, dsn string) (*metric.MeterProvider, error) {
+func prepareUptraceMeter(ctx context.Context, res *resource.Resource, dsn string) {
 	// 	otlpmetricgrpc.WithCompressor(gzip.Name),
 	// 	otlpmetricgrpc.WithTemporalitySelector(preferDeltaTemporalitySelector),
-	log.Entry().Debug("initializing metering to Uptrace")
+	log.Entry().Debug("preparing metering to Uptrace")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "https://otlp.uptrace.dev:4317")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "uptrace-dsn="+dsn)
-	return initGRPCMeter(ctx, res)
 }
 
 // Inits metric reporting to https://app.lightstep.com/
-func initLightstepMeter(ctx context.Context, res *resource.Resource, token string) (*metric.MeterProvider, error) {
-	log.Entry().Debug("initializing metering to Lightstep")
+func prepareLightstepMeter(ctx context.Context, res *resource.Resource, token string) {
+	log.Entry().Debug("preparing metering to Lightstep")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "https://ingest.lightstep.com:443")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "lightstep-access-token="+token)
-	return initGRPCMeter(ctx, res)
 }
 
 // Inits metric reporting to https://app.telemetryhub.com/
-func initTelemetryHubMeter(ctx context.Context, res *resource.Resource, token string) (*metric.MeterProvider, error) {
-	log.Entry().Debug("initializing metering to TelemetryHub")
+func prepareTelemetryHubMeter(ctx context.Context, res *resource.Resource, token string) {
+	log.Entry().Debug("preparing metering to TelemetryHub")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "https://otlp.telemetryhub.com:4317")
 	os.Setenv("OTEL_EXPORTER_OTLP_METRICS_HEADERS", "x-telemetryhub-key="+token)
-	return initGRPCMeter(ctx, res)
 }
 
 func initGRPCMeter(ctx context.Context, res *resource.Resource) (*metric.MeterProvider, error) {
+	log.Entry().Debugf("initializing metering to %s", os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"))
 	// 	u, _ := url.Parse(endpoint)
 	// 	if u.Scheme == "https" {
 	// 		// Create credentials using system certificates.
