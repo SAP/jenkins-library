@@ -139,7 +139,7 @@ go 1.17`
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "test-report.json", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath", "-ldflags", "test", "package/foo"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -160,7 +160,7 @@ go 1.17`
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "test-report.json", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./...", "--foo", "--bar"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./...", "--foo", "--bar"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath", "package/foo"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -195,7 +195,7 @@ go 1.17`
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--jsonfile", "integration-report.json", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--jsonfile", "integration-report.out", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -528,7 +528,7 @@ func TestRunGolangTests(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, success)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "test-report.json", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("success - failed tests", func(t *testing.T) {
@@ -579,7 +579,7 @@ func TestRunGolangIntegrationTests(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, success)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--jsonfile", "integration-report.json", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"--junitfile", "TEST-integration.xml", "--jsonfile", "integration-report.out", "--", "-tags=integration", "./..."}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("success - failed tests", func(t *testing.T) {
