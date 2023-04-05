@@ -31,6 +31,8 @@ const (
 	coverageFile                = "cover.out"
 	golangUnitTestOutput        = "TEST-go.xml"
 	golangIntegrationTestOutput = "TEST-integration.xml"
+	unitJsonReport              = "test-report.json"
+	integrationJsonReport       = "integration-report.json"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
@@ -364,7 +366,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
-	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", "test-report.json", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}
+	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", unitJsonReport, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}
 	testOptions = append(testOptions, config.TestOptions...)
 	if err := utils.RunExecutable("gotestsum", testOptions...); err != nil {
 		exists, fileErr := utils.FileExists(golangUnitTestOutput)
@@ -385,7 +387,7 @@ func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, e
 func runGolangIntegrationTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
 	// for integration tests coverage data is not meaningful and thus not being created
-	if err := utils.RunExecutable("gotestsum", "--junitfile", golangIntegrationTestOutput, "--jsonfile", "integration-report.json", "--", "-tags=integration", "./..."); err != nil {
+	if err := utils.RunExecutable("gotestsum", "--junitfile", golangIntegrationTestOutput, "--jsonfile", integrationJsonReport, "--", "-tags=integration", "./..."); err != nil {
 		exists, fileErr := utils.FileExists(golangIntegrationTestOutput)
 		if !exists || fileErr != nil {
 			log.SetErrorCategory(log.ErrorBuild)
