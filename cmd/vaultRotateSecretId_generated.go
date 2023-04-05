@@ -29,7 +29,7 @@ type vaultRotateSecretIdOptions struct {
 	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty" validate:"required_if=SecretStore ado"`
 	AdoProject                           string `json:"adoProject,omitempty"`
 	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
-	GithubPersonalAccessToken            string `json:"githubPersonalAccessToken,omitempty" validate:"required_if=SecretStore ghactions"`
+	GithubToken                          string `json:"githubToken,omitempty" validate:"required_if=SecretStore ghactions"`
 	GithubAPIURL                         string `json:"githubApiUrl,omitempty"`
 	Owner                                string `json:"owner,omitempty"`
 	Repository                           string `json:"repository,omitempty"`
@@ -70,7 +70,7 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 			log.RegisterSecret(stepConfig.JenkinsUsername)
 			log.RegisterSecret(stepConfig.JenkinsToken)
 			log.RegisterSecret(stepConfig.AdoPersonalAccessToken)
-			log.RegisterSecret(stepConfig.GithubPersonalAccessToken)
+			log.RegisterSecret(stepConfig.GithubToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -146,7 +146,7 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 	cmd.Flags().StringVar(&stepConfig.AdoPersonalAccessToken, "adoPersonalAccessToken", os.Getenv("PIPER_adoPersonalAccessToken"), "The Azure DevOps personal access token")
 	cmd.Flags().StringVar(&stepConfig.AdoProject, "adoProject", os.Getenv("PIPER_adoProject"), "The Azure DevOps project ID. Project name also can be used")
 	cmd.Flags().IntVar(&stepConfig.AdoPipelineID, "adoPipelineId", 0, "The Azure DevOps pipeline ID. Also called as definition ID")
-	cmd.Flags().StringVar(&stepConfig.GithubPersonalAccessToken, "githubPersonalAccessToken", os.Getenv("PIPER_githubPersonalAccessToken"), "The GitHub Actions personal access token")
+	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token, with the repo scope")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL that corresponds to the pipeline repository")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Owner of the pipeline GitHub repository")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the pipeline GitHub repository")
@@ -308,7 +308,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Default:     0,
 					},
 					{
-						Name: "githubPersonalAccessToken",
+						Name: "githubToken",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "password",
@@ -320,7 +320,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "token"}},
-						Default:   os.Getenv("PIPER_githubPersonalAccessToken"),
+						Default:   os.Getenv("PIPER_githubToken"),
 					},
 					{
 						Name:        "githubApiUrl",
@@ -332,22 +332,32 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Default:     `https://api.github.com`,
 					},
 					{
-						Name:        "owner",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_owner"),
+						Name: "owner",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/owner",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
-						Name:        "repository",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_repository"),
+						Name: "repository",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/repository",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 				},
 			},

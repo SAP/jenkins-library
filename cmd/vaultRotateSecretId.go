@@ -136,27 +136,27 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		// Additional info:
 		// https://github.com/google/go-github/blob/master/example/newreposecretwithxcrypto/main.go
 
-		ctx, client, err := github.NewClient(config.GithubPersonalAccessToken, config.GithubAPIURL, "", []string{})
+		ctx, client, err := github.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
 		if err != nil {
-			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
+			log.Entry().Warn("Could not write secret ID back to GitHub Actions: GitHub client not created")
 			return err
 		}
 
 		publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, config.Owner, config.Repository)
 		if err != nil {
-			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
+			log.Entry().Warn("Could not write secret ID back to GitHub Actions: repository's public key not retrieved")
 			return err
 		}
 
 		encryptedSecret, err := github.CreateEncryptedSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
 		if err != nil {
-			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
+			log.Entry().Warn("Could not write secret ID back to GitHub Actions: secret encryption failed")
 			return err
 		}
 
 		_, err = client.Actions.CreateOrUpdateRepoSecret(ctx, config.Owner, config.Repository, encryptedSecret)
 		if err != nil {
-			log.Entry().Warn("Could not write secret ID back to GitHub Actions")
+			log.Entry().Warn("Could not write secret ID back to GitHub Actions: submission to GitHub failed")
 			return err
 		}
 	default:
