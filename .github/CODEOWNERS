@@ -60,8 +60,8 @@ AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 abapEnvironment*                                @SAP/jenkins-library-abap
 AbapEnvironment*                                @SAP/jenkins-library-abap
 
-ascAppUpload*                                   @Mau04
-AscAppUpload*                                   @Mau04
+ascAppUpload*                                   @Mau04 @inf2381
+AscAppUpload*                                   @Mau04 @inf2381
 
 #####################
 # Integration tests #
