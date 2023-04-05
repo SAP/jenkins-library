@@ -129,7 +129,7 @@ func TestRunAbapEnvironmentBuild(t *testing.T) {
 		// test
 		err := runAbapEnvironmentBuild(&config, nil, utils, &cpe)
 		// assert
-		finalValues := `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"},{"value_id":"BUILD_FRAMEWORK_MODE","value":"P"}]`
+		finalValues := `[{"value_id":"PACKAGES","value":"/BUILD/AUNIT_DUMMY_TESTS"}]`
 		err = json.Unmarshal([]byte(finalValues), &expectedValueList)
 		assert.NoError(t, err)
 		err = json.Unmarshal([]byte(cpe.abap.buildValues), &recordedValueList)
@@ -385,6 +385,17 @@ func TestEvaluateAddonDescriptor(t *testing.T) {
 		// assert
 		assert.Error(t, err)
 		assert.Equal(t, 0, len(values))
+	})
+}
+
+func TestValues2String(t *testing.T) {
+	t.Run("dito", func(t *testing.T) {
+		var myValues []abapbuild.Value
+		myValues = append(myValues, abapbuild.Value{ValueID: "Name", Value: "Hugo"})
+		myValues = append(myValues, abapbuild.Value{ValueID: "Age", Value: "43"})
+		myValues = append(myValues, abapbuild.Value{ValueID: "Hight", Value: "17cm"})
+		myString := values2string(myValues)
+		assert.Equal(t, "Name = Hugo; Age = 43; Hight = 17cm", myString)
 	})
 }
 
