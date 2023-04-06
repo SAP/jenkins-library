@@ -83,6 +83,7 @@ nav:
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
         - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
+        - checkmarxOneExecuteScan: steps/checkmarxOneExecuteScan.md
         - checksPublishResults: steps/checksPublishResults.md
         - cfManifestSubstituteVariables: steps/cfManifestSubstituteVariables.md
         - cloudFoundryCreateService: steps/cloudFoundryCreateService.md

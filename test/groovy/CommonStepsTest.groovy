@@ -146,6 +146,7 @@ public class CommonStepsTest extends BasePiperTest{
         'buildSetResult',
         'runClosures',
         'checkmarxExecuteScan', //implementing new golang pattern without fields
+        'checkmarxOneExecuteScan', //implementing new golang pattern without fields
         'githubCreateIssue', //implementing new golang pattern without fields
         'githubCreatePullRequest', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
