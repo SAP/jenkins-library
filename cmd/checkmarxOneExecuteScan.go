@@ -65,6 +65,10 @@ func checkmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, _ *telemetry
 	influx.step_data.fields.checkmarxOne = true
 }
 
+func RunCheckmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) error {
+	return runStep(config, influx)
+}
+
 func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) error {
 	// TODO: Setup connection with Splunk, influxDB?
 	cx1sh, err := Authenticate(config, influx)

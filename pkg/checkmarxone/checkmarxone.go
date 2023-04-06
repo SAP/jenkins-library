@@ -835,7 +835,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 
 	response, err := sendRequestInternal(sys, http.MethodPut, uploadUri, bytes.NewReader(zipContents), header, []int{})
 	if err != nil {
-		sys.logger.Errorf("Failed to upload file %v: s", zipFile, err)
+		sys.logger.Errorf("Failed to upload file %v: %s", zipFile, err)
 		return uploadUri, err
 	}
 
