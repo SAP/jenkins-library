@@ -351,12 +351,14 @@ spec:
         default: "{{"
         scope:
           - STEPS
+          - PARAMETERS
       - name: templateEndDelimiter
         type: string
         description: When templating value files, use this end delimiter.
         default: "}}"
         scope:
           - STEPS
+          - PARAMETERS
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config
