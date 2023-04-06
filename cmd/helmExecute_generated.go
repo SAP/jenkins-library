@@ -613,7 +613,7 @@ func helmExecuteMetadata() config.StepData {
 					{
 						Name:        "templateStartDelimiter",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS"},
+						Scope:       []string{"STEPS", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -622,7 +622,7 @@ func helmExecuteMetadata() config.StepData {
 					{
 						Name:        "templateEndDelimiter",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS"},
+						Scope:       []string{"STEPS", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
