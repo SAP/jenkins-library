@@ -28,6 +28,8 @@ type codeqlExecuteScanOptions struct {
 	Database      string `json:"database,omitempty"`
 	QuerySuite    string `json:"querySuite,omitempty"`
 	UploadResults bool   `json:"uploadResults,omitempty"`
+	Threads       string `json:"threads,omitempty"`
+	Ram           string `json:"ram,omitempty"`
 	AnalyzedRef   string `json:"analyzedRef,omitempty"`
 	Repository    string `json:"repository,omitempty"`
 	CommitID      string `json:"commitId,omitempty"`
@@ -45,6 +47,7 @@ func (p *codeqlExecuteScanReports) persist(stepConfig codeqlExecuteScanOptions, 
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/*.csv", ParamRef: "", StepResultType: "codeql"},
 		{FilePattern: "**/*.sarif", ParamRef: "", StepResultType: "codeql"},
+		{FilePattern: "**/toolrun_codeql_*.json", ParamRef: "", StepResultType: "codeql"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -169,7 +172,7 @@ and Java plus Maven.`,
 }
 
 func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `githubTokenCredentialsId` parameter.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Defines the build tool which is used for building the project.")
 	cmd.Flags().StringVar(&stepConfig.BuildCommand, "buildCommand", os.Getenv("PIPER_buildCommand"), "Command to build the project")
 	cmd.Flags().StringVar(&stepConfig.Language, "language", os.Getenv("PIPER_language"), "The programming language used to analyze.")
@@ -177,6 +180,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.Database, "database", `codeqlDB`, "Path to the CodeQL database to create. This directory will be created, and must not already exist.")
 	cmd.Flags().StringVar(&stepConfig.QuerySuite, "querySuite", os.Getenv("PIPER_querySuite"), "The name of a CodeQL query suite. If omitted, the default query suite for the language of the database being analyzed will be used.")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
+	cmd.Flags().StringVar(&stepConfig.Threads, "threads", `0`, "Use this many threads for the codeql operations.")
+	cmd.Flags().StringVar(&stepConfig.Ram, "ram", os.Getenv("PIPER_ram"), "Use this much ram (MB) for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "URL of the GitHub instance")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
@@ -196,6 +201,11 @@ func codeqlExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
+				Resources: []config.StepResources{
+					{Name: "commonPipelineEnvironment"},
+					{Name: "buildDescriptor", Type: "stash"},
+					{Name: "tests", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -282,6 +292,24 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "threads",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `0`,
+					},
+					{
+						Name:        "ram",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_ram"),
+					},
+					{
 						Name: "analyzedRef",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -336,6 +364,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/*.csv", "type": "codeql"},
 							{"filePattern": "**/*.sarif", "type": "codeql"},
+							{"filePattern": "**/toolrun_codeql_*.json", "type": "codeql"},
 						},
 					},
 				},

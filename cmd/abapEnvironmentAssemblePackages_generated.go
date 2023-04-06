@@ -308,7 +308,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli:7"},
+				{Name: "cf", Image: "ppiper/cf-cli:v12"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

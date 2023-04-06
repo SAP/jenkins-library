@@ -405,7 +405,13 @@ func (dv *deploymentValues) mapValues() error {
 		if val := dv.get(srcString); val != "" {
 			dv.add(dst, val)
 		} else {
-			log.Entry().Warnf("can not map '%s: %s', %s is not set", dst, dv.mapping[dst], dv.mapping[dst])
+			escapedSrcString := strings.ReplaceAll(srcString, "-", "_")
+			log.Entry().Debugf("property '%s' not found, trying with escaped version '%s'", srcString, escapedSrcString)
+			if val := dv.get(escapedSrcString); val != "" {
+				dv.add(dst, val)
+			} else {
+				return fmt.Errorf("can not map '%s: %s', %s is not set", dst, srcString, srcString)
+			}
 		}
 	}
 
@@ -433,7 +439,7 @@ func (dv *deploymentValues) asHelmValues() map[string]interface{} {
 	}
 }
 
-func joinKey(parts ...string) string {
+func createKey(parts ...string) string {
 	escapedParts := make([]string, 0, len(parts))
 	replacer := strings.NewReplacer(".", "_", "-", "_")
 	for _, part := range parts {
@@ -532,8 +538,8 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 				tag = fmt.Sprintf("%s@%s", tag, config.ImageDigests[i])
 			}
 
-			dv.add(joinKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
-			dv.add(joinKey("image", key, "tag"), tag)
+			dv.add(createKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createKey("image", key, "tag"), tag)
 
 			if len(config.ImageNames) == 1 {
 				dv.singleImage = true
@@ -561,8 +567,8 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 		dv.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
 		dv.add("image.tag", containerImageTag)
 
-		dv.add(joinKey("image", containerImageName, "repository"), fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
-		dv.add(joinKey("image", containerImageName, "tag"), containerImageTag)
+		dv.add(createKey("image", containerImageName, "repository"), fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+		dv.add(createKey("image", containerImageName, "tag"), containerImageTag)
 	}
 
 	return dv, nil
