@@ -26,7 +26,7 @@ func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Du
 	}
 }
 
-func WaitForBuildToFinishWithRetry(ctx context.Context, build Build, pollInterval, retryInterval time.Duration, maxRetries int) error {
+func WaitForBuildToFinishWithRetry(ctx context.Context, build Build, pollInterval time.Duration, retryInterval time.Duration, maxRetries int) error {
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		for build.IsRunning(ctx) {
