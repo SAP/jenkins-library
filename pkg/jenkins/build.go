@@ -18,7 +18,7 @@ type Build interface {
 }
 
 // WaitForBuildToFinish waits till a build is finished.
-func WaitForBuildToFinishWithRetry(ctx context.Context, build Build, pollInterval time.Duration) error {
+func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Duration) error {
 	var err error
 	var maxRetries int = 5
 	var retryInterval time.Duration = 10 * time.Second
