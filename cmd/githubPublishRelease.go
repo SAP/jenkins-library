@@ -145,17 +145,18 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, conf
 
 func getReleaseDeltaText(config *githubPublishReleaseOptions, lastRelease *github.RepositoryRelease) string {
 	releaseDeltaText := ""
+	tagName := config.TagPrefix + config.Version
 
 	// add delta link to previous release
 	releaseDeltaText += "\n**Changes**\n"
 	releaseDeltaText += fmt.Sprintf(
 		"[%v...%v](%v/%v/%v/compare/%v...%v)\n",
 		lastRelease.GetTagName(),
-		config.Version,
+		tagName,
 		config.ServerURL,
 		config.Owner,
 		config.Repository,
-		lastRelease.GetTagName(), config.Version,
+		lastRelease.GetTagName(), tagName,
 	)
 
 	return releaseDeltaText
