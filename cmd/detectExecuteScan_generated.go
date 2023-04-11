@@ -57,6 +57,8 @@ type detectExecuteScanOptions struct {
 	FailOnSevereVulnerabilities bool     `json:"failOnSevereVulnerabilities,omitempty"`
 	BuildTool                   string   `json:"buildTool,omitempty"`
 	ExcludedDirectories         []string `json:"excludedDirectories,omitempty"`
+	ExcludedNpmDependencies     []string `json:"excludedNpmDependencies,omitempty" validate:"possible-values=NONE DEV PEER"`
+	NpmArguments                []string `json:"npmArguments,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -289,6 +291,8 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the step on severe vulnerabilties or not")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludedDirectories, "excludedDirectories", []string{}, "List of directories which should be excluded from the scan.")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludedNpmDependencies, "excludedNpmDependencies", []string{}, "List of npm dependency types which Detect should exclude from the BOM.")
+	cmd.Flags().StringSliceVar(&stepConfig.NpmArguments, "npmArguments", []string{}, "List of additional arguments that Detect will add at then end of the npm ls command line when Detect executes the NPM CLI Detector on an NPM project.")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -669,6 +673,24 @@ func detectExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "excludedDirectories",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/excludedDirectories"}},
+						Default:     []string{},
+					},
+					{
+						Name:        "excludedNpmDependencies",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/excludedDirectories"}},
+						Default:     []string{},
+					},
+					{
+						Name:        "npmArguments",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
