@@ -138,7 +138,7 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 	cmd.Flags().StringVar(&stepConfig.JenkinsCredentialDomain, "jenkinsCredentialDomain", `_`, "The jenkins credential domain which should be used")
 	cmd.Flags().StringVar(&stepConfig.JenkinsUsername, "jenkinsUsername", os.Getenv("PIPER_jenkinsUsername"), "The jenkins username")
 	cmd.Flags().StringVar(&stepConfig.JenkinsToken, "jenkinsToken", os.Getenv("PIPER_jenkinsToken"), "The jenkins token")
-	cmd.Flags().StringVar(&stepConfig.VaultAppRoleSecretTokenCredentialsID, "vaultAppRoleSecretTokenCredentialsId", os.Getenv("PIPER_vaultAppRoleSecretTokenCredentialsId"), "The Jenkins credential ID or Azure DevOps/GitHub Actions variable name for the Vault AppRole Secret ID credential")
+	cmd.Flags().StringVar(&stepConfig.VaultAppRoleSecretTokenCredentialsID, "vaultAppRoleSecretTokenCredentialsId", os.Getenv("PIPER_vaultAppRoleSecretTokenCredentialsId"), "The Jenkins credential ID, Azure DevOps variable name, or GitHub Actions secret name for the Vault AppRole Secret ID credential")
 	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "The URL for the Vault server to use")
 	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "The Vault namespace that should be used (optional)")
 	cmd.Flags().IntVar(&stepConfig.DaysBeforeExpiry, "daysBeforeExpiry", 15, "The amount of days before expiry until the secret ID gets rotated")
@@ -146,7 +146,7 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 	cmd.Flags().StringVar(&stepConfig.AdoPersonalAccessToken, "adoPersonalAccessToken", os.Getenv("PIPER_adoPersonalAccessToken"), "The Azure DevOps personal access token")
 	cmd.Flags().StringVar(&stepConfig.AdoProject, "adoProject", os.Getenv("PIPER_adoProject"), "The Azure DevOps project ID. Project name also can be used")
 	cmd.Flags().IntVar(&stepConfig.AdoPipelineID, "adoPipelineId", 0, "The Azure DevOps pipeline ID. Also called as definition ID")
-	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token, with the repo scope")
+	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line with the scope 'repo'")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL that corresponds to the pipeline repository")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Owner of the pipeline GitHub repository")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the pipeline GitHub repository")
@@ -311,15 +311,15 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "githubToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:    "password",
+								Name:    "githubVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "github",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "token"}},
+						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
 					},
 					{
