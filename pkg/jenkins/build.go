@@ -19,15 +19,15 @@ type Build interface {
 
 // WaitForBuildToFinish waits till a build is finished.
 func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Duration) {
-    // TODO: handle timeout?
-    for build.IsRunning(ctx) {
-        time.Sleep(pollInterval)
-        statusCode, err := build.Poll(ctx)
-        if err != nil {
-            log.Printf("Error polling build (status code: %d): %s", statusCode, err)
-            break
-        }
-    }
+	// TODO: handle timeout?
+	for build.IsRunning(ctx) {
+		time.Sleep(pollInterval)
+		statusCode, err := build.Poll(ctx)
+		if err != nil {
+			log.Printf("Error polling build (status code: %d): %s", statusCode, err)
+			break
+		}
+	}
 }
 
 // FetchBuildArtifact is fetching a build artifact from a finished build with a certain name.
