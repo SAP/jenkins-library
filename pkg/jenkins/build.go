@@ -18,16 +18,30 @@ type Build interface {
 }
 
 // WaitForBuildToFinish waits till a build is finished.
-func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Duration) {
-	// TODO: handle timeout?
+func WaitForBuildToFinishWithRetry(ctx context.Context, build Build, pollInterval time.Duration) error {
+	var err error
+	var maxRetries int = 5
+	var retryInterval time.Duration = 10 * time.Second
+
 	for build.IsRunning(ctx) {
 		time.Sleep(pollInterval)
-		statusCode, err := build.Poll(ctx)
+	}
+
+	for i := 0; i < maxRetries; i++ {
+		time.Sleep(pollInterval)
+		_, err = build.Poll(ctx)
 		if err != nil {
-			fmt.Errorf("Error polling build (status code: %d): %s", statusCode, err)
 			break
 		}
+		if err == nil {
+			return nil
+		}
+		fmt.Printf("Error occurred while waiting for build to finish: %v. Retrying after %v\n", err, retryInterval)
+		// Sleep for the retry interval before trying again.
+		time.Sleep(retryInterval)
 	}
+	fmt.Printf("Max retries (%v) exceeded while waiting for build to finish. Last error: %v\n", maxRetries, err)
+	return err
 }
 
 // FetchBuildArtifact is fetching a build artifact from a finished build with a certain name.
