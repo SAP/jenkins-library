@@ -24,7 +24,7 @@ func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Du
 		time.Sleep(pollInterval)
 		statusCode, err := build.Poll(ctx)
 		if err != nil {
-			log.Printf("Error polling build (status code: %d): %s", statusCode, err)
+			fmt.Errorf("Error polling build (status code: %d): %s", statusCode, err)
 			break
 		}
 	}
