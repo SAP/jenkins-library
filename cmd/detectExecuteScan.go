@@ -390,7 +390,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	// npm
-	log.Entry().Infof("Checking for npm paramters: ", config.NpmDependencyTypesExcluded, config.NpmArguments)
 	if len(config.NpmDependencyTypesExcluded) > 0 {
 		args = append(args, fmt.Sprintf("--detect.npm.dependency.types.excluded=%v", strings.ToUpper(strings.Join(config.NpmDependencyTypesExcluded, ","))))
 	}
