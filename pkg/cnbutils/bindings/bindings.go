@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	k8sjson "sigs.k8s.io/json"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	"github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
@@ -23,37 +25,65 @@ type binding struct {
 }
 
 type bindingData struct {
-	Key     string  `json:"key"`
-	Content *string `json:"content,omitempty"`
-	File    *string `json:"file,omitempty"`
-	FromURL *string `json:"fromUrl,omitempty"`
+	Key                string  `json:"key"`
+	Content            *string `json:"content,omitempty"`
+	File               *string `json:"file,omitempty"`
+	FromURL            *string `json:"fromUrl,omitempty"`
+	VaultCredentialKey *string `json:"vaultCredentialKey,omitempty"`
 }
 
 type bindings map[string]binding
 
+type bindingContentType int
+
+const (
+	fileBinding bindingContentType = iota
+	contentBinding
+	fromURLBinding
+	vaultBinding
+)
+
 // Return error if:
-// 1. Content is set + File or FromURL
-// 2. File is set + FromURL or Content
-// 3. FromURL is set + File or Content
-// 4. Everything is set
+// 1. Content is set + File or FromURL or VaultCredentialKey
+// 2. File is set + FromURL or Content or VaultCredentialKey
+// 3. FromURL is set + File or Content or VaultCredentialKey
+// 4. VaultCredentialKey is set + File or FromURL or Content
+// 5. Everything is set
 func (b *bindingData) validate() error {
 	if !validName(b.Key) {
 		return fmt.Errorf("invalid key: '%s'", b.Key)
 	}
 
-	if b.Content == nil && b.File == nil && b.FromURL == nil {
-		return errors.New("one of 'file', 'content' or 'fromUrl' properties must be specified")
+	if b.Content == nil && b.File == nil && b.FromURL == nil && b.VaultCredentialKey == nil {
+		return errors.New("one of 'file', 'content', 'fromUrl' or 'vaultCredentialKey' properties must be specified")
 	}
 
-	onlyOneSet := (b.Content != nil && b.File == nil && b.FromURL == nil) ||
-		(b.Content == nil && b.File != nil && b.FromURL == nil) ||
-		(b.Content == nil && b.File == nil && b.FromURL != nil)
+	onlyOneSet := (b.Content != nil && b.File == nil && b.FromURL == nil && b.VaultCredentialKey == nil) ||
+		(b.Content == nil && b.File != nil && b.FromURL == nil && b.VaultCredentialKey == nil) ||
+		(b.Content == nil && b.File == nil && b.FromURL != nil && b.VaultCredentialKey == nil) ||
+		(b.Content == nil && b.File == nil && b.FromURL == nil && b.VaultCredentialKey != nil)
 
 	if !onlyOneSet {
-		return errors.New("only one of 'content', 'file' or 'fromUrl' can be set")
+		return errors.New("only one of 'content', 'file', 'fromUrl' or 'vaultCredentialKey' can be set")
 	}
 
 	return nil
+}
+
+func (b *bindingData) bindingContentType() bindingContentType {
+	if b.File != nil {
+		return fileBinding
+	}
+
+	if b.Content != nil {
+		return contentBinding
+	}
+
+	if b.FromURL != nil {
+		return fromURLBinding
+	}
+
+	return vaultBinding
 }
 
 // ProcessBindings creates the given bindings in the platform directory
@@ -95,33 +125,39 @@ func processBinding(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, plat
 		return errors.Wrap(err, "failed to write the 'type' binding file")
 	}
 
-	if data.File != nil {
-		_, err = utils.Copy(*data.File, filepath.Join(bindingDir, data.Key))
+	var bindingContent []byte
+
+	switch data.bindingContentType() {
+	case fileBinding:
+		bindingContent, err = utils.FileRead(*data.File)
 		if err != nil {
 			return errors.Wrap(err, "failed to copy binding file")
 		}
-	} else {
-		var bindingContent []byte
-
-		if data.Content == nil {
-			response, err := httpClient.SendRequest(http.MethodGet, *data.FromURL, nil, nil, nil)
-			if err != nil {
-				return errors.Wrap(err, "failed to load binding from url")
-			}
-
-			bindingContent, err = ioutil.ReadAll(response.Body)
-			defer response.Body.Close()
-			if err != nil {
-				return errors.Wrap(err, "error reading response")
-			}
-		} else {
-			bindingContent = []byte(*data.Content)
-		}
-
-		err = utils.FileWrite(filepath.Join(bindingDir, data.Key), bindingContent, 0644)
+	case contentBinding:
+		bindingContent = []byte(*data.Content)
+	case fromURLBinding:
+		response, err := httpClient.SendRequest(http.MethodGet, *data.FromURL, nil, nil, nil)
 		if err != nil {
-			return errors.Wrap(err, "failed to write binding")
+			return errors.Wrap(err, "failed to load binding from url")
 		}
+
+		bindingContent, err = ioutil.ReadAll(response.Body)
+		defer response.Body.Close()
+		if err != nil {
+			return errors.Wrap(err, "error reading response")
+		}
+	case vaultBinding:
+		envVar := config.VaultCredentialEnvPrefixDefault + config.ConvertEnvVar(*data.VaultCredentialKey)
+		if bindingContentString, ok := os.LookupEnv(envVar); ok {
+			bindingContent = []byte(bindingContentString)
+		} else {
+			return fmt.Errorf("environment variable %q is not set (required by the %q binding)", envVar, name)
+		}
+	}
+
+	err = utils.FileWrite(filepath.Join(bindingDir, data.Key), bindingContent, 0644)
+	if err != nil {
+		return errors.Wrap(err, "failed to write binding")
 	}
 
 	return nil
@@ -152,10 +188,11 @@ func toTyped(rawMap map[string]interface{}) (bindings, error) {
 
 		if b.Key != "" {
 			b.Data = append(b.Data, bindingData{
-				Key:     b.Key,
-				Content: b.Content,
-				File:    b.File,
-				FromURL: b.FromURL,
+				Key:                b.Key,
+				Content:            b.Content,
+				File:               b.File,
+				FromURL:            b.FromURL,
+				VaultCredentialKey: b.VaultCredentialKey,
 			})
 		}
 

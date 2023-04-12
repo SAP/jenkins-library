@@ -132,7 +132,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepConfig := StepConfig{Config: map[string]interface{}{}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
-		assert.Equal(t, nil, stepConfig.Config[secretName])
+		assert.Nil(t, stepConfig.Config[secretName])
 		vaultMock.AssertNotCalled(t, "GetKvSecret", mock.AnythingOfType("string"))
 	})
 }
@@ -154,7 +154,7 @@ func TestVaultSecretFiles(t *testing.T) {
 		contentByte, err := ioutil.ReadFile(path)
 		assert.NoError(t, err)
 		content := string(contentByte)
-		assert.Equal(t, content, "value1")
+		assert.Equal(t, "value1", content)
 	})
 
 	os.RemoveAll(VaultSecretFileDirectory)
@@ -248,10 +248,10 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 		resolveVaultTestCredentials(&stepConfig, vaultMock)
 
 		// assert
-		for k, v := range vaultData {
+		for k, expectedValue := range vaultData {
 			env := envPrefix + strings.ToUpper(k)
 			assert.NotEmpty(t, os.Getenv(env))
-			assert.Equal(t, os.Getenv(env), v)
+			assert.Equal(t, expectedValue, os.Getenv(env))
 		}
 	})
 
@@ -283,13 +283,13 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 			resolveVaultCredentials(&stepConfig, vaultMock)
 
 			// assert
-			for k, v := range vaultData {
+			for k, expectedValue := range vaultData {
 				env := envPrefix + strings.ToUpper(k)
 				assert.NotEmpty(t, os.Getenv(env))
-				assert.Equal(t, os.Getenv(env), v)
+				assert.Equal(t, expectedValue, os.Getenv(env))
 				standardEnv := standardEnvPrefix + strings.ToUpper(k)
 				assert.NotEmpty(t, os.Getenv(standardEnv))
-				assert.Equal(t, os.Getenv(standardEnv), v)
+				assert.Equal(t, expectedValue, os.Getenv(standardEnv))
 			}
 		})
 	}
@@ -317,10 +317,10 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 		resolveVaultTestCredentials(&stepConfig, vaultMock)
 
 		// assert
-		for k, v := range vaultData {
+		for k, expectedValue := range vaultData {
 			env := envPrefix + strings.ToUpper(k)
 			assert.NotEmpty(t, os.Getenv(env))
-			assert.Equal(t, os.Getenv(env), v)
+			assert.Equal(t, expectedValue, os.Getenv(env))
 		}
 	})
 }
@@ -357,7 +357,7 @@ func Test_convertEnvVar(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := convertEnvVar(tt.args.s); got != tt.want {
+			if got := ConvertEnvVar(tt.args.s); got != tt.want {
 				t.Errorf("convertEnvironment() = %v, want %v", got, tt.want)
 			}
 		})
