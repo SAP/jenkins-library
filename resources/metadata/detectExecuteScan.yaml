@@ -427,11 +427,11 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: excludedNpmDependencies
+      - name: npmDependencyTypesExcluded
         description:
           "List of npm dependency types which Detect should exclude from the BOM."
         aliases:
-          - name: detect/excludedDirectories
+          - name: detect/npmDependencyTypesExcluded
         type: "[]string"
         scope:
           - PARAMETERS
@@ -445,7 +445,7 @@ spec:
         description:
           "List of additional arguments that Detect will add at then end of the npm ls command line when Detect executes the NPM CLI Detector on an NPM project."
         aliases:
-          - name: detect/excludedDirectories
+          - name: detect/npmArguments
         type: "[]string"
         scope:
           - PARAMETERS
