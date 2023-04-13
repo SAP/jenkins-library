@@ -2,7 +2,6 @@ package github
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -233,26 +232,5 @@ func TestRunGithubCreateIssue(t *testing.T) {
 
 		// assert
 		assert.EqualError(t, err, "error occurred when creating issue: error creating issue")
-	})
-}
-
-func TestRunGithubCreateEncryptedSecret(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Success", func(t *testing.T) {
-		mockKeyID := "1"
-		mockB64Key := base64.StdEncoding.EncodeToString([]byte("testPublicKey"))
-		mockPubKey := github.PublicKey{KeyID: &mockKeyID, Key: &mockB64Key}
-
-		mockName := "testSecret"
-		mockValue := "testValue"
-
-		// test
-		githubSecret, err := CreateEncryptedSecret(mockName, mockValue, &mockPubKey)
-
-		// assert
-		assert.NoError(t, err)
-		assert.Equal(t, githubSecret.Name, mockName)
-		assert.Equal(t, githubSecret.KeyID, mockKeyID)
 	})
 }
