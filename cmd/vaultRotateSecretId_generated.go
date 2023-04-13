@@ -29,7 +29,7 @@ type vaultRotateSecretIdOptions struct {
 	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty" validate:"required_if=SecretStore ado"`
 	AdoProject                           string `json:"adoProject,omitempty"`
 	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
-	GithubToken                          string `json:"githubToken,omitempty" validate:"required_if=SecretStore ghactions"`
+	GithubToken                          string `json:"githubToken,omitempty" validate:"required_if=SecretStore github"`
 	GithubAPIURL                         string `json:"githubApiUrl,omitempty"`
 	Owner                                string `json:"owner,omitempty"`
 	Repository                           string `json:"repository,omitempty"`
@@ -319,7 +319,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "access_token"}},
+						Aliases:   []config.Alias{{Name: "access_token"}, {Name: "token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
 					},
 					{
