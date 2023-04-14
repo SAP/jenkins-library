@@ -29,7 +29,7 @@ func TestRunCheckmarxoneExecuteScan(t *testing.T) {
 		config := checkmarxOneExecuteScanOptions{}
 
 		// test
-		err := runStep(config, nil)
+		err := RunCheckmarxOneExecuteScan(config, nil)
 
 		// assert
 		assert.NoError(t, err)
@@ -38,12 +38,10 @@ func TestRunCheckmarxoneExecuteScan(t *testing.T) {
 	t.Run("error path", func(t *testing.T) {
 		t.Parallel()
 		// init
-		config := checkmarxoneExecuteScanOptions{}
-
-		utils := newCheckmarxoneExecuteScanTestsUtils()
+		config := checkmarxOneExecuteScanOptions{}
 
 		// test
-		err := runCheckmarxoneExecuteScan(&config, nil, utils)
+		err := RunCheckmarxOneExecuteScan(config, nil)
 
 		// assert
 		assert.EqualError(t, err, "cannot run without important file")
