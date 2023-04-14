@@ -15,7 +15,7 @@ metadata:
     thresholds instead of `percentage` whereas we strongly recommend you to stay with the defaults provided.
 spec:
   inputs:
-    secrets:  
+    secrets:
       - name: checkmarxOneCredentialsId
         description: Jenkins 'Username with password' credentials ID containing ClientID and ClientSecret to communicate with the checkmarxOne backend.
         type: jenkins
