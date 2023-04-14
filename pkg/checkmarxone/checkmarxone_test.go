@@ -239,7 +239,6 @@ func TestGetScanMetadata(t *testing.T) {
 	})
 }
 
-
 func TestGetScan(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne_test")
 	opts := piperHttp.ClientOptions{}
@@ -266,7 +265,6 @@ func TestGetScan(t *testing.T) {
 	})
 }
 
-
 func TestGetApplicationByName(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne_test")
 	opts := piperHttp.ClientOptions{}
@@ -281,8 +279,8 @@ func TestGetApplicationByName(t *testing.T) {
 
 		app1, _ := sys.GetApplicationByName("test_dev2")
 		assert.Equal(t, "8cf83fcf-ac61-4e32-b988-47cde3cc818c", app1.ApplicationID, "ApplicationID is incorrect")
-		
-		_ , err = sys.GetApplicationByName("ssba")
+
+		_, err = sys.GetApplicationByName("ssba")
 		assert.Contains(t, fmt.Sprint(err), "no application found named ssba")
 	})
 
