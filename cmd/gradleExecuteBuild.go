@@ -177,9 +177,11 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	}
 
 	// gradle build
+	// if user provides TaskList, it is respected over Task
 	gradleOptions := &gradle.ExecuteOptions{
 		BuildGradlePath: config.Path,
 		Task:            config.Task,
+		TaskList:        config.TaskList,
 		UseWrapper:      config.UseWrapper,
 	}
 	if _, err := gradle.Execute(gradleOptions, utils); err != nil {

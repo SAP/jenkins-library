@@ -36,6 +36,7 @@ type gradleExecuteBuildOptions struct {
 	ApplyPublishingForAllProjects bool     `json:"applyPublishingForAllProjects,omitempty"`
 	ExcludeCreateBOMForProjects   []string `json:"excludeCreateBOMForProjects,omitempty"`
 	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
+	TaskList                      []string `json:"taskList,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -202,7 +203,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 
 func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Path to the folder with build.gradle (or build.gradle.kts) file which should be executed.")
-	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "Gradle task that should be executed.")
+	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "Gradle task that should be executed. Not executed if 'taskList' param is specified.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures gradle to publish the artifact to a repository.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
@@ -215,6 +216,7 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().BoolVar(&stepConfig.ApplyPublishingForAllProjects, "applyPublishingForAllProjects", false, "If set to false publishing logic will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludeCreateBOMForProjects, "excludeCreateBOMForProjects", []string{}, "Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
+	cmd.Flags().StringSliceVar(&stepConfig.TaskList, "taskList", []string{}, "Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter")
 
 }
 
@@ -378,6 +380,15 @@ func gradleExecuteBuildMetadata() config.StepData {
 					},
 					{
 						Name:        "excludePublishingForProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "taskList",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",

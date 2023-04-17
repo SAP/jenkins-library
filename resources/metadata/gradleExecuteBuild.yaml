@@ -18,7 +18,7 @@ spec:
         mandatory: false
       - name: task
         type: string
-        description: Gradle task that should be executed.
+        description: Gradle task that should be executed. Not executed if 'taskList' param is specified.
         scope:
           - PARAMETERS
           - STAGES
@@ -137,6 +137,25 @@ spec:
           - STAGES
           - STEPS
         type: "[]string"
+      - name: taskList
+        type: "[]string"
+        description: Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter
+        longDescription: |
+          To run command `gradle clean build -x check` , it can be achieved as follows
+
+          ```
+          steps:
+            gradleExeceureBuild:
+              taskList:
+                - clean
+                - build
+                - -x
+                - test
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: reports
