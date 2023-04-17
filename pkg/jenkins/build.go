@@ -20,7 +20,7 @@ type Build interface {
 // WaitForBuildToFinish waits till a build is finished.
 func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Duration) {
 	//TODO: handle timeout?
-	maxRetries := 5
+	maxRetries := 4
 
 	for build.IsRunning(ctx) {
 		time.Sleep(pollInterval)
