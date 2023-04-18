@@ -1,0 +1,93 @@
+metadata:
+  name: ascAppUpload
+  description: Upload an app to ASC
+  longDescription: |
+    With this step you can upload an app to ASC.
+    It creates a new release note in ASC and uploads the binary to ASC and therewith to Jamf.
+    For more information about ASC, check out [Application Support Center](https://github.com/SAP/application-support-center).
+spec:
+  inputs:
+    secrets:
+      - name: ascAppTokenCredentialsId
+        description: "Jenkins secret text credential ID containing the authentication token for the ASC app"
+        type: jenkins
+    params:
+      - name: serverUrl
+        type: string
+        description: "The URL to the ASC backend"
+        aliases:
+          - name: ascServerUrl
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: appToken
+        type: string
+        description: "App token used to authenticate with the ASC backend"
+        scope:
+          - PARAMETERS
+        secret: true
+        resourceRef:
+          - type: vaultSecret
+            name: ascVaultSecretName
+            default: asc
+          - name: ascAppTokenCredentialsId
+            type: secret
+        aliases:
+          - name: ascAppToken
+      - name: appId
+        type: string
+        description: "The app ID in ASC"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: filePath
+        type: string
+        description: "The path to the app binary"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: jamfTargetSystem
+        type: string
+        description: "The jamf target system"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: releaseAppVersion
+        type: string
+        description: "The new app version name to be created in ASC"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "Pending Release"
+      - name: releaseDescription
+        type: string
+        description: "The new release description"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "<p>TBD</p>"
+      - name: releaseDate
+        type: string
+        description: "The new release date (Format: MM/DD/YYYY) Default is the current date"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: releaseVisible
+        type: bool
+        description: "The new release visible flag"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false

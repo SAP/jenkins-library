@@ -1,6 +1,8 @@
 package privacy
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"strings"
 
 	containerName "github.com/google/go-containerregistry/pkg/name"
@@ -37,6 +39,8 @@ func FilterBuilder(builder string) string {
 // FilterBuildpacks filters a list of buildpacks to redact Personally Identifiable Information (PII) like the hostname of a personal registry
 func FilterBuildpacks(buildpacks []string) []string {
 	result := make([]string, 0, len(buildpacks))
+	hash := sha256.New()
+
 	for _, buildpack := range buildpacks {
 		ref, err := containerName.ParseReference(strings.ToLower(buildpack))
 		if err != nil {
@@ -58,7 +62,9 @@ func FilterBuildpacks(buildpacks []string) []string {
 		if allowed {
 			result = append(result, buildpack)
 		} else {
-			result = append(result, "<redacted>")
+			hash.Write([]byte(buildpack))
+			result = append(result, fmt.Sprintf("%x", hash.Sum(nil)))
+			hash.Reset()
 		}
 	}
 	return result
