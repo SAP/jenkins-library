@@ -184,6 +184,16 @@ func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, er
 	if testCaseType == "Positive" {
 		return &http.Response{
 			StatusCode: 200,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Good Request",
+					"message": {
+						"@lang": "en",
+						"#text": "valid"
+					}
+				}`))),
+			Header: map[string][]string{
+				"test": []string{"this is a test"},
+			},
 		}, nil
 	}
 	res := http.Response{

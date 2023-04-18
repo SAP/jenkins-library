@@ -305,8 +305,10 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
     try {
         SidecarUtils sidecarUtils = new SidecarUtils(script)
         def stashContent = config.stashContent
+        boolean defaultStashCreated = false
         if (config.containerName && stashContent.isEmpty()) {
             stashContent = [stashWorkspace(config, 'workspace')]
+            defaultStashCreated = true
         }
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
@@ -322,9 +324,18 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                     container(containerParams) {
                         try {
                             utils.unstashAll(stashContent)
-                            echo "invalidate stash workspace-${config.uniqueId}"
-                            stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
-                            body()
+                            if (config.verbose) {
+                                lsDir('Directory content before body execution')
+                            }
+                            if (defaultStashCreated) {
+                                echo "invalidate stash workspace-${config.uniqueId}"
+                                stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+                            }
+                            def result = body()
+                            if (config.verbose) {
+                                lsDir('Directory content after body execution')
+                            }
+                            return result
                         } finally {
                             stashWorkspace(config, 'container', true, true)
                         }
@@ -338,6 +349,16 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
         if (config.containerName)
             unstashWorkspace(config, 'container')
     }
+}
+
+private void lsDir(String message) {
+  echo "[DEBUG] Begin of ${message}"
+  // some images might not contain the find command. In that case the build must not be aborted.
+  catchError (message: 'Cannot list directory content', buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+    // no -ls option since this is not available for some images
+    sh  'find . -mindepth 1 -maxdepth 2'
+  }
+  echo "[DEBUG] End of ${message}"
 }
 
 private String generatePodSpec(Map config) {

@@ -9,6 +9,7 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/tmsUpload.yaml'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
@@ -49,7 +50,12 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Proxy which should be used for the communication with the Transport Management Service Backend.
      */
-    'proxy'
+    'proxy',
+    /**
+     * Toggle to activate a new Golang implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
+    'useGoStep'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + GENERAL_CONFIG_KEYS
 
@@ -86,6 +92,22 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('credentialsId')
             .use()
 
+        def namedUser = jenkinsUtils.getJobStartedByUserId()
+
+        if (config.useGoStep == true) {
+            List credentials = [
+                [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
+            ]
+
+            if (namedUser) {
+                parameters.namedUser = namedUser
+            }
+
+            utils.unstashAll(config.stashContent)
+            piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+            return
+        }
+
         // telemetry reporting
         new Utils().pushToSWA([
             step         : STEP_NAME,
@@ -103,7 +125,9 @@ void call(Map parameters = [:]) {
         def customDescription = config.customDescription ? "${config.customDescription}" : "Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
         def description = customDescription
 
-        def namedUser = jenkinsUtils.getJobStartedByUserId() ?: config.namedUser
+        if (!namedUser) {
+            namedUser = config.namedUser
+        }
 
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
