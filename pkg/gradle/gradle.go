@@ -35,7 +35,7 @@ type Utils interface {
 type ExecuteOptions struct {
 	BuildGradlePath   string            `json:"path,omitempty"`
 	Task              string            `json:"task,omitempty"`
-	TaskList          []string          `json:"taskList,omitempty"`
+	BuildFlags        []string          `json:"buildFlags,omitempty"`
 	InitScriptContent string            `json:"initScriptContent,omitempty"`
 	UseWrapper        bool              `json:"useWrapper,omitempty"`
 	ProjectProperties map[string]string `json:"projectProperties,omitempty"`
@@ -101,9 +101,9 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 func getParametersFromOptions(options *ExecuteOptions) []string {
 	var parameters []string
 
-	if len(options.TaskList) > 0 {
-		// respect the list of tasks user wants to execute
-		parameters = append(parameters, options.TaskList...)
+	if len(options.BuildFlags) > 0 {
+		// respect the list of tasks/flags user wants to execute
+		parameters = append(parameters, options.BuildFlags...)
 	} else {
 		// default value for task is 'build', so no necessary to checking for empty parameter
 		parameters = append(parameters, options.Task)
@@ -113,7 +113,7 @@ func getParametersFromOptions(options *ExecuteOptions) []string {
 	if options.BuildGradlePath != "" {
 		parameters = append(parameters, "-p", options.BuildGradlePath)
 	}
-	//where is this coming from?
+
 	for k, v := range options.ProjectProperties {
 		parameters = append(parameters, fmt.Sprintf("-P%s=%s", k, v))
 	}
