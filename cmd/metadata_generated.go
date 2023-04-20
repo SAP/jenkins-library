@@ -35,6 +35,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"apiProxyList":                              apiProxyListMetadata(),
 		"apiProxyUpload":                            apiProxyUploadMetadata(),
 		"artifactPrepareVersion":                    artifactPrepareVersionMetadata(),
+		"ascAppUpload":                              ascAppUploadMetadata(),
 		"awsS3Upload":                               awsS3UploadMetadata(),
 		"azureBlobUpload":                           azureBlobUploadMetadata(),
 		"batsExecuteTests":                          batsExecuteTestsMetadata(),
