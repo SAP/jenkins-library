@@ -226,12 +226,12 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		"--namespace", config.Namespace,
 	}
 
-	if config.HelmTestWaitSeconds > 0 {
-		testParams = append(
-			testParams,
-			"--timeout",
-			strconv.Itoa(config.HelmTestWaitSeconds),
-		)
+	if config.DeployTool == "helm" {
+		testParams = append(testParams, "--timeout", strconv.Itoa(config.HelmTestWaitSeconds))
+	}
+
+	if config.DeployTool == "helm3" {
+		testParams = append(testParams, "--timeout", fmt.Sprintf("%vs", config.HelmTestWaitSeconds))
 	}
 
 	if config.ShowTestLogs {
