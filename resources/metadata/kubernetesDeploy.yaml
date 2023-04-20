@@ -281,12 +281,12 @@ spec:
         default: 300
       - name: helmTestWaitSeconds
         type: int
-        description: Time to wait for any individual Kubernetes operation (like Jobs for hooks) . this param gets translated to `--timeout param` for helm cli during helm test.
-          Default value is 5m0s (5 min and 0 seconds) if not set via parameter. See https://helm.sh/docs/helm/helm_test/#options for further details
+        description: Number of seconds to wait for any individual Kubernetes operation (like Jobs for hooks). See https://helm.sh/docs/helm/helm_test/#options for further details
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: 300
       - name: helmValues
         type: "[]string"
         description: List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)
