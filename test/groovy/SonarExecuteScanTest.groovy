@@ -1,12 +1,22 @@
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.hasSize
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import util.*
-
-import static org.hamcrest.Matchers.*
+import org.junit.rules.ExpectedException
 import static org.junit.Assert.assertThat
+
+import util.BasePiperTest
+import util.JenkinsDockerExecuteRule
+import util.JenkinsShellCallRule
+import util.JenkinsReadYamlRule
+import util.JenkinsStepRule
+import util.JenkinsLoggingRule
+import util.Rules
 
 class SonarExecuteScanTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
