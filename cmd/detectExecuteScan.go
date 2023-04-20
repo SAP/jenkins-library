@@ -389,6 +389,16 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
 
+	// to exclude dependency types for npm
+	if len(config.NpmDependencyTypesExcluded) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.dependency.types.excluded") {
+		args = append(args, fmt.Sprintf("--detect.npm.dependency.types.excluded=%v", strings.ToUpper(strings.Join(config.NpmDependencyTypesExcluded, ","))))
+	}
+
+	// A space-separated list of additional arguments that Detect will add at then end of the npm ls command line
+	if len(config.NpmArguments) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.arguments") {
+		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.ToUpper(strings.Join(config.NpmArguments, " "))))
+	}
+
 	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
 	if err != nil {
 		return nil, err
@@ -830,6 +840,19 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		projectId,
 		config.ProjectName,
 		projectURL)
+	if err != nil {
+		return "", err
+	}
+	projectVersionName := getVersionName(config)
+	projectVersion, err := sys.Client.GetProjectVersion(config.ProjectName, projectVersionName)
+	if err != nil {
+		return "", err
+	}
+	projectVersionUrl := projectVersion.Href
+	err = record.AddKeyData("version",
+		projectVersion.Name,
+		projectVersionUrl,
+		projectVersionUrl)
 	if err != nil {
 		return "", err
 	}
