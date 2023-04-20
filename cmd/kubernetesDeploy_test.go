@@ -459,6 +459,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--kube-context",
+			"testCluster",
 		}, mockUtils.Calls[2].Params, "Wrong test parameters")
 	})
 
@@ -538,6 +540,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--kube-context",
+			"testCluster",
 			"--logs",
 		}, mockUtils.Calls[2].Params, "Wrong test parameters")
 	})

@@ -226,6 +226,10 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		"--namespace", config.Namespace,
 	}
 
+	if len(config.KubeContext) > 0 {
+		testParams = append(testParams, "--kube-context", config.KubeContext)
+	}
+
 	if config.ShowTestLogs {
 		testParams = append(
 			testParams,
