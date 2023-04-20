@@ -7,27 +7,26 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	"github.com/SAP/jenkins-library/pkg/command"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/reporting"
-	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/pkg/errors"
-
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/google/go-github/v45/github"
+	"github.com/pkg/errors"
 )
 
 type detectUtils interface {
@@ -46,14 +45,16 @@ type detectUtils interface {
 
 	GetIssueService() *github.IssuesService
 	GetSearchService() *github.SearchService
+	GetProvider() orchestrator.OrchestratorSpecificConfigProviding
 }
 
 type detectUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
-	issues *github.IssuesService
-	search *github.SearchService
+	issues   *github.IssuesService
+	search   *github.SearchService
+	provider orchestrator.OrchestratorSpecificConfigProviding
 }
 
 func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
@@ -62,6 +63,10 @@ func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
 
 func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 	return d.search
+}
+
+func (d *detectUtilsBundle) GetProvider() orchestrator.OrchestratorSpecificConfigProviding {
+	return d.provider
 }
 
 type blackduckSystem struct {
@@ -104,6 +109,15 @@ func newDetectUtils(client *github.Client) detectUtils {
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
+
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().WithError(err).Warning(err)
+		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
+	}
+
+	utils.provider = provider
+
 	return &utils
 }
 
@@ -159,8 +173,10 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		}
 	}
 
+	blackduckSystem := newBlackduckSystem(config)
+
 	args := []string{"./detect.sh"}
-	args, err = addDetectArgs(args, config, utils)
+	args, err = addDetectArgs(args, config, utils, blackduckSystem)
 	if err != nil {
 		return err
 	}
@@ -173,7 +189,6 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
-	blackduckSystem := newBlackduckSystem(config)
 	reportingErr := postScanChecksAndReporting(ctx, config, influx, utils, blackduckSystem)
 	if reportingErr != nil {
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
@@ -275,31 +290,32 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 		log.Entry().Infof("Using Detect Rescan script")
 		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
 	}
-	env := utils.GetOsEnv()
-	env = append(env, config.CustomEnvironmentVariables...)
-	if piperutils.ContainsStringPart(env, "DETECT_LATEST_RELEASE_VERSION") {
-		releaseVersion := ""
-		for _, i := range env {
-			if strings.Contains(i, "DETECT_LATEST_RELEASE_VERSION") {
-				releaseVersion = strings.Split(i, "=")[1]
-			}
-		}
-		log.Entry().Infof("Using detect script Version %v ", releaseVersion)
-		detect6, _ := regexp.MatchString("6\\.\\d\\.\\d", releaseVersion)
-		if detect6 {
-			log.Entry().Infof("Downloading Detect 6.x")
-			return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
-		}
-	}
+
 	log.Entry().Infof("Downloading Detect7")
 	return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
 }
 
-func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
+func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem) ([]string, error) {
 	detectVersionName := getVersionName(config)
 	// Split on spaces, the scanPropeties, so that each property is available as a single string
 	// instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
+
+	if config.BuildTool == "mta" {
+
+		if !checkIfArgumentIsInScanProperties(config, "detect.detector.search.depth") {
+			args = append(args, "--detect.detector.search.depth=100")
+		}
+
+		if !checkIfArgumentIsInScanProperties(config, "detect.detector.search.continue") {
+			args = append(args, "--detect.detector.search.continue=true")
+		}
+
+	}
+
+	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
+		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
 
 	if config.ScanOnChanges {
 		args = append(args, "--report")
@@ -373,6 +389,16 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
 
+	// to exclude dependency types for npm
+	if len(config.NpmDependencyTypesExcluded) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.dependency.types.excluded") {
+		args = append(args, fmt.Sprintf("--detect.npm.dependency.types.excluded=%v", strings.ToUpper(strings.Join(config.NpmDependencyTypesExcluded, ","))))
+	}
+
+	// A space-separated list of additional arguments that Detect will add at then end of the npm ls command line
+	if len(config.NpmArguments) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.arguments") {
+		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.ToUpper(strings.Join(config.NpmArguments, " "))))
+	}
+
 	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
 	if err != nil {
 		return nil, err
@@ -390,6 +416,18 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 	}
 
+	// rapid scan on pull request
+	if utils.GetProvider().IsPullRequest() {
+		log.Entry().Debug("pull request detected")
+		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
+		_, err := sys.Client.GetProjectVersion(config.ProjectName, config.Version)
+		if err == nil {
+			args = append(args, "--detect.blackduck.rapid.compare.mode='BOM_COMPARE_STRICT'")
+		}
+		args = append(args, "--detect.cleanup=false")
+		args = append(args, "--detect.output.path='report'")
+	}
+
 	return args, nil
 }
 
@@ -401,6 +439,16 @@ func getVersionName(config detectExecuteScanOptions) string {
 		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
 	}
 	return detectVersionName
+}
+
+func checkIfArgumentIsInScanProperties(config detectExecuteScanOptions, argumentName string) bool {
+	for _, argument := range config.ScanProperties {
+		if strings.Contains(argument, argumentName) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulnerabilities, influx *detectExecuteScanInflux, sys *blackduckSystem) reporting.ScanReport {
@@ -498,6 +546,33 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 }
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
+
+	if utils.GetProvider().IsPullRequest() {
+		issueNumber, err := strconv.Atoi(utils.GetProvider().GetPullRequestConfig().Key)
+		if err != nil {
+			log.Entry().Warning("Can not get issue number ", err)
+			return nil
+		}
+		commentBody, err := reporting.RapidScanResult("./report")
+		if err != nil {
+			log.Entry().Warning("Couldn't read file of report of rapid scan, error: ", err)
+			return nil
+		}
+		_, _, err = utils.GetIssueService().CreateComment(ctx,
+			config.Owner,
+			config.Repository,
+			issueNumber,
+			&github.IssueComment{
+				Body: &commentBody,
+			})
+		if err != nil {
+			log.Entry().Warning("Can send request to github ", err)
+			return nil
+		}
+
+		return nil
+	}
+
 	errorsOccured := []string{}
 	vulns, err := getVulnerabilitiesWithComponents(config, influx, sys)
 	if err != nil {
@@ -765,6 +840,19 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		projectId,
 		config.ProjectName,
 		projectURL)
+	if err != nil {
+		return "", err
+	}
+	projectVersionName := getVersionName(config)
+	projectVersion, err := sys.Client.GetProjectVersion(config.ProjectName, projectVersionName)
+	if err != nil {
+		return "", err
+	}
+	projectVersionUrl := projectVersion.Href
+	err = record.AddKeyData("version",
+		projectVersion.Name,
+		projectVersionUrl,
+		projectVersionUrl)
 	if err != nil {
 		return "", err
 	}

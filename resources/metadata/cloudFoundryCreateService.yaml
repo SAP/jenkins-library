@@ -190,6 +190,16 @@ spec:
         aliases:
           - name: cloudFoundry/manifestVariablesFiles
           - name: cfManifestVariablesFiles
+      - name: cfAsync
+        type: bool
+        description: Decides if the service creation runs asynchronously
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: true
   containers:
     - name: cf
       image: ppiper/cf-cli:latest
