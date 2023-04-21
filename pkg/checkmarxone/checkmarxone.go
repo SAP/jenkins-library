@@ -299,6 +299,7 @@ type System interface {
 	GetResultsPredicates(SimilarityID int64, ProjectID string) ([]ResultsPredicates, error)
 	GetScanWorkflow(scanID string) ([]WorkflowLog, error)
 	GetLastScans(projectID string, limit int) ([]Scan, error)
+	GetLastScansByStatus(projectID string, limit int, status []string) ([]Scan, error)
 
 	ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration) (Scan, error)
 	ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration) (Scan, error)
