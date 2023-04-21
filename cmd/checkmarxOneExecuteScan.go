@@ -42,7 +42,7 @@ type checkmarxOneExecuteScanUtils interface {
 type checkmarxOneExecuteScanHelper struct {
 	ctx     context.Context
 	config  checkmarxOneExecuteScanOptions
-	sys     *checkmarxOne.SystemInstance
+	sys     checkmarxOne.System
 	influx  *checkmarxOneExecuteScanInflux
 	utils   checkmarxOneExecuteScanUtils
 	Project *checkmarxOne.Project
@@ -58,24 +58,21 @@ type checkmarxOneExecuteScanUtilsBundle struct {
 }
 
 func checkmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxOneExecuteScanInflux) {
-	err := runStep(config, influx)
+	// TODO: Setup connection with Splunk, influxDB?
+	cx1sh, err := Authenticate(config, influx)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("failed to create Cx1 client: %s", err)
+	}
+
+	err = runStep(config, influx, &cx1sh)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to run CheckmarxOne scan.")
 	}
 	influx.step_data.fields.checkmarxOne = true
 }
 
-func RunCheckmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) error {
-	return runStep(config, influx)
-}
-
-func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) error {
-	// TODO: Setup connection with Splunk, influxDB?
-	cx1sh, err := Authenticate(config, influx)
-	if err != nil {
-		return fmt.Errorf("failed to create Cx1 client: %s", err)
-	}
-
+func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux, cx1sh *checkmarxOneExecuteScanHelper) error {
+	err := error(nil)
 	cx1sh.Project, err = cx1sh.GetProjectByName()
 	if err != nil && err.Error() != "project not found" {
 		return fmt.Errorf("failed to get project: %s", err)
