@@ -1,7 +1,7 @@
 metadata:
   name: gradleExecuteBuild
   description: This step runs a gradle build command with parameters provided to the step.
-  longDescription: This step runs a gradle build command with parameters provided to the step.
+  longDescription: This step runs a gradle build command with parameters provided to the step.Supports execution of gradle tasks with or without wrapper.Gradle tasks and flags can be specified via 'task' or 'buildFlags' parameter. If both are not specified 'build' task will run by default.
 spec:
   inputs:
     params:
@@ -18,7 +18,7 @@ spec:
         mandatory: false
       - name: task
         type: string
-        description: Gradle task that should be executed.
+        description: A single gradle task that should be executed. If you prefer more than one, use 'buildFlags' parameter. If 'buildFlags' parameter is specified, this parameter will be ignored.
         scope:
           - PARAMETERS
           - STAGES
@@ -137,6 +137,25 @@ spec:
           - STAGES
           - STEPS
         type: "[]string"
+      - name: buildFlags
+        type: "[]string"
+        description: Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter
+        longDescription: |
+          To run command `gradle clean build -x test` , it can be achieved as follows
+
+          ```
+          steps:
+            gradleExecuteBuild:
+              buildFlags:
+                - clean
+                - build
+                - -x
+                - test
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: reports
