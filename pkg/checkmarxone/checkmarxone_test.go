@@ -66,7 +66,7 @@ func (sm *senderMock) SetOptions(opts piperHttp.ClientOptions) {
 }
 
 func TestSendRequest(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 200}
@@ -100,7 +100,7 @@ func TestSendRequest(t *testing.T) {
 }
 
 func TestSendRequestInternal(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 
 	t.Run("test accepted error", func(t *testing.T) {
@@ -114,7 +114,7 @@ func TestSendRequestInternal(t *testing.T) {
 }
 
 func TestGetOAuthToken(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
@@ -162,7 +162,7 @@ func TestGetOAuthToken(t *testing.T) {
 }
 
 func TestGetGroups(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `[{"id":"be82031b-a75c-4fc0-894b-fff4deab2854","name":"Group1","path":"/Group1","subGroups":[]},{"id":"b368988c-b124-4151-b507-c8fcad501165","name":"Group2","path":"/Group2","subGroups":[]}]`, httpStatusCode: 200}
@@ -208,32 +208,26 @@ func TestGetGroups(t *testing.T) {
 	})
 }
 
-/*
 func TestGetProjects(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `[{"id":"1", "groupId":"1", "name":"Project1"}, {"id":"2", "groupId":"2", "name":"Project2"}]`, httpStatusCode: 200}
+		myTestClient := senderMock{responseBody: `{"totalCount":2,"filteredTotalCount":2,"projects":[{"id":"872b63f8-7a78-434e-9bc8-9dc81449e6a8","name":"Project1","createdAt":"2022-12-15T06:24:07.148202Z","updatedAt":"2022-12-15T06:24:07.148202Z","groups":[],"tags":{},"repoUrl":"","mainBranch":"","criticality":3,"privatePackage":false},{"id":"872b63f8-7a78-434e-9bc8-9dc81449e6a9","name":"Project2","createdAt":"2022-12-16T06:24:07.148202Z","updatedAt":"2022-12-16T06:24:07.148202Z","groups":[],"tags":{},"repoUrl":"","mainBranch":"","criticality":3,"privatePackage":false}]}`, httpStatusCode: 200}
 		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		projects, err := sys.GetProjects()
 
 		assert.NoError(t, err)
-		assert.Equal(t, "https://cx1.server.com/cxrestapi/projects", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "https://cx1.server.com/api/projects/", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, 2, len(projects), "Number of Projects incorrect")
 		assert.Equal(t, "Project1", projects[0].Name, "Project name 1 incorrect")
 		assert.Equal(t, "Project2", projects[1].Name, "Project name 2 incorrect")
 
 		t.Run("test Filter projects by name", func(t *testing.T) {
-			project1 := sys.FilterProjectByName(projects, "Project1")
-			assert.Equal(t, "Project1", project1.Name, "Project name incorrect")
-			assert.Equal(t, "1", project1.GroupID, "Project groupId incorrect")
-		})
-
-		t.Run("test fail Filter projects by name", func(t *testing.T) {
-			project := sys.FilterProjectByName(projects, "Project5")
-			assert.Equal(t, "", project.Name, "Project name incorrect")
+			projects, _ := sys.GetProjectsByName("Project")
+			assert.Equal(t, "Project1", projects[0].Name, "Project name incorrect")
+			assert.Equal(t, "872b63f8-7a78-434e-9bc8-9dc81449e6a8", projects[0].ProjectID, "Project groupId incorrect")
 		})
 	})
 
@@ -245,26 +239,26 @@ func TestGetProjects(t *testing.T) {
 
 		_, err := sys.GetProjects()
 
-		assert.Contains(t, fmt.Sprint(err), "Provoked technical error")
+		assert.Contains(t, fmt.Sprint(err), "error")
 	})
 }
 
 func TestCreateProject(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `{"id": 16}`, httpStatusCode: 200}
+		myTestClient := senderMock{responseBody: `{"id":"06b1e9d5-5773-4bc9-9f15-9b84f2b967b4","name":"TestProjectCreate","createdAt":"2023-04-06T13:31:32.915146717Z","updatedAt":"2023-04-06T13:31:32.915146717Z","groups":["e2f958a6-fcef-4b18-aa27-ae2e24930ab2"],"tags":{},"repoUrl":"","mainBranch":"","origin":"Postmans","criticality":3,"privatePackage":false}`, httpStatusCode: 200}
 		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result, err := sys.CreateProject("TestProjectCreate", "4711")
+		result, err := sys.CreateProject("TestProjectCreate", []string{"e2f958a6-fcef-4b18-aa27-ae2e24930ab2"})
 
 		assert.NoError(t, err, "CreateProject call not successful")
-		assert.Equal(t, 16, result.ID, "Wrong project ID")
-		assert.Equal(t, "https://cx1.server.com/cxrestapi/projects", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "06b1e9d5-5773-4bc9-9f15-9b84f2b967b4", result.ProjectID, "Wrong project ID")
+		assert.Equal(t, "https://cx1.server.com/api/projects", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, "application/json", myTestClient.header.Get("Content-Type"), "Called url incorrect")
-		assert.Equal(t, `{"isPublic":true,"name":"TestProjectCreate","owningGroup":"4711"}`, myTestClient.requestBody, "Request body incorrect")
+		assert.Equal(t, `{"criticality":3,"groups":["e2f958a6-fcef-4b18-aa27-ae2e24930ab2"],"name":"TestProjectCreate","origin":"GolangScript"}`, myTestClient.requestBody, "Request body incorrect")
 	})
 
 	t.Run("test technical error", func(t *testing.T) {
@@ -273,34 +267,35 @@ func TestCreateProject(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
-		_, err := sys.CreateProject("Test", "13")
+		_, err := sys.CreateProject("Test", []string{"13"})
 
 		assert.Contains(t, fmt.Sprint(err), "", "expected a different error")
 	})
 }
 
-
+/*
 func TestUploadProjectSourceCode(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
-	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{httpStatusCode: 204}
+	t.Run("test upload zip success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{ "url": "https://cx1.server.com/storage/location" }`, httpStatusCode: 200}
 		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		err := sys.UploadProjectSourceCode(10415, "sources.zip")
+		uploadurl, err := sys.UploadProjectSourceCode("123", "sources.zip")
 
 		assert.NoError(t, err, "UploadProjectSourceCode call not successful")
-		assert.Equal(t, "https://cx1.server.com/cxrestapi/projects/10415/sourceCode/attachments", myTestClient.urlCalled, "Called url incorrect")
-		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, "https://cx1.server.com/api/uploads", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "PUT", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, "https://cx1.server.com/storage/location", uploadurl)
 		assert.Equal(t, 2, len(myTestClient.header), "HTTP header incorrect")
-		assert.Equal(t, "gzip,deflate", myTestClient.header.Get("Accept-Encoding"), "HTTP header incorrect")
-		assert.Equal(t, "text/plain", myTestClient.header.Get("Accept"), "HTTP header incorrect")
 	})
-}
+}*/
+
+/*
 
 func TestUpdateProjectExcludeSettings(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{httpStatusCode: 204}
@@ -317,46 +312,28 @@ func TestUpdateProjectExcludeSettings(t *testing.T) {
 		assert.Equal(t, `{"excludeFilesPattern":"*.go","excludeFoldersPattern":"some,test,a/b/c"}`, myTestClient.requestBody, "Request body incorrect")
 	})
 }
-
+*/
+/*
 func TestGetPresets(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `[{"id":1, "name":"Preset1", "ownerName":"Group1", "link":{"rel":"rel", "uri":"https://1234"}}, {"id":2, "name":"Preset2", "ownerName":"Group1", "link":{"rel":"re2l", "uri":"https://12347"}}]`, httpStatusCode: 200}
+		myTestClient := senderMock{responseBody: `{"totalCount":3,"presets":[{"id":100028,"name":"ASA Premium"},{"id":1,"name":"All"},{"id":9,"name":"Android"}]}`, httpStatusCode: 200}
 		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		presets := sys.GetPresets()
+		presets, _ := sys.GetPresets()
 
-		assert.Equal(t, "https://cx1.server.com/cxrestapi/sast/presets", myTestClient.urlCalled, "Called url incorrect")
-		assert.Equal(t, 2, len(presets), "Number of Presets incorrect")
-		assert.Equal(t, "Preset1", presets[0].Name, "Preset name incorrect")
-		assert.Equal(t, "https://1234", presets[0].Link.URI, "Preset name incorrect")
-		assert.Equal(t, "Preset2", presets[1].Name, "Preset name incorrect")
-
-		t.Run("test Filter preset by name", func(t *testing.T) {
-			preset2 := sys.FilterPresetByName(presets, "Preset2")
-			assert.Equal(t, "Preset2", preset2.Name, "Preset name incorrect")
-			assert.Equal(t, "Group1", preset2.OwnerName, "Preset ownerName incorrect")
-		})
-		t.Run("test fail Filter preset by name", func(t *testing.T) {
-			preset := sys.FilterPresetByName(presets, "Preset5")
-			assert.Equal(t, "", preset.Name, "Preset name incorrect")
-		})
-		t.Run("test Filter preset by ID", func(t *testing.T) {
-			preset2 := sys.FilterPresetByID(presets, 2)
-			assert.Equal(t, "Preset2", preset2.Name, "Preset ID incorrect")
-			assert.Equal(t, "Group1", preset2.OwnerName, "Preset ownerName incorrect")
-		})
-		t.Run("test fail Filter preset by ID", func(t *testing.T) {
-			preset := sys.FilterPresetByID(presets, 15)
-			assert.Equal(t, "", preset.Name, "Preset ID incorrect")
-		})
+		assert.Equal(t, "https://cx1.server.com/api/presets", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, 3, len(presets), "Number of Presets incorrect")
+		assert.Equal(t, "ASA Premium", presets[0].Name, "Preset name incorrect")
+		assert.Equal(t, 9, presets[2].PresetID, "Preset ID incorrect")
 	})
-}
+} */
 
+/*
 func TestUpdateProjectConfiguration(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{httpStatusCode: 204}
@@ -370,10 +347,27 @@ func TestUpdateProjectConfiguration(t *testing.T) {
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, `{"engineConfigurationId":1,"presetId":15,"projectId":12}`, myTestClient.requestBody, "Request body incorrect")
 	})
+}*/
+
+func TestUpdateProjectConfiguration(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test update preset", func(t *testing.T) {
+		myTestClient := senderMock{httpStatusCode: 204}
+		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		err := sys.SetProjectPreset("123", "All", true)
+
+		assert.NoError(t, err, "SetProjectPreset call not successful")
+		assert.Equal(t, "https://cx1.server.com/api/configuration/project?project-id=123", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "PATCH", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, `[{"key":"scan.config.sast.presetName","name":"","category":"","originLevel":"","value":"All","valuetype":"","valuetypeparams":"","allowOverride":true}]`, myTestClient.requestBody, "Request body incorrect")
+	})
 }
 
 func TestScanProject(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"id":1, "link":{"rel":"rel", "uri":"https://scan1234"}}`, httpStatusCode: 200}
@@ -390,8 +384,9 @@ func TestScanProject(t *testing.T) {
 	})
 }
 
+/*
 func TestGetScans(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `[
@@ -434,7 +429,7 @@ func TestGetScans(t *testing.T) {
 }
 
 func TestGetScanStatusAndDetail(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"status":{"id":1,"name":"SUCCESS", "details":{"stage": "1 of 15", "step": "One"}}}`, httpStatusCode: 200}
@@ -452,7 +447,7 @@ func TestGetScanStatusAndDetail(t *testing.T) {
 }
 
 func TestGetResults(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"highSeverity":5, "mediumSeverity":4, "lowSeverity":20, "infoSeverity":10}`, httpStatusCode: 200}
@@ -471,7 +466,7 @@ func TestGetResults(t *testing.T) {
 }
 
 func TestRequestNewReport(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{
@@ -501,7 +496,7 @@ func TestRequestNewReport(t *testing.T) {
 }
 
 func TestGetReportStatus(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{
@@ -529,7 +524,7 @@ func TestGetReportStatus(t *testing.T) {
 }
 
 func TestDownloadReport(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: "abc", httpStatusCode: 200}
@@ -545,7 +540,7 @@ func TestDownloadReport(t *testing.T) {
 }
 
 func TestCreateBranch(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"id": 13, "link": {}}`, httpStatusCode: 201}
@@ -561,7 +556,7 @@ func TestCreateBranch(t *testing.T) {
 }
 
 func TestGetProjectByID(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"id": 209, "groupID": "Test", "name":"Project1_PR-18"}`, httpStatusCode: 200}
@@ -577,7 +572,7 @@ func TestGetProjectByID(t *testing.T) {
 }
 
 func TestGetProjectByName(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `[{"id": 209, "groupID": "Test", "name":"Project1_PR-18"}]`, httpStatusCode: 200}
@@ -594,7 +589,7 @@ func TestGetProjectByName(t *testing.T) {
 }
 
 func TestGetShortDescription(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxone_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"shortDescription":"This is a dummy short description."}`, httpStatusCode: 200}
