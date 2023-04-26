@@ -86,7 +86,6 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	// client for talking to the SonarQube API
 	apiClient := &piperhttp.Client{}
 	proxy := config.Proxy
-	options := piperhttp.ClientOptions{}
 	if proxy != "" {
 		transportProxy, err := url.Parse(proxy)
 		host, port, _ := net.SplitHostPort(transportProxy.Host)
@@ -96,7 +95,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 			log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
 		}
 
-		options = piperhttp.ClientOptions{TransportProxy: transportProxy}
+		options := piperhttp.ClientOptions{TransportProxy: transportProxy, TransportSkipVerification: true}
 		apiClient.SetOptions(options)
 		log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
 
