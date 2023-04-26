@@ -39,6 +39,15 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+      - name: githubApiUrl
+        description: "Set the GitHub API URL."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: "https://api.github.com"
       - name: buildTool
         type: string
         description: Defines the build tool which is used for building the project.
@@ -142,6 +151,22 @@ spec:
           - name: commonPipelineEnvironment
             param: git/remoteCommitId
         type: string
+      - name: vulnerabilityThresholdTotal
+        description: "Threashold for maximum number of allowed vulnerabilities."
+        type: int
+        default: 0
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: checkForCompliance
+        description: "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
+        type: bool
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: ""
   outputs:
