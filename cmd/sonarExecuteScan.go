@@ -89,12 +89,13 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	if proxy != "" {
 		transportProxy, err := url.Parse(proxy)
 		if err != nil {
-                	log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
-                }
+			log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
+		}
 		host, port, err := net.SplitHostPort(transportProxy.Host)
 		if err != nil {
-                	log.Entry().WithError(err).Fatalf("Failed to retrieve host and port from the proxy URL")
-                }
+			log.Entry().WithError(err).Fatalf("Failed to retrieve host and port from the proxy URL")
+		}
+		// provide proxy setting for Java based Sonar scanner
 		javaToolOptions := fmt.Sprintf("-Dhttp.proxyHost=%v -Dhttp.proxyPort=%v", host, port)
 		os.Setenv("JAVA_TOOL_OPTIONS", javaToolOptions)
 
