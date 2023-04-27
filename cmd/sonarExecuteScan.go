@@ -88,12 +88,15 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	proxy := config.Proxy
 	if proxy != "" {
 		transportProxy, err := url.Parse(proxy)
-		host, port, _ := net.SplitHostPort(transportProxy.Host)
+		if err != nil {
+                	log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
+                }
+		host, port, err := net.SplitHostPort(transportProxy.Host)
+		if err != nil {
+                	log.Entry().WithError(err).Fatalf("Failed to retrieve host and port from the proxy URL")
+                }
 		javaToolOptions := fmt.Sprintf("-Dhttp.proxyHost=%v -Dhttp.proxyPort=%v", host, port)
 		os.Setenv("JAVA_TOOL_OPTIONS", javaToolOptions)
-		if err != nil {
-			log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
-		}
 
 		options := piperhttp.ClientOptions{TransportProxy: transportProxy, TransportSkipVerification: true}
 		apiClient.SetOptions(options)
