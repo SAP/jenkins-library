@@ -55,6 +55,10 @@ type detectExecuteScanOptions struct {
 	Assignees                   []string `json:"assignees,omitempty"`
 	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
 	FailOnSevereVulnerabilities bool     `json:"failOnSevereVulnerabilities,omitempty"`
+	BuildTool                   string   `json:"buildTool,omitempty"`
+	ExcludedDirectories         []string `json:"excludedDirectories,omitempty"`
+	NpmDependencyTypesExcluded  []string `json:"npmDependencyTypesExcluded,omitempty" validate:"possible-values=NONE DEV PEER"`
+	NpmArguments                []string `json:"npmArguments,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -285,6 +289,10 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the step on severe vulnerabilties or not")
+	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludedDirectories, "excludedDirectories", []string{}, "List of directories which should be excluded from the scan.")
+	cmd.Flags().StringSliceVar(&stepConfig.NpmDependencyTypesExcluded, "npmDependencyTypesExcluded", []string{}, "List of npm dependency types which Detect should exclude from the BOM.")
+	cmd.Flags().StringSliceVar(&stepConfig.NpmArguments, "npmArguments", []string{}, "List of additional arguments that Detect will add at then end of the npm ls command line when Detect executes the NPM CLI Detector on an NPM project.")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -648,6 +656,47 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
+					},
+					{
+						Name: "buildTool",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "buildTool",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildTool"),
+					},
+					{
+						Name:        "excludedDirectories",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/excludedDirectories"}},
+						Default:     []string{},
+					},
+					{
+						Name:        "npmDependencyTypesExcluded",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/npmDependencyTypesExcluded"}},
+						Default:     []string{},
+					},
+					{
+						Name:        "npmArguments",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/npmArguments"}},
+						Default:     []string{},
 					},
 				},
 			},
