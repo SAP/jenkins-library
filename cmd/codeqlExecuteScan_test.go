@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -200,11 +201,14 @@ func TestInitGitInfo(t *testing.T) {
 	t.Run("Invalid URL with no org/reponame", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
 		repoInfo := initGitInfo(&config)
+		_, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 		assert.Equal(t, "abcd1234", repoInfo.commitId)
-		assert.Equal(t, "", repoInfo.owner)
-		assert.Equal(t, "", repoInfo.repo)
 		assert.Equal(t, "refs/head/branch", repoInfo.ref)
-		assert.Equal(t, "", repoInfo.serverUrl)
+		if err != nil {
+			assert.Equal(t, "", repoInfo.owner)
+			assert.Equal(t, "", repoInfo.repo)
+			assert.Equal(t, "", repoInfo.serverUrl)
+		}
 	})
 }
 
