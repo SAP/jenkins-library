@@ -20,19 +20,22 @@ import (
 )
 
 type codeqlExecuteScanOptions struct {
-	GithubToken   string `json:"githubToken,omitempty"`
-	BuildTool     string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
-	BuildCommand  string `json:"buildCommand,omitempty"`
-	Language      string `json:"language,omitempty"`
-	ModulePath    string `json:"modulePath,omitempty"`
-	Database      string `json:"database,omitempty"`
-	QuerySuite    string `json:"querySuite,omitempty"`
-	UploadResults bool   `json:"uploadResults,omitempty"`
-	Threads       string `json:"threads,omitempty"`
-	Ram           string `json:"ram,omitempty"`
-	AnalyzedRef   string `json:"analyzedRef,omitempty"`
-	Repository    string `json:"repository,omitempty"`
-	CommitID      string `json:"commitId,omitempty"`
+	GithubToken                 string `json:"githubToken,omitempty"`
+	GithubAPIURL                string `json:"githubApiUrl,omitempty"`
+	BuildTool                   string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
+	BuildCommand                string `json:"buildCommand,omitempty"`
+	Language                    string `json:"language,omitempty"`
+	ModulePath                  string `json:"modulePath,omitempty"`
+	Database                    string `json:"database,omitempty"`
+	QuerySuite                  string `json:"querySuite,omitempty"`
+	UploadResults               bool   `json:"uploadResults,omitempty"`
+	Threads                     string `json:"threads,omitempty"`
+	Ram                         string `json:"ram,omitempty"`
+	AnalyzedRef                 string `json:"analyzedRef,omitempty"`
+	Repository                  string `json:"repository,omitempty"`
+	CommitID                    string `json:"commitId,omitempty"`
+	VulnerabilityThresholdTotal int    `json:"vulnerabilityThresholdTotal,omitempty"`
+	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
 }
 
 type codeqlExecuteScanReports struct {
@@ -173,6 +176,7 @@ and Java plus Maven.`,
 
 func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `githubTokenCredentialsId` parameter.")
+	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Defines the build tool which is used for building the project.")
 	cmd.Flags().StringVar(&stepConfig.BuildCommand, "buildCommand", os.Getenv("PIPER_buildCommand"), "Command to build the project")
 	cmd.Flags().StringVar(&stepConfig.Language, "language", os.Getenv("PIPER_language"), "The programming language used to analyze.")
@@ -185,6 +189,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "URL of the GitHub instance")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
+	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threashold for maximum number of allowed vulnerabilities.")
+	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -227,6 +233,15 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
+					},
+					{
+						Name:        "githubApiUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `https://api.github.com`,
 					},
 					{
 						Name:        "buildTool",
@@ -350,6 +365,24 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_commitId"),
+					},
+					{
+						Name:        "vulnerabilityThresholdTotal",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
+					},
+					{
+						Name:        "checkForCompliance",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

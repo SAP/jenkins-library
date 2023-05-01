@@ -177,9 +177,11 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	}
 
 	// gradle build
+	// if user provides BuildFlags, it is respected over a single Task
 	gradleOptions := &gradle.ExecuteOptions{
 		BuildGradlePath: config.Path,
 		Task:            config.Task,
+		BuildFlags:      config.BuildFlags,
 		UseWrapper:      config.UseWrapper,
 	}
 	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
