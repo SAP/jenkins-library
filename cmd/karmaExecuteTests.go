@@ -23,7 +23,7 @@ func runKarma(config karmaExecuteTestsOptions, command command.ExecRunner) {
 	modulePaths := config.Modules
 	
 	if config.verbose {
-		runCommandTokens = append(runCommandTokens, "--log-level", "DEBUG")
+		runCommandTokens = append(runCommandTokens, "--", "--log-level", "DEBUG")
 	}
 
 	for _, module := range modulePaths {
