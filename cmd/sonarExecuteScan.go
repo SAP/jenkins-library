@@ -222,9 +222,9 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	var serverUrl string
 
 	if len(config.ServerURL) > 0 {
-		serverUrl := config.ServerURL
+		serverUrl = config.ServerURL
 	} else {
-		serverUrl := taskReport.ServerURL
+		serverUrl = taskReport.ServerURL
 	}
 	// write reports JSON
 	reports := []piperutils.Path{
