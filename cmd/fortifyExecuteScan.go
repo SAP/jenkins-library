@@ -306,14 +306,21 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	if config.ConvertToSarif {
 		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
 		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := fortify.ConvertFprToSarif(sys, projectVersion, resultFilePath, filterSet)
+		sarif, sarifSimplified, err := fortify.ConvertFprToSarif(sys, projectVersion, resultFilePath, filterSet)
 		if err != nil {
 			return reports, fmt.Errorf("failed to generate SARIF")
 		}
-		log.Entry().Debug("Writing sarif file to disk.")
-		paths, err := fortify.WriteSarif(sarif)
+		log.Entry().Debug("Writing simplified sarif file in plain text to disk.")
+		paths, err := fortify.WriteSarif(sarifSimplified, "result.sarif")
 		if err != nil {
-			return reports, fmt.Errorf("failed to write sarif")
+			return reports, fmt.Errorf("failed to write simplified sarif")
+		}
+		reports = append(reports, paths...)
+
+		log.Entry().Debug("Writing full sarif file to disk and gzip it.")
+		paths, err = fortify.WriteGzipSarif(sarif, "result.sarif.gz")
+		if err != nil {
+			return reports, fmt.Errorf("failed to write gzip sarif")
 		}
 		reports = append(reports, paths...)
 	}

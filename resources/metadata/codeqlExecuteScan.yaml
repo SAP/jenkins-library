@@ -13,10 +13,17 @@ spec:
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
+    resources:
+      - name: commonPipelineEnvironment
+        resourceSpec:
+          type: piperEnvironment
+      - name: buildDescriptor
+        type: stash
+      - name: tests
+        type: stash
     params:
       - name: githubToken
-        description: "GitHub personal access token as per
-          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        description: "GitHub personal access token in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `githubTokenCredentialsId` parameter."
         scope:
           - GENERAL
           - PARAMETERS
@@ -32,6 +39,15 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+      - name: githubApiUrl
+        description: "Set the GitHub API URL."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: "https://api.github.com"
       - name: buildTool
         type: string
         description: Defines the build tool which is used for building the project.
@@ -97,6 +113,21 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: threads
+        type: string
+        description: "Use this many threads for the codeql operations."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "0"
+      - name: ram
+        type: string
+        description: "Use this much ram (MB) for the codeql operations."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: analyzedRef
         type: string
         description: "Name of the ref that was analyzed."
@@ -120,6 +151,22 @@ spec:
           - name: commonPipelineEnvironment
             param: git/remoteCommitId
         type: string
+      - name: vulnerabilityThresholdTotal
+        description: "Threashold for maximum number of allowed vulnerabilities."
+        type: int
+        default: 0
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: checkForCompliance
+        description: "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
+        type: bool
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: ""
   outputs:
@@ -130,4 +177,6 @@ spec:
           - filePattern: "**/*.csv"
             type: codeql
           - filePattern: "**/*.sarif"
+            type: codeql
+          - filePattern: "**/toolrun_codeql_*.json"
             type: codeql

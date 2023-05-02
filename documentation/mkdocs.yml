@@ -94,6 +94,7 @@ nav:
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
+        - credentialdiggerScan: steps/credentialdiggerScan.md
         - debugReportArchive: steps/debugReportArchive.md
         - detectExecuteScan: steps/detectExecuteScan.md
         - dockerExecute: steps/dockerExecute.md
@@ -126,6 +127,7 @@ nav:
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
         - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
         - integrationArtifactResource: steps/integrationArtifactResource.md
+        - integrationArtifactTransport: steps/integrationArtifactTransport.md        
         - integrationArtifactUnDeploy: steps/integrationArtifactUnDeploy.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - integrationArtifactUpload: steps/integrationArtifactUpload.md
@@ -167,6 +169,7 @@ nav:
         - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
+        - tmsExport: steps/tmsExport.md
         - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadCTS: steps/transportRequestUploadCTS.md
