@@ -141,6 +141,7 @@ spec:
         type: "[]string"
         description: Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter
         longDescription: |
+          Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter
           To run command `gradle clean build -x test` , it can be achieved as follows
 
           ```
