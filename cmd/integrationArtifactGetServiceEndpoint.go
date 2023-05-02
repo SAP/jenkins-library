@@ -62,11 +62,11 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
+	bodyText, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
+	if readErr != nil {
+		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", serviceEndpointResp.StatusCode)
+	}
 	if serviceEndpointResp.StatusCode == 200 {
-		bodyText, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
-		if readErr != nil {
-			return errors.Wrap(readErr, "HTTP response body could not be read")
-		}
 		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
@@ -81,13 +81,9 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 				return nil
 			}
 		}
-	}
-	responseBody, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
-
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", serviceEndpointResp.StatusCode)
+                return fmt.Errorf("Cannot retrieve integrationFlowServiceEndpoint from response: %q", bodyText)
 	}
 
-	log.Entry().Errorf("a HTTP error occurred!  Response body: %v, Response status code: %v", string(responseBody), serviceEndpointResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred!  Response body: %v, Response status code: %v", string(bodyText), serviceEndpointResp.StatusCode)
 	return errors.Errorf("Unable to get integration flow service endpoint, Response Status code: %v", serviceEndpointResp.StatusCode)
 }
