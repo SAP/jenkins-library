@@ -52,8 +52,7 @@ spec:
           - STAGES
           - STEPS
         default:
-          "!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go,
-          **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts"
+          '!**/target-static-fixtures/**,!**/dist/**, !**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, !**/test/**,!**/*_cxsast.html,!**/target/**'
       - name: fullScanCycle
         type: string
         description: Indicates how often a full scan should happen between the incremental scans when activated
