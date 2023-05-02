@@ -24,7 +24,7 @@ func TestRunKarma(t *testing.T) {
 		assert.Equal(t, e.Calls[1], mock.ExecCall{Exec: "npm", Params: []string{"run", "test"}}, "run command/params incorrect")
 
 	})
-	
+
 	t.Run("success case - verbose logging", func(t *testing.T) {
 		opts := karmaExecuteTestsOptions{Modules: []string{"./test"}, InstallCommand: "npm install test", RunCommand: "npm run test"}
 
