@@ -218,6 +218,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.Entry().WithError(err).Warning("no scan report found")
 		return nil
 	}
+
+	var serverUrl string
+
+	if len(config.ServerURL) > 0 {
+		serverUrl := config.ServerURL
+	} else {
+		serverUrl := taskReport.ServerURL
+	}
 	// write reports JSON
 	reports := []piperutils.Path{
 		{
@@ -238,14 +246,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.Entry().Warn("no measurements are fetched due to missing credentials")
 		return nil
 	}
-	taskService := SonarUtils.NewTaskService(config.ServerURL, config.Token, taskReport.TaskID, apiClient)
+	taskService := SonarUtils.NewTaskService(serverUrl, config.Token, taskReport.TaskID, apiClient)
 	// wait for analysis task to complete
 	err = taskService.WaitForTask()
 	if err != nil {
 		return err
 	}
 	// fetch number of issues by severity
-	issueService := SonarUtils.NewIssuesService(config.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
+	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues()
 	if err != nil {
 		return err
@@ -282,7 +290,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Info:     influx.sonarqube_data.fields.info_issues,
 		}}
 
-	componentService := SonarUtils.NewMeasuresComponentService(config.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
+	componentService := SonarUtils.NewMeasuresComponentService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	cov, err := componentService.GetCoverage()
 	if err != nil {
 		log.Entry().Warnf("failed to retrieve sonar coverage data: %v", err)
