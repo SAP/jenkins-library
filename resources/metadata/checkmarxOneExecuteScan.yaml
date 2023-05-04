@@ -2,7 +2,7 @@ metadata:
   name: checkmarxOneExecuteScan
   description: checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
   longDescription: |-
-    checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java- or TypeScript, Swift, Golang, Ruby code,
+    checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java or TypeScript, Swift, Golang, Ruby code,
     and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
     This step by default enforces a specific audit baseline for findings and therefore ensures that:
@@ -183,7 +183,6 @@ spec:
       - name: projectCriticality
         aliases:
           - name: criticality
-            deprecated: true
         type: string
         description: The criticality of the checkmarxOne project, used during project creation
         mandatory: true
@@ -191,6 +190,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: "3"
       - name: projectName
         aliases:
           - name: checkmarxOneProject
@@ -270,17 +270,6 @@ spec:
           - STAGES
           - STEPS
         default: "1"
-      - name: groupId
-        aliases:
-          - name: checkmarxOneGroupId
-          - name: teamId
-            deprecated: true
-        type: string
-        description: The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: groupName
         aliases:
           - name: checkmarxOneGroupName
@@ -292,10 +281,8 @@ spec:
           - STAGES
           - STEPS
       - name: applicationName
-        aliases:
-          - name: checkmarxOneApplicationName
         type: string
-        description: The full name of the Checkmarx One application to assign newly created projects to
+        description: The full name of the Checkmarx One application to which the newly created projects will be assigned
         scope:
           - PARAMETERS
           - STAGES
