@@ -78,7 +78,7 @@ class DockerUtilsTest extends BasePiperTest {
             ]
         )
 
-        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --src-creds=\'registryUser\':\'********\' --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --src-creds=\'registryUser\':\'********\' --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag --multi-arch=all'))
     }
 
     @Test
