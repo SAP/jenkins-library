@@ -203,13 +203,7 @@ func (c *checkmarxOneExecuteScanHelper) GetProjectByName() (*checkmarxOne.Projec
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) {
-	if len(c.config.GroupID) > 0 {
-		group, err := c.sys.GetGroupByID(c.config.GroupID)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to get Checkmarx One group by ID %v: %s", c.config.GroupID, err)
-		}
-		return &group, nil
-	} else if len(c.config.GroupName) > 0 {
+	if len(c.config.GroupName) > 0 {
 		group, err := c.sys.GetGroupByName(c.config.GroupName)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get Checkmarx One group by Name %v: %s", c.config.GroupName, err)
