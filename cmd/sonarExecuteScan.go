@@ -221,7 +221,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 
 	var serverUrl string
 
-	if len(config.ServerURL) > 0 {
+	if len(config.Proxy) > 0 {
 		serverUrl = config.ServerURL
 	} else {
 		serverUrl = taskReport.ServerURL
