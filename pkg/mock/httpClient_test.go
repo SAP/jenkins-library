@@ -1,5 +1,5 @@
-//go:build !release
-// +build !release
+//go:build unit && !release
+// +build unit,!release
 
 package mock
 
