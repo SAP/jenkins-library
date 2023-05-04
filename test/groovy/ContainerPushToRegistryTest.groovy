@@ -377,7 +377,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
             sourceRegistryUrl: 'https://my.source.registry:44444',
         )
 
-        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/sourceImage:sourceTag --multi-arch=all'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --multi-arch=all --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/sourceImage:sourceTag'))
     }
 
     @Test
