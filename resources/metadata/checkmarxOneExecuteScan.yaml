@@ -128,8 +128,6 @@ spec:
           - STEPS
         type: string
       - name: clientSecret
-        aliases:
-          - name: password
         type: string
         description: The clientSecret to authenticate using a service account
         mandatory: true
@@ -146,8 +144,6 @@ spec:
             name: checkmarxOneVaultSecretName
             default: checkmarxOne
       - name: APIKey
-        aliases:
-          - name: checkmarxOneAPIKey
         type: string
         description: The APIKey to authenticate
         mandatory: true
@@ -164,8 +160,6 @@ spec:
             name: checkmarxOneVaultSecretName
             default: checkmarxOne
       - name: preset
-        aliases:
-          - name: presetName
         type: string
         description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`
         scope:
@@ -181,8 +175,6 @@ spec:
           - STEPS
         default: "multi"
       - name: projectCriticality
-        aliases:
-          - name: criticality
         type: string
         description: The criticality of the checkmarxOne project, used during project creation
         mandatory: true
@@ -192,8 +184,6 @@ spec:
           - STEPS
         default: "3"
       - name: projectName
-        aliases:
-          - name: checkmarxOneProject
         type: string
         description: The name of the checkmarxOne project to scan into
         mandatory: true
@@ -230,8 +220,6 @@ spec:
           - STEPS
         type: string
       - name: serverUrl
-        aliases:
-          - name: checkmarxOneServerUrl
         type: string
         description: The URL pointing to the root of the checkmarxOne server to be used
         mandatory: true
@@ -241,8 +229,6 @@ spec:
           - STAGES
           - STEPS
       - name: iamUrl
-        aliases:
-          - name: checkmarxOneIAMUrl
         type: string
         description: The URL pointing to the access control root of the checkmarxOne IAM server to be used
         mandatory: true
@@ -252,8 +238,6 @@ spec:
           - STAGES
           - STEPS
       - name: tenant
-        aliases:
-          - name: checkmarxOneTenant
         type: string
         description: The name of the checkmarxOne tenant to be used
         mandatory: true
@@ -271,9 +255,6 @@ spec:
           - STEPS
         default: "1"
       - name: groupName
-        aliases:
-          - name: checkmarxOneGroupName
-          - name: teamName
         type: string
         description: The full name of the group to assign newly created projects to which is preferred to groupId
         scope:
@@ -288,8 +269,6 @@ spec:
           - STAGES
           - STEPS
       - name: clientId
-        aliases:
-          - name: username
         type: string
         description: The username to authenticate
         mandatory: true
