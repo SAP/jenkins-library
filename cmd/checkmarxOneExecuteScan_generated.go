@@ -45,7 +45,6 @@ type checkmarxOneExecuteScanOptions struct {
 	IamURL                               string   `json:"iamUrl,omitempty"`
 	Tenant                               string   `json:"tenant,omitempty"`
 	SourceEncoding                       string   `json:"sourceEncoding,omitempty"`
-	GroupID                              string   `json:"groupId,omitempty"`
 	GroupName                            string   `json:"groupName,omitempty"`
 	ApplicationName                      string   `json:"applicationName,omitempty"`
 	ClientID                             string   `json:"clientId,omitempty"`
@@ -245,7 +244,7 @@ func CheckmarxOneExecuteScanCommand() *cobra.Command {
 	var createCheckmarxOneExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
-		Long: `checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java- or TypeScript, Swift, Golang, Ruby code,
+		Long: `checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java or TypeScript, Swift, Golang, Ruby code,
 and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
 This step by default enforces a specific audit baseline for findings and therefore ensures that:
@@ -354,7 +353,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.APIKey, "APIKey", os.Getenv("PIPER_APIKey"), "The APIKey to authenticate")
 	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
-	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", os.Getenv("PIPER_projectCriticality"), "The criticality of the checkmarxOne project, used during project creation")
+	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", `3`, "The criticality of the checkmarxOne project, used during project creation")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the checkmarxOne project to scan into")
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Used to supply the branch scanned in the repository, or a friendly-name set by the user")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios. This is supplied by the orchestrator.")
@@ -363,9 +362,8 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.IamURL, "iamUrl", os.Getenv("PIPER_iamUrl"), "The URL pointing to the access control root of the checkmarxOne IAM server to be used")
 	cmd.Flags().StringVar(&stepConfig.Tenant, "tenant", os.Getenv("PIPER_tenant"), "The name of the checkmarxOne tenant to be used")
 	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used  [Not yet supported]")
-	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to assign newly created projects to which is preferred to groupId")
-	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The full name of the Checkmarx One application to assign newly created projects to")
+	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The full name of the Checkmarx One application to which the newly created projects will be assigned")
 	cmd.Flags().StringVar(&stepConfig.ClientID, "clientId", os.Getenv("PIPER_clientId"), "The username to authenticate")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
@@ -534,7 +532,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "password"}},
+						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_clientSecret"),
 					},
 					{
@@ -555,7 +553,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "checkmarxOneAPIKey"}},
+						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_APIKey"),
 					},
 					{
@@ -564,7 +562,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "presetName"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_preset"),
 					},
 					{
@@ -582,8 +580,8 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "criticality", Deprecated: true}},
-						Default:     os.Getenv("PIPER_projectCriticality"),
+						Aliases:     []config.Alias{},
+						Default:     `3`,
 					},
 					{
 						Name:        "projectName",
@@ -591,7 +589,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxOneProject"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
@@ -632,7 +630,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxOneServerUrl"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -641,7 +639,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxOneIAMUrl"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_iamUrl"),
 					},
 					{
@@ -650,7 +648,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxOneTenant"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_tenant"),
 					},
 					{
@@ -663,21 +661,12 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Default:     `1`,
 					},
 					{
-						Name:        "groupId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "checkmarxOneGroupId"}, {Name: "teamId", Deprecated: true}},
-						Default:     os.Getenv("PIPER_groupId"),
-					},
-					{
 						Name:        "groupName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "checkmarxOneGroupName"}, {Name: "teamName"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_groupName"),
 					},
 					{
@@ -686,7 +675,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "checkmarxOneApplicationName"}},
+						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_applicationName"),
 					},
 					{
@@ -707,7 +696,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "username"}},
+						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_clientId"),
 					},
 					{
