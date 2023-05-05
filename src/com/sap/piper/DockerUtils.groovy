@@ -58,11 +58,9 @@ class DockerUtils implements Serializable {
 
     private void skopeoMoveImage(sourceImageFullName, sourceUserId, sourcePassword, targetImageFullName, targetUserId, targetPassword) {
         if (sourceUserId && sourcePassword) {
-            script.sh "skopeo copy --src-tls-verify=false --src-creds=${BashUtils.quoteAndEscape(sourceUserId)}:${BashUtils.quoteAndEscape(sourcePassword)} --dest-tls-verify=false --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
+            script.sh "skopeo copy --multi-arch=all --src-tls-verify=false --src-creds=${BashUtils.quoteAndEscape(sourceUserId)}:${BashUtils.quoteAndEscape(sourcePassword)} --dest-tls-verify=false --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
         } else {
-            script.sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
+            script.sh "skopeo copy --multi-arch=all --src-tls-verify=false --dest-tls-verify=false --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
         }
     }
-
-
 }
