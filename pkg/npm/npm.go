@@ -370,7 +370,6 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 				"XML",
 				"--spec-version",
 				cycloneDxSchemaVersion,
-				"--no-validate",
 				"--output-file", filepath.Join(filepath.Dir(packageJSONFile), npmBomFilename),
 				packageJSONFile,
 			}

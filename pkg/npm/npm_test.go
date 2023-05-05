@@ -357,12 +357,19 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "@cyclonedx/bom@^3.10.6", "--no-save"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"cyclonedx-bom", ".",
-					"--output", "bom-npm.xml"}}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"cyclonedx-bom", "src",
-					"--output", filepath.Join("src", "bom-npm.xml")}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "--global", "@cyclonedx/cyclonedx-npm@1.11.0", "--no-save"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "cyclonedx-npm", Params: []string{"--output-format",
+					"XML",
+					"--spec-version",
+					"1.4",
+					"--output-file", "bom-npm.xml", "package.json"}}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "cyclonedx-npm", Params: []string{"--output-format",
+					"XML",
+					"--spec-version",
+					"1.4",
+					"--output-file", filepath.Join("src", "bom-npm.xml"), filepath.Join("src", "package.json")}}, utils.execRunner.Calls[2])
 			}
+
 		}
 	})
 }
