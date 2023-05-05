@@ -63,6 +63,9 @@ AbapEnvironment*                                @SAP/jenkins-library-abap
 ascAppUpload*                                   @Mau04 @inf2381
 AscAppUpload*                                   @Mau04 @inf2381
 
+credentialdiggerScan*                           @marcorosa @SlimTrabelsi
+CredentialdiggerScan*                           @marcorosa @SlimTrabelsi
+
 #####################
 # Integration tests #
 #####################
