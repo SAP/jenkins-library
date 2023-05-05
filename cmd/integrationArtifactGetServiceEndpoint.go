@@ -81,6 +81,8 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 				return nil
 			}
 		}
+		return errors.Errorf("Unable to get integration flow service endpoint '%v', Response body: %v, Response Status code: %v",
+			config.IntegrationFlowID, string(bodyText), serviceEndpointResp.StatusCode)
 	}
 	responseBody, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
 

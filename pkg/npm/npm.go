@@ -364,13 +364,13 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
-			//path := filepath.Dir(packageJSONFile)
+			path := filepath.Dir(packageJSONFile)
 			params := []string{
 				"--output-format",
 				"XML",
 				"--spec-version",
 				cycloneDxSchemaVersion,
-				"--output-file", filepath.Join(filepath.Dir(packageJSONFile), npmBomFilename),
+				"--output-file", filepath.Join(path, npmBomFilename),
 				packageJSONFile,
 			}
 			err := execRunner.RunExecutable("cyclonedx-npm", params...)
