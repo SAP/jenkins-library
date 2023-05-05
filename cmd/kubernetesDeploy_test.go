@@ -43,6 +43,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			DeploymentName:            "deploymentName",
 			DeployTool:                "helm",
 			ForceUpdates:              true,
+			RenderSubchartNotes:       true,
 			HelmDeployWaitSeconds:     400,
 			IngressHosts:              []string{"ingress.host1", "ingress.host2"},
 			Image:                     "path/to/Image:latest",
@@ -90,6 +91,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--atomic",
 			"--kube-context",
 			"testCluster",
+			"--render-subchart-notes",
 			"--testParam",
 			"testValue",
 		}, mockUtils.Calls[2].Params, "Wrong upgrade parameters")
