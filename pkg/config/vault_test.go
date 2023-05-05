@@ -227,6 +227,107 @@ func addAlias(param *StepParameters, aliasName string) {
 	param.Aliases = append(param.Aliases, alias)
 }
 
+func TestResolveVaultCredentialsWrapperBase(t *testing.T) {
+	t.Parallel()
+	t.Run("Default test credential prefix", func(t *testing.T) {
+		t.Parallel()
+		// init
+		vaultMock := &mocks.VaultMock{}
+		envPrefix := "PIPER_TESTCREDENTIAL_"
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultPath":               "team1",
+			"vaultTestCredentialPath": "appCredentials",
+			"vaultTestCredentialKeys": []interface{}{"appUser", "appUserPw"},
+		}}
+
+		defer os.Unsetenv("PIPER_TESTCREDENTIAL_APPUSER")
+		defer os.Unsetenv("PIPER_TESTCREDENTIAL_APPUSERPW")
+
+		// mock
+		vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
+		vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
+
+		// test
+		resolveVaultCredentialsWrapper(&stepConfig, vaultMock)
+
+		// assert
+		for k, expectedValue := range vaultData {
+			env := envPrefix + strings.ToUpper(k)
+			assert.NotEmpty(t, os.Getenv(env))
+			assert.Equal(t, expectedValue, os.Getenv(env))
+		}
+	})
+
+	// Test empty and non-empty custom general purpose credential prefix
+	envPrefixes := []string{"CUSTOM_MYCRED_", ""}
+	for _, envPrefix := range envPrefixes {
+		t.Run("Custom general purpose credential prefix along with fixed standard prefix", func(t *testing.T) {
+			t.Parallel()
+			// init
+			vaultMock := &mocks.VaultMock{}
+			standardEnvPrefix := "PIPER_VAULTCREDENTIAL_"
+			stepConfig := StepConfig{Config: map[string]interface{}{
+				"vaultPath":                "team1",
+				"vaultCredentialPath":      "appCredentials",
+				"vaultCredentialKeys":      []interface{}{"appUser", "appUserPw"},
+				"vaultCredentialEnvPrefix": envPrefix,
+			}}
+
+			defer os.Unsetenv(envPrefix + "APPUSER")
+			defer os.Unsetenv(envPrefix + "APPUSERPW")
+			defer os.Unsetenv("PIPER_VAULTCREDENTIAL_APPUSER")
+			defer os.Unsetenv("PIPER_VAULTCREDENTIAL_APPUSERPW")
+
+			// mock
+			vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
+			vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
+
+			// test
+			resolveVaultCredentials(&stepConfig, vaultMock)
+
+			// assert
+			for k, expectedValue := range vaultData {
+				env := envPrefix + strings.ToUpper(k)
+				assert.NotEmpty(t, os.Getenv(env))
+				assert.Equal(t, expectedValue, os.Getenv(env))
+				standardEnv := standardEnvPrefix + strings.ToUpper(k)
+				assert.NotEmpty(t, os.Getenv(standardEnv))
+				assert.Equal(t, expectedValue, os.Getenv(standardEnv))
+			}
+		})
+	}
+
+	t.Run("Custom test credential prefix", func(t *testing.T) {
+		t.Parallel()
+		// init
+		vaultMock := &mocks.VaultMock{}
+		envPrefix := "CUSTOM_CREDENTIAL_"
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultPath":                    "team1",
+			"vaultTestCredentialPath":      "appCredentials",
+			"vaultTestCredentialKeys":      []interface{}{"appUser", "appUserPw"},
+			"vaultTestCredentialEnvPrefix": envPrefix,
+		}}
+
+		defer os.Unsetenv("CUSTOM_CREDENTIAL_APPUSER")
+		defer os.Unsetenv("CUSTOM_CREDENTIAL_APPUSERPW")
+
+		// mock
+		vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
+		vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
+
+		// test
+		resolveVaultTestCredentials(&stepConfig, vaultMock)
+
+		// assert
+		for k, expectedValue := range vaultData {
+			env := envPrefix + strings.ToUpper(k)
+			assert.NotEmpty(t, os.Getenv(env))
+			assert.Equal(t, expectedValue, os.Getenv(env))
+		}
+	})
+}
+
 func TestResolveVaultTestCredentials(t *testing.T) {
 	t.Parallel()
 	t.Run("Default test credential prefix", func(t *testing.T) {
