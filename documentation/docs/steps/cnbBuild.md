@@ -45,7 +45,7 @@ This behavior can be overwritten by using the respective sections in [`project.t
 
 ```groovy
 cnbBuild(
-    script: script,
+    script: this,
     dockerConfigJsonCredentialsId: 'DOCKER_REGISTRY_CREDS',
     containerImageName: 'images/example',
     containerImageTag: 'v0.0.1',
@@ -57,7 +57,7 @@ cnbBuild(
 
 ```groovy
 cnbBuild(
-    script: script,
+    script: this,
     dockerConfigJsonCredentialsId: 'DOCKER_REGISTRY_CREDS',
     dockerImage: 'paketobuildpacks/builder:base',
     containerImageName: 'images/example',
@@ -70,7 +70,7 @@ cnbBuild(
 
 ```groovy
 cnbBuild(
-    script: script,
+    script: this,
     dockerConfigJsonCredentialsId: 'DOCKER_REGISTRY_CREDS',
     containerImageName: 'images/example',
     containerImageTag: 'v0.0.1',
@@ -83,7 +83,7 @@ cnbBuild(
 
 ```groovy
 cnbBuild(
-    script: script,
+    script: this,
     dockerConfigJsonCredentialsId: 'DOCKER_REGISTRY_CREDS',
     containerImageName: 'images/example',
     containerImageTag: 'v0.0.1',

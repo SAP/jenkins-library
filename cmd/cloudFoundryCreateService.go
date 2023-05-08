@@ -73,6 +73,9 @@ func cloudFoundryCreateServiceRequest(config *cloudFoundryCreateServiceOptions, 
 	if config.CfServiceTags != "" {
 		cfCreateServiceScript = append(cfCreateServiceScript, "-t", config.CfServiceTags)
 	}
+	if !config.CfAsync {
+		cfCreateServiceScript = append(cfCreateServiceScript, "--wait")
+	}
 	if config.ServiceManifest != "" && fileExists(config.ServiceManifest) {
 
 		cfCreateServiceScript = []string{"create-service-push", "--no-push", "--service-manifest", config.ServiceManifest}

@@ -47,6 +47,12 @@ func cloneRepository(config *gctsCloneRepositoryOptions, telemetryData *telemetr
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/clone?sap-client=" + config.Client
 
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 	resp, httpErr := httpClient.SendRequest("POST", url, nil, header, nil)
 
 	defer func() {

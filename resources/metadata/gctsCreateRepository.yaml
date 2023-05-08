@@ -96,3 +96,20 @@ spec:
         default: GIT
         possibleValues:
           - GIT
+      - name: queryParameters
+        type: "map[string]interface{}"
+        description: Add query parameters (for API requests) that apply to all endpoints of the step. Provide the parameters as key-value pair map in the format `<query parameter>:<value>`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: skipSSLVerification
+        type: bool
+        description: Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: false

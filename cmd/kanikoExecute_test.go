@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -13,6 +16,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -66,7 +70,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{
@@ -76,7 +79,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -117,7 +120,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{
@@ -128,7 +130,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 		fileUtils.AddFile("/tmp/*-kanikoExecutetest/digest.txt", []byte(`sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0`))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -169,7 +171,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{
@@ -179,7 +180,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -214,7 +215,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{
@@ -224,7 +224,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -262,7 +262,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{}
@@ -270,7 +269,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("path/to/docker/config.json", []byte(``))
 		fileUtils.FileReadErrors = map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoErrorf(t, err, "failed to update certificates: failed to load file '/kaniko/ssl/certs/ca-certificates.crt': read error")
 	})
@@ -284,7 +283,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{
@@ -293,7 +291,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -316,7 +314,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{
@@ -326,12 +323,13 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 		cwd, _ := fileUtils.Getwd()
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, execRunner.Calls[1].Params)
 	})
+
 	t.Run("success case - createBOM", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			ContainerImage:              "myImage:tag",
@@ -339,31 +337,31 @@ func TestRunKanikoExecute(t *testing.T) {
 			DockerfilePath:              "Dockerfile",
 			DockerConfigJSON:            "path/to/docker/config.json",
 			CreateBOM:                   true,
+			SyftDownloadURL:             "http://test-syft-url.io",
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
-
-		certClient := &kanikoMockClient{
-			responseBody: "testCert",
-		}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
-		fileUtils.AddFile("install.sh", []byte(`echo syft`))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
-
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		fakeArchive, err := fileUtils.CreateArchive(map[string][]byte{"syft": []byte("test")})
 		assert.NoError(t, err)
 
-		assert.Equal(t, "/kaniko/executor", execRunner.Calls[1].Exec)
+		httpmock.RegisterResponder(http.MethodGet, "http://test-syft-url.io", httpmock.NewBytesResponder(http.StatusOK, fakeArchive))
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
+		err = runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, client, fileUtils)
+		assert.NoError(t, err)
+		assert.Equal(t, "/kaniko/executor", execRunner.Calls[1].Exec)
 		assert.Equal(t, "myImage:tag", commonPipelineEnvironment.container.imageNameTag)
 		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)
 
-		//Syft install and call
-		assert.Contains(t, shellRunner.Calls[0], "cat ./install.sh | sh -s -- -b .")
-		assert.Contains(t, shellRunner.Calls[1], "./syft index.docker.io/myImage:tag -o cyclonedx-xml=bom-docker-0.xml")
+		assert.Equal(t, "/tmp/syfttest/syft", execRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"packages", "registry:index.docker.io/myImage:tag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"}, execRunner.Calls[2].Params)
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
@@ -375,7 +373,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		fileUtils := &mock.FilesMock{}
@@ -383,7 +380,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, nil, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, nil, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -433,7 +430,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		fileUtils := &mock.FilesMock{}
@@ -441,7 +437,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, nil, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, nil, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -482,26 +478,29 @@ func TestRunKanikoExecute(t *testing.T) {
 			ContainerMultiImageBuild: true,
 			DockerConfigJSON:         "path/to/docker/config.json",
 			CreateBOM:                true,
+			SyftDownloadURL:          "http://test-syft-url.io",
 		}
-		certClient := &kanikoMockClient{
-			responseBody: "testCert",
-		}
-
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
-
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
-		fileUtils.AddFile("install.sh", []byte(`echo syft`))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		fakeArchive, err := fileUtils.CreateArchive(map[string][]byte{"syft": []byte("test")})
 		assert.NoError(t, err)
 
-		assert.Equal(t, 3, len(execRunner.Calls))
+		httpmock.RegisterResponder(http.MethodGet, "http://test-syft-url.io", httpmock.NewBytesResponder(http.StatusOK, fakeArchive))
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+
+		err = runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, client, fileUtils)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 6, len(execRunner.Calls))
 		assert.Equal(t, "/kaniko/executor", execRunner.Calls[0].Exec)
 		assert.Equal(t, "/kaniko/executor", execRunner.Calls[1].Exec)
 		assert.Equal(t, "/kaniko/executor", execRunner.Calls[2].Exec)
@@ -511,11 +510,17 @@ func TestRunKanikoExecute(t *testing.T) {
 			{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
 			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
 			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"packages", "registry:my.registry.com:50000/myImage:myTag", "-o", "cyclonedx-xml", "--file"},
+			{"packages", "registry:my.registry.com:50000/myImage-sub1:myTag", "-o", "cyclonedx-xml", "--file"},
+			{"packages", "registry:my.registry.com:50000/myImage-sub2:myTag", "-o", "cyclonedx-xml", "--file"},
 		}
 		// need to go this way since we cannot count on the correct order
-		for _, call := range execRunner.Calls {
+		for index, call := range execRunner.Calls {
 			found := false
 			for _, expected := range expectedParams {
+				if expected[0] == "packages" {
+					expected = append(expected, fmt.Sprintf("bom-docker-%d.xml", index-3), "-q")
+				}
 				if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
 					found = true
 					break
@@ -535,25 +540,6 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "", commonPipelineEnvironment.container.imageDigest)
 		assert.Empty(t, commonPipelineEnvironment.container.imageDigests)
-
-		//Syft install and call, can we do it better without 2 for loops
-		expectedShellCalls := []string{
-			"cat ./install.sh | sh -s -- -b .",
-			"./syft my.registry.com:50000/myImage:myTag -o cyclonedx-xml=bom-docker-0.xml",
-			"./syft my.registry.com:50000/myImage-sub1:myTag -o cyclonedx-xml=bom-docker-1.xml",
-			"./syft my.registry.com:50000/myImage-sub2:myTag -o cyclonedx-xml=bom-docker-2.xml",
-		}
-		for _, call := range shellRunner.Calls {
-			found := false
-			for _, expected := range expectedShellCalls {
-				if strings.Contains(call, expected) {
-					found = true
-					break
-				}
-			}
-			assert.True(t, found)
-		}
-
 	})
 
 	t.Run("success case - updating an existing docker config json with addtional credentials", func(t *testing.T) {
@@ -571,7 +557,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{
@@ -581,7 +566,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths": {"dummyUrl": {"auth": "XXXXXXX"}}}`))
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -608,7 +593,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 		certClient := &kanikoMockClient{
@@ -617,7 +601,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("/kaniko/ssl/certs/ca-certificates.crt", []byte(``))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -640,11 +624,9 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cpe := kanikoExecuteCommonPipelineEnvironment{}
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
-
 		fileUtils := &mock.FilesMock{}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &cpe, execRunner, shellRunner, nil, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &cpe, execRunner, nil, fileUtils)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "failed to identify image list for multi image build")
@@ -661,12 +643,11 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cpe := kanikoExecuteCommonPipelineEnvironment{}
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &cpe, execRunner, shellRunner, nil, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &cpe, execRunner, nil, fileUtils)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "no docker files to process, please check exclude list")
@@ -682,14 +663,13 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cpe := kanikoExecuteCommonPipelineEnvironment{}
 		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
 
 		execRunner.ShouldFailOnCommand = map[string]error{"/kaniko/executor": fmt.Errorf("execution failed")}
 
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &cpe, execRunner, shellRunner, nil, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &cpe, execRunner, nil, fileUtils)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "failed to build image")
@@ -699,7 +679,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
 		}
-		shellRunner := &mock.ShellMockRunner{}
 		execRunner := &mock.ExecMockRunner{
 			ShouldFailOnCommand: map[string]error{"rm": fmt.Errorf("rm failed")},
 		}
@@ -708,14 +687,13 @@ func TestRunKanikoExecute(t *testing.T) {
 		certClient := &kanikoMockClient{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to initialize Kaniko container: rm failed")
 	})
 
 	t.Run("error case - Kaniko execution failed", func(t *testing.T) {
 		config := &kanikoExecuteOptions{}
-		shellRunner := &mock.ShellMockRunner{}
 		execRunner := &mock.ExecMockRunner{
 			ShouldFailOnCommand: map[string]error{"/kaniko/executor": fmt.Errorf("kaniko run failed")},
 		}
@@ -724,7 +702,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		certClient := &kanikoMockClient{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "execution of '/kaniko/executor' failed: kaniko run failed")
 	})
@@ -740,7 +718,6 @@ func TestRunKanikoExecute(t *testing.T) {
 			DockerfilePath:              "Dockerfile",
 			DockerConfigJSON:            "path/to/docker/config.json",
 		}
-		shellRunner := &mock.ShellMockRunner{}
 		execRunner := &mock.ExecMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
@@ -748,7 +725,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.FileReadErrors = map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to update certificates: failed to load file '/kaniko/ssl/certs/ca-certificates.crt': read error")
 	})
@@ -757,7 +734,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			DockerConfigJSON: "path/to/docker/config.json",
 		}
-		shellRunner := &mock.ShellMockRunner{}
 		execRunner := &mock.ExecMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
@@ -765,7 +741,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils := &mock.FilesMock{}
 		fileUtils.FileReadErrors = map[string]error{"path/to/docker/config.json": fmt.Errorf("read error")}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to read existing docker config json at 'path/to/docker/config.json': read error")
 	})
@@ -774,7 +750,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			DockerConfigJSON: "path/to/docker/config.json",
 		}
-		shellRunner := &mock.ShellMockRunner{}
 		execRunner := &mock.ExecMockRunner{}
 		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
@@ -783,48 +758,8 @@ func TestRunKanikoExecute(t *testing.T) {
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.FileWriteErrors = map[string]error{"/kaniko/.docker/config.json": fmt.Errorf("write error")}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to write file '/kaniko/.docker/config.json': write error")
-	})
-
-	t.Run("error cases - createBOM", func(t *testing.T) {
-		config := &kanikoExecuteOptions{
-			ContainerImage:              "myImage:tag",
-			DockerfilePath:              "Dockerfile",
-			DockerConfigJSON:            "path/to/docker/config.json",
-			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
-			CreateBOM:                   true,
-		}
-
-		execRunner := &mock.ExecMockRunner{}
-		shellRunner := &mock.ShellMockRunner{}
-		commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
-		certClient := &kanikoMockClient{
-			responseBody: "testCert",
-		}
-		fileUtils := &mock.FilesMock{}
-		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
-		fileUtils.AddFile("install.sh", []byte(`echo syft`))
-
-		// Case 1 - Download of syft installation file failed
-		certClient.errorMessage = "Download failed"
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient, fileUtils)
-		assert.Error(t, err)
-		assert.Contains(t, fmt.Sprint(err), certClient.errorMessage)
-
-		// Case 2 - Installation of syft failed, using new kanikoMockClient here
-		certClient1 := &kanikoMockClient{}
-		shellRunner.ShouldFailOnCommand = map[string]error{"cat ./install.sh | sh -s -- -b .": fmt.Errorf("install failed")}
-		err = runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner, certClient1, fileUtils)
-		assert.Error(t, err)
-		assert.Contains(t, fmt.Sprint(err), "failed to install syft")
-
-		// Case 3 syft run failed, using new ShellMockRunner here
-		shellRunner1 := &mock.ShellMockRunner{}
-		shellRunner1.ShouldFailOnCommand = map[string]error{"./syft index.docker.io/myImage:tag -o cyclonedx-xml=bom-docker-0.xml": fmt.Errorf("run failed")}
-		err = runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, execRunner, shellRunner1, certClient1, fileUtils)
-		assert.Error(t, err)
-		assert.Contains(t, fmt.Sprint(err), "failed to generate SBOM")
 	})
 }

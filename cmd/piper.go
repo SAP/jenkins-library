@@ -111,8 +111,10 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentCreateTagCommand())
 	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
+	rootCmd.AddCommand(CheckmarxOneExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(CodeqlExecuteScanCommand())
+	rootCmd.AddCommand(CredentialdiggerScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
@@ -192,6 +194,9 @@ func Execute() {
 	rootCmd.AddCommand(AnsSendEventCommand())
 	rootCmd.AddCommand(ApiProviderListCommand())
 	rootCmd.AddCommand(TmsUploadCommand())
+	rootCmd.AddCommand(TmsExportCommand())
+	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
+	rootCmd.AddCommand(AscAppUploadCommand())
 
 	addRootFlags(rootCmd)
 
@@ -269,7 +274,7 @@ func initStageName(outputToLog bool) {
 	var stageNameSource string
 	if outputToLog {
 		defer func() {
-			log.Entry().Infof("Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
+			log.Entry().Debugf("Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
 		}()
 	}
 
@@ -360,7 +365,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		{
 			projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 			if exists, err := piperutils.FileExists(projectConfigFile); exists {
-				log.Entry().Infof("Project config: '%s'", projectConfigFile)
+				log.Entry().Debugf("Project config: '%s'", projectConfigFile)
 				if customConfig, err = openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens); err != nil {
 					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
@@ -378,11 +383,11 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			// only create error for non-default values
 			if err != nil {
 				if projectDefaultFile != ".pipeline/defaults.yaml" {
-					log.Entry().Infof("Project defaults: '%s'", projectDefaultFile)
+					log.Entry().Debugf("Project defaults: '%s'", projectDefaultFile)
 					return errors.Wrapf(err, "Cannot read '%s'", projectDefaultFile)
 				}
 			} else {
-				log.Entry().Infof("Project defaults: '%s'", projectDefaultFile)
+				log.Entry().Debugf("Project defaults: '%s'", projectDefaultFile)
 				defaultConfig = append(defaultConfig, fc)
 			}
 		}
@@ -427,7 +432,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration) {
 	if source != nil {
-		log.Entry().Info("Retrieving hook configuration")
+		log.Entry().Debug("Retrieving hook configuration")
 		b, err := json.Marshal(source)
 		if err != nil {
 			log.Entry().Warningf("Failed to marshal source hook configuration: %v", err)

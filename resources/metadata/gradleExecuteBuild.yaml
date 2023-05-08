@@ -1,7 +1,7 @@
 metadata:
   name: gradleExecuteBuild
   description: This step runs a gradle build command with parameters provided to the step.
-  longDescription: This step runs a gradle build command with parameters provided to the step.
+  longDescription: This step runs a gradle build command with parameters provided to the step.Supports execution of gradle tasks with or without wrapper.Gradle tasks and flags can be specified via 'task' or 'buildFlags' parameter. If both are not specified 'build' task will run by default.
 spec:
   inputs:
     params:
@@ -18,7 +18,7 @@ spec:
         mandatory: false
       - name: task
         type: string
-        description: Gradle task that should be executed.
+        description: A single gradle task that should be executed. If you prefer more than one, use 'buildFlags' parameter. If 'buildFlags' parameter is specified, this parameter will be ignored.
         scope:
           - PARAMETERS
           - STAGES
@@ -115,6 +115,48 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
+      - name: applyPublishingForAllProjects
+        type: bool
+        description: If set to false publishing logic will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: excludeCreateBOMForProjects
+        description: Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+      - name: excludePublishingForProjects
+        description: Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+      - name: buildFlags
+        type: "[]string"
+        description: Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter
+        longDescription: |
+          Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter
+          To run command `gradle clean build -x test` , it can be achieved as follows
+
+          ```
+          steps:
+            gradleExecuteBuild:
+              buildFlags:
+                - clean
+                - build
+                - -x
+                - test
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: reports

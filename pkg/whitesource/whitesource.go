@@ -60,8 +60,16 @@ type Alert struct {
 	Status           string        `json:"status,omitempty"`
 }
 
+// DependencyType returns type of dependency: direct/transitive
+func (a *Alert) DependencyType() string {
+	if a.DirectDependency == true {
+		return "direct"
+	}
+	return "transitive"
+}
+
 // Title returns the issue title representation of the contents
-func (a *Alert) Title() string {
+func (a Alert) Title() string {
 	if a.Type == "SECURITY_VULNERABILITY" {
 		return fmt.Sprintf("Security Vulnerability %v %v", a.Vulnerability.Name, a.Library.ArtifactID)
 	} else if a.Type == "REJECTED_BY_POLICY_RESOURCE" {
@@ -145,7 +153,7 @@ func consolidate(cvss2severity, cvss3severity string, cvss2score, cvss3score flo
 }
 
 // ToMarkdown returns the markdown representation of the contents
-func (a *Alert) ToMarkdown() ([]byte, error) {
+func (a Alert) ToMarkdown() ([]byte, error) {
 
 	if a.Type == "SECURITY_VULNERABILITY" {
 		score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
@@ -153,10 +161,10 @@ func (a *Alert) ToMarkdown() ([]byte, error) {
 		vul := reporting.VulnerabilityReport{
 			ArtifactID: a.Library.ArtifactID,
 			// no information available about branch and commit, yet
-			Branch:           "",
-			CommitID:         "",
-			Description:      a.Vulnerability.Description,
-			DirectDependency: fmt.Sprint(a.DirectDependency),
+			Branch:         "",
+			CommitID:       "",
+			Description:    a.Vulnerability.Description,
+			DependencyType: a.DependencyType(),
 			// no information available about footer, yet
 			Footer: "",
 			Group:  a.Library.GroupID,

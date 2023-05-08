@@ -36,11 +36,11 @@ parameters:
 
 modules:
   - name: {{.ApplicationName}}
-    type: html5
+    type: com.sap.hcp.html5
     path: .
     parameters:
-       version: {{.Version}}-${timestamp}
-       name: {{.ApplicationName}}
+      version: {{.Version}}-${timestamp}
+      name: {{.ApplicationName}}
     build-parameters:
       builder: grunt
       build-result: dist`
@@ -415,7 +415,7 @@ func getTimestamp() string {
 
 func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils) error {
 
-	log.Entry().Debugf("mta yaml file not found in project sources.")
+	log.Entry().Infof("\"%s\" file not found in project sources", mtaYamlFile)
 
 	if len(applicationName) == 0 {
 		return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)

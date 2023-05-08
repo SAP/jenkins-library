@@ -31,12 +31,12 @@ const (
 	coverageFile                = "cover.out"
 	golangUnitTestOutput        = "TEST-go.xml"
 	golangIntegrationTestOutput = "TEST-integration.xml"
+	unitJsonReport              = "unit-report.out"
+	integrationJsonReport       = "integration-report.out"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
 	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
 	sbomFilename                = "bom-golang.xml"
-	golangciLintURL             = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
-	golangciLintVersion         = "latest"
 )
 
 type golangBuildUtils interface {
@@ -49,6 +49,7 @@ type golangBuildUtils interface {
 	getDockerImageValue(stepName string) (string, error)
 	GetExitCode() int
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	Untar(src string, dest string, stripComponentLevel int) error
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The golangBuildUtils interface should be descriptive of your runtime dependencies,
@@ -76,6 +77,10 @@ func (g *golangBuildUtilsBundle) DownloadFile(url, filename string, header http.
 
 func (g *golangBuildUtilsBundle) getDockerImageValue(stepName string) (string, error) {
 	return GetDockerImageValue(stepName)
+}
+
+func (g *golangBuildUtilsBundle) Untar(src string, dest string, stripComponentLevel int) error {
+	return piperutils.Untar(src, dest, stripComponentLevel)
 }
 
 func newGolangBuildUtils(config golangBuildOptions) golangBuildUtils {
@@ -175,7 +180,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		goPath := os.Getenv("GOPATH")
 		golangciLintDir := filepath.Join(goPath, "bin")
 
-		if err := retrieveGolangciLint(utils, golangciLintDir); err != nil {
+		if err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL); err != nil {
 			return err
 		}
 
@@ -361,7 +366,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
-	testOptions := []string{"--junitfile", golangUnitTestOutput, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}
+	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", unitJsonReport, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "-tags=unit", "./..."}
 	testOptions = append(testOptions, config.TestOptions...)
 	if err := utils.RunExecutable("gotestsum", testOptions...); err != nil {
 		exists, fileErr := utils.FileExists(golangUnitTestOutput)
@@ -382,7 +387,7 @@ func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, e
 func runGolangIntegrationTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
 	// for integration tests coverage data is not meaningful and thus not being created
-	if err := utils.RunExecutable("gotestsum", "--junitfile", golangIntegrationTestOutput, "--", "-tags=integration", "./..."); err != nil {
+	if err := utils.RunExecutable("gotestsum", "--junitfile", golangIntegrationTestOutput, "--jsonfile", integrationJsonReport, "--", "-tags=integration", "./..."); err != nil {
 		exists, fileErr := utils.FileExists(golangIntegrationTestOutput)
 		if !exists || fileErr != nil {
 			log.SetErrorCategory(log.ErrorBuild)
@@ -433,19 +438,14 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error {
-	installationScript := "./install.sh"
-	err := utils.DownloadFile(golangciLintURL, installationScript, nil, nil)
+func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir, golangciLintURL string) error {
+	archiveName := "golangci-lint.tar.gz"
+	err := utils.DownloadFile(golangciLintURL, archiveName, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download golangci-lint: %w", err)
 	}
 
-	err = utils.Chmod(installationScript, 0777)
-	if err != nil {
-		return err
-	}
-
-	err = utils.RunExecutable(installationScript, "-b", golangciLintDir, golangciLintVersion)
+	err = utils.Untar(archiveName, golangciLintDir, 1)
 	if err != nil {
 		return fmt.Errorf("failed to install golangci-lint: %w", err)
 	}
@@ -455,6 +455,7 @@ func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir string) error 
 
 func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
+
 	var outputBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
 	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])

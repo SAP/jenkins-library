@@ -336,8 +336,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: renderSubchartNotes
+        type: bool
+        description: If set, render subchart notes along with the parent.
+        default: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
-    - image: dtzar/helm-kubectl:3.8.0
+    - image: dtzar/helm-kubectl:3
       workingDir: /config
       options:
         - name: -u

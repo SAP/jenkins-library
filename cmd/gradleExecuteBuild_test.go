@@ -1,7 +1,12 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
 	"fmt"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -16,6 +21,24 @@ const moduleFileContent = `{"variants": [{"name": "apiElements","files": [{"name
 type gradleExecuteBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	Filepath
+}
+
+type isDirEntryMock func() bool
+
+func (d isDirEntryMock) Name() string {
+	panic("not implemented")
+}
+
+func (d isDirEntryMock) IsDir() bool {
+	return d()
+}
+
+func (d isDirEntryMock) Type() fs.FileMode {
+	panic("not implemented")
+}
+func (d isDirEntryMock) Info() (fs.FileInfo, error) {
+	panic("not implemented")
 }
 
 func TestRunGradleExecuteBuild(t *testing.T) {
@@ -55,6 +78,25 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "-p", "path/to"}}, utils.Calls[0])
 	})
 
+	t.Run("success case - build with flags", func(t *testing.T) {
+		utils := gradleExecuteBuildMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{},
+			FilesMock:      &mock.FilesMock{},
+		}
+		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
+		options := &gradleExecuteBuildOptions{
+			Path:       "path/to",
+			Task:       "build",
+			BuildFlags: []string{"clean", "build", "-x", "test"},
+			UseWrapper: false,
+		}
+
+		err := runGradleExecuteBuild(options, nil, utils, pipelineEnv)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"clean", "build", "-x", "test", "-p", "path/to"}}, utils.Calls[0])
+	})
+
 	t.Run("success case - bom creation", func(t *testing.T) {
 		utils := gradleExecuteBuildMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{},
@@ -79,12 +121,19 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 	})
 
 	t.Run("success case - publishing of artifacts", func(t *testing.T) {
+		var walkDir WalkDirFunc = func(root string, fn fs.WalkDirFunc) error {
+			var dirMock isDirEntryMock = func() bool {
+				return false
+			}
+			return fn(filepath.Join("test_subproject_path", "build", "publications", "maven", "module.json"), dirMock, nil)
+		}
 		utils := gradleExecuteBuildMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{},
 			FilesMock:      &mock.FilesMock{},
+			Filepath:       walkDir,
 		}
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
-		utils.FilesMock.AddFile("/build/publications/maven/module.json", []byte(moduleFileContent))
+		utils.FilesMock.AddFile(filepath.Join("test_subproject_path", "build", "publications", "maven", "module.json"), []byte(moduleFileContent))
 		options := &gradleExecuteBuildOptions{
 			Path:       "path/to",
 			Task:       "build",
@@ -139,6 +188,26 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		err := runGradleExecuteBuild(options, nil, utils, pipelineEnv)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to build")
+	})
+
+	t.Run("failed case - build with flags", func(t *testing.T) {
+		utils := gradleExecuteBuildMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				ShouldFailOnCommand: map[string]error{"gradle clean build -x test -p path/to": errors.New("failed to build with flags")},
+			},
+			FilesMock: &mock.FilesMock{},
+		}
+		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
+		options := &gradleExecuteBuildOptions{
+			Path:       "path/to",
+			Task:       "build",
+			BuildFlags: []string{"clean", "build", "-x", "test"},
+			UseWrapper: false,
+		}
+
+		err := runGradleExecuteBuild(options, nil, utils, pipelineEnv)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to build with flags")
 	})
 
 	t.Run("failed case - bom creation", func(t *testing.T) {

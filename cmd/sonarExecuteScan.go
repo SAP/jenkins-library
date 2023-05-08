@@ -150,6 +150,9 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if config.InferJavaBinaries && !isInOptions(config, javaBinaries) {
 		addJavaBinaries()
 	}
+	if config.WaitForQualityGate {
+		sonar.addOption("sonar.qualitygate.wait=true")
+	}
 	if err := handlePullRequest(config); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
@@ -192,6 +195,13 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.Entry().WithError(err).Warning("no scan report found")
 		return nil
 	}
+	// write reports JSON
+	reports := []piperutils.Path{
+		{
+			Target:    "sonarscan.json",
+			Mandatory: false,
+		},
+	}
 	// write links JSON
 	links := []piperutils.Path{
 		{
@@ -199,7 +209,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Name:   "Sonar Web UI",
 		},
 	}
-	piperutils.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, utils, nil, links)
+	piperutils.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, utils, reports, links)
 
 	if len(config.Token) == 0 {
 		log.Entry().Warn("no measurements are fetched due to missing credentials")

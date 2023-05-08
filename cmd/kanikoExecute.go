@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -16,50 +16,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
-
-const syftURL = "https://raw.githubusercontent.com/anchore/syft/main/install.sh"
-
-type kanikoHttpClient interface {
-	piperhttp.Sender
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-}
-
-func installSyft(shellRunner command.ShellRunner, fileUtils piperutils.FileUtils, httpClient kanikoHttpClient) error {
-	installationScript := "./install.sh"
-	err := httpClient.DownloadFile(syftURL, installationScript, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to download syft: %w", err)
-	}
-
-	err = fileUtils.Chmod(installationScript, 0777)
-	if err != nil {
-		return err
-	}
-
-	err = shellRunner.RunShell("/busybox/sh", "cat ./install.sh | sh -s -- -b .")
-	if err != nil {
-		return fmt.Errorf("failed to install syft: %w", err)
-	}
-
-	return nil
-}
-
-func generateSBOM(shellRunner command.ShellRunner, fileUtils piperutils.FileUtils, httpClient kanikoHttpClient, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
-	shellRunner.AppendEnv([]string{"DOCKER_CONFIG", "/kaniko/.docker"})
-	syftInstallErr := installSyft(shellRunner, fileUtils, httpClient)
-	if syftInstallErr != nil {
-		return syftInstallErr
-	}
-	for index, eachImageTag := range commonPipelineEnvironment.container.imageNameTags {
-		// TrimPrefix needed as syft needs containerRegistry name only
-		syftRunErr := shellRunner.RunShell("/busybox/sh", fmt.Sprintf("./syft %s/%s -o cyclonedx-xml=bom-docker-%v.xml", strings.TrimPrefix(commonPipelineEnvironment.container.registryURL, "https://"), eachImageTag, index))
-		if syftRunErr != nil {
-			return fmt.Errorf("failed to generate SBOM: %w", syftRunErr)
-		}
-	}
-	return nil
-
-}
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
 	// for command execution use Command
@@ -79,13 +35,13 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 
 	fileUtils := &piperutils.Files{}
 
-	err := runKanikoExecute(&config, telemetryData, commonPipelineEnvironment, &c, &c, client, fileUtils)
+	err := runKanikoExecute(&config, telemetryData, commonPipelineEnvironment, &c, client, fileUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Kaniko execution failed")
 	}
 }
 
-func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, shellRunner command.ShellRunner, httpClient kanikoHttpClient, fileUtils piperutils.FileUtils) error {
+func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
 	binfmtSupported, _ := docker.IsBinfmtMiscSupportedByHost(fileUtils)
 
 	if !binfmtSupported && len(config.TargetArchitectures) > 0 {
@@ -222,7 +178,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				}
 				if config.CreateBOM {
 					//Syft for multi image, generates bom-docker-(1/2/3).xml
-					return generateSBOM(shellRunner, fileUtils, httpClient, commonPipelineEnvironment)
+					return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 				}
 				return nil
 			} else {
@@ -286,7 +242,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 	if config.CreateBOM {
 		// Syft for single image, generates bom-docker-0.xml
-		return generateSBOM(shellRunner, fileUtils, httpClient, commonPipelineEnvironment)
+		return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 	}
 	return nil
 }

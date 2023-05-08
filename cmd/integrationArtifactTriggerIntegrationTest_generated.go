@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -23,6 +25,36 @@ type integrationArtifactTriggerIntegrationTestOptions struct {
 	MessageBodyPath                   string `json:"messageBodyPath,omitempty"`
 }
 
+type integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment struct {
+	custom struct {
+		integrationFlowTriggerIntegrationTestResponseBody    string
+		integrationFlowTriggerIntegrationTestResponseHeaders string
+	}
+}
+
+func (p *integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "integrationFlowTriggerIntegrationTestResponseBody", value: p.custom.integrationFlowTriggerIntegrationTestResponseBody},
+		{category: "custom", name: "integrationFlowTriggerIntegrationTestResponseHeaders", value: p.custom.integrationFlowTriggerIntegrationTestResponseHeaders},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Piper environment")
+	}
+}
+
 // IntegrationArtifactTriggerIntegrationTestCommand Test the service endpoint of your iFlow
 func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactTriggerIntegrationTest"
@@ -30,6 +62,7 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 	metadata := integrationArtifactTriggerIntegrationTestMetadata()
 	var stepConfig integrationArtifactTriggerIntegrationTestOptions
 	var startTime time.Time
+	var commonPipelineEnvironment integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -37,7 +70,7 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 	var createIntegrationArtifactTriggerIntegrationTestCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Test the service endpoint of your iFlow",
-		Long:  `With this step you can test your intergration flow  exposed by SAP Cloud Platform Integration on a tenant using OData API.Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Long:  `With this step you can test your intergration flow  exposed by SAP BTP Integration on a tenant using OData API.Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -86,6 +119,7 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -106,7 +140,7 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			integrationArtifactTriggerIntegrationTest(stepConfig, &stepTelemetryData)
+			integrationArtifactTriggerIntegrationTest(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -197,6 +231,18 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_messageBodyPath"),
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"name": "custom/integrationFlowTriggerIntegrationTestResponseBody"},
+							{"name": "custom/integrationFlowTriggerIntegrationTestResponseHeaders"},
+						},
 					},
 				},
 			},

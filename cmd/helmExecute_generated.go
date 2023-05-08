@@ -45,6 +45,7 @@ type helmExecuteOptions struct {
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	Publish                   bool     `json:"publish,omitempty"`
 	Version                   string   `json:"version,omitempty"`
+	RenderSubchartNotes       bool     `json:"renderSubchartNotes,omitempty"`
 }
 
 type helmExecuteCommonPipelineEnvironment struct {
@@ -224,6 +225,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures helm to run the deploy command to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the artifact version to use from helm package/publish commands.")
+	cmd.Flags().BoolVar(&stepConfig.RenderSubchartNotes, "renderSubchartNotes", true, "If set, render subchart notes along with the parent.")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -595,10 +597,19 @@ func helmExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_version"),
 					},
+					{
+						Name:        "renderSubchartNotes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3.8.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Image: "dtzar/helm-kubectl:3", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

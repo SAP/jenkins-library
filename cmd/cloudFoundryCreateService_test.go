@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -34,11 +37,12 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			CfService:             "testService",
 			CfServiceInstanceName: "testName",
 			CfServicePlan:         "testPlan",
+			CfAsync:               false,
 		}
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
 			assert.Equal(t, []mock.ExecCall{{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
-				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", "testService", "testPlan", "testName"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", "testService", "testPlan", "testName", "--wait"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
 		}
@@ -56,6 +60,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			CfServiceInstanceName: "testName",
 			CfServicePlan:         "testPlan",
 			CfServiceTags:         "testTag, testTag2",
+			CfAsync:               true,
 		}
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
@@ -77,6 +82,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			CfServiceInstanceName: "testName",
 			CfServicePlan:         "testPlan",
 			CfServiceBroker:       "testBroker",
+			CfAsync:               true,
 		}
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
@@ -98,6 +104,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			CfServiceInstanceName: "testName",
 			CfServicePlan:         "testPlan",
 			CfCreateServiceConfig: "testConfig.json",
+			CfAsync:               true,
 		}
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
@@ -126,17 +133,17 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			_ = os.Chdir(oldCWD)
 		}()
 
-		manifestFileString := `  
+		manifestFileString := `
 		---
 		create-services:
 		- name:   ((name))
 		  broker: "testBroker"
 		  plan:   "testPlan"
-		
+
 		- name:   ((name2))
 		  broker: "testBroker"
 		  plan:   "testPlan"
-		
+
 		- name:   "test3"
 		  broker: "testBroker"
 		  plan:   "testPlan"`
@@ -155,6 +162,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			Password:          "testPassword",
 			ServiceManifest:   "manifestTest.yml",
 			ManifestVariables: manifestVariables,
+			CfAsync:           false, // should be ignored
 		}
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
@@ -178,17 +186,17 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		varsFileString := `name: test1
 		name2: test2`
 
-		manifestFileString := `  
+		manifestFileString := `
 		---
 		create-services:
 		- name:   ((name))
 		  broker: "testBroker"
 		  plan:   "testPlan"
-		
+
 		- name:   ((name2))
 		  broker: "testBroker"
 		  plan:   "testPlan"
-		
+
 		- name:   "test3"
 		  broker: "testBroker"
 		  plan:   "testPlan"`

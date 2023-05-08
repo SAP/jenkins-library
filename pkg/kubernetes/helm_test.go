@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package kubernetes
 
 import (
@@ -128,11 +131,12 @@ func TestRunHelmUpgrade(t *testing.T) {
 				Image:                 "dtzar/helm-kubectl:3.4.1",
 				TargetRepositoryName:  "test",
 				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+				RenderSubchartNotes:   true,
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
 				{Exec: "helm", Params: []string{"repo", "add", "test", "https://charts.helm.sh/stable", "--debug"}},
-				{Exec: "helm", Params: []string{"upgrade", "test_deployment", "test", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"}},
+				{Exec: "helm", Params: []string{"upgrade", "test_deployment", "test", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "--render-subchart-notes", "additional parameter"}},
 			},
 		},
 		{
@@ -228,11 +232,12 @@ func TestRunHelmInstall(t *testing.T) {
 				HelmDeployWaitSeconds: 525,
 				TargetRepositoryURL:   "https://charts.helm.sh/stable",
 				TargetRepositoryName:  "test",
+				RenderSubchartNotes:   true,
 			},
 			generalVerbose: false,
 			expectedExecCalls: []mock.ExecCall{
 				{Exec: "helm", Params: []string{"repo", "add", "test", "https://charts.helm.sh/stable"}},
-				{Exec: "helm", Params: []string{"install", "testPackage", "test", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", "test", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--render-subchart-notes"}},
 			},
 		},
 		{
@@ -540,8 +545,8 @@ func TestRunHelmPublish(t *testing.T) {
 		targetURL, err := helmExecute.RunHelmPublish()
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, len(utils.FileUploads))
-			assert.Equal(t, "https://my.target.repository.local/test_helm_chart/test_helm_chart-1.2.3.tgz", targetURL)
-			assert.Equal(t, "https://my.target.repository.local/test_helm_chart/test_helm_chart-1.2.3.tgz", utils.FileUploads["test_helm_chart-1.2.3.tgz"])
+			assert.Equal(t, "https://my.target.repository.local/test_helm_chart-1.2.3.tgz", targetURL)
+			assert.Equal(t, "https://my.target.repository.local/test_helm_chart-1.2.3.tgz", utils.FileUploads["test_helm_chart-1.2.3.tgz"])
 		}
 	})
 }

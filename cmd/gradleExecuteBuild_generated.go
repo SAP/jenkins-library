@@ -22,17 +22,21 @@ import (
 )
 
 type gradleExecuteBuildOptions struct {
-	Path               string `json:"path,omitempty"`
-	Task               string `json:"task,omitempty"`
-	Publish            bool   `json:"publish,omitempty"`
-	RepositoryURL      string `json:"repositoryUrl,omitempty"`
-	RepositoryPassword string `json:"repositoryPassword,omitempty"`
-	RepositoryUsername string `json:"repositoryUsername,omitempty"`
-	CreateBOM          bool   `json:"createBOM,omitempty"`
-	ArtifactVersion    string `json:"artifactVersion,omitempty"`
-	ArtifactGroupID    string `json:"artifactGroupId,omitempty"`
-	ArtifactID         string `json:"artifactId,omitempty"`
-	UseWrapper         bool   `json:"useWrapper,omitempty"`
+	Path                          string   `json:"path,omitempty"`
+	Task                          string   `json:"task,omitempty"`
+	Publish                       bool     `json:"publish,omitempty"`
+	RepositoryURL                 string   `json:"repositoryUrl,omitempty"`
+	RepositoryPassword            string   `json:"repositoryPassword,omitempty"`
+	RepositoryUsername            string   `json:"repositoryUsername,omitempty"`
+	CreateBOM                     bool     `json:"createBOM,omitempty"`
+	ArtifactVersion               string   `json:"artifactVersion,omitempty"`
+	ArtifactGroupID               string   `json:"artifactGroupId,omitempty"`
+	ArtifactID                    string   `json:"artifactId,omitempty"`
+	UseWrapper                    bool     `json:"useWrapper,omitempty"`
+	ApplyPublishingForAllProjects bool     `json:"applyPublishingForAllProjects,omitempty"`
+	ExcludeCreateBOMForProjects   []string `json:"excludeCreateBOMForProjects,omitempty"`
+	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
+	BuildFlags                    []string `json:"buildFlags,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -115,7 +119,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 	var createGradleExecuteBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step runs a gradle build command with parameters provided to the step.",
-		Long:  `This step runs a gradle build command with parameters provided to the step.`,
+		Long:  `This step runs a gradle build command with parameters provided to the step.Supports execution of gradle tasks with or without wrapper.Gradle tasks and flags can be specified via 'task' or 'buildFlags' parameter. If both are not specified 'build' task will run by default.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -199,7 +203,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 
 func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Path to the folder with build.gradle (or build.gradle.kts) file which should be executed.")
-	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "Gradle task that should be executed.")
+	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "A single gradle task that should be executed. If you prefer more than one, use 'buildFlags' parameter. If 'buildFlags' parameter is specified, this parameter will be ignored.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures gradle to publish the artifact to a repository.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
@@ -209,6 +213,10 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringVar(&stepConfig.ArtifactGroupID, "artifactGroupId", os.Getenv("PIPER_artifactGroupId"), "The group of the artifact.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The name of the artifact.")
 	cmd.Flags().BoolVar(&stepConfig.UseWrapper, "useWrapper", false, "If set to false all commands are executed using 'gradle', otherwise 'gradlew' is executed.")
+	cmd.Flags().BoolVar(&stepConfig.ApplyPublishingForAllProjects, "applyPublishingForAllProjects", false, "If set to false publishing logic will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludeCreateBOMForProjects, "excludeCreateBOMForProjects", []string{}, "Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter")
 
 }
 
@@ -351,6 +359,42 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "applyPublishingForAllProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "excludeCreateBOMForProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "excludePublishingForProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "buildFlags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

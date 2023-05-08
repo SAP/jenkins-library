@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package blackduck
 
 import (
@@ -17,31 +20,106 @@ func TestCreateSarifResultFile(t *testing.T) {
 	affectedComponent := Component{Name: "test1", Version: "1.2.3", ComponentOriginName: "Maven", PrimaryLanguage: "Java"}
 	otherAffectedComponent := Component{Name: "test2", Version: "1.2.8", ComponentOriginName: "Maven", PrimaryLanguage: "Java"}
 	alerts := []Vulnerability{
-		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456543", VulnerabilityName: "CVE-1", Severity: "Critical", Description: "Some vulnerability that can be exploited by peeling the glue off.", BaseScore: 9.8, OverallScore: 10}},
-		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456542", VulnerabilityName: "CVE-2", Severity: "Critical", Description: "Some other vulnerability that can be exploited by filling the glass.", BaseScore: 9, OverallScore: 9}},
-		{Name: "test1", Version: "1.2.3", Component: &affectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456541", VulnerabilityName: "CVE-3", Severity: "High", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
-		{Name: "test2", Version: "1.2.8", Component: &otherAffectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45789754", VulnerabilityName: "CVE-4", Severity: "High", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
-		{Name: "test2", Version: "1.2.8", Component: &otherAffectedComponent, VulnerabilityWithRemediation: VulnerabilityWithRemediation{CweID: "CWE-45456541", VulnerabilityName: "CVE-3", Severity: "High", Description: "Some vulnerability that can be exploited by turning it upside down.", BaseScore: 6.5, OverallScore: 7}},
+		{
+			Name:      "test1",
+			Version:   "1.2.3",
+			Component: &affectedComponent,
+			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
+				CweID:             "CWE-45456543",
+				VulnerabilityName: "CVE-1",
+				Severity:          "CRITICAL",
+				Description:       "Some vulnerability that can be exploited by peeling the glue off.",
+				BaseScore:         9.8, OverallScore: 10,
+				RemediationStatus:  "IGNORED",
+				RemediationComment: "CWE-45456543 Auto-remediated: CWE-45456543 is related to CVE-1, but the CWE team has determined that this component version is not affected.",
+			},
+		},
+		{
+			Name:      "test1",
+			Version:   "1.2.3",
+			Component: &affectedComponent,
+			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
+				CweID:              "CWE-45456542",
+				VulnerabilityName:  "CVE-2",
+				Severity:           "CRITICAL",
+				Description:        "Some other vulnerability that can be exploited by filling the glass.",
+				BaseScore:          9,
+				OverallScore:       9,
+				RemediationStatus:  "NEW",
+				RemediationComment: "",
+			},
+		},
+		{
+			Name:      "test1",
+			Version:   "1.2.3",
+			Component: &affectedComponent,
+			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
+				CweID:             "CWE-45456541",
+				VulnerabilityName: "CVE-3",
+				Severity:          "HIGH",
+				Description:       "Some vulnerability that can be exploited by turning it upside down.",
+				BaseScore:         6.5,
+				OverallScore:      7,
+			},
+		},
+		{
+			Name:      "test2",
+			Version:   "1.2.8",
+			Component: &otherAffectedComponent,
+			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
+				CweID:             "CWE-45789754",
+				VulnerabilityName: "CVE-4",
+				Severity:          "HIGH",
+				Description:       "Some vulnerability that can be exploited by turning it upside down.",
+				BaseScore:         6.5,
+				OverallScore:      7,
+			},
+		},
+		{
+			Name:      "test2",
+			Version:   "1.2.8",
+			Component: &otherAffectedComponent,
+			VulnerabilityWithRemediation: VulnerabilityWithRemediation{
+				CweID:             "CWE-45456541",
+				VulnerabilityName: "CVE-3",
+				Severity:          "HIGH",
+				Description:       "Some vulnerability that can be exploited by turning it upside down.",
+				BaseScore:         6.5,
+				OverallScore:      7,
+			},
+		},
 	}
 	vulns := Vulnerabilities{
 		Items: alerts,
 	}
-	components := []Component{
-		affectedComponent,
-	}
-	componentList := Components{
-		Items: components,
-	}
+	projectName := "theProjectName"
+	projectVersion := "theProjectVersion"
+	projectLink := "theProjectLink"
 
-	sarif := CreateSarifResultFile(&vulns, &componentList)
+	sarif := CreateSarifResultFile(&vulns, projectName, projectVersion, projectLink)
 
 	assert.Equal(t, "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json", sarif.Schema)
 	assert.Equal(t, "2.1.0", sarif.Version)
 	assert.Equal(t, 1, len(sarif.Runs))
-	assert.Equal(t, "Blackduck Hub Detect", sarif.Runs[0].Tool.Driver.Name)
+	assert.Equal(t, "Black Duck", sarif.Runs[0].Tool.Driver.Name)
 	assert.Equal(t, "unknown", sarif.Runs[0].Tool.Driver.Version)
 	assert.Equal(t, 4, len(sarif.Runs[0].Tool.Driver.Rules))
 	assert.Equal(t, 5, len(sarif.Runs[0].Results))
+	assert.Equal(t, "CRITICAL", sarif.Runs[0].Results[0].Properties.ToolSeverity)
+
+	// Test correctness of audit information
+	assert.Equal(t, true, sarif.Runs[0].Results[0].Properties.Audited)
+	assert.Equal(t, "IGNORED", sarif.Runs[0].Results[0].Properties.ToolState)
+	assert.Equal(t,
+		"CWE-45456543 Auto-remediated: CWE-45456543 is related to CVE-1, but the CWE team has determined that this component version is not affected.",
+		sarif.Runs[0].Results[0].Properties.ToolAuditMessage,
+	)
+	assert.Equal(t, 4, sarif.Runs[0].Results[0].Properties.ToolSeverityIndex)
+	assert.Equal(t, 3, sarif.Runs[0].Results[2].Properties.ToolSeverityIndex)
+
+	assert.Equal(t, false, sarif.Runs[0].Results[1].Properties.Audited)
+	assert.Equal(t, "NEW", sarif.Runs[0].Results[1].Properties.ToolState)
+	assert.Equal(t, "", sarif.Runs[0].Results[1].Properties.ToolAuditMessage)
 
 	collectedRules := []string{}
 	for _, rule := range sarif.Runs[0].Tool.Driver.Rules {

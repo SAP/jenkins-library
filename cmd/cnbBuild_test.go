@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -79,6 +82,7 @@ func TestRunCnbBuild(t *testing.T) {
 			ContainerRegistryURL: fmt.Sprintf("https://%s", imageRegistry),
 			DockerConfigJSON:     "/path/to/config.json",
 			RunImage:             "my-run-image",
+			DefaultProcess:       "my-process",
 		}
 
 		projectToml := `[project]
@@ -99,6 +103,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, config.ContainerImageName, config.ContainerImageTag))
 		assert.Contains(t, runner.Calls[0].Params, "-run-image")
 		assert.Contains(t, runner.Calls[0].Params, "my-run-image")
+		assert.Contains(t, runner.Calls[0].Params, "-process-type")
+		assert.Contains(t, runner.Calls[0].Params, "my-process")
 		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, "my-image:0.0.1", commonPipelineEnvironment.container.imageNameTag)
 		assert.Equal(t, `{"cnbBuild":[{"dockerImage":"paketobuildpacks/builder:base"}]}`, commonPipelineEnvironment.custom.buildSettingsInfo)
@@ -515,8 +521,7 @@ uri = "some-buildpack"`))
 
 		assert.Contains(t, customData.Data[0].Buildpacks.FromConfig, "paketobuildpacks/java")
 		assert.NotContains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "paketobuildpacks/java")
-		assert.Contains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "<redacted>")
-		assert.NotContains(t, customData.Data[0].Buildpacks.Overall, "<redacted>")
+		assert.Contains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "bcc73ab1f0a0d3fb0d1bf2b6df5510a25ccd14a761dbc0f5044ea24ead30452b")
 		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "paketobuildpacks/java")
 
 		assert.True(t, customData.Data[0].ProjectDescriptor.Used)
@@ -636,7 +641,7 @@ uri = "some-buildpack"
 		assert.Equal(t, "11", customData.Data[0].BuildEnv.KeyValues["BP_NODE_VERSION"])
 		assert.NotContains(t, customData.Data[0].BuildEnv.KeyValues, "PROJECT_KEY")
 
-		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "<redacted>")
+		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "bcc73ab1f0a0d3fb0d1bf2b6df5510a25ccd14a761dbc0f5044ea24ead30452b")
 	})
 
 	t.Run("success case (multiple images configured)", func(t *testing.T) {
