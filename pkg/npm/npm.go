@@ -360,7 +360,7 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	// See https://github.com/CycloneDX/cyclonedx-node-npm#installation
 	err := execRunner.RunExecutable("npx", "--package", cycloneDxPackageVersion, "--call", "exit")
 	if err != nil {
-		return fmt.Errorf("failed to install cycloneDx package: %w", err)
+		return fmt.Errorf("failed to install CycloneDX package: %w", err)
 	}
 
 	if len(packageJSONFiles) > 0 {
@@ -377,7 +377,7 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 			}
 			err := execRunner.RunExecutable("npx", params...)
 			if err != nil {
-				return fmt.Errorf("failed to generate cycloneDx BOM: %w", err)
+				return fmt.Errorf("failed to generate CycloneDX BOM: %w", err)
 			}
 		}
 	}
