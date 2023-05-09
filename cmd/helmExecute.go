@@ -175,7 +175,7 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 		if err != nil {
 			return fmt.Errorf("failed to read file: %v", err)
 		}
-		generated, err := cpe.ParseTemplate(string(cpeTemplate))
+		generated, err := cpe.ParseTemplateWithDelimiter(string(cpeTemplate), config.TemplateStartDelimiter, config.TemplateEndDelimiter)
 		if err != nil {
 			return fmt.Errorf("failed to parse template: %v", err)
 		}
