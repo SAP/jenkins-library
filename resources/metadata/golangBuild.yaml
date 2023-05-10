@@ -172,7 +172,7 @@ spec:
           - PARAMETERS
       - name: runTests
         type: bool
-        description: Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).
+        description: Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum). Tag Go unit tests with 'unit' build tag to exclude them using `--runTests=false`
         default: true
         scope:
           - STEPS

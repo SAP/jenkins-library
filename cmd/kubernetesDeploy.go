@@ -200,6 +200,10 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		upgradeParams = append(upgradeParams, "--kube-context", config.KubeContext)
 	}
 
+	if config.RenderSubchartNotes {
+		upgradeParams = append(upgradeParams, "--render-subchart-notes")
+	}
+
 	if len(config.AdditionalParameters) > 0 {
 		upgradeParams = append(upgradeParams, config.AdditionalParameters...)
 	}
