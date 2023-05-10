@@ -191,7 +191,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			"additionalParams": "",
 		}
 
-		if err := runGolangciLint(utils, golangciLintDir, lintSettings); err != nil {
+		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings); err != nil {
 			return err
 		}
 	}
@@ -215,14 +215,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	var binaries []string
 	platforms, err := multiarch.ParsePlatformStrings(config.TargetArchitectures)
-
 	if err != nil {
 		return err
 	}
 
 	for _, platform := range platforms {
 		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
-
 		if err != nil {
 			return err
 		}
@@ -264,7 +262,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			}
 
 			artifact, err := versioning.GetArtifact("golang", "", &artifactOpts, utils)
-
 			if err != nil {
 				return err
 			}
@@ -306,7 +303,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			log.Entry().Infof("publishing artifact: %s", targetURL)
 
 			response, err := utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
-
 			if err != nil {
 				return fmt.Errorf("couldn't upload artifact: %w", err)
 			}
@@ -342,7 +338,6 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
 	repoURLs, err := lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, utils)
-
 	if err != nil {
 		return err
 	}
@@ -424,7 +419,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 		}
 		utils.Stdout(log.Writer())
 
-		err = utils.FileWrite("cobertura-coverage.xml", coverageOutput.Bytes(), 0666)
+		err = utils.FileWrite("cobertura-coverage.xml", coverageOutput.Bytes(), 0o666)
 		if err != nil {
 			return fmt.Errorf("failed to create cobertura coverage file: %w", err)
 		}
@@ -453,7 +448,7 @@ func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir, golangciLintU
 	return nil
 }
 
-func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string) error {
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 
 	var outputBuffer bytes.Buffer
@@ -465,12 +460,12 @@ func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSetting
 
 	log.Entry().Infof("lint report: \n" + outputBuffer.String())
 	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
-	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0644)
+	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0o644)
 	if err != nil {
 		return fmt.Errorf("writing golangci-lint report failed: %w", err)
 	}
 
-	if utils.GetExitCode() == 1 {
+	if utils.GetExitCode() == 1 && failOnError {
 		return fmt.Errorf("golangci-lint found issues, see report above")
 	}
 
@@ -559,7 +554,6 @@ func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern
 		}
 
 		repo, err := utils.GetRepositoryURL(goModule.Mod.Path)
-
 		if err != nil {
 			return nil, err
 		}

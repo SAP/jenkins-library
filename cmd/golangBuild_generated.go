@@ -29,6 +29,7 @@ type golangBuildOptions struct {
 	CreateBOM                    bool     `json:"createBOM,omitempty"`
 	CustomTLSCertificateLinks    []string `json:"customTlsCertificateLinks,omitempty"`
 	ExcludeGeneratedFromCoverage bool     `json:"excludeGeneratedFromCoverage,omitempty"`
+	FailOnLintingError           bool     `json:"failOnLintingError,omitempty"`
 	LdflagsTemplate              string   `json:"ldflagsTemplate,omitempty"`
 	Output                       string   `json:"output,omitempty"`
 	Packages                     []string `json:"packages,omitempty"`
@@ -229,6 +230,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.ExcludeGeneratedFromCoverage, "excludeGeneratedFromCoverage", true, "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode).")
+	cmd.Flags().BoolVar(&stepConfig.FailOnLintingError, "failOnLintingError", true, "Defines if step will return an error in case linting runs into a problem")
 	cmd.Flags().StringVar(&stepConfig.LdflagsTemplate, "ldflagsTemplate", os.Getenv("PIPER_ldflagsTemplate"), "Defines the content of -ldflags option in a golang template format.")
 	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "Defines the build result or output directory as per `go build` documentation.")
 	cmd.Flags().StringSliceVar(&stepConfig.Packages, "packages", []string{}, "List of packages to be build as per `go build` documentation.")
@@ -326,6 +328,15 @@ func golangBuildMetadata() config.StepData {
 					},
 					{
 						Name:        "excludeGeneratedFromCoverage",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "failOnLintingError",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
