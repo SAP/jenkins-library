@@ -395,6 +395,7 @@ steps:
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
       tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties'
+      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, **/*.d, **/*.di, **/*.ts'
       checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, **/*.d, **/*.di, **/*.ts'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
@@ -404,6 +405,7 @@ steps:
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       tests: ''
+      checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
       checkmarxOne: '**/*.mockserver.js, node_modules/**/*.js'
     noDefaultExludes:
       - 'git'
