@@ -356,9 +356,8 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 // CreateBOM generates BOM file using CycloneDX from all package.json files
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	execRunner := exec.Utils.GetExecRunner()
-	// Install CycloneDX Node.js module via npx without saving in package.json / polluting globals
-	// See https://github.com/CycloneDX/cyclonedx-node-npm#installation
-	err := execRunner.RunExecutable("npx", "--package", cycloneDxPackageVersion, "--call", "exit")
+	// Install CycloneDX Node.js module locally without saving in package.json
+	err := execRunner.RunExecutable("npm", "install", cycloneDxPackageVersion, "--no-save")
 	if err != nil {
 		return fmt.Errorf("failed to install CycloneDX package: %w", err)
 	}
