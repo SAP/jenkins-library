@@ -360,7 +360,7 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"--package", "@cyclonedx/cyclonedx-npm@1.11.0", "--call", "exit"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "@cyclonedx/cyclonedx-npm@1.11.0", "--no-save"}}, utils.execRunner.Calls[0])
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"@cyclonedx/cyclonedx-npm@1.11.0", "--output-format",
 					"XML",
 					"--spec-version",
