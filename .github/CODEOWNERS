@@ -63,7 +63,7 @@ AbapEnvironment*                                @SAP/jenkins-library-abap
 ascAppUpload*                                   @Mau04 @inf2381
 AscAppUpload*                                   @Mau04 @inf2381
 
-credentialdiggerScan*                           @marcorosa @SlimTrabelsi
+credentialdiggerScan*                           @SAP/credential-digger-members @SAP/credential-digger-admins 
 CredentialdiggerScan*                           @marcorosa @SlimTrabelsi
 
 #####################
