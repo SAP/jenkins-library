@@ -14,7 +14,9 @@ import (
 )
 
 const (
-	npmBomFilename = "bom-npm.xml"
+	npmBomFilename          = "bom-npm.xml"
+	cycloneDxPackageVersion = "@cyclonedx/cyclonedx-npm@1.11.0"
+	cycloneDxSchemaVersion  = "1.4"
 )
 
 // Execute struct holds utils to enable mocking and common parameters
@@ -355,22 +357,26 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	execRunner := exec.Utils.GetExecRunner()
 	// Install CycloneDX Node.js module locally without saving in package.json
-	err := execRunner.RunExecutable("npm", "install", "@cyclonedx/bom@^3.10.6", "--no-save")
+	err := execRunner.RunExecutable("npm", "install", cycloneDxPackageVersion, "--no-save")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to install CycloneDX package: %w", err)
 	}
 
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
 			params := []string{
-				"cyclonedx-bom",
-				path,
-				"--output", filepath.Join(path, npmBomFilename),
+				cycloneDxPackageVersion,
+				"--output-format",
+				"XML",
+				"--spec-version",
+				cycloneDxSchemaVersion,
+				"--output-file", filepath.Join(path, npmBomFilename),
+				packageJSONFile,
 			}
 			err := execRunner.RunExecutable("npx", params...)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to generate CycloneDX BOM: %w", err)
 			}
 		}
 	}
