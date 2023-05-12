@@ -7,9 +7,16 @@ import (
 	"text/template"
 )
 
+const DEFAULT_START_DELIMITER = "{{"
+const DEFAULT_END_DELIMITER = "}}"
+
 // ParseTemplate allows to parse a template which contains references to the CPE
 // Utility functions make it simple to access specific parts of the CPE
 func (c *CPEMap) ParseTemplate(cpeTemplate string) (*bytes.Buffer, error) {
+	return c.ParseTemplateWithDelimiter(cpeTemplate, DEFAULT_START_DELIMITER, DEFAULT_END_DELIMITER)
+}
+
+func (c *CPEMap) ParseTemplateWithDelimiter(cpeTemplate string, startDelimiter string, endDelimiter string) (*bytes.Buffer, error) {
 	funcMap := template.FuncMap{
 		"cpe":         c.cpe,
 		"cpecustom":   c.custom,
@@ -21,7 +28,7 @@ func (c *CPEMap) ParseTemplate(cpeTemplate string) (*bytes.Buffer, error) {
 		// This requires alignment on artifact handling before, though
 	}
 
-	tmpl, err := template.New("cpetemplate").Funcs(funcMap).Parse(cpeTemplate)
+	tmpl, err := template.New("cpetemplate").Delims(startDelimiter, endDelimiter).Funcs(funcMap).Parse(cpeTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse cpe template '%v': %w", cpeTemplate, err)
 	}
