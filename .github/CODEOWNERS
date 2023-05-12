@@ -64,7 +64,7 @@ ascAppUpload*                                   @Mau04 @inf2381
 AscAppUpload*                                   @Mau04 @inf2381
 
 credentialdiggerScan*                           @SAP/credential-digger-members @SAP/credential-digger-admins 
-CredentialdiggerScan*                           @marcorosa @SlimTrabelsi
+CredentialdiggerScan*                           @SAP/credential-digger-admins @SAP/credential-digger-members 
 
 #####################
 # Integration tests #
