@@ -273,7 +273,7 @@ func TestResolveVaultTestCredentialsWrapper(t *testing.T) {
 	envPrefixes := []string{"CUSTOM_MYCRED_", ""}
 	for _, envPrefix := range envPrefixes {
 		t.Run("Custom general purpose credential prefix along with fixed standard prefix", func(t *testing.T) {
-			t.Parallel()
+			// t.Parallel()
 			// init
 			vaultMock := &mocks.VaultMock{}
 			standardEnvPrefix := "PIPER_VAULTCREDENTIAL_"
