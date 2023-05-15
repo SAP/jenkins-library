@@ -77,7 +77,7 @@ func TestRunCodeqlExecuteScan(t *testing.T) {
 }
 
 func TestGetGitRepoInfo(t *testing.T) {
-	t.Run("Valid URL1", func(t *testing.T) {
+	t.Run("Valid https URL1", func(t *testing.T) {
 		var repoInfo RepoInfo
 		err := getGitRepoInfo("https://github.hello.test/Testing/fortify.git", &repoInfo)
 		assert.NoError(t, err)
@@ -86,7 +86,7 @@ func TestGetGitRepoInfo(t *testing.T) {
 		assert.Equal(t, "Testing", repoInfo.owner)
 	})
 
-	t.Run("Valid URL2", func(t *testing.T) {
+	t.Run("Valid https URL2", func(t *testing.T) {
 		var repoInfo RepoInfo
 		err := getGitRepoInfo("https://github.hello.test/Testing/fortify", &repoInfo)
 		assert.NoError(t, err)
@@ -94,7 +94,7 @@ func TestGetGitRepoInfo(t *testing.T) {
 		assert.Equal(t, "fortify", repoInfo.repo)
 		assert.Equal(t, "Testing", repoInfo.owner)
 	})
-	t.Run("Valid URL1 with dots", func(t *testing.T) {
+	t.Run("Valid https URL1 with dots", func(t *testing.T) {
 		var repoInfo RepoInfo
 		err := getGitRepoInfo("https://github.hello.test/Testing/com.sap.fortify.git", &repoInfo)
 		assert.NoError(t, err)
@@ -103,7 +103,7 @@ func TestGetGitRepoInfo(t *testing.T) {
 		assert.Equal(t, "Testing", repoInfo.owner)
 	})
 
-	t.Run("Valid URL2 with dots", func(t *testing.T) {
+	t.Run("Valid https URL2 with dots", func(t *testing.T) {
 		var repoInfo RepoInfo
 		err := getGitRepoInfo("https://github.hello.test/Testing/com.sap.fortify", &repoInfo)
 		assert.NoError(t, err)
@@ -111,7 +111,7 @@ func TestGetGitRepoInfo(t *testing.T) {
 		assert.Equal(t, "com.sap.fortify", repoInfo.repo)
 		assert.Equal(t, "Testing", repoInfo.owner)
 	})
-	t.Run("Valid URL1 with username and token", func(t *testing.T) {
+	t.Run("Valid https URL1 with username and token", func(t *testing.T) {
 		var repoInfo RepoInfo
 		err := getGitRepoInfo("https://username:token@github.hello.test/Testing/fortify.git", &repoInfo)
 		assert.NoError(t, err)
@@ -120,7 +120,7 @@ func TestGetGitRepoInfo(t *testing.T) {
 		assert.Equal(t, "Testing", repoInfo.owner)
 	})
 
-	t.Run("Valid URL2 with username and token", func(t *testing.T) {
+	t.Run("Valid https URL2 with username and token", func(t *testing.T) {
 		var repoInfo RepoInfo
 		err := getGitRepoInfo("https://username:token@github.hello.test/Testing/fortify", &repoInfo)
 		assert.NoError(t, err)
@@ -129,7 +129,7 @@ func TestGetGitRepoInfo(t *testing.T) {
 		assert.Equal(t, "Testing", repoInfo.owner)
 	})
 
-	t.Run("Invalid URL as no org/owner passed", func(t *testing.T) {
+	t.Run("Invalid https URL as no org/owner passed", func(t *testing.T) {
 		var repoInfo RepoInfo
 		assert.Error(t, getGitRepoInfo("https://github.com/fortify", &repoInfo))
 	})
@@ -137,6 +137,46 @@ func TestGetGitRepoInfo(t *testing.T) {
 	t.Run("Invalid URL as no protocol passed", func(t *testing.T) {
 		var repoInfo RepoInfo
 		assert.Error(t, getGitRepoInfo("github.hello.test/Testing/fortify", &repoInfo))
+	})
+
+	t.Run("Valid ssh URL1", func(t *testing.T) {
+		var repoInfo RepoInfo
+		err := getGitRepoInfo("git@github.hello.test/Testing/fortify.git", &repoInfo)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://github.hello.test", repoInfo.serverUrl)
+		assert.Equal(t, "fortify", repoInfo.repo)
+		assert.Equal(t, "Testing", repoInfo.owner)
+	})
+
+	t.Run("Valid ssh URL2", func(t *testing.T) {
+		var repoInfo RepoInfo
+		err := getGitRepoInfo("git@github.hello.test/Testing/fortify", &repoInfo)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://github.hello.test", repoInfo.serverUrl)
+		assert.Equal(t, "fortify", repoInfo.repo)
+		assert.Equal(t, "Testing", repoInfo.owner)
+	})
+	t.Run("Valid ssh URL1 with dots", func(t *testing.T) {
+		var repoInfo RepoInfo
+		err := getGitRepoInfo("git@github.hello.test/Testing/com.sap.fortify.git", &repoInfo)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://github.hello.test", repoInfo.serverUrl)
+		assert.Equal(t, "com.sap.fortify", repoInfo.repo)
+		assert.Equal(t, "Testing", repoInfo.owner)
+	})
+
+	t.Run("Valid ssh URL2 with dots", func(t *testing.T) {
+		var repoInfo RepoInfo
+		err := getGitRepoInfo("git@github.hello.test/Testing/com.sap.fortify", &repoInfo)
+		assert.NoError(t, err)
+		assert.Equal(t, "https://github.hello.test", repoInfo.serverUrl)
+		assert.Equal(t, "com.sap.fortify", repoInfo.repo)
+		assert.Equal(t, "Testing", repoInfo.owner)
+	})
+
+	t.Run("Invalid ssh URL as no org/owner passed", func(t *testing.T) {
+		var repoInfo RepoInfo
+		assert.Error(t, getGitRepoInfo("git@github.com/fortify", &repoInfo))
 	})
 }
 
