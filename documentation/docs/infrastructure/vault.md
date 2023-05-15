@@ -109,6 +109,18 @@ steps:
     vaultCredentialKeys: ['myAppId', 'myAppSecret']
 ```
 
+In case if you want to retrieve secrets from multiple vault folders, pass several paths with keys:
+
+```yaml
+general:
+  < your Vault configuration > # see above
+...
+steps:
+  < piper go step >:
+    vaultCredentialPath: ['myStepCredentials1', 'myStepCredentials2']
+    vaultCredentialKeys: [['myAppId1', 'myAppSecret1'], ['myAppId2', 'myAppSecret2']]
+```
+
 The `vaultCredentialPath` parameter is the endpoint of your credential path in Vault. Depending on your _general_ config, the lookup for the credential IDs will be done in the following order respectively locations. The first path with found general purpose credentials will be used.
 
 1. `<vaultPath>/<vaultCredentialPath>`
