@@ -200,6 +200,10 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		upgradeParams = append(upgradeParams, "--kube-context", config.KubeContext)
 	}
 
+	if config.RenderSubchartNotes {
+		upgradeParams = append(upgradeParams, "--render-subchart-notes")
+	}
+
 	if len(config.AdditionalParameters) > 0 {
 		upgradeParams = append(upgradeParams, config.AdditionalParameters...)
 	}
@@ -228,6 +232,14 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 
 	if len(config.KubeContext) > 0 {
 		testParams = append(testParams, "--kube-context", config.KubeContext)
+	}
+
+	if config.DeployTool == "helm" {
+		testParams = append(testParams, "--timeout", strconv.Itoa(config.HelmTestWaitSeconds))
+	}
+
+	if config.DeployTool == "helm3" {
+		testParams = append(testParams, "--timeout", fmt.Sprintf("%vs", config.HelmTestWaitSeconds))
 	}
 
 	if config.ShowTestLogs {

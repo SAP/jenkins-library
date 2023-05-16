@@ -45,6 +45,9 @@ type helmExecuteOptions struct {
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	Publish                   bool     `json:"publish,omitempty"`
 	Version                   string   `json:"version,omitempty"`
+	RenderSubchartNotes       bool     `json:"renderSubchartNotes,omitempty"`
+	TemplateStartDelimiter    string   `json:"templateStartDelimiter,omitempty"`
+	TemplateEndDelimiter      string   `json:"templateEndDelimiter,omitempty"`
 }
 
 type helmExecuteCommonPipelineEnvironment struct {
@@ -224,6 +227,9 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures helm to run the deploy command to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the artifact version to use from helm package/publish commands.")
+	cmd.Flags().BoolVar(&stepConfig.RenderSubchartNotes, "renderSubchartNotes", true, "If set, render subchart notes along with the parent.")
+	cmd.Flags().StringVar(&stepConfig.TemplateStartDelimiter, "templateStartDelimiter", `{{`, "When templating value files, use this start delimiter.")
+	cmd.Flags().StringVar(&stepConfig.TemplateEndDelimiter, "templateEndDelimiter", `}}`, "When templating value files, use this end delimiter.")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -594,6 +600,33 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_version"),
+					},
+					{
+						Name:        "renderSubchartNotes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "templateStartDelimiter",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `{{`,
+					},
+					{
+						Name:        "templateEndDelimiter",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `}}`,
 					},
 				},
 			},

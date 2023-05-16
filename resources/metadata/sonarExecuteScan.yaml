@@ -23,6 +23,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: proxy
+        type: string
+        description: Proxy URL to be used for communication with the SonarQube instance.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
       - name: serverUrl
         aliases:
           - name: host

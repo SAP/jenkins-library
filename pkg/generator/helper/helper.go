@@ -344,7 +344,10 @@ func {{ .StepName }}Metadata() config.StepData {
 `
 
 // StepTestGoTemplate ...
-const stepTestGoTemplate = `package cmd
+const stepTestGoTemplate = `//go:build unit
+// +build unit
+
+package cmd
 
 import (
 	"testing"

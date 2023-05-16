@@ -61,6 +61,7 @@ type HelmExecuteOptions struct {
 	SourceRepositoryPassword  string   `json:"sourceRepositoryPassword,omitempty"`
 	HelmCommand               string   `json:"helmCommand,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	RenderSubchartNotes       bool     `json:"renderSubchartNotes,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance
@@ -168,6 +169,10 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		helmParams = append(helmParams, "--atomic")
 	}
 
+	if h.config.RenderSubchartNotes {
+		helmParams = append(helmParams, "--render-subchart-notes")
+	}
+
 	if len(h.config.AdditionalParameters) > 0 {
 		helmParams = append(helmParams, h.config.AdditionalParameters...)
 	}
@@ -230,16 +235,24 @@ func (h *HelmExecute) RunHelmInstall() error {
 	}
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
+
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
+
 	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 	for _, v := range h.config.HelmValues {
 		helmParams = append(helmParams, "--values", v)
 	}
+
+	if h.config.RenderSubchartNotes {
+		helmParams = append(helmParams, "--render-subchart-notes")
+	}
+
 	if len(h.config.AdditionalParameters) > 0 {
 		helmParams = append(helmParams, h.config.AdditionalParameters...)
 	}
+
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}

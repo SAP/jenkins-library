@@ -30,7 +30,7 @@ jobs:
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
         with:
-          coverageCommand: go test ./... -coverprofile cover.out
+          coverageCommand: go test -tags=unit ./... -coverprofile cover.out
           coverageLocations: cover.out:gocov
           # truncate package name from file paths in report
           prefix: github.com/SAP/jenkins-library/

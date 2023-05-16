@@ -375,12 +375,14 @@ steps:
   pipelineStashFilesAfterBuild:
     stashIncludes:
       buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/**'
-      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
+      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
+      checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
     stashExcludes:
       buildResult: ''
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
+      checkmarxOne: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
       sonar: ''
     noDefaultExludes: []
@@ -393,6 +395,8 @@ steps:
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
       tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties'
+      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, **/*.d, **/*.di, **/*.ts'
+      checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, **/*.d, **/*.di, **/*.ts'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
@@ -401,6 +405,8 @@ steps:
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       tests: ''
+      checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
+      checkmarxOne: '**/*.mockserver.js, node_modules/**/*.js'
     noDefaultExludes:
       - 'git'
   piperPublishWarnings:
