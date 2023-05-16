@@ -549,13 +549,10 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
-<<<<<<< HEAD
 			"--kube-context",
 			"testCluster",
-=======
 			"--timeout",
 			"400s",
->>>>>>> master
 			"--logs",
 		}, mockUtils.Calls[2].Params, "Wrong test parameters")
 	})
