@@ -72,7 +72,7 @@ spec:
       - name: sonarScannerDownloadUrl
         type: string
         description: "URL to the sonar-scanner-cli archive."
-        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip"
+        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip"
         scope:
           - PARAMETERS
           - STAGES
