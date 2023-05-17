@@ -69,8 +69,10 @@ func New(fileUtils fileWriteUtils, workspace, toolName, toolInstance string) *To
 			now.Format("20060102150405")+
 			".json")
 	tr.reportFileName = reportFileName
-
-	return &tr
+	// keep the timestamp inside the object too
+	var otr = &tr
+	otr.AddContext("generatedOnUtc", now.Format("20060102150405"))
+	return otr
 }
 
 // AddKeyData - add one key to the current toolrecord
