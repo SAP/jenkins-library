@@ -17,12 +17,12 @@ type githubCodeqlScanningService interface {
 
 const auditStateOpen = "open"
 
-func NewCodeqlScanAuditInstance(apiURL, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
-	return CodeqlScanAuditInstance{apiURL: apiURL, owner: owner, repository: repository, token: token, trustedCerts: trustedCerts}
+func NewCodeqlScanAuditInstance(serverUrl, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
+	return CodeqlScanAuditInstance{serverUrl: serverUrl, owner: owner, repository: repository, token: token, trustedCerts: trustedCerts}
 }
 
 type CodeqlScanAuditInstance struct {
-	apiURL           string
+	serverUrl        string
 	owner            string
 	repository       string
 	token            string
@@ -31,7 +31,8 @@ type CodeqlScanAuditInstance struct {
 }
 
 func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef string) (CodeqlScanning, error) {
-	ctx, client, err := sapgithub.NewClient(codeqlScanAudit.token, codeqlScanAudit.apiURL, "", codeqlScanAudit.trustedCerts)
+	apiUrl := getApiUrl(codeqlScanAudit.serverUrl)
+	ctx, client, err := sapgithub.NewClient(codeqlScanAudit.token, apiUrl, "", codeqlScanAudit.trustedCerts)
 	if err != nil {
 		return CodeqlScanning{}, err
 	}
@@ -62,4 +63,12 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 	codeqlScanning.Total = len(alerts)
 	codeqlScanning.Audited = (codeqlScanning.Total - openStateCount)
 	return codeqlScanning, nil
+}
+
+func getApiUrl(serverUrl string) string {
+	if serverUrl == "https://github.com" {
+		return "https://api.github.com"
+	}
+
+	return (serverUrl + "/api/v3")
 }

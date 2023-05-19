@@ -48,3 +48,13 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestGetApiUrl(t *testing.T) {
+	t.Run("public url", func(t *testing.T) {
+		assert.Equal(t, "https://api.github.com", getApiUrl("https://github.com"))
+	})
+
+	t.Run("enterprise github url", func(t *testing.T) {
+		assert.Equal(t, "https://github.test.org/api/v3", getApiUrl("https://github.test.org"))
+	})
+}
