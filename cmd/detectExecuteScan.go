@@ -849,10 +849,20 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	projectVersionUrl := projectVersion.Href
+	if projectVersionUrl == "" {
+		return "", fmt.Errorf("TR_DETECT: no projectversion URL")
+	}
+	// projectVersion UUID comes as last part of the URL
+	vparts := strings.Split(projectVersionUrl, "/")
+	projectVersionId := vparts[len(vparts)-1]
+	if projectVersionId == "" {
+		return "", fmt.Errorf("TR_DETECT: no projectversion id in %v", projectVersionUrl)
+	}
+
 	err = record.AddKeyData("version",
+		projectVersionId,
 		projectVersion.Name,
-		projectVersionUrl,
-		projectVersionUrl)
+		projectVersion.Href)
 	if err != nil {
 		return "", err
 	}
