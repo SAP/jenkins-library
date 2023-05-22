@@ -13,7 +13,22 @@ Init:
 Build:
   unstash:
     - source
-  stashes: []
+  stashes:
+    - name: 'buildResult'
+      includes: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/*'
+      excludes: ''
+    - name: 'checkmarx'
+      includes: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
+      excludes: '**/*.mockserver.js, node_modules/**/*.js'
+    - name: 'checkmarxOne'
+      includes: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
+      excludes: '**/*.mockserver.js, node_modules/**/*.js'
+    - name: 'classFiles'
+      includes: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
+      excludes: ''
+    - name: 'sonar'
+      includes: '**/jacoco*.exec, **/sonar-project.properties'
+      excludes: ''
 
 Integration:
   unstash:
