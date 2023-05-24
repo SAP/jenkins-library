@@ -48,10 +48,6 @@ class PiperPipelineStageBuildTest extends BasePiperTest {
             stepsCalled.add('buildExecute')
         })
 
-        helper.registerAllowedMethod('pipelineStashFilesAfterBuild', [Map.class], {m ->
-            stepsCalled.add('pipelineStashFilesAfterBuild')
-        })
-
         helper.registerAllowedMethod('checksPublishResults', [Map.class], {m ->
             stepsCalled.add('checksPublishResults')
         })
@@ -75,7 +71,7 @@ class PiperPipelineStageBuildTest extends BasePiperTest {
 
         jsr.step.piperPipelineStageBuild(script: nullScript, juStabUtils: utils)
 
-        assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'pipelineStashFilesAfterBuild', 'testsPublishResults'))
+        assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults',  'testsPublishResults'))
         assertThat(stepParameters.testsPublishResults.junit.updateResults, is(true))
         assertThat(stepsCalled, not(anyOf(hasItem('mavenExecuteStaticCodeChecks'), hasItem('npmExecuteLint'))))
     }
@@ -87,7 +83,7 @@ class PiperPipelineStageBuildTest extends BasePiperTest {
 
         jsr.step.piperPipelineStageBuild(script: nullScript, juStabUtils: utils)
 
-        assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'pipelineStashFilesAfterBuild', 'testsPublishResults', 'npmExecuteLint'))
+        assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults',  'testsPublishResults', 'npmExecuteLint'))
     }
 
     @Test
@@ -97,6 +93,6 @@ class PiperPipelineStageBuildTest extends BasePiperTest {
 
         jsr.step.piperPipelineStageBuild(script: nullScript, juStabUtils: utils)
 
-        assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'pipelineStashFilesAfterBuild', 'testsPublishResults', 'mavenExecuteStaticCodeChecks'))
+        assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'testsPublishResults', 'mavenExecuteStaticCodeChecks'))
     }
 }
