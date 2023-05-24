@@ -320,4 +320,47 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(DebugReport.instance.failedBuild.fatal, is('true'))
         assertThat(DebugReport.instance.failedBuild.reason, is(caught))
     }
+
+    @Test
+    void testStashing() {
+
+        String stageNameStashStageFiles, stageNameUnstashStageFiles
+        List stashConfigStash, stashConfigUnstash
+
+        def utilsMock =  new com.sap.piper.Utils() {
+
+            public unstashStageFiles(Script script, String stageName,  List stashes = []) {
+                stageNameUnstashStageFiles = stageName
+                stashConfigUnstash = script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.unstash ?: []
+            }
+            public stashStageFiles(Script script, String stageName)  {
+                stageNameStashStageFiles = stageName
+                stashConfigStash = script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stash ?: []
+            }
+            public void pushToSWA(Map parameters, Map config) {
+
+            }
+        }
+
+        nullScript.commonPipelineEnvironment.configuration['stageStashes'] = [
+            foo: [
+                stash: ['foo-stash'],
+                unstash: ['foo-unstash']
+            ]
+        ]
+
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utilsMock,
+            stageName: 'foo',
+            ordinal: 10
+        ) {
+
+        }
+
+        assertThat(stageNameStashStageFiles, is('foo'))
+        assertThat(stageNameUnstashStageFiles, is('foo'))
+        assertThat(stashConfigStash, is(['foo-stash']))
+        assertThat(stashConfigUnstash, is(['foo-unstash']))
+    }
 }
