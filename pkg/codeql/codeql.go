@@ -43,8 +43,8 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit, totalAlerts)
 }
 
-func getTotalAlertsFromClient(ctx context.Context, codeScannning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance)  (int, error) {
-	analysesOptions := github.AnalysesListOptions {
+func getTotalAlertsFromClient(ctx context.Context, codeScannning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (int, error) {
+	analysesOptions := github.AnalysesListOptions{
 		Ref: &analyzedRef,
 	}
 	analyses, _, err := codeScannning.ListAnalysesForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &analysesOptions)
@@ -64,20 +64,20 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 	for page := 1; page <= pages; page++ {
 		go func(i int) {
 			alertOptions := github.AlertListOptions{
-				State:       "",
-				Ref:         analyzedRef,
+				State: "",
+				Ref:   analyzedRef,
 				ListOptions: github.ListOptions{
-					Page: i,
+					Page:    i,
 					PerPage: 100,
 				},
 			}
-		
+
 			alerts, _, err := codeScanning.ListAlertsForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &alertOptions)
 			if err != nil {
 				errChan <- err
 				return
 			}
-		
+
 			openStateCount := 0
 			for _, alert := range alerts {
 				if *alert.State == auditStateOpen {
@@ -85,16 +85,16 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 				}
 			}
 			openStateCountChan <- len(alerts) - openStateCount
-		} (page)	
+		}(page)
 	}
-	
+
 	codeqlScanning := CodeqlScanning{}
 	codeqlScanning.Total = totalAlerts
 	for i := 0; i < pages; i++ {
 		select {
 		case openStateCount := <-openStateCountChan:
 			codeqlScanning.Audited += openStateCount
-		case err := <- errChan:
+		case err := <-errChan:
 			return CodeqlScanning{}, err
 		}
 	}
