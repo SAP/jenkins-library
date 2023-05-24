@@ -23,7 +23,8 @@ func (g *githubCodeqlScanningMock) ListAlertsForRepo(ctx context.Context, owner,
 }
 
 func (g *githubCodeqlScanningMock) ListAnalysesForRepo(ctx context.Context, owner, repo string, opts *github.AnalysesListOptions) ([]*github.ScanningAnalysis, *github.Response, error) {
-	analysis := []*github.ScanningAnalysis{{ResultsCount: 3}}
+	resultsCount := 3
+	analysis := []*github.ScanningAnalysis{{ResultsCount: &resultsCount}}
 	return analysis, nil, nil
 }
 
