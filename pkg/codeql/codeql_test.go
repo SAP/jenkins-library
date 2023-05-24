@@ -43,8 +43,9 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 	t.Parallel()
 	t.Run("Success", func(t *testing.T) {
 		ghCodeqlScanningMock := githubCodeqlScanningMock{}
+		totalAlerts := 3
 		codeqlScanAuditInstance := NewCodeqlScanAuditInstance("", "", "", "", []string{})
-		codeScanning, err := getVulnerabilitiesFromClient(ctx, &ghCodeqlScanningMock, "ref", &codeqlScanAuditInstance, 3)
+		codeScanning, err := getVulnerabilitiesFromClient(ctx, &ghCodeqlScanningMock, "ref", &codeqlScanAuditInstance, totalAlerts)
 		assert.NoError(t, err)
 		assert.Equal(t, 3, codeScanning.Total)
 		assert.Equal(t, 1, codeScanning.Audited)
@@ -52,8 +53,9 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 
 	t.Run("Error", func(t *testing.T) {
 		ghCodeqlScanningErrorMock := githubCodeqlScanningErrorMock{}
+		totalAlerts := 3
 		codeqlScanAuditInstance := NewCodeqlScanAuditInstance("", "", "", "", []string{})
-		_, err := getVulnerabilitiesFromClient(ctx, &ghCodeqlScanningErrorMock, "ref", &codeqlScanAuditInstance, 3)
+		_, err := getVulnerabilitiesFromClient(ctx, &ghCodeqlScanningErrorMock, "ref", &codeqlScanAuditInstance, totalAlerts)
 		assert.Error(t, err)
 	})
 }
