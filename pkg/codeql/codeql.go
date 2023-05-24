@@ -38,12 +38,12 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 	if err != nil {
 		return CodeqlScanning{}, err
 	}
-	totalAnalyses, err := getTotalAnalysesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
+	totalAlerts, err := getTotalAlertsFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 
-	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit, totalAnalyses)
+	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit, totalAlerts)
 }
 
-func getTotalAnalysesFromClient(ctx context.Context, codeScannning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance)  (int, error) {
+func getTotalAlertsFromClient(ctx context.Context, codeScannning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance)  (int, error) {
 	analysesOptions := github.AnalysesListOptions {
 		Ref: &analyzedRef,
 	}
