@@ -26,9 +26,10 @@ import (
 )
 
 const (
-	webReportPath  = "%s/#/product/%v/"
-	scanResultFile = "protecodescan_vulns.json"
-	stepResultFile = "protecodeExecuteScan.json"
+	webReportPath    = "%s/#/product/%v/"
+	scanResultFile   = "protecodescan_vulns.json"
+	stepResultFile   = "protecodeExecuteScan.json"
+	dockerConfigFile = ".pipeline/docker/config.json"
 )
 
 type protecodeUtils interface {
@@ -380,7 +381,7 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions, utils protec
 	path := config.DockerConfigJSON
 
 	if len(config.DockerConfigJSON) > 0 && len(config.DockerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
-		path, err = docker.CreateDockerConfigJSON(config.DockerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+		path, err = docker.CreateDockerConfigJSON(config.DockerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, dockerConfigFile, config.DockerConfigJSON, utils)
 	}
 
 	if err != nil {
