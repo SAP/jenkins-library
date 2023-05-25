@@ -26,6 +26,8 @@ type protecodeExecuteScanOptions struct {
 	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
 	ScanImage                   string `json:"scanImage,omitempty"`
 	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
+	ContainerRegistryPassword   string `json:"containerRegistryPassword,omitempty"`
+	ContainerRegistryUser       string `json:"containerRegistryUser,omitempty"`
 	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
 	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"possible-values=none binary complete"`
 	FilePath                    string `json:"filePath,omitempty"`
@@ -173,6 +175,8 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
+			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
@@ -245,6 +249,8 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the step on severe vulnerabilties or not")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "The reference to the docker image to scan with Protecode. Note: If possible please also check [fetchUrl](https://www.project-piper.io/steps/protecodeExecuteScan/#fetchurl) parameter, which might help you to optimize upload time.")
 	cmd.Flags().StringVar(&stepConfig.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.CleanupMode, "cleanupMode", `binary`, "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
@@ -331,6 +337,44 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_dockerRegistryUrl"),
+					},
+					{
+						Name: "containerRegistryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryPassword",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_containerRegistryPassword"),
+					},
+					{
+						Name: "containerRegistryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUsername",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_containerRegistryUser"),
 					},
 					{
 						Name: "dockerConfigJSON",
