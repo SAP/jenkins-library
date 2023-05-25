@@ -36,9 +36,6 @@ class UtilsTest extends BasePiperTest {
     @Before
     void setup() {
         parameters = [:]
-
-        //steps.unstash = { stashName -> System.err.println("[MH] StashName: ${stashName}")}
-        helper.registerAllowedMethod( 'stash', [String.class], {stashName -> System.err.println("[MH] XXXXXX ${stashName}")})
     }
 
     @Test
