@@ -281,7 +281,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 
 		if config.CheckForCompliance {
-			codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(config.GithubAPIURL, repoInfo.owner, repoInfo.repo, token, []string{})
+			codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
 			scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
 			if err != nil {
 				return reports, errors.Wrap(err, "failed to get scan results")
