@@ -73,7 +73,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 		return err
 	}
 
-	if err := correctDockerConfigEnvVar(config); err != nil {
+	if err := correctDockerConfigEnvVar(config, utils); err != nil {
 		return err
 	}
 
@@ -375,12 +375,12 @@ func uploadFile(utils protecodeUtils, config protecodeExecuteScanOptions, produc
 	return productID
 }
 
-func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) error {
+func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions, utils protecodeUtils) error {
 	var err error
-	fileUtils := &piperutils.Files{}
 	path := config.DockerConfigJSON
+
 	if len(config.DockerConfigJSON) > 0 && len(config.DockerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
-		path, err = docker.CreateDockerConfigJSON(config.DockerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, fileUtils)
+		path, err = docker.CreateDockerConfigJSON(config.DockerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
 	}
 
 	if err != nil {
