@@ -81,6 +81,37 @@ class UtilsTest extends BasePiperTest {
     }
 
     @Test
+    void testStashListStashesAllStashes() {
+        def stashes = [] as Set
+        def examinee = new Utils()
+        examinee.steps = [
+            stash: { Map stash ->
+                stashes << stash
+            },
+        ]
+        examinee.echo = {}
+
+        examinee.stashList(nullScript, [
+            [
+                name: 'foo',
+                includes: '*.foo',
+                excludes: 'target/foo/*'
+            ],
+            [
+                name: 'bar',
+                includes: '*.bar',
+                excludes: 'target/bar/*'
+            ]
+        ])
+
+        assert stashes == [
+            [name: 'foo', includes: '*.foo', excludes: 'target/foo/*', allowEmpty: true],
+            [name: 'bar', includes: '*.bar', excludes: 'target/bar/*', allowEmpty: true]
+        ] as Set
+
+    }
+
+    @Test
     void testUnstashStageFilesUnstashesAllUnstashableStashes() {
 
         // We do not fail in case a stash cannot be unstashed
