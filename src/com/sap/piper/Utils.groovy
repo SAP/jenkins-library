@@ -78,11 +78,11 @@ boolean isInsidePod(Script script) {
 }
 
 def unstash(name, msg = "Unstash failed:") {
-
     def unstashedContent = []
     try {
         echo "Unstash content: ${name}"
         steps.unstash name
+        echo "Unstahed content: ${name}"
         unstashedContent += name
     } catch (e) {
         echo "$msg $name (${e.getMessage()})"
