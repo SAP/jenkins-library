@@ -203,13 +203,7 @@ func (c *checkmarxOneExecuteScanHelper) GetProjectByName() (*checkmarxOne.Projec
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) {
-	if len(c.config.GroupID) > 0 {
-		group, err := c.sys.GetGroupByID(c.config.GroupID)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to get Checkmarx One group by ID %v: %s", c.config.GroupID, err)
-		}
-		return &group, nil
-	} else if len(c.config.GroupName) > 0 {
+	if len(c.config.GroupName) > 0 {
 		group, err := c.sys.GetGroupByName(c.config.GroupName)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get Checkmarx One group by Name %v: %s", c.config.GroupName, err)
@@ -240,26 +234,23 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	project, err := c.sys.CreateProject(c.config.ProjectName, []string{c.Group.GroupID})
 	if err != nil {
 		return nil, fmt.Errorf("Error when trying to create project: %s", err)
-	} else {
-		log.Entry().Infof("Project %v created", project.ProjectID)
 	}
+	log.Entry().Infof("Project %v created", project.ProjectID)
 
 	// new project, set the defaults per pipeline config
 	err = c.sys.SetProjectPreset(project.ProjectID, c.config.Preset, true)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to set preset for project %v to %v: %s", project.ProjectID, c.config.Preset, err)
-	} else {
-		log.Entry().Infof("Project preset updated to %v", c.config.Preset)
 	}
+	log.Entry().Infof("Project preset updated to %v", c.config.Preset)
 
 	if len(c.config.LanguageMode) != 0 {
 		err = c.sys.SetProjectLanguageMode(project.ProjectID, c.config.LanguageMode, true)
 		if err != nil {
 
 			return nil, fmt.Errorf("Unable to set languageMode for project %v to %v: %s", project.ProjectID, c.config.LanguageMode, err)
-		} else {
-			log.Entry().Infof("Project languageMode updated to %v", c.config.LanguageMode)
 		}
+		log.Entry().Infof("Project languageMode updated to %v", c.config.LanguageMode)
 	}
 
 	return &project, nil
@@ -276,6 +267,7 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	for _, conf := range projectConf {
 		if conf.Key == "scan.config.sast.presetName" {
 			currentPreset = conf.Value
+			break
 		}
 	}
 

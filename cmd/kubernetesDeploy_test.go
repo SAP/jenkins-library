@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -402,6 +405,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			Namespace:                 "deploymentNamespace",
 			DockerConfigJSON:          ".pipeline/docker/config.json",
 			RunHelmTests:              true,
+			HelmTestWaitSeconds:       400,
 		}
 
 		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
@@ -459,6 +463,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--timeout",
+			"400s",
 		}, mockUtils.Calls[2].Params, "Wrong test parameters")
 	})
 
@@ -481,6 +487,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			DockerConfigJSON:          ".pipeline/docker/config.json",
 			RunHelmTests:              true,
 			ShowTestLogs:              true,
+			HelmTestWaitSeconds:       400,
 		}
 
 		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
@@ -538,6 +545,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--timeout",
+			"400s",
 			"--logs",
 		}, mockUtils.Calls[2].Params, "Wrong test parameters")
 	})
