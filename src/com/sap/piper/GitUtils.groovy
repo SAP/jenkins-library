@@ -90,7 +90,7 @@ static String handleTestRepository(Script steps, Map config){
     // checkout test repository
     steps.git options
     // stash test content
-    steps.stash stashName
+    new Utils().stash(stashName)
     // return stash name
     return stashName
 }

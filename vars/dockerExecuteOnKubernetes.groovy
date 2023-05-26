@@ -329,7 +329,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                             }
                             if (defaultStashCreated) {
                                 echo "invalidate stash workspace-${config.uniqueId}"
-                                stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+                                utils.stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
                             }
                             def result = body()
                             if (config.verbose) {
