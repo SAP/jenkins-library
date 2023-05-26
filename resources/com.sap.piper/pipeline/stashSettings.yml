@@ -14,6 +14,7 @@ Build:
   unstash:
     - source
   stashes:
+    # configuration copied from pipelineStashFilesAfterBuild (default_pipeline_environment)
     - name: 'buildResult'
       includes: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/*'
       excludes: ''

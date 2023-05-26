@@ -373,6 +373,9 @@ steps:
     timeoutInSeconds: 900
     stepMessage: 'Do you want to restart?'
   pipelineStashFilesAfterBuild:
+    # Step is present due to backward compatibility
+    # Configuration has been moved to resources/com.sap.piper/pipeline/stashSettings.yml
+    # piperStageWrapper will do the stashing after the build
     stashIncludes:
       buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/**'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
