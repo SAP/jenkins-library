@@ -344,7 +344,7 @@ class PiperStageWrapperTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration['stageStashes'] = [
             foo: [
-                stash: ['foo-stash'],
+                stash: [[name: 'foo-stash']],
                 unstash: ['foo-unstash']
             ]
         ]
@@ -360,7 +360,7 @@ class PiperStageWrapperTest extends BasePiperTest {
 
         assertThat(stageNameStashStageFiles, is('foo'))
         assertThat(stageNameUnstashStageFiles, is('foo'))
-        assertThat(stashConfigStash, is(['foo-stash']))
+        assertThat(stashConfigStash, is([[name: 'foo-stash']]))
         assertThat(stashConfigUnstash, is(['foo-unstash']))
     }
 }
