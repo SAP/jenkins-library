@@ -457,7 +457,7 @@ private Map getSecurityContext(Map config) {
 
 private void unstashWorkspace(config, prefix) {
     try {
-        unstash "${prefix}-${config.uniqueId}"
+        new Utils().unstash "${prefix}-${config.uniqueId}"
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}\n${e.getCause()}"
     } catch (Throwable e) {
