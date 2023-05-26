@@ -90,6 +90,20 @@ class UtilsTest extends BasePiperTest {
     }
 
     @Test
+    void testStash_noParentheses() {
+        Map results = [:]
+        newExaminee(results).stash 'test'
+        assertEquals([name: 'test', includes: '**/*.*', excludes: ''], results.stashProperties)
+    }
+
+    @Test
+    void testStashAndLog_noParentheses() {
+        Map results = [:]
+        newExaminee(results).stashAndLog name: 'test'
+        assertEquals([name: 'test', includes: '**/*.*', excludes: ''], results.stashProperties)
+    }
+
+    @Test
     void testStash_simpleSignature1Param() {
         Map results = [:]
         Map expected = [name: 'test', includes: '**/*.*', excludes: '']
