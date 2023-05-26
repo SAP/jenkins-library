@@ -108,7 +108,29 @@ class UtilsTest extends BasePiperTest {
             [name: 'foo', includes: '*.foo', excludes: 'target/foo/*', allowEmpty: true],
             [name: 'bar', includes: '*.bar', excludes: 'target/bar/*', allowEmpty: true]
         ] as Set
+    }
 
+    @Test
+    void testStashListDoesNotSwallowException() {
+
+        thrown.expect(RuntimeException.class)
+        thrown.expectMessage('something went wrong')
+
+        def examinee = new Utils()
+        examinee.steps = [
+            stash: { Map stash ->
+                throw new RuntimeException('something went wrong')
+            },
+        ]
+        examinee.echo = {}
+
+        examinee.stashList(nullScript, [
+            [
+                name: 'fail',
+                includes: '*.fail',
+                excludes: 'target/fail/*'
+            ],
+        ])
     }
 
     @Test
