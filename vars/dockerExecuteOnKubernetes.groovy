@@ -418,7 +418,7 @@ chown -R ${runAsUser}:${fsGroup} ."""
             echo "stash effective (excludes): ${excludes}"
         }
 
-        new Utils().stashAndLog(
+        new Utils().stash(
             name: stashName,
             includes: includes,
             excludes: excludes,
@@ -465,7 +465,7 @@ private void unstashWorkspace(config, prefix) {
         throw e
     } finally {
         echo "invalidate stash ${prefix}-${config.uniqueId}"
-        new Utils().stashAndLog name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+        new Utils().stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     }
 }
 

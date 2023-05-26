@@ -98,7 +98,7 @@ void call(Map parameters = [:]) {
         if (configFile && !configFile.startsWith('.pipeline/')) {
             stashIncludes += ", $configFile"
         }
-        utils.stashAndLog name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
+        utils.stash name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()

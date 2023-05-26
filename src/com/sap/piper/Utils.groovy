@@ -7,7 +7,7 @@ import groovy.text.GStringTemplateEngine
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
-def stashAndLog(Map params) {
+def stash(Map params) {
     if(params.includes == null) params.includes = '**/*.*'
     if(params.excludes == null) params.excludes = ''
     if(params.useDefaultExcludes == null) params.useDefaultExcludes = true
