@@ -532,12 +532,17 @@ func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (m
 		return detailedResults, fmt.Errorf("Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err)
 	}
 
+	totalResultCount := uint64(0)
+
 	scansummary, err := c.sys.GetScanSummary(scan.ScanID)
 	if err != nil {
-		return detailedResults, fmt.Errorf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+		/* TODO: scansummary throws a 404 for 0-result scans, once the bug is fixed put this code back. */
+		// return detailedResults, fmt.Errorf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+	} else {
+		totalResultCount = scansummary.TotalCount()
 	}
 
-	results, err := c.sys.GetScanResults(scan.ScanID, scansummary.TotalCount())
+	results, err := c.sys.GetScanResults(scan.ScanID, totalResultCount)
 	if err != nil {
 		return detailedResults, fmt.Errorf("Unable to fetch scan results for scan %v: %s", scan.ScanID, err)
 	}
@@ -606,12 +611,15 @@ func (c *checkmarxOneExecuteScanHelper) generateAndDownloadReport(scan *checkmar
 
 		if finalStatus.Status == "completed" {
 			break
+		} else if finalStatus.Status == "failed" {
+			return []byte{}, fmt.Errorf("report generation failed")
 		}
 		time.Sleep(10 * time.Second)
 	}
 	if finalStatus.Status == "completed" {
 		return c.sys.DownloadReport(finalStatus.ReportURL)
 	}
+
 	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus.Status)
 }
 
