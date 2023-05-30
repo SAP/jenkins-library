@@ -444,7 +444,7 @@ steps:
       dockerWorkspace: ''
   slackSendNotification:
     color: "${['SUCCESS': '#8cc04f', 'FAILURE': '#d54c53', 'ABORTED': '#949393', 'UNSTABLE': '#f6b44b', 'PAUSED': '#24b0d5', 'UNKNOWN': '#d54cc4'].get(buildStatus, '#d54cc4')}"
-    defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
+    defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}> ${buildDescription}"
   snykExecute:
     buildDescriptorFile: './package.json'
     dockerImage: 'node:lts-buster'

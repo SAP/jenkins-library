@@ -73,7 +73,8 @@ void call(Map parameters = [:]) {
                 echo "[${STEP_NAME}] currentBuild.result is not set. Skipping Slack notification"
                 return
             }
-            config.message = GStringTemplateEngine.newInstance().createTemplate(config.defaultMessage).make([buildStatus: buildStatus, env: env]).toString()
+            def buildDescription = script.currentBuild.description ? script.currentBuild.description : ''
+            config.message = GStringTemplateEngine.newInstance().createTemplate(config.defaultMessage).make([buildStatus: buildStatus, buildDescription: buildDescription, env: env]).toString()
         }
         Map options = [:]
         if(config.credentialsId)
