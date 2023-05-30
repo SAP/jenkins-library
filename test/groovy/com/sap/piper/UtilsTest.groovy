@@ -168,7 +168,7 @@ class UtilsTest extends BasePiperTest {
 
         assertThat(deleteDirCalled, is(true))
 
-        assertThat(unstashed, hasSize(5)) // should be for since we should not unstash 'duplicate' twice
+        assertThat(unstashed, hasSize(5)) // should be 4 since we should not unstash 'duplicate' twice
         assertThat(unstashed, hasItems('stash-1', 'stash-2', 'additional-stash', 'duplicate'))
 
         // This is inconsistent. Above we can see only four different stashes has been unstashed (duplicate twice),
