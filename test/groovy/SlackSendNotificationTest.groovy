@@ -40,7 +40,7 @@ class SlackSendNotificationTest extends BasePiperTest {
     void testNotificationBuildSuccessDefaultChannel() throws Exception {
         stepRule.step.slackSendNotification(script: [currentBuild: [result: 'SUCCESS']])
         // asserts
-        assertEquals('Message not set correctly', 'SUCCESS: Job p <http://build.url|#1>', slackCallMap.message.toString())
+        assertEquals('Message not set correctly', 'SUCCESS: Job p <http://build.url|#1> ', slackCallMap.message.toString())
         assertNull('Channel not set correctly', slackCallMap.channel)
         assertEquals('Color not set correctly', '#8cc04f', slackCallMap.color)
         assertJobStatusSuccess()
@@ -58,7 +58,7 @@ class SlackSendNotificationTest extends BasePiperTest {
     void testNotificationBuildFailed() throws Exception {
         stepRule.step.slackSendNotification(script: [currentBuild: [result: 'FAILURE']])
         // asserts
-        assertEquals('Message not set correctly', 'FAILURE: Job p <http://build.url|#1>', slackCallMap.message.toString())
+        assertEquals('Message not set correctly', 'FAILURE: Job p <http://build.url|#1> ', slackCallMap.message.toString())
         assertEquals('Color not set correctly', '#d54c53', slackCallMap.color)
     }
 
