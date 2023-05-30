@@ -143,7 +143,7 @@ class UtilsTest extends BasePiperTest {
         // The behaviour wrt unstashable stashes should be improved. In case of issues
         // with unstashing, we should throw an exception
 
-        boolean directoryDeleted = false
+        boolean deleteDirCalled = false
         def unstashed = []
         def examinee = new Utils()
         examinee.steps = [
@@ -162,11 +162,11 @@ class UtilsTest extends BasePiperTest {
             ]
         ]
 
-        nullScript.metaClass.deleteDir = { directoryDeleted = true }
+        nullScript.metaClass.deleteDir = { deleteDirCalled = true }
 
         def stashResult = examinee.unstashStageFiles(nullScript, 'foo', ['additional-stash', 'duplicate'])
 
-        assertThat(directoryDeleted, is(true))
+        assertThat(deleteDirCalled, is(true))
 
         assertThat(unstashed, hasSize(5)) // should be for since we should not unstash 'duplicate' twice
         assertThat(unstashed, hasItems('stash-1', 'stash-2', 'additional-stash', 'duplicate'))
