@@ -916,6 +916,10 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	insecureResults := []string{}
 	insecure := false
 
+	if results == nil { // no results found, so just return
+		return insecure, insecureResults, neutralResults
+	}
+
 	cxHighThreshold := c.config.VulnerabilityThresholdHigh
 	cxMediumThreshold := c.config.VulnerabilityThresholdMedium
 	cxLowThreshold := c.config.VulnerabilityThresholdLow
