@@ -604,6 +604,8 @@ spec:
         type: stash
       - name: checkmarx
         type: stash
+      - name: checkmarxOne
+        type: stash
   outputs:
     resources:
       - name: commonPipelineEnvironment

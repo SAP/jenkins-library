@@ -386,6 +386,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					{Name: "buildDescriptor", Type: "stash"},
 					{Name: "opensourceConfiguration", Type: "stash"},
 					{Name: "checkmarx", Type: "stash"},
+					{Name: "checkmarxOne", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
