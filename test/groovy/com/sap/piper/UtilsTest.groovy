@@ -60,7 +60,7 @@ class UtilsTest extends BasePiperTest {
 
         examinee.stash('foo')
 
-        assert(stashProperties == [name: 'foo', includes: '**/*.*', excludes: ''])
+        assertThat(stashProperties, is([name: 'foo', includes: '**/*.*', excludes: '']))
     }
 
    @Test
