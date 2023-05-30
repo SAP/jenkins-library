@@ -207,7 +207,7 @@ class UtilsTest extends BasePiperTest {
 
 
     @Test
-    void testUnstashAllSuceedsAndUnstashesWhatIsExpected() {
+    void testUnstashAllSucceeds() {
         def unstashed = [] as Set
         def examinee = new Utils()
         examinee.steps = [
