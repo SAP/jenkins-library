@@ -38,20 +38,20 @@ def stash(String name, String includes = '**/*.*', String excludes = '', boolean
 def stashList(script, List stashes) {
     for (def stash : stashes) {
         def name = stash.name
-        def include = stash.includes
-        def exclude = stash.excludes
+        def includes = stash.includes
+        def excludes = stash.excludes
 
         if (stash?.merge == true) {
             String lockingResourceGroup = script.commonPipelineEnvironment.projectName?:env.JOB_NAME
             String lockName = "${lockingResourceGroup}/${stash.name}"
             lock(lockName) {
                 unstash stash.name
-                echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-                steps.stash name: name, includes: include, excludes: exclude, allowEmpty: true
+                echo "Stash content: ${name} (includes: ${includes}, excludes: ${excludes})"
+                steps.stash name: name, includes: includes, excludes: excludes, allowEmpty: true
             }
         } else {
-            echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-            steps.stash name: name, includes: include, excludes: exclude, allowEmpty: true
+            echo "Stash content: ${name} (includes: ${includes}, excludes: ${excludes})"
+            steps.stash name: name, includes: includes, excludes: excludes, allowEmpty: true
         }
     }
 }
