@@ -307,7 +307,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
         def stashContent = config.stashContent
         boolean defaultStashCreated = false
         if (config.containerName && stashContent.isEmpty()) {
-            stashContent = [stashWorkspace(config, 'workspace')]
+            stashContent = [stashWorkspace(config, utils, 'workspace')]
             defaultStashCreated = true
         }
         podTemplate(getOptions(config)) {
@@ -337,7 +337,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                             }
                             return result
                         } finally {
-                            stashWorkspace(config, 'container', true, true)
+                            stashWorkspace(config, utils, 'container', true, true)
                         }
                     }
                 } else {
@@ -347,7 +347,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
         }
     } finally {
         if (config.containerName)
-            unstashWorkspace(config, 'container')
+            unstashWorkspace(config, utils, 'container')
     }
 }
 
@@ -387,7 +387,7 @@ private String generatePodSpec(Map config) {
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
 
-private String stashWorkspace(config, prefix, boolean chown = false, boolean stashBack = false) {
+private String stashWorkspace(config, utils, prefix, boolean chown = false, boolean stashBack = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
         if (chown) {
@@ -418,7 +418,7 @@ chown -R ${runAsUser}:${fsGroup} ."""
             echo "stash effective (excludes): ${excludes}"
         }
 
-        new Utils().stash(
+        utils.stash(
             name: stashName,
             includes: includes,
             excludes: excludes,
@@ -455,7 +455,7 @@ private Map getSecurityContext(Map config) {
     return config.securityContext ?: config.jenkinsKubernetes.securityContext ?: [:]
 }
 
-private void unstashWorkspace(config, prefix) {
+private void unstashWorkspace(config, utils, prefix) {
     try {
         unstash "${prefix}-${config.uniqueId}"
     } catch (AbortException | IOException e) {
@@ -465,7 +465,7 @@ private void unstashWorkspace(config, prefix) {
         throw e
     } finally {
         echo "invalidate stash ${prefix}-${config.uniqueId}"
-        new Utils().stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+        utils.stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     }
 }
 
