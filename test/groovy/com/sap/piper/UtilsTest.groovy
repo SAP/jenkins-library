@@ -171,7 +171,7 @@ class UtilsTest extends BasePiperTest {
         assertThat(unstashed, hasSize(5)) // should be 4 since we should not unstash 'duplicate' twice
         assertThat(unstashed, hasItems('stash-1', 'stash-2', 'additional-stash', 'duplicate'))
 
-        // This is inconsistent. Above we can see only four different stashes has been unstashed (duplicate twice),
+        // This is inconsistent. Above we can see only four different stashes has been unstashed ('duplicate' twice),
         // but here we see that the stashResult contains six entries, also the 'fail' entry
         // for which we throw an exception (... and duplicate twice).
         // We should fix that and adjust the test accordingly with the fix.
