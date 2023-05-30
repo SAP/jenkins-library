@@ -41,6 +41,7 @@ import groovy.text.GStringTemplateEngine
  * Notification contains:
  *
  * * Build status
+ * * Build description
  * * Repo Owner
  * * Repo Name
  * * Branch Name
