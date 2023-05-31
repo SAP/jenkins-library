@@ -284,6 +284,7 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 		c.sys.SetProjectPreset(c.Project.ProjectID, c.config.Preset, true)
 	} else {
 		log.Entry().Infof("Project is configured to use preset %v", currentPreset)
+		c.config.Preset = currentPreset
 	}
 	return nil
 }
