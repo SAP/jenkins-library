@@ -125,10 +125,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
     Utils newUtilsMock() {
         def utilsMock = new Utils()
-        utilsMock.steps = [
-            stash  : {  },
-            unstash: {  }
-        ]
+        utilsMock.steps = [ stash  : {  } ]
         utilsMock.echo = { def m -> }
         return utilsMock
     }
