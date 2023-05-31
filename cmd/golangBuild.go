@@ -570,7 +570,7 @@ func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
