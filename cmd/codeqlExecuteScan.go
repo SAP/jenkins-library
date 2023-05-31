@@ -96,7 +96,7 @@ func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 		return errors.New("repository param is not set or it cannot be auto populated")
 	}
 
-	pat := regexp.MustCompile(`^(https|git):\/\/([\S]+:[\S]+@)?([^\/:]+)[\/:]([^\/:]+\/[\S]+)$`)
+	pat := regexp.MustCompile(`^(https:\/\/|git@)([\S]+:[\S]+@)?([^\/:]+)[\/:]([^\/:]+\/[\S]+)$`)
 	matches := pat.FindAllStringSubmatch(repoUri, -1)
 	if len(matches) > 0 {
 		match := matches[0]
@@ -280,23 +280,23 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, err
 		}
 
-		if config.CheckForCompliance {
-			codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(config.GithubAPIURL, repoInfo.owner, repoInfo.repo, token, []string{})
-			scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
-			if err != nil {
-				return reports, errors.Wrap(err, "failed to get scan results")
-			}
+		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
+		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
+		if err != nil {
+			return reports, errors.Wrap(err, "failed to get scan results")
+		}
 
+		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, ScanResults: scanResults}
+		paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
+		if err != nil {
+			return reports, errors.Wrap(err, "failed to write json compliance report")
+		}
+
+		if config.CheckForCompliance {
 			unaudited := (scanResults.Total - scanResults.Audited)
 			if unaudited > config.VulnerabilityThresholdTotal {
 				msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
 				return reports, errors.Errorf(msg)
-			}
-
-			codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, ScanResults: scanResults}
-			paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
-			if err != nil {
-				return reports, errors.Wrap(err, "failed to write json compliance report")
 			}
 
 			reports = append(reports, paths...)
