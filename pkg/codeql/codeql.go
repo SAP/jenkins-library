@@ -17,7 +17,8 @@ type githubCodeqlScanningService interface {
 	ListAnalysesForRepo(ctx context.Context, owner, repo string, opts *github.AnalysesListOptions) ([]*github.ScanningAnalysis, *github.Response, error)
 }
 
-const auditStateOpen = "open"
+const auditStateOpen string = "open"
+const perPageCount int = 100
 
 func NewCodeqlScanAuditInstance(serverUrl, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
 	return CodeqlScanAuditInstance{serverUrl: serverUrl, owner: owner, repository: repository, token: token, trustedCerts: trustedCerts}
@@ -58,7 +59,7 @@ func getTotalAlertsFromClient(ctx context.Context, codeScannning githubCodeqlSca
 }
 
 func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance, totalAlerts int) (CodeqlScanning, error) {
-	pages := totalAlerts/100 + 1
+	pages := totalAlerts/perPageCount + 1
 	errChan := make(chan error)
 	openStateCountChan := make(chan int)
 	for page := 1; page <= pages; page++ {
@@ -68,7 +69,7 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 				Ref:   analyzedRef,
 				ListOptions: github.ListOptions{
 					Page:    i,
-					PerPage: 100,
+					PerPage: perPageCount,
 				},
 			}
 
