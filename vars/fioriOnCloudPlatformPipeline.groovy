@@ -22,7 +22,7 @@ import groovy.transform.Field
 void call(parameters = [:]) {
 
     checkScript(this, parameters)
-    if(parameters.utils != null) parameters.juStabUtils = parameters.utils //called differently in steps
+    if(parameters.utils != null) parameters.juStabUtils = parameters.utils //named differently in steps
 
     node(parameters.label) {
 
