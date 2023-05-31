@@ -272,7 +272,12 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	}
 
 	if c.config.Preset == "" {
-		log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		if currentPreset == "" {
+			currentPreset = "ASA Premium"
+			log.Entry().Infof("Pipeline yaml does not specify a preset and no preset configured for the project, will use the default %v.", currentPreset)
+		} else {
+			log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		}
 		c.config.Preset = currentPreset
 	} else if currentPreset != c.config.Preset {
 		log.Entry().Infof("Project configured preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentPreset, c.config.Preset)
@@ -915,10 +920,6 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	neutralResults := []string{}
 	insecureResults := []string{}
 	insecure := false
-
-	if results == nil { // no results found, so just return
-		return insecure, insecureResults, neutralResults
-	}
 
 	cxHighThreshold := c.config.VulnerabilityThresholdHigh
 	cxMediumThreshold := c.config.VulnerabilityThresholdMedium
