@@ -283,8 +283,7 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 		log.Entry().Infof("Project configured preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentPreset, c.config.Preset)
 		c.sys.SetProjectPreset(c.Project.ProjectID, c.config.Preset, true)
 	} else {
-		log.Entry().Infof("Project is configured to use preset %v", currentPreset)
-		c.config.Preset = currentPreset
+		log.Entry().Infof("Project is already configured to use pipeline preset %v", currentPreset)
 	}
 	return nil
 }
@@ -968,8 +967,9 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 		}
 		// if the flag is switched on, calculate the Low findings threshold per query
 		if cxLowThresholdPerQuery {
-			lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
-			if lowPerQueryMap != nil {
+			if (*results)["LowPerQuery"] != nil {
+				lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
+
 				for lowQuery, resultsLowQuery := range lowPerQueryMap {
 					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
 					lowOverallPerQuery := resultsLowQuery["Issues"]
