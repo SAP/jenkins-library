@@ -347,7 +347,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
         }
     } finally {
         if (config.containerName)
-            unstashWorkspace(config, 'container')
+            unstashWorkspace(config, utils, 'container')
     }
 }
 
@@ -455,9 +455,9 @@ private Map getSecurityContext(Map config) {
     return config.securityContext ?: config.jenkinsKubernetes.securityContext ?: [:]
 }
 
-private void unstashWorkspace(config, prefix) {
+private void unstashWorkspace(config, utils, prefix) {
     try {
-        new Utils().unstash "${prefix}-${config.uniqueId}"
+        utils.unstash "${prefix}-${config.uniqueId}"
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}\n${e.getCause()}"
     } catch (Throwable e) {

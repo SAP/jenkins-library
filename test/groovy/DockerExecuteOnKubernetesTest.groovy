@@ -68,6 +68,17 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def podSpec
     Map resources =  [:]
     List stashList = []
+    List unstashList = []
+    def utilsMock = newUtilsMock()
+
+    Utils newUtilsMock() {
+        def utilsMock = new Utils()
+        utilsMock.steps = [
+            unstash  : { m -> unstashList.add(m) }
+        ]
+        utilsMock.echo = { def m -> }
+        return utilsMock
+    }
 
     @Before
     void init() {
@@ -807,6 +818,20 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasEntry('allowEmpty', true),
             hasEntry('includes', 'container/include.test'),
             hasEntry('excludes', 'container/exclude.test'))))
+    }
+
+    @Test
+    void testUnstash() {
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utilsMock,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) {
+            bodyExecuted = true
+        }
+        assertEquals(2, unstashList.size())
+        assertTrue(unstashList[0].startsWith('workspace-'))
+        assertTrue(unstashList[1].startsWith('container-'))
     }
 
     @Test
