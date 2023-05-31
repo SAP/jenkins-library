@@ -273,8 +273,9 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 
 	if c.config.Preset == "" {
 		if currentPreset == "" {
-			currentPreset = "ASA Premium"
-			log.Entry().Infof("Pipeline yaml does not specify a preset and no preset configured for the project, will use the default %v.", currentPreset)
+			//currentPreset = "ASA Premium"
+			//log.Entry().Infof("Pipeline yaml does not specify a preset and no preset configured for the project, will use the default %v.", currentPreset)
+			return fmt.Errorf("must specify the preset in either the pipeline yaml or in the CheckmarxOne project configuration")
 		} else {
 			log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
 		}
