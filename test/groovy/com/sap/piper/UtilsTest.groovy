@@ -50,14 +50,11 @@ class UtilsTest extends BasePiperTest {
     void testStashWithDefaults() {
         Map stashProperties
 
-        def examinee = new Utils()
-        examinee.steps = [
-            stash: { Map stashProps ->
+        def examinee = newExaminee(
+            stashClosure: { Map stashProps ->
                 stashProperties = stashProps
-            },
-        ]
-        examinee.echo = {}
-
+            }
+        )
         examinee.stash('foo')
 
         assertThat(stashProperties, is([name: 'foo', includes: '**/*.*', excludes: '']))
@@ -67,13 +64,11 @@ class UtilsTest extends BasePiperTest {
     void testStashWithIncludesAndExcludes() {
         Map stashProperties
 
-        def examinee = new Utils()
-        examinee.steps = [
-            stash: { Map stashProps ->
+        def examinee = newExaminee(
+            stashClosure: { Map stashProps ->
                 stashProperties = stashProps
-            },
-        ]
-        examinee.echo = {}
+            }
+        )
 
         examinee.stash('foo', '**/*.mtar', '**/target')
 
@@ -83,13 +78,11 @@ class UtilsTest extends BasePiperTest {
     @Test
     void testStashListStashesAllStashes() {
         def stashes = [] as Set
-        def examinee = new Utils()
-        examinee.steps = [
-            stash: { Map stash ->
+        def examinee = newExaminee(
+            stashClosure: { Map stash ->
                 stashes << stash
-            },
-        ]
-        examinee.echo = {}
+            }
+        )
 
         examinee.stashList(nullScript, [
             [
@@ -116,13 +109,11 @@ class UtilsTest extends BasePiperTest {
         thrown.expect(RuntimeException.class)
         thrown.expectMessage('something went wrong')
 
-        def examinee = new Utils()
-        examinee.steps = [
-            stash: { Map stash ->
+        def examinee = newExaminee(
+            stashClosure: { Map stash ->
                 throw new RuntimeException('something went wrong')
-            },
-        ]
-        examinee.echo = {}
+            }
+        )
 
         examinee.stashList(nullScript, [
             [
@@ -145,16 +136,14 @@ class UtilsTest extends BasePiperTest {
 
         boolean deleteDirCalled = false
         def unstashed = []
-        def examinee = new Utils()
-        examinee.steps = [
-            unstash: { def stashName ->
+        def examinee = newExaminee(
+            unstashClosure: { def stashName ->
                 if(stashName == 'fail') {
                     throw new RuntimeException('something went wrong')
                 }
                 unstashed << stashName
-            },
-        ]
-        examinee.echo = {}
+            }
+        )
 
         nullScript.commonPipelineEnvironment.configuration.stageStashes = [
             foo : [
@@ -191,17 +180,16 @@ class UtilsTest extends BasePiperTest {
     @Test
     void testUnstashSkipsFailedUnstashes() {
 
-        def examinee = new Utils()
-        examinee.steps = [
-            unstash: { def stashName ->
+        def examinee = newExaminee(
+            unstashClosure: { def stashName ->
                 if(stashName == 'fail') {
                     throw new RuntimeException('something went wrong')
                 }
-            },
-        ]
-        examinee.echo = {}
+            }
+        )
 
         def stashResult = examinee.unstashAll(['a', 'fail', 'b'])
+
         assert stashResult == ['a', 'b']
     }
 
@@ -209,11 +197,8 @@ class UtilsTest extends BasePiperTest {
     @Test
     void testUnstashAllSucceeds() {
         def unstashed = [] as Set
-        def examinee = new Utils()
-        examinee.steps = [
-            unstash: { def stashName -> unstashed << stashName},
-        ]
-        examinee.echo = {}
+        def examinee = newExaminee(unstashClosure: { def stashName -> unstashed << stashName})
+
         examinee.unstashAll(['a', 'b'])
 
         assert(unstashed == ['a', 'b'] as Set)
@@ -222,15 +207,16 @@ class UtilsTest extends BasePiperTest {
     @Test
     void testUnstashFails() {
         def logMessages = []
-        def examinee = new Utils()
-        examinee.steps = [
-            unstash: { def stashName -> throw new RuntimeException('something went wrong')},
-        ]
-        examinee.echo = {
-            // coerce to java.lang.String, we might have GStrings.
-            // comparism with java.lang.String might fail.
-            message -> logMessages << message.toString()
-        }
+        def examinee = newExaminee(
+            unstashClosure:  {
+                def stashName -> throw new RuntimeException('something went wrong')
+            },
+            echoClosure: {
+                // coerce to java.lang.String, we might have GStrings.
+                // comparism with java.lang.String might fail.
+                message -> logMessages << message.toString()
+            }
+        )
         def stashResult = examinee.unstash('a')
 
         // in case unstash fails (maybe the stash does not exist, or we cannot unstash due to
@@ -239,6 +225,16 @@ class UtilsTest extends BasePiperTest {
         // instead an array containing the name of the unstashed stash.
         assertThat(logMessages, hasItem('Unstash failed: a (something went wrong)'))
         assert(stashResult == [])
+    }
+
+    private Utils newExaminee(Map parameters) {
+        def examinee = new Utils()
+        examinee.steps = [
+            stash: parameters.stashClosure ?: {},
+            unstash: parameters.unstashClosure ?: {},
+        ]
+        examinee.echo = parameters.echoClosure ?: {}
+        return examinee
     }
 
     @Test
