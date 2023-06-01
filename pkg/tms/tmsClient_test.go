@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package tms
 
 import (
@@ -5,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -48,21 +50,21 @@ func (um *uploaderMock) SendRequest(method, url string, body io.Reader, header h
 	if um.httpStatusCode >= 300 {
 		httpError = fmt.Errorf("http error %v", um.httpStatusCode)
 	}
-	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(um.responseBody))}, httpError
+	return &http.Response{StatusCode: um.httpStatusCode, Body: io.NopCloser(strings.NewReader(um.responseBody))}, httpError
 }
 
 func (um *uploaderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	um.httpMethod = http.MethodPost
 	um.urlCalled = url
 	um.header = header
-	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
+	return &http.Response{StatusCode: um.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
 }
 
 func (um *uploaderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	um.httpMethod = http.MethodPost
 	um.urlCalled = url
 	um.header = header
-	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
+	return &http.Response{StatusCode: um.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
 }
 
 func (um *uploaderMock) Upload(uploadRequestData piperHttp.UploadRequestData) (*http.Response, error) {
@@ -84,7 +86,7 @@ func (um *uploaderMock) Upload(uploadRequestData piperHttp.UploadRequestData) (*
 	if um.httpStatusCode >= 300 {
 		httpError = fmt.Errorf("http error %v", um.httpStatusCode)
 	}
-	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(um.responseBody))}, httpError
+	return &http.Response{StatusCode: um.httpStatusCode, Body: io.NopCloser(strings.NewReader(um.responseBody))}, httpError
 }
 
 func (um *uploaderMock) SetOptions(options piperHttp.ClientOptions) {

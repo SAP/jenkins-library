@@ -145,7 +145,7 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 
 	// consider custom defaults defined in config.yml unless told otherwise
 	if ignoreCustomDefaults {
-		log.Entry().Info("Ignoring custom defaults from pipeline config")
+		log.Entry().Debug("Ignoring custom defaults from pipeline config")
 	} else if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
 		if c.openFile == nil {
 			c.openFile = OpenPiperFile
@@ -265,8 +265,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		if vaultClient != nil {
 			defer vaultClient.MustRevokeToken()
 			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
-			resolveVaultTestCredentials(&stepConfig, vaultClient)
-			resolveVaultCredentials(&stepConfig, vaultClient)
+			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
+			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
 		}
 	}
 

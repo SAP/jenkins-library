@@ -142,6 +142,22 @@ spec:
           - name: commonPipelineEnvironment
             param: git/remoteCommitId
         type: string
+      - name: vulnerabilityThresholdTotal
+        description: "Threashold for maximum number of allowed vulnerabilities."
+        type: int
+        default: 0
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: checkForCompliance
+        description: "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
+        type: bool
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: ""
   outputs:

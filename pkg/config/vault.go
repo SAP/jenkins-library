@@ -32,7 +32,7 @@ const (
 	vaultTestCredentialEnvPrefix        = "vaultTestCredentialEnvPrefix"
 	vaultCredentialEnvPrefix            = "vaultCredentialEnvPrefix"
 	vaultTestCredentialEnvPrefixDefault = "PIPER_TESTCREDENTIAL_"
-	vaultCredentialEnvPrefixDefault     = "PIPER_VAULTCREDENTIAL_"
+	VaultCredentialEnvPrefixDefault     = "PIPER_VAULTCREDENTIAL_"
 	vaultSecretName                     = ".+VaultSecretName$"
 )
 
@@ -172,6 +172,52 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 	}
 }
 
+func resolveVaultTestCredentialsWrapper(config *StepConfig, client vaultClient) {
+	log.Entry().Debugln("resolveVaultTestCredentialsWrapper")
+	resolveVaultTestCredentialsWrapperBase(config, client, vaultTestCredentialPath, vaultTestCredentialKeys, resolveVaultTestCredentials)
+}
+
+func resolveVaultCredentialsWrapper(config *StepConfig, client vaultClient) {
+	log.Entry().Debugln("resolveVaultCredentialsWrapper")
+	resolveVaultTestCredentialsWrapperBase(config, client, vaultCredentialPath, vaultCredentialKeys, resolveVaultCredentials)
+}
+
+func resolveVaultTestCredentialsWrapperBase(
+	config *StepConfig, client vaultClient,
+	vaultCredPath, vaultCredKeys string,
+	resolveVaultCredentials func(config *StepConfig, client vaultClient),
+) {
+	switch config.Config[vaultCredPath].(type) {
+	case string:
+		resolveVaultCredentials(config, client)
+	case []interface{}:
+		vaultCredentialPathCopy := config.Config[vaultCredPath]
+		vaultCredentialKeysCopy := config.Config[vaultCredKeys]
+
+		if _, ok := vaultCredentialKeysCopy.([]interface{}); !ok {
+			log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: unknown type of keys")
+			return
+		}
+
+		if len(vaultCredentialKeysCopy.([]interface{})) != len(vaultCredentialPathCopy.([]interface{})) {
+			log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: not same count of values and keys")
+			return
+		}
+
+		for i := 0; i < len(vaultCredentialPathCopy.([]interface{})); i++ {
+			config.Config[vaultCredPath] = vaultCredentialPathCopy.([]interface{})[i]
+			config.Config[vaultCredKeys] = vaultCredentialKeysCopy.([]interface{})[i]
+			resolveVaultCredentials(config, client)
+		}
+
+		config.Config[vaultCredPath] = vaultCredentialPathCopy
+		config.Config[vaultCredKeys] = vaultCredentialKeysCopy
+	default:
+		log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: unknown type of path")
+		return
+	}
+}
+
 // resolve test credential keys and expose as environment variables
 func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 	credPath, pathOk := config.Config[vaultTestCredentialPath].(string)
@@ -257,7 +303,7 @@ func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string,
 		for _, key := range keys {
 			if secretKey == key {
 				log.RegisterSecret(secretValue)
-				envVariable := vaultTestCredentialEnvPrefix + convertEnvVar(secretKey)
+				envVariable := vaultTestCredentialEnvPrefix + ConvertEnvVar(secretKey)
 				log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
 				os.Setenv(envVariable, secretValue)
 				matched = true
@@ -273,19 +319,19 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 	isCredentialEnvPrefixDefault := false
 
 	if !ok {
-		vaultCredentialEnvPrefix = vaultCredentialEnvPrefixDefault
+		vaultCredentialEnvPrefix = VaultCredentialEnvPrefixDefault
 		isCredentialEnvPrefixDefault = true
 	}
 	for secretKey, secretValue := range secret {
 		for _, key := range keys {
 			if secretKey == key {
 				log.RegisterSecret(secretValue)
-				envVariable := vaultCredentialEnvPrefix + convertEnvVar(secretKey)
+				envVariable := vaultCredentialEnvPrefix + ConvertEnvVar(secretKey)
 				log.Entry().Debugf("Exposing general purpose credential '%v' as '%v'", key, envVariable)
 				os.Setenv(envVariable, secretValue)
 
 				log.RegisterSecret(piperutils.EncodeString(secretValue))
-				envVariable = vaultCredentialEnvPrefix + convertEnvVar(secretKey) + "_BASE64"
+				envVariable = vaultCredentialEnvPrefix + ConvertEnvVar(secretKey) + "_BASE64"
 				log.Entry().Debugf("Exposing general purpose base64 encoded credential '%v' as '%v'", key, envVariable)
 				os.Setenv(envVariable, piperutils.EncodeString(secretValue))
 				matched = true
@@ -300,12 +346,12 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 			for _, key := range keys {
 				if secretKey == key {
 					log.RegisterSecret(secretValue)
-					envVariable := vaultCredentialEnvPrefixDefault + convertEnvVar(secretKey)
+					envVariable := VaultCredentialEnvPrefixDefault + ConvertEnvVar(secretKey)
 					log.Entry().Debugf("Exposing general purpose credential '%v' as '%v'", key, envVariable)
 					os.Setenv(envVariable, secretValue)
 
 					log.RegisterSecret(piperutils.EncodeString(secretValue))
-					envVariable = vaultCredentialEnvPrefixDefault + convertEnvVar(secretKey) + "_BASE64"
+					envVariable = VaultCredentialEnvPrefixDefault + ConvertEnvVar(secretKey) + "_BASE64"
 					log.Entry().Debugf("Exposing general purpose base64 encoded credential '%v' as '%v'", key, envVariable)
 					os.Setenv(envVariable, piperutils.EncodeString(secretValue))
 					matched = true
@@ -351,8 +397,8 @@ func getCredentialKeys(config *StepConfig) []string {
 	return keys
 }
 
-// converts to a valid environment variable string
-func convertEnvVar(s string) string {
+// ConvertEnvVar converts to a valid environment variable string
+func ConvertEnvVar(s string) string {
 	r := strings.ToUpper(s)
 	r = strings.ReplaceAll(r, "-", "_")
 	reg, err := regexp.Compile("[^a-zA-Z0-9_]*")
