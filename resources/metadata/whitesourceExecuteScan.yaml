@@ -234,7 +234,7 @@ spec:
           - STEPS
       - name: installCommand
         type: string
-        description: "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios."
+        description: "Install command that can be used to populate the default docker image for some scenarios."
         scope:
           - PARAMETERS
           - STAGES
@@ -603,6 +603,8 @@ spec:
       - name: opensourceConfiguration
         type: stash
       - name: checkmarx
+        type: stash
+      - name: checkmarxOne
         type: stash
   outputs:
     resources:
