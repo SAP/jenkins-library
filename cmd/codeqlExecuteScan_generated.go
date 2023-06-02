@@ -50,6 +50,7 @@ func (p *codeqlExecuteScanReports) persist(stepConfig codeqlExecuteScanOptions, 
 		{FilePattern: "**/*.csv", ParamRef: "", StepResultType: "codeql"},
 		{FilePattern: "**/*.sarif", ParamRef: "", StepResultType: "codeql"},
 		{FilePattern: "**/toolrun_codeql_*.json", ParamRef: "", StepResultType: "codeql"},
+		{FilePattern: "**/piper_codeql_report.json", ParamRef: "", StepResultType: "codeql"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -387,6 +388,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 							{"filePattern": "**/*.csv", "type": "codeql"},
 							{"filePattern": "**/*.sarif", "type": "codeql"},
 							{"filePattern": "**/toolrun_codeql_*.json", "type": "codeql"},
+							{"filePattern": "**/piper_codeql_report.json", "type": "codeql"},
 						},
 					},
 				},
