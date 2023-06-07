@@ -167,7 +167,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 }
 
 func findEslintConfigs(utils lintUtils) []string {
-	unfilteredListOfEslintConfigs, _ := utils.Glob("**/.eslintrc.*")
+	unfilteredListOfEslintConfigs, _ := utils.Glob("**/.eslintrc*")
 
 	var eslintConfigs []string
 
