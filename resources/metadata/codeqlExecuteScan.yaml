@@ -171,3 +171,5 @@ spec:
             type: codeql
           - filePattern: "**/toolrun_codeql_*.json"
             type: codeql
+          - filePattern: "**/piper_codeql_report.json"
+            type: codeql
