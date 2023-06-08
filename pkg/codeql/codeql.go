@@ -2,7 +2,6 @@ package codeql
 
 import (
 	"context"
-	"errors"
 
 	sapgithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/google/go-github/v45/github"
@@ -39,66 +38,43 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 	if err != nil {
 		return CodeqlScanning{}, err
 	}
-	totalAlerts, err := getTotalAlertsFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 
-	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit, totalAlerts)
+	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 }
 
-func getTotalAlertsFromClient(ctx context.Context, codeScannning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (int, error) {
-	analysesOptions := github.AnalysesListOptions{
-		Ref: &analyzedRef,
-	}
-	analyses, _, err := codeScannning.ListAnalysesForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &analysesOptions)
-	if err != nil {
-		return 0, err
-	}
-	if len(analyses) < 1 {
-		return 0, errors.New("analyses for ref not found")
-	}
-	return *analyses[0].ResultsCount, nil
-}
+func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (CodeqlScanning, error) {
+	page := 1
+	openStateCount := 0
+	totalAlerts := 0
 
-func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance, totalAlerts int) (CodeqlScanning, error) {
-	pages := totalAlerts/perPageCount + 1
-	errChan := make(chan error)
-	openStateCountChan := make(chan int)
-	for page := 1; page <= pages; page++ {
-		go func(i int) {
-			alertOptions := github.AlertListOptions{
-				State: "",
-				Ref:   analyzedRef,
-				ListOptions: github.ListOptions{
-					Page:    i,
-					PerPage: perPageCount,
-				},
-			}
+	for page != 0 {
+		alertOptions := github.AlertListOptions{
+			State: "",
+			Ref:   analyzedRef,
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: perPageCount,
+			},
+		}
 
-			alerts, _, err := codeScanning.ListAlertsForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &alertOptions)
-			if err != nil {
-				errChan <- err
-				return
-			}
+		alerts, response, err := codeScanning.ListAlertsForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &alertOptions)
+		if err != nil {
+			return CodeqlScanning{}, err
+		}
 
-			openStateCount := 0
-			for _, alert := range alerts {
-				if *alert.State == auditStateOpen {
-					openStateCount = openStateCount + 1
-				}
+		page = response.NextPage
+
+		for _, alert := range alerts {
+			totalAlerts += 1
+			if *alert.State == auditStateOpen {
+				openStateCount += 1
 			}
-			openStateCountChan <- len(alerts) - openStateCount
-		}(page)
+		}
 	}
 
 	codeqlScanning := CodeqlScanning{}
 	codeqlScanning.Total = totalAlerts
-	for i := 0; i < pages; i++ {
-		select {
-		case openStateCount := <-openStateCountChan:
-			codeqlScanning.Audited += openStateCount
-		case err := <-errChan:
-			return CodeqlScanning{}, err
-		}
-	}
+	codeqlScanning.Audited = (totalAlerts - openStateCount)
 
 	return codeqlScanning, nil
 }
