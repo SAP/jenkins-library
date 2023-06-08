@@ -298,7 +298,7 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 	t.Run("Valid toolrun file", func(t *testing.T) {
 		repoInfo := RepoInfo{serverUrl: "https://github.hello.test", commitId: "test", ref: "refs/head/branch", owner: "Testing", repo: "fortify"}
 		repoUrl, repoReference, repoCodeqlScanUrl := getRepoReferences(repoInfo)
-		toolRecord, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
+		toolRecord, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "./", repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
 		assert.NoError(t, err)
 		assert.Equal(t, toolRecord.ToolName, "codeql")
 		assert.Equal(t, toolRecord.ToolInstance, "https://github.hello.test")
@@ -308,7 +308,7 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 	t.Run("Empty repository URL", func(t *testing.T) {
 		repoInfo := RepoInfo{serverUrl: "", commitId: "test", ref: "refs/head/branch", owner: "Testing", repo: "fortify"}
 		repoUrl, repoReference, repoCodeqlScanUrl := getRepoReferences(repoInfo)
-		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
+		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "./", repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
 
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "Repository not set")
@@ -317,7 +317,7 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 	t.Run("Empty analyzedRef", func(t *testing.T) {
 		repoInfo := RepoInfo{serverUrl: "https://github.hello.test", commitId: "test", ref: "", owner: "Testing", repo: "fortify"}
 		repoUrl, repoReference, repoCodeqlScanUrl := getRepoReferences(repoInfo)
-		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
+		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "./", repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
 
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "Analyzed Reference not set")
@@ -326,7 +326,7 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 	t.Run("Empty CommitId", func(t *testing.T) {
 		repoInfo := RepoInfo{serverUrl: "https://github.hello.test", commitId: "", ref: "refs/head/branch", owner: "Testing", repo: "fortify"}
 		repoUrl, repoReference, repoCodeqlScanUrl := getRepoReferences(repoInfo)
-		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
+		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "./", repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
 
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "CommitId not set")
@@ -334,7 +334,7 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 	t.Run("Invalid analyzedRef", func(t *testing.T) {
 		repoInfo := RepoInfo{serverUrl: "https://github.hello.test", commitId: "", ref: "refs/branch", owner: "Testing", repo: "fortify"}
 		repoUrl, repoReference, repoCodeqlScanUrl := getRepoReferences(repoInfo)
-		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
+		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), "./", repoInfo, repoUrl, repoReference, repoCodeqlScanUrl)
 
 		assert.Error(t, err)
 	})
