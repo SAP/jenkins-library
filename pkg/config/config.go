@@ -171,15 +171,11 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	parameters := metadata.Spec.Inputs.Parameters
 	secrets := metadata.Spec.Inputs.Secrets
 	stepAliases := metadata.Metadata.Aliases
-	log.Entry().Info(parameters, "ParametersGSC")
-	log.Entry().Info(secrets, "SecretsGSC")
-	log.Entry().Info(stepAliases, "stepAliasesGSC")
 	var stepConfig StepConfig
 	var err error
 
 	if !c.initialized {
 		err = c.InitializeConfig(configuration, defaults, ignoreCustomDefaults)
-		log.Entry().Info(err, "ERRORGSC")
 		if err != nil {
 			return StepConfig{}, err
 		}
@@ -189,47 +185,32 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
-	log.Entry().Info(stepConfig, "stepConfigGSC1")
 	// merge parameters provided by Piper environment
 	stepConfig.mixIn(envParameters, filters.All)
-	log.Entry().Info(stepConfig, "stepConfigGSC2")
 	stepConfig.mixIn(envParameters, ReportingParameters.getReportingFilter())
-	log.Entry().Info(stepConfig, "stepConfigGSC3")
 
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range c.defaults.Defaults {
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General)
-		log.Entry().Info(stepConfig, "stepConfigGSC4")
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
-		log.Entry().Info(stepConfig, "stepConfigGSC5")
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
-		log.Entry().Info(stepConfig, "stepConfigGSC6")
 		stepConfig.mixinVaultConfig(parameters, def.General, def.Steps[stepName], def.Stages[stageName])
-		log.Entry().Info(stepConfig, "stepConfigGSC7")
 		reportingConfig, err := cloneConfig(&def)
 		if err != nil {
 			return StepConfig{}, err
 		}
 		reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 		stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
-		log.Entry().Info(stepConfig, "stepConfigGSC8")
 		stepConfig.mixInHookConfig(def.Hooks)
-		log.Entry().Info(stepConfig, "stepConfigGSC81")
 	}
 
 	// read config & merge - general -> steps -> stages
-	log.Entry().Info(stepConfig, "stepConfigGSC82")
 	stepConfig.mixIn(c.General, filters.General)
-	log.Entry().Info(stepConfig, "stepConfigGSC83")
-	log.Entry().Info(c, "CstepConfigGSC8")
 	stepConfig.mixIn(c.Steps[stepName], filters.Steps)
-	log.Entry().Info(stepConfig, "stepConfigGSC9")
 	stepConfig.mixIn(c.Stages[stageName], filters.Stages)
-	log.Entry().Info(stepConfig, "stepConfigGSC10")
 	// merge parameters provided via env vars
 	stepConfig.mixIn(envValues(filters.All), filters.All)
-	log.Entry().Info(stepConfig, "stepConfigGSC11")
 	// if parameters are provided in JSON format merge them
 	if len(paramJSON) != 0 {
 		var params map[string]interface{}
@@ -246,7 +227,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			}
 
 			stepConfig.mixIn(params, filters.Parameters)
-			log.Entry().Info(stepConfig, "stepConfigGSC12")
 		}
 	}
 
@@ -262,14 +242,12 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName])
-	log.Entry().Info(stepConfig, "stepConfigGSC13")
 	reportingConfig, err := cloneConfig(c)
 	if err != nil {
 		return StepConfig{}, err
 	}
 	reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 	stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
-	log.Entry().Info(stepConfig, "stepConfigGSC14")
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// fetch secrets from vault
@@ -305,7 +283,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			}
 		}
 	}
-	log.Entry().Info(stepConfig, "stepConfigGSC15")
 	return stepConfig, nil
 }
 

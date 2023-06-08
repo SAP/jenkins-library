@@ -148,10 +148,8 @@ func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 	var err error
-	log.Entry().Info(myConfig, "myConfig")
 	if configOptions.stageConfig {
 		stepConfig, err = GetStageConfig()
-		log.Entry().Info(stepConfig, "stepConfig2")
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting stage config failed")
 		}
@@ -159,11 +157,8 @@ func getConfig() (config.StepConfig, error) {
 		log.Entry().Infof("Printing stepName %s", configOptions.stepName)
 		if GeneralConfig.MetaDataResolver == nil {
 			GeneralConfig.MetaDataResolver = GetAllStepMetadata
-			log.Entry().Info(GeneralConfig, "GeneralConfigNil")
 		}
 		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GeneralConfig.MetaDataResolver, configOptions.stepMetadata, configOptions.stepName)
-		log.Entry().Info(GeneralConfig, "general config")
-		log.Entry().Info(metadata, "DmetadataDA")
 		if err != nil {
 			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
 		}
@@ -182,7 +177,6 @@ func getConfig() (config.StepConfig, error) {
 		projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
 		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
-		log.Entry().Info(customConfig, "customConfigDa")
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
 				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
@@ -191,35 +185,26 @@ func getConfig() (config.StepConfig, error) {
 		}
 
 		defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
-		log.Entry().Info(defaultConfig, "defaultConfigda")
-		log.Entry().Info(metadata, "metadataDa")
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "defaults: retrieving step defaults failed")
 		}
 
 		for _, f := range GeneralConfig.DefaultConfig {
 			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
-			log.Entry().Info(fc, "HZfcHZ")
 			// only create error for non-default values
 			if err != nil && f != ".pipeline/defaults.yaml" {
 				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
-				log.Entry().Info(defaultConfig, "defaultConfigFC")
 			}
 		}
 
 		var flags map[string]interface{}
-		log.Entry().Info([]config.StepParameters{}, "stepParameters")
 		if configOptions.contextConfig {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
-		log.Entry().Info(metadata.Spec.Inputs.Parameters, "DAmetadaDA")
-		log.Entry().Info(myConfig, "DAmconDA")
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
-		log.Entry().Info(stepConfig, "stepConfignu")
-		log.Entry().Info(err, "ERRstepConfignu")
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting step config failed")
 		}
@@ -235,13 +220,11 @@ func getConfig() (config.StepConfig, error) {
 func generateConfig(utils getConfigUtils) error {
 
 	stepConfig, err := getConfig()
-	log.Entry().Info(stepConfig, "stepConfig")
 	if err != nil {
 		return err
 	}
 
 	myConfigJSON, err := config.GetJSON(stepConfig.Config)
-	log.Entry().Info(myConfigJSON, "myConfigJSON")
 	if err != nil {
 		return fmt.Errorf("failed to get JSON from config: %w", err)
 	}

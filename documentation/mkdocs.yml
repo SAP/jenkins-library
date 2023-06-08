@@ -108,6 +108,7 @@ nav:
         - gctsDeploy: steps/gctsDeploy.md
         - gctsExecuteABAPQualityChecks: steps/gctsExecuteABAPQualityChecks.md
         - gctsRollback: steps/gctsRollback.md
+        - getPackageList: steps/getPackageList.md
         - githubCheckBranchProtection: steps/githubCheckBranchProtection.md
         - githubCommentIssue: steps/githubCommentIssue.md
         - githubCreateIssue: steps/githubCreateIssue.md
@@ -130,6 +131,8 @@ nav:
         - integrationArtifactUnDeploy: steps/integrationArtifactUnDeploy.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - integrationArtifactUpload: steps/integrationArtifactUpload.md
+        - integrationPackageDownload: steps/integrationPackageDownload.md
+        - integrationPackageUpload: steps/integrationPackageUpload.md
         - isChangeInDevelopment: steps/isChangeInDevelopment.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
@@ -141,6 +144,9 @@ nav:
         - mavenExecute: steps/mavenExecute.md
         - mavenExecuteIntegration: steps/mavenExecuteIntegration.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
+        - messageMappingDeploy: steps/messageMappingDeploy.md
+        - messageMappingDownload: steps/messageMappingDownload.md
+        - messageMappingUpload: steps/messageMappingUpload.md
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
@@ -159,6 +165,9 @@ nav:
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
         - pythonBuild: steps/pythonBuild.md
+        - scriptCollectionDeploy: steps/scriptCollectionDeploy.md
+        - scriptCollectionDownload: steps/scriptCOllectionDownload.md
+        - scriptCollectionUpload: steps/scriptCollectionUpload.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - shellExecute: steps/shellExecute.md
@@ -174,6 +183,9 @@ nav:
         - transportRequestUploadRFC: steps/transportRequestUploadRFC.md
         - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
+        - valueMappingArtifactDownload: steps/valueMappingArtifactDownload.md
+        - valueMappingArtifactUpload: steps/valueMappingArtifactUpload.md
+        - valueMappingDeploy: steps/valueMappingDeploy.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
         - writeTemporaryCredentials: steps/writeTemporaryCredentials.md

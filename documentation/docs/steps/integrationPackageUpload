@@ -1,0 +1,31 @@
+# ${docGenStepName}
+
+## ${docGenDescription}
+
+## Prerequisites
+
+## ${docGenParameters}
+
+## ${docGenConfiguration}
+
+## ${docJenkinsPluginDependencies}
+
+## Example
+
+Example configuration for the use in a `Jenkinsfile`.
+
+```groovy
+integrationPackageUpload script: this
+```
+
+Example for the use in a YAML configuration file (such as `.pipeline/config.yaml`).
+
+```yaml
+steps:
+  <...>
+  integrationPackageUpload:
+    cpiApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
+    integrationPackageId: 'MY_INTEGRATION_PACKAGE_ID'
+    integrationPackageName: 'MY_INTEGRATION_PACKAGE_NAME'
+    filePath: MY_INTEGRATION_FLOW_FILE_PATH
+```
