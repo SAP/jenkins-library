@@ -12,11 +12,12 @@ import (
 
 // JSONfile defines an artifact using a json file for versioning
 type JSONfile struct {
-	path         string
-	content      *orderedmap.OrderedMap
-	versionField string
-	readFile     func(string) ([]byte, error)
-	writeFile    func(string, []byte, os.FileMode) error
+	path             string
+	content          *orderedmap.OrderedMap
+	versioningScheme string
+	versionField     string
+	readFile         func(string) ([]byte, error)
+	writeFile        func(string, []byte, os.FileMode) error
 }
 
 func (j *JSONfile) init() {
@@ -34,7 +35,7 @@ func (j *JSONfile) init() {
 
 // VersioningScheme returns the relevant versioning scheme
 func (j *JSONfile) VersioningScheme() string {
-	return "semver2"
+	return j.versioningScheme
 }
 
 // GetVersion returns the current version of the artifact with a JSON-based build descriptor
