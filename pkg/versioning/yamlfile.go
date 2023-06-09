@@ -19,12 +19,13 @@ type YAMLDescriptor struct {
 
 // YAMLfile defines an artifact using a yaml file for versioning
 type YAMLfile struct {
-	path            string
-	content         map[string]interface{}
-	versionField    string
-	artifactIDField string
-	readFile        func(string) ([]byte, error)
-	writeFile       func(string, []byte, os.FileMode) error
+	path             string
+	content          map[string]interface{}
+	versioningScheme string
+	versionField     string
+	artifactIDField  string
+	readFile         func(string) ([]byte, error)
+	writeFile        func(string, []byte, os.FileMode) error
 }
 
 func (y *YAMLfile) init() {
@@ -68,7 +69,7 @@ func (y *YAMLfile) readField(key string) (string, error) {
 
 // VersioningScheme returns the relevant versioning scheme
 func (y *YAMLfile) VersioningScheme() string {
-	return "semver2"
+	return y.versioningScheme
 }
 
 // GetArtifactID returns the current ID of the artifact

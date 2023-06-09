@@ -218,13 +218,15 @@ func customArtifact(buildDescriptorFilePath, field, section, scheme string) (Art
 		}, nil
 	case ".json":
 		return &JSONfile{
-			path:         buildDescriptorFilePath,
-			versionField: field,
+			path:             buildDescriptorFilePath,
+			versionField:     field,
+			versioningScheme: scheme,
 		}, nil
 	case ".yaml", ".yml":
 		return &YAMLfile{
-			path:         buildDescriptorFilePath,
-			versionField: field,
+			path:             buildDescriptorFilePath,
+			versionField:     field,
+			versioningScheme: scheme,
 		}, nil
 	case ".txt", "":
 		return &Versionfile{
