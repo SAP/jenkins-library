@@ -367,13 +367,13 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 			path := filepath.Dir(packageJSONFile)
 			params := []string{
 				cycloneDxPackageVersion,
+				"--omit",
+				"optional",
 				"--output-format",
 				"XML",
 				"--spec-version",
 				cycloneDxSchemaVersion,
 				"--output-file", filepath.Join(path, npmBomFilename),
-				"--package-lock-only",
-				//"--ignore-npm-errors",
 				packageJSONFile,
 			}
 			err := execRunner.RunExecutable("npx", params...)
