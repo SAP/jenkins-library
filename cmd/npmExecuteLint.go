@@ -122,6 +122,8 @@ func runLintScript(npmExecutor npm.Executor, runScript string, failOnError bool)
 	if err != nil {
 		if failOnError {
 			return fmt.Errorf("%s script execution failed with error: %w. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the cilint.xml file, if available, or the log above. ", runScript, err)
+		} else {
+			log.Entry().Infof("%s script execution failed with error: %s. This error is suppressed since failOnError was set to false.", runScript, err.Error())
 		}
 	}
 	return nil
@@ -150,6 +152,8 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 			if err != nil {
 				if failOnError {
 					return fmt.Errorf("Lint execution failed. This might be the result of severe linting findings, problems with the provided ESLint configuration (%s), or another issue. Please examine the linting results in the UI or in %s, if available, or the log above. ", config, strconv.Itoa(i)+"_defaultlint.xml")
+				} else {
+					log.Entry().Infof("Lint execution failed with error: %s. This error is suppressed since failOnError was set to false.", err.Error())
 				}
 			}
 		}
