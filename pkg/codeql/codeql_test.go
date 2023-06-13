@@ -17,34 +17,37 @@ type githubCodeqlScanningMock struct {
 
 func (g *githubCodeqlScanningMock) ListAlertsForRepo(ctx context.Context, owner, repo string, opts *github.AlertListOptions) ([]*github.Alert, *github.Response, error) {
 	openState := "open"
-	closedState := "closed"
+	dismissedState := "dismissed"
 	alerts := []*github.Alert{}
 	response := github.Response{}
+	codeqlToolName := "CodeQL"
+	testToolName := "Test"
 
 	if repo == "testRepo1" {
-		alerts = append(alerts, &github.Alert{State: &openState})
-		alerts = append(alerts, &github.Alert{State: &openState})
-		alerts = append(alerts, &github.Alert{State: &closedState})
+		alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}})
+		alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}})
+		alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}})
+		alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}})
 		response.NextPage = 0
 	}
 
 	if repo == "testRepo2" {
 		if opts.Page == 1 {
 			for i := 0; i < 50; i++ {
-				alerts = append(alerts, &github.Alert{State: &openState})
+				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}})
 			}
 			for i := 0; i < 50; i++ {
-				alerts = append(alerts, &github.Alert{State: &closedState})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}})
 			}
 			response.NextPage = 2
 		}
 
 		if opts.Page == 2 {
 			for i := 0; i < 10; i++ {
-				alerts = append(alerts, &github.Alert{State: &openState})
+				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}})
 			}
 			for i := 0; i < 30; i++ {
-				alerts = append(alerts, &github.Alert{State: &closedState})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}})
 			}
 			response.NextPage = 0
 		}

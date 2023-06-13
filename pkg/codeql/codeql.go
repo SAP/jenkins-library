@@ -13,10 +13,11 @@ type CodeqlScanAudit interface {
 
 type githubCodeqlScanningService interface {
 	ListAlertsForRepo(ctx context.Context, owner, repo string, opts *github.AlertListOptions) ([]*github.Alert, *github.Response, error)
-	ListAnalysesForRepo(ctx context.Context, owner, repo string, opts *github.AnalysesListOptions) ([]*github.ScanningAnalysis, *github.Response, error)
 }
 
 const auditStateOpen string = "open"
+const auditStateDismissed string = "dismissed"
+const codeqlToolName string = "CodeQL"
 const perPageCount int = 100
 
 func NewCodeqlScanAuditInstance(serverUrl, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
@@ -44,7 +45,7 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 
 func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (CodeqlScanning, error) {
 	page := 1
-	openStateCount := 0
+	audited := 0
 	totalAlerts := 0
 
 	for page != 0 {
@@ -65,16 +66,24 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 		page = response.NextPage
 
 		for _, alert := range alerts {
-			totalAlerts += 1
+			if *alert.Tool.Name != codeqlToolName {
+				continue
+			}
+
+			if *alert.State == auditStateDismissed {
+				audited += 1
+				totalAlerts += 1
+			}
+
 			if *alert.State == auditStateOpen {
-				openStateCount += 1
+				totalAlerts += 1
 			}
 		}
 	}
 
 	codeqlScanning := CodeqlScanning{}
 	codeqlScanning.Total = totalAlerts
-	codeqlScanning.Audited = (totalAlerts - openStateCount)
+	codeqlScanning.Audited = audited
 
 	return codeqlScanning, nil
 }

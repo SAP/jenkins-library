@@ -203,7 +203,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	var reports []piperutils.Path
-	cmd := []string{"database", "create", filepath.Join(config.ModulePath, config.Database), "--overwrite", "--source-root", config.ModulePath}
+	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", config.ModulePath}
 
 	language := getLangFromBuildTool(config.BuildTool)
 
@@ -239,7 +239,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	cmd = nil
-	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")), filepath.Join(config.ModulePath, config.Database))
+	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")), config.Database)
 	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
@@ -251,7 +251,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	reports = append(reports, piperutils.Path{Target: filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")})
 
 	cmd = nil
-	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", "codeqlReport.csv")), filepath.Join(config.ModulePath, config.Database))
+	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", "codeqlReport.csv")), config.Database)
 	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 	cmd = codeqlQuery(cmd, config.QuerySuite)
 	err = execute(utils, cmd, GeneralConfig.Verbose)
@@ -304,7 +304,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 	}
 
-	toolRecordFileName, err := createAndPersistToolRecord(utils, config.ModulePath, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
+	toolRecordFileName, err := createAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
 	if err != nil {
 		log.Entry().Warning("TR_CODEQL: Failed to create toolrecord file ...", err)
 	} else {
@@ -314,8 +314,8 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	return reports, nil
 }
 
-func createAndPersistToolRecord(utils codeqlExecuteScanUtils, modulePath string, repoInfo RepoInfo, repoReference string, repoUrl string, repoCodeqlScanUrl string) (string, error) {
-	toolRecord, err := createToolRecordCodeql(utils, modulePath, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
+func createAndPersistToolRecord(utils codeqlExecuteScanUtils, repoInfo RepoInfo, repoReference string, repoUrl string, repoCodeqlScanUrl string) (string, error) {
+	toolRecord, err := createToolRecordCodeql(utils, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
 	if err != nil {
 		return "", err
 	}
@@ -328,8 +328,8 @@ func createAndPersistToolRecord(utils codeqlExecuteScanUtils, modulePath string,
 	return toolRecordFileName, nil
 }
 
-func createToolRecordCodeql(utils codeqlExecuteScanUtils, modulePath string, repoInfo RepoInfo, repoUrl string, repoReference string, repoCodeqlScanUrl string) (*toolrecord.Toolrecord, error) {
-	record := toolrecord.New(utils, modulePath, "codeql", repoInfo.serverUrl)
+func createToolRecordCodeql(utils codeqlExecuteScanUtils, repoInfo RepoInfo, repoUrl string, repoReference string, repoCodeqlScanUrl string) (*toolrecord.Toolrecord, error) {
+	record := toolrecord.New(utils, "./", "codeql", repoInfo.serverUrl)
 
 	if repoInfo.serverUrl == "" {
 		return record, errors.New("Repository not set")
