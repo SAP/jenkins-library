@@ -478,6 +478,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		AgentURL:                   config.AgentURL,
 		ServiceURL:                 config.ServiceURL,
 		ScanPath:                   config.ScanPath,
+		InstallCommand:             config.InstallCommand,
 		Verbose:                    GeneralConfig.Verbose,
 	}
 }
@@ -486,6 +487,14 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 // The Unified Agent will be used to perform the scan.
 func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	options := wsScanOptions(config)
+
+	if options.InstallCommand != "" {
+		installCommandTokens := strings.Split(config.InstallCommand, " ")
+		if err := utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
+			log.SetErrorCategory(log.ErrorCustom)
+			return errors.Wrapf(err, "failed to execute install command: %v", config.InstallCommand)
+		}
+	}
 
 	// Execute scan with Unified Agent jar file
 	if err := scan.ExecuteUAScan(options, utils); err != nil {
