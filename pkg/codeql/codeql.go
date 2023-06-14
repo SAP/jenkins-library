@@ -2,7 +2,10 @@ package codeql
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 
 	sapgithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/google/go-github/v45/github"
@@ -43,6 +46,36 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 
 	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit, totalAlerts)
 }
+
+type SarifFileInfo struct {
+	ProcessingStatus string `json:"processing_status"`
+	Errors []string `json:"errors"`
+}
+
+func (codeqlScanAudit *CodeqlScanAuditInstance) GetSarifUploadingStatus(sarifURL string) (SarifFileInfo, error) {
+	client := http.Client{}
+	req , err := http.NewRequest("GET", sarifURL, nil)
+	if err != nil {
+		return SarifFileInfo{}, err
+	}
+	req.Header.Add("Authorization", "Bearer "+codeqlScanAudit.token)
+	req.Header.Add("Accept", "application/vnd.github+json")
+	req.Header.Add("X-GitHub-Api-Version", "2022-11-28")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return SarifFileInfo{}, err
+	}
+	defer resp.Body.Close()
+    body, err := io.ReadAll(resp.Body)
+
+	sarifInfo := SarifFileInfo{}
+	err = json.Unmarshal(body, &sarifInfo)
+	if err != nil {
+		return SarifFileInfo{}, err
+	}
+	return sarifInfo, nil
+} 
 
 func getTotalAlertsFromClient(ctx context.Context, codeScannning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (int, error) {
 	analysesOptions := github.AnalysesListOptions{

@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -159,7 +161,7 @@ func getToken(config *codeqlExecuteScanOptions) (bool, string) {
 	return false, ""
 }
 
-func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token string, utils codeqlExecuteScanUtils) error {
+func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
 	cmd := []string{"github", "upload-results", "--sarif=" + filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
 
 	if config.GithubToken != "" {
@@ -184,13 +186,42 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 
 	//if no git pramas are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
 	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
+
+	var buffer bytes.Buffer
+	utils.Stdout(&buffer)
 	err := execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed to upload sarif results")
-		return err
+		return "", err
 	}
+	utils.Stdout(log.Writer())
 
-	return nil
+	url := buffer.String()
+	return strings.TrimSpace(url), nil
+}
+
+func waitSarifUploaded(url string, codeqlScanAudit *codeql.CodeqlScanAuditInstance) error {
+	var sarifUploadComplete = "complete"
+	var sarifUploadFailed = "failed"
+	for {
+		sarifStatus, err := codeqlScanAudit.GetSarifUploadingStatus(url)
+		if err != nil {
+			return err
+		}
+		if len(sarifStatus.Errors) > 0 {
+			for e := range sarifStatus.Errors {
+				log.Entry().Error(e)
+			}
+			return errors.New("failed to get sarif file uploading status")
+		}
+		if sarifStatus.ProcessingStatus == sarifUploadComplete {
+			return nil
+		}
+		if sarifStatus.ProcessingStatus == sarifUploadFailed {
+			return errors.New("failed to upload sarif file")
+		}
+		time.Sleep(time.Second)		
+	}
 }
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
@@ -274,13 +305,18 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.New("failed running upload-results as githubToken was not specified")
 		}
 
-		err = uploadResults(config, repoInfo, token, utils)
+		sarifUrl, err := uploadResults(config, repoInfo, token, utils)
 		if err != nil {
-
 			return reports, err
 		}
 
 		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
+
+		err = waitSarifUploaded(sarifUrl, &codeqlScanAuditInstance)
+		if err != nil {
+			return reports, err
+		}
+
 		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
