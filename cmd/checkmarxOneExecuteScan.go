@@ -272,13 +272,17 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	}
 
 	if c.config.Preset == "" {
-		log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		if currentPreset == "" {
+			return fmt.Errorf("must specify the preset in either the pipeline yaml or in the CheckmarxOne project configuration")
+		} else {
+			log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		}
 		c.config.Preset = currentPreset
 	} else if currentPreset != c.config.Preset {
 		log.Entry().Infof("Project configured preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentPreset, c.config.Preset)
 		c.sys.SetProjectPreset(c.Project.ProjectID, c.config.Preset, true)
 	} else {
-		log.Entry().Infof("Project is configured to use preset %v", currentPreset)
+		log.Entry().Infof("Project is already configured to use pipeline preset %v", currentPreset)
 	}
 	return nil
 }
@@ -532,12 +536,17 @@ func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (m
 		return detailedResults, fmt.Errorf("Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err)
 	}
 
+	totalResultCount := uint64(0)
+
 	scansummary, err := c.sys.GetScanSummary(scan.ScanID)
 	if err != nil {
-		return detailedResults, fmt.Errorf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+		/* TODO: scansummary throws a 404 for 0-result scans, once the bug is fixed put this code back. */
+		// return detailedResults, fmt.Errorf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+	} else {
+		totalResultCount = scansummary.TotalCount()
 	}
 
-	results, err := c.sys.GetScanResults(scan.ScanID, scansummary.TotalCount())
+	results, err := c.sys.GetScanResults(scan.ScanID, totalResultCount)
 	if err != nil {
 		return detailedResults, fmt.Errorf("Unable to fetch scan results for scan %v: %s", scan.ScanID, err)
 	}
@@ -606,12 +615,15 @@ func (c *checkmarxOneExecuteScanHelper) generateAndDownloadReport(scan *checkmar
 
 		if finalStatus.Status == "completed" {
 			break
+		} else if finalStatus.Status == "failed" {
+			return []byte{}, fmt.Errorf("report generation failed")
 		}
 		time.Sleep(10 * time.Second)
 	}
 	if finalStatus.Status == "completed" {
 		return c.sys.DownloadReport(finalStatus.ReportURL)
 	}
+
 	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus.Status)
 }
 
@@ -954,8 +966,9 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 		}
 		// if the flag is switched on, calculate the Low findings threshold per query
 		if cxLowThresholdPerQuery {
-			lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
-			if lowPerQueryMap != nil {
+			if (*results)["LowPerQuery"] != nil {
+				lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
+
 				for lowQuery, resultsLowQuery := range lowPerQueryMap {
 					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
 					lowOverallPerQuery := resultsLowQuery["Issues"]
