@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	npmBomFilename          = "bom-npm.xml"
-	cycloneDxPackageVersion = "@cyclonedx/cyclonedx-npm@1.11.0"
-	cycloneDxSchemaVersion  = "1.4"
+	npmBomFilename             = "bom-npm.xml"
+	cycloneDxNewPackageVersion = "@cyclonedx/cyclonedx-npm@1.11.0"
+	cycloneDxOldPackageVersion = "@cyclonedx/bom@^3.10.6"
+	cycloneDxSchemaVersion     = "1.4"
 )
 
 // Execute struct holds utils to enable mocking and common parameters
@@ -356,29 +357,60 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 // CreateBOM generates BOM file using CycloneDX from all package.json files
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	execRunner := exec.Utils.GetExecRunner()
-	// Install CycloneDX Node.js module locally without saving in package.json
-	err := execRunner.RunExecutable("npm", "install", cycloneDxPackageVersion)
+	// Install CycloneDX node npm package globally and try to generate bBOM
+	// if not successful, as fallback use old package - cyclonedx bom
+	newPackageInstallParams := []string{"install", "--global", cycloneDxNewPackageVersion}
+	newPackageRunParams := []string{
+		cycloneDxNewPackageVersion,
+		"--omit",
+		"optional",
+		"--output-format",
+		"XML",
+		"--spec-version",
+		cycloneDxSchemaVersion,
+		"--output-file",
+	}
+
+	err := execRunner.RunExecutable("npm", newPackageInstallParams...)
 	if err != nil {
-		return fmt.Errorf("failed to install CycloneDX package: %w", err)
+		//return fmt.Errorf("failed to install CycloneDX package: %w", err)
+		log.Entry().Infof("failed to install CycloneDX BOM with cyclonedx-npm: %w", err)
+		log.Entry().Infof("Fallback to cyclonedx/bom")
+		goto fallback
 	}
 
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
-			params := []string{
-				cycloneDxPackageVersion,
-				"--omit",
-				"optional",
-				"--output-format",
-				"XML",
-				"--spec-version",
-				cycloneDxSchemaVersion,
-				"--output-file", filepath.Join(path, npmBomFilename),
-				packageJSONFile,
-			}
+			params := append(newPackageRunParams, filepath.Join(path, npmBomFilename),
+				packageJSONFile)
 			err := execRunner.RunExecutable("npx", params...)
 			if err != nil {
-				return fmt.Errorf("failed to generate CycloneDX BOM: %w", err)
+				log.Entry().Infof("failed to generate CycloneDX BOM with yclonedx-npm: %w", err)
+				log.Entry().Infof("Fallback to cyclonedx/bom")
+				goto fallback
+			}
+		}
+	}
+
+fallback:
+	oldPackageInstallParams := []string{"install", "@cyclonedx/bom@^3.10.6", "--no-save"}
+
+	err = execRunner.RunExecutable("npm", oldPackageInstallParams...)
+	if err != nil {
+		return fmt.Errorf("failed to install CycloneDX via cyclonedx/bom package: %w", err)
+	}
+
+	if len(packageJSONFiles) > 0 {
+		for _, packageJSONFile := range packageJSONFiles {
+			path := filepath.Dir(packageJSONFile)
+			oldPackageRunParams := []string{
+				"cyclonedx-bom",
+				path,
+				"--output", filepath.Join(path, npmBomFilename)}
+			err := execRunner.RunExecutable("npx", oldPackageRunParams...)
+			if err != nil {
+				return fmt.Errorf("failed to generate CycloneDX BOM via cyclonedx/bom package : %w", err)
 			}
 		}
 	}
