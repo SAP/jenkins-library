@@ -140,13 +140,12 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 	// i.e., .jsx, .ts, .tsx, since we can not be sure that the provided config enables parsing of these file types.
 	if len(eslintConfigs) > 0 {
 		for i, config := range eslintConfigs {
+			lintPattern := "."
 			dir := filepath.Dir(config)
-			if dir == "." {
-				err = execRunner.RunExecutable("npx", "eslint", ".", "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
-			} else {
-				lintPattern := dir + "/**/*.js"
-				err = execRunner.RunExecutable("npx", "eslint", lintPattern, "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
+			if dir != "." {
+				lintPattern = dir + "/**/*.js"
 			}
+			err = execRunner.RunExecutable("npx", "eslint", lintPattern, "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
 			if err != nil {
 				if failOnError {
 					return fmt.Errorf("Lint execution failed. This might be the result of severe linting findings, problems with the provided ESLint configuration (%s), or another issue. Please examine the linting results in the UI or in %s, if available, or the log above. ", config, strconv.Itoa(i)+"_defaultlint.xml")
