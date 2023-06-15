@@ -139,6 +139,7 @@ private String formatErrorMessage(Map config, error){
 }
 
 private void writeErrorToInfluxData(Map config, error){
+    echo "--- Writing error: ${error} to influx ---"
     InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
     InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
     InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
