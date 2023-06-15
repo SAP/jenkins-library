@@ -26,7 +26,7 @@ type kanikoExecuteOptions struct {
 	BuildSettingsInfo                string   `json:"buildSettingsInfo,omitempty"`
 	ContainerBuildOptions            string   `json:"containerBuildOptions,omitempty"`
 	ContainerImage                   string   `json:"containerImage,omitempty"`
-	ContainerImageName               string   `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
+	ContainerImageName               string   `json:"containerImageName,omitempty"`
 	ContainerImageTag                string   `json:"containerImageTag,omitempty"`
 	ContainerMultiImageBuild         bool     `json:"containerMultiImageBuild,omitempty"`
 	ContainerMultiImageBuildExcludes []string `json:"containerMultiImageBuildExcludes,omitempty"`
@@ -304,6 +304,7 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
 
+	cmd.MarkFlagRequired("containerImageName")
 }
 
 // retrieve step metadata
@@ -366,7 +367,7 @@ func kanikoExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "dockerImageName"}},
 						Default:     os.Getenv("PIPER_containerImageName"),
 					},
