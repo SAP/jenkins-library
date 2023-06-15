@@ -6,6 +6,7 @@ package kubernetes
 import (
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -156,8 +157,26 @@ func TestRunHelmUpgrade(t *testing.T) {
 				{Exec: "helm", Params: []string{"upgrade", "test_deployment", ".", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"}},
 			},
 		},
+		{
+			config: HelmExecuteOptions{
+				DeploymentName:        "test_deployment",
+				ChartPath:             ".",
+				Namespace:             "test_namespace",
+				ForceUpdates:          true,
+				HelmDeployWaitSeconds: 3456,
+				AdditionalParameters:  []string{"--set", "secret=$SECRET"},
+				Image:                 "dtzar/helm-kubectl:3.4.1",
+				TargetRepositoryName:  "test",
+				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+			},
+			generalVerbose: true,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"upgrade", "test_deployment", ".", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "--set", "secret=abcd"}},
+			},
+		},
 	}
 
+	os.Setenv("SECRET", "abcd")
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprintf("test case: %d", i), func(t *testing.T) {
 			utils := helmMockUtilsBundle{

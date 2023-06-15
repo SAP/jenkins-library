@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -174,7 +175,9 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 	}
 
 	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+		for _, additionalParameter := range h.config.AdditionalParameters {
+			helmParams = append(helmParams, os.ExpandEnv(additionalParameter))
+		}
 	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
