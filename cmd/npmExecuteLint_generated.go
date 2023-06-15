@@ -20,6 +20,8 @@ type npmExecuteLintOptions struct {
 	RunScript          string `json:"runScript,omitempty"`
 	FailOnError        bool   `json:"failOnError,omitempty"`
 	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty"`
+	OutputFormat       string `json:"outputFormat,omitempty"`
+	OutputFileName     string `json:"outputFileName,omitempty"`
 }
 
 // NpmExecuteLintCommand Execute ci-lint script on all npm packages in a project or execute default linting
@@ -120,6 +122,8 @@ func addNpmExecuteLintFlags(cmd *cobra.Command, stepConfig *npmExecuteLintOption
 	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `ci-lint`, "List of additional run scripts to execute from package.json.")
 	cmd.Flags().BoolVar(&stepConfig.FailOnError, "failOnError", false, "Defines the behavior in case linting errors are found.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
+	cmd.Flags().StringVar(&stepConfig.OutputFormat, "outputFormat", `checkstyle`, "eslint output format, e.g. stylish, checkmarx")
+	cmd.Flags().StringVar(&stepConfig.OutputFileName, "outputFileName", `defaultlint.xml`, "name of the output file. There might be a 'N_' prefix where 'N' is a number. '-' will print to console")
 
 }
 
@@ -169,6 +173,24 @@ func npmExecuteLintMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
+					},
+					{
+						Name:        "outputFormat",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/outputFormat"}},
+						Default:     `checkstyle`,
+					},
+					{
+						Name:        "outputFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/outputFormat"}},
+						Default:     `defaultlint.xml`,
 					},
 				},
 			},

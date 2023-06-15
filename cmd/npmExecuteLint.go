@@ -106,7 +106,8 @@ func runNpmExecuteLint(npmExecutor npm.Executor, utils lintUtils, config *npmExe
 			}
 		}
 
-		err := runDefaultLint(npmExecutor, utils, config.FailOnError)
+		err := runDefaultLint(npmExecutor, utils, config.FailOnError, config.OutputFormat, config.OutputFileName)
+
 		if err != nil {
 			return err
 		}
@@ -127,7 +128,7 @@ func runLintScript(npmExecutor npm.Executor, runScript string, failOnError bool)
 	return nil
 }
 
-func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool) error {
+func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool, outputFormat string, outputFileName string) error {
 	execRunner := utils.getExecRunner()
 	eslintConfigs := findEslintConfigs(utils)
 
@@ -145,7 +146,16 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 			if dir != "." {
 				lintPattern = dir + "/**/*.js"
 			}
-			err = execRunner.RunExecutable("npx", "eslint", lintPattern, "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
+
+			args := prepareArgs([]string{
+				"eslint",
+				lintPattern,
+				"-f", outputFormat,
+				"--ignore-pattern", "node_modules/",
+				"--ignore-pattern", ".eslintrc.js",
+			}, fmt.Sprintf("./%s_%s", strconv.Itoa(i), outputFileName))
+
+			err = execRunner.RunExecutable("npx", args...)
 			if err != nil {
 				if failOnError {
 					return fmt.Errorf("Lint execution failed. This might be the result of severe linting findings, problems with the provided ESLint configuration (%s), or another issue. Please examine the linting results in the UI or in %s, if available, or the log above. ", config, strconv.Itoa(i)+"_defaultlint.xml")
@@ -160,7 +170,18 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 
 		// Ignore possible errors when invoking ESLint to not fail the pipeline based on linting results
 		_ = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0")
-		_ = execRunner.RunExecutable("npx", "--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js")
+
+		args := prepareArgs([]string{
+			"--no-install",
+			"eslint",
+			".",
+			"--ext", ".js,.jsx,.ts,.tsx",
+			"-c", ".pipeline/.eslintrc.json",
+			"-f", outputFormat,
+			"--ignore-pattern", ".eslintrc.js",
+		}, fmt.Sprintf("./%s", outputFileName))
+
+		_ = execRunner.RunExecutable("npx", args...)
 	}
 	return nil
 }
@@ -185,4 +206,12 @@ func findEslintConfigs(utils lintUtils) []string {
 		log.Entry().Info("Discovered ESLint config " + config)
 	}
 	return eslintConfigs
+}
+
+func prepareArgs(defaultArgs []string, outputFileName string) []string {
+	if outputFileName != "-" { // in this case we omit the -o flag and output will go to the log
+		defaultArgs = append(defaultArgs, "-o", outputFileName)
+	}
+	return defaultArgs
+
 }
