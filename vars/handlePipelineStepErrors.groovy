@@ -139,9 +139,7 @@ private String formatErrorMessage(Map config, error){
 }
 
 private void writeErrorToInfluxData(Map config, error){
-    if(InfluxData.getInstance().getFields().pipeline_data?.build_error_message == null){
-        InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
-        InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
-        InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
-    }
+    InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
+    InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
+    InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
 }
