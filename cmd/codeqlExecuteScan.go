@@ -209,14 +209,13 @@ func waitSarifUploaded(codeqlSarifUploader codeql.CodeqlSarifUploader) error {
 		if err != nil {
 			return err
 		}
+		if sarifStatus.ProcessingStatus == sarifUploadComplete {
+			return nil
+		}
 		if len(sarifStatus.Errors) > 0 {
 			for e := range sarifStatus.Errors {
 				log.Entry().Error(e)
 			}
-			return errors.New("failed to get sarif file uploading status")
-		}
-		if sarifStatus.ProcessingStatus == sarifUploadComplete {
-			return nil
 		}
 		if sarifStatus.ProcessingStatus == sarifUploadFailed {
 			return errors.New("failed to upload sarif file")
