@@ -14,6 +14,10 @@ type CodeqlScanAudit interface {
 	GetVulnerabilities(analyzedRef string, state string) error
 }
 
+type CodeqlSarifUploader interface {
+	GetSarifStatus() (SarifFileInfo, error)
+}
+
 type githubCodeqlScanningService interface {
 	ListAlertsForRepo(ctx context.Context, owner, repo string, opts *github.AlertListOptions) ([]*github.Alert, *github.Response, error)
 }
@@ -46,18 +50,31 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 }
 
-type SarifFileInfo struct {
-	ProcessingStatus string `json:"processing_status"`
-	Errors []string `json:"errors"`
+func NewCodeqlSarifUploaderInstance(url, token string) CodeqlSarifUploaderInstance {
+	return CodeqlSarifUploaderInstance{url: url, token: token}
 }
 
-func (codeqlScanAudit *CodeqlScanAuditInstance) GetSarifUploadingStatus(sarifURL string) (SarifFileInfo, error) {
+type CodeqlSarifUploaderInstance struct {
+	url   string
+	token string
+}
+
+func (codeqlSarifUploader *CodeqlSarifUploaderInstance) GetSarifStatus() (SarifFileInfo, error) {
+	return getSarifUploadingStatus(codeqlSarifUploader.url, codeqlSarifUploader.token)
+}
+
+type SarifFileInfo struct {
+	ProcessingStatus string   `json:"processing_status"`
+	Errors           []string `json:"errors"`
+}
+
+func getSarifUploadingStatus(sarifURL, token string) (SarifFileInfo, error) {
 	client := http.Client{}
-	req , err := http.NewRequest("GET", sarifURL, nil)
+	req, err := http.NewRequest("GET", sarifURL, nil)
 	if err != nil {
 		return SarifFileInfo{}, err
 	}
-	req.Header.Add("Authorization", "Bearer "+codeqlScanAudit.token)
+	req.Header.Add("Authorization", "Bearer "+token)
 	req.Header.Add("Accept", "application/vnd.github+json")
 	req.Header.Add("X-GitHub-Api-Version", "2022-11-28")
 
@@ -66,7 +83,7 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetSarifUploadingStatus(sarifURL
 		return SarifFileInfo{}, err
 	}
 	defer resp.Body.Close()
-    body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 
 	sarifInfo := SarifFileInfo{}
 	err = json.Unmarshal(body, &sarifInfo)
@@ -74,7 +91,7 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetSarifUploadingStatus(sarifURL
 		return SarifFileInfo{}, err
 	}
 	return sarifInfo, nil
-} 
+}
 
 func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (CodeqlScanning, error) {
 	page := 1

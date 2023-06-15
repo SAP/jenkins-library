@@ -201,11 +201,11 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 	return strings.TrimSpace(url), nil
 }
 
-func waitSarifUploaded(url string, codeqlScanAudit *codeql.CodeqlScanAuditInstance) error {
+func waitSarifUploaded(codeqlSarifUploader codeql.CodeqlSarifUploader) error {
 	var sarifUploadComplete = "complete"
 	var sarifUploadFailed = "failed"
 	for {
-		sarifStatus, err := codeqlScanAudit.GetSarifUploadingStatus(url)
+		sarifStatus, err := codeqlSarifUploader.GetSarifStatus()
 		if err != nil {
 			return err
 		}
@@ -221,7 +221,7 @@ func waitSarifUploaded(url string, codeqlScanAudit *codeql.CodeqlScanAuditInstan
 		if sarifStatus.ProcessingStatus == sarifUploadFailed {
 			return errors.New("failed to upload sarif file")
 		}
-		time.Sleep(time.Second)		
+		time.Sleep(time.Second)
 	}
 }
 
@@ -312,13 +312,13 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 
 		if config.CheckForCompliance {
-			codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
-			
-			err = waitSarifUploaded(sarifUrl, &codeqlScanAuditInstance)
+			codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
+			err = waitSarifUploaded(&codeqlSarifUploader)
 			if err != nil {
 				return reports, err
 			}
 
+			codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
 			scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
 			if err != nil {
 				return reports, errors.Wrap(err, "failed to get scan results")
