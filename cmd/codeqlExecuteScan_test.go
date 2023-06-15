@@ -6,9 +6,12 @@ package cmd
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -338,4 +341,64 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 
 		assert.Error(t, err)
 	})
+}
+
+func TestWaitSarifUploaded(t *testing.T) {
+	t.Run("Fast complete upload", func(t *testing.T) {
+		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: 0}
+		timerStart := time.Now()
+		err := waitSarifUploaded(&codeqlScanAuditMock)
+		assert.Less(t, time.Now().Sub(timerStart), time.Second)
+		assert.NoError(t, err)
+	})
+	t.Run("Long completed upload", func(t *testing.T) {
+		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: 10}
+		timerStart := time.Now()
+		err := waitSarifUploaded(&codeqlScanAuditMock)
+		assert.GreaterOrEqual(t, time.Now().Sub(timerStart), time.Second*10)
+		assert.NoError(t, err)
+	})
+	t.Run("Failed upload", func(t *testing.T) {
+		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: -1}
+		err := waitSarifUploaded(&codeqlScanAuditMock)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "failed to upload sarif file")
+	})
+	t.Run("Error while checking sarif uploading", func(t *testing.T) {
+		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{}
+		err := waitSarifUploaded(&codeqlScanAuditErrorMock)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "test error")
+	})
+}
+
+type CodeqlSarifUploaderMock struct {
+	counter int
+}
+
+func (c *CodeqlSarifUploaderMock) GetSarifStatus() (codeql.SarifFileInfo, error) {
+	if c.counter == 0 {
+		return codeql.SarifFileInfo{
+			ProcessingStatus: "complete",
+			Errors:           nil,
+		}, nil
+	}
+	if c.counter == -1 {
+		return codeql.SarifFileInfo{
+			ProcessingStatus: "failed",
+			Errors:           []string{"upload error"},
+		}, nil
+	}
+	c.counter--
+	return codeql.SarifFileInfo{
+		ProcessingStatus: "pending",
+		Errors:           nil,
+	}, nil
+}
+
+type CodeqlSarifUploaderErrorMock struct {
+}
+
+func (c *CodeqlSarifUploaderErrorMock) GetSarifStatus() (codeql.SarifFileInfo, error) {
+	return codeql.SarifFileInfo{}, errors.New("test error")
 }
