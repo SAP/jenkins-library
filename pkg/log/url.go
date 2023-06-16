@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"mvdan.cc/xurls/v2"
 	"os"
 	"sync"
+
+	"mvdan.cc/xurls/v2"
 )
 
 type (
@@ -93,5 +94,5 @@ func (cl *URLLogger) Parse(buf bytes.Buffer) {
 }
 
 func parseURLs(src []byte) [][]byte {
-	return xurls.Strict().FindAll(src, -1)
+	return xurls.Relaxed().FindAll(src, -1)
 }
