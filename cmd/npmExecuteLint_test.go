@@ -32,7 +32,7 @@ func newLintMockUtilsBundle() mockLintUtilsBundle {
 }
 
 func TestNpmExecuteLint(t *testing.T) {
-	defaultConfig := npmExecuteLintOptions{RunScript: "ci-lint"}
+	defaultConfig := npmExecuteLintOptions{RunScript: "ci-lint", OutputFormat: "checkstyle", OutputFileName: "defaultlint.xml"}
 
 	t.Run("Call with ci-lint script and one package.json", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
@@ -67,7 +67,13 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(lintUtils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, lintUtils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{
+					"eslint",
+					".",
+					"-f", "checkstyle",
+					"--ignore-pattern", "node_modules/",
+					"--ignore-pattern", ".eslintrc.js",
+					"-o", "./0_defaultlint.xml"}}, lintUtils.execRunner.Calls[1])
 			}
 		}
 	})
@@ -89,8 +95,22 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(lintUtils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, lintUtils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", "src/**/*.js", "-f", "checkstyle", "-o", "./1_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, lintUtils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{
+					"eslint",
+					".",
+					"-f", "checkstyle",
+					"--ignore-pattern", "node_modules/",
+					"--ignore-pattern", ".eslintrc.js",
+					"-o", "./0_defaultlint.xml",
+				}}, lintUtils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{
+					"eslint",
+					"src/**/*.js",
+					"-f", "checkstyle",
+					"--ignore-pattern", "node_modules/",
+					"--ignore-pattern", ".eslintrc.js",
+					"-o", "./1_defaultlint.xml",
+				}}, lintUtils.execRunner.Calls[2])
 			}
 		}
 	})
@@ -111,7 +131,17 @@ func TestNpmExecuteLint(t *testing.T) {
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(lintUtils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0"}}, lintUtils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js"}}, lintUtils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{
+					"--no-install",
+					"eslint",
+					".",
+					"--ext",
+					".js,.jsx,.ts,.tsx",
+					"-c", ".pipeline/.eslintrc.json",
+					"-f", "checkstyle",
+					"--ignore-pattern", ".eslintrc.js",
+					"-o", "./defaultlint.xml",
+				}}, lintUtils.execRunner.Calls[2])
 			}
 		}
 	})
@@ -143,7 +173,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
 		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
-		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"eslint . -f checkstyle -o ./0_defaultlint.xml --ignore-pattern node_modules/ --ignore-pattern .eslintrc.js": errors.New("exit 1")}}
+		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{
+			"eslint . -f checkstyle --ignore-pattern node_modules/ --ignore-pattern .eslintrc.js -o ./0_defaultlint.xml": errors.New("exit 1")}}
 
 		config := defaultConfig
 		config.FailOnError = true
@@ -157,7 +188,14 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		if assert.EqualError(t, err, "Lint execution failed. This might be the result of severe linting findings, problems with the provided ESLint configuration (.eslintrc.json), or another issue. Please examine the linting results in the UI or in 0_defaultlint.xml, if available, or the log above. ") {
 			if assert.Equal(t, 2, len(lintUtils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, lintUtils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{
+					"eslint",
+					".",
+					"-f", "checkstyle",
+					"--ignore-pattern", "node_modules/",
+					"--ignore-pattern", ".eslintrc.js",
+					"-o", "./0_defaultlint.xml",
+				}}, lintUtils.execRunner.Calls[1])
 			}
 		}
 	})
