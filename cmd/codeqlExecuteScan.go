@@ -204,10 +204,19 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 func waitSarifUploaded(codeqlSarifUploader codeql.CodeqlSarifUploader) error {
 	var sarifUploadComplete = "complete"
 	var sarifUploadFailed = "failed"
+	var maxRetries = 5
+	var retryCount = 0
 	for {
 		sarifStatus, err := codeqlSarifUploader.GetSarifStatus()
 		if err != nil {
-			return err
+			if retryCount < maxRetries {
+				retryCount++
+				log.Entry().Errorf("error while checking sarif status, retrying in 10 seconds... (retry %d/%d)", retryCount, maxRetries)
+				time.Sleep(time.Second * 10)
+				continue
+			} else {
+				return err
+			}
 		}
 		if len(sarifStatus.Errors) > 0 {
 			for e := range sarifStatus.Errors {
@@ -220,7 +229,7 @@ func waitSarifUploaded(codeqlSarifUploader codeql.CodeqlSarifUploader) error {
 		if sarifStatus.ProcessingStatus == sarifUploadFailed {
 			return errors.New("failed to upload sarif file")
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 10)
 	}
 }
 
