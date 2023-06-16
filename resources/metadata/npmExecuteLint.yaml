@@ -47,7 +47,7 @@ spec:
           - name: npm/defaultNpmRegistry
       - name: outputFormat
         type: string
-        description: eslint output format, e.g. stylish, checkmarx
+        description: eslint output format, e.g. stylish, checkstyle
         scope:
           - PARAMETERS
           - GENERAL
