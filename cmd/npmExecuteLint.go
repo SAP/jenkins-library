@@ -153,7 +153,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool,
 				"-f", outputFormat,
 				"--ignore-pattern", "node_modules/",
 				"--ignore-pattern", ".eslintrc.js",
-			}, fmt.Sprintf("./%s_%s", strconv.Itoa(i), outputFileName))
+			}, fmt.Sprintf("./%s_%%s", strconv.Itoa(i)), outputFileName)
 
 			err = execRunner.RunExecutable("npx", args...)
 			if err != nil {
@@ -179,7 +179,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool,
 			"-c", ".pipeline/.eslintrc.json",
 			"-f", outputFormat,
 			"--ignore-pattern", ".eslintrc.js",
-		}, fmt.Sprintf("./%s", outputFileName))
+		}, "./%s", outputFileName)
 
 		_ = execRunner.RunExecutable("npx", args...)
 	}
@@ -208,9 +208,10 @@ func findEslintConfigs(utils lintUtils) []string {
 	return eslintConfigs
 }
 
-func prepareArgs(defaultArgs []string, outputFileName string) []string {
+func prepareArgs(defaultArgs []string, outputFileNamePattern, outputFileName string) []string {
+	fmt.Printf("[MH] outputFileName:%s", outputFileName)
 	if outputFileName != "-" { // in this case we omit the -o flag and output will go to the log
-		defaultArgs = append(defaultArgs, "-o", outputFileName)
+		defaultArgs = append(defaultArgs, "-o", fmt.Sprintf(outputFileNamePattern, outputFileName))
 	}
 	return defaultArgs
 
