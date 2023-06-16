@@ -1,14 +1,15 @@
 package cmd
 
 import (
+	"strconv"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"strconv"
 )
 
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
-	err := runMavenStaticCodeChecks(&config, telemetryData, maven.NewUtilsBundle())
+	err := runMavenStaticCodeChecks(&config, telemetryData, maven.NewUtilsBundle(""))
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}

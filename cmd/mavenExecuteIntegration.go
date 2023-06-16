@@ -2,17 +2,18 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 func mavenExecuteIntegration(config mavenExecuteIntegrationOptions, _ *telemetry.CustomData) {
-	err := runMavenExecuteIntegration(&config, maven.NewUtilsBundle())
+	err := runMavenExecuteIntegration(&config, maven.NewUtilsBundle(""))
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}

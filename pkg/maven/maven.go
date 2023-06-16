@@ -59,11 +59,13 @@ type utilsBundle struct {
 	*piperhttp.Client
 }
 
-func NewUtilsBundle() Utils {
+func NewUtilsBundle(stepName string) Utils {
 	utils := utilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-		Client:  &piperhttp.Client{},
+		Command: &command.Command{
+			StepName: stepName,
+		},
+		Files:  &piperutils.Files{},
+		Client: &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
