@@ -209,7 +209,6 @@ func findEslintConfigs(utils lintUtils) []string {
 }
 
 func prepareArgs(defaultArgs []string, outputFileNamePattern, outputFileName string) []string {
-	fmt.Printf("[MH] outputFileName:%s", outputFileName)
 	if outputFileName != "-" { // in this case we omit the -o flag and output will go to the log
 		defaultArgs = append(defaultArgs, "-o", fmt.Sprintf(outputFileNamePattern, outputFileName))
 	}
