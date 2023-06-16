@@ -318,13 +318,13 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		if err != nil {
 			return reports, err
 		}
+		codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
+		err = waitSarifUploaded(&codeqlSarifUploader)
+		if err != nil {
+			return reports, errors.Wrap(err, "failed to upload sarif")
+		}
 
 		if config.CheckForCompliance {
-			codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
-			if waitSarifUploaded(&codeqlSarifUploader) != nil {
-				return reports, err
-			}
-
 			codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
 			scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
 			if err != nil {
