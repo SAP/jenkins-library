@@ -28,6 +28,8 @@ type codeqlExecuteScanOptions struct {
 	Database                    string `json:"database,omitempty"`
 	QuerySuite                  string `json:"querySuite,omitempty"`
 	UploadResults               bool   `json:"uploadResults,omitempty"`
+	SarifCheckMaxRetries        int    `json:"sarifCheckMaxRetries,omitempty"`
+	SarifCheckRetryInterval     int    `json:"sarifCheckRetryInterval,omitempty"`
 	Threads                     string `json:"threads,omitempty"`
 	Ram                         string `json:"ram,omitempty"`
 	AnalyzedRef                 string `json:"analyzedRef,omitempty"`
@@ -183,6 +185,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.Database, "database", `codeqlDB`, "Path to the CodeQL database to create. This directory will be created, and must not already exist.")
 	cmd.Flags().StringVar(&stepConfig.QuerySuite, "querySuite", os.Getenv("PIPER_querySuite"), "The name of a CodeQL query suite. If omitted, the default query suite for the language of the database being analyzed will be used.")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
+	cmd.Flags().IntVar(&stepConfig.SarifCheckMaxRetries, "sarifCheckMaxRetries", 5, "Sets max retries for check SARIF file is uploaded when server doesn't response.")
+	cmd.Flags().IntVar(&stepConfig.SarifCheckRetryInterval, "sarifCheckRetryInterval", 10, "")
 	cmd.Flags().StringVar(&stepConfig.Threads, "threads", `0`, "Use this many threads for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.Ram, "ram", os.Getenv("PIPER_ram"), "Use this much ram (MB) for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
@@ -295,6 +299,24 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "sarifCheckMaxRetries",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     5,
+					},
+					{
+						Name:        "sarifCheckRetryInterval",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     10,
 					},
 					{
 						Name:        "threads",

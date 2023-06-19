@@ -345,35 +345,36 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 
 func TestWaitSarifUploaded(t *testing.T) {
 	t.Parallel()
+	config := codeqlExecuteScanOptions{SarifCheckRetryInterval: 1, SarifCheckMaxRetries: 5}
 	t.Run("Fast complete upload", func(t *testing.T) {
 		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: 0}
 		timerStart := time.Now()
-		err := waitSarifUploaded(&codeqlScanAuditMock)
+		err := waitSarifUploaded(&config, &codeqlScanAuditMock)
 		assert.Less(t, time.Now().Sub(timerStart), time.Second)
 		assert.NoError(t, err)
 	})
 	t.Run("Long completed upload", func(t *testing.T) {
 		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: 2}
 		timerStart := time.Now()
-		err := waitSarifUploaded(&codeqlScanAuditMock)
-		assert.GreaterOrEqual(t, time.Now().Sub(timerStart), time.Second*20)
+		err := waitSarifUploaded(&config, &codeqlScanAuditMock)
+		assert.GreaterOrEqual(t, time.Now().Sub(timerStart), time.Second*2)
 		assert.NoError(t, err)
 	})
 	t.Run("Failed upload", func(t *testing.T) {
 		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: -1}
-		err := waitSarifUploaded(&codeqlScanAuditMock)
+		err := waitSarifUploaded(&config, &codeqlScanAuditMock)
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "failed to upload sarif file")
 	})
 	t.Run("Error while checking sarif uploading", func(t *testing.T) {
 		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: 10}
-		err := waitSarifUploaded(&codeqlScanAuditErrorMock)
+		err := waitSarifUploaded(&config, &codeqlScanAuditErrorMock)
 		assert.Error(t, err)
-		assert.ErrorContains(t, err, "test error")
+		assert.ErrorContains(t, err, "max retries reached")
 	})
 	t.Run("Completed upload after getting errors from server", func(t *testing.T) {
 		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: 3}
-		err := waitSarifUploaded(&codeqlScanAuditErrorMock)
+		err := waitSarifUploaded(&config, &codeqlScanAuditErrorMock)
 		assert.NoError(t, err)
 	})
 }

@@ -201,36 +201,31 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 	return strings.TrimSpace(url), nil
 }
 
-func waitSarifUploaded(codeqlSarifUploader codeql.CodeqlSarifUploader) error {
+func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader codeql.CodeqlSarifUploader) error {
 	var sarifUploadComplete = "complete"
 	var sarifUploadFailed = "failed"
-	var maxRetries = 5
-	var retryCount = 0
-	for {
+	maxRetries := config.SarifCheckMaxRetries
+	retryInterval := time.Duration(config.SarifCheckRetryInterval) * time.Second
+
+	for i := 1; i <= maxRetries; i++ {
 		sarifStatus, err := codeqlSarifUploader.GetSarifStatus()
 		if err != nil {
-			if retryCount < maxRetries {
-				retryCount++
-				log.Entry().Errorf("error while checking sarif status, retrying in 10 seconds... (retry %d/%d)", retryCount, maxRetries)
-				time.Sleep(time.Second * 10)
-				continue
-			} else {
-				return err
-			}
-		}
-		if len(sarifStatus.Errors) > 0 {
-			for e := range sarifStatus.Errors {
-				log.Entry().Error(e)
-			}
+			log.Entry().Errorf("error while checking sarif status: %s, retrying in %d seconds... (retry %d/%d)", err, retryInterval, i, maxRetries)
+			time.Sleep(retryInterval)
+			continue
 		}
 		if sarifStatus.ProcessingStatus == sarifUploadComplete {
 			return nil
 		}
 		if sarifStatus.ProcessingStatus == sarifUploadFailed {
+			for e := range sarifStatus.Errors {
+				log.Entry().Error(e)
+			}
 			return errors.New("failed to upload sarif file")
 		}
-		time.Sleep(time.Second * 10)
+		time.Sleep(retryInterval)
 	}
+	return errors.New("failed to check sarif uploading status: max retries reached")
 }
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
@@ -319,7 +314,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, err
 		}
 		codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
-		err = waitSarifUploaded(&codeqlSarifUploader)
+		err = waitSarifUploaded(config, &codeqlSarifUploader)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to upload sarif")
 		}

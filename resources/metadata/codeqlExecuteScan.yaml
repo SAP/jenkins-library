@@ -104,6 +104,22 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: sarifCheckMaxRetries
+        type: int
+        description: "Sets max retries for check SARIF file is uploaded when server doesn't response."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 5
+      - name: sarifCheckRetryInterval
+        type: int
+        descriptoin: "Sets interval in seconds to poll the server to check if SARIF is uploaded."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
       - name: threads
         type: string
         description: "Use this many threads for the codeql operations."
