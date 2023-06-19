@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -25,12 +24,6 @@ const (
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
-
-	// enables url-log.json creation
-	cmd := reflect.ValueOf(utils).Elem().FieldByName("Command")
-	if cmd.IsValid() {
-		reflect.Indirect(cmd).FieldByName("StepName").SetString("mavenBuild")
-	}
 
 	err := runMavenBuild(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
