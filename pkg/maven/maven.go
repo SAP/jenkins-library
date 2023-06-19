@@ -59,13 +59,18 @@ type utilsBundle struct {
 	*piperhttp.Client
 }
 
+// NewUtilsBundle provides methods that are used for running a step.
+// Setting the stepName parameter to a non-empty string will enable the creation of an access log (URL log).
 func NewUtilsBundle(stepName string) Utils {
+	cmd := &command.Command{}
+	if stepName != "" {
+		cmd.StepName = stepName
+	}
+
 	utils := utilsBundle{
-		Command: &command.Command{
-			StepName: stepName,
-		},
-		Files:  &piperutils.Files{},
-		Client: &piperhttp.Client{},
+		Command: cmd,
+		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
