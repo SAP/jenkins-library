@@ -106,7 +106,7 @@ spec:
         default: false
       - name: sarifCheckMaxRetries
         type: int
-        description: "Sets max retries for check SARIF file is uploaded when server doesn't response."
+        description: "Maximum number of retries when waiting for the server to finish processing the SARIF upload. Only relevant, if checkForCompliance is enabled."
         scope:
           - PARAMETERS
           - STAGES
@@ -114,7 +114,7 @@ spec:
         default: 5
       - name: sarifCheckRetryInterval
         type: int
-        descriptoin: "Sets interval in seconds to poll the server to check if SARIF is uploaded."
+        descriptoin: "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload. Only relevant, if checkForCompliance is enabled."
         scope:
           - PARAMETERS
           - STAGES

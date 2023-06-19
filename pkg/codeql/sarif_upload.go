@@ -46,6 +46,12 @@ func getSarifUploadingStatus(sarifURL, token string) (SarifFileInfo, error) {
 		return SarifFileInfo{}, err
 	}
 	defer resp.Body.Close()
+
+	var serviceUnavailable = "Service unavailable"
+	if resp.StatusCode == http.StatusServiceUnavailable {
+		return SarifFileInfo{ProcessingStatus: serviceUnavailable}, nil
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return SarifFileInfo{}, err

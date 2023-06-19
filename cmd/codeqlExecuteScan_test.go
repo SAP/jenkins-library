@@ -361,15 +361,21 @@ func TestWaitSarifUploaded(t *testing.T) {
 		assert.ErrorContains(t, err, "failed to upload sarif file")
 	})
 	t.Run("Error while checking sarif uploading", func(t *testing.T) {
-		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: 10}
+		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: -1}
 		err := waitSarifUploaded(&config, &codeqlScanAuditErrorMock)
 		assert.Error(t, err)
-		assert.ErrorContains(t, err, "max retries reached")
+		assert.ErrorContains(t, err, "test error")
 	})
 	t.Run("Completed upload after getting errors from server", func(t *testing.T) {
 		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: 3}
 		err := waitSarifUploaded(&config, &codeqlScanAuditErrorMock)
 		assert.NoError(t, err)
+	})
+	t.Run("Max retries reached", func(t *testing.T) {
+		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: 6}
+		err := waitSarifUploaded(&config, &codeqlScanAuditErrorMock)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "max retries reached")
 	})
 }
 
@@ -402,6 +408,9 @@ type CodeqlSarifUploaderErrorMock struct {
 }
 
 func (c *CodeqlSarifUploaderErrorMock) GetSarifStatus() (codeql.SarifFileInfo, error) {
+	if c.counter == -1 {
+		return codeql.SarifFileInfo{}, errors.New("test error")
+	}
 	if c.counter == 0 {
 		return codeql.SarifFileInfo{
 			ProcessingStatus: "complete",
@@ -409,5 +418,5 @@ func (c *CodeqlSarifUploaderErrorMock) GetSarifStatus() (codeql.SarifFileInfo, e
 		}, nil
 	}
 	c.counter--
-	return codeql.SarifFileInfo{}, errors.New("test error")
+	return codeql.SarifFileInfo{ProcessingStatus: "Service unavailable"}, nil
 }
