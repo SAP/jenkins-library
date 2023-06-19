@@ -83,7 +83,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
 
-		config := npmExecuteLintOptions{RunScript: "ci-lint", OutputFormat: "stylish", OutputFileName: "-"}
+		config := npmExecuteLintOptions{RunScript: "ci-lint", OutputFormat: "stylish", OutputFileName: ""}
 		config.DefaultNpmRegistry = "foo.bar"
 
 		npmUtils := newNpmMockUtilsBundle()
@@ -153,7 +153,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := defaultConfig
 		config.DefaultNpmRegistry = "foo.bar"
 		config.OutputFormat = "stylish"
-		config.OutputFileName = "-"
+		config.OutputFileName = ""
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
@@ -221,7 +221,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := defaultConfig
 		config.DefaultNpmRegistry = "foo.bar"
 		config.OutputFormat = "stylish"
-		config.OutputFileName = "-"
+		config.OutputFileName = ""
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
@@ -311,7 +311,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := defaultConfig
 		config.FailOnError = true
 		config.OutputFormat = "stylish"
-		config.OutputFileName = "-"
+		config.OutputFileName = ""
 		config.DefaultNpmRegistry = "foo.bar"
 
 		npmUtils := newNpmMockUtilsBundle()

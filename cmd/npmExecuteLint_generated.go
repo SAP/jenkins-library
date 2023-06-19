@@ -123,7 +123,7 @@ func addNpmExecuteLintFlags(cmd *cobra.Command, stepConfig *npmExecuteLintOption
 	cmd.Flags().BoolVar(&stepConfig.FailOnError, "failOnError", false, "Defines the behavior in case linting errors are found.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
 	cmd.Flags().StringVar(&stepConfig.OutputFormat, "outputFormat", `checkstyle`, "eslint output format, e.g. stylish, checkstyle")
-	cmd.Flags().StringVar(&stepConfig.OutputFileName, "outputFileName", `defaultlint.xml`, "name of the output file. There might be a 'N_' prefix where 'N' is a number. '-' will print to console")
+	cmd.Flags().StringVar(&stepConfig.OutputFileName, "outputFileName", `defaultlint.xml`, "name of the output file. There might be a 'N_' prefix where 'N' is a number. When the empty string is provided, we will print to console")
 
 }
 

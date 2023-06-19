@@ -59,7 +59,7 @@ spec:
           - name: npm/outputFormat
       - name: outputFileName
         type: string
-        description: name of the output file. There might be a 'N_' prefix where 'N' is a number. '-' will print to console
+        description: name of the output file. There might be a 'N_' prefix where 'N' is a number. When the empty string is provided, we will print to console
         scope:
           - PARAMETERS
           - GENERAL
