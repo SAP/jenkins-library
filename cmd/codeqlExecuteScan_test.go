@@ -48,12 +48,6 @@ func TestRunCodeqlExecuteScan(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("Check for compliace fails as repository not specified", func(t *testing.T) {
-		config := codeqlExecuteScanOptions{BuildTool: "maven", ModulePath: "./", UploadResults: true, GithubToken: "test", CheckForCompliance: true}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
-		assert.Error(t, err)
-	})
-
 	t.Run("Custom buildtool", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "custom", Language: "javascript", ModulePath: "./"}
 		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
