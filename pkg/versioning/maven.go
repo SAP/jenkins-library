@@ -33,7 +33,7 @@ func (m *Maven) init() {
 	}
 
 	if m.utils == nil {
-		m.utils = maven.NewUtilsBundle("")
+		m.utils = maven.NewUtilsBundle()
 	}
 }
 

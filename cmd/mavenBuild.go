@@ -23,7 +23,7 @@ const (
 )
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
-	utils := maven.NewUtilsBundle("mavenBuild")
+	utils := maven.NewUtilsBundle()
 
 	err := runMavenBuild(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
