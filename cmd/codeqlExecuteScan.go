@@ -208,7 +208,8 @@ func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader cod
 	retryInterval := time.Duration(config.SarifCheckRetryInterval) * time.Second
 
 	log.Entry().Info("waiting for the SARIF to upload")
-	for i := 1; i <= maxRetries; i++ {
+	i := 1
+	for {
 		sarifStatus, err := codeqlSarifUploader.GetSarifStatus()
 		if err != nil {
 			return err
@@ -223,9 +224,14 @@ func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader cod
 			}
 			return errors.New("failed to upload sarif file")
 		}
-		time.Sleep(retryInterval)
+		if i <= maxRetries {
+			log.Entry().Infof("still waiting for the SARIF to upload: retrying in %d seconds... (retry %d/%d)", config.SarifCheckRetryInterval, i, maxRetries)
+			time.Sleep(retryInterval)
+			i++
+			continue
+		}
+		return errors.New("failed to check sarif uploading status: max retries reached")
 	}
-	return errors.New("failed to check sarif uploading status: max retries reached")
 }
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
@@ -332,7 +338,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 				return reports, errors.Wrap(err, "failed to write json compliance report")
 			}
 
-			unaudited := (scanResults.Total - scanResults.Audited)
+			unaudited := scanResults.Total - scanResults.Audited
 			if unaudited > config.VulnerabilityThresholdTotal {
 				msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
 				return reports, errors.Errorf(msg)

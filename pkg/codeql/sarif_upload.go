@@ -47,9 +47,10 @@ func getSarifUploadingStatus(sarifURL, token string) (SarifFileInfo, error) {
 	}
 	defer resp.Body.Close()
 
-	var serviceUnavailable = "Service unavailable"
-	if resp.StatusCode == http.StatusServiceUnavailable {
-		return SarifFileInfo{ProcessingStatus: serviceUnavailable}, nil
+	var internalServerError = "Internal server error"
+	if resp.StatusCode == http.StatusServiceUnavailable || resp.StatusCode == http.StatusBadGateway ||
+		resp.StatusCode == http.StatusGatewayTimeout {
+		return SarifFileInfo{ProcessingStatus: internalServerError}, nil
 	}
 
 	body, err := io.ReadAll(resp.Body)
