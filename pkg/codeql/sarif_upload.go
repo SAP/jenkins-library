@@ -47,6 +47,9 @@ func getSarifUploadingStatus(sarifURL, token string) (SarifFileInfo, error) {
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return SarifFileInfo{}, err
+	}
 
 	sarifInfo := SarifFileInfo{}
 	err = json.Unmarshal(body, &sarifInfo)
