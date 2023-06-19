@@ -207,6 +207,7 @@ func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader cod
 	maxRetries := config.SarifCheckMaxRetries
 	retryInterval := time.Duration(config.SarifCheckRetryInterval) * time.Second
 
+	log.Entry().Debug("wait sarif uploaded")
 	for i := 1; i <= maxRetries; i++ {
 		sarifStatus, err := codeqlSarifUploader.GetSarifStatus()
 		if err != nil {
@@ -215,6 +216,7 @@ func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader cod
 			continue
 		}
 		if sarifStatus.ProcessingStatus == sarifUploadComplete {
+			log.Entry().Debug("sarif uploaded successfully")
 			return nil
 		}
 		if sarifStatus.ProcessingStatus == sarifUploadFailed {
