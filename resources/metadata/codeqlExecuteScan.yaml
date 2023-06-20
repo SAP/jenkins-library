@@ -104,6 +104,22 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: sarifCheckMaxRetries
+        type: int
+        description: "Maximum number of retries when waiting for the server to finish processing the SARIF upload. Only relevant, if checkForCompliance is enabled."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
+      - name: sarifCheckRetryInterval
+        type: int
+        descriptoin: "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload. Only relevant, if checkForCompliance is enabled."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 30
       - name: threads
         type: string
         description: "Use this many threads for the codeql operations."
