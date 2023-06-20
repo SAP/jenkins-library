@@ -31,6 +31,8 @@ type SarifFileInfo struct {
 	Errors           []string `json:"errors"`
 }
 
+const internalServerError = "Internal server error"
+
 func getSarifUploadingStatus(sarifURL, token string) (SarifFileInfo, error) {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", sarifURL, nil)
@@ -47,7 +49,6 @@ func getSarifUploadingStatus(sarifURL, token string) (SarifFileInfo, error) {
 	}
 	defer resp.Body.Close()
 
-	var internalServerError = "Internal server error"
 	if resp.StatusCode == http.StatusServiceUnavailable || resp.StatusCode == http.StatusBadGateway ||
 		resp.StatusCode == http.StatusGatewayTimeout {
 		return SarifFileInfo{ProcessingStatus: internalServerError}, nil

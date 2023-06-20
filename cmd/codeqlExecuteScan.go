@@ -38,6 +38,9 @@ type codeqlExecuteScanUtilsBundle struct {
 	*piperutils.Files
 }
 
+const sarifUploadComplete = "complete"
+const sarifUploadFailed = "failed"
+
 func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	utils := codeqlExecuteScanUtilsBundle{
 		Command: &command.Command{},
@@ -202,8 +205,6 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 }
 
 func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader codeql.CodeqlSarifUploader) error {
-	var sarifUploadComplete = "complete"
-	var sarifUploadFailed = "failed"
 	maxRetries := config.SarifCheckMaxRetries
 	retryInterval := time.Duration(config.SarifCheckRetryInterval) * time.Second
 
