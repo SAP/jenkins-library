@@ -194,6 +194,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
 			log.Entry().Errorf("License Policy Violations found")
 			log.SetErrorCategory(log.ErrorCompliance)
+			// check for string output with license policy violations
 			if err == nil && piperutils.ContainsStringPart(config.FailOn, "CRITICAL") {
 				err = errors.New("License Policy Violations found")
 			}
