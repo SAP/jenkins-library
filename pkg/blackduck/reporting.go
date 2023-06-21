@@ -30,9 +30,30 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 		for _, v := range vulns.Items {
 
 			isAudited := true
-			if v.RemediationStatus == "NEW" || v.RemediationStatus == "REMEDIATION_REQUIRED" ||
-				v.RemediationStatus == "NEEDS_REVIEW" {
+			if v.RemediationStatus == "NEW" {
 				isAudited = false
+			}
+			//|| v.RemediationStatus == "REMEDIATION_REQUIRED" || v.RemediationStatus == "NEEDS_REVIEW"
+
+			unifiedStatusValue := "not audited"
+
+			switch v.RemediationStatus {
+			case "NEW":
+				unifiedStatusValue = "not audited"
+			case "NEEDS_REVIEW":
+				unifiedStatusValue = "in process"
+			case "REMEDIATION_COMPLETE":
+				unifiedStatusValue = "not exploitable/false positive"
+			case "PATCHED":
+				unifiedStatusValue = "not exploitable/false positive"
+			case "MITIGATED":
+				unifiedStatusValue = "not exploitable/false positive"
+			case "DUPLICATE":
+				unifiedStatusValue = "not exploitable/false positive"
+			case "IGNORED":
+				unifiedStatusValue = "not exploitable/false positive"
+			case "REMEDIATION_REQUIRED":
+				unifiedStatusValue = "exploitable/true positive"
 			}
 
 			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", v.VulnerabilityWithRemediation.VulnerabilityName, v.Component.Name, v.Component.Version)
@@ -54,6 +75,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 					ToolSeverityIndex: severityIndex[v.Severity],
 					ToolAuditMessage:  v.VulnerabilityWithRemediation.RemediationComment,
 					ToolState:         v.RemediationStatus,
+					UnifiedAuditState: unifiedStatusValue,
 				},
 			}
 
