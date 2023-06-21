@@ -71,6 +71,7 @@ func execute(utils codeqlExecuteScanUtils, cmd []string, isVerbose bool) error {
 	if isVerbose {
 		cmd = append(cmd, "-v")
 	}
+
 	return utils.RunExecutable("codeql", cmd...)
 }
 
