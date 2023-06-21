@@ -175,3 +175,6 @@ spec:
   containers:
     - name: node
       image: node:lts-buster
+      options:
+        - name: -u
+          value: "0"
