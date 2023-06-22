@@ -592,7 +592,7 @@ func TestAddDetectArgs(t *testing.T) {
 				IncludedPackageManagers: []string{"maven", "GRADLE"},
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
-				DetectTools:             []string{"DETECTOR"}
+				DetectTools:             []string{"DETECTOR"},
 			},
 			expected: []string{
 				"--testProp1=1",
