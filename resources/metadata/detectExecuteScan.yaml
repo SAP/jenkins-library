@@ -286,16 +286,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: scanOnChanges
-        description:
-          "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials
-          If the flag is set to false, then the scan request is submitted to server regardless of any changes.
-          For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)"
-        type: bool
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: customEnvironmentVariables
         description:
           "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by

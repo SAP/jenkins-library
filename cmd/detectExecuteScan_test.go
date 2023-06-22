@@ -555,7 +555,6 @@ func TestAddDetectArgs(t *testing.T) {
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
 				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -593,8 +592,7 @@ func TestAddDetectArgs(t *testing.T) {
 				IncludedPackageManagers: []string{"maven", "GRADLE"},
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
-				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
+				DetectTools:             []string{"DETECTOR"}
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -634,7 +632,6 @@ func TestAddDetectArgs(t *testing.T) {
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
 				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
 			},
 			expected: []string{
 				"--testProp1=1",
