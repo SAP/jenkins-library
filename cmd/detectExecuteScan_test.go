@@ -750,8 +750,8 @@ func TestAddDetectArgs(t *testing.T) {
 		},
 	}
 
-	for k, v := range testData {
-		v := v
+	for k := range testData {
+		v := testData[k]
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
 			t.Parallel()
 
