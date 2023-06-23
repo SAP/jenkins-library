@@ -286,11 +286,6 @@ func exitCodeMapping(exitCodeKey int) string {
 }
 
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
-	if config.ScanOnChanges {
-		log.Entry().Infof("Using Detect Rescan script")
-		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
-	}
-
 	log.Entry().Infof("Downloading Detect7")
 	return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
 }
@@ -315,11 +310,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
 		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
-	}
-
-	if config.ScanOnChanges {
-		args = append(args, "--report")
-		config.Unmap = false
 	}
 
 	if config.MinScanInterval > 0 {
