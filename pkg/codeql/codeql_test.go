@@ -56,21 +56,11 @@ func (g *githubCodeqlScanningMock) ListAlertsForRepo(ctx context.Context, owner,
 	return alerts, &response, nil
 }
 
-func (g *githubCodeqlScanningMock) ListAnalysesForRepo(ctx context.Context, owner, repo string, opts *github.AnalysesListOptions) ([]*github.ScanningAnalysis, *github.Response, error) {
-	resultsCount := 3
-	analysis := []*github.ScanningAnalysis{{ResultsCount: &resultsCount}}
-	return analysis, nil, nil
-}
-
 type githubCodeqlScanningErrorMock struct {
 }
 
 func (g *githubCodeqlScanningErrorMock) ListAlertsForRepo(ctx context.Context, owner, repo string, opts *github.AlertListOptions) ([]*github.Alert, *github.Response, error) {
 	return []*github.Alert{}, nil, errors.New("Some error")
-}
-
-func (g *githubCodeqlScanningErrorMock) ListAnalysesForRepo(ctx context.Context, owner, repo string, opts *github.AnalysesListOptions) ([]*github.ScanningAnalysis, *github.Response, error) {
-	return []*github.ScanningAnalysis{}, nil, errors.New("Some error")
 }
 
 func TestGetVulnerabilitiesFromClient(t *testing.T) {
