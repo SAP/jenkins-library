@@ -96,7 +96,6 @@ func (h *HelmExecute) runHelmInit() error {
 // runHelmAdd is used to add a chart repository
 func (h *HelmExecute) runHelmAdd(name, url, user, password string) error {
 	// test comment
-	
 	helmParams := []string{
 		"repo",
 		"add",
