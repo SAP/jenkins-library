@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	npmBomFilename             = "bom-npm.xml"
-	cycloneDxNpmPackageVersion = "@cyclonedx/cyclonedx-npm@1.11.0"
-	cycloneDxBomPackageVersion = "@cyclonedx/bom@^3.10.6"
-	cycloneDxSchemaVersion     = "1.4"
+	npmBomFilename                 = "bom-npm.xml"
+	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
+	cycloneDxNpmInstallationFolder = "./bomFolder"
+	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
+	cycloneDxSchemaVersion         = "1.4"
 )
 
 // Execute struct holds utils to enable mocking and common parameters
@@ -356,10 +357,9 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 
 // CreateBOM generates BOM file using CycloneDX from all package.json files
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
-	// Install cyclonedx-npm globally (to avoid extraneous errors) and generate BOM
-	cycloneDxNpmInstallParams := []string{"install", "--global", cycloneDxNpmPackageVersion}
+	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
+	cycloneDxNpmInstallParams := []string{"install", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
 	cycloneDxNpmRunParams := []string{
-		cycloneDxNpmPackageVersion,
 		"--output-format",
 		"XML",
 		"--spec-version",
@@ -401,17 +401,19 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
+			executable := "npx"
 			params := append(packageRunParams, filepath.Join(path, npmBomFilename))
 
-			//Below code needed as cyclonedx-npm needs packageJson file itself, while
-			//cyclonedx/bom needs dir path of package json
+			//Below code needed as to adjust according to needs of
+			// two packages
 			if !fallback {
 				params = append(params, packageJSONFile)
+				executable = cycloneDxNpmInstallationFolder + "/node_modules/.bin/cyclonedx-npm"
 			} else {
 				params = append(params, path)
 			}
 
-			err := execRunner.RunExecutable("npx", params...)
+			err := execRunner.RunExecutable(executable, params...)
 			if err != nil {
 				return fmt.Errorf("failed to generate CycloneDX BOM :%w", err)
 			}

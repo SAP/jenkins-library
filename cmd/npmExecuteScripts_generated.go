@@ -414,7 +414,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-buster", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "node", Image: "node:lts-buster"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
