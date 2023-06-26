@@ -105,17 +105,25 @@ type StepOutputs struct {
 // Container defines an execution container
 type Container struct {
 	//ToDo: check dockerOptions, dockerVolumeBind, containerPortMappings, sidecarOptions, sidecarVolumeBind
-	Command         []string    `json:"command"`
-	EnvVars         []EnvVar    `json:"env"`
-	Image           string      `json:"image"`
-	ImagePullPolicy string      `json:"imagePullPolicy"`
-	Name            string      `json:"name"`
-	ReadyCommand    string      `json:"readyCommand"`
-	Shell           string      `json:"shell"`
-	WorkingDir      string      `json:"workingDir"`
-	Conditions      []Condition `json:"conditions,omitempty"`
-	Options         []Option    `json:"options,omitempty"`
+	Command         []string         `json:"command"`
+	EnvVars         []EnvVar         `json:"env"`
+	Image           string           `json:"image"`
+	ImagePullPolicy string           `json:"imagePullPolicy"`
+	Name            string           `json:"name"`
+	ReadyCommand    string           `json:"readyCommand"`
+	Shell           string           `json:"shell"`
+	WorkingDir      string           `json:"workingDir"`
+	Conditions      []Condition      `json:"conditions,omitempty"`
+	Options         []Option         `json:"options,omitempty"`
+	SecurityContext *SecurityContext `json:"securityContext,omitempty"`
 	//VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty"`
+}
+
+// SecurityContext defines Kubernetes Pod SecurityContext
+type SecurityContext struct {
+	RunAsUser  *int `json:"runAsUser,omitempty"`
+	RunAsGroup *int `json:"runAsGroup,omitempty"`
+	FSGroup    *int `json:"fsGroup,omitempty"`
 }
 
 // ToDo: Add the missing Volumes part to enable the volume mount completely
@@ -220,7 +228,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		}
 	}
 	if len(m.Spec.Containers) > 0 {
-		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "dockerRegistryUrl", "dockerRegistryCredentialsId"}
+		parameterKeys := []string{"containerCommand", "securityContext", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "dockerRegistryUrl", "dockerRegistryCredentialsId"}
 		for _, container := range m.Spec.Containers {
 			for _, condition := range container.Conditions {
 				for _, dependentParam := range condition.Params {
@@ -287,6 +295,22 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			}
 			if len(container.Command) > 0 {
 				p["containerCommand"] = container.Command[0]
+			}
+
+			if container.SecurityContext != nil {
+				var secContext map[string]interface{}
+
+				secContextAsBytes, err := json.Marshal(container.SecurityContext)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed marshal securityContext")
+				}
+
+				err = json.Unmarshal(secContextAsBytes, &secContext)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed unmarshal securityContext")
+				}
+
+				p["securityContext"] = secContext
 			}
 
 			putStringIfNotEmpty(p, "containerName", container.Name)

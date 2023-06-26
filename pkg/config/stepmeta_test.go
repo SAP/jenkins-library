@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/utils/pointer"
 )
 
 func TestReadPipelineStepData(t *testing.T) {
@@ -397,6 +398,10 @@ func TestGetContextDefaults(t *testing.T) {
 							{Name: "opt1", Value: "optValue1"},
 							{Name: "opt2", Value: "optValue2"},
 						},
+						SecurityContext: &SecurityContext{
+							RunAsUser:  pointer.Int(1001),
+							RunAsGroup: pointer.Int(1002),
+						},
 						//VolumeMounts: []VolumeMount{
 						//	{MountPath: "mp1", Name: "mn1"},
 						//	{MountPath: "mp2", Name: "mn2"},
@@ -451,6 +456,7 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, true, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
 		assert.Equal(t, "/test/dir", d.Defaults[0].Steps["testStep"]["dockerWorkspace"], "dockerWorkspace default not available")
 		assert.Equal(t, []interface{}{"opt1 optValue1", "opt2 optValue2"}, d.Defaults[0].Steps["testStep"]["dockerOptions"], "dockerOptions default not available")
+		assert.Equal(t, map[string]interface{}{"runAsUser": float64(1001), "runAsGroup": float64(1002)}, d.Defaults[0].Steps["testStep"]["securityContext"], "securityContext default not available")
 		//assert.Equal(t, []interface{}{"mn1:mp1", "mn2:mp2"}, d.Defaults[0].Steps["testStep"]["dockerVolumeBind"], "dockerVolumeBind default not available")
 
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarCommand"], "sidecarCommand default not available")

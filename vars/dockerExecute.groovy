@@ -124,7 +124,14 @@ import groovy.transform.Field
     /**
      * Specific stashes that should be considered for the step execution.
      */
-    'stashContent'
+    'stashContent',
+    /**
+     * Kubernetes only:
+     * Kubernetes Security Context used for the pod.
+     * Can be used to specify uid and fsGroup.
+     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+     */
+    'securityContext',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /**
@@ -204,6 +211,7 @@ void call(Map parameters = [:], body) {
                     dockerEnvVars: config.dockerEnvVars,
                     dockerWorkspace: config.dockerWorkspace,
                     stashContent: config.stashContent,
+                    securityContext: config.securityContext,
                     stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                 ]
 
@@ -217,6 +225,7 @@ void call(Map parameters = [:], body) {
                         sidecarEnvVars: parameters.sidecarEnvVars,
                     ]
                 }
+
                 dockerExecuteOnKubernetes(dockerExecuteOnKubernetesParams) {
                     echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                     body()
