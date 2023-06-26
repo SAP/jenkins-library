@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/vault/api"
 
 	"github.com/SAP/jenkins-library/pkg/ado"
+	"github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/jenkins"
 	"github.com/SAP/jenkins-library/pkg/vault"
 
@@ -129,6 +130,33 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		}
 		if err := adoBuildClient.UpdateVariables(variables); err != nil {
 			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
+			return err
+		}
+	case "github":
+		// Additional info:
+		// https://github.com/google/go-github/blob/master/example/newreposecretwithxcrypto/main.go
+
+		ctx, client, err := github.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+		if err != nil {
+			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: GitHub client not created: %v", err)
+			return err
+		}
+
+		publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, config.Owner, config.Repository)
+		if err != nil {
+			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: repository's public key not retrieved: %v", err)
+			return err
+		}
+
+		encryptedSecret, err := github.CreateEncryptedSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
+		if err != nil {
+			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: secret encryption failed: %v", err)
+			return err
+		}
+
+		_, err = client.Actions.CreateOrUpdateRepoSecret(ctx, config.Owner, config.Repository, encryptedSecret)
+		if err != nil {
+			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: submission to GitHub failed: %v", err)
 			return err
 		}
 	default:

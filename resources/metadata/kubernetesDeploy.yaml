@@ -279,6 +279,14 @@ spec:
           - STAGES
           - STEPS
         default: 300
+      - name: helmTestWaitSeconds
+        type: int
+        description: Number of seconds to wait for any individual Kubernetes operation (like Jobs for hooks). See https://helm.sh/docs/helm/helm_test/#options for further details
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 300
       - name: helmValues
         type: "[]string"
         description: List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)
@@ -299,6 +307,15 @@ spec:
             subchart.image.pullsecret: secret.dockerconfigjson
           ```
         scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: renderSubchartNotes
+        type: bool
+        description: If set, render subchart notes along with the parent.
+        default: true
+        scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS

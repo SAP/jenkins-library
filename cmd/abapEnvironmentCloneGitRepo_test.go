@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -16,15 +19,14 @@ import (
 var executionLogStringClone string
 
 func init() {
-	executionLog := abaputils.PullEntity{
-		ToExecutionLog: abaputils.AbapLogs{
-			Results: []abaputils.LogResults{
-				{
-					Index:       "1",
-					Type:        "LogEntry",
-					Description: "S",
-					Timestamp:   "/Date(1644332299000+0000)/",
-				},
+	executionLog := abaputils.LogProtocolResults{
+		Results: []abaputils.LogProtocol{
+			{
+				ProtocolLine:  1,
+				OverviewIndex: 1,
+				Type:          "LogEntry",
+				Description:   "S",
+				Timestamp:     "/Date(1644332299000+0000)/",
 			},
 		},
 	}
@@ -78,16 +80,16 @@ repositories:
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : [] }`,
 				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
-				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : [] }`,
 				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
-				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -124,9 +126,9 @@ repositories:
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : [] }`,
 				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
-				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -397,15 +399,15 @@ func TestALreadyCloned(t *testing.T) {
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : }`,
 				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
-				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : }`,
 				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
-				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -479,7 +481,7 @@ func TestALreadyCloned(t *testing.T) {
 		err := errors.New("Custom Error")
 		err, _ = handleCloneError(&resp, err, autils.ReturnedConnectionDetailsHTTP, client, repo)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Pull of the repository / software component 'Test', commit 'abcd1234' failed on the ABAP system", err.Error(), "Expected different error message")
+			assert.Equal(t, "Pull of the repository / software component 'Test', commit 'abcd1234' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
 	})
 

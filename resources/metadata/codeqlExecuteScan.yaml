@@ -23,8 +23,7 @@ spec:
         type: stash
     params:
       - name: githubToken
-        description: "GitHub personal access token as per
-          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        description: "GitHub personal access token in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `githubTokenCredentialsId` parameter."
         scope:
           - GENERAL
           - PARAMETERS
@@ -105,6 +104,22 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: sarifCheckMaxRetries
+        type: int
+        description: "Maximum number of retries when waiting for the server to finish processing the SARIF upload. Only relevant, if checkForCompliance is enabled."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
+      - name: sarifCheckRetryInterval
+        type: int
+        descriptoin: "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload. Only relevant, if checkForCompliance is enabled."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 30
       - name: threads
         type: string
         description: "Use this many threads for the codeql operations."
@@ -143,6 +158,22 @@ spec:
           - name: commonPipelineEnvironment
             param: git/remoteCommitId
         type: string
+      - name: vulnerabilityThresholdTotal
+        description: "Threashold for maximum number of allowed vulnerabilities."
+        type: int
+        default: 0
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: checkForCompliance
+        description: "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
+        type: bool
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: ""
   outputs:
@@ -155,4 +186,6 @@ spec:
           - filePattern: "**/*.sarif"
             type: codeql
           - filePattern: "**/toolrun_codeql_*.json"
+            type: codeql
+          - filePattern: "**/piper_codeql_report.json"
             type: codeql

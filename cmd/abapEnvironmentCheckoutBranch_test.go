@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -14,15 +17,14 @@ import (
 var executionLogStringCheckout string
 
 func init() {
-	executionLog := abaputils.PullEntity{
-		ToExecutionLog: abaputils.AbapLogs{
-			Results: []abaputils.LogResults{
-				{
-					Index:       "1",
-					Type:        "LogEntry",
-					Description: "S",
-					Timestamp:   "/Date(1644332299000+0000)/",
-				},
+	executionLog := abaputils.LogProtocolResults{
+		Results: []abaputils.LogProtocol{
+			{
+				ProtocolLine:  1,
+				OverviewIndex: 1,
+				Type:          "LogEntry",
+				Description:   "S",
+				Timestamp:     "/Date(1644332299000+0000)/",
 			},
 		},
 	}
@@ -55,9 +57,9 @@ func TestCheckoutBranchStep(t *testing.T) {
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : [] }`,
 				`{"d" : ` + executionLogStringCheckout + `}`,
 				logResultSuccess,
-				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "S" } }`,
@@ -84,9 +86,9 @@ func TestCheckoutBranchStep(t *testing.T) {
 		logResultError := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : [] }`,
 				`{"d" : ` + executionLogStringCheckout + `}`,
 				logResultError,
-				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
@@ -123,9 +125,9 @@ func TestCheckoutBranchStep(t *testing.T) {
 		logResultError := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : [] }`,
 				`{"d" : ` + executionLogStringCheckout + `}`,
 				logResultError,
-				`{"d" : { "EntitySets" : [ "LogOverviews" ] } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
