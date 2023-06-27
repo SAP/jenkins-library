@@ -26,7 +26,7 @@ jobs:
       - name: Get pull request URL
         id: pull_request
         run: |
-          echo "pull_request=$(curl ${{ github.event.pull_request.url }} |
+          echo "pull_request=$(curl ${{ github.event.pull_request }} |
           jq '.url' |
           sed 's/\"//g')" >> "$GITHUB_OUTPUT"
       - name: Get repository
