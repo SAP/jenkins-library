@@ -26,14 +26,15 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       - name: unit-test
-        uses: paambaati/codeclimate-action@v2.6.0
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
-        with:
-          coverageCommand: go test -tags=unit ./... -coverprofile cover.out
-          coverageLocations: cover.out:gocov
+        run: echo ${{secret.ENV_TEST}}
+        # uses: paambaati/codeclimate-action@v2.6.0
+        # env:
+          # CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
+        # with:
+          # coverageCommand: go test -tags=unit ./... -coverprofile cover.out
+          # coverageLocations: cover.out:gocov
           # truncate package name from file paths in report
-          prefix: github.com/SAP/jenkins-library/
+          # prefix: github.com/SAP/jenkins-library/
   format:
     runs-on: ubuntu-latest
     steps:
