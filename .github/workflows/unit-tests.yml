@@ -35,7 +35,7 @@ jobs:
             --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ steps.sha.outputs.sha }}' \
             -H 'Content-Type: application/json' \
             --data '{"state": "pending",
-                    "context": "Go / integration-tests",
+                    "context": "Go / unit-tests",
                     "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
             -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
       - uses: actions/setup-go@v1
@@ -72,7 +72,7 @@ jobs:
               --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ needs.unit_tests.outputs.sha }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "success",
-                      "context": "Go / integration-tests",
+                      "context": "Go / unit-tests",
                       "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
             exit 0
@@ -82,7 +82,7 @@ jobs:
               --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ needs.unit_tests.outputs.sha }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "failure",
-                      "context": "Go / integration-tests",
+                      "context": "Go / unit-tests",
                       "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
             exit 1
