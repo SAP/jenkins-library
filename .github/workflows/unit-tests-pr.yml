@@ -1,4 +1,4 @@
-name: Go unit tests
+name: Go unit tests (Pull Request)
 
 on:
   issue_comment:
@@ -8,7 +8,6 @@ on:
 
 jobs:
   unit_tests:
-
     if: |
       (
         github.event.comment.body == '/ut' ||
@@ -19,7 +18,6 @@ jobs:
         github.event.comment.author_association == 'MEMBER'
       )
     outputs:
-      # go_version: ${{ steps.go_version.outputs.go_version }}
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     steps:
@@ -77,11 +75,8 @@ jobs:
 
   finish:
     name: Finish
-    # if: always() && needs.start.result == 'success'
+    if: always()
     needs:
-      # - start
-      # - build_piper
-      # - build_integration_tests
       - unit_tests
     runs-on: ubuntu-latest
     steps:
