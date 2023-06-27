@@ -359,26 +359,18 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
 	cycloneDxNpmInstallParams := []string{"install", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
-	cycloneDxNpmRunParams := []string{
-		"--output-format",
-		"XML",
-		"--spec-version",
-		cycloneDxSchemaVersion,
-		"--output-file",
-	}
+	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--output-file"}
 
 	// Install cyclonedx/bom with --nosave and generate BOM.
 	cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
-	cycloneDxBomRunParams := []string{
-		"cyclonedx-bom",
-		"--output",
-	}
+	cycloneDxBomRunParams := []string{"cyclonedx-bom", "--output"}
 
-	// Attempt#1, generate BOM via cyclonedx -npm
+	// Attempt#1, generate BOM via cyclonedx-npm
 	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
 	if err != nil {
 
 		log.Entry().Infof("Failed to generate BOM CycloneDX BOM with cyclonedx-npm ,fallback to cyclonedx/bom")
+
 		// Attempt #2, generate BOM via cyclonedx/bom@^3.10.6
 		err = exec.createBOMWithParams(cycloneDxBomInstallParams, cycloneDxBomRunParams, packageJSONFiles, true)
 		if err != nil {
@@ -389,23 +381,25 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	return nil
 }
 
+// Facilitates BOM generation with different packages
 func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageRunParams []string, packageJSONFiles []string, fallback bool) error {
 	execRunner := exec.Utils.GetExecRunner()
 
+	// Install package
 	err := execRunner.RunExecutable("npm", packageInstallParams...)
 
 	if err != nil {
 		return fmt.Errorf("failed to install CycloneDX BOM %w", err)
 	}
 
+	// Run package for all package JSON files
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
 			executable := "npx"
 			params := append(packageRunParams, filepath.Join(path, npmBomFilename))
 
-			//Below code needed as to adjust according to needs of
-			// two packages
+			//Below code needed as to adjust according to needs of cyclonedx-npm and fallback cyclonedx/bom@^3.10.6
 			if !fallback {
 				params = append(params, packageJSONFile)
 				executable = cycloneDxNpmInstallationFolder + "/node_modules/.bin/cyclonedx-npm"
