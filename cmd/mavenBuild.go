@@ -22,6 +22,8 @@ const (
 	mvnBomFilename = "bom-maven"
 )
 
+// dummy
+
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
 
