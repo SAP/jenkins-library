@@ -109,7 +109,7 @@ spec:
           - name: containerImageNameAndTag
             deprecated: true
         type: string
-        description: Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.
+        description: Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If `containerImage` is not provided, then `containerImageName` or `--destination` (via buildOptions) should be provided.
         scope:
           - PARAMETERS
           - STAGES
@@ -118,7 +118,7 @@ spec:
         aliases:
           - name: dockerImageName
         type: string
-        description: Name of the container which will be built - will be used instead of parameter `containerImage`
+        description: Name of the container which will be built - will be used instead of parameter `containerImage`. If `containerImageName` is not provided, then `containerImage` or `--destination` (via buildOptions) should be provided.
         mandatoryIf:
           - name: containerMultiImageBuild
             value: true
