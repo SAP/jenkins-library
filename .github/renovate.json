@@ -4,6 +4,7 @@
         "config:base"
     ],
     "ignorePaths": [
-        "integration/testdata/**"
+        "integration/testdata/**",
+        "test/resources"
     ]
 }
