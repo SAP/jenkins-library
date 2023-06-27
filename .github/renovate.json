@@ -5,6 +5,6 @@
     ],
     "ignorePaths": [
         "integration/testdata/**",
-        "test/resources"
+        "test/resources/**"
     ]
 }
