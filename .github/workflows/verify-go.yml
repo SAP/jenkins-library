@@ -10,7 +10,7 @@ on:
 
 jobs:
   unit:
-    if: github.event.pull_request.head.repo.fork == 'false'
+    # if: github.event.pull_request.head.repo.fork == 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.10.0
