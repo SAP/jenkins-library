@@ -1,10 +1,10 @@
 name: Create new Release
 
 on:
-  repository_dispatch:
-    types: perform-release
-  schedule:
-    - cron: '0 9 * * 1'
+  # repository_dispatch:
+  #   types: perform-release
+  # schedule:
+  #   - cron: '0 9 * * 1'
 
 jobs:
   build:

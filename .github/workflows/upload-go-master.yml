@@ -2,8 +2,8 @@ name: Publish master branch binary
 
 on:
   push:
-    branches:
-      - master
+    # branches:
+    #   - master
 
 jobs:
   build:

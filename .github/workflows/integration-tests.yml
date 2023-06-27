@@ -2,9 +2,9 @@ name: Integration tests
 
 on:
   push:
-    branches:
-      - master
-      - it/**
+    # branches:
+    #   - master
+    #   - it/**
 
 jobs:
   start:

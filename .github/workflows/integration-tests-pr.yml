@@ -58,11 +58,11 @@ jobs:
         run: |
           curl \
             --location \
-            --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.sha.outputs.sha }}' \
+            --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ steps.sha.outputs.sha }}' \
             -H 'Content-Type: application/json' \
             --data '{"state": "pending",
                     "context": "Go / integration-tests",
-                    "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+                    "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
             -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
 
   build_piper:
@@ -143,10 +143,10 @@ jobs:
           name: integration_tests
           path: ./integration/
       - name: Run test
-        env:
-          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-          PIPER_tmsServiceKey: ${{secrets.PIPER_TMSSERVICEKEY}}
+        # env:
+          # PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
+          # PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
+          # PIPER_tmsServiceKey: ${{secrets.PIPER_TMSSERVICEKEY}}
         run: |
           chmod +x piper
           cd ./integration
@@ -169,21 +169,21 @@ jobs:
           then
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.sha }}' \
+              --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ needs.start.outputs.sha }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "success",
                       "context": "Go / integration-tests",
-                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+                      "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
             exit 0
           else
             curl \
               --location \
-              --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ needs.start.outputs.sha }}' \
+              --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ needs.start.outputs.sha }}' \
               -H 'Content-Type: application/json' \
               --data '{"state": "failure",
                       "context": "Go / integration-tests",
-                      "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+                      "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
             exit 1
           fi
