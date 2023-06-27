@@ -1,4 +1,4 @@
-name: Go1
+name: Go unit tests
 
 on:
   issue_comment:
@@ -7,7 +7,7 @@ on:
       - edited
 
 jobs:
-  unit:
+  unit_tests:
 
     if: |
       (
@@ -18,10 +18,26 @@ jobs:
         github.event.comment.author_association == 'OWNER' ||
         github.event.comment.author_association == 'MEMBER'
       )
-
+    outputs:
+      # go_version: ${{ steps.go_version.outputs.go_version }}
+      sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.10.0
+      - name: Get commit SHA
+        id: sha
+        run: |
+          echo "sha=$(git log --format=%H -n 1)" >> "$GITHUB_OUTPUT"
+      - name: Update status
+        run: |
+          curl \
+            --location \
+            --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ steps.sha.outputs.sha }}' \
+            -H 'Content-Type: application/json' \
+            --data '{"state": "pending",
+                    "context": "Go / integration-tests",
+                    "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+            -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
       - uses: actions/setup-go@v1
         with:
           go-version: '1.18.x'
@@ -36,3 +52,39 @@ jobs:
         uses: actions/checkout@v2
       - name: unit-test
         run: echo ${{secrets.ENV_TEST}}
+
+  finish:
+    name: Finish
+    # if: always() && needs.start.result == 'success'
+    needs:
+      # - start
+      # - build_piper
+      # - build_integration_tests
+      - unit_tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update status
+        run: |
+          if [[ "${{ needs.unit_tests.result }}" == "success" ]]
+          then
+            curl \
+              --location \
+              --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ needs.unit_tests.outputs.sha }}' \
+              -H 'Content-Type: application/json' \
+              --data '{"state": "success",
+                      "context": "Go / integration-tests",
+                      "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+            exit 0
+          else
+            curl \
+              --location \
+              --request POST 'https://api.github.com/repos/vstarostin/jenkins-library/statuses/${{ needs.unit_tests.outputs.sha }}' \
+              -H 'Content-Type: application/json' \
+              --data '{"state": "failure",
+                      "context": "Go / integration-tests",
+                      "target_url": "https://github.com/vstarostin/jenkins-library/actions/runs/${{ github.run_id }}"}' \
+              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+            exit 1
+          fi
+
