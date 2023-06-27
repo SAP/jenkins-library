@@ -172,6 +172,52 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 	}
 }
 
+func resolveVaultTestCredentialsWrapper(config *StepConfig, client vaultClient) {
+	log.Entry().Debugln("resolveVaultTestCredentialsWrapper")
+	resolveVaultTestCredentialsWrapperBase(config, client, vaultTestCredentialPath, vaultTestCredentialKeys, resolveVaultTestCredentials)
+}
+
+func resolveVaultCredentialsWrapper(config *StepConfig, client vaultClient) {
+	log.Entry().Debugln("resolveVaultCredentialsWrapper")
+	resolveVaultTestCredentialsWrapperBase(config, client, vaultCredentialPath, vaultCredentialKeys, resolveVaultCredentials)
+}
+
+func resolveVaultTestCredentialsWrapperBase(
+	config *StepConfig, client vaultClient,
+	vaultCredPath, vaultCredKeys string,
+	resolveVaultCredentials func(config *StepConfig, client vaultClient),
+) {
+	switch config.Config[vaultCredPath].(type) {
+	case string:
+		resolveVaultCredentials(config, client)
+	case []interface{}:
+		vaultCredentialPathCopy := config.Config[vaultCredPath]
+		vaultCredentialKeysCopy := config.Config[vaultCredKeys]
+
+		if _, ok := vaultCredentialKeysCopy.([]interface{}); !ok {
+			log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: unknown type of keys")
+			return
+		}
+
+		if len(vaultCredentialKeysCopy.([]interface{})) != len(vaultCredentialPathCopy.([]interface{})) {
+			log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: not same count of values and keys")
+			return
+		}
+
+		for i := 0; i < len(vaultCredentialPathCopy.([]interface{})); i++ {
+			config.Config[vaultCredPath] = vaultCredentialPathCopy.([]interface{})[i]
+			config.Config[vaultCredKeys] = vaultCredentialKeysCopy.([]interface{})[i]
+			resolveVaultCredentials(config, client)
+		}
+
+		config.Config[vaultCredPath] = vaultCredentialPathCopy
+		config.Config[vaultCredKeys] = vaultCredentialKeysCopy
+	default:
+		log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: unknown type of path")
+		return
+	}
+}
+
 // resolve test credential keys and expose as environment variables
 func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 	credPath, pathOk := config.Config[vaultTestCredentialPath].(string)
