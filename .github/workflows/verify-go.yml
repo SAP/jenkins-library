@@ -10,6 +10,17 @@ on:
 
 jobs:
   unit:
+
+    if: |
+      (
+        github.event.comment.body == '/ut' ||
+        github.event.comment.body == '/ut-go'
+      ) && (
+        github.event.comment.author_association == 'COLLABORATOR' ||
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER'
+      )
+
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.10.0
