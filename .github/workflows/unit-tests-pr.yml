@@ -77,6 +77,10 @@ jobs:
         uses: actions/checkout@v2
       - name: unit-test
         run: echo ${{secrets.ENV_TEST}}
+      - name: check if it is a fork
+        run: echo ${{ github.event.pull_request.head.repo.fork }}
+      - name: check event type
+        run: echo  ${{ github.event.type }}
 
   finish:
     name: Finish
