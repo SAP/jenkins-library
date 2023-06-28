@@ -1,12 +1,6 @@
 name: Go unit tests (Pull Request)
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
   issue_comment:
     types:
       - created
@@ -16,8 +10,11 @@ jobs:
   unit_tests:
     # echo "pull_request=$(curl ${{ github.event.comment.issue_url }} |
     if: |
-      ((github.event.comment.body == '/ut' || github.event.comment.body == '/ut-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')) ||
-      github.event.pull_request.head.repo.fork == false
+      (
+        github.event.comment.body == '/ut' || github.event.comment.body == '/ut-go'
+      ) && (
+        github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER'
+      )
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
@@ -26,8 +23,8 @@ jobs:
       - name: Get pull request URL
         id: pull_request
         run: |
-          echo "pull_request=$(curl ${{ github.event.pull_request }} |
-          jq '.url' |
+          echo "pull_request=$(curl ${{ github.event.comment.issue_url }} |
+          jq '.pull_request.url' |
           sed 's/\"//g')" >> "$GITHUB_OUTPUT"
       - name: Get repository
         id: repository
@@ -40,7 +37,7 @@ jobs:
         run: |
           echo "branch_name=$(curl ${{ steps.pull_request.outputs.pull_request }} |
           jq '.head.ref' |
-          sed 's/\"//g')" >> "$GITHUB_OUTPUT"
+          sed 's/\"//g')" >> "$GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           repository: ${{ steps.repository.outputs.repository }}
