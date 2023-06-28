@@ -1,6 +1,12 @@
 name: Go unit tests (Pull Request)
 
 on:
+  # push:
+    # branches:
+      # - master
+  pull_request:
+    branches:
+      - master
   issue_comment:
     types:
       - created
@@ -14,38 +20,39 @@ jobs:
         github.event.comment.body == '/ut' || github.event.comment.body == '/ut-go'
       ) && (
         github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER'
-      )
+      ) || github.event.pull_request.head.repo.fork != false
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.10.0
-      - name: Get pull request URL
-        id: pull_request
-        run: |
-          echo "pull_request=$(curl ${{ github.event.comment.issue_url }} |
-          jq '.pull_request.url' |
-          sed 's/\"//g')" >> "$GITHUB_OUTPUT"
-      - name: Get repository
-        id: repository
-        run: |
-          echo "repository=$(curl ${{ steps.pull_request.outputs.pull_request }} |
-          jq '.head.repo.full_name' |
-          sed 's/\"//g')" >> "$GITHUB_OUTPUT"
-      - name: Get branch name
-        id: branch_name
-        run: |
-          echo "branch_name=$(curl ${{ steps.pull_request.outputs.pull_request }} |
-          jq '.head.ref' |
-          sed 's/\"//g')" >> "$GITHUB_OUTPUT"
+      # - name: Get pull request URL
+      #   id: pull_request
+      #   run: |
+      #     echo "pull_request=$(curl ${{ github.event.comment.issue_url }} |
+      #     jq '.pull_request.url' |
+      #     sed 's/\"//g')" >> "$GITHUB_OUTPUT"
+      # - name: Get repository
+      #   id: repository
+      #   run: |
+      #     echo "repository=$(curl ${{ steps.pull_request.outputs.pull_request }} |
+      #     jq '.head.repo.full_name' |
+      #     sed 's/\"//g')" >> "$GITHUB_OUTPUT"
+      # - name: Get branch name
+      #   id: branch_name
+      #   run: |
+      #     echo "branch_name=$(curl ${{ steps.pull_request.outputs.pull_request }} |
+      #     jq '.head.ref' |
+      #     sed 's/\"//g')" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v3
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branch_name.outputs.branch_name }}
+        # with:
+          # repository: ${{ steps.repository.outputs.repository }}
+          # ref: ${{ steps.branch_name.outputs.branch_name }}
       - name: Get commit SHA
         id: sha
         run: |
           echo "sha=$(git log --format=%H -n 1)" >> "$GITHUB_OUTPUT"
+      - run: echo ${{steps.sha.output.sha}}
       - name: Update status
         run: |
           curl \
@@ -73,7 +80,7 @@ jobs:
 
   finish:
     name: Finish
-    if: always()
+    if: always() && needs.unit_tests.result == 'success'
     needs:
       - unit_tests
     runs-on: ubuntu-latest

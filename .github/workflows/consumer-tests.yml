@@ -1,10 +1,10 @@
 name: Consumer tests
 
 on:
-  # push:
-  #   branches:
-  #     - master
-  #     - it/**
+  push:
+    branches:
+      - master
+      - it/**
 
 jobs:
   consumer_tests:
