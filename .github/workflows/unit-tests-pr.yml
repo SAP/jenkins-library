@@ -37,7 +37,7 @@ jobs:
         run: |
           echo "branch_name=$(curl ${{ steps.pull_request.outputs.pull_request }} |
           jq '.head.ref' |
-          sed 's/\"//g')" >> "$GITHUB_OUTPUT
+          sed 's/\"//g')" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v3
         with:
           repository: ${{ steps.repository.outputs.repository }}

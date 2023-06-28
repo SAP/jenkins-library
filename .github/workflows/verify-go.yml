@@ -15,10 +15,8 @@ jobs:
     steps:
       - name: check if it is a fork (1)
         run: echo ${{github.event.pull_request.head.repo.fork}}
-      - name: check if it is a fork (2)
-        id: fork_2
-        run: echo fork=$( curl ${{ github.event.pull_request.head.repo.fork }}) >> "$GITHUB_OUTPUT"
-      - run: echo ${{steps.fork_2.output.fork}}
+      - name: check event repository
+        run: echo ${{ github.event.repository }}
       - uses: styfle/cancel-workflow-action@0.10.0
       - uses: actions/setup-go@v1
         with:
