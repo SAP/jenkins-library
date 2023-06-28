@@ -10,7 +10,7 @@ on:
 
 jobs:
   unit:
-    # if: github.event.pull_request.head.repo.fork == 'false'
+    if: github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
     steps:
       - name: check if it is a fork (1)
@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v2
       - name: unit-test
         run: echo ${{secrets.ENV_TEST}}
-        
+
         # uses: paambaati/codeclimate-action@v2.6.0
         # env:
           # CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
