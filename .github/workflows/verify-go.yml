@@ -15,8 +15,8 @@ jobs:
     steps:
       - name: check if it is a fork (1)
         run: echo ${{github.event.pull_request.head.repo.fork}}
-      - name: check event repository
-        run: echo $(curl ${{ github.event.repository.url }})
+      - name: check event type
+        run: echo  ${{ github.event.type }}
       - uses: styfle/cancel-workflow-action@0.10.0
       - uses: actions/setup-go@v1
         with:
