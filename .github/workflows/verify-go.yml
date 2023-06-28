@@ -13,6 +13,8 @@ jobs:
     # if: github.event.pull_request.head.repo.fork == 'false'
     runs-on: ubuntu-latest
     steps:
+      - name: check if it is a fork
+        run: echo github.event.pull_request.head.repo.fork 
       - uses: styfle/cancel-workflow-action@0.10.0
       - uses: actions/setup-go@v1
         with:
