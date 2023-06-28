@@ -10,7 +10,7 @@ on:
 
 jobs:
   unit:
-    if: github.event.pull_request.head.repo.fork != true
+    # if: github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
     steps:
       - name: check if it is a fork (1)
