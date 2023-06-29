@@ -140,6 +140,10 @@ func KanikoExecuteCommand() *cobra.Command {
 		Short: "Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.",
 		Long: `Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
 
+### Building one container image
+
+For building one container image the step expects that one of the containerImage, containerImageName or --destination (via buildOptions) is set.
+
 ### Building multiple container images
 
 The step allows you to build multiple container images with one run.
