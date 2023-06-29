@@ -385,8 +385,24 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		err = renameDockerConfig(config, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
+			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%s'", config.DockerConfigJSON)
 		}
+	}
+
+	if config.ContainerRegistryUser != "" && config.ContainerRegistryPassword != "" {
+		log.Entry().Debug("enhancing docker config with the provided credentials")
+		if config.DockerConfigJSON == "" {
+			config.DockerConfigJSON = "/tmp/config.json"
+		}
+		log.Entry().Debugf("using docker config file %q", config.DockerConfigJSON)
+
+		_, err = docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "failed to update DockerConfigJSON file %q", config.DockerConfigJSON)
+		}
+
+		log.Entry().Debugf("docker config %q has been updated", config.DockerConfigJSON)
 	}
 
 	mergedConfigs, err := processConfigs(*config, config.MultipleImages)
