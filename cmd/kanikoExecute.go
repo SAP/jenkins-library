@@ -25,6 +25,7 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 				"unsupported status code 401",
 			},
 		},
+		StepName: "kanikoExecute",
 	}
 
 	// reroute command output to logging framework
