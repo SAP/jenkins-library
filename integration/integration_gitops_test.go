@@ -17,7 +17,7 @@ func TestGitOpsIntegrationUpdateDeployment(t *testing.T) {
 		Mounts:  map[string]string{"./testdata/TestGitopsUpdateIntegration/kustomize/gitopsRepo": "/gitopsRepo-source"},
 		Setup:   []string{"cp -r /gitopsRepo-source /gitopsRepo"},
 	})
-	// defer container.terminate(t)
+	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("gitopsUpdateDeployment", "--containerImageNameTag=image:456")
 	if err != nil {
