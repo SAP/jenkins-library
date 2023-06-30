@@ -26,6 +26,8 @@ type cnbBuildOptions struct {
 	ContainerImageAlias       string                   `json:"containerImageAlias,omitempty"`
 	ContainerImageTag         string                   `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL      string                   `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser     string                   `json:"containerRegistryUser,omitempty"`
+	ContainerRegistryPassword string                   `json:"containerRegistryPassword,omitempty"`
 	Buildpacks                []string                 `json:"buildpacks,omitempty"`
 	BuildEnvVars              map[string]interface{}   `json:"buildEnvVars,omitempty"`
 	Path                      string                   `json:"path,omitempty"`
@@ -224,6 +226,8 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImageAlias, "containerImageAlias", os.Getenv("PIPER_containerImageAlias"), "Logical name used for this image.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to.\n\n**Note**: `containerRegistryUrl` should include only the domain. If you want to publish an image under `docker.io/example/my-image`, you must set `containerRegistryUrl: \"docker.io\"` and `containerImageName: \"example/my-image\"`.\n")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username of the container registry where the image should be pushed to - which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON`, then the existing file will be enhanced")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password of the container registry where the image should be pushed to -  which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON`, then the existing file will be enhanced")
 	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`.")
 
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Glob that should either point to a directory with your sources or one artifact in zip format.\nThis property determines the input to the buildpack.\n")
@@ -309,6 +313,34 @@ func cnbBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
+						Name: "containerRegistryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerRegistryUser"}},
+						Default:   os.Getenv("PIPER_containerRegistryUser"),
+					},
+					{
+						Name: "containerRegistryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerRegistryPassword"}},
+						Default:   os.Getenv("PIPER_containerRegistryPassword"),
+					},
+					{
 						Name: "buildpacks",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -351,11 +383,6 @@ func cnbBuildMetadata() config.StepData {
 					{
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/dockerConfigJSON",
-							},
-
 							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
