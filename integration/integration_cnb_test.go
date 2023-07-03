@@ -61,7 +61,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 		},
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--dockerConfigJSON", "TestCnbIntegration/config.json", "--containerRegistryUrl", registryURL, "--containerRegistryUser", "foo", "--containerRegistryPassword", "bar", "--defaultProcess", "greeter")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--dockerConfigJSON", "TestCnbIntegration/config.json", "--containerRegistryUrl", fmt.Sprintf("http://%s", registryURL), "--containerRegistryUser", "foo", "--containerRegistryPassword", "bar", "--defaultProcess", "greeter")
 	assert.NoError(t, err)
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
