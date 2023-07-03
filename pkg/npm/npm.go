@@ -16,7 +16,7 @@ import (
 const (
 	npmBomFilename                 = "bom-npm.xml"
 	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
-	cycloneDxNpmInstallationFolder = "./bomFolder"
+	cycloneDxNpmInstallationFolder = "./tmp"
 	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
 	cycloneDxSchemaVersion         = "1.4"
 )
@@ -358,7 +358,7 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 // CreateBOM generates BOM file using CycloneDX from all package.json files
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
-	cycloneDxNpmInstallParams := []string{"install", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
+	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
 	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--output-file"}
 
 	// Install cyclonedx/bom with --nosave and generate BOM.
