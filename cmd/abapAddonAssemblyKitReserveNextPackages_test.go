@@ -15,6 +15,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func arrangeConfig(addonDescriptor abaputils.AddonDescriptor) abapAddonAssemblyKitReserveNextPackagesOptions {
+	var config abapAddonAssemblyKitReserveNextPackagesOptions
+	config.Username = "dummy"
+	config.Password = "dummy"
+	adoDesc, _ := json.Marshal(addonDescriptor)
+	config.AddonDescriptor = string(adoDesc)
+	return config
+}
+
 func TestReserveNextPackagesStep(t *testing.T) {
 	var config abapAddonAssemblyKitReserveNextPackagesOptions
 	config.Username = "dummy"
