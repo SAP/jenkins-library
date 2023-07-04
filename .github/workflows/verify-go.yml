@@ -30,11 +30,13 @@ jobs:
             ${{ runner.os }}-golang-
       - name: checkout
         uses: actions/checkout@v2
-      - name: unit-test
+      # - name: unit-test
+      - name: read ENV_TEST
+        id: evn_test
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
-        if: env.ENV_TEST != null
-        run: echo ${{env.ENV_TEST}}
+        # if: env.ENV_TEST != null
+        run: echo "ENV_TTEST=${{env.ENV_TEST}}" >> "$GITHUB_OUTPUT"
 
         # uses: paambaati/codeclimate-action@v2.6.0
         # env:
@@ -44,6 +46,15 @@ jobs:
           # coverageLocations: cover.out:gocov
           # truncate package name from file paths in report
           # prefix: github.com/SAP/jenkins-library/
+
+      - name: unit-test
+        if: steps.env_test.output.ENV_TTEST != null
+        run: echo $steps.env_test.output.ENV_TTEST
+
+      - name: unit-test (for fork)
+        if: steps.env_test.output.ENV_TTEST == null
+        run: echo $steps.env_test.output.ENV_TTEST
+      
   format:
     runs-on: ubuntu-latest
     steps:
