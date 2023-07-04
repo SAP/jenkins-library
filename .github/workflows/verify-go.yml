@@ -31,8 +31,10 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       - name: unit-test
-        if: ${{ secrets.ENV_TEST != null }}
-        run: echo ${{secrets.ENV_TEST}}
+        env:
+          ENV_TEST: ${{ secrets.ENV_TEST }}
+        if: env.ENV_TEST != null
+        run: echo env.ENV_TEST
 
         # uses: paambaati/codeclimate-action@v2.6.0
         # env:
