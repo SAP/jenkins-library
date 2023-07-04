@@ -16,8 +16,8 @@ import (
 const (
 	npmBomFilename                 = "bom-npm.xml"
 	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
-	cycloneDxNpmInstallationFolder = "./tmp"
 	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
+	cycloneDxNpmInstallationFolder = "./tmp" // This folder is also added to npmignore in publish.go.Any changes to this folder needs a change in publish.go publish()
 	cycloneDxSchemaVersion         = "1.4"
 )
 
