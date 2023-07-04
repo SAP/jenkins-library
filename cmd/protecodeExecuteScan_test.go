@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -345,6 +348,11 @@ func TestExecuteProtecodeScan(t *testing.T) {
 }
 
 func TestCorrectDockerConfigEnvVar(t *testing.T) {
+	utils := protecodeTestUtilsBundle{
+		FilesMock:    &mock.FilesMock{},
+		DownloadMock: &mock.DownloadMock{},
+	}
+
 	t.Run("with credentials", func(t *testing.T) {
 		// init
 		testDirectory := t.TempDir()
@@ -363,7 +371,7 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
+		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile}, utils)
 		// assert
 		absolutePath, _ := filepath.Abs(dockerConfigDir)
 		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
@@ -373,7 +381,7 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{})
+		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{}, utils)
 		// assert
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 	})
