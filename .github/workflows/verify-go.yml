@@ -24,7 +24,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: unit-test
         uses: paambaati/codeclimate-action@v4
         env:
@@ -49,7 +49,7 @@ jobs:
             ${{ runner.os }}-golang-format
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: format
         run: go fmt ./...
       - name: verify
@@ -62,7 +62,7 @@ jobs:
           go-version: '1.19.x'
           # action requires go@1.19
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
       - name: staticcheck
@@ -85,7 +85,7 @@ jobs:
             ${{ runner.os }}-golang-generate
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: generate
         run: go run pkg/generator/step-metadata.go
       - name: verify
@@ -105,7 +105,7 @@ jobs:
             ${{ runner.os }}-golang-dependencies
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: cleanup dependencies
         run: go mod tidy
       - name: verify
