@@ -48,12 +48,12 @@ jobs:
           # prefix: github.com/SAP/jenkins-library/
 
       - name: unit-test
-        if: steps.env_test.output.ENV_TTEST != null
-        run: echo $steps.env_test.output.ENV_TTEST
+        if: steps.env_test.outputs.ENV_TTEST != null
+        run: echo $steps.env_test.outputs.ENV_TTEST
 
       - name: unit-test (for fork)
-        if: steps.env_test.output.ENV_TTEST == null
-        run: echo $steps.env_test.output.ENV_TTEST
+        if: steps.env_test.outputs.ENV_TTEST == null
+        run: echo $steps.env_test.outputs.ENV_TTEST
       
   format:
     runs-on: ubuntu-latest
