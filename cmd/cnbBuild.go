@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -396,7 +397,17 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		}
 		log.Entry().Debugf("using docker config file %q", config.DockerConfigJSON)
 
-		_, err = docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
+		if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); !matched {
+			config.ContainerRegistryURL = fmt.Sprintf("https://%s", config.ContainerRegistryURL)
+		}
+
+		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to read registry url %q", config.ContainerRegistryURL)
+		}
+
+		_, err = docker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "failed to update DockerConfigJSON file %q", config.DockerConfigJSON)
