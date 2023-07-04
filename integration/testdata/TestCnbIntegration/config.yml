@@ -12,7 +12,7 @@ steps:
         type: dummy
         data:
         - key: dummy.yml
-          file: TestCnbIntegration/config.yml
+          file: config.yml
       dynatrace:
         type: Dynatrace
         data:
