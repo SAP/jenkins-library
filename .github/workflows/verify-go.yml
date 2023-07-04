@@ -51,12 +51,13 @@ jobs:
         if: steps.cc_reporter_id.outputs.cc_reporter_id != null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
-          
+          go test -tags=unit ./... -coverprofile cover.out
 
       - name: unit-test (for fork)
         if: steps.cc_reporter_id.outputs.cc_reporter_id == null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
+          go test -tags=unit ./... -coverprofile cover.out
       
   format:
     runs-on: ubuntu-latest
