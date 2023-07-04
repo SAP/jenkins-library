@@ -34,8 +34,8 @@ jobs:
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
         if: env.ENV_TEST != null
-        run: echo env.ENV_TEST
-        
+        run: echo ${{env.ENV_TEST}}
+
         # uses: paambaati/codeclimate-action@v2.6.0
         # env:
           # CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
