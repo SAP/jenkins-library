@@ -31,12 +31,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       # - name: unit-test
-      # - name: read ENV_TEST
-      - id: env_test
+      - name: check code climate reporter id
+      - id: cc_reporter_id
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
         # if: env.ENV_TEST != null
-        run: echo "ENV_TTEST=${{env.ENV_TEST}}" >> "$GITHUB_OUTPUT"
+        run: echo "cc_reporter_id=${{env.ENV_TEST}}" >> "$GITHUB_OUTPUT"
 
         # uses: paambaati/codeclimate-action@v2.6.0
         # env:
@@ -48,12 +48,15 @@ jobs:
           # prefix: github.com/SAP/jenkins-library/
 
       - name: unit-test
-        if: steps.env_test.outputs.ENV_TTEST != null
-        run: echo ${{ steps.env_test.outputs.ENV_TTEST }}
+        if: steps.cc_reporter_id.outputs.cc_reporter_id != null
+        run: |
+          echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
+          
 
       - name: unit-test (for fork)
-        if: steps.env_test.outputs.ENV_TTEST == null
-        run: echo ${{ steps.env_test.outputs.ENV_TTEST }}
+        if: steps.cc_reporter_id.outputs.cc_reporter_id == null
+        run: |
+          echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
       
   format:
     runs-on: ubuntu-latest
