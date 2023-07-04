@@ -31,8 +31,8 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       # - name: unit-test
-      - name: read ENV_TEST
-        id: env_test
+      # - name: read ENV_TEST
+      - id: env_test
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
         # if: env.ENV_TEST != null
