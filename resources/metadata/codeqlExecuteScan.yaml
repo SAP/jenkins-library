@@ -39,15 +39,6 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
-      - name: githubApiUrl
-        description: "Set the GitHub API URL."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
-        default: "https://api.github.com"
       - name: buildTool
         type: string
         description: Defines the build tool which is used for building the project.
@@ -113,6 +104,22 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: sarifCheckMaxRetries
+        type: int
+        description: "Maximum number of retries when waiting for the server to finish processing the SARIF upload. Only relevant, if checkForCompliance is enabled."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
+      - name: sarifCheckRetryInterval
+        type: int
+        descriptoin: "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload. Only relevant, if checkForCompliance is enabled."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 30
       - name: threads
         type: string
         description: "Use this many threads for the codeql operations."
@@ -179,4 +186,6 @@ spec:
           - filePattern: "**/*.sarif"
             type: codeql
           - filePattern: "**/toolrun_codeql_*.json"
+            type: codeql
+          - filePattern: "**/piper_codeql_report.json"
             type: codeql

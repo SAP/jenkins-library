@@ -15,14 +15,17 @@ type githubCodeqlScanningService interface {
 	ListAlertsForRepo(ctx context.Context, owner, repo string, opts *github.AlertListOptions) ([]*github.Alert, *github.Response, error)
 }
 
-const auditStateOpen = "open"
+const auditStateOpen string = "open"
+const auditStateDismissed string = "dismissed"
+const codeqlToolName string = "CodeQL"
+const perPageCount int = 100
 
-func NewCodeqlScanAuditInstance(apiURL, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
-	return CodeqlScanAuditInstance{apiURL: apiURL, owner: owner, repository: repository, token: token, trustedCerts: trustedCerts}
+func NewCodeqlScanAuditInstance(serverUrl, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
+	return CodeqlScanAuditInstance{serverUrl: serverUrl, owner: owner, repository: repository, token: token, trustedCerts: trustedCerts}
 }
 
 type CodeqlScanAuditInstance struct {
-	apiURL           string
+	serverUrl        string
 	owner            string
 	repository       string
 	token            string
@@ -31,7 +34,8 @@ type CodeqlScanAuditInstance struct {
 }
 
 func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef string) (CodeqlScanning, error) {
-	ctx, client, err := sapgithub.NewClient(codeqlScanAudit.token, codeqlScanAudit.apiURL, "", codeqlScanAudit.trustedCerts)
+	apiUrl := getApiUrl(codeqlScanAudit.serverUrl)
+	ctx, client, err := sapgithub.NewClient(codeqlScanAudit.token, apiUrl, "", codeqlScanAudit.trustedCerts)
 	if err != nil {
 		return CodeqlScanning{}, err
 	}
@@ -40,26 +44,54 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 }
 
 func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (CodeqlScanning, error) {
-	alertOptions := github.AlertListOptions{
-		State:       "",
-		Ref:         analyzedRef,
-		ListOptions: github.ListOptions{},
-	}
+	page := 1
+	audited := 0
+	totalAlerts := 0
 
-	alerts, _, err := codeScanning.ListAlertsForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &alertOptions)
-	if err != nil {
-		return CodeqlScanning{}, err
-	}
+	for page != 0 {
+		alertOptions := github.AlertListOptions{
+			State: "",
+			Ref:   analyzedRef,
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: perPageCount,
+			},
+		}
 
-	openStateCount := 0
-	for _, alert := range alerts {
-		if *alert.State == auditStateOpen {
-			openStateCount = openStateCount + 1
+		alerts, response, err := codeScanning.ListAlertsForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &alertOptions)
+		if err != nil {
+			return CodeqlScanning{}, err
+		}
+
+		page = response.NextPage
+
+		for _, alert := range alerts {
+			if *alert.Tool.Name != codeqlToolName {
+				continue
+			}
+
+			if *alert.State == auditStateDismissed {
+				audited += 1
+				totalAlerts += 1
+			}
+
+			if *alert.State == auditStateOpen {
+				totalAlerts += 1
+			}
 		}
 	}
 
 	codeqlScanning := CodeqlScanning{}
-	codeqlScanning.Total = len(alerts)
-	codeqlScanning.Audited = (codeqlScanning.Total - openStateCount)
+	codeqlScanning.Total = totalAlerts
+	codeqlScanning.Audited = audited
+
 	return codeqlScanning, nil
+}
+
+func getApiUrl(serverUrl string) string {
+	if serverUrl == "https://github.com" {
+		return "https://api.github.com"
+	}
+
+	return (serverUrl + "/api/v3")
 }

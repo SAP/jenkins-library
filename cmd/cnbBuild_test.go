@@ -230,11 +230,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag))
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:latest", config.ContainerRegistryURL, config.ContainerImageName))
 
-		initialFileExists, _ := utils.FileExists("/path/to/test.json")
-		renamedFileExists, _ := utils.FileExists("/path/to/config.json")
-
-		assert.False(t, initialFileExists)
-		assert.True(t, renamedFileExists)
+		copiedFileExists, _ := utils.FileExists("/tmp/config.json")
+		assert.True(t, copiedFileExists)
 	})
 
 	t.Run("success case (customTlsCertificates)", func(t *testing.T) {
@@ -420,7 +417,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
-		assert.EqualError(t, err, "failed to generate CNB_REGISTRY_AUTH: could not read 'not-there/config.json'")
+		assert.EqualError(t, err, "failed to create/rename DockerConfigJSON file: cannot copy 'not-there/config.json': file does not exist")
 	})
 
 	t.Run("error case: DockerConfigJSON file not there (not config.json)", func(t *testing.T) {
@@ -436,7 +433,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
-		assert.EqualError(t, err, "failed to rename DockerConfigJSON file 'not-there': renaming file 'not-there' is not supported, since it does not exist, or is not a leaf-entry")
+		assert.EqualError(t, err, "failed to create/rename DockerConfigJSON file: cannot copy 'not-there': file does not exist")
 	})
 
 	t.Run("error case: dockerImage is not a valid builder", func(t *testing.T) {

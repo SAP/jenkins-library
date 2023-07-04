@@ -44,26 +44,24 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
 		User:    "cnb",
-		TestDir: []string{"testdata"},
+		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
 			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
 		},
 	})
-	defer container.terminate(t)
 
 	container2 := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
 		User:    "cnb",
-		TestDir: []string{"testdata"},
+		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
 			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
 		},
 	})
-	defer container2.terminate(t)
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--defaultProcess", "greeter")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "project", "--customConfig", "config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--dockerConfigJSON", "config.json", "--containerRegistryUrl", fmt.Sprintf("http://%s", registryURL), "--defaultProcess", "greeter")
 	assert.NoError(t, err)
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
@@ -72,9 +70,10 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	container.assertHasOutput(t, "Setting default process type 'greeter'")
 	container.assertHasOutput(t, "*** Images (sha256:")
 	container.assertHasOutput(t, "SUCCESS")
+	container.assertFileContentEquals(t, "/tmp/config.json", "{\n\t\"auths\": {\n\t\t\"test.registry.io\": {},\n\t\t\"test2.registry.io\": {}\n\t}\n}")
 	container.terminate(t)
 
-	err = container2.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--projectDescriptor", "project-with-id.toml")
+	err = container2.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "project", "--customConfig", "config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--projectDescriptor", "project-with-id.toml")
 	assert.NoError(t, err)
 	container2.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container2.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
@@ -82,6 +81,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	container2.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
 	container2.assertHasOutput(t, "*** Images (sha256:")
 	container2.assertHasOutput(t, "SUCCESS")
+	container2.assertFileContentEquals(t, "/tmp/config.json", "{\n\t\"auths\": {\n\t\t\"test2.registry.io\": {}\n\t}\n}")
 	container2.terminate(t)
 }
 
@@ -97,7 +97,6 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
@@ -114,6 +113,7 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 		"*** Images (sha256:",
 		"SUCCESS",
 	)
+	container.terminate(t)
 }
 
 func TestCNBIntegrationZipPath(t *testing.T) {
@@ -128,7 +128,6 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "go.zip", "--createBOM")
 	assert.NoError(t, err)
@@ -143,6 +142,7 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 		"syft packages registry:localhost:5000/not-found:0.0.1 -o cyclonedx-xml --file bom-docker-0.xml -q",
 	)
 	container.assertHasFiles(t, "/project/bom-docker-0.xml")
+	container.terminate(t)
 }
 
 func TestCNBIntegrationNonZipPath(t *testing.T) {
@@ -157,12 +157,12 @@ func TestCNBIntegrationNonZipPath(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "mta.yaml")
 	assert.Error(t, err)
 
 	container.assertHasOutput(t, "Copying  '/project/mta.yaml' into '/workspace' failed: application path must be a directory or zip")
+	container.terminate(t)
 }
 
 func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
@@ -177,7 +177,6 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
@@ -191,6 +190,7 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 		"*** Images (sha256:",
 		"SUCCESS",
 	)
+	container.terminate(t)
 }
 
 func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
@@ -205,7 +205,6 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
@@ -218,6 +217,7 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 		"*** Images (sha256:",
 		"SUCCESS",
 	)
+	container.terminate(t)
 }
 
 func TestCNBIntegrationWrongBuilderProject(t *testing.T) {
@@ -226,12 +226,12 @@ func TestCNBIntegrationWrongBuilderProject(t *testing.T) {
 		Image:   "nginx:latest",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
 	assert.Error(t, err)
 
 	container.assertHasOutput(t, "the provided dockerImage is not a valid builder")
+	container.terminate(t)
 }
 
 func TestCNBIntegrationBindings(t *testing.T) {
@@ -243,24 +243,23 @@ func TestCNBIntegrationBindings(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
 		User:    "cnb",
-		TestDir: []string{"testdata"},
+		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
 			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
 		},
 	})
-	defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "TestMtaIntegration/maven")
-	assert.Error(t, err)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "project")
+	assert.NoError(t, err)
 
-	container.assertHasOutput(t, "bindings/maven-settings/settings.xml: only whitespace content allowed before start tag")
 	container.assertHasFiles(t,
 		"/tmp/platform/bindings/dummy-binding/type",
 		"/tmp/platform/bindings/dummy-binding/dummy.yml",
 	)
 	container.assertFileContentEquals(t, "/tmp/platform/bindings/maven-settings/settings.xml", "invalid xml")
 	container.assertFileContentEquals(t, "/tmp/platform/bindings/dynatrace/api-key", "api-key-content")
+	container.terminate(t)
 }
 
 func TestCNBIntegrationMultiImage(t *testing.T) {
@@ -275,7 +274,6 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_multi_image.yml", "--createBOM")
 	assert.NoError(t, err)
@@ -295,6 +293,7 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 	container.assertHasFiles(t, "/project/bom-docker-0.xml")
 	container.assertHasFiles(t, "/project/bom-docker-1.xml")
 	container.assertHasFiles(t, "/project/bom-docker-2.xml")
+	container.terminate(t)
 }
 
 func TestCNBIntegrationPreserveFiles(t *testing.T) {
@@ -309,12 +308,12 @@ func TestCNBIntegrationPreserveFiles(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml")
 	assert.NoError(t, err)
 
 	container.assertHasFiles(t, "/project/project/node_modules/base/README.md", "/project/project/package-lock.json")
+	container.terminate(t)
 }
 
 func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
@@ -329,9 +328,9 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
-	defer container.terminate(t)
 
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml", "--path", "zip/go.zip", "--containerImageName", "go-zip")
 	assert.NoError(t, err)
 	container.assertHasOutput(t, "skipping preserving files because the source")
+	container.terminate(t)
 }
