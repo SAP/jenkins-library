@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 
+	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/configfile"
+
 	cranecmd "github.com/google/go-containerregistry/cmd/crane/cmd"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -25,6 +29,61 @@ import (
 // AuthEntry defines base64 encoded username:password required inside a Docker config.json
 type AuthEntry struct {
 	Auth string `json:"auth,omitempty"`
+}
+
+// MergeDockerConfigJSON merges two docker config.json files.
+func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error {
+	if exists, _ := utils.FileExists(sourcePath); !exists {
+		return fmt.Errorf("source dockerConfigJSON file %q does not exist", sourcePath)
+	}
+
+	sourceReader, err := utils.Open(sourcePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open file %q", sourcePath)
+	}
+	defer sourceReader.Close()
+
+	sourceConfig, err := config.LoadFromReader(sourceReader)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read file %q", sourcePath)
+	}
+
+	var targetConfig *configfile.ConfigFile
+	if exists, _ := utils.FileExists(targetPath); !exists {
+		log.Entry().Warnf("target dockerConfigJSON file %q does not exist, creating a new one", sourcePath)
+		targetConfig = configfile.New(targetPath)
+	} else {
+		targetReader, err := utils.Open(targetPath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to open file %q", targetReader)
+		}
+		defer targetReader.Close()
+		targetConfig, err = config.LoadFromReader(targetReader)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read file %q", targetPath)
+		}
+	}
+
+	for registry, auth := range sourceConfig.GetAuthConfigs() {
+		targetConfig.AuthConfigs[registry] = auth
+	}
+
+	buf := bytes.NewBuffer(nil)
+	err = targetConfig.SaveToWriter(buf)
+	if err != nil {
+		return errors.Wrapf(err, "failed to save file %q", targetPath)
+	}
+
+	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
+	if err != nil {
+		return fmt.Errorf("failed to create directory path for the file %q: %w", targetPath, err)
+	}
+	err = utils.FileWrite(targetPath, buf.Bytes(), 0666)
+	if err != nil {
+		return fmt.Errorf("failed to write %q: %w", targetPath, err)
+	}
+
+	return nil
 }
 
 // CreateDockerConfigJSON creates / updates a Docker config.json with registry credentials

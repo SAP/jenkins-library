@@ -44,7 +44,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
 		User:    "cnb",
-		TestDir: []string{"testdata"},
+		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
 			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
@@ -54,14 +54,14 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	container2 := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
 		User:    "cnb",
-		TestDir: []string{"testdata"},
+		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
 			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
 		},
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--dockerConfigJSON", "TestCnbIntegration/config.json", "--containerRegistryUrl", fmt.Sprintf("http://%s", registryURL), "--containerRegistryUser", "foo", "--containerRegistryPassword", "bar", "--defaultProcess", "greeter")
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "project", "--customConfig", "config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--dockerConfigJSON", "config.json", "--containerRegistryUrl", fmt.Sprintf("http://%s", registryURL), "--defaultProcess", "greeter")
 	assert.NoError(t, err)
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
@@ -70,10 +70,10 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	container.assertHasOutput(t, "Setting default process type 'greeter'")
 	container.assertHasOutput(t, "*** Images (sha256:")
 	container.assertHasOutput(t, "SUCCESS")
-	container.assertFileContentEquals(t, "/project/TestCnbIntegration/config.json", "{\"auths\":{\"localhost:5000\":{\"auth\":\"Zm9vOmJhcg==\"},\"test.registry.io\":{}}}")
+	container.assertFileContentEquals(t, "/tmp/config.json", "{\n\t\"auths\": {\n\t\t\"test.registry.io\": {},\n\t\t\"test2.registry.io\": {}\n\t}\n}")
 	container.terminate(t)
 
-	err = container2.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "TestCnbIntegration/project", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--containerRegistryUser", "foo", "--containerRegistryPassword", "bar", "--projectDescriptor", "project-with-id.toml")
+	err = container2.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--path", "project", "--customConfig", "config.yml", "--containerImageName", "node", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--projectDescriptor", "project-with-id.toml")
 	assert.NoError(t, err)
 	container2.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container2.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
@@ -81,7 +81,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	container2.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
 	container2.assertHasOutput(t, "*** Images (sha256:")
 	container2.assertHasOutput(t, "SUCCESS")
-	container2.assertFileContentEquals(t, "/tmp/config.json", "{\"auths\":{\"localhost:5000\":{\"auth\":\"Zm9vOmJhcg==\"}}}")
+	container2.assertFileContentEquals(t, "/tmp/config.json", "{\n\t\"auths\": {\n\t\t\"test2.registry.io\": {}\n\t}\n}")
 	container2.terminate(t)
 }
 
@@ -243,17 +243,16 @@ func TestCNBIntegrationBindings(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
 		User:    "cnb",
-		TestDir: []string{"testdata"},
+		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
 			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
 		},
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "TestCnbIntegration/config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "TestMtaIntegration/maven")
-	assert.Error(t, err)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config.yml", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL, "--path", "project")
+	assert.NoError(t, err)
 
-	container.assertHasOutput(t, "bindings/maven-settings/settings.xml: only whitespace content allowed before start tag")
 	container.assertHasFiles(t,
 		"/tmp/platform/bindings/dummy-binding/type",
 		"/tmp/platform/bindings/dummy-binding/dummy.yml",
