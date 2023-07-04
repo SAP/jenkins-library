@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v2
       # - name: unit-test
       - name: check code climate reporter id
-      - id: cc_reporter_id
+        id: cc_reporter_id
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
         # if: env.ENV_TEST != null
