@@ -112,10 +112,29 @@ func processConfigs(main cnbBuildOptions, multipleImages []map[string]interface{
 	return result, nil
 }
 
-func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
+func setCustomBuildpacks(bpacks, preBuildpacks, postBuildpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
 	buildpacksPath := "/tmp/buildpacks"
 	orderPath := "/tmp/buildpacks/order.toml"
-	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, dockerCreds, utils)
+	err := cnbutils.DownloadBuildpacks(buildpacksPath, append(bpacks, append(preBuildpacks, postBuildpacks...)...), dockerCreds, utils)
+	if err != nil {
+		return "", "", err
+	}
+
+	if len(bpacks) == 0 && (len(postBuildpacks) > 0 || len(preBuildpacks) > 0) {
+		matches, err := utils.Glob("/cnb/buildpacks/*")
+		if err != nil {
+			return "", "", err
+		}
+
+		for _, match := range matches {
+			err = cnbutils.CreateVersionSymlinks(buildpacksPath, match, utils)
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+
+	newOrder, err := cnbutils.CreateOrder(bpacks, preBuildpacks, postBuildpacks, dockerCreds, utils)
 	if err != nil {
 		return "", "", err
 	}
@@ -475,8 +494,16 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 
 		config.mergeEnvVars(descriptor.EnvVars)
 
-		if (config.Buildpacks == nil || len(config.Buildpacks) == 0) && len(descriptor.Buildpacks) > 0 {
+		if len(config.Buildpacks) == 0 && len(descriptor.Buildpacks) > 0 {
 			config.Buildpacks = descriptor.Buildpacks
+		}
+
+		if len(config.PreBuildpacks) == 0 && len(descriptor.PreBuildpacks) > 0 {
+			config.PreBuildpacks = descriptor.PreBuildpacks
+		}
+
+		if len(config.PostBuildpacks) == 0 && len(descriptor.PostBuildpacks) > 0 {
+			config.PostBuildpacks = descriptor.PostBuildpacks
 		}
 
 		if descriptor.Exclude != nil {
@@ -563,11 +590,13 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	metadata.WriteProjectMetadata(GeneralConfig.EnvRootPath, utils)
 
 	var buildpacksPath = "/cnb/buildpacks"
-	var orderPath = "/cnb/order.toml"
+	var orderPath = cnbutils.DefaultOrderPath
 
-	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
+	if len(config.Buildpacks) > 0 || len(config.PreBuildpacks) > 0 || len(config.PostBuildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, config.DockerConfigJSON, utils)
+		log.Entry().Infof("Pre-buildpacks: '%v'", config.PreBuildpacks)
+		log.Entry().Infof("Post-buildpacks: '%v'", config.PostBuildpacks)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, config.PreBuildpacks, config.PostBuildpacks, config.DockerConfigJSON, utils)
 		defer func() { _ = utils.RemoveAll(buildpacksPath) }()
 		defer func() { _ = utils.RemoveAll(orderPath) }()
 		if err != nil {
