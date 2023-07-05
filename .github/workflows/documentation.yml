@@ -20,7 +20,7 @@ jobs:
         with:
           java-version: '1.8'
 
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
 
