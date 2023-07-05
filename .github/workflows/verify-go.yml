@@ -58,12 +58,17 @@ jobs:
         # if: steps.cc_reporter_id.outputs.cc_reporter_id != null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
+          go test -tags=unit ./... -coverprofile cover.out
+          cat cover.out
 
       - name: unit-test (for fork)
         if: github.event.pull_request.head.repo.fork == true
         # if: steps.cc_reporter_id.outputs.cc_reporter_id == null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
+          go test -tags=unit ./... -coverprofile cover.out
+          cat cover.out
+
       
   format:
     runs-on: ubuntu-latest
