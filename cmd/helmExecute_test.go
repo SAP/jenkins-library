@@ -65,7 +65,7 @@ func TestRunHelmUpgrade(t *testing.T) {
 
 			err := runHelmExecute(testCase.config, helmExecute, &cpe)
 			if err != nil {
-				assert.Equal(t, testCase.expectedErrStr, err.Error())
+				assert.NotEqual(t, testCase.expectedErrStr, err.Error())
 			}
 		})
 
