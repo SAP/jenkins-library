@@ -47,6 +47,12 @@ jobs:
       - name: event name
         run: echo "${{ github.event_name }}"
 
+      - name: check if it's a fork
+        run: |
+          echo "${{ github.event.pull_request.head.repo.fork }}
+          echo "${{ github.event.pull_request.head.repo.fork }} != true"
+          echo "${{ github.event.pull_request.head.repo.fork }} == false"
+
       - name: unit-test
         if: github.event.pull_request.head.repo.fork != true
         # if: steps.cc_reporter_id.outputs.cc_reporter_id != null
