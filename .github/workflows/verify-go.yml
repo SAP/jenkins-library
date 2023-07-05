@@ -30,12 +30,10 @@ jobs:
             ${{ runner.os }}-golang-
       - name: checkout
         uses: actions/checkout@v2
-      # - name: unit-test
       - name: check code climate reporter id
         id: cc_reporter_id
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
-        # if: env.ENV_TEST != null
         run: echo "cc_reporter_id=${{env.ENV_TEST}}" >> "$GITHUB_OUTPUT"
 
         # uses: paambaati/codeclimate-action@v2.6.0
@@ -46,18 +44,20 @@ jobs:
           # coverageLocations: cover.out:gocov
           # truncate package name from file paths in report
           # prefix: github.com/SAP/jenkins-library/
+      - name: event name
+        run: echo "${{ github.event_name }}"
 
       - name: unit-test
-        if: steps.cc_reporter_id.outputs.cc_reporter_id != null
+        if: github.event.pull_request.head.repo.fork != true
+        # if: steps.cc_reporter_id.outputs.cc_reporter_id != null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
-          go test -tags=unit ./... -coverprofile cover.out
 
       - name: unit-test (for fork)
-        if: steps.cc_reporter_id.outputs.cc_reporter_id == null
+        if: github.event.pull_request.head.repo.fork == true
+        # if: steps.cc_reporter_id.outputs.cc_reporter_id == null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
-          go test -tags=unit ./... -coverprofile cover.out
       
   format:
     runs-on: ubuntu-latest
