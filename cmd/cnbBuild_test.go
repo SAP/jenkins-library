@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -227,11 +230,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag))
 		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:latest", config.ContainerRegistryURL, config.ContainerImageName))
 
-		initialFileExists, _ := utils.FileExists("/path/to/test.json")
-		renamedFileExists, _ := utils.FileExists("/path/to/config.json")
-
-		assert.False(t, initialFileExists)
-		assert.True(t, renamedFileExists)
+		copiedFileExists, _ := utils.FileExists("/tmp/config.json")
+		assert.True(t, copiedFileExists)
 	})
 
 	t.Run("success case (customTlsCertificates)", func(t *testing.T) {
@@ -417,7 +417,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
-		assert.EqualError(t, err, "failed to generate CNB_REGISTRY_AUTH: could not read 'not-there/config.json'")
+		assert.EqualError(t, err, "failed to create/rename DockerConfigJSON file: cannot copy 'not-there/config.json': file does not exist")
 	})
 
 	t.Run("error case: DockerConfigJSON file not there (not config.json)", func(t *testing.T) {
@@ -433,7 +433,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
-		assert.EqualError(t, err, "failed to rename DockerConfigJSON file 'not-there': renaming file 'not-there' is not supported, since it does not exist, or is not a leaf-entry")
+		assert.EqualError(t, err, "failed to create/rename DockerConfigJSON file: cannot copy 'not-there': file does not exist")
 	})
 
 	t.Run("error case: dockerImage is not a valid builder", func(t *testing.T) {
@@ -518,8 +518,7 @@ uri = "some-buildpack"`))
 
 		assert.Contains(t, customData.Data[0].Buildpacks.FromConfig, "paketobuildpacks/java")
 		assert.NotContains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "paketobuildpacks/java")
-		assert.Contains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "<redacted>")
-		assert.NotContains(t, customData.Data[0].Buildpacks.Overall, "<redacted>")
+		assert.Contains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "bcc73ab1f0a0d3fb0d1bf2b6df5510a25ccd14a761dbc0f5044ea24ead30452b")
 		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "paketobuildpacks/java")
 
 		assert.True(t, customData.Data[0].ProjectDescriptor.Used)
@@ -639,7 +638,7 @@ uri = "some-buildpack"
 		assert.Equal(t, "11", customData.Data[0].BuildEnv.KeyValues["BP_NODE_VERSION"])
 		assert.NotContains(t, customData.Data[0].BuildEnv.KeyValues, "PROJECT_KEY")
 
-		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "<redacted>")
+		assert.Contains(t, customData.Data[0].Buildpacks.Overall, "bcc73ab1f0a0d3fb0d1bf2b6df5510a25ccd14a761dbc0f5044ea24ead30452b")
 	})
 
 	t.Run("success case (multiple images configured)", func(t *testing.T) {

@@ -194,7 +194,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
 			log.Entry().Errorf("License Policy Violations found")
 			log.SetErrorCategory(log.ErrorCompliance)
-			if err == nil && !piperutils.ContainsStringPart(config.FailOn, "NONE") {
+			if err == nil && piperutils.ContainsStringPart(config.FailOn, "CRITICAL") {
 				err = errors.New("License Policy Violations found")
 			}
 		} else {
@@ -389,6 +389,16 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
 
+	// to exclude dependency types for npm
+	if len(config.NpmDependencyTypesExcluded) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.dependency.types.excluded") {
+		args = append(args, fmt.Sprintf("--detect.npm.dependency.types.excluded=%v", strings.ToUpper(strings.Join(config.NpmDependencyTypesExcluded, ","))))
+	}
+
+	// A space-separated list of additional arguments that Detect will add at then end of the npm ls command line
+	if len(config.NpmArguments) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.arguments") {
+		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.ToUpper(strings.Join(config.NpmArguments, " "))))
+	}
+
 	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
 	if err != nil {
 		return nil, err
@@ -402,7 +412,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
 	}
 
-	if len(mavenArgs) > 0 {
+	if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
 		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 	}
 
@@ -839,10 +849,20 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	projectVersionUrl := projectVersion.Href
+	if projectVersionUrl == "" {
+		return "", fmt.Errorf("TR_DETECT: no projectversion URL")
+	}
+	// projectVersion UUID comes as last part of the URL
+	vparts := strings.Split(projectVersionUrl, "/")
+	projectVersionId := vparts[len(vparts)-1]
+	if projectVersionId == "" {
+		return "", fmt.Errorf("TR_DETECT: no projectversion id in %v", projectVersionUrl)
+	}
+
 	err = record.AddKeyData("version",
+		projectVersionId,
 		projectVersion.Name,
-		projectVersionUrl,
-		projectVersionUrl)
+		projectVersion.Href)
 	if err != nil {
 		return "", err
 	}

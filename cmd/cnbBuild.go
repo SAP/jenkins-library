@@ -211,28 +211,26 @@ func extractZip(source, target string) error {
 	return nil
 }
 
-func renameDockerConfig(config *cnbBuildOptions, utils cnbutils.BuildUtils) error {
-	if filepath.Base(config.DockerConfigJSON) != "config.json" {
-		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(config.DockerConfigJSON))
+func ensureDockerConfig(config *cnbBuildOptions, utils cnbutils.BuildUtils) error {
+	newFile := "/tmp/config.json"
+	if config.DockerConfigJSON == "" {
+		config.DockerConfigJSON = newFile
 
-		newPath := filepath.Join(filepath.Dir(config.DockerConfigJSON), "config.json")
-		alreadyExists, err := utils.FileExists(newPath)
-		if err != nil {
-			return err
-		}
-
-		if alreadyExists {
-			return nil
-		}
-
-		err = utils.FileRename(config.DockerConfigJSON, newPath)
-		if err != nil {
-			return err
-		}
-
-		config.DockerConfigJSON = newPath
+		return utils.FileWrite(config.DockerConfigJSON, []byte("{}"), os.ModePerm)
 	}
 
+	log.Entry().Debugf("Copying docker config file from '%s' to '%s'", config.DockerConfigJSON, newFile)
+	_, err := utils.Copy(config.DockerConfigJSON, newFile)
+	if err != nil {
+		return err
+	}
+
+	err = utils.Chmod(newFile, 0644)
+	if err != nil {
+		return err
+	}
+
+	config.DockerConfigJSON = newFile
 	return nil
 }
 
@@ -381,11 +379,18 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
-	if len(config.DockerConfigJSON) > 0 {
-		err = renameDockerConfig(config, utils)
+	err = ensureDockerConfig(config, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrapf(err, "failed to create/rename DockerConfigJSON file")
+	}
+
+	if config.DockerConfigJSONCPE != "" {
+		log.Entry().Debugf("merging docker config file '%s' into '%s'", config.DockerConfigJSONCPE, config.DockerConfigJSON)
+		err = docker.MergeDockerConfigJSON(config.DockerConfigJSONCPE, config.DockerConfigJSON, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
+			return errors.Wrapf(err, "failed to merge DockerConfigJSON files")
 		}
 	}
 

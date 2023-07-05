@@ -111,6 +111,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentCreateTagCommand())
 	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
+	rootCmd.AddCommand(CheckmarxOneExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(CodeqlExecuteScanCommand())
 	rootCmd.AddCommand(CredentialdiggerScanCommand())
@@ -195,6 +196,7 @@ func Execute() {
 	rootCmd.AddCommand(TmsUploadCommand())
 	rootCmd.AddCommand(TmsExportCommand())
 	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
+	rootCmd.AddCommand(AscAppUploadCommand())
 
 	addRootFlags(rootCmd)
 
