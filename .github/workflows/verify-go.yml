@@ -17,7 +17,7 @@ jobs:
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-${{ hashFiles('go.sum') }}
@@ -41,7 +41,7 @@ jobs:
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-format${{ hashFiles('go.sum') }}
@@ -77,7 +77,7 @@ jobs:
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-generate${{ hashFiles('go.sum') }}
@@ -97,7 +97,7 @@ jobs:
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-dependencies${{ hashFiles('go.sum') }}
