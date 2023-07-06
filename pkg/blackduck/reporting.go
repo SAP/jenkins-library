@@ -30,30 +30,30 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 		for _, v := range vulns.Items {
 
 			isAudited := true
-			if v.RemediationStatus == "NEW" {
+			if v.RemediationStatus == "NEW" || v.RemediationStatus == "REMEDIATION_REQUIRED" || v.RemediationStatus == "NEEDS_REVIEW" {
 				isAudited = false
 			}
-			//|| v.RemediationStatus == "REMEDIATION_REQUIRED" || v.RemediationStatus == "NEEDS_REVIEW"
+			//
 
 			unifiedStatusValue := "not audited"
 
 			switch v.RemediationStatus {
 			case "NEW":
-				unifiedStatusValue = "not audited"
+				unifiedStatusValue = "new"
 			case "NEEDS_REVIEW":
-				unifiedStatusValue = "in process"
+				unifiedStatusValue = "inProcess"
 			case "REMEDIATION_COMPLETE":
-				unifiedStatusValue = "not exploitable/false positive"
+				unifiedStatusValue = "notRelevant"
 			case "PATCHED":
-				unifiedStatusValue = "not exploitable/false positive"
+				unifiedStatusValue = "notRelevant"
 			case "MITIGATED":
-				unifiedStatusValue = "not exploitable/false positive"
+				unifiedStatusValue = "notRelevant"
 			case "DUPLICATE":
-				unifiedStatusValue = "not exploitable/false positive"
+				unifiedStatusValue = "notRelevant"
 			case "IGNORED":
-				unifiedStatusValue = "not exploitable/false positive"
+				unifiedStatusValue = "notRelevant"
 			case "REMEDIATION_REQUIRED":
-				unifiedStatusValue = "exploitable/true positive"
+				unifiedStatusValue = "relevant"
 			}
 
 			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", v.VulnerabilityWithRemediation.VulnerabilityName, v.Component.Name, v.Component.Version)
