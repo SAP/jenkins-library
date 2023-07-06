@@ -17,7 +17,7 @@ import (
 
 const (
 	registryURL = "localhost:5000"
-	baseBuilder = "paketobuildpacks/builder:0.3.26-base"
+	baseBuilder = "paketobuildpacks/builder:0.3.280-base"
 )
 
 func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Container {
@@ -135,7 +135,7 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 	container.assertHasOutput(t,
 		"running command: /cnb/lifecycle/creator",
 		"Installing Go",
-		"Paketo Go Build Buildpack",
+		"Paketo Buildpack for Go Build",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
@@ -279,9 +279,9 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
-		"Previous image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found",
+		"Image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found",
 		"Saving localhost:5000/io-buildpacks-my-app:latest...",
-		"Previous image with name \"localhost:5000/go-app:v1.0.0\" not found",
+		"Image with name \"localhost:5000/go-app:v1.0.0\" not found",
 		"Saving localhost:5000/go-app:v1.0.0...",
 		"Using cached buildpack",
 		"Saving localhost:5000/my-app2:latest...",
@@ -332,5 +332,29 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml", "--path", "zip/go.zip", "--containerImageName", "go-zip")
 	assert.NoError(t, err)
 	container.assertHasOutput(t, "skipping preserving files because the source")
+	container.terminate(t)
+}
+
+func TestCNBIntegrationPrePostBuildpacks(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	registryContainer := setupDockerRegistry(t, ctx)
+	defer registryContainer.Terminate(ctx)
+
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   baseBuilder,
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestCnbIntegration"},
+		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+		Environment: map[string]string{
+			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
+		},
+	})
+
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--projectDescriptor", "", "--path", "project", "--customConfig", "config.yml", "--containerImageTag", "0.0.1", "--containerImageName", "not-found", "--containerRegistryUrl", registryURL, "--postBuildpacks", "paketobuildpacks/datadog")
+	assert.NoError(t, err)
+	container.assertHasOutput(t, "Setting custom buildpacks: '[]'")
+	container.assertHasOutput(t, "Pre-buildpacks: '[]'")
+	container.assertHasOutput(t, "Post-buildpacks: '[paketobuildpacks/datadog]'")
 	container.terminate(t)
 }
