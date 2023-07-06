@@ -45,7 +45,7 @@ func TestOrderSave(t *testing.T) {
 		assert.True(t, mockUtils.HasWrittenFile("/tmp/order.toml"))
 		result, err := mockUtils.FileRead("/tmp/order.toml")
 		assert.NoError(t, err)
-		assert.Equal(t, "\n[[order]]\n\n  [[order.group]]\n    id = \"paketo-buildpacks/sap-machine\"\n    version = \"1.1.1\"\n\n  [[order.group]]\n    id = \"paketo-buildpacks/java\"\n    version = \"2.2.2\"\n", string(result))
+		assert.Equal(t, "[[order]]\n\n  [[order.group]]\n    id = \"paketo-buildpacks/sap-machine\"\n    version = \"1.1.1\"\n\n  [[order.group]]\n    id = \"paketo-buildpacks/java\"\n    version = \"2.2.2\"\n", string(result))
 	})
 
 	t.Run("raises an error if unable to write the file", func(t *testing.T) {

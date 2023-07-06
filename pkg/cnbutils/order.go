@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pelletier/go-toml"
+	"github.com/BurntSushi/toml"
 )
 
 const DefaultOrderPath = "/cnb/order.toml"
@@ -46,7 +46,7 @@ func loadExistingOrder(utils BuildUtils) (Order, error) {
 	}
 	defer orderReader.Close()
 
-	err = toml.NewDecoder(orderReader).Decode(&order)
+	_, err = toml.NewDecoder(orderReader).Decode(&order)
 	if err != nil {
 		return Order{}, err
 	}

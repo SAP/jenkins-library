@@ -135,7 +135,7 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 	container.assertHasOutput(t,
 		"running command: /cnb/lifecycle/creator",
 		"Installing Go",
-		"Paketo Go Build Buildpack",
+		"Paketo Buildpack for Go Build",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
@@ -279,9 +279,9 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
-		"Previous image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found",
+		"Image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found",
 		"Saving localhost:5000/io-buildpacks-my-app:latest...",
-		"Previous image with name \"localhost:5000/go-app:v1.0.0\" not found",
+		"Image with name \"localhost:5000/go-app:v1.0.0\" not found",
 		"Saving localhost:5000/go-app:v1.0.0...",
 		"Using cached buildpack",
 		"Saving localhost:5000/my-app2:latest...",
