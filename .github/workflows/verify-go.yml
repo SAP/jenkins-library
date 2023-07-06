@@ -30,11 +30,11 @@ jobs:
             ${{ runner.os }}-golang-
       - name: checkout
         uses: actions/checkout@v2
-      - name: check code climate reporter id
+      - name: read code climate reporter id
         id: cc_reporter_id
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
-        run: echo "cc_reporter_id=${{env.ENV_TEST}}" >> "$GITHUB_OUTPUT"
+        run: echo "cc_reporter_id=${{ env.ENV_TEST }}" >> "$GITHUB_OUTPUT"
 
         # uses: paambaati/codeclimate-action@v2.6.0
         # env:
@@ -54,21 +54,19 @@ jobs:
           echo "${{ github.event.pull_request.head.repo.fork == false }}"
 
       - name: unit-test
-        if: github.event.pull_request.head.repo.fork != true
+        if: github.repository_owner == "vstarostin"
         # if: steps.cc_reporter_id.outputs.cc_reporter_id != null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
           go test -tags=unit ./... -coverprofile cover.out
 
-      - run: cat cover.out
-
       - name: unit-test (for fork)
-        if: github.event.pull_request.head.repo.fork == true
+        if: github.repository_owner != "vstarostin"
+        # if: github.event.pull_request.head.repo.fork == true
         # if: steps.cc_reporter_id.outputs.cc_reporter_id == null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
           go test -tags=unit ./... -coverprofile cover.out
-          cat cover.out
 
       
   format:
