@@ -95,35 +95,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/registryUrl
-      - name: containerRegistryUser
-        aliases:
-          - name: dockerRegistryUser
-        type: string
-        description: Username of the container registry where the image should be pushed to - which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON`, then the existing file will be enhanced
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: container/repositoryUsername
-      - name: containerRegistryPassword
-        aliases:
-          - name: dockerRegistryPassword
-        type: string
-        description: Password of the container registry where the image should be pushed to -  which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON`, then the existing file will be enhanced
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: container/repositoryPassword
       - name: buildpacks
         type: "[]string"
-        description: List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`.
+        description: List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`. When this property is specified, buildpacks which are part of the builder will be ignored.
         scope:
           - PARAMETERS
           - STAGES
@@ -131,6 +105,26 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/buildpacks
+      - name: preBuildpacks
+        type: "[]string"
+        description: Buildpacks to prepend to the groups in the builder's order.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/preBuildpacks
+      - name: postBuildpacks
+        type: "[]string"
+        description: Buildpacks to append to the groups in the builder's order.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/postBuildpacks
       - name: buildEnvVars
         type: "map[string]interface{}"
         description: |
@@ -181,6 +175,13 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+      - name: dockerConfigJSONCPE
+        type: string
+        description: This property is intended only for reading the `dockerConfigJSON` from the Common Pipeline Environment. If you want to provide your own credentials, please refer to the [dockerConfigJSON](#dockerConfigJSON) property. If both properties are set, the config files will be merged, with the [dockerConfigJSON](#dockerConfigJSON) having higher priority.
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
       - name: customTlsCertificateLinks
         type: "[]string"
         description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.

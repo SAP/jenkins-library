@@ -13,18 +13,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.10.0
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-${{ hashFiles('go.sum') }}
           restore-keys: |
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: unit-test
         uses: paambaati/codeclimate-action@v4
         env:
@@ -37,11 +37,11 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-format${{ hashFiles('go.sum') }}
@@ -49,7 +49,7 @@ jobs:
             ${{ runner.os }}-golang-format
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: format
         run: go fmt ./...
       - name: verify
@@ -57,12 +57,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.19.x'
           # action requires go@1.19
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
       - name: staticcheck
@@ -73,11 +73,11 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-generate${{ hashFiles('go.sum') }}
@@ -85,7 +85,7 @@ jobs:
             ${{ runner.os }}-golang-generate
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: generate
         run: go run pkg/generator/step-metadata.go
       - name: verify
@@ -93,11 +93,11 @@ jobs:
   dependencies:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-dependencies${{ hashFiles('go.sum') }}
@@ -105,7 +105,7 @@ jobs:
             ${{ runner.os }}-golang-dependencies
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: cleanup dependencies
         run: go mod tidy
       - name: verify
