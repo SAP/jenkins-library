@@ -27,36 +27,30 @@ type License struct {
 	URI  string `toml:"uri" json:"uri"`
 }
 
-func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils BuildUtils) (Order, error) {
+func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils BuildUtils) error {
 	if dockerCreds != "" {
 		os.Setenv("DOCKER_CONFIG", filepath.Dir(dockerCreds))
 	}
 
-	var orderEntry OrderEntry
-	order := Order{
-		Utils: utils,
-	}
-
 	err := utils.MkdirAll(bpCacheDir, os.ModePerm)
 	if err != nil {
-		return Order{}, errors.Wrap(err, "failed to create temp directory for buildpack cache")
+		return errors.Wrap(err, "failed to create temp directory for buildpack cache")
 	}
 
 	for _, bpack := range bpacks {
-		var bpackMeta BuildPackMetadata
 		imageInfo, err := utils.GetRemoteImageInfo(bpack)
 		if err != nil {
-			return Order{}, errors.Wrap(err, "failed to get remote image info of buildpack")
+			return errors.Wrap(err, "failed to get remote image info of buildpack")
 		}
 		hash, err := imageInfo.Digest()
 		if err != nil {
-			return Order{}, errors.Wrap(err, "failed to get image digest")
+			return errors.Wrap(err, "failed to get image digest")
 		}
 		cacheDir := filepath.Join(bpCacheDir, hash.String())
 
 		cacheExists, err := utils.DirExists(cacheDir)
 		if err != nil {
-			return Order{}, errors.Wrapf(err, "failed to check if cache dir '%s' exists", cacheDir)
+			return errors.Wrapf(err, "failed to check if cache dir '%s' exists", cacheDir)
 		}
 
 		if cacheExists {
@@ -64,36 +58,83 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 		} else {
 			err := utils.MkdirAll(cacheDir, os.ModePerm)
 			if err != nil {
-				return Order{}, errors.Wrap(err, "failed to create temp directory for buildpack cache")
+				return errors.Wrap(err, "failed to create temp directory for buildpack cache")
 			}
 
 			log.Entry().Infof("Downloading buildpack '%s' to %s", bpack, cacheDir)
-			img, err := utils.DownloadImageContent(bpack, cacheDir)
+			_, err = utils.DownloadImageContent(bpack, cacheDir)
 			if err != nil {
-				return Order{}, errors.Wrapf(err, "failed download buildpack image '%s'", bpack)
+				return errors.Wrapf(err, "failed download buildpack image '%s'", bpack)
 			}
-			imageInfo = img
+		}
+
+		matches, err := utils.Glob(filepath.Join(cacheDir, "cnb/buildpacks/*"))
+		if err != nil {
+			return err
+		}
+
+		for _, match := range matches {
+			err = CreateVersionSymlinks(path, match, utils)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func GetMetadata(bpacks []string, utils BuildUtils) ([]BuildPackMetadata, error) {
+	var metadata []BuildPackMetadata
+
+	for _, bpack := range bpacks {
+		var bpackMeta BuildPackMetadata
+		imageInfo, err := utils.GetRemoteImageInfo(bpack)
+		if err != nil {
+			return nil, err
 		}
 
 		imgConf, err := imageInfo.ConfigFile()
 		if err != nil {
-			return Order{}, errors.Wrapf(err, "failed to read '%s' image config", bpack)
+			return nil, errors.Wrapf(err, "failed to read '%s' image config", bpack)
 		}
 
 		err = json.Unmarshal([]byte(imgConf.Config.Labels["io.buildpacks.buildpackage.metadata"]), &bpackMeta)
 		if err != nil {
-			return Order{}, errors.Wrapf(err, "failed unmarshal '%s' image label", bpack)
+			return nil, err
 		}
-		log.Entry().Debugf("Buildpack metadata: '%v'", bpackMeta)
-		orderEntry.Group = append(orderEntry.Group, bpackMeta)
+		metadata = append(metadata, bpackMeta)
+	}
 
-		err = CopyProject(filepath.Join(cacheDir, "cnb/buildpacks"), path, nil, nil, utils)
+	return metadata, nil
+}
+
+func CreateVersionSymlinks(basePath, buildpackDir string, utils BuildUtils) error {
+	newBuildpackPath := filepath.Join(basePath, filepath.Base(buildpackDir))
+	err := utils.MkdirAll(newBuildpackPath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	versions, err := utils.Glob(filepath.Join(buildpackDir, "*"))
+	if err != nil {
+		return err
+	}
+
+	for _, version := range versions {
+		newVersionPath := filepath.Join(newBuildpackPath, filepath.Base(version))
+		exists, err := utils.DirExists(newVersionPath)
 		if err != nil {
-			return Order{}, err
+			return err
+		}
+
+		if !exists {
+			err = utils.Symlink(version, newVersionPath)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	order.Order = []OrderEntry{orderEntry}
-
-	return order, nil
+	return nil
 }
