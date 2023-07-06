@@ -59,7 +59,8 @@ jobs:
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
           go test -tags=unit ./... -coverprofile cover.out
-          cat cover.out
+
+      - run: cat cover.out
 
       - name: unit-test (for fork)
         if: github.event.pull_request.head.repo.fork == true
