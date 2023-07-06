@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.10.0
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-${{ hashFiles('go.sum') }}
@@ -46,11 +46,11 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-format${{ hashFiles('go.sum') }}
@@ -66,7 +66,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.19.x'
           # action requires go@1.19
@@ -82,11 +82,11 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-generate${{ hashFiles('go.sum') }}
@@ -102,11 +102,11 @@ jobs:
   dependencies:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.18.x'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-dependencies${{ hashFiles('go.sum') }}
