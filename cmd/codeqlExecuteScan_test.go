@@ -6,9 +6,12 @@ package cmd
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,12 +44,6 @@ func TestRunCodeqlExecuteScan(t *testing.T) {
 
 	t.Run("GitCommitID is NA on upload results", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", UploadResults: true, ModulePath: "./", CommitID: "NA"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
-		assert.Error(t, err)
-	})
-
-	t.Run("Check for compliace fails as repository not specified", func(t *testing.T) {
-		config := codeqlExecuteScanOptions{BuildTool: "maven", ModulePath: "./", UploadResults: true, GithubToken: "test", CheckForCompliance: true}
 		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
 		assert.Error(t, err)
 	})
@@ -338,4 +335,88 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 
 		assert.Error(t, err)
 	})
+}
+
+func TestWaitSarifUploaded(t *testing.T) {
+	t.Parallel()
+	config := codeqlExecuteScanOptions{SarifCheckRetryInterval: 1, SarifCheckMaxRetries: 5}
+	t.Run("Fast complete upload", func(t *testing.T) {
+		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: 0}
+		timerStart := time.Now()
+		err := waitSarifUploaded(&config, &codeqlScanAuditMock)
+		assert.Less(t, time.Now().Sub(timerStart), time.Second)
+		assert.NoError(t, err)
+	})
+	t.Run("Long completed upload", func(t *testing.T) {
+		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: 2}
+		timerStart := time.Now()
+		err := waitSarifUploaded(&config, &codeqlScanAuditMock)
+		assert.GreaterOrEqual(t, time.Now().Sub(timerStart), time.Second*2)
+		assert.NoError(t, err)
+	})
+	t.Run("Failed upload", func(t *testing.T) {
+		codeqlScanAuditMock := CodeqlSarifUploaderMock{counter: -1}
+		err := waitSarifUploaded(&config, &codeqlScanAuditMock)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "failed to upload sarif file")
+	})
+	t.Run("Error while checking sarif uploading", func(t *testing.T) {
+		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: -1}
+		err := waitSarifUploaded(&config, &codeqlScanAuditErrorMock)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "test error")
+	})
+	t.Run("Completed upload after getting errors from server", func(t *testing.T) {
+		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: 3}
+		err := waitSarifUploaded(&config, &codeqlScanAuditErrorMock)
+		assert.NoError(t, err)
+	})
+	t.Run("Max retries reached", func(t *testing.T) {
+		codeqlScanAuditErrorMock := CodeqlSarifUploaderErrorMock{counter: 6}
+		err := waitSarifUploaded(&config, &codeqlScanAuditErrorMock)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "max retries reached")
+	})
+}
+
+type CodeqlSarifUploaderMock struct {
+	counter int
+}
+
+func (c *CodeqlSarifUploaderMock) GetSarifStatus() (codeql.SarifFileInfo, error) {
+	if c.counter == 0 {
+		return codeql.SarifFileInfo{
+			ProcessingStatus: "complete",
+			Errors:           nil,
+		}, nil
+	}
+	if c.counter == -1 {
+		return codeql.SarifFileInfo{
+			ProcessingStatus: "failed",
+			Errors:           []string{"upload error"},
+		}, nil
+	}
+	c.counter--
+	return codeql.SarifFileInfo{
+		ProcessingStatus: "pending",
+		Errors:           nil,
+	}, nil
+}
+
+type CodeqlSarifUploaderErrorMock struct {
+	counter int
+}
+
+func (c *CodeqlSarifUploaderErrorMock) GetSarifStatus() (codeql.SarifFileInfo, error) {
+	if c.counter == -1 {
+		return codeql.SarifFileInfo{}, errors.New("test error")
+	}
+	if c.counter == 0 {
+		return codeql.SarifFileInfo{
+			ProcessingStatus: "complete",
+			Errors:           nil,
+		}, nil
+	}
+	c.counter--
+	return codeql.SarifFileInfo{ProcessingStatus: "Service unavailable"}, nil
 }

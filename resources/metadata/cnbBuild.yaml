@@ -150,13 +150,18 @@ spec:
           - PARAMETERS
         secret: true
         resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/dockerConfigJSON
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+      - name: dockerConfigJSONCPE
+        type: string
+        description: This property is intended only for reading the `dockerConfigJSON` from the Common Pipeline Environment. If you want to provide your own credentials, please refer to the [dockerConfigJSON](#dockerConfigJSON) property. If both properties are set, the config files will be merged, with the [dockerConfigJSON](#dockerConfigJSON) having higher priority.
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
       - name: customTlsCertificateLinks
         type: "[]string"
         description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
