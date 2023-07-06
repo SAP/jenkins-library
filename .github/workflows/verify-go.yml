@@ -34,7 +34,7 @@ jobs:
         if: steps.cc_reporter_id.outputs.cc_reporter_id != null
         uses: paambaati/codeclimate-action@v4
         env:
-          CC_TEST_REPORTER_ID: ${{ steps.cc_reporter_id.output.cc_reporter_id }}
+          CC_TEST_REPORTER_ID: ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
         with:
           coverageCommand: go test -tags=unit ./... -coverprofile cover.out
           coverageLocations: cover.out:gocov
