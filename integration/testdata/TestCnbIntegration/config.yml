@@ -3,6 +3,9 @@ general:
   collectTelemetryData: false
 steps:
   cnbBuild:
+    buildEnvVars:
+      BP_DATADOG_ENABLED: true
+      BP_EAR_KEY: 74657374
     bindings:
       maven-settings:
         type: maven
