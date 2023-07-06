@@ -35,7 +35,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 				isAudited = false
 			}
 
-			unifiedStatusValue := "not audited"
+			unifiedStatusValue := "new"
 
 			switch v.RemediationStatus {
 			case "NEW":
