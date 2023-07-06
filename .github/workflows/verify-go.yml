@@ -31,7 +31,7 @@ jobs:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
         run: echo "cc_reporter_id=${{ env.CC_TEST_REPORTER_ID }}" >> "GITHUB_OUTPUT"
       - name: unit-test
-        if: steps.cc_reporter_id.output.cc_reporter_id != null
+        if: steps.cc_reporter_id.outputs.cc_reporter_id != null
         uses: paambaati/codeclimate-action@v4
         env:
           CC_TEST_REPORTER_ID: ${{ steps.cc_reporter_id.output.cc_reporter_id }}
@@ -41,7 +41,7 @@ jobs:
           # truncate package name from file paths in report
           prefix: github.com/SAP/jenkins-library/
       - name: unit-test (for fork PR)
-        if: steps.cc_reporter_id.output.cc_reporter_id == null
+        if: steps.cc_reporter_id.outputs.cc_reporter_id == null
         run: go test -tags=unit ./...
   format:
     runs-on: ubuntu-latest
