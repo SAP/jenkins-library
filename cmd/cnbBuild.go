@@ -494,15 +494,15 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 
 		config.mergeEnvVars(descriptor.EnvVars)
 
-		if len(config.Buildpacks) == 0 && len(descriptor.Buildpacks) > 0 {
+		if len(config.Buildpacks) == 0 {
 			config.Buildpacks = descriptor.Buildpacks
 		}
 
-		if len(config.PreBuildpacks) == 0 && len(descriptor.PreBuildpacks) > 0 {
+		if len(config.PreBuildpacks) == 0 {
 			config.PreBuildpacks = descriptor.PreBuildpacks
 		}
 
-		if len(config.PostBuildpacks) == 0 && len(descriptor.PostBuildpacks) > 0 {
+		if len(config.PostBuildpacks) == 0 {
 			config.PostBuildpacks = descriptor.PostBuildpacks
 		}
 
