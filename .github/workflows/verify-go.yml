@@ -25,15 +25,42 @@ jobs:
             ${{ runner.os }}-golang-
       - name: checkout
         uses: actions/checkout@v3
-      - name: unit-test
-        uses: paambaati/codeclimate-action@v4
+
+      - name: read code climate reporter id
+        id: cc_reporter_id
         env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
-        with:
-          coverageCommand: go test -tags=unit ./... -coverprofile cover.out
-          coverageLocations: cover.out:gocov
-          # truncate package name from file paths in report
-          prefix: github.com/SAP/jenkins-library/
+          ENV_TEST: ${{ secrets.ENV_TEST }}
+        run: echo "cc_reporter_id=${{ env.ENV_TEST }}" >> "$GITHUB_OUTPUT"
+        
+      - name: event name
+        run: echo "${{ github.event_name }}"
+
+      - name: check if it's a fork
+        run: |
+          echo "${{ github.event.pull_request.head.repo.fork }}"
+          echo "${{ github.event.pull_request.head.repo.fork != true }}"
+          echo "${{ github.event.pull_request.head.repo.fork == false }}"
+          echo "${{ github.repository_owner }}"
+
+      - name: unit-test
+        if: github.repository_owner == 'SAP'
+        run: |
+          echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
+
+      - name: unit-test (for fork)
+        if: github.repository_owner != 'SAP'
+        run: |
+          echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
+
+      # - name: unit-test
+      #   uses: paambaati/codeclimate-action@v4
+      #   env:
+      #     CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
+      #   with:
+      #     coverageCommand: go test -tags=unit ./... -coverprofile cover.out
+      #     coverageLocations: cover.out:gocov
+      #     # truncate package name from file paths in report
+      #     prefix: github.com/SAP/jenkins-library/
   format:
     runs-on: ubuntu-latest
     steps:
