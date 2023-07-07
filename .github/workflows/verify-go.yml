@@ -55,13 +55,13 @@ jobs:
           echo "${{ github.repository_owner }}"
 
       - name: unit-test
-        if: github.repository_owner == 'vstarostin'
+        if: github.repository_owner == 'VSTAROSTIN'
         # if: steps.cc_reporter_id.outputs.cc_reporter_id != null
         run: |
           echo ${{ steps.cc_reporter_id.outputs.cc_reporter_id }}
 
       - name: unit-test (for fork)
-        if: github.repository_owner != 'vstarostin'
+        if: github.repository_owner != 'VSTAROSTIN'
         # if: github.event.pull_request.head.repo.fork == true
         # if: steps.cc_reporter_id.outputs.cc_reporter_id == null
         run: |
