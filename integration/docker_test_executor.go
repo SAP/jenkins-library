@@ -293,9 +293,7 @@ func (d *IntegrationTestDockerExecRunner) assertFileContentEquals(t *testing.T, 
 		t.Fatalf("unable to get tar file content: %s", err)
 	}
 
-	if !strings.Contains(str.String(), contentWant) {
-		assert.Equal(t, str.String(), contentWant, fmt.Sprintf("Unexpected content of file '%s'", fileWant))
-	}
+	assert.Equal(t, str.String(), contentWant, fmt.Sprintf("Unexpected content of file '%s'", fileWant))
 }
 
 func (d *IntegrationTestDockerExecRunner) terminate(t *testing.T) {
