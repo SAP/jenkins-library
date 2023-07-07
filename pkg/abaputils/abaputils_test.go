@@ -350,4 +350,18 @@ func TestHandleHTTPError(t *testing.T) {
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
+
+	t.Run("Timeout with EOF", func(t *testing.T) {
+
+		errorValue := "Received Error EOF"
+
+		var resp http.Response
+		resp = http.Response{}
+		receivedErr := errors.New(errorValue)
+		message := "Custom Error Message"
+
+		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
+		log.Entry().Info(err.Error())
+	})
 }
