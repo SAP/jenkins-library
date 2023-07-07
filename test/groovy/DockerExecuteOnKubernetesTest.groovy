@@ -826,9 +826,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utilsMock,
             dockerImage: 'maven:3.5-jdk-8-alpine',
-        ) {
-            bodyExecuted = true
-        }
+        ) {}
         assertEquals(2, unstashList.size())
         assertTrue(unstashList[0].startsWith('workspace-'))
         assertTrue(unstashList[1].startsWith('container-'))
