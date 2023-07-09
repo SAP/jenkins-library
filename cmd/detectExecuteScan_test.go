@@ -558,7 +558,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
@@ -596,7 +596,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
@@ -635,8 +635,8 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
 				"--scan=1",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
