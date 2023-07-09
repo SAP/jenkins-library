@@ -26,6 +26,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
     def usedConfigFile
     def pipelineAndTestStashIncludes
+    def utilsMock
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
@@ -43,7 +44,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         .around(shellRule)
         .around(readFileRule)
         .around(loggingRule)
-
 
     @Before
     void init() {
@@ -87,18 +87,17 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
         })
-
-        helper.registerAllowedMethod("stash", [Map], { Map params ->
-            pipelineAndTestStashIncludes = params.includes
-        })
-
-        Utils.metaClass.echo = { def m -> }
+        utilsMock = newUtilsMock()
     }
 
-
-    @After
-    public void tearDown() {
-        Utils.metaClass = null
+    Utils newUtilsMock() {
+        def utilsMock = new Utils()
+        utilsMock.steps = [
+            stash  : { Map params -> pipelineAndTestStashIncludes = params.includes },
+            unstash: {  }
+        ]
+        utilsMock.echo = { def m -> }
+        return utilsMock
     }
 
     @Test
@@ -108,7 +107,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock)
 
         assertEquals('.pipeline/config.yml', usedConfigFile)
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
@@ -124,7 +123,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yaml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock)
 
         assertEquals('.pipeline/config.yaml', usedConfigFile)
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
@@ -140,7 +139,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('pipeline_config.yml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, configFile: 'pipeline_config.yml')
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock, configFile: 'pipeline_config.yml')
 
         assertEquals('pipeline_config.yml', usedConfigFile)
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
@@ -172,6 +171,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         stepRule.step.setupCommonPipelineEnvironment(
             script: nullScript,
+            utils: utilsMock,
             customDefaults: 'notFound.yml'
         )
     }
@@ -205,6 +205,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         stepRule.step.setupCommonPipelineEnvironment(
             script: nullScript,
+            utils: utilsMock,
             configFile: '.pipeline/config-with-custom-defaults.yml'
         )
 
@@ -252,6 +253,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         stepRule.step.setupCommonPipelineEnvironment(
             script: nullScript,
+            utils: utilsMock,
             customDefaults: 'custom.yml',
             configFile: '.pipeline/config-with-custom-defaults.yml',
         )
@@ -311,7 +313,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_URL: 'https://github.com/testOrg/testRepo.git']
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo, gitUtils: gitUtils)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock, scmInfo: dummyScmInfo, gitUtils: gitUtils)
         assertThat(nullScript.commonPipelineEnvironment.gitCommitId, is('dummy_git_commit_id'))
     }
 
@@ -330,7 +332,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_BRANCH: 'origin/testbranch']
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo, gitUtils: gitUtils)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock, scmInfo: dummyScmInfo, gitUtils: gitUtils)
         assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/heads/testbranch'))
     }
 
@@ -353,7 +355,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_BRANCH: 'PR-42']
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo, gitUtils: gitUtils)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock, scmInfo: dummyScmInfo, gitUtils: gitUtils)
         assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/pull/42/head'))
         assertThat(nullScript.commonPipelineEnvironment.gitRemoteCommitId, is('dummy_git_commit_id'))
     }
@@ -377,7 +379,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_BRANCH: 'PR-42']
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo, gitUtils: gitUtils)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock, scmInfo: dummyScmInfo, gitUtils: gitUtils)
         assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/pull/42/merge'))
         assertThat(nullScript.commonPipelineEnvironment.gitRemoteCommitId, is('dummy_merge_git_commit_id'))
     }
@@ -401,7 +403,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_BRANCH: 'PR-42']
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo, gitUtils: gitUtils)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock, scmInfo: dummyScmInfo, gitUtils: gitUtils)
         assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/pull/42/merge'))
         assertThat(nullScript.commonPipelineEnvironment.gitRemoteCommitId, is('NA'))
     }
@@ -412,7 +414,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock)
         assertNull(nullScript.commonPipelineEnvironment.gitCommitId)
         assertNull(nullScript.commonPipelineEnvironment.getGitSshUrl())
         assertNull(nullScript.commonPipelineEnvironment.getGitHttpsUrl())
