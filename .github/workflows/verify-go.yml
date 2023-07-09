@@ -41,7 +41,7 @@ jobs:
           echo "${{ github.event.pull_request.head.repo.fork != true }}"
           echo "${{ github.event.pull_request.head.repo.fork == false }}"
           echo "${{ github.repository_owner }}"
-          echo "${{ github.org }}"
+          echo "${{ github.org.url }}"
 
       - name: unit-test
         if: github.repository_owner == 'SAP'
