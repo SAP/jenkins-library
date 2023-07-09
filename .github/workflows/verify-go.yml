@@ -31,7 +31,7 @@ jobs:
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
         run: echo "cc_reporter_id=${{ env.ENV_TEST }}" >> "$GITHUB_OUTPUT"
-        
+
       - name: event name
         run: echo "${{ github.event_name }}"
 
@@ -41,6 +41,7 @@ jobs:
           echo "${{ github.event.pull_request.head.repo.fork != true }}"
           echo "${{ github.event.pull_request.head.repo.fork == false }}"
           echo "${{ github.repository_owner }}"
+          echo "${{ github.org }}"
 
       - name: unit-test
         if: github.repository_owner == 'SAP'
