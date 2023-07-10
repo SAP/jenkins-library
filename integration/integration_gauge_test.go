@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	installCommand string = "npm install -g @getgauge/cli --prefix=~/.npm-global --unsafe-perm" //option --unsafe-perm need to install gauge in docker container. See this issue: https://github.com/getgauge/gauge/issues/1470
+	installCommand string = "npm install -g @getgauge/cli@1.4.3 --prefix=~/.npm-global --unsafe-perm" //option --unsafe-perm need to install gauge in docker container. See this issue: https://github.com/getgauge/gauge/issues/1470
 )
 
 func runTest(t *testing.T, languageRunner string) {
