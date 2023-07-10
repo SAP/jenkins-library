@@ -29,7 +29,7 @@ jobs:
         run: go test -tags=unit ./... -coverprofile cover.out
       # run code coverage upload to code climate on main branch since PR branch will not have access to secret
       - name: unit-test-code-climate-upload
-        if: github.event_name != 'pull_request'
+        if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.head.repo.full_name == github.repository) }}
         uses: paambaati/codeclimate-action@v4
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
