@@ -337,6 +337,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to write json compliance report")
 		}
+		reports = append(reports, paths...)
 
 		if config.CheckForCompliance {
 			unaudited := scanResults.Total - scanResults.Audited
@@ -345,8 +346,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 				return reports, errors.Errorf(msg)
 			}
 		}
-
-		reports = append(reports, paths...)
 	}
 
 	toolRecordFileName, err := createAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
