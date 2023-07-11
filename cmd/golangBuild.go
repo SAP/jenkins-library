@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -349,13 +350,20 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 	// configure credentials git shall use for pulling repos
 	for _, repoURL := range repoURLs {
-		if match, _ := regexp.MatchString("(?i)^https?://", repoURL); !match {
+
+		parsedRepoURL, err := url.Parse(repoURL)
+		if err != nil {
+			return err
+		}
+		repoBaseURL := fmt.Sprintf("%s://%s", parsedRepoURL.Scheme, parsedRepoURL.Host)
+
+		if match, _ := regexp.MatchString("(?i)^https?://", repoBaseURL); !match {
 			continue
 		}
 
-		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
+		authenticatedRepoURL := strings.Replace(repoBaseURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
 
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoURL)
+		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
 		if err != nil {
 			return err
 		}
