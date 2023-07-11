@@ -194,7 +194,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
 			log.Entry().Errorf("License Policy Violations found")
 			log.SetErrorCategory(log.ErrorCompliance)
-			if err == nil && !piperutils.ContainsStringPart(config.FailOn, "NONE") {
+			if err == nil && piperutils.ContainsStringPart(config.FailOn, "CRITICAL") {
 				err = errors.New("License Policy Violations found")
 			}
 		} else {
@@ -412,7 +412,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
 	}
 
-	if len(mavenArgs) > 0 {
+	if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
 		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 	}
 

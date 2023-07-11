@@ -2,7 +2,6 @@ package codeql
 
 import (
 	"context"
-	"errors"
 
 	sapgithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/google/go-github/v45/github"
@@ -14,10 +13,11 @@ type CodeqlScanAudit interface {
 
 type githubCodeqlScanningService interface {
 	ListAlertsForRepo(ctx context.Context, owner, repo string, opts *github.AlertListOptions) ([]*github.Alert, *github.Response, error)
-	ListAnalysesForRepo(ctx context.Context, owner, repo string, opts *github.AnalysesListOptions) ([]*github.ScanningAnalysis, *github.Response, error)
 }
 
 const auditStateOpen string = "open"
+const auditStateDismissed string = "dismissed"
+const codeqlToolName string = "CodeQL"
 const perPageCount int = 100
 
 func NewCodeqlScanAuditInstance(serverUrl, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
@@ -39,66 +39,51 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 	if err != nil {
 		return CodeqlScanning{}, err
 	}
-	totalAlerts, err := getTotalAlertsFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 
-	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit, totalAlerts)
+	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 }
 
-func getTotalAlertsFromClient(ctx context.Context, codeScannning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (int, error) {
-	analysesOptions := github.AnalysesListOptions{
-		Ref: &analyzedRef,
-	}
-	analyses, _, err := codeScannning.ListAnalysesForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &analysesOptions)
-	if err != nil {
-		return 0, err
-	}
-	if len(analyses) < 1 {
-		return 0, errors.New("analyses for ref not found")
-	}
-	return *analyses[0].ResultsCount, nil
-}
+func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (CodeqlScanning, error) {
+	page := 1
+	audited := 0
+	totalAlerts := 0
 
-func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance, totalAlerts int) (CodeqlScanning, error) {
-	pages := totalAlerts/perPageCount + 1
-	errChan := make(chan error)
-	openStateCountChan := make(chan int)
-	for page := 1; page <= pages; page++ {
-		go func(i int) {
-			alertOptions := github.AlertListOptions{
-				State: "",
-				Ref:   analyzedRef,
-				ListOptions: github.ListOptions{
-					Page:    i,
-					PerPage: perPageCount,
-				},
+	for page != 0 {
+		alertOptions := github.AlertListOptions{
+			State: "",
+			Ref:   analyzedRef,
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: perPageCount,
+			},
+		}
+
+		alerts, response, err := codeScanning.ListAlertsForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &alertOptions)
+		if err != nil {
+			return CodeqlScanning{}, err
+		}
+
+		page = response.NextPage
+
+		for _, alert := range alerts {
+			if *alert.Tool.Name != codeqlToolName {
+				continue
 			}
 
-			alerts, _, err := codeScanning.ListAlertsForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &alertOptions)
-			if err != nil {
-				errChan <- err
-				return
+			if *alert.State == auditStateDismissed {
+				audited += 1
+				totalAlerts += 1
 			}
 
-			openStateCount := 0
-			for _, alert := range alerts {
-				if *alert.State == auditStateOpen {
-					openStateCount = openStateCount + 1
-				}
+			if *alert.State == auditStateOpen {
+				totalAlerts += 1
 			}
-			openStateCountChan <- len(alerts) - openStateCount
-		}(page)
+		}
 	}
 
 	codeqlScanning := CodeqlScanning{}
 	codeqlScanning.Total = totalAlerts
-	for i := 0; i < pages; i++ {
-		select {
-		case openStateCount := <-openStateCountChan:
-			codeqlScanning.Audited += openStateCount
-		case err := <-errChan:
-			return CodeqlScanning{}, err
-		}
-	}
+	codeqlScanning.Audited = audited
 
 	return codeqlScanning, nil
 }
