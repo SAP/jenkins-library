@@ -77,6 +77,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	npmignore.Add("**/piper")
 	log.Entry().Debug("adding **/sap-piper")
 	npmignore.Add("**/sap-piper")
+	// temporary installation folder used to install BOM to be ignored
+	log.Entry().Debug("adding tmp to npmignore")
+	npmignore.Add("tmp/")
 
 	npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
