@@ -87,7 +87,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         }
                     } finally {
                         InfluxData.readFromDisk(script)
-                        stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
+                        utils.stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
                     }
                 }
             }
