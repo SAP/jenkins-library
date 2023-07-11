@@ -43,15 +43,20 @@ func runTest(t *testing.T, languageRunner string) {
 cd /test
 /piperbin/piper gaugeExecuteTests --installCommand="%v" --languageRunner=%v --runCommand="run" >test-log.txt 2>&1
 `, installCommand, languageRunner)
+
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
-		Image: "node:lts-buster",
+		Image: "getgauge/gocd-jdk-mvn-node",
 		Cmd:   []string{"tail", "-f"},
 		BindMounts: map[string]string{
 			pwd:     "/piperbin",
 			tempDir: "/test",
 		},
+	}
+
+	if languageRunner == "js" {
+		reqNode.Image = "node:lts-buster"
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
