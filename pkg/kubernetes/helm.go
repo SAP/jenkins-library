@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -174,7 +175,7 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 	}
 
 	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
 	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
@@ -250,7 +251,7 @@ func (h *HelmExecute) RunHelmInstall() error {
 	}
 
 	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
 	}
 
 	if h.verbose {
@@ -474,4 +475,11 @@ func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 	}
 
 	return nil
+}
+
+// expandEnv replaces ${var} or $var in params according to the values of the current environment variables
+func expandEnv(params []string) []string {
+	paramsRaw := strings.Join(params, " ")
+
+	return strings.Split(os.ExpandEnv(paramsRaw), " ")
 }
