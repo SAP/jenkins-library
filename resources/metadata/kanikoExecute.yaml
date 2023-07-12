@@ -144,6 +144,37 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: multipleImages
+        aliases:
+          - name: images
+        type: "[]map[string]interface{}"
+        description: |
+          This parameter is only needed if `kanikoExecute` should create multiple images using the same root Dockerfile, but with different sub-contexts.
+          Otherwise it can be ignored!!!
+
+          In case of multiple images, this array contains one entry for each image.
+          Either containerImageName OR containerImage MUST be provided for each entry.
+          contextSubPath MUST be provided for each entry.
+
+          Array keys:
+            contextSubPath - Set a context subpath.
+            containerImageName - Name of the container which will be built.
+            containerImageTag - Tag of the container which will be built. If empty - root containerImageTag will be used.
+            containerImage - Defines the full name of the Docker image to be created including registry.
+
+          ```yaml
+          containerRegistryUrl: docker.io
+          containerImageTag: latest
+          multipleImages:
+          - containerImageName: myImage1
+            containerImageTag: v1.0.0
+            contextSubPath: path/to/folder
+          ```
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: containerMultiImageBuild
         type: bool
         description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).
