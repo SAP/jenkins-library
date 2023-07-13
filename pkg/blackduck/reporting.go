@@ -35,6 +35,27 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 				isAudited = false
 			}
 
+			unifiedStatusValue := "new"
+
+			switch v.RemediationStatus {
+			case "NEW":
+				unifiedStatusValue = "new"
+			case "NEEDS_REVIEW":
+				unifiedStatusValue = "inProcess"
+			case "REMEDIATION_COMPLETE":
+				unifiedStatusValue = "notRelevant"
+			case "PATCHED":
+				unifiedStatusValue = "notRelevant"
+			case "MITIGATED":
+				unifiedStatusValue = "notRelevant"
+			case "DUPLICATE":
+				unifiedStatusValue = "notRelevant"
+			case "IGNORED":
+				unifiedStatusValue = "notRelevant"
+			case "REMEDIATION_REQUIRED":
+				unifiedStatusValue = "relevant"
+			}
+
 			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", v.VulnerabilityWithRemediation.VulnerabilityName, v.Component.Name, v.Component.Version)
 			result := format.Results{
 				RuleID:  v.VulnerabilityWithRemediation.VulnerabilityName,
@@ -54,6 +75,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 					ToolSeverityIndex: severityIndex[v.Severity],
 					ToolAuditMessage:  v.VulnerabilityWithRemediation.RemediationComment,
 					ToolState:         v.RemediationStatus,
+					UnifiedAuditState: unifiedStatusValue,
 				},
 			}
 
