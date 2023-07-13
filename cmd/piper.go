@@ -66,7 +66,7 @@ type SplunkConfiguration struct {
 	Token             string `json:"token,omitempty"`
 	Index             string `json:"index,omitempty"`
 	SendLogs          bool   `json:"sendLogs"`
-	ProdCriblEndpoint string `json:"ProdCriblEndpoint,omitempty"`
+	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
 	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
 	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
 }
