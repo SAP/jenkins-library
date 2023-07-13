@@ -479,7 +479,11 @@ func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 
 // expandEnv replaces ${var} or $var in params according to the values of the current environment variables
 func expandEnv(params []string) []string {
-	paramsRaw := strings.Join(params, " ")
+	expanded := []string{}
 
-	return strings.Split(os.ExpandEnv(paramsRaw), " ")
+	for _, param := range params {
+		expanded = append(expanded, os.ExpandEnv(param))
+	}
+
+	return expanded
 }
