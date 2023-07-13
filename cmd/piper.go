@@ -66,8 +66,9 @@ type SplunkConfiguration struct {
 	Token             string `json:"token,omitempty"`
 	Index             string `json:"index,omitempty"`
 	SendLogs          bool   `json:"sendLogs"`
-	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
+	ProdCriblEndpoint string `json:"ProdCriblEndpoint,omitempty"`
 	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
+	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
