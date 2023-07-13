@@ -140,6 +140,10 @@ func KanikoExecuteCommand() *cobra.Command {
 		Short: "Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.",
 		Long: `Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
 
+### Building one container image
+
+For building one container image the step expects that one of the containerImage, containerImageName or --destination (via buildOptions) is set.
+
 ### Building multiple container images
 
 The step allows you to build multiple container images with one run.
@@ -286,8 +290,8 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`, `--ignore-path=/busybox`}, "Defines a list of build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.ContainerBuildOptions, "containerBuildOptions", os.Getenv("PIPER_containerBuildOptions"), "Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
-	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.")
-	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If `containerImage` is not provided, then `containerImageName` or `--destination` (via buildOptions) should be provided.")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used instead of parameter `containerImage`. If `containerImageName` is not provided, then `containerImage` or `--destination` (via buildOptions) should be provided.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used instead of parameter `containerImage`")
 	cmd.Flags().BoolVar(&stepConfig.ContainerMultiImageBuild, "containerMultiImageBuild", false, "Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).")
 	cmd.Flags().StringSliceVar(&stepConfig.ContainerMultiImageBuildExcludes, "containerMultiImageBuildExcludes", []string{}, "Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).")
