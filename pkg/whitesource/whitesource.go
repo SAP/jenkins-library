@@ -160,13 +160,16 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 		score := consolidateScores(a.Vulnerability.Score, a.Vulnerability.CVSS3Score)
 
 		vul := reporting.VulnerabilityReport{
-			ArtifactID:        a.Library.ArtifactID, // no information available about branch and commit, yet
-			Branch:            "",
-			CommitID:          "",
-			Description:       a.Vulnerability.Description,
-			DependencyType:    a.DependencyType(), // no information available about footer, yet
-			Footer:            "",
-			Group:             a.Library.GroupID, // no information available about pipeline name and link, yet
+			ArtifactID: a.Library.ArtifactID,
+			// no information available about branch and commit, yet
+			Branch:         "",
+			CommitID:       "",
+			Description:    a.Vulnerability.Description,
+			DependencyType: a.DependencyType(),
+			// no information available about footer, yet
+			Footer: "",
+			Group:  a.Library.GroupID,
+			// no information available about pipeline name and link, yet
 			PipelineName:      "",
 			PipelineLink:      "",
 			PublishDate:       a.Vulnerability.PublishDate,
@@ -181,17 +184,20 @@ func (a Alert) ToMarkdown() ([]byte, error) {
 		return vul.ToMarkdown()
 	} else if a.Type == "REJECTED_BY_POLICY_RESOURCE" {
 		policyReport := reporting.PolicyViolationReport{
-			ArtifactID:       a.Library.ArtifactID, // no information available about branch and commit, yet
+			ArtifactID: a.Library.ArtifactID,
+			// no information available about branch and commit, yet
 			Branch:           "",
 			CommitID:         "",
 			Description:      a.Vulnerability.Description,
-			DirectDependency: fmt.Sprint(a.DirectDependency), // no information available about footer, yet
-			Footer:           "",
-			Group:            a.Library.GroupID, // no information available about pipeline name and link, yet
-			PipelineName:     "",
-			PipelineLink:     "",
-			Version:          a.Library.Version,
-			PackageURL:       a.Library.ToPackageUrl().ToString(),
+			DirectDependency: fmt.Sprint(a.DirectDependency),
+			// no information available about footer, yet
+			Footer: "",
+			Group:  a.Library.GroupID,
+			// no information available about pipeline name and link, yet
+			PipelineName: "",
+			PipelineLink: "",
+			Version:      a.Library.Version,
+			PackageURL:   a.Library.ToPackageUrl().ToString(),
 		}
 		return policyReport.ToMarkdown()
 	}
@@ -210,7 +216,18 @@ Installed Version: %v
 Package URL: %v
 Description: %v
 Fix Resolution: %v
-Link: [%v](%v)`, a.Vulnerability.Name, a.Vulnerability.Severity, score, a.Library.ArtifactID, a.Library.Version, a.Library.ToPackageUrl().ToString(), a.Vulnerability.Description, a.Vulnerability.TopFix.FixResolution, a.Vulnerability.Name, a.Vulnerability.URL)
+Link: [%v](%v)`,
+		a.Vulnerability.Name,
+		a.Vulnerability.Severity,
+		score,
+		a.Library.ArtifactID,
+		a.Library.Version,
+		a.Library.ToPackageUrl().ToString(),
+		a.Vulnerability.Description,
+		a.Vulnerability.TopFix.FixResolution,
+		a.Vulnerability.Name,
+		a.Vulnerability.URL,
+	)
 }
 
 func consolidateScores(cvss2score, cvss3score float64) float64 {
