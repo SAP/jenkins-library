@@ -223,9 +223,9 @@ func TestStepCommand() *cobra.Command {
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProCriblEndpoint) > 0 {
+				if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 					splunkClient.Initialize(piperOsCmd.GeneralConfig.CorrelationID,
-					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProCriblEndpoint,
+					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
