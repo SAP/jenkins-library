@@ -904,7 +904,6 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 				return errors.Wrapf(err, "failed to get project alerts by type")
 			}
 
-
 			ignoredAlerts, err := sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 			if err != nil {
 				return errors.Wrapf(err, "failed to get project ignored alerts by type")
