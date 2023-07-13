@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -139,7 +142,7 @@ go 1.17`
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "-tags=unit", "./..."}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath", "-ldflags", "test", "package/foo"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -160,7 +163,7 @@ go 1.17`
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "gotest.tools/gotestsum@latest"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./...", "--foo", "--bar"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "-tags=unit", "./...", "--foo", "--bar"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath", "package/foo"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -281,9 +284,9 @@ go 1.17`
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom-golang.xml"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom-golang.xml", "-output-version", "1.4"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -327,7 +330,7 @@ go 1.17`
 			CreateBOM: true,
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest": fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -528,7 +531,7 @@ func TestRunGolangTests(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, success)
 		assert.Equal(t, "gotestsum", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"--junitfile", "TEST-go.xml", "--jsonfile", "unit-report.out", "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "-tags=unit", "./..."}, utils.ExecMockRunner.Calls[0].Params)
 	})
 
 	t.Run("success - failed tests", func(t *testing.T) {

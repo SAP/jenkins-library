@@ -35,7 +35,7 @@ const (
 	integrationJsonReport       = "integration-report.out"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"
 	sbomFilename                = "bom-golang.xml"
 )
 
@@ -366,7 +366,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
-	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", unitJsonReport, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}
+	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", unitJsonReport, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "-tags=unit", "./..."}
 	testOptions = append(testOptions, config.TestOptions...)
 	if err := utils.RunExecutable("gotestsum", testOptions...); err != nil {
 		exists, fileErr := utils.FileExists(golangUnitTestOutput)
@@ -570,7 +570,7 @@ func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil

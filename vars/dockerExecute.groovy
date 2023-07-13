@@ -166,7 +166,7 @@ void call(Map parameters = [:], body) {
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
 
-        new Utils().pushToSWA([
+        utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null,

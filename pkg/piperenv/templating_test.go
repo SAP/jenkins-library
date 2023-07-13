@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package piperenv
 
 import (
@@ -27,6 +30,35 @@ func TestParseTemplate(t *testing.T) {
 
 	for _, test := range tt {
 		res, err := cpe.ParseTemplate(test.template)
+		if test.expectedError != nil {
+			assert.Contains(t, fmt.Sprint(err), fmt.Sprint(test.expectedError))
+		} else {
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected, (*res).String())
+		}
+
+	}
+}
+
+func TestParseTemplateWithDelimiter(t *testing.T) {
+	tt := []struct {
+		template      string
+		cpe           CPEMap
+		expected      string
+		expectedError error
+	}{
+		{template: `version: [[index .CPE "artifactVersion"]], sha: [[git "commitId"]]`, expected: "version: 1.2.3, sha: thisIsMyTestSha"},
+		{template: "version: [[", expectedError: fmt.Errorf("failed to parse cpe template 'version: [['")},
+		{template: `version: [[index .CPE "artifactVersion"]], release: {{ .RELEASE }}`, expected: "version: 1.2.3, release: {{ .RELEASE }}"},
+	}
+
+	cpe := CPEMap{
+		"artifactVersion": "1.2.3",
+		"git/commitId":    "thisIsMyTestSha",
+	}
+
+	for _, test := range tt {
+		res, err := cpe.ParseTemplateWithDelimiter(test.template, "[[", "]]")
 		if test.expectedError != nil {
 			assert.Contains(t, fmt.Sprint(err), fmt.Sprint(test.expectedError))
 		} else {

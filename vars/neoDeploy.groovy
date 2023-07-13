@@ -227,6 +227,7 @@ void call(parameters = [:]) {
 
                 dockerExecute(
                     script: script,
+                    juStabUtils: parameters.utils ?: null,
                     dockerImage: configuration.dockerImage,
                     dockerEnvVars: configuration.dockerEnvVars,
                     dockerOptions: configuration.dockerOptions
