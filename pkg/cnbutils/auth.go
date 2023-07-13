@@ -14,6 +14,7 @@ func GenerateCnbAuth(config string, utils BuildUtils) (string, error) {
 	dockerConfig := &configfile.ConfigFile{}
 
 	if config != "" {
+		log.Entry().Debugf("using docker config file %q", config)
 		dockerConfigJSON, err := utils.FileRead(config)
 		if err != nil {
 			return "", err
@@ -37,8 +38,11 @@ func GenerateCnbAuth(config string, utils BuildUtils) (string, error) {
 		}
 
 		log.Entry().Debugf("Adding credentials for: registry %q", registry)
-
 		auth[registry] = fmt.Sprintf("Basic %s", value.Auth)
+	}
+
+	if len(auth) == 0 {
+		log.Entry().Warn("docker config file is empty!")
 	}
 
 	cnbRegistryAuth, err := json.Marshal(auth)
