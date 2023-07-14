@@ -25,23 +25,56 @@ import (
 const imageRegistry = "some-registry"
 
 func newCnbBuildTestsUtils() cnbutils.MockUtils {
+	imageStub := func(imageRef, target string) (v1.Image, error) {
+		fakeImage := &fake.FakeImage{}
+		var imageConfig v1.Config
+		switch imageRef {
+		case "pre-test":
+			imageConfig = v1.Config{
+				Labels: map[string]string{
+					"io.buildpacks.buildpackage.metadata": "{\"id\": \"pre-testbuildpack\", \"version\": \"0.0.1\"}",
+				},
+			}
+		case "post-test":
+			imageConfig = v1.Config{
+				Labels: map[string]string{
+					"io.buildpacks.buildpackage.metadata": "{\"id\": \"post-testbuildpack\", \"version\": \"0.0.1\"}",
+				},
+			}
+		default:
+			imageConfig = v1.Config{
+				Labels: map[string]string{
+					"io.buildpacks.buildpackage.metadata": "{\"id\": \"testbuildpack\", \"version\": \"0.0.1\"}",
+				},
+			}
+		}
+
+		fakeImage.ConfigFileReturns(&v1.ConfigFile{
+			Config: imageConfig,
+		}, nil)
+
+		return fakeImage, nil
+	}
+
 	utils := cnbutils.MockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
-		DownloadMock:   &mock.DownloadMock{},
-	}
-
-	fakeImage := &fake.FakeImage{}
-	fakeImage.ConfigFileReturns(&v1.ConfigFile{
-		Config: v1.Config{
-			Labels: map[string]string{
-				"io.buildpacks.buildpackage.metadata": "{\"id\": \"testbuildpack\", \"version\": \"0.0.1\"}",
+		DownloadMock: &mock.DownloadMock{
+			ImageContentStub: imageStub,
+			ImageInfoStub: func(imageRef string) (v1.Image, error) {
+				return imageStub(imageRef, "")
 			},
 		},
-	}, nil)
+	}
 
-	utils.RemoteImageInfo = fakeImage
-	utils.ReturnImage = fakeImage
+	utils.AddFile("/cnb/order.toml", []byte(`[[order]]
+    [[order.group]]
+      id = "buildpacks/java"
+      version = "1.8.0"
+[[order]]
+    [[order.group]]
+      id = "buildpacks/nodejs"
+      version = "1.6.0"`))
 	utils.AddFile("/layers/report.toml", []byte(`[build]
 [image]
 tags = ["localhost:5000/not-found:0.0.1"]
@@ -209,6 +242,75 @@ func TestRunCnbBuild(t *testing.T) {
 			ContainerRegistryURL: imageRegistry,
 			DockerConfigJSON:     "/path/to/test.json",
 			Buildpacks:           []string{"test"},
+			BuildEnvVars: map[string]interface{}{
+				"FOO": "BAR",
+			},
+			AdditionalTags: []string{"latest"},
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		addBuilderFiles(&utils)
+
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
+
+		require.NoError(t, err)
+		runner := utils.ExecMockRunner
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Equal(t, creatorPath, runner.Calls[0].Exec)
+		assert.Contains(t, runner.Calls[0].Params, "/tmp/buildpacks")
+		assert.Contains(t, runner.Calls[0].Params, "/tmp/buildpacks/order.toml")
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag))
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:latest", config.ContainerRegistryURL, config.ContainerImageName))
+
+		copiedFileExists, _ := utils.FileExists("/tmp/config.json")
+		assert.True(t, copiedFileExists)
+	})
+
+	t.Run("success case (custom buildpacks, pre and post buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
+		t.Parallel()
+		config := cnbBuildOptions{
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "0.0.1",
+			ContainerRegistryURL: imageRegistry,
+			DockerConfigJSON:     "/path/to/test.json",
+			PreBuildpacks:        []string{"pre-test"},
+			PostBuildpacks:       []string{"post-test"},
+			Buildpacks:           []string{"test"},
+			BuildEnvVars: map[string]interface{}{
+				"FOO": "BAR",
+			},
+			AdditionalTags: []string{"latest"},
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		addBuilderFiles(&utils)
+
+		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
+
+		require.NoError(t, err)
+		runner := utils.ExecMockRunner
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Equal(t, creatorPath, runner.Calls[0].Exec)
+		assert.Contains(t, runner.Calls[0].Params, "/tmp/buildpacks")
+		assert.Contains(t, runner.Calls[0].Params, "/tmp/buildpacks/order.toml")
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag))
+		assert.Contains(t, runner.Calls[0].Params, fmt.Sprintf("%s/%s:latest", config.ContainerRegistryURL, config.ContainerImageName))
+
+		copiedFileExists, _ := utils.FileExists("/tmp/config.json")
+		assert.True(t, copiedFileExists)
+	})
+
+	t.Run("success case (custom pre and post buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
+		t.Parallel()
+		config := cnbBuildOptions{
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "0.0.1",
+			ContainerRegistryURL: imageRegistry,
+			DockerConfigJSON:     "/path/to/test.json",
+			PostBuildpacks:       []string{"post-test"},
+			PreBuildpacks:        []string{"pre-test"},
 			BuildEnvVars: map[string]interface{}{
 				"FOO": "BAR",
 			},
