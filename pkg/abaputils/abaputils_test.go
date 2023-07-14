@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -349,5 +350,22 @@ func TestHandleHTTPError(t *testing.T) {
 		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
+	})
+
+	t.Run("EOF Error", func(t *testing.T) {
+
+		message := "Custom Error Message"
+		errorValue := "Received Error EOF"
+		receivedErr := errors.New(errorValue)
+
+		_, hook := test.NewNullLogger()
+		log.RegisterHook(hook)
+
+		err := HandleHTTPError(nil, receivedErr, message, ConnectionDetailsHTTP{})
+
+		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
+		assert.Equal(t, 5, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)`, hook.AllEntries()[2].Message, "Expected a different message")
+		hook.Reset()
 	})
 }
