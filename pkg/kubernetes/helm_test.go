@@ -310,6 +310,23 @@ func TestRunHelmInstall(t *testing.T) {
 				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug"}},
 			},
 		},
+		{
+			config: HelmExecuteOptions{
+				ChartPath:             ".",
+				DeploymentName:        "testPackage",
+				Namespace:             "test-namespace",
+				HelmDeployWaitSeconds: 525,
+				KeepFailedDeployments: false,
+				AdditionalParameters:  []string{"--set", "auth=Basic user:password"},
+				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+				TargetRepositoryName:  "test",
+			},
+			generalVerbose: true,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set", "auth=Basic user:password", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set", "auth=Basic user:password", "--debug"}},
+			},
+		},
 	}
 
 	for i, testCase := range testTable {
