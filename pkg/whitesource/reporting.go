@@ -295,9 +295,9 @@ func getAuditInformation(alert Alert) *format.SarifProperties {
 	}
 
 	return &format.SarifProperties{
-		Audited:               isAudited,
-		ToolAuditMessage:      auditMessage,
-		UnifiedAuditState:     unifiedAuditState,
+		Audited:           isAudited,
+		ToolAuditMessage:  auditMessage,
+		UnifiedAuditState: unifiedAuditState,
 	}
 }
 
