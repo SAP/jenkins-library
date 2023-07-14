@@ -344,53 +344,53 @@ func TestGetAuditInformation(t *testing.T) {
 		expected *format.SarifProperties
 	}{
 		{
-			name:     "New not audited alert",
-			alert:    Alert{
+			name: "New not audited alert",
+			alert: Alert{
 				Status: "OPEN",
 			},
 			expected: &format.SarifProperties{
-				Audited: false,
-				ToolAuditMessage: "",
+				Audited:           false,
+				ToolAuditMessage:  "",
 				UnifiedAuditState: "new",
 			},
 		},
 		{
-			name:     "Audited alert",
-			alert:    Alert{
-				Status: "IGNORE",
+			name: "Audited alert",
+			alert: Alert{
+				Status:   "IGNORE",
 				Comments: "Not relevant alert",
 			},
 			expected: &format.SarifProperties{
-				Audited: true,
-				ToolAuditMessage: "Not relevant alert",
+				Audited:           true,
+				ToolAuditMessage:  "Not relevant alert",
 				UnifiedAuditState: "notRelevant",
 			},
 		},
 		{
-			name:     "Alert with incorrect status",
-			alert:    Alert{
-				Status: "Not correct",
+			name: "Alert with incorrect status",
+			alert: Alert{
+				Status:   "Not correct",
 				Comments: "Some comment",
 			},
 			expected: &format.SarifProperties{
-				Audited: false,
-				ToolAuditMessage: "",
+				Audited:           false,
+				ToolAuditMessage:  "",
 				UnifiedAuditState: "new",
 			},
 		},
 		{
-			name:     "Audited alert",
-			alert:    Alert{
-				Assessment:       &format.Assessment{
-					Status:        format.NotRelevant,
-					Analysis:      format.FixedByDevTeam,
+			name: "Audited alert",
+			alert: Alert{
+				Assessment: &format.Assessment{
+					Status:   format.NotRelevant,
+					Analysis: format.FixedByDevTeam,
 				},
-				Status:           "OPEN",
-				Comments:         "New alert",
+				Status:   "OPEN",
+				Comments: "New alert",
 			},
 			expected: &format.SarifProperties{
-				Audited: true,
-				ToolAuditMessage: string(format.FixedByDevTeam),
+				Audited:           true,
+				ToolAuditMessage:  string(format.FixedByDevTeam),
 				UnifiedAuditState: "notRelevant",
 			},
 		},
