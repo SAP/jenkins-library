@@ -153,7 +153,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 
 		secretValue = lookupPath(client, vaultPath, &param)
 		if secretValue != nil {
-			log.Entry().Debugf("Resolved param '%s' with Vault path '%s'", param.Name, vaultPath)
+			log.Entry().Infof("Resolved param '%s' with Vault path '%s'", param.Name, vaultPath)
 			if ref.Type == "vaultSecret" {
 				config.Config[param.Name] = *secretValue
 			} else if ref.Type == "vaultSecretFile" {
