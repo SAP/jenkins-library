@@ -117,6 +117,7 @@ func TestRunHelmAdd(t *testing.T) {
 
 func TestRunHelmUpgrade(t *testing.T) {
 	os.Setenv("IMAGE", "image")
+	os.Setenv("PIPER_VAULTCREDENTIAL_IMAGE", "image")
 
 	testTable := []struct {
 		config            HelmExecuteOptions
@@ -167,6 +168,23 @@ func TestRunHelmUpgrade(t *testing.T) {
 				ForceUpdates:          true,
 				HelmDeployWaitSeconds: 3456,
 				AdditionalParameters:  []string{"--set", "image.repository=$IMAGE"},
+				Image:                 "dtzar/helm-kubectl:3.4.1",
+				TargetRepositoryName:  "test",
+				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+			},
+			generalVerbose: true,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"upgrade", "test_deployment", ".", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "--set", "image.repository=$IMAGE"}},
+			},
+		},
+		{
+			config: HelmExecuteOptions{
+				DeploymentName:        "test_deployment",
+				ChartPath:             ".",
+				Namespace:             "test_namespace",
+				ForceUpdates:          true,
+				HelmDeployWaitSeconds: 3456,
+				AdditionalParameters:  []string{"--set", "image.repository=$PIPER_VAULTCREDENTIAL_IMAGE"},
 				Image:                 "dtzar/helm-kubectl:3.4.1",
 				TargetRepositoryName:  "test",
 				TargetRepositoryURL:   "https://charts.helm.sh/stable",
@@ -239,7 +257,7 @@ func TestRunHelmLint(t *testing.T) {
 }
 
 func TestRunHelmInstall(t *testing.T) {
-	os.Setenv("MY_SCRIPT", "dothings.sh")
+	os.Setenv("PIPER_VAULTCREDENTIAL_MY_SCRIPT", "dothings.sh")
 
 	testTable := []struct {
 		config            HelmExecuteOptions
@@ -300,7 +318,7 @@ func TestRunHelmInstall(t *testing.T) {
 				Namespace:             "test-namespace",
 				HelmDeployWaitSeconds: 525,
 				KeepFailedDeployments: false,
-				AdditionalParameters:  []string{"--set-file", "my_script=$MY_SCRIPT"},
+				AdditionalParameters:  []string{"--set-file", "my_script=$PIPER_VAULTCREDENTIAL_MY_SCRIPT"},
 				TargetRepositoryURL:   "https://charts.helm.sh/stable",
 				TargetRepositoryName:  "test",
 			},
