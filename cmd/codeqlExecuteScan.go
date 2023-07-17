@@ -122,10 +122,18 @@ func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 
 func initGitInfo(config *codeqlExecuteScanOptions) RepoInfo {
 	var repoInfo RepoInfo
-	err := getGitRepoInfo(config.Repository, &repoInfo)
-	if err != nil {
-		log.Entry().Error(err)
+	if len(config.TargetGithubRepoURL) > 0 {
+		err := getGitRepoInfo(config.TargetGithubRepoURL, &repoInfo)
+		if err != nil {
+			log.Entry().Error(err)
+		}
+	} else {
+		err := getGitRepoInfo(config.Repository, &repoInfo)
+		if err != nil {
+			log.Entry().Error(err)
+		}
 	}
+
 	repoInfo.ref = config.AnalyzedRef
 	repoInfo.commitId = config.CommitID
 
