@@ -308,6 +308,29 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	repoReference, err := buildRepoReference(repoUrl, repoInfo.ref)
 	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref)
 
+	if len(config.TargetGithubRepoURL) > 0 {
+		hasToken, token := getToken(config)
+		if !hasToken {
+			return reports, errors.New("failed running upload db sources to GitHub as githubToken was not specified")
+		}
+		ghRepoUploader := codeql.NewGithubUploaderInstance(
+			repoInfo.serverUrl,
+			repoInfo.owner,
+			repoInfo.repo,
+			token,
+			repoInfo.ref,
+			config.Database,
+			repoInfo.commitId,
+			config.Repository,
+			[]string{},
+		)
+		targetCommitId, err := ghRepoUploader.UploadProjectToGithub()
+		if err != nil {
+			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
+		}
+		repoInfo.commitId = targetCommitId
+	}
+
 	if !config.UploadResults {
 		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
 	} else {
