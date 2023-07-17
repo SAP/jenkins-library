@@ -482,7 +482,11 @@ func expandEnv(params []string) []string {
 	expanded := []string{}
 
 	for _, param := range params {
-		expanded = append(expanded, os.ExpandEnv(param))
+		if strings.Contains(param, "PIPER_VAULTCREDENTIAL_") {
+			expanded = append(expanded, os.ExpandEnv(param))
+		} else {
+			expanded = append(expanded, param)
+		}
 	}
 
 	return expanded
