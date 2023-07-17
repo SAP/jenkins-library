@@ -10,6 +10,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/config"
 )
 
 // HelmExecutor is used for mock
@@ -482,7 +483,7 @@ func expandEnv(params []string) []string {
 	expanded := []string{}
 
 	for _, param := range params {
-		if strings.Contains(param, "PIPER_VAULTCREDENTIAL_") {
+		if strings.Contains(param, config.VaultCredentialEnvPrefixDefault) {
 			expanded = append(expanded, os.ExpandEnv(param))
 		} else {
 			expanded = append(expanded, param)
