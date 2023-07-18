@@ -318,9 +318,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
 		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
 		config.BuildOptions = append(config.BuildOptions, "--destination", config.ContainerImage)
-
 	default:
-		return fmt.Errorf("BuildOptions or ContainerImage or ContainerRegistryURL/ContainerImageName/ContainerImageTag must be provided")
+		config.BuildOptions = append(config.BuildOptions, "--no-push")
 	}
 
 	if err = runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
