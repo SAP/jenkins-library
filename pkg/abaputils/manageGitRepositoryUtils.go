@@ -62,7 +62,7 @@ func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, c
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
 		printLog(logEntryForDetails, connectionDetails, client)
 	}
-	log.Entry().Infof("-------------------------")
+	AddDefaultDashedLine()
 
 	return
 }
@@ -151,14 +151,14 @@ func allLogsHaveBeenPrinted(entity LogProtocolResults, page int, err error) bool
 func printHeader(logEntry LogResultsV2) {
 	if logEntry.Status != `Success` {
 		log.Entry().Infof("\n")
-		log.Entry().Infof("-------------------------")
+		AddDefaultDashedLine()
 		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
-		log.Entry().Infof("-------------------------")
+		AddDefaultDashedLine()
 	} else {
 		log.Entry().Debugf("\n")
-		log.Entry().Debugf("-------------------------")
+		AddDebugDashedLine()
 		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
-		log.Entry().Debugf("-------------------------")
+		AddDebugDashedLine()
 	}
 }
 
