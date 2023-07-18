@@ -17,7 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/pkg/errors"
-	"k8s.io/utils/strings/slices"
 )
 
 type codeqlExecuteScanUtils interface {
@@ -341,9 +340,8 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		reports = append(reports, paths...)
 
 		if config.CheckForCompliance {
-			mustAuditGroups := strings.Split(config.MustAuditFindingsGroups, ",")
 			for _, scanResult := range scanResults {
-				if !slices.Contains(mustAuditGroups, scanResult.ClassificationName) {
+				if !strings.Contains(config.MustAuditFindingsGroups, scanResult.ClassificationName) {
 					continue
 				}
 				unaudited := scanResult.Total - scanResult.Audited
