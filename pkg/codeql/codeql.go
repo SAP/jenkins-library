@@ -33,17 +33,17 @@ type CodeqlScanAuditInstance struct {
 	alertListoptions github.AlertListOptions
 }
 
-func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef string) (CodeqlScanning, error) {
+func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef string) ([]CodeqlFindings, error) {
 	apiUrl := getApiUrl(codeqlScanAudit.serverUrl)
 	ctx, client, err := sapgithub.NewClient(codeqlScanAudit.token, apiUrl, "", codeqlScanAudit.trustedCerts)
 	if err != nil {
-		return CodeqlScanning{}, err
+		return []CodeqlFindings{}, err
 	}
 
 	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 }
 
-func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) (CodeqlScanning, error) {
+func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) ([]CodeqlFindings, error) {
 	page := 1
 	audited := 0
 	totalAlerts := 0
@@ -60,7 +60,7 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 
 		alerts, response, err := codeScanning.ListAlertsForRepo(ctx, codeqlScanAudit.owner, codeqlScanAudit.repository, &alertOptions)
 		if err != nil {
-			return CodeqlScanning{}, err
+			return []CodeqlFindings{}, err
 		}
 
 		page = response.NextPage
@@ -81,9 +81,12 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 		}
 	}
 
-	codeqlScanning := CodeqlScanning{}
-	codeqlScanning.Total = totalAlerts
-	codeqlScanning.Audited = audited
+	auditAll := CodeqlFindings{
+		ClassificationName: "Audit All",
+		Total:              totalAlerts,
+		Audited:            audited,
+	}
+	codeqlScanning := []CodeqlFindings{auditAll}
 
 	return codeqlScanning, nil
 }
