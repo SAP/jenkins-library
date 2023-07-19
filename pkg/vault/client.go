@@ -1,8 +1,10 @@
 package vault
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
@@ -40,6 +42,18 @@ func NewClient(config *Config, token string) (Client, error) {
 	if err != nil {
 		return Client{}, err
 	}
+
+	client.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		retry, err := api.DefaultRetryPolicy(ctx, resp, err)
+		if err != nil || retry {
+			return retry, err
+		}
+		// which status codes to retry?
+		if resp != nil && resp.StatusCode > 400 {
+			return true, nil
+		}
+		return false, nil
+	})
 
 	if config.Namespace != "" {
 		client.SetNamespace(config.Namespace)
