@@ -296,6 +296,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        deprecated: true
       - name: customEnvironmentVariables
         description:
           "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by
