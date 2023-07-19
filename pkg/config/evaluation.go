@@ -19,6 +19,7 @@ const (
 	filePatternFromConfigCondition = "filePatternFromConfig"
 	filePatternCondition           = "filePattern"
 	npmScriptsCondition            = "npmScripts"
+	deactivateIfOnlyActive         = "deactivateIfOnlyActive"
 )
 
 // EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
@@ -64,7 +65,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					stepActive = true
 				} else {
 					for _, condition := range step.Conditions {
-						stepActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath)
+						stepActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath, r.RunSteps[stageName])
 						if err != nil {
 							return fmt.Errorf("failed to evaluate stage conditions: %w", err)
 						}
@@ -79,7 +80,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 			// TODO: PART 1 : if explicit activation/de-activation is available should notActiveConditions be checked ?
 			// Fortify has no anchor, so if we explicitly set it to true then it may run even during commit pipelines, if we implement TODO PART 1??
 			for _, condition := range step.NotActiveConditions {
-				stepNotActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath)
+				stepNotActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath, r.RunSteps[stageName])
 				if err != nil {
 					return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
 				}
@@ -103,7 +104,13 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 	return nil
 }
 
-func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils, stepName string, envRootPath string) (bool, error) {
+func (s *StepCondition) evaluateV1(
+	config StepConfig,
+	utils piperutils.FileUtils,
+	stepName string,
+	envRootPath string,
+	runSteps map[string]bool,
+) (bool, error) {
 
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
@@ -189,6 +196,10 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 		return false, nil
 	}
 
+	if s.DeactivateIfOnlyActive {
+		return deactivateIfPreviousStepsAreInactive(runSteps), nil
+	}
+
 	// needs to be checked last:
 	// if none of the other conditions matches, step will be active unless set to inactive
 	if s.Inactive == true {
@@ -264,6 +275,8 @@ func (r *RunConfig) evaluateConditions(config *Config, filters map[string]StepFi
 						if stepActive, err = checkForNpmScriptsInPackages(condition, stepConfig, stepName, glob, r.OpenFile); err != nil {
 							return errors.Wrapf(err, "error: check npmScripts condition failed")
 						}
+					case deactivateIfOnlyActive:
+						stepActive = deactivateIfPreviousStepsAreInactive(r.RunSteps[stageName])
 					default:
 						return errors.Errorf("unknown condition %s", conditionName)
 					}
@@ -272,6 +285,7 @@ func (r *RunConfig) evaluateConditions(config *Config, filters map[string]StepFi
 					}
 				}
 			}
+
 			runStep[stepName] = stepActive
 			r.RunSteps[stageName] = runStep
 		}
@@ -490,4 +504,16 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 		}
 	}
 	return false, nil
+}
+
+// deactivateIfPreviousStepsAreInactive loops through previous steps active states and disables current step
+// if all previous steps are inactive
+func deactivateIfPreviousStepsAreInactive(runSteps map[string]bool) bool {
+	for _, isActive := range runSteps {
+		if isActive {
+			return true
+		}
+	}
+
+	return false
 }
