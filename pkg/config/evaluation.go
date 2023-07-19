@@ -252,37 +252,40 @@ func (r *RunConfig) evaluateConditions(config *Config, filters map[string]StepFi
 				// respect explicit activation/de-activation if available
 				stepActive = active
 			} else {
+			loop:
 				for conditionName, condition := range stepCondition {
 					var err error
+					var conditionResult bool
 					switch conditionName {
 					case configCondition:
-						if stepActive, err = checkConfig(condition, stepConfig, stepName); err != nil {
+						if conditionResult, err = checkConfig(condition, stepConfig, stepName); err != nil {
 							return errors.Wrapf(err, "error: check config condition failed")
 						}
 					case configKeysCondition:
-						if stepActive, err = checkConfigKeys(condition, stepConfig, stepName); err != nil {
+						if conditionResult, err = checkConfigKeys(condition, stepConfig, stepName); err != nil {
 							return errors.Wrapf(err, "error: check configKeys condition failed")
 						}
 					case filePatternFromConfigCondition:
-						if stepActive, err = checkForFilesWithPatternFromConfig(condition, stepConfig, stepName, glob); err != nil {
+						if conditionResult, err = checkForFilesWithPatternFromConfig(condition, stepConfig, stepName, glob); err != nil {
 							return errors.Wrapf(err, "error: check filePatternFromConfig condition failed")
 						}
 					case filePatternCondition:
-						if stepActive, err = checkForFilesWithPattern(condition, stepConfig, stepName, glob); err != nil {
+						if conditionResult, err = checkForFilesWithPattern(condition, stepConfig, stepName, glob); err != nil {
 							return errors.Wrapf(err, "error: check filePattern condition failed")
 						}
 					case npmScriptsCondition:
-						if stepActive, err = checkForNpmScriptsInPackages(condition, stepConfig, stepName, glob, r.OpenFile); err != nil {
+						if conditionResult, err = checkForNpmScriptsInPackages(condition, stepConfig, stepName, glob, r.OpenFile); err != nil {
 							return errors.Wrapf(err, "error: check npmScripts condition failed")
 						}
 					case deactivateIfOnlyActive:
 						stepActive = deactivateIfPreviousStepsAreInactive(r.RunSteps[stageName])
+						break loop
 					default:
 						return errors.Errorf("unknown condition %s", conditionName)
 					}
-					if stepActive {
-						break
-					}
+
+					// step is active if at least one of the conditions is true
+					stepActive = stepActive || conditionResult
 				}
 			}
 

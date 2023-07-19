@@ -925,6 +925,39 @@ stages:
 				},
 			},
 		},
+		{
+			name:     "test deactivateIfOnlyActive condition - success",
+			globFunc: evaluateConditionsGlobMock,
+			customConfig: &Config{
+				General: map[string]interface{}{},
+				Stages:  map[string]map[string]interface{}{},
+				Steps: map[string]map[string]interface{}{
+					"thirdStep": {
+						"myVal1": "**/conf.js",
+					},
+				},
+			},
+			stageConfig: ioutil.NopCloser(strings.NewReader(`
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        npmScripts: 'npmScript11111111'
+      secondStep:
+        npmScripts: 'npmScript22222222'
+      thirdStep:
+        filePatternFromConfig: myVal1
+        deactivateIfOnlyActive: true
+            `)),
+			runStepsExpected: map[string]map[string]bool{
+				"testStage1": {
+					"firstStep":  false,
+					"secondStep": false,
+					"thirdStep":  false,
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
