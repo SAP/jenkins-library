@@ -332,7 +332,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
 
-		codeqlAudit := codeql.CodeqlAudit{ToolName: "CodeQL", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, ScanResults: scanResults}
+		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, ScanResults: scanResults}
 		paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to write json compliance report")
@@ -341,9 +341,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 		if config.CheckForCompliance {
 			for _, scanResult := range scanResults {
-				if !strings.Contains(config.MustAuditFindingsGroups, scanResult.ClassificationName) {
-					continue
-				}
 				unaudited := scanResult.Total - scanResult.Audited
 				if unaudited > config.VulnerabilityThresholdTotal {
 					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)

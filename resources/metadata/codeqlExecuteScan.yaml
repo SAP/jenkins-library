@@ -174,14 +174,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: mustAuditFindingsGroups
-        type: string
-        description: "Comma separated list of findings groups that must be audited completely"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: "Audit All"
   containers:
     - image: ""
   outputs:
