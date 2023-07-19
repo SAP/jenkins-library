@@ -250,6 +250,7 @@ func TestEvaluateV1(t *testing.T) {
 		name          string
 		config        StepConfig
 		stepCondition StepCondition
+		runSteps      map[string]bool
 		expected      bool
 		expectedError error
 	}{
@@ -400,6 +401,20 @@ func TestEvaluateV1(t *testing.T) {
 			expected:      false,
 		},
 		{
+			name:          "DeactivateIfOnlyActive - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{DeactivateIfOnlyActive: true},
+			runSteps:      map[string]bool{"step1": false, "step2": false},
+			expected:      false,
+		},
+		{
+			name:          "DeactivateIfOnlyActive - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{DeactivateIfOnlyActive: true},
+			runSteps:      map[string]bool{"step1": false, "step2": false, "step3": true},
+			expected:      true,
+		},
+		{
 			name:     "No condition - true",
 			config:   StepConfig{Config: map[string]interface{}{}},
 			expected: true,
@@ -429,7 +444,7 @@ func TestEvaluateV1(t *testing.T) {
 
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
-			active, err := test.stepCondition.evaluateV1(test.config, &filesMock, "dummy", dir)
+			active, err := test.stepCondition.evaluateV1(test.config, &filesMock, "dummy", dir, test.runSteps)
 			if test.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -505,7 +520,7 @@ stages:
   testStage1:
     stepConditions:
       firstStep:
-        config: 
+        config:
          - testGeneral
             `)),
 			runStepsExpected: map[string]map[string]bool{},
@@ -711,7 +726,7 @@ stages:
          - '**/conf.js'
          - 'myCollection.json'
       secondStep:
-        filePattern: 
+        filePattern:
          - '**/conf.jsx'
             `)),
 			runStepsExpected: map[string]map[string]bool{
