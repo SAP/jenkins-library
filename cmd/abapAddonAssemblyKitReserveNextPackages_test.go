@@ -25,14 +25,11 @@ func arrangeConfig(addonDescriptor abaputils.AddonDescriptor) abapAddonAssemblyK
 }
 
 func TestReserveNextPackagesStep(t *testing.T) {
-	var config abapAddonAssemblyKitReserveNextPackagesOptions
-	config.Username = "dummy"
-	config.Password = "dummy"
 	var cpe abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment
 	bundle := aakaas.NewAakBundleMock()
 	utils := bundle.GetUtils()
 	t.Run("step success", func(t *testing.T) {
-		addonDescriptor := abaputils.AddonDescriptor{
+		config := arrangeConfig(abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
 				{
 					Name:        "/DRNMSPC/COMP01",
@@ -45,9 +42,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 					CommitID:    "something40charslongxxxxxxxxxxxxxxxxxxxx",
 				},
 			},
-		}
-		adoDesc, _ := json.Marshal(addonDescriptor)
-		config.AddonDescriptor = string(adoDesc)
+		})
 		bodyList := []string{responseReserveNextPackageReleased, responseReserveNextPackagePlanned, responseReserveNextPackagePostReleased, "myToken", responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
 		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
@@ -59,29 +54,25 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		assert.Equal(t, "R", addonDescriptorFinal.Repositories[1].Status)
 	})
 	t.Run("step error - invalid input", func(t *testing.T) {
-		addonDescriptor := abaputils.AddonDescriptor{
+		config := arrangeConfig(abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
 				{
 					Name: "/DRNMSPC/COMP01",
 				},
 			},
-		}
-		adoDesc, _ := json.Marshal(addonDescriptor)
-		config.AddonDescriptor = string(adoDesc)
+		})
 		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
 	t.Run("step error - timeout", func(t *testing.T) {
-		addonDescriptor := abaputils.AddonDescriptor{
+		config := arrangeConfig(abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
 				{
 					Name:        "/DRNMSPC/COMP01",
 					VersionYAML: "1.0.0.",
 				},
 			},
-		}
-		adoDesc, _ := json.Marshal(addonDescriptor)
-		config.AddonDescriptor = string(adoDesc)
+		})
 		bodyList := []string{responseReserveNextPackageCreationTriggered, responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
 		bundle.SetMaxRuntime(time.Duration(1 * time.Microsecond))
