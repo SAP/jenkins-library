@@ -167,8 +167,8 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 	// Low
 	lowFindings := Finding{}
 	lowFindings.ClassificationName = "Low"
-	lowPerQueryList := []LowPerQuery{}
 	if _, ok := (*data)["LowPerQuery"]; ok {
+		lowPerQueryList := []LowPerQuery{}
 		lowPerQueryMap := (*data)["LowPerQuery"].(map[string]map[string]int)
 		for queryName, resultsLowQuery := range lowPerQueryMap {
 			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
@@ -179,9 +179,14 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 			lowPerQuery.Total = total
 			lowPerQueryList = append(lowPerQueryList, lowPerQuery)
 		}
+		lowFindings.LowPerQuery = &lowPerQueryList
+		findings = append(findings, lowFindings)
+	} else {
+		lowFindings.Total = (*data)["Low"].(map[string]int)["Issues"]
+		lowAudited := (*data)["Low"].(map[string]int)["Confirmed"] + (*data)["Low"].(map[string]int)["NotExploitable"]
+		lowFindings.Audited = &lowAudited
+		findings = append(findings, lowFindings)
 	}
-	lowFindings.LowPerQuery = &lowPerQueryList
-	findings = append(findings, lowFindings)
 
 	checkmarxReportData.Findings = &findings
 
