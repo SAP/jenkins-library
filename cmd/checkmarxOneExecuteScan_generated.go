@@ -111,7 +111,7 @@ type checkmarxOneExecuteScanInflux struct {
 			group_full_path_on_report_date       string
 			scan_start                           string
 			scan_time                            string
-			checkmarxOne_version                 string
+			tool_version                         string
 			scan_type                            string
 			preset                               string
 			deep_link                            string
@@ -169,7 +169,7 @@ func (i *checkmarxOneExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "group_full_path_on_report_date", value: i.checkmarxOne_data.fields.group_full_path_on_report_date},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "scan_start", value: i.checkmarxOne_data.fields.scan_start},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "scan_time", value: i.checkmarxOne_data.fields.scan_time},
-		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "checkmarxOne_version", value: i.checkmarxOne_data.fields.checkmarxOne_version},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "tool_version", value: i.checkmarxOne_data.fields.tool_version},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "scan_type", value: i.checkmarxOne_data.fields.scan_type},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "preset", value: i.checkmarxOne_data.fields.preset},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "deep_link", value: i.checkmarxOne_data.fields.deep_link},
@@ -832,7 +832,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"name": "step_data", "fields": []map[string]string{{"name": "checkmarxOne"}}},
-							{"name": "checkmarxOne_data", "fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "group"}, {"name": "group_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "checkmarxOne_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
+							{"name": "checkmarxOne_data", "fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "group"}, {"name": "group_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "tool_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
 						},
 					},
 					{
