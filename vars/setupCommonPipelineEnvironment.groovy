@@ -57,6 +57,7 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters)
+        def utils = parameters.utils ?: new Utils()
 
         String configFile = parameters.get('configFile')
         loadConfigurationFromFile(script, configFile)
@@ -97,7 +98,7 @@ void call(Map parameters = [:]) {
         if (configFile && !configFile.startsWith('.pipeline/')) {
             stashIncludes += ", $configFile"
         }
-        stash name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
+        utils.stash name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -106,7 +107,7 @@ void call(Map parameters = [:]) {
 
         inferBuildTool(script, config)
 
-        (parameters.utils ?: new Utils()).pushToSWA([
+        utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey4: 'customDefaults',
             stepParam4: parameters.customDefaults?'true':'false'

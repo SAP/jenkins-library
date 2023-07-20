@@ -5,11 +5,11 @@ import (
 	"bytes"
 	"path/filepath"
 
+	"github.com/BurntSushi/toml"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/buildpacks/lifecycle/platform"
-	"github.com/pelletier/go-toml"
 )
 
 var metadataFilePath = "/layers/project-metadata.toml"

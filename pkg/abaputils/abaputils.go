@@ -186,11 +186,20 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 	if resp == nil {
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
+
+		match, _ := regexp.MatchString(".*EOF$", err.Error())
+		if match {
+			AddDefaultDashedLine()
+			log.Entry().Infof("%s", "A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)")
+			AddDefaultDashedLine()
+		}
+
+		log.Entry().Infof("Error message: %s,", err.Error())
 	} else {
 
 		defer resp.Body.Close()
 
-		log.Entry().WithField("StatusCode", resp.Status).Error(message)
+		log.Entry().WithField("StatusCode", resp.Status).WithField("User", connectionDetails.User).WithField("URL", connectionDetails.URL).Error(message)
 
 		errorText, errorCode, parsingError := GetErrorDetailsFromResponse(resp)
 		if parsingError != nil {
@@ -237,6 +246,16 @@ func ConvertTime(logTimeStamp string) time.Time {
 	}
 	t := time.Unix(n, 0).UTC()
 	return t
+}
+
+// AddDefaultDashedLine adds 25 dashes
+func AddDefaultDashedLine() {
+	log.Entry().Infof(strings.Repeat("-", 25))
+}
+
+// AddDefaultDebugLine adds 25 dashes in debug
+func AddDebugDashedLine() {
+	log.Entry().Debugf(strings.Repeat("-", 25))
 }
 
 /*******************************

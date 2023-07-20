@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -113,10 +112,29 @@ func processConfigs(main cnbBuildOptions, multipleImages []map[string]interface{
 	return result, nil
 }
 
-func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
+func setCustomBuildpacks(bpacks, preBuildpacks, postBuildpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
 	buildpacksPath := "/tmp/buildpacks"
 	orderPath := "/tmp/buildpacks/order.toml"
-	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, dockerCreds, utils)
+	err := cnbutils.DownloadBuildpacks(buildpacksPath, append(bpacks, append(preBuildpacks, postBuildpacks...)...), dockerCreds, utils)
+	if err != nil {
+		return "", "", err
+	}
+
+	if len(bpacks) == 0 && (len(postBuildpacks) > 0 || len(preBuildpacks) > 0) {
+		matches, err := utils.Glob("/cnb/buildpacks/*")
+		if err != nil {
+			return "", "", err
+		}
+
+		for _, match := range matches {
+			err = cnbutils.CreateVersionSymlinks(buildpacksPath, match, utils)
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+
+	newOrder, err := cnbutils.CreateOrder(bpacks, preBuildpacks, postBuildpacks, dockerCreds, utils)
 	if err != nil {
 		return "", "", err
 	}
@@ -212,28 +230,26 @@ func extractZip(source, target string) error {
 	return nil
 }
 
-func renameDockerConfig(config *cnbBuildOptions, utils cnbutils.BuildUtils) error {
-	if filepath.Base(config.DockerConfigJSON) != "config.json" {
-		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(config.DockerConfigJSON))
+func ensureDockerConfig(config *cnbBuildOptions, utils cnbutils.BuildUtils) error {
+	newFile := "/tmp/config.json"
+	if config.DockerConfigJSON == "" {
+		config.DockerConfigJSON = newFile
 
-		newPath := filepath.Join(filepath.Dir(config.DockerConfigJSON), "config.json")
-		alreadyExists, err := utils.FileExists(newPath)
-		if err != nil {
-			return err
-		}
-
-		if alreadyExists {
-			return nil
-		}
-
-		err = utils.FileRename(config.DockerConfigJSON, newPath)
-		if err != nil {
-			return err
-		}
-
-		config.DockerConfigJSON = newPath
+		return utils.FileWrite(config.DockerConfigJSON, []byte("{}"), os.ModePerm)
 	}
 
+	log.Entry().Debugf("Copying docker config file from '%s' to '%s'", config.DockerConfigJSON, newFile)
+	_, err := utils.Copy(config.DockerConfigJSON, newFile)
+	if err != nil {
+		return err
+	}
+
+	err = utils.Chmod(newFile, 0644)
+	if err != nil {
+		return err
+	}
+
+	config.DockerConfigJSON = newFile
 	return nil
 }
 
@@ -382,38 +398,19 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
-	if len(config.DockerConfigJSON) > 0 {
-		err = renameDockerConfig(config, utils)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%s'", config.DockerConfigJSON)
-		}
+	err = ensureDockerConfig(config, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrapf(err, "failed to create/rename DockerConfigJSON file")
 	}
 
-	if config.ContainerRegistryUser != "" && config.ContainerRegistryPassword != "" {
-		log.Entry().Debug("enhancing docker config with the provided credentials")
-		if config.DockerConfigJSON == "" {
-			config.DockerConfigJSON = "/tmp/config.json"
-		}
-		log.Entry().Debugf("using docker config file %q", config.DockerConfigJSON)
-
-		if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); !matched {
-			config.ContainerRegistryURL = fmt.Sprintf("https://%s", config.ContainerRegistryURL)
-		}
-
-		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+	if config.DockerConfigJSONCPE != "" {
+		log.Entry().Debugf("merging docker config file '%s' into '%s'", config.DockerConfigJSONCPE, config.DockerConfigJSON)
+		err = docker.MergeDockerConfigJSON(config.DockerConfigJSONCPE, config.DockerConfigJSON, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read registry url %q", config.ContainerRegistryURL)
+			return errors.Wrapf(err, "failed to merge DockerConfigJSON files")
 		}
-
-		_, err = docker.CreateDockerConfigJSON(containerRegistry, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, utils)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "failed to update DockerConfigJSON file %q", config.DockerConfigJSON)
-		}
-
-		log.Entry().Debugf("docker config %q has been updated", config.DockerConfigJSON)
 	}
 
 	mergedConfigs, err := processConfigs(*config, config.MultipleImages)
@@ -497,8 +494,16 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 
 		config.mergeEnvVars(descriptor.EnvVars)
 
-		if (config.Buildpacks == nil || len(config.Buildpacks) == 0) && len(descriptor.Buildpacks) > 0 {
+		if len(config.Buildpacks) == 0 {
 			config.Buildpacks = descriptor.Buildpacks
+		}
+
+		if len(config.PreBuildpacks) == 0 {
+			config.PreBuildpacks = descriptor.PreBuildpacks
+		}
+
+		if len(config.PostBuildpacks) == 0 {
+			config.PostBuildpacks = descriptor.PostBuildpacks
 		}
 
 		if descriptor.Exclude != nil {
@@ -585,11 +590,13 @@ func runCnbBuild(config *cnbBuildOptions, cnbTelemetry *cnbBuildTelemetry, utils
 	metadata.WriteProjectMetadata(GeneralConfig.EnvRootPath, utils)
 
 	var buildpacksPath = "/cnb/buildpacks"
-	var orderPath = "/cnb/order.toml"
+	var orderPath = cnbutils.DefaultOrderPath
 
-	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
+	if len(config.Buildpacks) > 0 || len(config.PreBuildpacks) > 0 || len(config.PostBuildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, config.DockerConfigJSON, utils)
+		log.Entry().Infof("Pre-buildpacks: '%v'", config.PreBuildpacks)
+		log.Entry().Infof("Post-buildpacks: '%v'", config.PostBuildpacks)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, config.PreBuildpacks, config.PostBuildpacks, config.DockerConfigJSON, utils)
 		defer func() { _ = utils.RemoveAll(buildpacksPath) }()
 		defer func() { _ = utils.RemoveAll(orderPath) }()
 		if err != nil {
