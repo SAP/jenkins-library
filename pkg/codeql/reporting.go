@@ -10,16 +10,17 @@ import (
 )
 
 type CodeqlAudit struct {
-	ToolName               string         `json:"toolName"`
-	RepositoryUrl          string         `json:"repositoryUrl"`
-	RepositoryReferenceUrl string         `json:"repositoryReferenceUrl"` //URL of PR or Branch where scan was performed
-	CodeScanningLink       string         `json:"codeScanningLink"`
-	ScanResults            CodeqlScanning `json:"scanResults"`
+	ToolName               string           `json:"toolName"`
+	RepositoryUrl          string           `json:"repositoryUrl"`
+	RepositoryReferenceUrl string           `json:"repositoryReferenceUrl"` //URL of PR or Branch where scan was performed
+	CodeScanningLink       string           `json:"codeScanningLink"`
+	ScanResults            []CodeqlFindings `json:"findings"`
 }
 
-type CodeqlScanning struct {
-	Total   int `json:"total"`
-	Audited int `json:"audited"`
+type CodeqlFindings struct {
+	ClassificationName string `json:"classificationName"`
+	Total              int    `json:"total"`
+	Audited            int    `json:"audited"`
 }
 
 func WriteJSONReport(jsonReport CodeqlAudit, modulePath string) ([]piperutils.Path, error) {
