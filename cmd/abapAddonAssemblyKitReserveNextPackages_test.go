@@ -28,6 +28,32 @@ func TestReserveNextPackagesStep(t *testing.T) {
 	var cpe abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment
 	bundle := aakaas.NewAakBundleMock()
 	utils := bundle.GetUtils()
+	t.Run("step success tag", func(t *testing.T) {
+		config := arrangeConfig(abaputils.AddonDescriptor{
+			Repositories: []abaputils.Repository{
+				{
+					Name:        "/DRNMSPC/COMP01",
+					VersionYAML: "1.0.0.",
+					Tag:         "myTestTagv1.0",
+				},
+				{
+					Name:        "/DRNMSPC/COMP02",
+					VersionYAML: "1.0.0.",
+					Tag:         "myTestTagv1.0",
+				},
+			},
+		})
+		bodyList := []string{responseReserveNextPackageReleased, responseReserveNextPackagePlanned, responseReserveNextPackagePostReleased, "myToken", responseReserveNextPackagePostPlanned, "myToken"}
+		bundle.SetBodyList(bodyList)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		assert.NoError(t, err, "Did not expect error")
+		var addonDescriptorFinal abaputils.AddonDescriptor
+		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.NoError(t, err)
+		assert.Equal(t, "P", addonDescriptorFinal.Repositories[0].Status)
+		assert.Equal(t, "R", addonDescriptorFinal.Repositories[1].Status)
+	})
+
 	t.Run("step success", func(t *testing.T) {
 		config := arrangeConfig(abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
