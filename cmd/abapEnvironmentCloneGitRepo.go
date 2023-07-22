@@ -29,7 +29,6 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 	}
 
 	client := piperhttp.Client{}
-
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &client)
 	if err != nil {
@@ -76,9 +75,9 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		logString := repo.GetCloneLogString()
 		errorString := "Clone of " + logString + " failed on the ABAP system"
 
-		log.Entry().Info("-------------------------")
+		abaputils.AddDefaultDashedLine()
 		log.Entry().Info("Start cloning " + logString)
-		log.Entry().Info("-------------------------")
+		abaputils.AddDefaultDashedLine()
 
 		// Triggering the Clone of the repository into the ABAP Environment system
 		uriConnectionDetails, errorTriggerClone, didCheckoutPullInstead := triggerClone(repo, connectionDetails, client)
@@ -99,7 +98,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 			log.Entry().Info("The " + logString + " was cloned successfully")
 		}
 	}
-	log.Entry().Info("-------------------------")
+	abaputils.AddDefaultDashedLine()
 	log.Entry().Info("All repositories were cloned successfully")
 	return nil
 }
@@ -191,12 +190,12 @@ func handleCloneError(resp *http.Response, err error, cloneConnectionDetails aba
 		// As an intermediate workaround, we react to the error message A4C_A2G/257 that gets thrown, if the repository had already been cloned
 		// In this case, a checkout branch and a pull will be performed
 		alreadyCloned = true
-		log.Entry().Infof("-------------------------")
-		log.Entry().Infof("-------------------------")
+		abaputils.AddDefaultDashedLine()
+		abaputils.AddDefaultDashedLine()
 		log.Entry().Infof("%s", "The repository / software component has already been cloned on the ABAP Environment system ")
 		log.Entry().Infof("%s", "A `checkout branch` and a `pull` will be performed instead")
-		log.Entry().Infof("-------------------------")
-		log.Entry().Infof("-------------------------")
+		abaputils.AddDefaultDashedLine()
+		abaputils.AddDefaultDashedLine()
 		checkoutOptions := abapEnvironmentCheckoutBranchOptions{
 			Username:       cloneConnectionDetails.User,
 			Password:       cloneConnectionDetails.Password,
@@ -214,8 +213,8 @@ func handleCloneError(resp *http.Response, err error, cloneConnectionDetails aba
 		if returnedError != nil {
 			return
 		}
-		log.Entry().Infof("-------------------------")
-		log.Entry().Infof("-------------------------")
+		abaputils.AddDefaultDashedLine()
+		abaputils.AddDefaultDashedLine()
 		pullOptions := abapEnvironmentPullGitRepoOptions{
 			Username:       cloneConnectionDetails.User,
 			Password:       cloneConnectionDetails.Password,
