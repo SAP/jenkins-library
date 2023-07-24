@@ -176,12 +176,12 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 		}
 		if config.CreateBOM {
-			//Syft for multi image, generates bom-docker-(1/2/3).xml
+			// Syft for multi image, generates bom-docker-(1/2/3).xml
 			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		}
 		return nil
 
-	case len(config.MultipleImages) > 0:
+	case config.MultipleImages != nil:
 		log.Entry().Debugf("MultipleImages build activated")
 		parsedMultipleImages, err := parseMultipleImages(config.MultipleImages)
 		if err != nil {
@@ -200,12 +200,11 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
 				}
 
-				containerImageTag := entry.ContainerImageTag
-				if containerImageTag == "" {
-					containerImageTag = config.ContainerImageTag
+				if entry.ContainerImageTag == "" {
+					entry.ContainerImageTag = config.ContainerImageTag
 				}
 				// Docker image tags don't allow plus signs in tags, thus replacing with dash
-				containerImageTag = strings.ReplaceAll(containerImageTag, "+", "-")
+				containerImageTag := strings.ReplaceAll(entry.ContainerImageTag, "+", "-")
 				containerImageNameAndTag := fmt.Sprintf("%v:%v", entry.ContainerImageName, containerImageTag)
 
 				log.Entry().Debugf("image build for image name '%v'", entry.ContainerImageName)
@@ -248,8 +247,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			}
 		}
 
+		// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
+		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, config.ContainerImageTag)
+		commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+
 		if config.CreateBOM {
-			//Syft for multi image, generates bom-docker-(1/2/3).xml
+			// Syft for multi image, generates bom-docker-(1/2/3).xml
 			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		}
 		return nil
@@ -261,15 +265,16 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			if o == "--destination" && i+1 < len(config.BuildOptions) {
 				destination := config.BuildOptions[i+1]
 
+				containerRegistry, err := docker.ContainerRegistryFromImage(destination)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorConfiguration)
+					return errors.Wrapf(err, "invalid registry part in image %v", destination)
+				}
 				if commonPipelineEnvironment.container.registryURL == "" {
-					containerRegistry, err := docker.ContainerRegistryFromImage(destination)
-					if err != nil {
-						log.SetErrorCategory(log.ErrorConfiguration)
-						return errors.Wrapf(err, "invalid registry part in image %v", destination)
-					}
 					commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
 				}
 
+				// errors are already caught with previous call to docker.ContainerRegistryFromImage
 				containerImageName, _ := docker.ContainerImageNameFromImage(destination)
 				containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(destination)
 
@@ -290,11 +295,11 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
 		}
 
-		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-
 		// Docker image tags don't allow plus signs in tags, thus replacing with dash
 		containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
 		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
+
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 		commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameAndTag)
 		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
