@@ -73,7 +73,7 @@ type StepCondition struct {
 	FilePattern               string                   `json:"filePattern,omitempty"`
 	FilePatternFromConfig     string                   `json:"filePatternFromConfig,omitempty"`
 	Inactive                  bool                     `json:"inactive,omitempty"`
-	DeactivateIfOnlyActive    bool                     `json:"deactivateIfOnlyActive,omitempty"`
+	OnlyActiveStepInStage     bool                     `json:"onlyActiveStepInStage,omitempty"`
 	NpmScript                 string                   `json:"npmScript,omitempty"`
 	CommonPipelineEnvironment map[string]interface{}   `json:"commonPipelineEnvironment,omitempty"`
 	PipelineEnvironmentFilled string                   `json:"pipelineEnvironmentFilled,omitempty"`

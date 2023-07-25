@@ -195,8 +195,11 @@ func (s *StepCondition) evaluateV1(
 		return false, nil
 	}
 
-	if s.DeactivateIfOnlyActive {
-		return deactivateIfPreviousStepsAreInactive(runSteps), nil
+	if s.OnlyActiveStepInStage {
+		// Used only in NotActiveConditions.
+		// Returns true if all previous steps are inactive, so step will be deactivated
+		// if it's the only active step in stage.
+		return !anyPreviousStepIsActive(runSteps), nil
 	}
 
 	// needs to be checked last:
@@ -502,9 +505,9 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 	return false, nil
 }
 
-// deactivateIfPreviousStepsAreInactive loops through previous steps active states and disables current step
-// if all previous steps are inactive
-func deactivateIfPreviousStepsAreInactive(runSteps map[string]bool) bool {
+// anyPreviousStepIsActive loops through previous steps active states and returns true
+// if at least one of them is active, otherwise result is false
+func anyPreviousStepIsActive(runSteps map[string]bool) bool {
 	for _, isActive := range runSteps {
 		if isActive {
 			return true

@@ -401,18 +401,18 @@ func TestEvaluateV1(t *testing.T) {
 			expected:      false,
 		},
 		{
-			name:          "DeactivateIfOnlyActive - false",
+			name:          "NotActiveCondition: all previous steps are inactive",
 			config:        StepConfig{Config: map[string]interface{}{}},
-			stepCondition: StepCondition{DeactivateIfOnlyActive: true},
+			stepCondition: StepCondition{OnlyActiveStepInStage: true},
 			runSteps:      map[string]bool{"step1": false, "step2": false},
-			expected:      false,
+			expected:      true,
 		},
 		{
-			name:          "DeactivateIfOnlyActive - true",
+			name:          "NotActiveCondition: one of the previous steps is active",
 			config:        StepConfig{Config: map[string]interface{}{}},
-			stepCondition: StepCondition{DeactivateIfOnlyActive: true},
+			stepCondition: StepCondition{OnlyActiveStepInStage: true},
 			runSteps:      map[string]bool{"step1": false, "step2": false, "step3": true},
-			expected:      true,
+			expected:      false,
 		},
 		{
 			name:     "No condition - true",
@@ -939,39 +939,6 @@ stages:
 					"secondStep": false,
 				},
 			},
-		},
-		{
-			name:     "test deactivateIfOnlyActive condition - success",
-			globFunc: evaluateConditionsGlobMock,
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps: map[string]map[string]interface{}{
-					"thirdStep": {
-						"myVal1": "**/conf.js",
-					},
-				},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        npmScripts: 'npmScript11111111'
-      secondStep:
-        npmScripts: 'npmScript22222222'
-      thirdStep:
-        filePatternFromConfig: myVal1
-        deactivateIfOnlyActive: true
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {
-					"firstStep":  false,
-					"secondStep": false,
-					"thirdStep":  false,
-				},
-			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
