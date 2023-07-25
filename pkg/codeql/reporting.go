@@ -14,6 +14,7 @@ type CodeqlAudit struct {
 	RepositoryUrl          string           `json:"repositoryUrl"`
 	RepositoryReferenceUrl string           `json:"repositoryReferenceUrl"` //URL of PR or Branch where scan was performed
 	CodeScanningLink       string           `json:"codeScanningLink"`
+	QuerySuite             string           `json:"querySuite"`
 	ScanResults            []CodeqlFindings `json:"findings"`
 }
 
