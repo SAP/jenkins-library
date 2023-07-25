@@ -19,7 +19,6 @@ const (
 	filePatternFromConfigCondition = "filePatternFromConfig"
 	filePatternCondition           = "filePattern"
 	npmScriptsCondition            = "npmScripts"
-	deactivateIfOnlyActive         = "deactivateIfOnlyActive"
 )
 
 // EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
@@ -64,18 +63,15 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 					// if no condition is available, step will be active by default
 					stepActive = true
 				} else {
-					var conditionResult bool
 					for _, condition := range step.Conditions {
 						stepActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath, r.RunSteps[stageName])
 						if err != nil {
 							return fmt.Errorf("failed to evaluate stage conditions: %w", err)
 						}
-						if condition.DeactivateIfOnlyActive {
+						if stepActive {
+							// first condition which matches will be considered to activate the step
 							break
 						}
-
-						// step is active if at least one of the conditions is true
-						stepActive = stepActive || conditionResult
 					}
 				}
 			}
