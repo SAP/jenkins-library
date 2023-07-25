@@ -340,10 +340,12 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		reports = append(reports, paths...)
 
 		if config.CheckForCompliance {
-			unaudited := scanResults.Total - scanResults.Audited
-			if unaudited > config.VulnerabilityThresholdTotal {
-				msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
-				return reports, errors.Errorf(msg)
+			for _, scanResult := range scanResults {
+				unaudited := scanResult.Total - scanResult.Audited
+				if unaudited > config.VulnerabilityThresholdTotal {
+					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
+					return reports, errors.Errorf(msg)
+				}
 			}
 		}
 	}
