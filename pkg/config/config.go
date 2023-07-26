@@ -237,7 +237,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// merge command line flags
 	if flagValues != nil {
-		stepConfig.mixIn(flagValues, filters.Parameters)
+		flagFilter := append(filters.Parameters, vaultFilter...)
+		stepConfig.mixIn(flagValues, flagFilter)
 	}
 
 	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
@@ -326,7 +327,6 @@ func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON str
 }
 
 func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, acceptedParams []string, stageName string) (StepConfig, error) {
-
 	filters := StepFilters{
 		General:    acceptedParams,
 		Steps:      []string{},
@@ -339,7 +339,6 @@ func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, d
 
 // GetJSON returns JSON representation of an object
 func GetJSON(data interface{}) (string, error) {
-
 	result, err := json.Marshal(data)
 	if err != nil {
 		return "", errors.Wrapf(err, "error marshalling json: %v", err)
@@ -349,7 +348,6 @@ func GetJSON(data interface{}) (string, error) {
 
 // GetYAML returns YAML representation of an object
 func GetYAML(data interface{}) (string, error) {
-
 	result, err := yaml.Marshal(data)
 	if err != nil {
 		return "", errors.Wrapf(err, "error marshalling yaml: %v", err)
@@ -371,7 +369,6 @@ func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, 
 }
 
 func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
-
 	u, err := url.Parse(name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read url: %w", err)
@@ -404,7 +401,6 @@ func envValues(filter []string) map[string]interface{} {
 }
 
 func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
-
 	if s.Config == nil {
 		s.Config = map[string]interface{}{}
 	}
@@ -413,7 +409,6 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 }
 
 func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}) {
-
 	if s.HookConfig == nil {
 		s.HookConfig = map[string]interface{}{}
 	}
@@ -482,7 +477,6 @@ func filterMap(data map[string]interface{}, filter []string) map[string]interfac
 }
 
 func merge(base, overlay map[string]interface{}) map[string]interface{} {
-
 	result := map[string]interface{}{}
 
 	if base == nil {
