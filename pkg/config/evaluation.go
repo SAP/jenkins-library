@@ -199,6 +199,7 @@ func (s *StepCondition) evaluateV1(
 		// Used only in NotActiveConditions.
 		// Returns true if all previous steps are inactive, so step will be deactivated
 		// if it's the only active step in stage.
+		// For example, sapCumulusUpload step must be deactivated in a stage where others steps are inactive.
 		return !anyPreviousStepIsActive(runSteps), nil
 	}
 
