@@ -38,7 +38,7 @@ func TestRunKarma(t *testing.T) {
 		runKarma(opts, &e)
 
 		assert.Equal(t, "./test", e.Dir[1], "run command dir incorrect")
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "test", "--", "--log-level", "DEBUG"}}, e.Calls[1], "run command/params incorrect")
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "test", "--log-level", "DEBUG"}}, e.Calls[1], "run command/params incorrect")
 	})
 
 	t.Run("error case install command", func(t *testing.T) {
