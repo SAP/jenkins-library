@@ -203,6 +203,7 @@ func (p *checkmarxOneExecuteScanReports) persist(stepConfig checkmarxOneExecuteS
 		{FilePattern: "**/Cx1_SASTResults_*.xml", ParamRef: "", StepResultType: "checkmarxone"},
 		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarxone"},
 		{FilePattern: "**/toolrun_checkmarxone_*.json", ParamRef: "", StepResultType: "checkmarxone"},
+		{FilePattern: "**/piper_checkmarxone_report.json", ParamRef: "", StepResultType: "checkmarxone"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -843,6 +844,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 							{"filePattern": "**/Cx1_SASTResults_*.xml", "type": "checkmarxone"},
 							{"filePattern": "**/ScanReport.*", "type": "checkmarxone"},
 							{"filePattern": "**/toolrun_checkmarxone_*.json", "type": "checkmarxone"},
+							{"filePattern": "**/piper_checkmarxone_report.json", "type": "checkmarxone"},
 						},
 					},
 				},
