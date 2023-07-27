@@ -342,31 +342,10 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	// pass private repos to go process
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
-	repoURLs, err := lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, utils)
+	err = lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, config.PrivateModulesGitToken, utils)
 
 	if err != nil {
 		return err
-	}
-
-	// configure credentials git shall use for pulling repos
-	for _, repoURL := range repoURLs {
-
-		parsedRepoURL, err := url.Parse(repoURL)
-		if err != nil {
-			return err
-		}
-		repoBaseURL := fmt.Sprintf("%s://%s", parsedRepoURL.Scheme, parsedRepoURL.Host)
-
-		if match, _ := regexp.MatchString("(?i)^https?://", repoBaseURL); !match {
-			continue
-		}
-
-		authenticatedRepoURL := strings.Replace(repoBaseURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
-
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -548,33 +527,48 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 }
 
 // lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern
-func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern string, utils golangBuildUtils) ([]string, error) {
+func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern string, token string, utils golangBuildUtils) error {
 	if globPattern == "" {
-		return []string{}, nil
+		return nil
 	}
 
 	if goModFile == nil {
-		return nil, fmt.Errorf("couldn't find go.mod file")
+		return fmt.Errorf("couldn't find go.mod file")
 	} else if goModFile.Require == nil {
-		return []string{}, nil // no modules referenced, nothing to do
+		return nil // no modules referenced, nothing to do
 	}
-
-	privateModules := []string{}
 
 	for _, goModule := range goModFile.Require {
 		if !module.MatchPrefixPatterns(globPattern, goModule.Mod.Path) {
+
 			continue
 		}
 
 		repo, err := utils.GetRepositoryURL(goModule.Mod.Path)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		privateModules = append(privateModules, repo)
+		parsedRepoURL, err := url.Parse(repo)
+		if err != nil {
+			return err
+		}
+		repoBaseURL := fmt.Sprintf("%s://%s", parsedRepoURL.Scheme, parsedRepoURL.Host)
+
+		if match, err := regexp.MatchString("(?i)^https?://", repoBaseURL); !match {
+			log.Entry().Infof("private repostiory %s doesn't match : %v", repoBaseURL, err)
+		}
+
+		authenticatedRepoURL := strings.Replace(repoBaseURL, "://", fmt.Sprintf("://%s@", token), 1)
+
+		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
+		if err != nil {
+			return err
+		}
+
 	}
-	return privateModules, nil
+	return nil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {

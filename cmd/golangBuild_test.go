@@ -965,6 +965,7 @@ go 1.17`
 		modFileContent string
 		globPattern    string
 		expect         expectations
+		token          string
 	}{
 		{
 			name:           "Does nothing if glob pattern is empty",
@@ -1013,11 +1014,10 @@ go 1.17`
 
 			goModFile, _ := modfile.Parse("", []byte(tt.modFileContent), nil)
 
-			repos, err := lookupGolangPrivateModulesRepositories(goModFile, tt.globPattern, utils)
+			err := lookupGolangPrivateModulesRepositories(goModFile, tt.globPattern, tt.token, utils)
 
 			if tt.expect.errorMessage == "" {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expect.repos, repos)
 			} else {
 				assert.EqualError(t, err, tt.expect.errorMessage)
 			}
