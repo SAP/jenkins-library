@@ -5,6 +5,7 @@ import com.sap.piper.analytics.Telemetry
 import groovy.text.GStringTemplateEngine
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.AccessDeniedException
 import java.security.MessageDigest
 
 def stash(Map params) {
@@ -98,15 +99,30 @@ def unstash(name, msg = "Unstash failed:") {
         unstashedContent += name
     } catch (e) {
         echo "$msg $name (${e.getMessage()})"
-        if (e.getMessage().contains("JNLP4-connect")) {
-            sleep(3) // Wait 3 seconds in case it has been a network hiccup
+        def tryAgain = ({ loggerName ->
             try {
-                echo "[Retry JNLP4-connect issue] Unstashing content: ${name}"
+                echo "[${loggerName}] Unstashing content: ${name}"
                 steps.unstash name
                 unstashedContent += name
             } catch (errRetry) {
-                msg = "[Retry JNLP4-connect issue] Unstashing failed:"
+                msg = "[${loggerName}] Unstashing failed:"
                 echo "$msg $name (${errRetry.getMessage()})"
+            }
+        })
+        if (e.getMessage().contains("JNLP4-connect")) {
+            sleep(3) // Wait 3 seconds in case it has been a network hiccup
+            tryAgain("Retry JNLP4-connect issue")
+        } else if (e.getCause() instanceof AccessDeniedException) {
+            // in case of an AccessDeniedException, check if it is caused by a pack file from .git
+            // if a .git folder already exists on the workspace, it contains read-only files which
+            // will prevent the unstash => as a fix, make the .git folder writable and try again
+            def accessDeniesException = (AccessDeniedException) e.getCause()
+            def fileParts = accessDeniesException.getFile().split("/")
+            def gitRootFolder = fileParts.take(fileParts.findIndexOf({ it == ".git"}) + 1).join("/")
+            if (gitRootFolder != "") {
+                echo "Failed to unstash git content because read-only .git files already exist, try to make them writable"
+                sh "chmod -R u+w '${gitRootFolder}' || true"
+                tryAgain("Retry .git AccessDeniedException issue")
             }
         }
     }

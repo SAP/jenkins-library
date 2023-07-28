@@ -3,6 +3,9 @@ package com.sap.piper
 import org.junit.Rule
 import org.junit.Before
 import org.junit.Test
+
+import java.nio.file.AccessDeniedException
+
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
@@ -213,7 +216,7 @@ class UtilsTest extends BasePiperTest {
             },
             echoClosure: {
                 // coerce to java.lang.String, we might have GStrings.
-                // comparism with java.lang.String might fail.
+                // comparison with java.lang.String might fail.
                 message -> logMessages << message.toString()
             }
         )
@@ -227,6 +230,65 @@ class UtilsTest extends BasePiperTest {
         assert(stashResult == [])
     }
 
+    @Test
+    void testUnstashGitAccessDeniedException() {
+        def commands = []
+        def unstashRequests = []
+        def examinee = newExaminee(
+            unstashClosure:  { stashName ->
+                unstashRequests << stashName
+                if (unstashRequests.size() == 1) {
+                    throw new IOException("Failed to extract a.tar.gz", new AccessDeniedException("/var/jenkins_home/workspace/.git/objects/pack/abx.idx"))
+                }
+            },
+            shClosure: {
+                // coerce to java.lang.String, we might have GStrings.
+                // comparison with java.lang.String might fail.
+                command -> commands << command.toString()
+            }
+        )
+        def stashResult = examinee.unstash('a')
+
+        // in case an unstash fails due to a write-protected .git folder
+        // we try to make the .git folder writeable and retry once
+        assert(commands == ["chmod -R u+w '/var/jenkins_home/workspace/.git' || true"])
+        assert(unstashRequests == ['a', 'a'])
+        assert(stashResult == ['a'])
+    }
+
+    @Test
+    void testUnstashNonGitAccessDeniedException() {
+        def logMessages = []
+        def commands = []
+        def unstashRequests = []
+        def examinee = newExaminee(
+            unstashClosure:  { stashName ->
+                unstashRequests << stashName
+                throw new IOException("Failed to extract a.tar.gz", new AccessDeniedException("/var/jenkins_home/workspace/somefile"))
+            },
+            shClosure: {
+                // coerce to java.lang.String, we might have GStrings.
+                // comparison with java.lang.String might fail.
+                command -> commands << command.toString()
+            },
+            echoClosure: {
+                // coerce to java.lang.String, we might have GStrings.
+                // comparison with java.lang.String might fail.
+                message -> logMessages << message.toString()
+            }
+        )
+        def stashResult = examinee.unstash('a')
+
+        // in case unstash fails due to an AccessDeniedException not affecting a .git folder
+        // we emit a log message and continue silently instead of failing.
+        // In that case we get an empty array back instead an array containing
+        // the name of the unstashed stash.
+        assertThat(logMessages, hasItem('Unstash failed: a (Failed to extract a.tar.gz)'))
+        assert(commands == [])
+        assert(unstashRequests == ['a'])
+        assert(stashResult == [])
+    }
+
     private Utils newExaminee(Map parameters) {
         def examinee = new Utils()
         examinee.steps = [
@@ -234,6 +296,7 @@ class UtilsTest extends BasePiperTest {
             unstash: parameters.unstashClosure ?: {},
         ]
         examinee.echo = parameters.echoClosure ?: {}
+        examinee.sh = parameters.shClosure ?: {}
         return examinee
     }
 
