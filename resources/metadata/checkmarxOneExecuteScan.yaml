@@ -485,3 +485,5 @@ spec:
             type: checkmarxone
           - filePattern: "**/toolrun_checkmarxone_*.json"
             type: checkmarxone
+          - filePattern: "**/piper_checkmarxone_report.json"
+            type: checkmarxone
