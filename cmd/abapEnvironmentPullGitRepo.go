@@ -95,9 +95,9 @@ func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.Conne
 	logString := repo.GetPullLogString()
 	errorString := "Pull of the " + logString + " failed on the ABAP system"
 
-	log.Entry().Info("-------------------------")
+	abaputils.AddDefaultDashedLine()
 	log.Entry().Info("Start pulling the " + logString)
-	log.Entry().Info("-------------------------")
+	abaputils.AddDefaultDashedLine()
 
 	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
 	if err != nil {
@@ -183,7 +183,7 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 }
 
 func finishPullLogs() {
-	log.Entry().Info("-------------------------")
+	abaputils.AddDefaultDashedLine()
 	log.Entry().Info("All repositories were pulled successfully")
 }
 

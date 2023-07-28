@@ -332,7 +332,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
 
-		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, ScanResults: scanResults}
+		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, QuerySuite: config.QuerySuite, ScanResults: scanResults}
 		paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to write json compliance report")
@@ -340,10 +340,12 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		reports = append(reports, paths...)
 
 		if config.CheckForCompliance {
-			unaudited := scanResults.Total - scanResults.Audited
-			if unaudited > config.VulnerabilityThresholdTotal {
-				msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
-				return reports, errors.Errorf(msg)
+			for _, scanResult := range scanResults {
+				unaudited := scanResult.Total - scanResult.Audited
+				if unaudited > config.VulnerabilityThresholdTotal {
+					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
+					return reports, errors.Errorf(msg)
+				}
 			}
 		}
 	}
