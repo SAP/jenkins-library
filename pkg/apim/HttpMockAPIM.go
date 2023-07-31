@@ -6,7 +6,6 @@ package apim
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"

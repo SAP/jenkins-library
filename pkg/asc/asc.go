@@ -4,17 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io"
-	"io/ioutil"
 	"net/http"
 	url2 "net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type App struct {
