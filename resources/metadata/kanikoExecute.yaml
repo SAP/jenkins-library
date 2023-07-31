@@ -171,7 +171,6 @@ spec:
             contextSubPath: path/to/folder
           ```
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS

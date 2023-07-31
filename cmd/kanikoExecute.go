@@ -192,27 +192,27 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		return nil
 
 	case config.MultipleImages != nil:
-		log.Entry().Debugf("MultipleImages build activated")
+		log.Entry().Debugf("multipleImages build activated")
 		parsedMultipleImages, err := parseMultipleImages(config.MultipleImages)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrap(err, "failed to parse MultipleImages")
+			return errors.Wrap(err, "failed to parse multipleImages param")
 		}
 
 		for _, entry := range parsedMultipleImages {
 			switch {
 			case entry.ContextSubPath == "":
-				return fmt.Errorf("empty ContextSubPath")
+				return fmt.Errorf("multipleImages: empty contextSubPath")
 			case entry.ContainerImageName != "":
 				containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorConfiguration)
-					return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
+					return errors.Wrapf(err, "multipleImages: failed to read registry url %v", config.ContainerRegistryURL)
 				}
 
 				if entry.ContainerImageTag == "" {
 					if config.ContainerImageTag == "" {
-						return fmt.Errorf("both entry.ContainerImageTag and config.ContainerImageTag are empty")
+						return fmt.Errorf("both multipleImages containerImageTag and config.containerImageTag are empty")
 					}
 					entry.ContainerImageTag = config.ContainerImageTag
 				}
@@ -220,14 +220,14 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				containerImageTag := strings.ReplaceAll(entry.ContainerImageTag, "+", "-")
 				containerImageNameAndTag := fmt.Sprintf("%v:%v", entry.ContainerImageName, containerImageTag)
 
-				log.Entry().Debugf("image build for image name '%v'", entry.ContainerImageName)
+				log.Entry().Debugf("multipleImages: image build '%v'", entry.ContainerImageName)
 
 				buildOptions := append(config.BuildOptions,
 					"--context-sub-path", entry.ContextSubPath,
 					"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag),
 				)
 				if err = runKaniko(config.DockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
-					return fmt.Errorf("failed to build image '%v' using '%v': %w", entry.ContainerImageName, config.DockerfilePath, err)
+					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", entry.ContainerImageName, config.DockerfilePath, err)
 				}
 
 				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameAndTag)
@@ -245,20 +245,20 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					return errors.Wrapf(err, "invalid tag part in image %v", entry.ContainerImage)
 				}
 
-				log.Entry().Debugf("image build for image name '%v'", containerImageName)
+				log.Entry().Debugf("multipleImages: image build '%v'", containerImageName)
 
 				buildOptions := append(config.BuildOptions,
 					"--context-sub-path", entry.ContextSubPath,
 					"--destination", entry.ContainerImage,
 				)
 				if err = runKaniko(config.DockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
-					return fmt.Errorf("failed to build image '%v' using '%v': %w", containerImageName, config.DockerfilePath, err)
+					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", containerImageName, config.DockerfilePath, err)
 				}
 
 				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
 				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
 			default:
-				return fmt.Errorf("either entry.ContainerImageName or entry.ContainerImage must be filled")
+				return fmt.Errorf("multipleImages: either containerImageName or containerImage must be filled")
 			}
 		}
 

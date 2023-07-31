@@ -861,6 +861,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &cpe, execRunner, nil, fileUtils)
 
 		assert.Error(t, err)
-		assert.Contains(t, fmt.Sprint(err), "empty ContextSubPath")
+		assert.Contains(t, fmt.Sprint(err), "multipleImages: empty contextSubPath")
 	})
 }
