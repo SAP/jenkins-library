@@ -29,7 +29,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 		// create temporary file
-		f, err := os.CreateTemp("", "tmpfile-") // in Go version older than 1.17 you can use os.CreateTemp
+		f, err := os.CreateTemp("", "tmpfile-") // in Go version older than 1.17 you can use ioutil.TempFile
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -68,7 +68,7 @@ func TestRunAwsS3Upload(t *testing.T) {
 	t.Run("error bucket", func(t *testing.T) {
 		t.Parallel()
 		// create temporary file
-		f, err := os.CreateTemp("", "tmpfile-") // in Go version older than 1.17 you can use os.CreateTemp
+		f, err := os.CreateTemp("", "tmpfile-") // in Go version older than 1.17 you can use ioutil.TempFile
 		if err != nil {
 			log.Fatal(err)
 		}
