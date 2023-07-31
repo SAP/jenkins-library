@@ -27,6 +27,8 @@ type cnbBuildOptions struct {
 	ContainerImageTag         string                   `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL      string                   `json:"containerRegistryUrl,omitempty"`
 	Buildpacks                []string                 `json:"buildpacks,omitempty"`
+	PreBuildpacks             []string                 `json:"preBuildpacks,omitempty"`
+	PostBuildpacks            []string                 `json:"postBuildpacks,omitempty"`
 	BuildEnvVars              map[string]interface{}   `json:"buildEnvVars,omitempty"`
 	Path                      string                   `json:"path,omitempty"`
 	ProjectDescriptor         string                   `json:"projectDescriptor,omitempty"`
@@ -198,19 +200,25 @@ func CnbBuildCommand() *cobra.Command {
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			cnbBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -226,7 +234,9 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImageAlias, "containerImageAlias", os.Getenv("PIPER_containerImageAlias"), "Logical name used for this image.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to.\n\n**Note**: `containerRegistryUrl` should include only the domain. If you want to publish an image under `docker.io/example/my-image`, you must set `containerRegistryUrl: \"docker.io\"` and `containerImageName: \"example/my-image\"`.\n")
-	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`.")
+	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`. When this property is specified, buildpacks which are part of the builder will be ignored.")
+	cmd.Flags().StringSliceVar(&stepConfig.PreBuildpacks, "preBuildpacks", []string{}, "Buildpacks to prepend to the groups in the builder's order.")
+	cmd.Flags().StringSliceVar(&stepConfig.PostBuildpacks, "postBuildpacks", []string{}, "Buildpacks to append to the groups in the builder's order.")
 
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Glob that should either point to a directory with your sources or one artifact in zip format.\nThis property determines the input to the buildpack.\n")
 	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Relative path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.\nEnvironment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.\n\n*Note*: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.\n\n*Note*: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
@@ -317,6 +327,34 @@ func cnbBuildMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "container/buildpacks",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "preBuildpacks",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/preBuildpacks",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "postBuildpacks",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/postBuildpacks",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

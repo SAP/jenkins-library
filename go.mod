@@ -9,6 +9,7 @@ replace golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d => golang.org/x/c
 require (
 	cloud.google.com/go/storage v1.22.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.0
+	github.com/BurntSushi/toml v1.1.0
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/antchfx/htmlquery v1.2.4
@@ -46,7 +47,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/motemen/go-nuts v0.0.0-20210915132349-615a782f2c69
 	github.com/package-url/packageurl-go v0.1.0
-	github.com/pelletier/go-toml v1.9.5
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
@@ -87,7 +87,6 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.6.0
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/Jeffail/gabs v1.1.1 // indirect
@@ -263,7 +262,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.3-0.20220114050600-8b9d41f48198 // indirect
-	github.com/opencontainers/runc v1.1.2 // indirect
+	github.com/opencontainers/runc v1.1.5 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/oracle/oci-go-sdk v13.1.0+incompatible // indirect
 	github.com/packethost/packngo v0.1.1-0.20180711074735-b9cb5096f54c // indirect

@@ -237,6 +237,17 @@ class UtilsTest extends BasePiperTest {
         return examinee
     }
 
+    private def newExamineeRememberingLastStashProperties() {
+        Map stashProperties = [:]
+        Utils examinee = newExaminee(
+            stashClosure: { Map stashProps ->
+                stashProperties.clear()
+                stashProperties << stashProps
+            }
+        )
+        return [examinee, stashProperties]
+    }
+
     @Test
     void testAppendNonExistingParameterToStringList() {
         Map parameters = [:]
@@ -264,4 +275,144 @@ class UtilsTest extends BasePiperTest {
         List result = Utils.appendParameterToStringList(['string'], parameters, 'param')
         assertEquals(['string'], result)
     }
+
+    @Test
+    void testStash_noParentheses() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+
+        examinee.stash 'test'
+
+        assertEquals([name: 'test', includes: '**/*.*', excludes: ''], stashProperties)
+    }
+
+    @Test
+    void testStashAndLog_noParentheses() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+
+        examinee.stash name: 'test'
+
+        assertEquals([name: 'test', includes: '**/*.*', excludes: ''], stashProperties)
+    }
+
+    @Test
+    void testStash_simpleSignature1Param() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+        Map expected = [name: 'test', includes: '**/*.*', excludes: '']
+
+        examinee.stash('test')
+        assertEquals(expected, stashProperties)
+        
+        examinee.stash(name: 'test')
+        assertEquals(expected, stashProperties)
+    }
+
+    @Test
+    void testStash_simpleSignature2Params() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+        Map expected = [name: 'test', includes: 'includesX', excludes: '']
+        
+        examinee.stash('test', 'includesX')
+        assertEquals(expected, stashProperties)
+        
+        examinee.stash(name: 'test', includes: 'includesX')
+        assertEquals(expected, stashProperties)
+    }
+
+    @Test
+    void testStash_simpleSignature3Params() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+        Map expected = [name: 'test', includes: 'includesX', excludes: 'excludesX']
+        
+        examinee.stash('test', 'includesX', 'excludesX')
+        assertEquals(expected, stashProperties)
+        
+        examinee.stash(name: 'test', includes: 'includesX', excludes: 'excludesX')
+        assertEquals(expected, stashProperties)
+    }
+
+    @Test
+    void testStash_simpleSignature4Params() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+        Map expected = [name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: false]
+        
+        examinee.stash('test', 'includesX', 'excludesX', false)
+        assertEquals(expected, stashProperties)
+        
+        examinee.stash(name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: false)
+        assertEquals(expected, stashProperties)
+    }
+
+    @Test
+    void testStash_simpleSignature5Params() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+        Map expected = [name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: false, allowEmpty: true]
+        
+        examinee.stash('test', 'includesX', 'excludesX', false, true)
+        assertEquals(expected, stashProperties)
+        
+        examinee.stash(name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: false, allowEmpty: true)
+        assertEquals(expected, stashProperties)
+    }
+
+    @Test
+    void testStash_explicitDefaults() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+        Map expected = [name: 'test', includes: 'includesX', excludes: 'excludesX']
+       
+        examinee.stash('test', 'includesX', 'excludesX', true, false)
+        assertEquals(expected, stashProperties)
+        
+        examinee.stash(name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: true, allowEmpty: false)
+        assertEquals(expected, stashProperties)
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    void testStashAndLog_noName_fails() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+
+        examinee.stash([:])
+
+        assertEquals([includes: 'includesX'], stashProperties)
+    }
+
+    @Test
+    void testStashAndLog_includes() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+
+        examinee.stash(name: 'test', includes: 'includesX')
+
+        assertEquals([name: 'test', includes: 'includesX', excludes: ''], stashProperties)
+    }
+
+    @Test
+    void testStashAndLog_excludes() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+
+        examinee.stash(name: 'test', excludes: 'excludesX')
+
+        assertEquals([name: 'test', includes: '**/*.*', excludes: 'excludesX'], stashProperties)
+    }
+
+    @Test
+    void testStashAndLog_useDefaultExcludes() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+
+        examinee.stash(name: 'test', useDefaultExcludes: true)
+        assertEquals([name: 'test', includes: '**/*.*', excludes: ''], stashProperties)
+
+        examinee.stash(name: 'test', useDefaultExcludes: false)
+        assertEquals([name: 'test', includes: '**/*.*', excludes: '', useDefaultExcludes: false], stashProperties)
+    }
+
+    @Test
+    void testStashAndLog_allowEmpty() {
+        final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
+
+        examinee.stash(name: 'test', allowEmpty: true)
+        assertEquals([name: 'test', includes: '**/*.*', excludes: '', allowEmpty: true], stashProperties)
+
+        examinee.stash(name: 'test', allowEmpty: false)
+        assertEquals([name: 'test', includes: '**/*.*', excludes: ''], stashProperties)
+    }
+
 }

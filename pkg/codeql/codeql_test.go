@@ -71,8 +71,10 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 		codeqlScanAuditInstance := NewCodeqlScanAuditInstance("", "", "testRepo1", "", []string{})
 		codeScanning, err := getVulnerabilitiesFromClient(ctx, &ghCodeqlScanningMock, "ref", &codeqlScanAuditInstance)
 		assert.NoError(t, err)
-		assert.Equal(t, 3, codeScanning.Total)
-		assert.Equal(t, 1, codeScanning.Audited)
+		assert.NotEmpty(t, codeScanning)
+		assert.Equal(t, 1, len(codeScanning))
+		assert.Equal(t, 3, codeScanning[0].Total)
+		assert.Equal(t, 1, codeScanning[0].Audited)
 	})
 
 	t.Run("Success with pagination results", func(t *testing.T) {
@@ -80,8 +82,10 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 		codeqlScanAuditInstance := NewCodeqlScanAuditInstance("", "", "testRepo2", "", []string{})
 		codeScanning, err := getVulnerabilitiesFromClient(ctx, &ghCodeqlScanningMock, "ref", &codeqlScanAuditInstance)
 		assert.NoError(t, err)
-		assert.Equal(t, 140, codeScanning.Total)
-		assert.Equal(t, 80, codeScanning.Audited)
+		assert.NotEmpty(t, codeScanning)
+		assert.Equal(t, 1, len(codeScanning))
+		assert.Equal(t, 140, codeScanning[0].Total)
+		assert.Equal(t, 80, codeScanning[0].Audited)
 	})
 
 	t.Run("Error", func(t *testing.T) {
