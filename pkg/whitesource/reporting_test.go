@@ -6,6 +6,7 @@ package whitesource
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 

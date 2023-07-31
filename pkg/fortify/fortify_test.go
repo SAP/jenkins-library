@@ -5,6 +5,7 @@ package fortify
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"

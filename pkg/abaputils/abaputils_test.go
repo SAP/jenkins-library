@@ -6,6 +6,7 @@ package abaputils
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"testing"
 

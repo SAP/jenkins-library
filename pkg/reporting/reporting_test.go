@@ -4,6 +4,7 @@
 package reporting
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"

@@ -4,6 +4,7 @@
 package piperenv
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
