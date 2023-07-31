@@ -139,6 +139,16 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	case config.ContainerMultiImageBuild:
 		log.Entry().Debugf("Multi-image build activated for image name '%v'", config.ContainerImageName)
 
+		if config.ContainerRegistryURL == "" {
+			return fmt.Errorf("empty ContainerRegistryURL")
+		}
+		if config.ContainerImageName == "" {
+			return fmt.Errorf("empty ContainerImageName")
+		}
+		if config.ContainerImageTag == "" {
+			return fmt.Errorf("empty ContainerImageTag")
+		}
+
 		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -201,6 +211,9 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				}
 
 				if entry.ContainerImageTag == "" {
+					if config.ContainerImageTag == "" {
+						return fmt.Errorf("both entry.ContainerImageTag and config.ContainerImageTag are empty")
+					}
 					entry.ContainerImageTag = config.ContainerImageTag
 				}
 				// Docker image tags don't allow plus signs in tags, thus replacing with dash
@@ -244,6 +257,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
 				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
+			default:
+				return fmt.Errorf("either entry.ContainerImageName or entry.ContainerImage must be filled")
 			}
 		}
 
