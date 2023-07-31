@@ -59,7 +59,10 @@ import hudson.AbortException
      * as key and the corresponding value as value. The value can also be
      * a nested structure.
      * The properties will be added to the pod spec inside node `spec` at the
-     * same level like e.g. `containers`.
+     * same level like e.g. `containers`
+     * for eg., additionalPodProperties: [
+     *               imagePullSecrets: ['secret-name']
+     *        ]
      * This property provides some kind of an expert mode. Any property
      * which is not handled otherwise by the step can be set. It is not
      * possible to overwrite e.g. the `containers` property or to
