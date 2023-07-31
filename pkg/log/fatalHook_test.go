@@ -4,7 +4,6 @@
 package log
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"testing"
 
@@ -36,7 +35,7 @@ func TestFatalHookFire(t *testing.T) {
 		err := hook.Fire(&entry)
 
 		assert.NoError(t, err)
-		fileContent, err := ioutil.ReadFile(filepath.Join(workspace, "testStep_errorDetails.json"))
+		fileContent, err := os.ReadFile(filepath.Join(workspace, "testStep_errorDetails.json"))
 		assert.NoError(t, err)
 		assert.NotContains(t, string(fileContent), `"category":"testCategory"`)
 		assert.Contains(t, string(fileContent), `"correlationId":"https://build.url"`)
@@ -58,7 +57,7 @@ func TestFatalHookFire(t *testing.T) {
 		err := hook.Fire(&entry)
 
 		assert.NoError(t, err)
-		fileContent, err := ioutil.ReadFile(filepath.Join(workspace, "errorDetails.json"))
+		fileContent, err := os.ReadFile(filepath.Join(workspace, "errorDetails.json"))
 		assert.NoError(t, err)
 		assert.NotContains(t, string(fileContent), `"category":"testCategory"`)
 		assert.Contains(t, string(fileContent), `"correlationId":"https://build.url"`)
@@ -74,7 +73,7 @@ func TestFatalHookFire(t *testing.T) {
 		err := hook.Fire(&entry)
 
 		assert.NoError(t, err)
-		fileContent, err := ioutil.ReadFile(filepath.Join(workspace, "errorDetails.json"))
+		fileContent, err := os.ReadFile(filepath.Join(workspace, "errorDetails.json"))
 		assert.NoError(t, err)
 
 		assert.Contains(t, string(fileContent), `"message":"the error message"`)

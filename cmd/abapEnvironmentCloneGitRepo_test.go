@@ -6,7 +6,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -421,7 +420,7 @@ func TestALreadyCloned(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 
 		repo := abaputils.Repository{
@@ -469,7 +468,7 @@ func TestALreadyCloned(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 
 		repo := abaputils.Repository{
@@ -517,7 +516,7 @@ func TestALreadyCloned(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 
 		repo := abaputils.Repository{
@@ -555,7 +554,7 @@ func TestALreadyCloned(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 
 		repo := abaputils.Repository{

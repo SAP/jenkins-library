@@ -5,7 +5,6 @@ package fortify
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -363,7 +362,7 @@ func TestSetProjectVersionAttributesByProjectVersionID(t *testing.T) {
 		if req.URL.Path == "/projectVersions/4711/attributes" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyString := string(bodyBytes)
 			response := `{"data": `
 			response += bodyString
@@ -395,7 +394,7 @@ func TestCreateProjectVersion(t *testing.T) {
 		if req.URL.Path == "/projectVersions" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent := string(bodyBytes)
 			responseContent := `{"data": `
 			responseContent += bodyContent
@@ -449,7 +448,7 @@ func TestProjectVersionCopyFromPartial(t *testing.T) {
 		if req.URL.Path == "/projectVersions/action/copyFromPartial" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent = string(bodyBytes)
 			rw.Write([]byte(
 				`{"data":[{"latestScanId":null,"serverVersion":17.2,"tracesOutOfDate":false,"attachmentsOutOfDate":false,"description":"",
@@ -488,7 +487,7 @@ func TestProjectVersionCopyCurrentState(t *testing.T) {
 		if req.URL.Path == "/projectVersions/action/copyCurrentState" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent = string(bodyBytes)
 			rw.Write([]byte(
 				`{"data":[{"latestScanId":null,"serverVersion":17.2,"tracesOutOfDate":false,"attachmentsOutOfDate":false,"description":"",
@@ -538,7 +537,7 @@ func TestProjectVersionCopyPermissions(t *testing.T) {
 		if req.URL.Path == "/projectVersions/10173/authEntities" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent = string(bodyBytes)
 			rw.Write([]byte(response))
 			return
@@ -566,7 +565,7 @@ func TestCommitProjectVersion(t *testing.T) {
 		if req.URL.Path == "/projectVersions/10172" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent = string(bodyBytes)
 			rw.Write([]byte(response))
 			return
@@ -595,7 +594,7 @@ func TestInactivateProjectVersion(t *testing.T) {
 		if req.URL.Path == "/projectVersions/10172" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent = string(bodyBytes)
 			rw.Write([]byte(response))
 			return
@@ -867,7 +866,7 @@ func TestGenerateQGateReport(t *testing.T) {
 		if req.URL.Path == "/reports" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			data = string(bodyBytes)
 			response := `{"data": `
 			response += data
@@ -922,7 +921,7 @@ func TestGetFileToken(t *testing.T) {
 		if req.URL.Path == "/fileTokens" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent = string(bodyBytes)
 			rw.WriteHeader(201)
 			rw.Write([]byte(response))
@@ -986,7 +985,7 @@ func TestUploadResultFile(t *testing.T) {
 		if req.URL.Path == "/upload/resultFileUpload.html" && req.URL.RawQuery == "mat=89ee873" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent = string(bodyBytes)
 			rw.WriteHeader(200)
 			rw.Write([]byte("OK"))
@@ -996,7 +995,7 @@ func TestUploadResultFile(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	testFile, err := ioutil.TempFile("", "result.fpr")
+	testFile, err := os.CreateTemp("", "result.fpr")
 	if err != nil {
 		t.FailNow()
 	}
@@ -1111,7 +1110,7 @@ func TestLookupOrCreateProjectVersionDetailsForPullRequest(t *testing.T) {
 		if req.URL.Path == "/projectVersions" && req.Method == "POST" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyContent := string(bodyBytes)
 			responseContent := `{"data": `
 			responseContent += bodyContent
@@ -1132,7 +1131,7 @@ func TestLookupOrCreateProjectVersionDetailsForPullRequest(t *testing.T) {
 		if req.URL.Path == "/projectVersions/4712/attributes" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyBytes, _ := io.ReadAll(req.Body)
 			bodyString := string(bodyBytes)
 			response := `{"data": `
 			response += bodyString

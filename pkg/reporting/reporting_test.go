@@ -4,7 +4,6 @@
 package reporting
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"testing"
 	"time"
@@ -47,7 +46,7 @@ func TestVulToMarkdown(t *testing.T) {
 			VulnerabilityName:    "CVE-Test-001",
 		}
 		goldenFilePath := filepath.Join("testdata", "markdownVulnerability.golden")
-		expected, err := ioutil.ReadFile(goldenFilePath)
+		expected, err := os.ReadFile(goldenFilePath)
 		assert.NoError(t, err)
 
 		res, err := vulReport.ToMarkdown()

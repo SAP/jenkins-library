@@ -4,7 +4,6 @@
 package http
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -34,7 +33,7 @@ func TestDownloadRequest(t *testing.T) {
 	// asserts
 	assert.NoError(t, err, "Error occurred but none expected")
 	assert.FileExists(t, targetFile, "File not found")
-	bytes, err := ioutil.ReadFile(targetFile)
+	bytes, err := os.ReadFile(targetFile)
 	assert.NoError(t, err, "Error occurred but none expected")
 	assert.Equal(t, "my fancy file content", string(bytes))
 }

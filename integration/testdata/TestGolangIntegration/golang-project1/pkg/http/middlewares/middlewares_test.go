@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -55,7 +54,7 @@ func TestRecoverMiddleware(t *testing.T) {
 				t.Errorf("\nactual: %v\nexpected: %v\n", actualStatusCode, tt.statusCode)
 			}
 
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				t.Fatal(err)
 			}

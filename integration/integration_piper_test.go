@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -68,7 +67,7 @@ func copyDir(source string, target string) error {
 		return err
 	}
 
-	if fileInfo, err = ioutil.ReadDir(source); err != nil {
+	if fileInfo, err = os.ReadDir(source); err != nil {
 		return err
 	}
 	for _, info := range fileInfo {

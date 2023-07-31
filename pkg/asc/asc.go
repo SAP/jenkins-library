@@ -103,8 +103,8 @@ func NewSystemInstance(client *piperHttp.Client, serverURL, token string) (*Syst
 func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header) ([]byte, error) {
 	var requestBody io.Reader
 	if body != nil {
-		closer := ioutil.NopCloser(body)
-		bodyBytes, _ := ioutil.ReadAll(closer)
+		closer := io.NopCloser(body)
+		bodyBytes, _ := io.ReadAll(closer)
 		requestBody = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
 	}
@@ -114,7 +114,7 @@ func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header
 		return nil, err
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	sys.logger.Debugf("Valid response body: %v", string(data))
 	defer response.Body.Close()
 	return data, nil

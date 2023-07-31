@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
@@ -142,7 +141,7 @@ func (r *RunConfig) getStepConfig(config *Config, stageName, stepName string, fi
 
 func (r *RunConfig) loadConditions() error {
 	defer r.StageConfigFile.Close()
-	content, err := ioutil.ReadAll(r.StageConfigFile)
+	content, err := io.ReadAll(r.StageConfigFile)
 	if err != nil {
 		return errors.Wrapf(err, "error: failed to read the stageConfig file")
 	}
@@ -157,7 +156,7 @@ func (r *RunConfig) loadConditions() error {
 // LoadConditionsV1 loads stage conditions (in CRD-style) into PipelineConfig
 func (r *RunConfigV1) LoadConditionsV1() error {
 	defer r.StageConfigFile.Close()
-	content, err := ioutil.ReadAll(r.StageConfigFile)
+	content, err := io.ReadAll(r.StageConfigFile)
 	if err != nil {
 		return errors.Wrapf(err, "error: failed to read the stageConfig file")
 	}

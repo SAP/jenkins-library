@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/Jeffail/gabs/v2"
@@ -76,7 +76,7 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 			Info("Successfully created api key value map artefact in API Portal")
 		return nil
 	}
-	response, readErr := ioutil.ReadAll(apiProxyUploadStatusResp.Body)
+	response, readErr := io.ReadAll(apiProxyUploadStatusResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", apiProxyUploadStatusResp.StatusCode)
