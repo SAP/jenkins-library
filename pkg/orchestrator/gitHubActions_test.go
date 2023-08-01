@@ -197,6 +197,7 @@ func TestGitHubActions(t *testing.T) {
 
 		assert.Nil(t, actual)
 		// GitHubActionsConfigProvider.GetLog calls http.GetRequest concurrently, so we don't know what log (123 or 124) will be got first
+		// ref: pkg/orchestrator/gitHubActions.go:90
 		assert.ErrorContains(t, err, "failed to get logs: failed to get API data: HTTP request to https://api.github.com/repos/foo/bar/actions/jobs/12")
 	})
 }
