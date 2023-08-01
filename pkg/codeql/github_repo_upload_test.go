@@ -134,6 +134,17 @@ func (gr *gitRepositoriesServiceMock) GetCommit(ctx context.Context, owner, repo
 	}, nil, nil
 }
 
+func (gr *gitRepositoriesServiceMock) ListCommits(ctx context.Context, owner, repo string, opts *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
+	return []*github.RepositoryCommit{
+		{
+			SHA: github.String("sha"),
+			Commit: &github.Commit{
+				SHA: github.String("SHAofCommit"),
+			},
+		},
+	}, &github.Response{NextPage: 0}, nil
+}
+
 func (gr *gitRepositoriesServiceMock) DeleteFile(ctx context.Context, owner, repo, path string, opts *github.RepositoryContentFileOptions) (*github.RepositoryContentResponse, *github.Response, error) {
 	return &github.RepositoryContentResponse{
 		Commit: github.Commit{
@@ -149,19 +160,19 @@ func TestCloneTargetRepo(t *testing.T) {
 	t.Parallel()
 	t.Run("Created new branch", func(t *testing.T) {
 		ghUploader := NewGithubUploaderInstance("", "", exists, "", notExists, "", "", "", []string{})
-		newRef, err := cloneTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
+		newRef, err := checkoutTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, newRef)
 	})
 	t.Run("Target branch exists", func(t *testing.T) {
 		ghUploader := NewGithubUploaderInstance("", "", exists, "", exists, "", "", "", []string{})
-		newRef, err := cloneTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
+		newRef, err := checkoutTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, newRef)
 	})
 	t.Run("Invalid owner/repository", func(t *testing.T) {
 		ghUploader := NewGithubUploaderInstance("", notExists, notExists, "", notExists, "", "", "", []string{})
-		_, err := cloneTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
+		_, err := checkoutTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
 		assert.Error(t, err)
 	})
 }
@@ -193,6 +204,7 @@ func TestEmptyTargetBranch(t *testing.T) {
 
 func TestUnzip(t *testing.T) {
 	t.Parallel()
+	dbDir := "codeqlDB"
 
 	t.Run("Success", func(t *testing.T) {
 		targetDir, err := os.MkdirTemp("", "tmp_target")
@@ -218,7 +230,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, dbDir))
 		targetFilenames := []string{
 			filepath.Join(targetDir, "file1"),
 			filepath.Join(targetDir, "file2"),
@@ -247,7 +259,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, dbDir))
 		checkExistedFiles(t, targetDir, filenames)
 	})
 
@@ -264,7 +276,7 @@ func TestUnzip(t *testing.T) {
 		defer os.RemoveAll(sourceDir)
 		zipPath := filepath.Join(sourceDir, "src.zip")
 
-		assert.Error(t, unzip(zipPath, targetDir, sourceDir))
+		assert.Error(t, unzip(zipPath, targetDir, sourceDir, dbDir))
 	})
 
 	t.Run("extra files in zip", func(t *testing.T) {
@@ -294,7 +306,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, dbDir))
 		targetFilenames := []string{
 			filepath.Join(targetDir, "file1"),
 			filepath.Join(targetDir, "file2"),

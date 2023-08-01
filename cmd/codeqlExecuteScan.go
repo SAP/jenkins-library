@@ -120,18 +120,11 @@ func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 	return fmt.Errorf("Invalid repository %s", repoUri)
 }
 
-func initGitInfo(config *codeqlExecuteScanOptions) RepoInfo {
+func initGitInfo(config *codeqlExecuteScanOptions) (RepoInfo, error) {
 	var repoInfo RepoInfo
-	if len(config.TargetGithubRepoURL) > 0 {
-		err := getGitRepoInfo(config.TargetGithubRepoURL, &repoInfo)
-		if err != nil {
-			log.Entry().Error(err)
-		}
-	} else {
-		err := getGitRepoInfo(config.Repository, &repoInfo)
-		if err != nil {
-			log.Entry().Error(err)
-		}
+	err := getGitRepoInfo(config.Repository, &repoInfo)
+	if err != nil {
+		log.Entry().Error(err)
 	}
 
 	repoInfo.ref = config.AnalyzedRef
@@ -156,8 +149,22 @@ func initGitInfo(config *codeqlExecuteScanOptions) RepoInfo {
 			}
 		}
 	}
+	if len(config.TargetGithubRepoURL) > 0 {
+		if strings.Contains(repoInfo.serverUrl, "github") {
+			log.Entry().Errorf("TargetGithubRepoURL should not be set as the source repo is on github.")
+			return repoInfo, errors.New("TargetGithubRepoURL should not be set as the source repo is on github.")
+		}
+		err := getGitRepoInfo(config.TargetGithubRepoURL, &repoInfo)
+		if err != nil {
+			log.Entry().Error(err)
+			return repoInfo, err
+		}
+		if len(config.TargetGithubBranchName) > 0 {
+			repoInfo.ref = config.TargetGithubBranchName
+		}
+	}
 
-	return repoInfo
+	return repoInfo, nil
 }
 
 func getToken(config *codeqlExecuteScanOptions) (bool, string) {
@@ -311,7 +318,10 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	reports = append(reports, piperutils.Path{Target: filepath.Join(config.ModulePath, "target", "codeqlReport.csv")})
 
-	repoInfo := initGitInfo(config)
+	repoInfo, err := initGitInfo(config)
+	if err != nil {
+		return reports, err
+	}
 	repoUrl := fmt.Sprintf("%s/%s/%s", repoInfo.serverUrl, repoInfo.owner, repoInfo.repo)
 	repoReference, err := buildRepoReference(repoUrl, repoInfo.ref)
 	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref)

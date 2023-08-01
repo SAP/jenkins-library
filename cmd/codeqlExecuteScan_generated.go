@@ -31,6 +31,7 @@ type codeqlExecuteScanOptions struct {
 	SarifCheckMaxRetries        int    `json:"sarifCheckMaxRetries,omitempty"`
 	SarifCheckRetryInterval     int    `json:"sarifCheckRetryInterval,omitempty"`
 	TargetGithubRepoURL         string `json:"targetGithubRepoURL,omitempty"`
+	TargetGithubBranchName      string `json:"targetGithubBranchName,omitempty"`
 	Threads                     string `json:"threads,omitempty"`
 	Ram                         string `json:"ram,omitempty"`
 	AnalyzedRef                 string `json:"analyzedRef,omitempty"`
@@ -195,6 +196,7 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().IntVar(&stepConfig.SarifCheckMaxRetries, "sarifCheckMaxRetries", 10, "Maximum number of retries when waiting for the server to finish processing the SARIF upload.")
 	cmd.Flags().IntVar(&stepConfig.SarifCheckRetryInterval, "sarifCheckRetryInterval", 30, "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload.")
 	cmd.Flags().StringVar(&stepConfig.TargetGithubRepoURL, "targetGithubRepoURL", os.Getenv("PIPER_targetGithubRepoURL"), "")
+	cmd.Flags().StringVar(&stepConfig.TargetGithubBranchName, "targetGithubBranchName", os.Getenv("PIPER_targetGithubBranchName"), "")
 	cmd.Flags().StringVar(&stepConfig.Threads, "threads", `0`, "Use this many threads for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.Ram, "ram", os.Getenv("PIPER_ram"), "Use this much ram (MB) for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
@@ -334,6 +336,15 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_targetGithubRepoURL"),
+					},
+					{
+						Name:        "targetGithubBranchName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetGithubBranchName"),
 					},
 					{
 						Name:        "threads",

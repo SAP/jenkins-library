@@ -31,6 +31,7 @@ type gitService interface {
 
 type gitRepositoriesService interface {
 	GetCommit(ctx context.Context, owner, repo, sha string, opts *github.ListOptions) (*github.RepositoryCommit, *github.Response, error)
+	ListCommits(ctx context.Context, owner, repo string, opts *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error)
 	Get(ctx context.Context, owner, repo string) (*github.Repository, *github.Response, error)
 	DeleteFile(ctx context.Context, owner, repo, path string, opts *github.RepositoryContentFileOptions) (*github.RepositoryContentResponse, *github.Response, error)
 }
@@ -98,7 +99,7 @@ func (repoUploader *GithubUploaderInstance) UploadProjectToGithub() (string, err
 	}
 	sourceDir := filepath.Dir(ex)
 
-	newRef, err := cloneTargetRepo(ctx, client.Git, client.Repositories, repoUploader)
+	newRef, err := checkoutTargetRepo(ctx, client.Git, client.Repositories, repoUploader)
 	if err != nil {
 		return "", err
 	}
@@ -107,7 +108,7 @@ func (repoUploader *GithubUploaderInstance) UploadProjectToGithub() (string, err
 		return "", err
 	}
 	zipPath := path.Join(sourceDir, repoUploader.dbDir, SrcZip)
-	err = unzip(zipPath, tmpDir, strings.Trim(sourceDir, fmt.Sprintf("%c", os.PathSeparator)))
+	err = unzip(zipPath, tmpDir, strings.Trim(sourceDir, fmt.Sprintf("%c", os.PathSeparator)), repoUploader.dbDir)
 	if err != nil {
 		return "", err
 	}
@@ -120,25 +121,49 @@ func (repoUploader *GithubUploaderInstance) UploadProjectToGithub() (string, err
 	return newCommitId, err
 }
 
-func cloneTargetRepo(ctx context.Context, gitService gitService, repoService gitRepositoriesService, uploader *GithubUploaderInstance) (*github.Reference, error) {
+// checks if target branch exists, creates a new one if necessary from the first commit of default branch
+func checkoutTargetRepo(ctx context.Context, gitService gitService, repoService gitRepositoriesService, uploader *GithubUploaderInstance) (*github.Reference, error) {
 	repo, _, err := repoService.Get(ctx, uploader.owner, uploader.repository)
 	if err != nil {
 		return nil, err
 	}
-	baseRefName := *repo.DefaultBranch
 	ref, _, err := gitService.GetRef(ctx, uploader.owner, uploader.repository, uploader.ref)
 	if err == nil {
 		return ref, nil
 	}
-	baseRef, _, err := gitService.GetRef(ctx, uploader.owner, uploader.repository, "refs/heads/"+baseRefName)
+	baseRefName := *repo.DefaultBranch
+	firstCommit, err := getFirstCommit(ctx, repoService, uploader, baseRefName)
 	if err != nil {
 		return nil, err
 	}
-	newRef := &github.Reference{Ref: &uploader.ref, Object: &github.GitObject{SHA: baseRef.Object.SHA}}
+	newRef := &github.Reference{Ref: &uploader.ref, Object: &github.GitObject{SHA: firstCommit.SHA}}
 	ref, _, err = gitService.CreateRef(ctx, uploader.owner, uploader.repository, newRef)
 	return ref, err
 }
 
+// get the first commit of branch as we don't need the whole history
+func getFirstCommit(ctx context.Context, repoService gitRepositoriesService, uploader *GithubUploaderInstance, ref string) (*github.RepositoryCommit, error) {
+	page := 1
+	firstCommit := &github.RepositoryCommit{}
+	for page != 0 {
+		opts := &github.CommitsListOptions{
+			SHA: ref,
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: perPageCount,
+			},
+		}
+		commits, response, err := repoService.ListCommits(ctx, uploader.owner, uploader.repository, opts)
+		if err != nil {
+			return nil, err
+		}
+		page = response.NextPage
+		firstCommit = commits[len(commits)-1]
+	}
+	return firstCommit, nil
+}
+
+// delete all files from target branch (remote)
 func emptyTargetBranch(ctx context.Context, gitService gitService, repoService gitRepositoriesService, uploader *GithubUploaderInstance, objectSHA, entryParentPath string) (string, error) {
 	lastCommitSHA := objectSHA
 	tree, resp, err := gitService.GetTree(ctx, uploader.owner, uploader.repository, objectSHA, false)
@@ -225,7 +250,7 @@ func pushProjectToTargetRepo(ctx context.Context, repoService gitRepositoriesSer
 	return *newCommit.SHA, err
 }
 
-func unzip(zipPath, targetDir, srcDir string) error {
+func unzip(zipPath, targetDir, srcDir, dbDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return err
@@ -233,7 +258,7 @@ func unzip(zipPath, targetDir, srcDir string) error {
 	defer r.Close()
 
 	for _, f := range r.File {
-		if !strings.Contains(f.Name, srcDir) {
+		if !strings.Contains(f.Name, srcDir) || strings.Contains(f.Name, path.Join(srcDir, dbDir)) {
 			continue
 		}
 		rc, err := f.Open()
