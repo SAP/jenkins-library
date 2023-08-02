@@ -58,7 +58,9 @@ import groovy.transform.Field
       */
     'dockerRegistryUrl',
     /**
+      * Non Kubernetes only:
       * The credentials for the docker registry of type username/password as we rely on docker jenkins plugin. If left empty, images are pulled anonymously.
+      * For Kubernetes cases, pass secret name of type `kubernetes.io/dockerconfigjson` via `additionalPodProperties` parameter (The secret should already be created and present in the environment)
       */
     'dockerRegistryCredentialsId',
     /**
