@@ -69,7 +69,7 @@ func TestGolangIntegrationBuildProject1MultiPackage(t *testing.T) {
 		"info  golangBuild - DONE 8 tests",
 		"info  golangBuild - running command: go tool cover -html cover.out -o coverage.html",
 		"info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...",
-		"info  golangBuild - running command: cyclonedx-gomod mod -licenses -test -output bom-golang.xml",
+		"info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml",
 		"info  golangBuild - running command: go build -trimpath -o golang-app-linux-amd64/ github.com/example/golang-app/cmd/server github.com/example/golang-app/cmd/helper",
 		"info  golangBuild - SUCCESS",
 	)
@@ -106,7 +106,7 @@ func TestGolangIntegrationBuildProject2(t *testing.T) {
 		"info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...",
 		"info  golangBuild - running command: go tool cover -html cover.out -o coverage.html",
 		"info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...",
-		"info  golangBuild - running command: cyclonedx-gomod mod -licenses -test -output bom-golang.xml",
+		"info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml",
 	)
 
 	container.assertHasOutput(t,
