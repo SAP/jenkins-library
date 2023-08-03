@@ -264,12 +264,12 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 
 	digestFilePath := fmt.Sprintf("%s/digest.txt", tmpDir)
 
-	if GeneralConfig.Verbose {
-		kanikoOpts = append(kanikoOpts, "--verbosity=trace")
-	}
-
 	if readDigest {
 		kanikoOpts = append(kanikoOpts, "--digest-file", digestFilePath)
+	}
+
+	if GeneralConfig.Verbose {
+		kanikoOpts = append(kanikoOpts, "--verbosity=trace")
 	}
 
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
