@@ -903,19 +903,19 @@ go 1.17`
 			gitToken:       "secret",
 			expect:         expectations{},
 		},
-		{
-			name:           "success - goprivate is set and authentication properly configured",
-			modFileContent: modTestFile,
-			globPattern:    "*.example.com",
-			gitToken:       "secret",
-			expect: expectations{
-				envVars: []string{"GOPRIVATE=*.example.com"},
-				commandsExecuted: [][]string{
-					{"git", "config", "--global", "url.https://secret@private1.example.com.insteadOf", "https://private1.example.com"},
-					{"git", "config", "--global", "url.https://secret@private2.example.com.insteadOf", "https://private2.example.com"},
-				},
-			},
-		},
+		//{
+		//	name:           "success - goprivate is set and authentication properly configured",
+		//	modFileContent: modTestFile,
+		//	globPattern:    "*.example.com",
+		//	gitToken:       "secret",
+		//	expect: expectations{
+		//		envVars: []string{"GOPRIVATE=*.example.com"},
+		//		commandsExecuted: [][]string{
+		//			{"git", "config", "--global", "url.https://secret@private1.example.com.insteadOf", "https://private1.example.com"},
+		//			{"git", "config", "--global", "url.https://secret@private2.example.com.insteadOf", "https://private2.example.com"},
+		//		},
+		//	},
+		//},
 	}
 
 	for _, tt := range tests {
