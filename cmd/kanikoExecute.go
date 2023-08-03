@@ -49,6 +49,11 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		log.Entry().Warning("Be aware that the host doesn't support binfmt_misc and thus multi archtecture docker builds might not be possible")
 	}
 
+	fmt.Println(GeneralConfig.Verbose)
+	if GeneralConfig.Verbose {
+		fmt.Println("hoi")
+	}
+
 	// backward compatibility for parameter ContainerBuildOptions
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
@@ -269,7 +274,7 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 	}
 
 	if GeneralConfig.Verbose {
-		kanikoOpts = append(kanikoOpts, "--verbosity=trace")
+		kanikoOpts = append(kanikoOpts, "--verbosity=debug")
 	}
 
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
