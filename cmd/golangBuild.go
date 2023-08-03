@@ -341,8 +341,14 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 	// pass private repos to go process
 	os.Setenv("GOPRIVATE", config.PrivateModules)
-
-	err = lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, config.PrivateModulesGitToken, utils)
+	authenticatedRepoURL := fmt.Sprintf("%s@github.tools.sap", config.PrivateModulesGitToken)
+	repoBaseURL := " https://github.tools.sap"
+	//git config --global url.https://****@github.tools.sap.insteadOf https://github.tools.sap
+	err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
+	if err != nil {
+		return err
+	}
+	//err = lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, config.PrivateModulesGitToken, utils)
 
 	if err != nil {
 		return err
