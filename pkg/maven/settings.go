@@ -169,11 +169,16 @@ func CreateNewProjectSettingsXML(altDeploymentRepositoryID string, altDeployment
 
 func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) (string, error) {
 	projectSettingsFileDestination := ".pipeline/mavenProjectSettings"
+	var err error
 	if exists, _ := utils.FileExists(projectSettingsFile); exists {
 		projectSettingsFileDestination = projectSettingsFile
-		addServerTagtoProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+		err = addServerTagtoProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
 	} else {
-		addServerTagtoProjectSettingsXML(".pipeline/mavenProjectSettings", altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+		err = addServerTagtoProjectSettingsXML(".pipeline/mavenProjectSettings", altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal settings xml file '%v': %w", projectSettingsFile, err)
 	}
 	return projectSettingsFileDestination, nil
 
