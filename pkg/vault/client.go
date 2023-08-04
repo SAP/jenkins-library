@@ -46,10 +46,12 @@ func NewClient(config *Config, token string) (Client, error) {
 	client.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		retry, err := api.DefaultRetryPolicy(ctx, resp, err)
 		if err != nil || retry {
+			log.Entry().Info("Unique sentence for Vault retry debugging")
 			return retry, err
 		}
 		// which status codes to retry?
 		if resp != nil && resp.StatusCode > 400 {
+			log.Entry().Info("Unique sentence for Vault retry debugging")
 			return true, nil
 		}
 		return false, nil
