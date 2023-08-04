@@ -16,8 +16,8 @@ type Telemetry struct {
 	data       *BuildpacksTelemetry
 }
 
-func NewTelemetry(customData *telemetry.CustomData) Telemetry {
-	return Telemetry{
+func NewTelemetry(customData *telemetry.CustomData) *Telemetry {
+	return &Telemetry{
 		customData: customData,
 		data: &BuildpacksTelemetry{
 			Version: version,
@@ -92,54 +92,62 @@ func NewSegment() *Segment {
 	}
 }
 
-func (s *Segment) WithBindings(bindings map[string]interface{}) {
+func (s *Segment) WithBindings(bindings map[string]interface{}) *Segment {
 	var bindingKeys []string
 	for k := range bindings {
 		bindingKeys = append(bindingKeys, k)
 	}
 	s.data.BindingKeys = bindingKeys
+	return s
 }
 
-func (s *Segment) WithEnv(env map[string]interface{}) {
+func (s *Segment) WithEnv(env map[string]interface{}) *Segment {
 	s.data.BuildEnv.KeysFromConfig = []string{}
 	s.data.BuildEnv.KeysOverall = []string{}
 	for key := range env {
 		s.data.BuildEnv.KeysFromConfig = append(s.data.BuildEnv.KeysFromConfig, key)
 		s.data.BuildEnv.KeysOverall = append(s.data.BuildEnv.KeysOverall, key)
 	}
+	return s
 }
 
-// Merge tags?
-func (s *Segment) WithTags(tag string, additionalTags []string) {
+func (s *Segment) WithTags(tag string, additionalTags []string) *Segment {
 	s.data.ImageTag = tag
 	s.data.AdditionalTags = additionalTags
+	return s
 }
 
-func (s *Segment) WithPath(path PathEnum) {
+func (s *Segment) WithPath(path PathEnum) *Segment {
 	s.data.Path = path
+	return s
 }
 
-func (s *Segment) WithBuildTool(buildTool string) {
+func (s *Segment) WithBuildTool(buildTool string) *Segment {
 	s.data.BuildTool = buildTool
+	return s
 }
 
-func (s *Segment) WithBuilder(builder string) {
+func (s *Segment) WithBuilder(builder string) *Segment {
 	s.data.Builder = privacy.FilterBuilder(builder)
+	return s
 }
 
-func (s *Segment) WithBuildpacksFromConfig(buildpacks []string) {
+func (s *Segment) WithBuildpacksFromConfig(buildpacks []string) *Segment {
 	s.data.Buildpacks.FromConfig = privacy.FilterBuildpacks(buildpacks)
+	return s
 }
 
-func (s *Segment) WithBuildpacksOverall(buildpacks []string) {
+func (s *Segment) WithBuildpacksOverall(buildpacks []string) *Segment {
 	s.data.Buildpacks.Overall = privacy.FilterBuildpacks(buildpacks)
+	return s
 }
 
-func (s *Segment) WithKeyValues(env map[string]interface{}) {
+func (s *Segment) WithKeyValues(env map[string]interface{}) *Segment {
 	s.data.BuildEnv.KeyValues = privacy.FilterEnv(env)
+	return s
 }
 
-func (s *Segment) WithProjectDescriptor(descriptor *project.Descriptor) {
+func (s *Segment) WithProjectDescriptor(descriptor *project.Descriptor) *Segment {
 	descriptorKeys := s.data.BuildEnv.KeysFromProjectDescriptor
 	overallKeys := s.data.BuildEnv.KeysOverall
 	for key := range descriptor.EnvVars {
@@ -152,4 +160,5 @@ func (s *Segment) WithProjectDescriptor(descriptor *project.Descriptor) {
 	s.data.ProjectDescriptor.Used = true
 	s.data.ProjectDescriptor.IncludeUsed = descriptor.Include != nil
 	s.data.ProjectDescriptor.ExcludeUsed = descriptor.Exclude != nil
+	return s
 }

@@ -343,7 +343,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	return telemetry.Export()
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetry buildpacks.Telemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	err := cleanDir("/layers", utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -366,7 +366,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry buildpacks.Telemetry, utils 
 	}
 	config.BuildEnvVars["TMPDIR"] = tempdir
 
-	telemetrySegment := prepareTelemetrySegment(config, utils)
+	telemetrySegment := createInitialTelemetrySegment(config, utils)
 
 	err = isBuilder(utils)
 	if err != nil {
@@ -422,10 +422,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetry buildpacks.Telemetry, utils 
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
-	telemetrySegment.WithBuildpacksOverall(config.Buildpacks)
-	telemetrySegment.WithKeyValues(config.BuildEnvVars)
 
-	telemetry.AddSegment(telemetrySegment)
+	telemetry.AddSegment(telemetrySegment.WithBuildpacksOverall(config.Buildpacks).WithKeyValues(config.BuildEnvVars))
 
 	if commonPipelineEnvironment.container.imageNameTag == "" {
 		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
@@ -588,18 +586,15 @@ func runCnbBuild(config *cnbBuildOptions, telemetry buildpacks.Telemetry, utils 
 	return nil
 }
 
-func prepareTelemetrySegment(config *cnbBuildOptions, utils cnbutils.BuildUtils) *buildpacks.Segment {
+func createInitialTelemetrySegment(config *cnbBuildOptions, utils cnbutils.BuildUtils) *buildpacks.Segment {
 	telemetrySegment := buildpacks.NewSegment()
-	telemetrySegment.WithBindings(config.Bindings)
-	telemetrySegment.WithTags(config.ContainerImageTag, config.AdditionalTags)
-
-	projectPath, _, _ := config.resolvePath(utils) // ignore error here, telemetry problems should not fail the build
-	telemetrySegment.WithPath(projectPath)
-
-	telemetrySegment.WithEnv(config.BuildEnvVars)
-
+	projectPath, _, _ := config.resolvePath(utils)          // ignore error here, telemetry problems should not fail the build
 	buildTool, _ := getBuildToolFromStageConfig("cnbBuild") // ignore error here, telemetry problems should not fail the build
-	telemetrySegment.WithBuildTool(buildTool)
-	telemetrySegment.WithBuildpacksFromConfig(config.Buildpacks)
-	return telemetrySegment
+
+	return telemetrySegment.WithBindings(config.Bindings).
+		WithTags(config.ContainerImageTag, config.AdditionalTags).
+		WithPath(projectPath).
+		WithEnv(config.BuildEnvVars).
+		WithBuildTool(buildTool).
+		WithBuildpacksFromConfig(config.Buildpacks)
 }
