@@ -22,44 +22,42 @@ const (
 )
 
 // EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
-func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
+func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.FileUtils, envRootPath string) error {
 
 	// initialize in case not initialized
 	if r.RunConfig.RunSteps == nil {
-		r.RunConfig.RunSteps = map[string]map[string]bool{}
+		r.RunConfig.RunSteps = make(map[string]map[string]bool, len(r.PipelineConfig.Spec.Stages))
 	}
 	if r.RunConfig.RunStages == nil {
-		r.RunConfig.RunStages = map[string]bool{}
+		r.RunConfig.RunStages = make(map[string]bool, len(r.PipelineConfig.Spec.Stages))
 	}
 
+	currentOrchestrator := orchestrator.DetectOrchestrator().String()
 	for _, stage := range r.PipelineConfig.Spec.Stages {
-		runStep := map[string]bool{}
 		stageActive := false
+		runStep := make(map[string]bool, len(stage.Steps))
 
 		// currently displayName is used, may need to consider to use technical name as well
 		stageName := stage.DisplayName
 
 		for _, step := range stage.Steps {
 			// Only consider orchestrator-specific steps in case orchestrator limitation is set
-			currentOrchestrator := orchestrator.DetectOrchestrator().String()
 			if len(step.Orchestrators) > 0 && !piperutils.ContainsString(step.Orchestrators, currentOrchestrator) {
 				continue
 			}
 
-			stepActive := false
-			stepNotActive := false
-
-			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
+			stepConfig, err := r.getStepConfig(config, stageName, step.Name, nil, nil, nil, nil)
 			if err != nil {
 				return err
 			}
 
+			stepActive := false
+			stepNotActive := false
 			if active, ok := stepConfig.Config[step.Name].(bool); ok {
 				// respect explicit activation/de-activation if available
 				stepActive = active
 			} else {
-				if step.Conditions == nil || len(step.Conditions) == 0 {
+				if len(step.Conditions) == 0 {
 					// if no condition is available, step will be active by default
 					stepActive = true
 				} else {

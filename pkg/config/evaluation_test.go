@@ -142,7 +142,7 @@ func TestEvaluateConditionsV1(t *testing.T) {
 		"Test Stage 3": false,
 	}
 
-	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock, ".pipeline")
+	err := runConfig.evaluateConditionsV1(&config, &filesMock, ".pipeline")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSteps, runConfig.RunSteps)
 	assert.Equal(t, expectedStages, runConfig.RunStages)
@@ -238,7 +238,7 @@ func TestNotActiveEvaluateConditionsV1(t *testing.T) {
 		"Test Stage 3": false,
 	}
 
-	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock, ".pipeline")
+	err := runConfig.evaluateConditionsV1(&config, &filesMock, ".pipeline")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSteps, runConfig.RunSteps)
 	assert.Equal(t, expectedStages, runConfig.RunStages)

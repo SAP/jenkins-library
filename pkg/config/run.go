@@ -79,8 +79,7 @@ type StepCondition struct {
 	PipelineEnvironmentFilled string                   `json:"pipelineEnvironmentFilled,omitempty"`
 }
 
-func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
+func (r *RunConfigV1) InitRunConfigV1(config *Config, utils piperutils.FileUtils, envRootPath string) error {
 
 	if len(r.PipelineConfig.Spec.Stages) == 0 {
 		if err := r.LoadConditionsV1(); err != nil {
@@ -88,7 +87,7 @@ func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFil
 		}
 	}
 
-	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, utils, envRootPath)
+	err := r.evaluateConditionsV1(config, utils, envRootPath)
 	if err != nil {
 		return fmt.Errorf("failed to evaluate step conditions: %w", err)
 	}
