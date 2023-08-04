@@ -195,10 +195,10 @@ func (s *StepCondition) evaluateV1(
 
 	if s.OnlyActiveStepInStage {
 		// Used only in NotActiveConditions.
-		// Returns true if all previous steps are inactive, so step will be deactivated
+		// Returns true if all other steps are inactive, so step will be deactivated
 		// if it's the only active step in stage.
 		// For example, sapCumulusUpload step must be deactivated in a stage where others steps are inactive.
-		return !anyPreviousStepIsActive(runSteps), nil
+		return !anyOtherStepIsActive(stepName, runSteps), nil
 	}
 
 	// needs to be checked last:
@@ -504,11 +504,11 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 	return false, nil
 }
 
-// anyPreviousStepIsActive loops through previous steps active states and returns true
-// if at least one of them is active, otherwise result is false
-func anyPreviousStepIsActive(runSteps map[string]bool) bool {
-	for _, isActive := range runSteps {
-		if isActive {
+// anyOtherStepIsActive loops through previous steps active states and returns true
+// if at least one of them is active, otherwise result is false. Ignores the step that is being checked.
+func anyOtherStepIsActive(targetStep string, runSteps map[string]bool) bool {
+	for step, isActive := range runSteps {
+		if isActive && step != targetStep {
 			return true
 		}
 	}
