@@ -376,6 +376,10 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 		kanikoOpts = append(kanikoOpts, "--digest-file", digestFilePath)
 	}
 
+	if GeneralConfig.Verbose {
+		kanikoOpts = append(kanikoOpts, "--verbosity=debug")
+	}
+
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
