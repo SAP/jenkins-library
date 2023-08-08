@@ -51,6 +51,8 @@ spec:
         type: stash
       - name: downloadedArtifact
         type: stash
+      - name: source
+        type: stash
     params:
       - name: additionalParameters
         aliases:
