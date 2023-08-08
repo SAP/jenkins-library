@@ -5,6 +5,7 @@ package piperenv
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
