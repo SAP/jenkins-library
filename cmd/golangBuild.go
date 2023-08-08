@@ -343,7 +343,6 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
 	err = gitConfigurationForPrivateModules(config.PrivateModules, config.PrivateModulesGitToken, utils)
-
 	if err != nil {
 		return err
 	}
@@ -636,6 +635,7 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 
 func gitConfigurationForPrivateModules(privateMod string, token string, utils golangBuildUtils) error {
 	privateMod = strings.ReplaceAll(privateMod, "/*", "")
+	privateMod = strings.ReplaceAll(privateMod, "*.", "")
 	modules := strings.Split(privateMod, ",")
 	for _, v := range modules {
 		authenticatedRepoURL := fmt.Sprintf("https://%s@%s", token, v)
