@@ -1,15 +1,16 @@
 package telemetry
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"strconv"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
+
 	"net/http"
-	"net/url"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -38,6 +39,17 @@ type Telemetry struct {
 	BaseURL              string
 	Endpoint             string
 	SiteID               string
+	Token                string
+	Pendo                Pendo
+}
+
+type Pendo struct {
+	Type       string `json:"type"`
+	Event      string `json:"event"`
+	VisitorID  string `json:"visitorId"`
+	AccountID  string `json:"accountId"`
+	Timestamp  int64  `json:"timestamp"`
+	Proterties Data   `json:"proterties"`
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
@@ -55,15 +67,17 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		t.client = &piperhttp.Client{}
 	}
 
-	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
+	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1, Token: t.Token})
 
 	if t.BaseURL == "" {
 		//SWA baseURL
-		t.BaseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
+		// t.BaseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
+		t.BaseURL = "https://app.pendo.io"
 	}
 	if t.Endpoint == "" {
 		// SWA endpoint
-		t.Endpoint = "/tracker/log"
+		// t.Endpoint = "/tracker/log"
+		t.Endpoint = "/data/track"
 	}
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
@@ -85,6 +99,21 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
 	}
 	t.baseMetaData = baseMetaData
+
+	tt := time.Now().UnixMilli()
+	fmt.Println("timestamp:", tt)
+
+	t.Pendo = Pendo{
+		Type:       "track",
+		Event:      stepName,
+		VisitorID:  "123",
+		AccountID:  "123",
+		Timestamp:  tt,
+		Proterties: t.data,
+	}
+
+	fmt.Printf("pendo data: %+v\n", t.Pendo)
+
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
@@ -111,6 +140,10 @@ func (t *Telemetry) SetData(customData *CustomData) {
 		BaseMetaData: t.baseMetaData,
 		CustomData:   *customData,
 	}
+
+	t.Pendo.Proterties = t.data
+
+	fmt.Printf("pendo data (2): %+v\n", t.Pendo)
 }
 
 // GetData returns telemetryData
@@ -128,11 +161,20 @@ func (t *Telemetry) Send() {
 		return
 	}
 
-	request, _ := url.Parse(t.BaseURL)
-	request.Path = t.Endpoint
-	request.RawQuery = t.data.toPayloadString()
-	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
-	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
+	// request, _ := url.Parse(t.BaseURL)
+	// request.Path = t.Endpoint
+	// request.RawQuery = t.data.toPayloadString()
+	// log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
+
+	b, err := json.Marshal(t.Pendo)
+	if err != nil {
+		log.Entry().WithError(err).Warn("failed to marshal")
+	}
+
+	fmt.Println("json b:", string(b))
+
+	log.Entry().Debug("Sending telemetry data")
+	t.client.SendRequest(http.MethodPost, t.BaseURL+t.Endpoint, bytes.NewReader(b), nil, nil)
 }
 
 func (t *Telemetry) logStepTelemetryData() {
