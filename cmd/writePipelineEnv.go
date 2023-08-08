@@ -2,7 +2,12 @@ package cmd
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/sha256"
+	b64 "encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -46,6 +51,16 @@ func runWritePipelineEnv() error {
 		return nil
 	}
 
+	// try to decrypt
+	if secret, ok := os.LookupEnv("PIPER_pipelineEnv_SECRET"); ok && secret != "" {
+		log.Entry().Debug("found PIPER_pipelineEnv_SECRET, trying to decrypt CPE")
+		var err error
+		inBytes, err = decrypt([]byte(secret), inBytes)
+		if err != nil {
+			log.Entry().Fatal(err)
+		}
+	}
+
 	commonPipelineEnv := piperenv.CPEMap{}
 	decoder := json.NewDecoder(bytes.NewReader(inBytes))
 	decoder.UseNumber()
@@ -69,4 +84,31 @@ func runWritePipelineEnv() error {
 		return err
 	}
 	return nil
+}
+
+func decrypt(secret, base64CipherText []byte) ([]byte, error) {
+	// decode from base64
+	cipherText, err := b64.StdEncoding.DecodeString(string(base64CipherText))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode from base64: %v", err)
+	}
+
+	// use SHA256 as key
+	key := sha256.Sum256(secret)
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new cipher: %v", err)
+	}
+
+	if len(cipherText) < aes.BlockSize {
+		return nil, fmt.Errorf("invalid ciphertext block size")
+	}
+
+	iv := cipherText[:aes.BlockSize]
+	cipherText = cipherText[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(cipherText, cipherText)
+
+	return cipherText, nil
 }
