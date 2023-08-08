@@ -774,12 +774,13 @@ uri = "some-buildpack"
 		runner := utils.ExecMockRunner
 		require.Equal(t, expectedImageCount, len(runner.Calls)-1)
 		for i, call := range runner.Calls {
-			if i == 0 {
+			if i == 0 { // first call is -version
 				continue
 			}
-			assert.Equal(t, 4, len(customData.Data[i].AdditionalTags))
+			lifecycleCall := i - 1
+			assert.Equal(t, 4, len(customData.Data[lifecycleCall].AdditionalTags))
 			assertLifecycleCalls(t, runner, i+1)
-			containerImageName := fmt.Sprintf("my-image-%d", i-1)
+			containerImageName := fmt.Sprintf("my-image-%d", lifecycleCall)
 			assert.Contains(t, call.Params, fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, containerImageName, config.ContainerImageTag))
 			assert.Contains(t, call.Params, fmt.Sprintf("%s/%s:3", config.ContainerRegistryURL, containerImageName))
 			assert.Contains(t, call.Params, fmt.Sprintf("%s/%s:3.1", config.ContainerRegistryURL, containerImageName))
