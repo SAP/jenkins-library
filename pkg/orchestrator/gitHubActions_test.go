@@ -196,6 +196,8 @@ func TestGitHubActions(t *testing.T) {
 		actual, err := p.GetLog()
 
 		assert.Nil(t, actual)
-		assert.EqualError(t, err, "failed to get logs: failed to get API data: HTTP request to https://api.github.com/repos/foo/bar/actions/jobs/124/logs failed with error: HTTP GET request to https://api.github.com/repos/foo/bar/actions/jobs/124/logs failed: Get \"https://api.github.com/repos/foo/bar/actions/jobs/124/logs\": no responder found")
+		// GitHubActionsConfigProvider.GetLog calls http.GetRequest concurrently, so we don't know what log (123 or 124) will be got first
+		// ref: pkg/orchestrator/gitHubActions.go:90
+		assert.ErrorContains(t, err, "failed to get logs: failed to get API data: HTTP request to https://api.github.com/repos/foo/bar/actions/jobs/12")
 	})
 }
