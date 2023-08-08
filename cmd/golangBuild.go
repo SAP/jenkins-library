@@ -342,8 +342,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	// pass private repos to go process
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
-	err = gitConfigurationForPrivateModule(config.PrivateModules, config.PrivateModulesGitToken, utils)
-	//err = lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, config.PrivateModulesGitToken, utils)
+	err = gitConfigurationForPrivateModules(config.PrivateModules, config.PrivateModulesGitToken, utils)
 
 	if err != nil {
 		return err
@@ -635,7 +634,7 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	return true, nil
 }
 
-func gitConfigurationForPrivateModule(privateMod string, token string, utils golangBuildUtils) error {
+func gitConfigurationForPrivateModules(privateMod string, token string, utils golangBuildUtils) error {
 	privateMod = strings.ReplaceAll(privateMod, "/*", "")
 	modules := strings.Split(privateMod, ",")
 	for _, v := range modules {
