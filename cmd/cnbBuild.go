@@ -29,8 +29,9 @@ import (
 )
 
 const (
-	creatorPath  = "/cnb/lifecycle/creator"
-	platformPath = "/tmp/platform"
+	creatorPath        = "/cnb/lifecycle/creator"
+	platformPath       = "/tmp/platform"
+	platformAPIVersion = "0.11"
 )
 
 type cnbBuildUtilsBundle struct {
@@ -526,7 +527,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, utils
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
-	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.9"})
+	utils.AppendEnv([]string{fmt.Sprintf("CNB_PLATFORM_API=%s", platformAPIVersion)})
 
 	creatorArgs := []string{
 		"-no-color",
