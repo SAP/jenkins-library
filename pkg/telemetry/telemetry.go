@@ -173,8 +173,12 @@ func (t *Telemetry) Send() {
 
 	fmt.Println("json b:", string(b))
 
+	h := http.Header{}
+	http.Header.Add(h, "Content-Type", "application/json")
+	http.Header.Add(h, "x-pendo-integration-key", t.Token)
+
 	log.Entry().Debug("Sending telemetry data")
-	t.client.SendRequest(http.MethodPost, t.BaseURL+t.Endpoint, bytes.NewReader(b), nil, nil)
+	t.client.SendRequest(http.MethodPost, t.BaseURL+t.Endpoint, bytes.NewReader(b), h, nil)
 }
 
 func (t *Telemetry) logStepTelemetryData() {
