@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 	"io"
@@ -45,7 +46,7 @@ func runReadPipelineEnv() error {
 	}
 
 	// try to encrypt
-	if secret, ok := os.LookupEnv("PIPER_pipelineEnv_SECRET"); ok && secret != "" {
+	if secret, ok := os.LookupEnv("PIPER_pipelineEnv_SECRET"); ok && secret != "" && orchestrator.DetectOrchestrator() != orchestrator.Jenkins {
 		log.Entry().Debug("found PIPER_pipelineEnv_SECRET, trying to encrypt CPE")
 		jsonBytes, _ := json.Marshal(cpe)
 		encrypted, err := encrypt([]byte(secret), jsonBytes)
