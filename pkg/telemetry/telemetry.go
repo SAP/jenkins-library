@@ -49,7 +49,7 @@ type Pendo struct {
 	VisitorID  string `json:"visitorId"`
 	AccountID  string `json:"accountId"`
 	Timestamp  int64  `json:"timestamp"`
-	Proterties Data   `json:"proterties"`
+	Properties Data   `json:"properties"`
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
@@ -109,7 +109,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		VisitorID:  "123",
 		AccountID:  "123",
 		Timestamp:  tt,
-		Proterties: t.data,
+		Properties: t.data,
 	}
 
 	fmt.Printf("pendo data: %+v\n", t.Pendo)
@@ -141,7 +141,7 @@ func (t *Telemetry) SetData(customData *CustomData) {
 		CustomData:   *customData,
 	}
 
-	t.Pendo.Proterties = t.data
+	t.Pendo.Properties = t.data
 
 	fmt.Printf("pendo data (2): %+v\n", t.Pendo)
 }
