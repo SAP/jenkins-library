@@ -89,5 +89,5 @@ func encrypt(secret, inBytes []byte) ([]byte, error) {
 	stream.XORKeyStream(cipherText[aes.BlockSize:], inBytes)
 
 	// Return string encoded in base64
-	return []byte(base64.RawStdEncoding.EncodeToString(cipherText)), err
+	return []byte(base64.StdEncoding.EncodeToString(cipherText)), err
 }
