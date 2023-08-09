@@ -47,6 +47,7 @@ type golangBuildOptions struct {
 	PrivateModulesGitToken       string   `json:"privateModulesGitToken,omitempty"`
 	ArtifactVersion              string   `json:"artifactVersion,omitempty"`
 	GolangciLintURL              string   `json:"golangciLintUrl,omitempty"`
+	Token                        string   `json:"token,omitempty"`
 }
 
 type golangBuildCommonPipelineEnvironment struct {
@@ -158,6 +159,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			log.RegisterSecret(stepConfig.TargetRepositoryPassword)
 			log.RegisterSecret(stepConfig.TargetRepositoryUser)
 			log.RegisterSecret(stepConfig.PrivateModulesGitToken)
+			log.RegisterSecret(stepConfig.Token)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -216,6 +218,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
+			telemetryClient.Token = stepConfig.Token
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			golangBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
@@ -253,6 +256,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "Version of the artifact to be built.")
 	cmd.Flags().StringVar(&stepConfig.GolangciLintURL, "golangciLintUrl", `https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz`, "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Pendo Token")
 
 	cmd.MarkFlagRequired("targetArchitectures")
 }
@@ -547,6 +551,21 @@ func golangBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz`,
+					},
+					{
+						Name: "token",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "pendoVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "pendo",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_token"),
 					},
 				},
 			},
