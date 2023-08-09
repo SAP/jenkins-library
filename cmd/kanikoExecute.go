@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -54,8 +55,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
 		log.Entry().Warning("Parameter containerBuildOptions is deprecated, please use buildOptions instead.")
-		telemetryData.Custom1Label = "ContainerBuildOptions"
-		telemetryData.Custom1 = config.ContainerBuildOptions
+		telemetryData.ContainerBuildOptions = config.ContainerBuildOptions
 	}
 
 	// prepare kaniko container for running with proper Docker config.json and custom certificates

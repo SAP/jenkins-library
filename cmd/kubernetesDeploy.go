@@ -35,8 +35,7 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 }
 
 func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData, utils kubernetes.DeployUtils, stdout io.Writer) error {
-	telemetryData.Custom1Label = "deployTool"
-	telemetryData.Custom1 = config.DeployTool
+	telemetryData.DeployTool = config.DeployTool
 
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		err := runHelmDeploy(config, utils, stdout)

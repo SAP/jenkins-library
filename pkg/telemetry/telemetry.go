@@ -98,7 +98,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		PipelineURLHash: t.getPipelineURLHash(), // http://server:port/jenkins/job/foo/
 		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
 	}
-	t.baseMetaData = baseMetaData
+	// t.baseMetaData = baseMetaData
 
 	tt := time.Now().UnixMilli()
 	fmt.Println("timestamp:", tt)
@@ -136,9 +136,9 @@ func (t *Telemetry) toSha1OrNA(input string) string {
 // SetData sets the custom telemetry data and base data into the Data object
 func (t *Telemetry) SetData(customData *CustomData) {
 	t.data = Data{
-		BaseData:     t.baseData,
-		BaseMetaData: t.baseMetaData,
-		CustomData:   *customData,
+		BaseData: t.baseData,
+		// BaseMetaData: t.baseMetaData,
+		CustomData: *customData,
 	}
 
 	t.Pendo.Properties = t.data

@@ -26,12 +26,12 @@ func NewTelemetry(customData *telemetry.CustomData) *Telemetry {
 }
 
 func (d *Telemetry) Export() error {
-	d.customData.Custom1Label = "cnbBuildStepData"
+	d.customData.BuildTool = "cnbBuildStepData"
 	customData, err := json.Marshal(d.data)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal custom telemetry data")
 	}
-	d.customData.Custom1 = string(customData)
+	d.customData.BuildTool = string(customData)
 	return nil
 }
 
