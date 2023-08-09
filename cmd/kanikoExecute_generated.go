@@ -43,6 +43,7 @@ type kanikoExecuteOptions struct {
 	ReadImageDigest                  bool                     `json:"readImageDigest,omitempty"`
 	CreateBOM                        bool                     `json:"createBOM,omitempty"`
 	SyftDownloadURL                  string                   `json:"syftDownloadUrl,omitempty"`
+	Token                            string                   `json:"token,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
@@ -224,6 +225,7 @@ Following final image names will be built:
 				return err
 			}
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
+			log.RegisterSecret(stepConfig.Token)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -282,6 +284,7 @@ Following final image names will be built:
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
+			telemetryClient.Token = stepConfig.Token
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			kanikoExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
@@ -315,6 +318,7 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().BoolVar(&stepConfig.ReadImageDigest, "readImageDigest", false, "")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Pendo Token")
 
 }
 
@@ -555,6 +559,21 @@ func kanikoExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`,
+					},
+					{
+						Name: "token",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "pendoVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "pendo",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_token"),
 					},
 				},
 			},

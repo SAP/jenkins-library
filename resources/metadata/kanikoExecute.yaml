@@ -306,6 +306,20 @@ spec:
           - PARAMETERS
           - STEPS
         default: "https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz"
+
+      - name: token
+        type: string
+        description: Pendo Token
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - type: vaultSecret
+            name: pendoVaultSecretName
+            default: pendo
+
   outputs:
     resources:
       - name: commonPipelineEnvironment
