@@ -17,12 +17,13 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var httpHeader = http.Header{
+var httpHeaders = http.Header{
 	"Accept": {"application/vnd.github+json"},
 }
 
 type GitHubActionsConfigProvider struct {
-	client piperHttp.Client
+	client     piperHttp.Client
+	actionsURL string
 }
 
 type job struct {
@@ -45,25 +46,21 @@ func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *Orchest
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
 	})
+
+	g.actionsURL = actionsURL()
+
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 
-// getActionsURL returns URL to actions resource. For example,
+// actionsURL returns URL to actions resource. For example,
 // https://api.github.com/repos/SAP/jenkins-library/actions              - if it's github.com
 // https://github.tools.sap/api/v3/repos/project-piper/sap-piper/actions - if it's GitHub Enterprise
-func getActionsURL() string {
-	ghURL := getEnv("GITHUB_URL", "")
-	switch ghURL {
-	case "https://github.com/":
-		ghURL = "https://api.github.com"
-	default:
-		ghURL += "api/v3"
-	}
-	return fmt.Sprintf("%s/repos/%s/actions", ghURL, getEnv("GITHUB_REPOSITORY", ""))
+func actionsURL() string {
+	return fmt.Sprintf("%s/repos/%s/actions", getEnv("GITHUB_API_URL", ""), getEnv("GITHUB_REPOSITORY", ""))
 }
 
-// OrchestratorVersion TODO
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
+	log.Entry().Debugf("OrchestratorVersion() for GitHub Actions is not applicable.")
 	return "n/a"
 }
 
@@ -98,7 +95,7 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 		}
 		wg.Go(func() error {
 			defer sem.Release(1)
-			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", getActionsURL(), ids[i]), httpHeader, nil)
+			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", g.actionsURL, ids[i]), httpHeaders, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get API data: %w", err)
 			}
@@ -216,7 +213,7 @@ func isGitHubActions() bool {
 }
 
 func (g *GitHubActionsConfigProvider) getStageIds() ([]int, error) {
-	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", getActionsURL(), getEnv("GITHUB_RUN_ID", "")), httpHeader, nil)
+	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", g.actionsURL, getEnv("GITHUB_RUN_ID", "")), httpHeaders, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get API data: %w", err)
 	}
