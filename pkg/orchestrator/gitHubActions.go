@@ -17,13 +17,14 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var httpHeaders = http.Header{
-	"Accept": {"application/vnd.github+json"},
-}
-
 type GitHubActionsConfigProvider struct {
 	client     piperHttp.Client
 	actionsURL string
+	runData    run
+}
+
+type run struct {
+	Status string `json:"status"`
 }
 
 type job struct {
@@ -39,6 +40,10 @@ type logs struct {
 	b [][]byte
 }
 
+var httpHeaders = http.Header{
+	"Accept": {"application/vnd.github+json"},
+}
+
 // InitOrchestratorProvider initializes http client for GitHubActionsDevopsConfigProvider
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	g.client.SetOptions(piperHttp.ClientOptions{
@@ -48,15 +53,9 @@ func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *Orchest
 	})
 
 	g.actionsURL = actionsURL()
+	g.fetchRunData()
 
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
-}
-
-// actionsURL returns URL to actions resource. For example,
-// https://api.github.com/repos/SAP/jenkins-library/actions              - if it's github.com
-// https://github.tools.sap/api/v3/repos/project-piper/sap-piper/actions - if it's GitHub Enterprise
-func actionsURL() string {
-	return fmt.Sprintf("%s/repos/%s/actions", getEnv("GITHUB_API_URL", ""), getEnv("GITHUB_REPOSITORY", ""))
 }
 
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
@@ -68,10 +67,18 @@ func (g *GitHubActionsConfigProvider) OrchestratorType() string {
 	return "GitHubActions"
 }
 
-// GetBuildStatus TODO
+// GetBuildStatus returns current run status
 func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
-	log.Entry().Infof("GetBuildStatus() for GitHub Actions not yet implemented.")
-	return "FAILURE"
+	switch g.runData.Status {
+	case "success":
+		return BuildStatusSuccess
+	case "cancelled":
+		return BuildStatusAborted
+	case "in_progress":
+		return BuildStatusInProgress
+	default:
+		return BuildStatusFailure
+	}
 }
 
 // GetLog returns the whole logfile for the current pipeline run
@@ -210,6 +217,28 @@ func (g *GitHubActionsConfigProvider) IsPullRequest() bool {
 func isGitHubActions() bool {
 	envVars := []string{"GITHUB_ACTION", "GITHUB_ACTIONS"}
 	return areIndicatingEnvVarsSet(envVars)
+}
+
+// actionsURL returns URL to actions resource. For example,
+// https://api.github.com/repos/SAP/jenkins-library/actions              - if it's github.com
+// https://github.tools.sap/api/v3/repos/project-piper/sap-piper/actions - if it's GitHub Enterprise
+func actionsURL() string {
+	return fmt.Sprintf("%s/repos/%s/actions", getEnv("GITHUB_API_URL", ""), getEnv("GITHUB_REPOSITORY", ""))
+}
+
+func (g *GitHubActionsConfigProvider) fetchRunData() {
+	url := fmt.Sprintf("%s/runs/%s", g.actionsURL, getEnv("GITHUB_RUN_ID", ""))
+	resp, err := g.client.GetRequest(url, httpHeaders, nil)
+	if err != nil || resp.StatusCode != 200 {
+		log.Entry().Errorf("failed to get API data: %s", err)
+		return
+	}
+
+	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &g.runData)
+	if err != nil {
+		log.Entry().Errorf("failed to parse JSON data: %s", err)
+		return
+	}
 }
 
 func (g *GitHubActionsConfigProvider) getStageIds() ([]int, error) {

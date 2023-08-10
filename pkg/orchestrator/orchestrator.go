@@ -18,9 +18,10 @@ const (
 )
 
 const (
-	BuildStatusSuccess = "SUCCESS"
-	BuildStatusAborted = "ABORTED"
-	BuildStatusFailure = "FAILURE"
+	BuildStatusSuccess    = "SUCCESS"
+	BuildStatusAborted    = "ABORTED"
+	BuildStatusFailure    = "FAILURE"
+	BuildStatusInProgress = "IN_PROGRESS"
 )
 
 type OrchestratorSpecificConfigProviding interface {
