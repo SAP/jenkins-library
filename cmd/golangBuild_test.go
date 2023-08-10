@@ -942,89 +942,6 @@ go 1.17`
 	}
 }
 
-func TestLookupGolangPrivateModulesRepositories(t *testing.T) {
-	t.Parallel()
-
-	modTestFile := `
-module private.example.com/m
-
-require (
-	example.com/public/module v1.0.0
-	private1.example.com/private/repo v0.1.0
-	private2.example.com/another/repo v0.2.0
-)
-
-go 1.17`
-
-	type expectations struct {
-		repos        []string
-		errorMessage string
-	}
-	tests := []struct {
-		name           string
-		modFileContent string
-		globPattern    string
-		expect         expectations
-		token          string
-	}{
-		{
-			name:           "Does nothing if glob pattern is empty",
-			modFileContent: modTestFile,
-			expect: expectations{
-				repos: []string{},
-			},
-		},
-		{
-			name:           "Does nothing if there is no go.mod file",
-			globPattern:    "private.example.com",
-			modFileContent: "",
-			expect: expectations{
-				repos: []string{},
-			},
-		},
-		{
-			name:           "Detects all private repos using a glob pattern",
-			modFileContent: modTestFile,
-			globPattern:    "*.example.com",
-			expect: expectations{
-				repos: []string{"https://private1.example.com/private/repo.git", "https://private2.example.com/another/repo.git"},
-			},
-		},
-		{
-			name:           "Detects all private repos",
-			modFileContent: modTestFile,
-			globPattern:    "private1.example.com,private2.example.com",
-			expect: expectations{
-				repos: []string{"https://private1.example.com/private/repo.git", "https://private2.example.com/another/repo.git"},
-			},
-		},
-		{
-			name:           "Detects a dedicated repo",
-			modFileContent: modTestFile,
-			globPattern:    "private2.example.com",
-			expect: expectations{
-				repos: []string{"https://private2.example.com/another/repo.git"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			utils := newGolangBuildTestsUtils()
-
-			goModFile, _ := modfile.Parse("", []byte(tt.modFileContent), nil)
-
-			err := lookupGolangPrivateModulesRepositories(goModFile, tt.globPattern, tt.token, utils)
-
-			if tt.expect.errorMessage == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, tt.expect.errorMessage)
-			}
-		})
-	}
-}
-
 func TestRunGolangciLint(t *testing.T) {
 	t.Parallel()
 
@@ -1148,6 +1065,62 @@ func TestRetrieveGolangciLint(t *testing.T) {
 				b, err = utils.ReadFile(filepath.Join(golangciLintDir, "golangci-lint"))
 				assert.NoError(t, err)
 				assert.Equal(t, []byte("test content"), b)
+			}
+		})
+	}
+}
+
+func Test_gitConfigurationForPrivateModules(t *testing.T) {
+	type args struct {
+		privateMod string
+		token      string
+	}
+	type expectations struct {
+		commandsExecuted [][]string
+	}
+	tests := []struct {
+		name string
+		args args
+
+		expected expectations
+	}{
+		{
+			name: "with one private module",
+			args: args{
+				privateMod: "example.com/*",
+				token:      "mytoken",
+			},
+			expected: expectations{
+				commandsExecuted: [][]string{
+					{"git", "config", "--global", "url.https://mytoken@example.com.insteadOf", "https://example.com"},
+				},
+			},
+		},
+		{
+			name: "with multiple private modules",
+			args: args{
+				privateMod: "example.com/*,test.com/*",
+				token:      "mytoken",
+			},
+			expected: expectations{
+				commandsExecuted: [][]string{
+					{"git", "config", "--global", "url.https://mytoken@example.com.insteadOf", "https://example.com"},
+					{"git", "config", "--global", "url.https://mytoken@test.com.insteadOf", "https://test.com"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utils := newGolangBuildTestsUtils()
+
+			err := gitConfigurationForPrivateModules(tt.args.privateMod, tt.args.token, utils)
+
+			if assert.NoError(t, err) {
+				for i, expectedCommand := range tt.expected.commandsExecuted {
+					assert.Equal(t, expectedCommand[0], utils.Calls[i].Exec)
+					assert.Equal(t, expectedCommand[1:], utils.Calls[i].Params)
+				}
 			}
 		})
 	}

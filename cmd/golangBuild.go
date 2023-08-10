@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -25,7 +23,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
-	"golang.org/x/mod/module"
 )
 
 const (
@@ -523,51 +520,6 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	}
 
 	return binaryNames, nil
-}
-
-// lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern
-func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern string, token string, utils golangBuildUtils) error {
-	if globPattern == "" {
-		return nil
-	}
-
-	if goModFile == nil {
-		return fmt.Errorf("couldn't find go.mod file")
-	} else if goModFile.Require == nil {
-		return nil // no modules referenced, nothing to do
-	}
-
-	for _, goModule := range goModFile.Require {
-		if !module.MatchPrefixPatterns(globPattern, goModule.Mod.Path) {
-
-			continue
-		}
-
-		repo, err := utils.GetRepositoryURL(goModule.Mod.Path)
-
-		if err != nil {
-			return err
-		}
-
-		parsedRepoURL, err := url.Parse(repo)
-		if err != nil {
-			return err
-		}
-		repoBaseURL := fmt.Sprintf("%s://%s", parsedRepoURL.Scheme, parsedRepoURL.Host)
-
-		if match, err := regexp.MatchString("(?i)^https?://", repoBaseURL); !match {
-			log.Entry().Infof("private repostiory %s doesn't match : %v", repoBaseURL, err)
-		}
-
-		authenticatedRepoURL := strings.Replace(repoBaseURL, "://", fmt.Sprintf("://%s@", token), 1)
-
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
-		if err != nil {
-			return err
-		}
-
-	}
-	return nil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
