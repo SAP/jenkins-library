@@ -24,7 +24,8 @@ type GitHubActionsConfigProvider struct {
 }
 
 type run struct {
-	Status string `json:"status"`
+	Status    string    `json:"status"`
+	StartedAt time.Time `json:"run_started_at"`
 }
 
 type job struct {
@@ -126,22 +127,19 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	return bytes.Join(logs.b, []byte("")), nil
 }
 
-// GetBuildID TODO
+// GetBuildID returns current run ID
 func (g *GitHubActionsConfigProvider) GetBuildID() string {
-	log.Entry().Infof("GetBuildID() for GitHub Actions not yet implemented.")
-	return "n/a"
+	return getEnv("GITHUB_RUN_ID", "n/a")
 }
 
-// GetChangeSet TODO
 func (g *GitHubActionsConfigProvider) GetChangeSet() []ChangeSet {
-	log.Entry().Warn("GetChangeSet for GitHubActions not yet implemented")
+	log.Entry().Debug("GetChangeSet for GitHubActions not implemented")
 	return []ChangeSet{}
 }
 
 // GetPipelineStartTime returns the pipeline start time in UTC
 func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
-	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
-	return time.Time{}.UTC()
+	return g.runData.StartedAt.UTC()
 }
 
 // GetStageName returns the human-readable name given to a stage. e.g. "Promote" or "Init"
