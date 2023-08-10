@@ -40,7 +40,6 @@ type logs struct {
 
 // InitOrchestratorProvider initializes http client for GitHubActionsDevopsConfigProvider
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
-	g.client = piperHttp.Client{}
 	g.client.SetOptions(piperHttp.ClientOptions{
 		Password:         settings.GitHubToken,
 		MaxRetries:       3,

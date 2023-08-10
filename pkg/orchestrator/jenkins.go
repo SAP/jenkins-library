@@ -14,20 +14,17 @@ import (
 
 type JenkinsConfigProvider struct {
 	client         piperHttp.Client
-	options        piperHttp.ClientOptions
 	apiInformation map[string]interface{}
 }
 
 // InitOrchestratorProvider initializes the Jenkins orchestrator with credentials
 func (j *JenkinsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
-	j.client = piperHttp.Client{}
-	j.options = piperHttp.ClientOptions{
+	j.client.SetOptions(piperHttp.ClientOptions{
 		Username:         settings.JenkinsUser,
 		Password:         settings.JenkinsToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
-	}
-	j.client.SetOptions(j.options)
+	})
 	log.Entry().Debug("Successfully initialized Jenkins config provider")
 }
 
@@ -77,15 +74,15 @@ func (j *JenkinsConfigProvider) GetBuildStatus() string {
 		// cases in ADO: succeeded, failed, canceled, none, partiallySucceeded
 		switch result := val; result {
 		case "SUCCESS":
-			return "SUCCESS"
+			return BuildStatusSuccess
 		case "ABORTED":
-			return "ABORTED"
+			return BuildStatusAborted
 		default:
 			// FAILURE, NOT_BUILT
-			return "FAILURE"
+			return BuildStatusFailure
 		}
 	}
-	return "FAILURE"
+	return BuildStatusFailure
 }
 
 // GetChangeSet returns the commitIds and timestamp of the changeSet of the current run
