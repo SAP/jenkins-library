@@ -29,8 +29,9 @@ import (
 )
 
 const (
-	creatorPath  = "/cnb/lifecycle/creator"
-	platformPath = "/tmp/platform"
+	creatorPath        = "/cnb/lifecycle/creator"
+	platformPath       = "/tmp/platform"
+	platformAPIVersion = "0.11"
 )
 
 type cnbBuildUtilsBundle struct {
@@ -325,12 +326,17 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		return errors.Wrap(err, "failed to process config")
 	}
 
+	buildSummary := cnbutils.NewBuildSummary(dockerImage, utils)
 	for _, c := range mergedConfigs {
-		err = runCnbBuild(&c, telemetry, utils, commonPipelineEnvironment, httpClient)
+		imageSummary := &cnbutils.ImageSummary{}
+		err = runCnbBuild(&c, telemetry, imageSummary, utils, commonPipelineEnvironment, httpClient)
 		if err != nil {
 			return err
 		}
+		buildSummary.Images = append(buildSummary.Images, imageSummary)
 	}
+
+	buildSummary.Print()
 
 	if config.CreateBOM {
 		err = syft.GenerateSBOM(config.SyftDownloadURL, filepath.Dir(config.DockerConfigJSON), utils, utils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
@@ -343,7 +349,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	return telemetry.Export()
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, imageSummary *cnbutils.ImageSummary, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	err := cleanDir("/layers", utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -382,6 +388,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, utils
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to check if project descriptor exists")
 	}
+	imageSummary.ProjectDescriptor = projDescPath
 
 	var projectID string
 	if projDescPath != "" {
@@ -438,6 +445,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, utils
 
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
+		imageSummary.AddEnv(config.BuildEnvVars)
 		err = cnbutils.CreateEnvFiles(utils, platformPath, config.BuildEnvVars)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -526,7 +534,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, utils
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
-	utils.AppendEnv([]string{"CNB_PLATFORM_API=0.9"})
+	utils.AppendEnv([]string{fmt.Sprintf("CNB_PLATFORM_API=%s", platformAPIVersion)})
 
 	creatorArgs := []string{
 		"-no-color",
@@ -570,6 +578,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, utils
 	}
 	commonPipelineEnvironment.container.imageDigest = digest
 	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
+	imageSummary.ImageRef = fmt.Sprintf("%s@%s", containerImage, digest)
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != buildpacks.PathEnumArchive {
