@@ -49,6 +49,9 @@ func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *Orchest
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 
+// getActionsURL returns URL to actions resource. For example,
+// https://api.github.com/repos/SAP/jenkins-library/actions              - if it's github.com
+// https://github.tools.sap/api/v3/repos/project-piper/sap-piper/actions - if it's GitHub Enterprise
 func getActionsURL() string {
 	ghURL := getEnv("GITHUB_URL", "")
 	switch ghURL {
@@ -60,6 +63,7 @@ func getActionsURL() string {
 	return fmt.Sprintf("%s/repos/%s/actions", ghURL, getEnv("GITHUB_REPOSITORY", ""))
 }
 
+// OrchestratorVersion TODO
 func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
 	return "n/a"
 }
@@ -68,6 +72,7 @@ func (g *GitHubActionsConfigProvider) OrchestratorType() string {
 	return "GitHubActions"
 }
 
+// GetBuildStatus TODO
 func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
 	log.Entry().Infof("GetBuildStatus() for GitHub Actions not yet implemented.")
 	return "FAILURE"
@@ -118,59 +123,78 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	return bytes.Join(logs.b, []byte("")), nil
 }
 
+// GetBuildID TODO
 func (g *GitHubActionsConfigProvider) GetBuildID() string {
 	log.Entry().Infof("GetBuildID() for GitHub Actions not yet implemented.")
 	return "n/a"
 }
 
+// GetChangeSet TODO
 func (g *GitHubActionsConfigProvider) GetChangeSet() []ChangeSet {
 	log.Entry().Warn("GetChangeSet for GitHubActions not yet implemented")
 	return []ChangeSet{}
 }
 
+// GetPipelineStartTime returns the pipeline start time in UTC
 func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
 	return time.Time{}.UTC()
 }
+
+// GetStageName returns the human-readable name given to a stage. e.g. "Promote" or "Init"
+// TODO
 func (g *GitHubActionsConfigProvider) GetStageName() string {
 	return "GITHUB_WORKFLOW" // TODO: is there something like is "stage" in GH Actions?
 }
 
+// GetBuildReason returns the build reason
+// TODO
 func (g *GitHubActionsConfigProvider) GetBuildReason() string {
 	log.Entry().Infof("GetBuildReason() for GitHub Actions not yet implemented.")
 	return "n/a"
 }
 
+// GetBranch returns the source branch name, e.g. main
 func (g *GitHubActionsConfigProvider) GetBranch() string {
+	// TODO trim different prefixes. See GITHUB_REF description in
+	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+	// or just use GITHUB_REF_NAME ???
 	return strings.TrimPrefix(getEnv("GITHUB_REF", "n/a"), "refs/heads/")
 }
 
+// GetReference return the git reference. For example, refs/heads/your_branch_name
 func (g *GitHubActionsConfigProvider) GetReference() string {
 	return getEnv("GITHUB_REF", "n/a")
 }
 
+// GetBuildURL returns the builds URL. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
 	return g.GetRepoURL() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
 }
 
+// GetJobURL returns tje current job URL. For example, TODO
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
 	log.Entry().Debugf("Not yet implemented.")
 	return g.GetRepoURL() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
 }
 
+// GetJobName TODO
 func (g *GitHubActionsConfigProvider) GetJobName() string {
 	log.Entry().Debugf("GetJobName() for GitHubActions not yet implemented.")
 	return "n/a"
 }
 
+// GetCommit returns the commit SHA that triggered the workflow. For example, ffac537e6cbbf934b08745a378932722df287a53
 func (g *GitHubActionsConfigProvider) GetCommit() string {
 	return getEnv("GITHUB_SHA", "n/a")
 }
 
+// GetRepoURL returns full url to repository. For example, https://github.com/SAP/jenkins-library
 func (g *GitHubActionsConfigProvider) GetRepoURL() string {
 	return getEnv("GITHUB_SERVER_URL", "n/a") + "/" + getEnv("GITHUB_REPOSITORY", "n/a")
 }
 
+// GetPullRequestConfig returns pull request configuration
 func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	// See https://docs.github.com/en/enterprise-server@3.6/actions/learn-github-actions/variables#default-environment-variables
 	githubRef := getEnv("GITHUB_REF", "n/a")
@@ -182,6 +206,7 @@ func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	}
 }
 
+// IsPullRequest indicates whether the current build is triggered by a PR
 func (g *GitHubActionsConfigProvider) IsPullRequest() bool {
 	return truthy("GITHUB_HEAD_REF")
 }
