@@ -44,15 +44,24 @@ func NewClient(config *Config, token string) (Client, error) {
 	}
 
 	client.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		log.Entry().Info("Unique sentence for Vault retry debugging 0:", err)
+		if resp != nil {
+			log.Entry().Info("Unique sentence for Vault retry debugging 0:", resp.Status, resp.StatusCode)
+		}
 		retry, err := api.DefaultRetryPolicy(ctx, resp, err)
 		if err != nil || retry {
-			log.Entry().Info("Unique sentence for Vault retry debugging")
+			log.Entry().Info("Unique sentence for Vault retry debugging 1:", err, retry)
 			return retry, err
 		}
 		// which status codes to retry?
-		if resp != nil && resp.StatusCode > 400 {
-			log.Entry().Info("Unique sentence for Vault retry debugging")
+		if resp != nil && resp.StatusCode >= 400 {
+			log.Entry().Info("Unique sentence for Vault retry debugging 2:", resp.Status, resp.StatusCode)
 			return true, nil
+		}
+		if resp != nil {
+			log.Entry().Info("Unique sentence for Vault retry debugging 3:", resp.Status, resp.StatusCode)
+		} else {
+			log.Entry().Info("Unique sentence for Vault retry debugging 4: resp is nil")
 		}
 		return false, nil
 	})
