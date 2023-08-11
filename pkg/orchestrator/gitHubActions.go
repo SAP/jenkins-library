@@ -250,7 +250,7 @@ func isGitHubActions() bool {
 // https://api.github.com/repos/SAP/jenkins-library/actions              - if it's github.com
 // https://github.tools.sap/api/v3/repos/project-piper/sap-piper/actions - if it's GitHub Enterprise
 func actionsURL() string {
-	return fmt.Sprintf("%s/repos/%s/actions", getEnv("GITHUB_API_URL", ""), getEnv("GITHUB_REPOSITORY", ""))
+	return getEnv("GITHUB_API_URL", "") + "/repos/" + getEnv("GITHUB_REPOSITORY", "") + "/actions"
 }
 
 func (g *GitHubActionsConfigProvider) fetchRunData() {
