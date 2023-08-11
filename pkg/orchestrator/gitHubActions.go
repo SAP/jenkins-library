@@ -22,6 +22,7 @@ type GitHubActionsConfigProvider struct {
 	actionsURL string
 	runData    run
 	jobs       []job
+	currentJob *job
 }
 
 type run struct {
@@ -30,7 +31,9 @@ type run struct {
 }
 
 type job struct {
-	ID int `json:"id"`
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	HtmlURL string `json:"html_url"`
 }
 
 type stagesID struct {
@@ -56,6 +59,14 @@ func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *Orchest
 
 	g.actionsURL = actionsURL()
 	g.fetchRunData()
+
+	if err := g.fetchJobs(); err != nil {
+		// Since InitOrchestratorProvider() does not return an error and changing a public method
+		// is currently undesired, log the error here and return.
+		log.Entry().Errorf("failed to fetch jobs: %s", err)
+		g.jobs = []job{}
+		return
+	}
 
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
@@ -145,7 +156,11 @@ func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 
 // GetStageName returns the human-readable name given to a stage.
 func (g *GitHubActionsConfigProvider) GetStageName() string {
-	return getEnv("GITHUB_JOB", "unknown")
+	if g.currentJob == nil {
+		return "n/a"
+	}
+
+	return g.currentJob.Name
 }
 
 // GetBuildReason returns the reason of workflow trigger.
@@ -170,10 +185,7 @@ func (g *GitHubActionsConfigProvider) GetBuildReason() string {
 
 // GetBranch returns the source branch name, e.g. main
 func (g *GitHubActionsConfigProvider) GetBranch() string {
-	// TODO trim different prefixes. See GITHUB_REF description in
-	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
-	// or just use GITHUB_REF_NAME ???
-	return strings.TrimPrefix(getEnv("GITHUB_REF", "n/a"), "refs/heads/")
+	return getEnv("GITHUB_REF_NAME", "n/a")
 }
 
 // GetReference return the git reference. For example, refs/heads/your_branch_name
@@ -186,16 +198,19 @@ func (g *GitHubActionsConfigProvider) GetBuildURL() string {
 	return g.GetRepoURL() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
 }
 
-// GetJobURL returns tje current job URL. For example, TODO
+// GetJobURL returns the current job HTML URL (not API URL).
+// For example, https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
-	log.Entry().Debugf("Not yet implemented.")
-	return g.GetRepoURL() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
+	if g.currentJob == nil {
+		return "n/a"
+	}
+
+	return g.currentJob.HtmlURL
 }
 
-// GetJobName TODO
+// GetJobName returns the current workflow name. For example, "Piper workflow"
 func (g *GitHubActionsConfigProvider) GetJobName() string {
-	log.Entry().Debugf("GetJobName() for GitHubActions not yet implemented.")
-	return "n/a"
+	return getEnv("GITHUB_WORKFLOW", "unknown")
 }
 
 // GetCommit returns the commit SHA that triggered the workflow. For example, ffac537e6cbbf934b08745a378932722df287a53
@@ -278,4 +293,12 @@ func (g *GitHubActionsConfigProvider) fetchJobs() error {
 	g.jobs = result.Jobs
 
 	return nil
+}
+
+func (g *GitHubActionsConfigProvider) guessCurrentJob() {
+	for _, j := range g.jobs {
+		if j.Name == getEnv("GITHUB_JOB", "unknown") {
+			g.currentJob = &j
+		}
+	}
 }
