@@ -21,6 +21,7 @@ type GitHubActionsConfigProvider struct {
 	client     piperHttp.Client
 	actionsURL string
 	runData    run
+	jobs       []job
 }
 
 type run struct {
@@ -36,7 +37,7 @@ type stagesID struct {
 	Jobs []job `json:"jobs"`
 }
 
-type logs struct {
+type fullLog struct {
 	sync.Mutex
 	b [][]byte
 }
@@ -84,26 +85,26 @@ func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
 
 // GetLog returns the whole logfile for the current pipeline run
 func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
-	ids, err := g.getStageIds()
-	if err != nil {
+	if err := g.fetchJobs(); err != nil {
 		return nil, err
 	}
+	// Ignore the last stage (job) as it is not possible in GitHub to fetch logs for a running job.
+	jobs := g.jobs[:len(g.jobs)-1]
 
-	logs := logs{
-		b: make([][]byte, len(ids)),
+	fullLogs := fullLog{
+		b: make([][]byte, len(jobs)),
 	}
-
 	ctx := context.Background()
 	sem := semaphore.NewWeighted(10)
 	wg := errgroup.Group{}
-	for i := range ids {
+	for i := range jobs {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return nil, fmt.Errorf("failed to acquire semaphore: %w", err)
 		}
 		wg.Go(func() error {
 			defer sem.Release(1)
-			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", g.actionsURL, ids[i]), httpHeaders, nil)
+			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", g.actionsURL, jobs[i].ID), httpHeaders, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get API data: %w", err)
 			}
@@ -113,18 +114,18 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 				return fmt.Errorf("failed to read response body: %w", err)
 			}
 			defer resp.Body.Close()
-			logs.Lock()
-			defer logs.Unlock()
-			logs.b[i] = b
+			fullLogs.Lock()
+			defer fullLogs.Unlock()
+			fullLogs.b[i] = b
 
 			return nil
 		})
 	}
-	if err = wg.Wait(); err != nil {
+	if err := wg.Wait(); err != nil {
 		return nil, fmt.Errorf("failed to get logs: %w", err)
 	}
 
-	return bytes.Join(logs.b, []byte("")), nil
+	return bytes.Join(fullLogs.b, []byte("")), nil
 }
 
 // GetBuildID returns current run ID
@@ -251,26 +252,30 @@ func (g *GitHubActionsConfigProvider) fetchRunData() {
 	}
 }
 
-func (g *GitHubActionsConfigProvider) getStageIds() ([]int, error) {
-	resp, err := g.client.GetRequest(fmt.Sprintf("%s/runs/%s/jobs", g.actionsURL, getEnv("GITHUB_RUN_ID", "")), httpHeaders, nil)
+func (g *GitHubActionsConfigProvider) fetchJobs() error {
+	if len(g.jobs) != 0 {
+		// already fetched once
+		return nil
+	}
+
+	url := fmt.Sprintf("%s/runs/%s/jobs", g.actionsURL, getEnv("GITHUB_RUN_ID", ""))
+	resp, err := g.client.GetRequest(url, httpHeaders, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get API data: %w", err)
+		return fmt.Errorf("failed to get API data: %w", err)
 	}
 
-	var stagesID stagesID
-	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &stagesID)
+	var result struct {
+		Jobs []job `json:"jobs"`
+	}
+	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse JSON data: %w", err)
+		return fmt.Errorf("failed to parse JSON data: %w", err)
 	}
 
-	ids := make([]int, len(stagesID.Jobs))
-	for i, job := range stagesID.Jobs {
-		ids[i] = job.ID
+	if len(result.Jobs) == 0 {
+		return fmt.Errorf("no jobs found in response")
 	}
-	if len(ids) == 0 {
-		return nil, fmt.Errorf("failed to get IDs")
-	}
+	g.jobs = result.Jobs
 
-	// execution of the last stage hasn't finished yet - we can't get logs of the last stage
-	return ids[:len(stagesID.Jobs)-1], nil
+	return nil
 }
