@@ -28,6 +28,7 @@ type GitHubActionsConfigProvider struct {
 type run struct {
 	Status    string    `json:"status"`
 	StartedAt time.Time `json:"run_started_at"`
+	HtmlURL   string    `json:"html_url"`
 }
 
 type job struct {
@@ -195,7 +196,7 @@ func (g *GitHubActionsConfigProvider) GetReference() string {
 
 // GetBuildURL returns the builds URL. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
-	return g.GetRepoURL() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
+	return g.runData.HtmlURL
 }
 
 // GetJobURL returns the current job HTML URL (not API URL).
