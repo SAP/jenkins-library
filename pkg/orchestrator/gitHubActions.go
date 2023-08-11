@@ -142,17 +142,29 @@ func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 	return g.runData.StartedAt.UTC()
 }
 
-// GetStageName returns the human-readable name given to a stage. e.g. "Promote" or "Init"
-// TODO
+// GetStageName returns the human-readable name given to a stage.
 func (g *GitHubActionsConfigProvider) GetStageName() string {
-	return "GITHUB_WORKFLOW" // TODO: is there something like is "stage" in GH Actions?
+	return getEnv("GITHUB_JOB", "unknown")
 }
 
-// GetBuildReason returns the build reason
-// TODO
+// GetBuildReason returns the reason of workflow trigger.
+// BuildReasons are unified with AzureDevOps build reasons, see
+// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
 func (g *GitHubActionsConfigProvider) GetBuildReason() string {
-	log.Entry().Infof("GetBuildReason() for GitHub Actions not yet implemented.")
-	return "n/a"
+	switch getEnv("GITHUB_REF", "") {
+	case "workflow_dispatch":
+		return BuildReasonManual
+	case "schedule":
+		return BuildReasonSchedule
+	case "pull_request":
+		return BuildReasonPullRequest
+	case "workflow_call":
+		return BuildReasonResourceTrigger
+	case "push":
+		return BuildReasonIndividualCI
+	default:
+		return BuildReasonUnknown
+	}
 }
 
 // GetBranch returns the source branch name, e.g. main

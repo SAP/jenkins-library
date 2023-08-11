@@ -197,12 +197,12 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 	marshal, err := json.Marshal(j.apiInformation)
 	if err != nil {
 		log.Entry().WithError(err).Debugf("could not marshal apiInformation")
-		return "Unknown"
+		return BuildReasonUnknown
 	}
 	jsonParsed, err := gabs.ParseJSON(marshal)
 	if err != nil {
 		log.Entry().WithError(err).Debugf("could not parse apiInformation")
-		return "Unknown"
+		return BuildReasonUnknown
 	}
 
 	for _, child := range jsonParsed.Path("actions").Children() {
@@ -214,21 +214,21 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 			for _, val := range child.Path("causes").Children() {
 				subclass := val.S("_class")
 				if subclass.Data().(string) == "hudson.model.Cause$UserIdCause" {
-					return "Manual"
+					return BuildReasonManual
 				} else if subclass.Data().(string) == "hudson.triggers.TimerTrigger$TimerTriggerCause" {
-					return "Schedule"
+					return BuildReasonSchedule
 				} else if subclass.Data().(string) == "jenkins.branch.BranchEventCause" {
-					return "PullRequest"
+					return BuildReasonPullRequest
 				} else if subclass.Data().(string) == "org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause" {
-					return "ResourceTrigger"
+					return BuildReasonResourceTrigger
 				} else {
-					return "Unknown"
+					return BuildReasonUnknown
 				}
 			}
 		}
 
 	}
-	return "Unknown"
+	return BuildReasonUnknown
 }
 
 // GetBranch returns the branch name, only works with the git plugin enabled

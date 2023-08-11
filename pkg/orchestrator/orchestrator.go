@@ -22,6 +22,13 @@ const (
 	BuildStatusAborted    = "ABORTED"
 	BuildStatusFailure    = "FAILURE"
 	BuildStatusInProgress = "IN_PROGRESS"
+
+	BuildReasonManual          = "Manual"
+	BuildReasonSchedule        = "Schedule"
+	BuildReasonPullRequest     = "PullRequest"
+	BuildReasonResourceTrigger = "ResourceTrigger"
+	BuildReasonIndividualCI    = "IndividualCI"
+	BuildReasonUnknown         = "Unknown"
 )
 
 type OrchestratorSpecificConfigProviding interface {
