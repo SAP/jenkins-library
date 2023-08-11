@@ -56,7 +56,7 @@ func getPiperExecutable() string {
 // copyDir copies a directory
 func copyDir(source string, target string) error {
 	var err error
-	var fileInfo []os.FileInfo
+	var fileInfo []os.DirEntry
 	var sourceInfo os.FileInfo
 
 	if sourceInfo, err = os.Stat(source); err != nil {
