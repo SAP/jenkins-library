@@ -22,7 +22,7 @@ type GitHubActionsConfigProvider struct {
 	actionsURL string
 	runData    run
 	jobs       []job
-	currentJob *job
+	currentJob job
 }
 
 type run struct {
@@ -157,7 +157,7 @@ func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 
 // GetStageName returns the human-readable name given to a stage.
 func (g *GitHubActionsConfigProvider) GetStageName() string {
-	if g.currentJob == nil {
+	if g.currentJob.ID == 0 {
 		return "n/a"
 	}
 
@@ -202,7 +202,7 @@ func (g *GitHubActionsConfigProvider) GetBuildURL() string {
 // GetJobURL returns the current job HTML URL (not API URL).
 // For example, https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
-	if g.currentJob == nil {
+	if g.currentJob.ID == 0 {
 		return "n/a"
 	}
 
@@ -299,7 +299,7 @@ func (g *GitHubActionsConfigProvider) fetchJobs() error {
 func (g *GitHubActionsConfigProvider) guessCurrentJob() {
 	for _, j := range g.jobs {
 		if j.Name == getEnv("GITHUB_JOB", "unknown") {
-			g.currentJob = &j
+			g.currentJob = j
 		}
 	}
 }
