@@ -248,20 +248,6 @@ spec:
           - PARAMETERS
           - STEPS
         default: "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz"
-
-      - name: token
-        type: string
-        description: Pendo Token
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        resourceRef:
-          - type: vaultSecret
-            name: pendoVaultSecretName
-            default: pendo
-
   outputs:
     resources:
       - name: commonPipelineEnvironment

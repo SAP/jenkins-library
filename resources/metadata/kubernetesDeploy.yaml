@@ -538,20 +538,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      
-      - name: token
-        type: string
-        description: Pendo Token
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        resourceRef:
-          - type: vaultSecret
-            name: pendoVaultSecretName
-            default: pendo
-            
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config

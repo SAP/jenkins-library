@@ -262,20 +262,6 @@ spec:
           - type: vaultSecret
             name: gitHttpsCredentialVaultSecretName
             default: gitHttpsCredential
-
-      - name: token
-        type: string
-        description: Pendo Token
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        resourceRef:
-          - type: vaultSecret
-            name: pendoVaultSecretName
-            default: pendo
-
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
