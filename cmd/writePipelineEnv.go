@@ -19,15 +19,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type writePipelineEnvOptions struct {
-	Secret string `json:"secret,omitempty"`
-}
-
 // WritePipelineEnv Serializes the commonPipelineEnvironment JSON to disk
 func WritePipelineEnv() *cobra.Command {
-	const STEP_NAME = "writePipelineEnv"
-	var stepConfig writePipelineEnvOptions
-	metadata := writePipelineEnvMetadata()
+	var stepConfig artifactPrepareVersionOptions
+	metadata := artifactPrepareVersionMetadata()
 
 	return &cobra.Command{
 		Use:   "writePipelineEnv",
@@ -37,12 +32,13 @@ func WritePipelineEnv() *cobra.Command {
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "", &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return
 			}
-			log.RegisterSecret(stepConfig.Secret)
+			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.Username)
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
@@ -54,7 +50,7 @@ func WritePipelineEnv() *cobra.Command {
 	}
 }
 
-func runWritePipelineEnv(config *writePipelineEnvOptions) error {
+func runWritePipelineEnv(config *artifactPrepareVersionOptions) error {
 	pipelineEnv, ok := os.LookupEnv("PIPER_pipelineEnv")
 	inBytes := []byte(pipelineEnv)
 	if !ok {
@@ -69,10 +65,10 @@ func runWritePipelineEnv(config *writePipelineEnvOptions) error {
 	}
 
 	// try to decrypt
-	if config.Secret != "" && orchestrator.DetectOrchestrator() != orchestrator.Jenkins {
-		log.Entry().Debug("found PIPER_pipelineEnv_SECRET, trying to decrypt CPE")
+	if config.Password != "" && orchestrator.DetectOrchestrator() != orchestrator.Jenkins {
+		log.Entry().Debug("found artifactPrepareVersion.Password, trying to decrypt CPE")
 		var err error
-		inBytes, err = decrypt([]byte(config.Secret), inBytes)
+		inBytes, err = decrypt([]byte(config.Password), inBytes)
 		if err != nil {
 			log.Entry().Fatal(err)
 		}
@@ -128,32 +124,4 @@ func decrypt(secret, base64CipherText []byte) ([]byte, error) {
 	stream.XORKeyStream(cipherText, cipherText)
 
 	return cipherText, nil
-}
-
-// retrieve step metadata
-func writePipelineEnvMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name: "writePipelineEnv",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name: "secret",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "cpeSecret",
-								Type: "vaultSecret",
-							},
-						},
-						Type:      "string",
-						Mandatory: false,
-						Default:   os.Getenv("PIPER_pipelineEnv_SECRET"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

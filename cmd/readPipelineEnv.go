@@ -18,15 +18,10 @@ import (
 	"path"
 )
 
-type readPipelineEnvOptions struct {
-	Secret string `json:"secret,omitempty"`
-}
-
 // ReadPipelineEnv reads the commonPipelineEnvironment from disk and outputs it as JSON
 func ReadPipelineEnv() *cobra.Command {
-	const STEP_NAME = "readPipelineEnv"
-	var stepConfig readPipelineEnvOptions
-	metadata := readPipelineEnvMetadata()
+	var stepConfig artifactPrepareVersionOptions
+	metadata := artifactPrepareVersionMetadata()
 
 	return &cobra.Command{
 		Use:   "readPipelineEnv",
@@ -36,12 +31,13 @@ func ReadPipelineEnv() *cobra.Command {
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "", &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return
 			}
-			log.RegisterSecret(stepConfig.Secret)
+			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.Username)
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
@@ -53,7 +49,7 @@ func ReadPipelineEnv() *cobra.Command {
 	}
 }
 
-func runReadPipelineEnv(config *readPipelineEnvOptions) error {
+func runReadPipelineEnv(config *artifactPrepareVersionOptions) error {
 	cpe := piperenv.CPEMap{}
 
 	err := cpe.LoadFromDisk(path.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment"))
@@ -62,10 +58,10 @@ func runReadPipelineEnv(config *readPipelineEnvOptions) error {
 	}
 
 	// try to encrypt
-	if config.Secret != "" && orchestrator.DetectOrchestrator() != orchestrator.Jenkins {
-		log.Entry().Debug("found PIPER_pipelineEnv_SECRET, trying to encrypt CPE")
+	if config.Password != "" && orchestrator.DetectOrchestrator() != orchestrator.Jenkins {
+		log.Entry().Debug("found artifactPrepareVersion.Password, trying to encrypt CPE")
 		jsonBytes, _ := json.Marshal(cpe)
-		encrypted, err := encrypt([]byte(config.Secret), jsonBytes)
+		encrypted, err := encrypt([]byte(config.Password), jsonBytes)
 		if err != nil {
 			log.Entry().Fatal(err)
 		}
@@ -107,32 +103,4 @@ func encrypt(secret, inBytes []byte) ([]byte, error) {
 
 	// Return string encoded in base64
 	return []byte(base64.StdEncoding.EncodeToString(cipherText)), err
-}
-
-// retrieve step metadata
-func readPipelineEnvMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name: "readPipelineEnvMetadata",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name: "secret",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "cpeSecret",
-								Type: "vaultSecret",
-							},
-						},
-						Type:      "string",
-						Mandatory: false,
-						Default:   os.Getenv("PIPER_pipelineEnv_SECRET"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }
