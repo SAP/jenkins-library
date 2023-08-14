@@ -53,7 +53,7 @@ type Pendo struct {
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
-func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
+func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	t.disabled = telemetryDisabled
 
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
@@ -67,7 +67,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		t.client = &piperhttp.Client{}
 	}
 
-	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1, Token: t.Token})
+	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
 
 	if t.BaseURL == "" {
 		//SWA baseURL
@@ -87,6 +87,10 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 	}
 
+	t.Token = token
+	// ***
+	fmt.Println("pendo token:", token)
+
 	t.baseData = BaseData{
 		Orchestrator:    provider.OrchestratorType(),
 		StageName:       provider.GetStageName(),
@@ -100,15 +104,12 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	}
 	// t.baseMetaData = baseMetaData
 
-	tt := time.Now().UnixMilli()
-	fmt.Println("timestamp:", tt)
-
 	t.Pendo = Pendo{
 		Type:       "track",
 		Event:      stepName,
 		VisitorID:  "123",
 		AccountID:  "123",
-		Timestamp:  tt,
+		Timestamp:  time.Now().UnixMilli(),
 		Properties: t.data,
 	}
 

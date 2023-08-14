@@ -53,6 +53,7 @@ type GeneralConfigOptions struct {
 type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
 	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
+	PendoConfig  PendoConfiguration  `json:"pendo,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -69,6 +70,10 @@ type SplunkConfiguration struct {
 	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
 	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
 	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
+}
+
+type PendoConfiguration struct {
+	Token string `json:"token,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
