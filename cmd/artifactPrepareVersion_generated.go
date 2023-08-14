@@ -33,6 +33,7 @@ type artifactPrepareVersionOptions struct {
 	IsOptimizedAndScheduled     bool     `json:"isOptimizedAndScheduled,omitempty"`
 	M2Path                      string   `json:"m2Path,omitempty"`
 	Password                    string   `json:"password,omitempty"`
+	PipelineID                  string   `json:"pipelineId,omitempty"`
 	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
 	ShortCommitID               bool     `json:"shortCommitId,omitempty"`
 	TagPrefix                   string   `json:"tagPrefix,omitempty"`
@@ -264,6 +265,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Maven only - Path to the location of the local repository that should be used.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
+	cmd.Flags().StringVar(&stepConfig.PipelineID, "pipelineId", os.Getenv("PIPER_pipelineId"), "The cumulus pipelineId.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().BoolVar(&stepConfig.ShortCommitID, "shortCommitId", false, "Defines if a short version of the commitId should be used. GitHub format is used (first 7 characters).")
 	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", `build_`, "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`).")
@@ -441,6 +443,15 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_password"),
+					},
+					{
+						Name:        "pipelineId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "gcsBucketId"}},
+						Default:     os.Getenv("PIPER_pipelineId"),
 					},
 					{
 						Name:        "projectSettingsFile",

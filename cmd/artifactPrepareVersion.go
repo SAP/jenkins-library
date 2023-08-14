@@ -106,6 +106,8 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 var sshAgentAuth = ssh.NewSSHAgentAuth
 
 func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, utils artifactPrepareVersionUtils, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
+	// ***
+	fmt.Println("config.PipelineID:", config.PipelineID)
 
 	telemetryData.BuildTool = config.BuildTool
 	telemetryData.FilePath = config.FilePath

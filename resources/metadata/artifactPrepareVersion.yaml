@@ -262,6 +262,18 @@ spec:
           - type: vaultSecret
             name: gitHttpsCredentialVaultSecretName
             default: gitHttpsCredential
+
+      - name: pipelineId
+        type: string
+        description: The cumulus pipelineId.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: gcsBucketId
+
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
