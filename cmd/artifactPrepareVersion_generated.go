@@ -445,13 +445,18 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{
-						Name:        "pipelineId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "gcsBucketId"}},
-						Default:     os.Getenv("PIPER_pipelineId"),
+						Name: "pipelineId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/cumulusPipelineID",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "gcsBucketId"}},
+						Default:   os.Getenv("PIPER_pipelineId"),
 					},
 					{
 						Name:        "projectSettingsFile",

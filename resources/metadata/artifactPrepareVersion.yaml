@@ -267,12 +267,12 @@ spec:
         type: string
         description: The cumulus pipelineId.
         scope:
-          - GENERAL
           - PARAMETERS
-          - STAGES
-          - STEPS
         aliases:
           - name: gcsBucketId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/cumulusPipelineID
 
       - name: projectSettingsFile
         aliases:

@@ -194,6 +194,18 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      
+      - name: pipelineId
+        type: string
+        description: The cumulus pipelineId.
+        scope:
+          - PARAMETERS
+        aliases:
+          - name: gcsBucketId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/cumulusPipelineID
+
       - name: testResultFormat
         type: "string"
         description: Defines the output format of the test results.
