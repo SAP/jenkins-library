@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 
 	"golang.org/x/sync/errgroup"
-	"golang.org/x/sync/semaphore"
 )
 
 type GitHubActionsConfigProvider struct {
@@ -35,10 +33,6 @@ type job struct {
 	ID      int    `json:"id"`
 	Name    string `json:"name"`
 	HtmlURL string `json:"html_url"`
-}
-
-type stagesID struct {
-	Jobs []job `json:"jobs"`
 }
 
 type fullLog struct {
@@ -103,32 +97,26 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	// Ignore the last stage (job) as it is not possible in GitHub to fetch logs for a running job.
 	jobs := g.jobs[:len(g.jobs)-1]
 
-	fullLogs := fullLog{
-		b: make([][]byte, len(jobs)),
-	}
-	ctx := context.Background()
-	sem := semaphore.NewWeighted(10)
+	fullLogs := fullLog{b: make([][]byte, len(jobs))}
 	wg := errgroup.Group{}
+	wg.SetLimit(10)
 	for i := range jobs {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return nil, fmt.Errorf("failed to acquire semaphore: %w", err)
-		}
 		wg.Go(func() error {
-			defer sem.Release(1)
 			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", g.actionsURL, jobs[i].ID), httpHeaders, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get API data: %w", err)
 			}
+			defer resp.Body.Close()
 
 			b, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return fmt.Errorf("failed to read response body: %w", err)
 			}
-			defer resp.Body.Close()
+
 			fullLogs.Lock()
-			defer fullLogs.Unlock()
 			fullLogs.b[i] = b
+			fullLogs.Unlock()
 
 			return nil
 		})
