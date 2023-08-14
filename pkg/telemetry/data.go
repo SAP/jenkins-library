@@ -57,10 +57,17 @@ type CustomData struct {
 	ErrorCode             string `json:"errorCode,omitempty"`
 	ErrorCategory         string `json:"errorCategory,omitempty"`
 	PiperCommitHash       string `json:"piperCommitHash,omitempty"`
-	BuildTool             string `json:"buildTool,omitempty"`
+	BuildTool             string `json:"buildTool,omitempty"` // artifactPrepVersion
 	FilePath              string `json:"filePath,omitempty"`
-	DeployTool            string `json:"deployTool,omitempty"`
-	ContainerBuildOptions string `json:"containerBuildOptions,omitempty"`
+	DeployTool            string `json:"deployTool,omitempty"`            // k8sDeploy
+	ContainerBuildOptions string `json:"containerBuildOptions,omitempty"` // kaniko
+	IsScheduled           bool   `json:"isScheduled,omitempty"`           // sapInit
+	IsOptimized           bool   `json:"isOptimized,omitempty"`           // sapInit
+	ProxyLogFile          string `json:"proxyLogFile,omitempty"`          // xmake
+	BuildType             string `json:"buildType,omitempty"`
+	BuildQuality          string `json:"buildQuality,omitempty"`
+	LegacyJobNameTemplate string `json:"legacyJobNameTemplate,omitempty"`
+	LegacyJobName         string `json:"legacyJobName,omitempty"`
 }
 
 // StepTelemetryData definition for telemetry reporting and monitoring
