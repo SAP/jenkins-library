@@ -172,7 +172,6 @@ spec:
           ```
         scope:
           - PARAMETERS
-          - STAGES
           - STEPS
       - name: containerMultiImageBuild
         type: bool
