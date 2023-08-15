@@ -336,3 +336,69 @@ func TestVulnerabilityScore(t *testing.T) {
 		assert.Equalf(t, test.expected, vulnerabilityScore(test.alert), "run %v failed", i)
 	}
 }
+
+func TestGetAuditInformation(t *testing.T) {
+	tt := []struct {
+		name     string
+		alert    Alert
+		expected *format.SarifProperties
+	}{
+		{
+			name: "New not audited alert",
+			alert: Alert{
+				Status: "OPEN",
+			},
+			expected: &format.SarifProperties{
+				Audited:           false,
+				ToolAuditMessage:  "",
+				UnifiedAuditState: "new",
+			},
+		},
+		{
+			name: "Audited alert",
+			alert: Alert{
+				Status:   "IGNORE",
+				Comments: "Not relevant alert",
+			},
+			expected: &format.SarifProperties{
+				Audited:           true,
+				ToolAuditMessage:  "Not relevant alert",
+				UnifiedAuditState: "notRelevant",
+			},
+		},
+		{
+			name: "Alert with incorrect status",
+			alert: Alert{
+				Status:   "Not correct",
+				Comments: "Some comment",
+			},
+			expected: &format.SarifProperties{
+				Audited:           false,
+				ToolAuditMessage:  "",
+				UnifiedAuditState: "new",
+			},
+		},
+		{
+			name: "Audited alert",
+			alert: Alert{
+				Assessment: &format.Assessment{
+					Status:   format.NotRelevant,
+					Analysis: format.FixedByDevTeam,
+				},
+				Status:   "OPEN",
+				Comments: "New alert",
+			},
+			expected: &format.SarifProperties{
+				Audited:           true,
+				ToolAuditMessage:  string(format.FixedByDevTeam),
+				UnifiedAuditState: "notRelevant",
+			},
+		},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, getAuditInformation(test.alert), test.expected)
+		})
+	}
+}

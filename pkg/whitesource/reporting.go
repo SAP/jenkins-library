@@ -211,6 +211,8 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		partialFingerprints := new(format.PartialFingerprints)
 		partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", alert.Library.ToPackageUrl().ToString(), alert.Vulnerability.Name)))
 		result.PartialFingerprints = *partialFingerprints
+		result.Properties = getAuditInformation(alert)
+
 		//append the result
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
 
@@ -266,6 +268,37 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	sarif.Runs[0].Conversion = conversion
 
 	return &sarif
+}
+
+func getAuditInformation(alert Alert) *format.SarifProperties {
+	unifiedAuditState := "new"
+	auditMessage := ""
+	isAudited := false
+
+	// unified audit state
+	switch alert.Status {
+	case "OPEN":
+		unifiedAuditState = "new"
+	case "IGNORE":
+		unifiedAuditState = "notRelevant"
+		auditMessage = alert.Comments
+	}
+
+	if alert.Assessment != nil {
+		unifiedAuditState = string(alert.Assessment.Status)
+		auditMessage = string(alert.Assessment.Analysis)
+	}
+
+	if unifiedAuditState == string(format.Relevant) ||
+		unifiedAuditState == string(format.NotRelevant) {
+		isAudited = true
+	}
+
+	return &format.SarifProperties{
+		Audited:           isAudited,
+		ToolAuditMessage:  auditMessage,
+		UnifiedAuditState: unifiedAuditState,
+	}
 }
 
 func transformToLevel(cvss2severity, cvss3severity string) string {
