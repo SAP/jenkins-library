@@ -42,7 +42,6 @@ type golangBuildOptions struct {
 	RunIntegrationTests          bool     `json:"runIntegrationTests,omitempty"`
 	TargetArchitectures          []string `json:"targetArchitectures,omitempty"`
 	TestOptions                  []string `json:"testOptions,omitempty"`
-	PipelineID                   string   `json:"pipelineId,omitempty"`
 	TestResultFormat             string   `json:"testResultFormat,omitempty" validate:"possible-values=junit standard"`
 	PrivateModules               string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken       string   `json:"privateModulesGitToken,omitempty"`
@@ -249,7 +248,6 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.RunIntegrationTests, "runIntegrationTests", false, "Activates execution of a second test run using tag `integration`.")
 	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{`linux,amd64`}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma.")
 	cmd.Flags().StringSliceVar(&stepConfig.TestOptions, "testOptions", []string{}, "Options to pass to test as per `go test` documentation (comprises e.g. flags, packages).")
-	cmd.Flags().StringVar(&stepConfig.PipelineID, "pipelineId", os.Getenv("PIPER_pipelineId"), "The cumulus pipelineId.")
 	cmd.Flags().StringVar(&stepConfig.TestResultFormat, "testResultFormat", `junit`, "Defines the output format of the test results.")
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
@@ -487,20 +485,6 @@ func golangBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
-					},
-					{
-						Name: "pipelineId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/cumulusPipelineID",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "gcsBucketId"}},
-						Default:   os.Getenv("PIPER_pipelineId"),
 					},
 					{
 						Name:        "testResultFormat",

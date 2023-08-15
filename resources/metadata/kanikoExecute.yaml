@@ -276,16 +276,7 @@ spec:
           - STEPS
         default: Dockerfile
 
-      - name: pipelineId
-        type: string
-        description: The cumulus pipelineId.
-        scope:
-          - PARAMETERS
-        aliases:
-          - name: gcsBucketId
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/cumulusPipelineID
+      
 
       - name: targetArchitectures
         type: "[]string"

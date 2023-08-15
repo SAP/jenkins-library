@@ -59,16 +59,7 @@ spec:
           - STAGES
           - STEPS
 
-      - name: pipelineId
-        type: string
-        description: The cumulus pipelineId.
-        scope:
-          - PARAMETERS
-        aliases:
-          - name: gcsBucketId
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/cumulusPipelineID
+      
 
       - name: scriptOptions
         type: "[]string"
