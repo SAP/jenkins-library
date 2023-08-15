@@ -247,6 +247,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: dependencyUpdate
+        type: bool
+        description: "Runs a helm dependency update prior to performing updates on the cluster"
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: deployTool
         type: string
         description: Defines the tool which should be used for deployment.

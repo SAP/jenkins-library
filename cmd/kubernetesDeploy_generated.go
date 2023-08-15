@@ -28,6 +28,7 @@ type kubernetesDeployOptions struct {
 	ContainerRegistrySecret    string                 `json:"containerRegistrySecret,omitempty"`
 	CreateDockerRegistrySecret bool                   `json:"createDockerRegistrySecret,omitempty"`
 	DeploymentName             string                 `json:"deploymentName,omitempty"`
+	DependencyUpdate           bool                   `json:"dependencyUpdate,omitempty"`
 	DeployTool                 string                 `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
 	ForceUpdates               bool                   `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds      int                    `json:"helmDeployWaitSeconds,omitempty"`
@@ -190,6 +191,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
 	cmd.Flags().BoolVar(&stepConfig.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation.")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
+	cmd.Flags().BoolVar(&stepConfig.DependencyUpdate, "dependencyUpdate", false, "Runs a helm dependency update prior to performing updates on the cluster")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
 	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
@@ -398,6 +400,15 @@ func kubernetesDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
 						Default:     os.Getenv("PIPER_deploymentName"),
+					},
+					{
+						Name:        "dependencyUpdate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "deployTool",
