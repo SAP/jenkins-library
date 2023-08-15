@@ -1158,6 +1158,45 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, mockUtils.Calls[0].Params, "Wrong upgrade parameters")
 	})
 
+	t.Run("test helm v3 - with dependency update", func(t *testing.T) {
+
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:      "https://my.registry:55555",
+			ContainerRegistryUser:     "registryUser",
+			ContainerRegistryPassword: "dummy",
+			ContainerRegistrySecret:   "testSecret",
+			ChartPath:                 "path/to/chart",
+			DeploymentName:            "deploymentName",
+			DependencyUpdate:          true,
+			DeployTool:                "helm3",
+			ForceUpdates:              true,
+			HelmDeployWaitSeconds:     400,
+			HelmValues:                []string{"values1.yaml", "values2.yaml"},
+			ImageNames:                []string{"myImage", "myImage.sub1", "myImage.sub2"},
+			ImageNameTags:             []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
+			AdditionalParameters:      []string{"--testParam", "testValue"},
+			KubeContext:               "testCluster",
+			Namespace:                 "deploymentNamespace",
+			DockerConfigJSON:          ".pipeline/docker/config.json",
+		}
+
+		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.StdoutReturn = map[string]string{
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json`: dockerConfigJSON,
+		}
+
+		var stdout bytes.Buffer
+
+		require.NoError(t, runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout))
+
+		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong dependency-update command")
+
+		assert.Equal(t, []string{"dependency", "update", "path/to/chart"}, mockUtils.Calls[1].Params, "Wrong dependency-update parameters")
+
+	})
+
 	t.Run("test kubectl - create secret from docker config.json", func(t *testing.T) {
 
 		opts := kubernetesDeployOptions{
