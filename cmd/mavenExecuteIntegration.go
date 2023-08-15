@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 func mavenExecuteIntegration(config mavenExecuteIntegrationOptions, _ *telemetry.CustomData) {
@@ -30,6 +31,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
+			PomPath:             pomPath,
 		}, utils)
 		if err != nil {
 			return err
