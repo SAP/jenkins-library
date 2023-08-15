@@ -4,11 +4,12 @@
 package cmd
 
 import (
-	"github.com/google/uuid"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 
 	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
@@ -143,7 +144,7 @@ func TestRunNewmanExecute(t *testing.T) {
 		err := runNewmanExecute(&config, &utils)
 
 		// assert
-		assert.EqualError(t, err, "could not parse newman command template: template: template:1: unexpected \"}\" in operand")
+		assert.EqualError(t, err, "could not parse newman command template: template: template:1: bad character U+007D '}'")
 	})
 
 	t.Run("error on file search", func(t *testing.T) {
@@ -263,7 +264,7 @@ func TestResolveTemplate(t *testing.T) {
 		config := newmanExecuteOptions{RunOptions: []string{"this", "is", "my", "fancy", "command", "{{.collectionDisplayName}"}}
 
 		_, err := resolveTemplate(&config, "theDisplayName")
-		assert.EqualError(t, err, "could not parse newman command template: template: template:1: unexpected \"}\" in operand")
+		assert.EqualError(t, err, "could not parse newman command template: template: template:1: bad character U+007D '}'")
 	})
 }
 
