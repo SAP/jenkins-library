@@ -150,6 +150,19 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 
 	utils.Stdout(stdout)
 
+	if config.DependencyUpdate {
+		dependencyUpdateParams := []string{
+			"dependency", "update",
+			config.ChartPath,
+		}
+
+		log.Entry().Info("Calling helm dependency update ...")
+		log.Entry().Debugf("Helm parameters %v", dependencyUpdateParams)
+		if err := utils.RunExecutable("helm", dependencyUpdateParams...); err != nil {
+			log.Entry().WithError(err).Fatal("Helm dependency update call failed")
+		}
+	}
+
 	// Deprecated functionality
 	// only for backward compatible handling of ingress.hosts
 	// this requires an adoption of the default ingress.yaml template
