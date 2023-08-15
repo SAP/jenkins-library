@@ -148,6 +148,8 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
 	}
 
+	utils.Stdout(stdout)
+
 	// Deprecated functionality
 	// only for backward compatible handling of ingress.hosts
 	// this requires an adoption of the default ingress.yaml template
@@ -208,7 +210,6 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		upgradeParams = append(upgradeParams, config.AdditionalParameters...)
 	}
 
-	utils.Stdout(stdout)
 	log.Entry().Info("Calling helm upgrade ...")
 	log.Entry().Debugf("Helm parameters %v", upgradeParams)
 	if err := utils.RunExecutable("helm", upgradeParams...); err != nil {
