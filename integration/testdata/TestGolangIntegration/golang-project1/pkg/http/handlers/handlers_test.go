@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
