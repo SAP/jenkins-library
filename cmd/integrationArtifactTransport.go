@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"time"
@@ -65,7 +65,7 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 			WithField("IntegrationPackageID", config.IntegrationPackageID).
 			Info("successfully created the integration package transport request")
 
-		bodyText, readErr := ioutil.ReadAll(createTransportRequestResp.Body)
+		bodyText, readErr := io.ReadAll(createTransportRequestResp.Body)
 		if readErr != nil {
 			return errors.Wrap(readErr, "HTTP response body could not be read")
 		}
@@ -81,7 +81,7 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 		}
 		return errors.New("Invalid process id")
 	}
-	responseBody, readErr := ioutil.ReadAll(createTransportRequestResp.Body)
+	responseBody, readErr := io.ReadAll(createTransportRequestResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", createTransportRequestResp.StatusCode)
@@ -175,7 +175,7 @@ func getIntegrationTransportProcessingStatus(config *integrationArtifactTranspor
 			WithField("IntegrationPackageID", config.IntegrationPackageID).
 			Info("successfully processed the integration package transport response status")
 
-		bodyText, readErr := ioutil.ReadAll(transportProcStatusResp.Body)
+		bodyText, readErr := io.ReadAll(transportProcStatusResp.Body)
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", transportProcStatusResp.StatusCode)
 		}
@@ -212,7 +212,7 @@ func getIntegrationTransportError(config *integrationArtifactTransportOptions, h
 		log.Entry().
 			WithField("IntegrationPackageId", config.IntegrationPackageID).
 			Info("Successfully retrieved deployment failures error details")
-		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
+		responseBody, readErr := io.ReadAll(errorStatusResp.Body)
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
 		}

@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
@@ -116,7 +117,7 @@ func callIFlowURL(
 		}
 
 		var fileErr error
-		fileBody, fileErr = ioutil.ReadFile(config.MessageBodyPath)
+		fileBody, fileErr = os.ReadFile(config.MessageBodyPath)
 		if fileErr != nil {
 			log.SetErrorCategory(log.ErrorUndefined)
 			return fmt.Errorf("failed to read file %s: %w", config.MessageBodyPath, fileErr)
@@ -155,7 +156,7 @@ func callIFlowURL(
 		log.Entry().
 			WithField(config.IntegrationFlowID, serviceEndpointUrl).
 			Infof("successfully triggered %s with status code %d", serviceEndpointUrl, iFlowResp.StatusCode)
-		bodyText, readErr := ioutil.ReadAll(iFlowResp.Body)
+		bodyText, readErr := io.ReadAll(iFlowResp.Body)
 		if readErr != nil {
 			log.Entry().Warnf("HTTP response body could not be read. Error: %s", readErr.Error())
 		} else if len(bodyText) > 0 {

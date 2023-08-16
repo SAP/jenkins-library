@@ -9,11 +9,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -401,7 +401,7 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 		var buf bytes.Buffer
 		tee := io.TeeReader(req.Body, &buf)
 		log.Entry().Debugf("body: %v", transformBody(tee))
-		req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
@@ -419,7 +419,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 			var buf bytes.Buffer
 			tee := io.TeeReader(resp.Body, &buf)
 			log.Entry().Debugf("body: %v", transformBody(tee))
-			resp.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+			resp.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
 	} else {
 		log.Entry().Debug("response <nil>")
@@ -601,7 +601,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				}
 				log.Entry().Debugf("wrote %v bytes from response body to file", numWritten)
 
-				certs, err := ioutil.ReadFile(target)
+				certs, err := os.ReadFile(target)
 				if err != nil {
 					return errors.Wrapf(err, "failed to read cert file %v", certificate)
 				}
@@ -616,7 +616,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			}
 		} else {
 			log.Entry().Debugf("existing certificate file %v found, appending it to rootCA", target)
-			certs, err := ioutil.ReadFile(target)
+			certs, err := os.ReadFile(target)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read cert file %v", certificate)
 			}
@@ -652,7 +652,7 @@ func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 		return errors.Errorf("cannot parse HTTP response with value <nil>")
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return errors.Wrap(readErr, "HTTP response body could not be read")
 	}
@@ -671,7 +671,7 @@ func ParseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error 
 		return errors.Errorf("cannot parse HTTP response with value <nil>")
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read")
 	}

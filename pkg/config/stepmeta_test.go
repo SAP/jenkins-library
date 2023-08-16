@@ -6,7 +6,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +19,7 @@ func TestReadPipelineStepData(t *testing.T) {
 
 	t.Run("Success case", func(t *testing.T) {
 		myMeta := strings.NewReader("metadata:\n  name: testIt\nspec:\n  inputs:\n    params:\n      - name: testParamName\n    secrets:\n      - name: testSecret")
-		err := s.ReadPipelineStepData(ioutil.NopCloser(myMeta)) // NopCloser "no-ops" the closing interface since strings do not need to be closed
+		err := s.ReadPipelineStepData(io.NopCloser(myMeta)) // NopCloser "no-ops" the closing interface since strings do not need to be closed
 
 		if err != nil {
 			t.Errorf("Got error although no error expected: %v", err)
@@ -55,7 +54,7 @@ func TestReadPipelineStepData(t *testing.T) {
 
 	t.Run("Unmarshalling failure", func(t *testing.T) {
 		myMeta := strings.NewReader("metadata:\n\tname: testIt")
-		err := s.ReadPipelineStepData(ioutil.NopCloser(myMeta))
+		err := s.ReadPipelineStepData(io.NopCloser(myMeta))
 		if err == nil {
 			t.Errorf("Got no error although error expected.")
 		}
@@ -677,11 +676,11 @@ func TestGetResourceParameters(t *testing.T) {
 		t.Fatal("Failed to create sub directory")
 	}
 
-	ioutil.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "jsonList.json"), []byte("[\"value1\",\"value2\"]"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValue.json"), []byte("{\"key\":\"value\"}"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValueString"), []byte("{\"key\":\"valueString\"}"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "jsonList.json"), []byte("[\"value1\",\"value2\"]"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "jsonKeyValue.json"), []byte("{\"key\":\"value\"}"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "jsonKeyValueString"), []byte("{\"key\":\"valueString\"}"), 0700)
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
