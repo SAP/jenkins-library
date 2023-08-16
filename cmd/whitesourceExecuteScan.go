@@ -811,12 +811,12 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 		return 0, alerts, assessedAlerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
 	}
 
-	ignoredAlerts, err := sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
+	// TODO add ignored alerts to list of all alerts
+	_, err = sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
 		return 0, alerts, assessedAlerts, fmt.Errorf("failed to retrieve project ignored alerts from WhiteSource: %w", err)
 	}
-
-	alerts = append(alerts, ignoredAlerts...)
+	// alerts = append(alerts, ignoredAlerts...)
 
 	// filter alerts related to existing assessments
 	filteredAlerts := []ws.Alert{}
