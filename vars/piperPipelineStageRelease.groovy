@@ -84,6 +84,8 @@ void call(Map parameters = [:]) {
 
             if (config.kubernetesDeploy){
                 durationMeasure(script: script, measurementName: 'deploy_release_kubernetes_duration') {
+                    helmExecute script: script, helmCommand: 'dependency', dependency: 'update'
+                    stash name: 'charts', includes: "${config.chartPath}/charts/*.tgz", allowEmpty: true
                     kubernetesDeploy script: script
                 }
             }
