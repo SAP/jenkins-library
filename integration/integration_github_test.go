@@ -7,7 +7,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,10 +36,10 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 	dir := t.TempDir()
 
 	testAsset := filepath.Join(dir, "test.txt")
-	err := ioutil.WriteFile(testAsset, []byte("Test"), 0644)
+	err := os.WriteFile(testAsset, []byte("Test"), 0644)
 	assert.NoError(t, err, "Error when writing temporary file")
 	test2Asset := filepath.Join(dir, "test2.txt")
-	err = ioutil.WriteFile(test2Asset, []byte("Test"), 0644)
+	err = os.WriteFile(test2Asset, []byte("Test"), 0644)
 	assert.NoError(t, err, "Error when writing temporary file")
 
 	t.Run("test single asset - success", func(t *testing.T) {

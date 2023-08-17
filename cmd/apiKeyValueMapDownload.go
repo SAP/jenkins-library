@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -71,7 +70,7 @@ func runApiKeyValueMapDownload(config *apiKeyValueMapDownloadOptions, telemetryD
 		}
 		return nil
 	}
-	responseBody, readErr := ioutil.ReadAll(downloadResp.Body)
+	responseBody, readErr := io.ReadAll(downloadResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", downloadResp.StatusCode)

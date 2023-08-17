@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -217,7 +216,7 @@ func TestGetProjectConfigFile(t *testing.T) {
 			}
 
 			for _, file := range test.filesAvailable {
-				if err := ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700); err != nil {
 					t.Fail()
 				}
 			}
