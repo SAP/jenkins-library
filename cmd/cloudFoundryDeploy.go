@@ -81,6 +81,9 @@ func cloudFoundryDeploy(config cloudFoundryDeployOptions, telemetryData *telemet
 
 func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux, command command.ExecRunner) error {
 
+	telemetryData.DeployTool = config.DeployTool
+	telemetryData.DeployType = config.DeployType
+
 	log.Entry().Infof("General parameters: deployTool='%s', deployType='%s', cfApiEndpoint='%s', cfOrg='%s', cfSpace='%s'",
 		config.DeployTool, config.DeployType, config.APIEndpoint, config.Org, config.Space)
 

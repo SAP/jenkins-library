@@ -88,8 +88,6 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	}
 
 	t.Token = token
-	// ***
-	fmt.Println("pendo token:", token)
 
 	t.baseData = BaseData{
 		Orchestrator:    provider.OrchestratorType(),
@@ -107,8 +105,8 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	t.Pendo = Pendo{
 		Type:       "track",
 		Event:      stepName,
-		VisitorID:  "123",
-		AccountID:  "123",
+		VisitorID:  "123-456-789",
+		AccountID:  "123-456-789",
 		Timestamp:  time.Now().UnixMilli(),
 		Properties: t.data,
 	}

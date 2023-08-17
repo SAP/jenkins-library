@@ -68,6 +68,7 @@ type CustomData struct {
 	BuildQuality          string `json:"buildQuality,omitempty"`
 	LegacyJobNameTemplate string `json:"legacyJobNameTemplate,omitempty"`
 	LegacyJobName         string `json:"legacyJobName,omitempty"`
+	DeployType            string `json:"deployType,omitempty"`
 }
 
 // StepTelemetryData definition for telemetry reporting and monitoring
