@@ -32,7 +32,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** For buildTool npm: Execute npm install (boolean, default 'true') */
     'npmInstall',
     /** For buildTool npm: List of npm run scripts to execute */
-    'npmRunScripts'
+    'npmRunScripts',
+    'helmExecute',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -99,6 +100,10 @@ void call(Map parameters = [:]) {
                 } else {
                     error "[${STEP_NAME}] buildTool not set and no dockerImage & dockerCommand provided."
                 }
+        }
+
+        if(config.helmExecute) {
+          helmExecute script: script
         }
     }
 }
