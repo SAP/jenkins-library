@@ -16,14 +16,15 @@ import (
 )
 
 type GitHubActionsConfigProvider struct {
-	client     piperHttp.Client
-	actionsURL string
-	runData    run
-	jobs       []job
-	currentJob job
+	client      piperHttp.Client
+	runData     run
+	jobs        []job
+	jobsFetched bool
+	currentJob  job
 }
 
 type run struct {
+	fetched   bool
 	Status    string    `json:"status"`
 	StartedAt time.Time `json:"run_started_at"`
 	HtmlURL   string    `json:"html_url"`
@@ -52,17 +53,6 @@ func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *Orchest
 		TransportTimeout: time.Second * 10,
 	})
 
-	g.actionsURL = actionsURL()
-	g.fetchRunData()
-
-	if err := g.fetchJobs(); err != nil {
-		// Since InitOrchestratorProvider() does not return an error and changing a public method
-		// is currently undesired, log the error here and return.
-		log.Entry().Errorf("failed to fetch jobs: %s", err)
-		g.jobs = []job{}
-		return
-	}
-
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 
@@ -77,6 +67,7 @@ func (g *GitHubActionsConfigProvider) OrchestratorType() string {
 
 // GetBuildStatus returns current run status
 func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
+	g.fetchRunData()
 	switch g.runData.Status {
 	case "success":
 		return BuildStatusSuccess
@@ -103,7 +94,7 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	for i := range jobs {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
 		wg.Go(func() error {
-			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", g.actionsURL, jobs[i].ID), httpHeaders, nil)
+			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", actionsURL(), jobs[i].ID), httpHeaders, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get API data: %w", err)
 			}
@@ -140,15 +131,13 @@ func (g *GitHubActionsConfigProvider) GetChangeSet() []ChangeSet {
 
 // GetPipelineStartTime returns the pipeline start time in UTC
 func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
+	g.fetchRunData()
 	return g.runData.StartedAt.UTC()
 }
 
 // GetStageName returns the human-readable name given to a stage.
 func (g *GitHubActionsConfigProvider) GetStageName() string {
-	if g.currentJob.ID == 0 {
-		return "n/a"
-	}
-
+	g.guessCurrentJob()
 	return g.currentJob.Name
 }
 
@@ -184,16 +173,14 @@ func (g *GitHubActionsConfigProvider) GetReference() string {
 
 // GetBuildURL returns the builds URL. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
+	g.fetchRunData()
 	return g.runData.HtmlURL
 }
 
 // GetJobURL returns the current job HTML URL (not API URL).
 // For example, https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
-	if g.currentJob.ID == 0 {
-		return "n/a"
-	}
-
+	g.guessCurrentJob()
 	return g.currentJob.HtmlURL
 }
 
@@ -242,7 +229,11 @@ func actionsURL() string {
 }
 
 func (g *GitHubActionsConfigProvider) fetchRunData() {
-	url := fmt.Sprintf("%s/runs/%s", g.actionsURL, getEnv("GITHUB_RUN_ID", ""))
+	if g.runData.fetched {
+		return
+	}
+
+	url := fmt.Sprintf("%s/runs/%s", actionsURL(), getEnv("GITHUB_RUN_ID", ""))
 	resp, err := g.client.GetRequest(url, httpHeaders, nil)
 	if err != nil || resp.StatusCode != 200 {
 		log.Entry().Errorf("failed to get API data: %s", err)
@@ -254,15 +245,15 @@ func (g *GitHubActionsConfigProvider) fetchRunData() {
 		log.Entry().Errorf("failed to parse JSON data: %s", err)
 		return
 	}
+	g.runData.fetched = true
 }
 
 func (g *GitHubActionsConfigProvider) fetchJobs() error {
-	if len(g.jobs) != 0 {
-		// already fetched once
+	if g.jobsFetched {
 		return nil
 	}
 
-	url := fmt.Sprintf("%s/runs/%s/jobs", g.actionsURL, getEnv("GITHUB_RUN_ID", ""))
+	url := fmt.Sprintf("%s/runs/%s/jobs", actionsURL(), getEnv("GITHUB_RUN_ID", ""))
 	resp, err := g.client.GetRequest(url, httpHeaders, nil)
 	if err != nil {
 		return fmt.Errorf("failed to get API data: %w", err)
@@ -280,11 +271,24 @@ func (g *GitHubActionsConfigProvider) fetchJobs() error {
 		return fmt.Errorf("no jobs found in response")
 	}
 	g.jobs = result.Jobs
+	g.jobsFetched = true
 
 	return nil
 }
 
 func (g *GitHubActionsConfigProvider) guessCurrentJob() {
+	// check if the current job has already been guessed
+	if g.currentJob.ID != 0 {
+		return
+	}
+
+	// fetch jobs if they haven't been fetched yet
+	if err := g.fetchJobs(); err != nil {
+		log.Entry().Errorf("failed to fetch jobs: %s", err)
+		g.jobs = []job{}
+		return
+	}
+
 	for _, j := range g.jobs {
 		if j.Name == getEnv("GITHUB_JOB", "unknown") {
 			g.currentJob = j

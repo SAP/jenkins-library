@@ -23,11 +23,11 @@ func TestGitHubActionsConfigProvider_GetBuildStatus(t *testing.T) {
 		runData run
 		want    string
 	}{
-		{"BuildStatusSuccess", run{Status: "success"}, BuildStatusSuccess},
-		{"BuildStatusAborted", run{Status: "cancelled"}, BuildStatusAborted},
-		{"BuildStatusInProgress", run{Status: "in_progress"}, BuildStatusInProgress},
-		{"BuildStatusFailure", run{Status: "qwertyu"}, BuildStatusFailure},
-		{"BuildStatusFailure", run{Status: ""}, BuildStatusFailure},
+		{"BuildStatusSuccess", run{fetched: true, Status: "success"}, BuildStatusSuccess},
+		{"BuildStatusAborted", run{fetched: true, Status: "cancelled"}, BuildStatusAborted},
+		{"BuildStatusInProgress", run{fetched: true, Status: "in_progress"}, BuildStatusInProgress},
+		{"BuildStatusFailure", run{fetched: true, Status: "qwertyu"}, BuildStatusFailure},
+		{"BuildStatusFailure", run{fetched: true, Status: ""}, BuildStatusFailure},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -109,18 +109,21 @@ func TestGitHubActionsConfigProvider_guessCurrentJob(t *testing.T) {
 	tests := []struct {
 		name          string
 		jobs          []job
+		jobsFetched   bool
 		targetJobName string
 		wantJob       job
 	}{
 		{
 			name:          "job found",
 			jobs:          []job{{Name: "Job1"}, {Name: "Job2"}, {Name: "Job3"}},
+			jobsFetched:   true,
 			targetJobName: "Job2",
 			wantJob:       job{Name: "Job2"},
 		},
 		{
 			name:          "job not found",
 			jobs:          []job{{Name: "Job1"}, {Name: "Job2"}, {Name: "Job3"}},
+			jobsFetched:   true,
 			targetJobName: "Job123",
 			wantJob:       job{},
 		},
@@ -128,7 +131,8 @@ func TestGitHubActionsConfigProvider_guessCurrentJob(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := &GitHubActionsConfigProvider{
-				jobs: tt.jobs,
+				jobs:        tt.jobs,
+				jobsFetched: tt.jobsFetched,
 			}
 			_ = os.Setenv("GITHUB_JOB", tt.targetJobName)
 			g.guessCurrentJob()
@@ -147,13 +151,14 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 	}
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
 	wantRunData := run{
+		fetched:   true,
 		Status:    "completed",
 		StartedAt: startedAt,
 		HtmlURL:   "https://github.com/SAP/jenkins-library/actions/runs/11111",
 	}
 
 	// setup provider
-	g := &GitHubActionsConfigProvider{actionsURL: "https://api.github.com/repos/SAP/jenkins-library/actions"}
+	g := &GitHubActionsConfigProvider{}
 	g.client.SetOptions(piperHttp.ClientOptions{
 		UseDefaultTransport: true, // need to use default transport for http mock
 		MaxRetries:          -1,
@@ -169,6 +174,8 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 	// setup env vars
 	defer resetEnv(os.Environ())
 	os.Clearenv()
+	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
+	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
 	_ = os.Setenv("GITHUB_RUN_ID", "11111")
 
 	// run
@@ -207,7 +214,7 @@ func TestGitHubActionsConfigProvider_fetchJobs(t *testing.T) {
 	}}
 
 	// setup provider
-	g := &GitHubActionsConfigProvider{actionsURL: "https://api.github.com/repos/SAP/jenkins-library/actions"}
+	g := &GitHubActionsConfigProvider{}
 	g.client.SetOptions(piperHttp.ClientOptions{
 		UseDefaultTransport: true, // need to use default transport for http mock
 		MaxRetries:          -1,
@@ -225,6 +232,8 @@ func TestGitHubActionsConfigProvider_fetchJobs(t *testing.T) {
 	// setup env vars
 	defer resetEnv(os.Environ())
 	os.Clearenv()
+	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
+	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
 	_ = os.Setenv("GITHUB_RUN_ID", "11111")
 
 	// run
@@ -249,11 +258,9 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 
 	// setup provider
 	g := &GitHubActionsConfigProvider{
-		client:     piperHttp.Client{},
-		actionsURL: "https://api.github.com/repos/SAP/jenkins-library/actions",
-		runData:    run{},
-		jobs:       jobs,
-		currentJob: job{},
+		client:      piperHttp.Client{},
+		jobs:        jobs,
+		jobsFetched: true,
 	}
 	g.client.SetOptions(piperHttp.ClientOptions{
 		UseDefaultTransport: true, // need to use default transport for http mock
@@ -277,6 +284,11 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 			},
 		)
 	}
+	// setup env vars
+	defer resetEnv(os.Environ())
+	os.Clearenv()
+	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
+	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
 
 	// run
 	logs, err := g.GetLog()
@@ -300,6 +312,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	p := GitHubActionsConfigProvider{}
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
 	p.runData = run{
+		fetched:   true,
 		Status:    "",
 		StartedAt: startedAt,
 		HtmlURL:   "https://github.com/SAP/jenkins-library/actions/runs/5815297487",
