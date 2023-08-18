@@ -5,7 +5,6 @@ package config
 
 import (
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 )
@@ -17,7 +16,7 @@ func TestReadPipelineDefaults(t *testing.T) {
 	t.Run("Success case", func(t *testing.T) {
 		d0 := strings.NewReader("general:\n  testStepKey1: testStepValue1")
 		d1 := strings.NewReader("general:\n  testStepKey2: testStepValue2")
-		err := d.ReadPipelineDefaults([]io.ReadCloser{ioutil.NopCloser(d0), ioutil.NopCloser(d1)})
+		err := d.ReadPipelineDefaults([]io.ReadCloser{io.NopCloser(d0), io.NopCloser(d1)})
 
 		if err != nil {
 			t.Errorf("Got error although no error expected: %v", err)
@@ -48,7 +47,7 @@ func TestReadPipelineDefaults(t *testing.T) {
 
 	t.Run("Unmarshalling failure", func(t *testing.T) {
 		myConfig := strings.NewReader("general:\n\ttestStepKey: testStepValue")
-		err := d.ReadPipelineDefaults([]io.ReadCloser{ioutil.NopCloser(myConfig)})
+		err := d.ReadPipelineDefaults([]io.ReadCloser{io.NopCloser(myConfig)})
 		if err == nil {
 			t.Errorf("Got no error although error expected.")
 		}

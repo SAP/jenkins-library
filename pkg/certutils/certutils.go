@@ -1,7 +1,7 @@
 package certutils
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -28,7 +28,7 @@ func CertificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 			return errors.Wrap(err, "failed to load certificate from url")
 		}
 
-		content, err := ioutil.ReadAll(response.Body)
+		content, err := io.ReadAll(response.Body)
 		if err != nil {
 			return errors.Wrap(err, "error reading response")
 		}

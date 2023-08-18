@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -711,7 +710,7 @@ func TestPrepareLdflags(t *testing.T) {
 	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
 	assert.NoError(t, err, "Error when creating folder structure")
 
-	err = ioutil.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
+	err = os.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
 	assert.NoError(t, err, "Error when creating cpe file")
 
 	t.Run("success - default", func(t *testing.T) {

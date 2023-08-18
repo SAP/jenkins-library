@@ -5,7 +5,7 @@ package piperenv
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -92,7 +92,7 @@ func TestTemplateFunctionCpe(t *testing.T) {
 	t.Run("CPE from files", func(t *testing.T) {
 		theVersion := "1.2.3"
 		dir := t.TempDir()
-		assert.NoError(t, ioutil.WriteFile(filepath.Join(dir, "artifactVersion"), []byte(theVersion), 0o666))
+		assert.NoError(t, os.WriteFile(filepath.Join(dir, "artifactVersion"), []byte(theVersion), 0o666))
 		cpe := CPEMap{}
 		assert.NoError(t, cpe.LoadFromDisk(dir))
 

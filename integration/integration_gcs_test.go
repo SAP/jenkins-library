@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -99,11 +98,11 @@ func TestGCSIntegrationClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"placeholder", "test/file1", "test/folder/file2"}, fileNames)
 		go gcsClient.DownloadFile(bucketID, "test/file1", "file1")
-		fileContent, err := ioutil.ReadAll(file1Reader)
+		fileContent, err := io.ReadAll(file1Reader)
 		assert.NoError(t, err)
 		assert.Equal(t, file1Content, string(fileContent))
 		go gcsClient.DownloadFile(bucketID, "test/folder/file2", "file2")
-		fileContent, err = ioutil.ReadAll(file2Reader)
+		fileContent, err = io.ReadAll(file2Reader)
 		assert.NoError(t, err)
 		assert.Equal(t, file2Content, string(fileContent))
 
@@ -166,7 +165,7 @@ func openFileMock(name string) (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("open file faled")
 	}
-	return ioutil.NopCloser(strings.NewReader(fileContent)), nil
+	return io.NopCloser(strings.NewReader(fileContent)), nil
 }
 
 func getCreateFileMock(file1Writer io.WriteCloser, file2Writer io.WriteCloser) func(name string) (io.WriteCloser, error) {

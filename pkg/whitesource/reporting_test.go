@@ -6,7 +6,7 @@ package whitesource
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -150,7 +150,7 @@ func TestCreateCycloneSBOM(t *testing.T) {
 		assert.NoError(t, err, "unexpected error")
 
 		goldenFilePath := filepath.Join("testdata", "sbom.golden")
-		expected, err := ioutil.ReadFile(goldenFilePath)
+		expected, err := os.ReadFile(goldenFilePath)
 		assert.NoError(t, err)
 
 		assert.Equal(t, string(expected), string(contents))

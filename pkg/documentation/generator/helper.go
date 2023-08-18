@@ -3,14 +3,13 @@ package generator
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 )
 
 func readAndAdjustTemplate(docFile io.ReadCloser) string {
 	//read template content
-	content, err := ioutil.ReadAll(docFile)
+	content, err := io.ReadAll(docFile)
 	checkError(err)
 	contentStr := string(content)
 

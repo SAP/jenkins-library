@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -53,7 +52,7 @@ func openMetaFile(name string) (io.ReadCloser, error) {
 }
 
 func fileWriter(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }
 
 func checkError(err error) {
@@ -75,5 +74,5 @@ func openDocTemplate(docTemplateFilePath string) (io.ReadCloser, error) {
 }
 
 func docFileWriter(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }
