@@ -112,6 +112,7 @@ void call(Map parameters = [:]) {
                 }
                 if (appUrl.credentialId) {
                     credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+                    credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username'))
                 }
                 List scriptOptions = ["--launchUrl=${appUrl.url}"]
                 if (appUrl.parameters) {
@@ -127,6 +128,7 @@ void call(Map parameters = [:]) {
         }else{
             if (config.credentialsId) {
                 credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+                credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username'))
             }
             List scriptOptions = []
             if (config.baseUrl){
