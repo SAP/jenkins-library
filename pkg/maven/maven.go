@@ -83,6 +83,8 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to construct parameters from options: %w", err)
 	}
+	log.Entry().Debug("Maven execution parameters:")
+	log.Entry().Debug(parameters)
 
 	err = utils.RunExecutable(mavenExecutable, parameters...)
 	if err != nil {
@@ -290,6 +292,7 @@ func warFile(dir, finalName string) string {
 }
 
 func flattenPom(options *EvaluateOptions, utils Utils) error {
+	log.Entry().Debug(fmt.Sprintf("Flattening POM %s", options.PomPath))
 	mavenOptionsFlatten := ExecuteOptions{
 		Goals:               []string{"flatten:flatten"},
 		Defines:             []string{"-Dflatten.mode=resolveCiFriendliesOnly"},

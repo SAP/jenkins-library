@@ -27,6 +27,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	}
 
 	if config.InstallArtifacts {
+		log.Entry().Debug(fmt.Sprintf("Passing POM path %s to InstallArtifacts", pomPath))
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
