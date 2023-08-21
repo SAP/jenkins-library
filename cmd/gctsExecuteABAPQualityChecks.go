@@ -5,10 +5,10 @@ import (
 	"encoding/xml"
 	"fmt"
 	"html"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -733,7 +733,7 @@ func parseUnitResult(config *gctsExecuteABAPQualityChecksOptions, client piperht
 
 	body, _ := xml.Marshal(parsedResult)
 
-	writeErr := ioutil.WriteFile(config.AUnitResultsFileName, body, 0644)
+	writeErr := os.WriteFile(config.AUnitResultsFileName, body, 0644)
 
 	if writeErr != nil {
 		log.Entry().Error("file AUnitResults.xml could not be created")
@@ -1051,7 +1051,7 @@ func parseATCCheckResult(config *gctsExecuteABAPQualityChecksOptions, client pip
 
 	atcBody, _ := xml.Marshal(atcResults)
 
-	writeErr := ioutil.WriteFile(config.AtcResultsFileName, atcBody, 0644)
+	writeErr := os.WriteFile(config.AtcResultsFileName, atcBody, 0644)
 
 	if writeErr != nil {
 		log.Entry().Error("ATCResults.xml could not be created")
@@ -1105,7 +1105,7 @@ func findLine(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Send
 	if readableSource {
 
 		// the error line that we get from UnitTest Run or ATC Check is not aligned for the readable source, we need to calculated it
-		rawfile, err := ioutil.ReadFile(filePath)
+		rawfile, err := os.ReadFile(filePath)
 
 		if err != nil {
 

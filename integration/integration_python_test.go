@@ -9,7 +9,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,7 +36,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	testScript := fmt.Sprintf(`#!/bin/sh
 		cd /test
 		/piperbin/piper pythonBuild >test-log.txt 2>&1`)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
 		Image: "python:3.9",
@@ -57,7 +56,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
 		t.Fatal("Could not read test-log.txt.", err)
 	}
@@ -72,13 +71,13 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	testScript = fmt.Sprintf(`#!/bin/sh
 		cd /test
 		ls -l . dist build >files-list.txt 2>&1`)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err = ioutil.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
+	content, err = os.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
 	if err != nil {
 		t.Fatal("Could not read files-list.txt.", err)
 	}

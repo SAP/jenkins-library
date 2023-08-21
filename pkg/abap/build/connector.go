@@ -2,7 +2,7 @@ package build
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -60,7 +60,7 @@ func (conn *Connector) GetToken(appendum string) error {
 			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
 		}
 		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
+		errorbody, _ := io.ReadAll(response.Body)
 		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", string(errorbody))
 
 	}
@@ -79,12 +79,12 @@ func (conn Connector) Get(appendum string) ([]byte, error) {
 			return nil, errors.Wrap(err, "Get failed")
 		}
 		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
+		errorbody, _ := io.ReadAll(response.Body)
 		return errorbody, errors.Wrapf(err, "Get failed: %v", string(errorbody))
 
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	return body, err
 }
 
@@ -103,12 +103,12 @@ func (conn Connector) Post(appendum string, importBody string) ([]byte, error) {
 			return nil, errors.Wrap(err, "Post failed")
 		}
 		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
+		errorbody, _ := io.ReadAll(response.Body)
 		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
 
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	return body, err
 }
 
@@ -201,7 +201,7 @@ func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 	response, err := conn.Client.SendRequest("PUT", url, bytes.NewBuffer(sarFile), conn.Header, nil)
 	if err != nil {
 		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
+		errorbody, _ := io.ReadAll(response.Body)
 		return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
 	}
 	defer response.Body.Close()
@@ -236,7 +236,7 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 		response, err := conn.Client.SendRequest("POST", url, nextChunk, header, nil)
 		if err != nil {
 			if response != nil && response.Body != nil {
-				errorbody, _ := ioutil.ReadAll(response.Body)
+				errorbody, _ := io.ReadAll(response.Body)
 				response.Body.Close()
 				return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
 			} else {

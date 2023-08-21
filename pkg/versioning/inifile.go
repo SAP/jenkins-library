@@ -3,7 +3,6 @@ package versioning
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
@@ -26,10 +25,10 @@ func (i *INIfile) init() error {
 		i.versionField = "version"
 	}
 	if i.readFile == nil {
-		i.readFile = ioutil.ReadFile
+		i.readFile = os.ReadFile
 	}
 	if i.writeFile == nil {
-		i.writeFile = ioutil.WriteFile
+		i.writeFile = os.WriteFile
 	}
 	if i.content == nil {
 		conf, err := i.readFile(i.path)

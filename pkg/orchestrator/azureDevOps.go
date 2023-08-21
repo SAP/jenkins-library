@@ -1,7 +1,7 @@
 package orchestrator
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -153,7 +153,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 			log.Entry().Errorf("response code is %v, could not get log information from AzureDevOps ", response.StatusCode)
 			return []byte{}, err
 		}
-		content, err := ioutil.ReadAll(response.Body)
+		content, err := io.ReadAll(response.Body)
 		if err != nil {
 			log.Entry().Error("failed to parse http response", err)
 			return []byte{}, err

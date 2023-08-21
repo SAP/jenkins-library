@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,7 +42,7 @@ func (c CPEMap) WriteToDisk(rootDirectory string) error {
 		}
 		// if v is a string no json marshalling is needed
 		if vString, ok := v.(string); ok {
-			err := ioutil.WriteFile(entryPath, []byte(vString), 0666)
+			err := os.WriteFile(entryPath, []byte(vString), 0666)
 			if err != nil {
 				return err
 			}
@@ -55,7 +54,7 @@ func (c CPEMap) WriteToDisk(rootDirectory string) error {
 			return err
 		}
 
-		err = ioutil.WriteFile(fmt.Sprintf("%s.json", entryPath), jsonVal, 0666)
+		err = os.WriteFile(fmt.Sprintf("%s.json", entryPath), jsonVal, 0666)
 		if err != nil {
 			return err
 		}
@@ -69,7 +68,7 @@ func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
 		return nil
 	}
 
-	items, err := ioutil.ReadDir(dirPath)
+	items, err := os.ReadDir(dirPath)
 	if err != nil {
 		return err
 	}
@@ -104,7 +103,7 @@ func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
 }
 
 func addEmptyValueToFile(fullPath string) error {
-	err := ioutil.WriteFile(fullPath, []byte(""), 0666)
+	err := os.WriteFile(fullPath, []byte(""), 0666)
 	if err != nil {
 		return err
 	}
@@ -114,7 +113,7 @@ func addEmptyValueToFile(fullPath string) error {
 func readFileContent(fullPath string) (string, interface{}, bool, error) {
 	toBeEmptied := false
 
-	fileContent, err := ioutil.ReadFile(fullPath)
+	fileContent, err := os.ReadFile(fullPath)
 	if err != nil {
 		return "", nil, toBeEmptied, err
 	}

@@ -6,7 +6,6 @@ package abaputils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 	"testing"
@@ -154,7 +153,7 @@ repositories:
 - name: 'testRepo3'
   branch: 'testBranch3'`
 
-		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			BranchName:      "testBranch",
@@ -185,7 +184,7 @@ repositories:
 - repo: 'testRepo'
 - repo: 'testRepo2'`
 
-		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			Repositories: "repositoriesTest.yml",
@@ -213,7 +212,7 @@ repositories:
 - repo: 'testRepo'
 - repo: 'testRepo2'`
 
-		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			Repositories: "repositoriesTest.yml",
