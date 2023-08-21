@@ -42,12 +42,14 @@ type fullLog struct {
 
 var httpHeaders = http.Header{
 	"Accept": {"application/vnd.github+json"},
+	"Accept":               {"application/vnd.github+json"},
+	"X-GitHub-Api-Version": {"2022-11-28"},
 }
 
 // InitOrchestratorProvider initializes http client for GitHubActionsDevopsConfigProvider
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	g.client.SetOptions(piperHttp.ClientOptions{
-		Password:         settings.GitHubToken,
+		Token:            "Bearer " + settings.GitHubToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
 	})
@@ -136,15 +138,14 @@ func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
 
 // GetStageName returns the human-readable name given to a stage.
 func (g *GitHubActionsConfigProvider) GetStageName() string {
-	g.guessCurrentJob()
-	return g.currentJob.Name
+	return getEnv("GITHUB_JOB", "unknown")
 }
 
 // GetBuildReason returns the reason of workflow trigger.
 // BuildReasons are unified with AzureDevOps build reasons, see
 // https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
 func (g *GitHubActionsConfigProvider) GetBuildReason() string {
-	switch getEnv("GITHUB_REF", "") {
+	switch getEnv("GITHUB_EVENT_NAME", "") {
 	case "workflow_dispatch":
 		return BuildReasonManual
 	case "schedule":
@@ -287,9 +288,15 @@ func (g *GitHubActionsConfigProvider) guessCurrentJob() {
 		return
 	}
 
+	targetJobName := getEnv("GITHUB_JOB", "unknown")
+	log.Entry().Debugf("looking for job '%s' in jobs list: %v", targetJobName, g.jobs)
 	for _, j := range g.jobs {
-		if j.Name == getEnv("GITHUB_JOB", "unknown") {
+		// j.Name may be something like "piper / Init / Init"
+		// but GITHUB_JOB env may contain only "Init"
+		if strings.HasSuffix(j.Name, targetJobName) {
+			log.Entry().Debugf("current job id: %d", j.ID)
 			g.currentJob = j
+			return
 		}
 	}
 }
