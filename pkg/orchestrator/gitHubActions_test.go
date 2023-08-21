@@ -154,7 +154,6 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 		fetched:   true,
 		Status:    "completed",
 		StartedAt: startedAt,
-		HtmlURL:   "https://github.com/SAP/jenkins-library/actions/runs/11111",
 	}
 
 	// setup provider
@@ -307,6 +306,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	_ = os.Setenv("GITHUB_WORKFLOW", "Init")
 	_ = os.Setenv("GITHUB_SHA", "ffac537e6cbbf934b08745a378932722df287a53")
 	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
+	_ = os.Setenv("GITHUB_SERVER_URL", "https://github.com")
 	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
 
 	p := GitHubActionsConfigProvider{}
@@ -315,7 +315,6 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 		fetched:   true,
 		Status:    "",
 		StartedAt: startedAt,
-		HtmlURL:   "https://github.com/SAP/jenkins-library/actions/runs/5815297487",
 	}
 	p.currentJob = job{ID: 111, Name: "job1", HtmlURL: "https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321"}
 
@@ -327,7 +326,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	assert.Equal(t, "job1", p.GetStageName())
 	assert.Equal(t, "main", p.GetBranch())
 	assert.Equal(t, "refs/pull/42/merge", p.GetReference())
-	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions/runs/5815297487", p.GetBuildURL())
+	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions/runs/11111", p.GetBuildURL())
 	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321", p.GetJobURL())
 	assert.Equal(t, "Init", p.GetJobName())
 	assert.Equal(t, "ffac537e6cbbf934b08745a378932722df287a53", p.GetCommit())
