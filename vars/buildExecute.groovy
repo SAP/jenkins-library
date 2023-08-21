@@ -34,7 +34,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /** For buildTool npm: List of npm run scripts to execute */
     'npmRunScripts',
     /** toggles if a helmExecute is triggered at end of the step after invoking the build tool  */
-    'helmExecute',
+    'helmExecute'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
