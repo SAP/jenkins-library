@@ -178,6 +178,8 @@ func (g *GitHubActionsConfigProvider) GetBuildURL() string {
 // GetJobURL returns the current job HTML URL (not API URL).
 // For example, https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
+	// We need to query the GitHub API here because the environment variable GITHUB_JOB returns
+	// the name of the job, not a numeric ID (which we need to form the URL)
 	g.guessCurrentJob()
 	return g.currentJob.HtmlURL
 }
