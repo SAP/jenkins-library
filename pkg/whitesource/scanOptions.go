@@ -44,5 +44,7 @@ type ScanOptions struct {
 
 	ScanPath string
 
+	InstallCommand string
+
 	Verbose bool
 }

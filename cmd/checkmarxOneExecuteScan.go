@@ -228,7 +228,6 @@ func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) 
 		}
 		return &group, nil
 	}
-
 	return nil, fmt.Errorf("No group name specified in configuration")
 }
 
@@ -718,8 +717,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 
 	resultMap["LinesOfCodeScanned"] = scanmeta.LOC
 	resultMap["FilesScanned"] = scanmeta.FileCount
-
-	resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this"
+	resultMap["ToolVersion"] = "Cx1 Gap: No API for this"
 
 	if scanmeta.IsIncremental {
 		resultMap["ScanType"] = "Incremental"
@@ -1125,7 +1123,8 @@ func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]inter
 	c.influx.checkmarxOne_data.fields.scan_time = (*results)["ScanTime"].(string)
 	c.influx.checkmarxOne_data.fields.lines_of_code_scanned = (*results)["LinesOfCodeScanned"].(int)
 	c.influx.checkmarxOne_data.fields.files_scanned = (*results)["FilesScanned"].(int)
-	c.influx.checkmarxOne_data.fields.checkmarxOne_version = (*results)["CheckmarxVersion"].(string)
+	c.influx.checkmarxOne_data.fields.tool_version = (*results)["ToolVersion"].(string)
+
 	c.influx.checkmarxOne_data.fields.scan_type = (*results)["ScanType"].(string)
 	c.influx.checkmarxOne_data.fields.preset = (*results)["Preset"].(string)
 	c.influx.checkmarxOne_data.fields.deep_link = (*results)["DeepLink"].(string)

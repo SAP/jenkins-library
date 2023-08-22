@@ -7,18 +7,30 @@ import groovy.text.GStringTemplateEngine
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
+def stash(Map params) {
+    if(params.includes == null) params.includes = '**/*.*'
+    if(params.excludes == null) params.excludes = ''
+    if(params.useDefaultExcludes == null) params.useDefaultExcludes = true
+    if(params.allowEmpty == null) params.allowEmpty = false
+    return stash(params.name, params.includes, params.excludes, params.useDefaultExcludes, params.allowEmpty)
+}
 
-def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
-    echo "Stash content: ${name} (include: ${include}, exclude: ${exclude}, useDefaultExcludes: ${useDefaultExcludes})"
+def stash(String name, String includes = '**/*.*', String excludes = '', boolean useDefaultExcludes = true, boolean allowEmpty = false) {
+    if(!name) throw new IllegalArgumentException("name must not be '$name'")
+    echo "Stash content: ${name} (includes: ${includes}, excludes: ${excludes}, useDefaultExcludes: ${useDefaultExcludes}, allowEmpty: ${allowEmpty})"
 
     Map stashParams = [
         name    : name,
-        includes: include,
-        excludes: exclude
+        includes: includes,
+        excludes: excludes
     ]
     //only set the optional parameter if default excludes should not be applied
     if (!useDefaultExcludes) {
         stashParams.useDefaultExcludes = useDefaultExcludes
+    }
+    //only set the optional parameter if allow empty should be applied
+    if (allowEmpty) {
+        stashParams.allowEmpty = allowEmpty
     }
     steps.stash stashParams
 }
@@ -26,20 +38,20 @@ def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
 def stashList(script, List stashes) {
     for (def stash : stashes) {
         def name = stash.name
-        def include = stash.includes
-        def exclude = stash.excludes
+        def includes = stash.includes
+        def excludes = stash.excludes
 
         if (stash?.merge == true) {
             String lockingResourceGroup = script.commonPipelineEnvironment.projectName?:env.JOB_NAME
             String lockName = "${lockingResourceGroup}/${stash.name}"
             lock(lockName) {
                 unstash stash.name
-                echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-                steps.stash name: name, includes: include, excludes: exclude, allowEmpty: true
+                echo "Stash content: ${name} (includes: ${includes}, excludes: ${excludes})"
+                steps.stash name: name, includes: includes, excludes: excludes, allowEmpty: true
             }
         } else {
-            echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-            steps.stash name: name, includes: include, excludes: exclude, allowEmpty: true
+            echo "Stash content: ${name} (includes: ${includes}, excludes: ${excludes})"
+            steps.stash name: name, includes: includes, excludes: excludes, allowEmpty: true
         }
     }
 }

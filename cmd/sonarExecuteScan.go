@@ -1,7 +1,9 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -82,8 +84,27 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	downloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 	// client for talking to the SonarQube API
 	apiClient := &piperhttp.Client{}
-	//TODO: implement certificate handling
-	apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
+	proxy := config.Proxy
+	if proxy != "" {
+		transportProxy, err := url.Parse(proxy)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
+		}
+		host, port, err := net.SplitHostPort(transportProxy.Host)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Failed to retrieve host and port from the proxy URL")
+		}
+		// provide proxy setting for Java based Sonar scanner
+		javaToolOptions := fmt.Sprintf("-Dhttp.proxyHost=%v -Dhttp.proxyPort=%v", host, port)
+		os.Setenv("JAVA_TOOL_OPTIONS", javaToolOptions)
+
+		apiClient.SetOptions(piperhttp.ClientOptions{TransportProxy: transportProxy, TransportSkipVerification: true})
+		log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
+
+	} else {
+		//TODO: implement certificate handling
+		apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
+	}
 
 	sonar = sonarSettings{
 		workingDir:  "./",
@@ -195,6 +216,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.Entry().WithError(err).Warning("no scan report found")
 		return nil
 	}
+
+	var serverUrl string
+
+	if len(config.Proxy) > 0 {
+		serverUrl = config.ServerURL
+	} else {
+		serverUrl = taskReport.ServerURL
+	}
 	// write reports JSON
 	reports := []piperutils.Path{
 		{
@@ -215,14 +244,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.Entry().Warn("no measurements are fetched due to missing credentials")
 		return nil
 	}
-	taskService := SonarUtils.NewTaskService(taskReport.ServerURL, config.Token, taskReport.TaskID, apiClient)
+	taskService := SonarUtils.NewTaskService(serverUrl, config.Token, taskReport.TaskID, apiClient)
 	// wait for analysis task to complete
 	err = taskService.WaitForTask()
 	if err != nil {
 		return err
 	}
 	// fetch number of issues by severity
-	issueService := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
+	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues()
 	if err != nil {
 		return err
@@ -259,7 +288,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Info:     influx.sonarqube_data.fields.info_issues,
 		}}
 
-	componentService := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
+	componentService := SonarUtils.NewMeasuresComponentService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	cov, err := componentService.GetCoverage()
 	if err != nil {
 		log.Entry().Warnf("failed to retrieve sonar coverage data: %v", err)
@@ -276,7 +305,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 
 	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
 
-	err = SonarUtils.WriteReport(reportData, sonar.workingDir, ioutil.WriteFile)
+	err = SonarUtils.WriteReport(reportData, sonar.workingDir, os.WriteFile)
 
 	if err != nil {
 		return err
@@ -439,7 +468,7 @@ func getWorkingDir() string {
 }
 
 func getTempDir() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -155,7 +155,7 @@ func ReadConfigFile(path string) (file []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	yamlFile, err := ioutil.ReadFile(filename)
+	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -186,11 +186,20 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 	if resp == nil {
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
+
+		match, _ := regexp.MatchString(".*EOF$", err.Error())
+		if match {
+			AddDefaultDashedLine()
+			log.Entry().Infof("%s", "A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)")
+			AddDefaultDashedLine()
+		}
+
+		log.Entry().Infof("Error message: %s,", err.Error())
 	} else {
 
 		defer resp.Body.Close()
 
-		log.Entry().WithField("StatusCode", resp.Status).Error(message)
+		log.Entry().WithField("StatusCode", resp.Status).WithField("User", connectionDetails.User).WithField("URL", connectionDetails.URL).Error(message)
 
 		errorText, errorCode, parsingError := GetErrorDetailsFromResponse(resp)
 		if parsingError != nil {
@@ -207,7 +216,7 @@ func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, error
 
 	// Include the error message of the ABAP Environment system, if available
 	var abapErrorResponse AbapError
-	bodyText, readError := ioutil.ReadAll(resp.Body)
+	bodyText, readError := io.ReadAll(resp.Body)
 	if readError != nil {
 		return "", "", readError
 	}
@@ -237,6 +246,16 @@ func ConvertTime(logTimeStamp string) time.Time {
 	}
 	t := time.Unix(n, 0).UTC()
 	return t
+}
+
+// AddDefaultDashedLine adds 25 dashes
+func AddDefaultDashedLine() {
+	log.Entry().Infof(strings.Repeat("-", 25))
+}
+
+// AddDefaultDebugLine adds 25 dashes in debug
+func AddDebugDashedLine() {
+	log.Entry().Debugf(strings.Repeat("-", 25))
 }
 
 /*******************************
@@ -379,7 +398,7 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 	return &http.Response{
 		StatusCode: c.StatusCode,
 		Header:     header,
-		Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		Body:       io.NopCloser(bytes.NewReader(body)),
 	}, c.Error
 }
 

@@ -469,7 +469,7 @@ spec:
               - name: group_full_path_on_report_date
               - name: scan_start
               - name: scan_time
-              - name: checkmarxOne_version
+              - name: tool_version
               - name: scan_type
               - name: preset
               - name: deep_link
@@ -485,3 +485,6 @@ spec:
             type: checkmarxone
           - filePattern: "**/toolrun_checkmarxone_*.json"
             type: checkmarxone
+          - filePattern: "**/piper_checkmarxone_report.json"
+            type: checkmarxone
+

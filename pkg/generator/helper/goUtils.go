@@ -3,7 +3,6 @@ package helper
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -40,7 +39,7 @@ type ContextDefaultParameters struct {
 // ReadPipelineContextDefaultData loads step definition in yaml format
 func (c *ContextDefaultData) readPipelineContextDefaultData(metadata io.ReadCloser) {
 	defer metadata.Close()
-	content, err := ioutil.ReadAll(metadata)
+	content, err := io.ReadAll(metadata)
 	checkError(err)
 	err = yaml.Unmarshal(content, &c)
 	checkError(err)

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -153,7 +152,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 
 		secretValue = lookupPath(client, vaultPath, &param)
 		if secretValue != nil {
-			log.Entry().Debugf("Resolved param '%s' with Vault path '%s'", param.Name, vaultPath)
+			log.Entry().Infof("Resolved param '%s' with Vault path '%s'", param.Name, vaultPath)
 			if ref.Type == "vaultSecret" {
 				config.Config[param.Name] = *secretValue
 			} else if ref.Type == "vaultSecretFile" {
@@ -169,6 +168,52 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 	}
 	if secretValue == nil {
 		log.Entry().Warnf("Could not resolve param '%s' from Vault", param.Name)
+	}
+}
+
+func resolveVaultTestCredentialsWrapper(config *StepConfig, client vaultClient) {
+	log.Entry().Debugln("resolveVaultTestCredentialsWrapper")
+	resolveVaultTestCredentialsWrapperBase(config, client, vaultTestCredentialPath, vaultTestCredentialKeys, resolveVaultTestCredentials)
+}
+
+func resolveVaultCredentialsWrapper(config *StepConfig, client vaultClient) {
+	log.Entry().Debugln("resolveVaultCredentialsWrapper")
+	resolveVaultTestCredentialsWrapperBase(config, client, vaultCredentialPath, vaultCredentialKeys, resolveVaultCredentials)
+}
+
+func resolveVaultTestCredentialsWrapperBase(
+	config *StepConfig, client vaultClient,
+	vaultCredPath, vaultCredKeys string,
+	resolveVaultCredentials func(config *StepConfig, client vaultClient),
+) {
+	switch config.Config[vaultCredPath].(type) {
+	case string:
+		resolveVaultCredentials(config, client)
+	case []interface{}:
+		vaultCredentialPathCopy := config.Config[vaultCredPath]
+		vaultCredentialKeysCopy := config.Config[vaultCredKeys]
+
+		if _, ok := vaultCredentialKeysCopy.([]interface{}); !ok {
+			log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: unknown type of keys")
+			return
+		}
+
+		if len(vaultCredentialKeysCopy.([]interface{})) != len(vaultCredentialPathCopy.([]interface{})) {
+			log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: not same count of values and keys")
+			return
+		}
+
+		for i := 0; i < len(vaultCredentialPathCopy.([]interface{})); i++ {
+			config.Config[vaultCredPath] = vaultCredentialPathCopy.([]interface{})[i]
+			config.Config[vaultCredKeys] = vaultCredentialKeysCopy.([]interface{})[i]
+			resolveVaultCredentials(config, client)
+		}
+
+		config.Config[vaultCredPath] = vaultCredentialPathCopy
+		config.Config[vaultCredKeys] = vaultCredentialKeysCopy
+	default:
+		log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: unknown type of path")
+		return
 	}
 }
 
@@ -380,7 +425,7 @@ func createTemporarySecretFile(namePattern string, content string) (string, erro
 		}
 	}
 
-	file, err := ioutil.TempFile(VaultSecretFileDirectory, namePattern)
+	file, err := os.CreateTemp(VaultSecretFileDirectory, namePattern)
 	if err != nil {
 		return "", err
 	}

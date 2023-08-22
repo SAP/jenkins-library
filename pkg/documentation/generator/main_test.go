@@ -6,7 +6,6 @@ package generator
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -70,9 +69,9 @@ func configOpenDocTemplateFileMock(docTemplateFilePath string) (io.ReadCloser, e
 `
 	switch docTemplateFilePath {
 	case "testStep.md":
-		return ioutil.NopCloser(strings.NewReader(meta1)), nil
+		return io.NopCloser(strings.NewReader(meta1)), nil
 	default:
-		return ioutil.NopCloser(strings.NewReader("")), fmt.Errorf("Wrong Path: %v", docTemplateFilePath)
+		return io.NopCloser(strings.NewReader("")), fmt.Errorf("Wrong Path: %v", docTemplateFilePath)
 	}
 }
 

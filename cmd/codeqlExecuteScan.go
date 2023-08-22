@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -35,6 +37,9 @@ type codeqlExecuteScanUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 }
+
+const sarifUploadComplete = "complete"
+const sarifUploadFailed = "failed"
 
 func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	utils := codeqlExecuteScanUtilsBundle{
@@ -71,6 +76,7 @@ func execute(utils codeqlExecuteScanUtils, cmd []string, isVerbose bool) error {
 	if isVerbose {
 		cmd = append(cmd, "-v")
 	}
+
 	return utils.RunExecutable("codeql", cmd...)
 }
 
@@ -96,7 +102,7 @@ func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 		return errors.New("repository param is not set or it cannot be auto populated")
 	}
 
-	pat := regexp.MustCompile(`^(https|git):\/\/([\S]+:[\S]+@)?([^\/:]+)[\/:]([^\/:]+\/[\S]+)$`)
+	pat := regexp.MustCompile(`^(https:\/\/|git@)([\S]+:[\S]+@)?([^\/:]+)[\/:]([^\/:]+\/[\S]+)$`)
 	matches := pat.FindAllStringSubmatch(repoUri, -1)
 	if len(matches) > 0 {
 		match := matches[0]
@@ -159,7 +165,7 @@ func getToken(config *codeqlExecuteScanOptions) (bool, string) {
 	return false, ""
 }
 
-func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token string, utils codeqlExecuteScanUtils) error {
+func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
 	cmd := []string{"github", "upload-results", "--sarif=" + filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
 
 	if config.GithubToken != "" {
@@ -184,13 +190,49 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 
 	//if no git pramas are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
 	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
+
+	var buffer bytes.Buffer
+	utils.Stdout(&buffer)
 	err := execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed to upload sarif results")
-		return err
+		return "", err
 	}
+	utils.Stdout(log.Writer())
 
-	return nil
+	url := buffer.String()
+	return strings.TrimSpace(url), nil
+}
+
+func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader codeql.CodeqlSarifUploader) error {
+	maxRetries := config.SarifCheckMaxRetries
+	retryInterval := time.Duration(config.SarifCheckRetryInterval) * time.Second
+
+	log.Entry().Info("waiting for the SARIF to upload")
+	i := 1
+	for {
+		sarifStatus, err := codeqlSarifUploader.GetSarifStatus()
+		if err != nil {
+			return err
+		}
+		log.Entry().Infof("the SARIF processing status: %s", sarifStatus.ProcessingStatus)
+		if sarifStatus.ProcessingStatus == sarifUploadComplete {
+			return nil
+		}
+		if sarifStatus.ProcessingStatus == sarifUploadFailed {
+			for e := range sarifStatus.Errors {
+				log.Entry().Error(e)
+			}
+			return errors.New("failed to upload sarif file")
+		}
+		if i <= maxRetries {
+			log.Entry().Infof("still waiting for the SARIF to upload: retrying in %d seconds... (retry %d/%d)", config.SarifCheckRetryInterval, i, maxRetries)
+			time.Sleep(retryInterval)
+			i++
+			continue
+		}
+		return errors.New("failed to check sarif uploading status: max retries reached")
+	}
 }
 
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
@@ -274,32 +316,37 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.New("failed running upload-results as githubToken was not specified")
 		}
 
-		err = uploadResults(config, repoInfo, token, utils)
+		sarifUrl, err := uploadResults(config, repoInfo, token, utils)
 		if err != nil {
-
 			return reports, err
 		}
+		codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
+		err = waitSarifUploaded(config, &codeqlSarifUploader)
+		if err != nil {
+			return reports, errors.Wrap(err, "failed to upload sarif")
+		}
+
+		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
+		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
+		if err != nil {
+			return reports, errors.Wrap(err, "failed to get scan results")
+		}
+
+		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, QuerySuite: config.QuerySuite, ScanResults: scanResults}
+		paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
+		if err != nil {
+			return reports, errors.Wrap(err, "failed to write json compliance report")
+		}
+		reports = append(reports, paths...)
 
 		if config.CheckForCompliance {
-			codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(config.GithubAPIURL, repoInfo.owner, repoInfo.repo, token, []string{})
-			scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
-			if err != nil {
-				return reports, errors.Wrap(err, "failed to get scan results")
+			for _, scanResult := range scanResults {
+				unaudited := scanResult.Total - scanResult.Audited
+				if unaudited > config.VulnerabilityThresholdTotal {
+					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
+					return reports, errors.Errorf(msg)
+				}
 			}
-
-			unaudited := (scanResults.Total - scanResults.Audited)
-			if unaudited > config.VulnerabilityThresholdTotal {
-				msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
-				return reports, errors.Errorf(msg)
-			}
-
-			codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, ScanResults: scanResults}
-			paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
-			if err != nil {
-				return reports, errors.Wrap(err, "failed to write json compliance report")
-			}
-
-			reports = append(reports, paths...)
 		}
 	}
 

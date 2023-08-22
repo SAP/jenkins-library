@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -61,6 +63,7 @@ type HelmExecuteOptions struct {
 	SourceRepositoryPassword  string   `json:"sourceRepositoryPassword,omitempty"`
 	HelmCommand               string   `json:"helmCommand,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	RenderSubchartNotes       bool     `json:"renderSubchartNotes,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance
@@ -168,8 +171,12 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		helmParams = append(helmParams, "--atomic")
 	}
 
+	if h.config.RenderSubchartNotes {
+		helmParams = append(helmParams, "--render-subchart-notes")
+	}
+
 	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
 	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
@@ -230,16 +237,24 @@ func (h *HelmExecute) RunHelmInstall() error {
 	}
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
+
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
+
 	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 	for _, v := range h.config.HelmValues {
 		helmParams = append(helmParams, "--values", v)
 	}
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+
+	if h.config.RenderSubchartNotes {
+		helmParams = append(helmParams, "--render-subchart-notes")
 	}
+
+	if len(h.config.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
+	}
+
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
@@ -461,4 +476,19 @@ func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 	}
 
 	return nil
+}
+
+// expandEnv replaces ${var} or $var in params according to the values of the current environment variables
+func expandEnv(params []string) []string {
+	expanded := []string{}
+
+	for _, param := range params {
+		if strings.Contains(param, config.VaultCredentialEnvPrefixDefault) {
+			expanded = append(expanded, os.ExpandEnv(param))
+		} else {
+			expanded = append(expanded, param)
+		}
+	}
+
+	return expanded
 }

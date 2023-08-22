@@ -15,16 +15,13 @@ import (
 )
 
 func TestWriteProjectMetadata(t *testing.T) {
-	expectedResult := `
-[source]
+	expectedResult := `[source]
   type = "git"
-
-  [source.metadata]
-    refs = ["main"]
-
   [source.version]
     commit = "012548"
     describe = "test-commit"
+  [source.metadata]
+    refs = ["main"]
 `
 	mockUtils := &cnbutils.MockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},

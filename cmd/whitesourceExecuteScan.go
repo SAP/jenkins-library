@@ -46,6 +46,7 @@ type whitesource interface {
 	GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error)
 	GetProjectAlerts(projectToken string) ([]ws.Alert, error)
 	GetProjectAlertsByType(projectToken, alertType string) ([]ws.Alert, error)
+	GetProjectIgnoredAlertsByType(projectToken string, alertType string) ([]ws.Alert, error)
 	GetProjectLibraryLocations(projectToken string) ([]ws.Library, error)
 	GetProjectHierarchy(projectToken string, includeInHouse bool) ([]ws.Library, error)
 }
@@ -478,6 +479,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		AgentURL:                   config.AgentURL,
 		ServiceURL:                 config.ServiceURL,
 		ScanPath:                   config.ScanPath,
+		InstallCommand:             config.InstallCommand,
 		Verbose:                    GeneralConfig.Verbose,
 	}
 }
@@ -486,6 +488,14 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 // The Unified Agent will be used to perform the scan.
 func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	options := wsScanOptions(config)
+
+	if options.InstallCommand != "" {
+		installCommandTokens := strings.Split(config.InstallCommand, " ")
+		if err := utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
+			log.SetErrorCategory(log.ErrorCustom)
+			return errors.Wrapf(err, "failed to execute install command: %v", config.InstallCommand)
+		}
+	}
 
 	// Execute scan with Unified Agent jar file
 	if err := scan.ExecuteUAScan(options, utils); err != nil {
@@ -502,6 +512,14 @@ func checkPolicyViolations(ctx context.Context, config *ScanOptions, scan *ws.Sc
 		if err != nil {
 			return piperutils.Path{}, fmt.Errorf("failed to retrieve project policy alerts from WhiteSource: %w", err)
 		}
+
+		// TODO add ignored alerts to list of all alerts
+		_, err = sys.GetProjectIgnoredAlertsByType(project.Token, "REJECTED_BY_POLICY_RESOURCE")
+		if err != nil {
+			return piperutils.Path{}, fmt.Errorf("failed to retrieve project policy ignored alerts from WhiteSource: %w", err)
+		}
+		// alerts = append(alerts, ignoredAlerts...)
+
 		policyViolationCount += len(alerts)
 		allAlerts = append(allAlerts, alerts...)
 	}
@@ -793,6 +811,13 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 		return 0, alerts, assessedAlerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
 	}
 
+	// TODO add ignored alerts to list of all alerts
+	_, err = sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
+	if err != nil {
+		return 0, alerts, assessedAlerts, fmt.Errorf("failed to retrieve project ignored alerts from WhiteSource: %w", err)
+	}
+	// alerts = append(alerts, ignoredAlerts...)
+
 	// filter alerts related to existing assessments
 	filteredAlerts := []ws.Alert{}
 	if assessments != nil && len(*assessments) > 0 {
@@ -878,6 +903,14 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 			if err != nil {
 				return errors.Wrapf(err, "failed to get project alerts by type")
 			}
+
+			// TODO add ignored alerts to list of all alerts
+			_, err = sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
+			if err != nil {
+				return errors.Wrapf(err, "failed to get project ignored alerts by type")
+			}
+			// alerts = append(alerts, ignoredAlerts...)
+
 			log.Entry().Infof("Found project: %s with %v vulnerabilities.", project.Name, len(alerts))
 			versionWideAlerts = append(versionWideAlerts, alerts...)
 		}

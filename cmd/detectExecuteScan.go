@@ -194,7 +194,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
 			log.Entry().Errorf("License Policy Violations found")
 			log.SetErrorCategory(log.ErrorCompliance)
-			if err == nil && !piperutils.ContainsStringPart(config.FailOn, "NONE") {
+			if err == nil && piperutils.ContainsStringPart(config.FailOn, "CRITICAL") {
 				err = errors.New("License Policy Violations found")
 			}
 		} else {
@@ -287,8 +287,7 @@ func exitCodeMapping(exitCodeKey int) string {
 
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	if config.ScanOnChanges {
-		log.Entry().Infof("Using Detect Rescan script")
-		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
+		log.Entry().Infof("The scanOnChanges option is deprecated")
 	}
 
 	log.Entry().Infof("Downloading Detect7")
@@ -315,11 +314,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
 		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
-	}
-
-	if config.ScanOnChanges {
-		args = append(args, "--report")
-		config.Unmap = false
 	}
 
 	if config.MinScanInterval > 0 {
@@ -412,7 +406,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
 	}
 
-	if len(mavenArgs) > 0 {
+	if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
 		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 	}
 
@@ -849,10 +843,20 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	projectVersionUrl := projectVersion.Href
+	if projectVersionUrl == "" {
+		return "", fmt.Errorf("TR_DETECT: no projectversion URL")
+	}
+	// projectVersion UUID comes as last part of the URL
+	vparts := strings.Split(projectVersionUrl, "/")
+	projectVersionId := vparts[len(vparts)-1]
+	if projectVersionId == "" {
+		return "", fmt.Errorf("TR_DETECT: no projectversion id in %v", projectVersionUrl)
+	}
+
 	err = record.AddKeyData("version",
+		projectVersionId,
 		projectVersion.Name,
-		projectVersionUrl,
-		projectVersionUrl)
+		projectVersion.Href)
 	if err != nil {
 		return "", err
 	}

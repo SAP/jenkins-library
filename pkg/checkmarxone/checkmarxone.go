@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 
 	//"strconv"
 	"strings"
@@ -389,8 +389,8 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	var requestBody io.Reader
 	var reqBody string
 	if body != nil {
-		closer := ioutil.NopCloser(body)
-		bodyBytes, _ := ioutil.ReadAll(closer)
+		closer := io.NopCloser(body)
+		bodyBytes, _ := io.ReadAll(closer)
 		reqBody = string(bodyBytes)
 		requestBody = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
@@ -453,7 +453,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 		}
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	//sys.logger.Debugf("Valid response body: %v", string(data))
 	defer response.Body.Close()
 	return data, nil
@@ -873,7 +873,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 	header.Add("Content-Type", "application/zip")
 	header.Add("Accept", "application/json")
 
-	zipContents, err := ioutil.ReadFile(zipFile)
+	zipContents, err := os.ReadFile(zipFile)
 	if err != nil {
 		sys.logger.Error("Failed to Read the File " + zipFile + ": " + err.Error())
 		return "", err

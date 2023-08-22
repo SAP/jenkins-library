@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -66,7 +65,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 	c.header[url] = header
 	response := http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 	}
 
 	if c.errorMessageForURL[url] != "" {
@@ -75,7 +74,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 	}
 
 	if c.responseBodyForURL[url] != "" {
-		response.Body = ioutil.NopCloser(bytes.NewReader([]byte(c.responseBodyForURL[url])))
+		response.Body = io.NopCloser(bytes.NewReader([]byte(c.responseBodyForURL[url])))
 		return &response, nil
 	}
 
@@ -555,11 +554,10 @@ func TestAddDetectArgs(t *testing.T) {
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
 				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
@@ -594,11 +592,10 @@ func TestAddDetectArgs(t *testing.T) {
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
 				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
@@ -634,12 +631,11 @@ func TestAddDetectArgs(t *testing.T) {
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
 				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
 				"--scan=1",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
@@ -736,6 +732,46 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.detector.search.depth=5",
 				"--detect.detector.search.continue=false",
 				"--detect.excluded.directories=dir1,dir2",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"\"--detect.project.name='Rapid_scan_on_PRs'\"",
+				"\"--detect.project.version.name='2.0'\"",
+				"\"--detect.code.location.name='Rapid_scan_on_PRs/2.0'\"",
+				"--detect.blackduck.signature.scanner.paths=path1,path2",
+				"--detect.source.path='.'",
+				"--detect.blackduck.scan.mode='RAPID'",
+				"--detect.cleanup=false",
+				"--detect.output.path='report'",
+			},
+		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:          "https://server.url",
+				BuildTool:          "maven",
+				Token:              "apiToken",
+				ProjectName:        "Rapid_scan_on_PRs",
+				Version:            "2.0",
+				VersioningModel:    "major-minor",
+				CodeLocation:       "",
+				ScanPaths:          []string{"path1", "path2"},
+				M2Path:             "./m2",
+				GlobalSettingsFile: "pipeline/settings.xml",
+				ScanProperties: []string{
+					"--detect.maven.build.command= --settings .pipeline/settings.xml -DskipTests install",
+				},
+				MinScanInterval:   4,
+				CustomScanVersion: "2.0",
+			},
+			isPullRequest: true,
+			expected: []string{
+				"--testProp1=1",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
+				"--detect.maven.build.command=",
+				"--settings",
+				".pipeline/settings.xml",
+				"-DskipTests",
+				"install",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='Rapid_scan_on_PRs'\"",
