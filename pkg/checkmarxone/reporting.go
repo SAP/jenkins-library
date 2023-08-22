@@ -25,6 +25,8 @@ type CheckmarxOneReportData struct {
 	ScanID               string         `json:"scanID"`
 	GroupName            string         `json:"groupName"`
 	GroupPath            string         `json:"groupPath"`
+	ApplicationName      string         `json:"applicationName"`
+	ApplicationPath      string         `json:"applicationPath"`
 	DeepLink             string         `json:"deepLink"`
 	Preset               string         `json:"preset"`
 	CheckmarxVersion     string         `json:"checkmarxVersion"`
@@ -142,6 +144,8 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 		ProjectName:      fmt.Sprint((*data)["ProjectName"]),
 		GroupName:        fmt.Sprint((*data)["Group"]),
 		GroupPath:        fmt.Sprint((*data)["GroupFullPathOnReportDate"]),
+		ApplicationName:  fmt.Sprint((*data)["Application"]),
+		ApplicationPath:  fmt.Sprint((*data)["ApplicationFullPathOnReportDate"]),
 		DeepLink:         fmt.Sprint((*data)["DeepLink"]),
 		Preset:           fmt.Sprint((*data)["Preset"]),
 		CheckmarxVersion: fmt.Sprint((*data)["CheckmarxVersion"]),

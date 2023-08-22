@@ -92,6 +92,16 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		if err != nil {
 			return fmt.Errorf("failed to create project: %s", err)
 		}
+	} else {
+		cx1sh.Project, err = cx1sh.GetProjectByID(cx1sh.Project.ProjectID)
+		if err != nil {
+			return fmt.Errorf("failed to get project by ID: %s", err)
+		} else {
+			if len(cx1sh.Project.Applications) > 0 {
+				cx1sh.App, err = cx1sh.GetApplicationByID(cx1sh.Project.Applications[0])
+
+			}
+		}
 	}
 
 	err = cx1sh.SetProjectPreset()
@@ -202,6 +212,11 @@ func (c *checkmarxOneExecuteScanHelper) GetProjectByName() (*checkmarxOne.Projec
 	return nil, fmt.Errorf("project not found")
 }
 
+func (c *checkmarxOneExecuteScanHelper) GetProjectByID(projectId string) (*checkmarxOne.Project, error) {
+	project, err := c.sys.GetProjectByID(projectId)
+	return &project, err
+}
+
 func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) {
 	if len(c.config.GroupName) > 0 {
 		group, err := c.sys.GetGroupByName(c.config.GroupName)
@@ -224,6 +239,15 @@ func (c *checkmarxOneExecuteScanHelper) GetApplication() (*checkmarxOne.Applicat
 		return &app, nil
 	}
 	return nil, fmt.Errorf("No application named %v found", c.config.ApplicationName)
+}
+
+func (c *checkmarxOneExecuteScanHelper) GetApplicationByID(applicationId string) (*checkmarxOne.Application, error) {
+	app, err := c.sys.GetApplicationByID(applicationId)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Checkmarx One application by Name %v: %s", c.config.ApplicationName, err)
+	}
+
+	return &app, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, error) {
@@ -660,8 +684,18 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	resultMap["ScanId"] = scan.ScanID
 	resultMap["ProjectId"] = c.Project.ProjectID
 	resultMap["ProjectName"] = c.Project.Name
-	resultMap["Group"] = c.Group.GroupID
-	resultMap["GroupFullPathOnReportDate"] = c.Group.Name
+
+	resultMap["Group"] = ""
+	resultMap["GroupFullPathOnReportDate"] = ""
+
+	if c.App != nil {
+		resultMap["Application"] = c.App.ApplicationID
+		resultMap["ApplicationFullPathOnReportDate"] = c.App.Name
+	} else {
+		resultMap["Application"] = ""
+		resultMap["ApplicationFullPathOnReportDate"] = ""
+	}
+
 	resultMap["ScanStart"] = scan.CreatedAt
 
 	scanCreated, err := time.Parse(time.RFC3339, scan.CreatedAt)

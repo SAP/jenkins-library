@@ -62,16 +62,17 @@ type Preset struct {
 // Project - Project Structure
 // Updated for Cx1
 type Project struct {
-	ProjectID   string            `json:"id"`
-	Name        string            `json:"name"`
-	CreatedAt   string            `json:"createdAt"`
-	UpdatedAt   string            `json:"updatedAt"`
-	Groups      []string          `json:"groups"`
-	Tags        map[string]string `json:"tags"`
-	RepoUrl     string            `json:"repoUrl"`
-	MainBranch  string            `json:"mainBranch"`
-	Origin      string            `json:"origin"`
-	Criticality int               `json:"criticality"`
+	ProjectID    string            `json:"id"`
+	Name         string            `json:"name"`
+	CreatedAt    string            `json:"createdAt"`
+	UpdatedAt    string            `json:"updatedAt"`
+	Groups       []string          `json:"groups"`
+	Applications []string          `json:"applicationIds"`
+	Tags         map[string]string `json:"tags"`
+	RepoUrl      string            `json:"repoUrl"`
+	MainBranch   string            `json:"mainBranch"`
+	Origin       string            `json:"origin"`
+	Criticality  int               `json:"criticality"`
 }
 
 // New for Cx1
@@ -290,6 +291,7 @@ type System interface {
 
 	CreateApplication(appname string) (Application, error)
 	GetApplicationByName(appname string) (Application, error)
+	GetApplicationByID(appId string) (Application, error)
 	UpdateApplication(app *Application) error
 
 	GetScan(scanID string) (Scan, error)
@@ -537,6 +539,21 @@ func (sys *SystemInstance) GetApplicationsByName(name string, limit uint64) ([]A
 	err = json.Unmarshal(response, &ApplicationResponse)
 	sys.logger.Tracef("Retrieved %d applications", len(ApplicationResponse.Applications))
 	return ApplicationResponse.Applications, err
+}
+
+func (sys *SystemInstance) GetApplicationByID(appId string) (Application, error) {
+	sys.logger.Debugf("Get Cx1 Application by ID: %v", appId)
+
+	var ret Application
+
+	response, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/applications/%v", appId), nil, nil, []int{})
+
+	if err != nil {
+		return ret, err
+	}
+
+	err = json.Unmarshal(response, &ret)
+	return ret, err
 }
 
 func (sys *SystemInstance) GetApplicationByName(name string) (Application, error) {
