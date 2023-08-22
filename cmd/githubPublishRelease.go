@@ -115,9 +115,19 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, conf
 	if len(config.Labels) > 0 {
 		options.Labels = config.Labels
 	}
-	ghIssues, _, err := ghIssueClient.ListByRepo(ctx, config.Owner, config.Repository, &options)
-	if err != nil {
-		log.Entry().WithError(err).Error("Failed to get GitHub issues.")
+
+	var ghIssues []*github.Issue
+	for {
+		issues, resp, err := ghIssueClient.ListByRepo(ctx, config.Owner, config.Repository, &options)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to get GitHub issues")
+		}
+
+		ghIssues = append(ghIssues, issues...)
+		if resp.NextPage == 0 {
+			break
+		}
+		options.Page = resp.NextPage
 	}
 
 	prTexts := []string{"**List of closed pull-requests since last release**"}
