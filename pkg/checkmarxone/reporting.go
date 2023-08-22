@@ -18,19 +18,28 @@ import (
 )
 
 type CheckmarxOneReportData struct {
-	ToolName        string     `json:"toolName"`
-	ToolVersion     string     `json:"toolVersion"`
-	ProjectName     string     `json:"projectName"`
-	ProjectID       string     `json:"projectID"`
-	ScanID          string     `json:"scanID"`
-	ApplicationName string     `json:"applicationName"`
-	ApplicationID   string     `json:"applicationID"`
-	GroupName       string     `json:"groupName"`
-	GroupID         string     `json:"groupID"`
-	DeepLink        string     `json:"deepLink"`
-	Preset          string     `json:"preset"`
-	ScanType        string     `json:"scanType"`
-	Findings        *[]Finding `json:"findings"`
+	ToolName             string         `json:"toolName"`
+	ProjectName          string         `json:"projectName"`
+	ProjectID            string         `json:"projectID"`
+	ScanID               string         `json:"scanID"`
+	GroupName            string         `json:"groupName"`
+	GroupPath            string         `json:"groupPath"`
+	ApplicationName      string         `json:"applicationName"`
+	ApplicationPath      string         `json:"applicationPath"`
+	DeepLink             string         `json:"deepLink"`
+	Preset               string         `json:"preset"`
+	CheckmarxVersion     string         `json:"checkmarxVersion"`
+	ScanType             string         `json:"scanType"`
+	HighTotal            int            `json:"highTotal"`
+	HighAudited          int            `json:"highAudited"`
+	MediumTotal          int            `json:"mediumTotal"`
+	MediumAudited        int            `json:"mediumAudited"`
+	LowTotal             int            `json:"lowTotal"`
+	LowAudited           int            `json:"lowAudited"`
+	InformationTotal     int            `json:"informationTotal"`
+	InformationAudited   int            `json:"informationAudited"`
+	IsLowPerQueryAudited bool           `json:"isLowPerQueryAudited"`
+	LowPerQuery          *[]LowPerQuery `json:"lowPerQuery"`
 }
 
 type Finding struct {
@@ -41,9 +50,9 @@ type Finding struct {
 }
 
 type LowPerQuery struct {
-	QueryName string `json:"name"`
-	Total     int    `json:"total"`
+	QueryName string `json:"query"`
 	Audited   int    `json:"audited"`
+	Total     int    `json:"total"`
 }
 
 func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
@@ -141,6 +150,8 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 		ProjectName: fmt.Sprint((*data)["ProjectName"]),
 		GroupID:     fmt.Sprint((*data)["Group"]),
 		GroupName:   fmt.Sprint((*data)["GroupFullPathOnReportDate"]),
+		ApplicationName:  fmt.Sprint((*data)["Application"]),
+		ApplicationPath:  fmt.Sprint((*data)["ApplicationFullPathOnReportDate"]),
 		DeepLink:    fmt.Sprint((*data)["DeepLink"]),
 		Preset:      fmt.Sprint((*data)["Preset"]),
 		ToolVersion: fmt.Sprint((*data)["ToolVersion"]),
