@@ -9,7 +9,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,7 +39,7 @@ func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *test
 cd /test
 /piperbin/piper gradleExecuteBuild >test-log.txt 2>&1
 `)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
 		Image: "adoptopenjdk/openjdk11:jdk-11.0.11_9-alpine",
@@ -60,7 +59,7 @@ cd /test
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
 		t.Fatal("Could not read test-log.txt.", err)
 	}
@@ -76,13 +75,13 @@ cd /test
 cd /test
 ls -l ./build/reports/ >files-list.txt 2>&1
 `)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err = ioutil.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
+	content, err = os.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
 	if err != nil {
 		t.Fatal("Could not read files-list.txt.", err)
 	}
@@ -112,7 +111,7 @@ func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 cd /test
 /piperbin/piper gradleExecuteBuild >test-log.txt 2>&1
 `)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
 		Image: "gradle:6-jdk11-alpine",
@@ -132,7 +131,7 @@ cd /test
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
 		t.Fatal("Could not read test-log.txt.", err)
 	}
@@ -148,13 +147,13 @@ cd /test
 cd /test
 ls -l ./build/reports/ >files-list.txt 2>&1
 `)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err = ioutil.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
+	content, err = os.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
 	if err != nil {
 		t.Fatal("Could not read files-list.txt.", err)
 	}

@@ -3,7 +3,7 @@ package abaputils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 
@@ -86,7 +86,7 @@ func readFile(FileName string) ([]byte, error) {
 	}
 
 	var fileContent []byte
-	fileContent, err = ioutil.ReadFile(absoluteFilename)
+	fileContent, err = os.ReadFile(absoluteFilename)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Could not read %v", FileName))
 	}
