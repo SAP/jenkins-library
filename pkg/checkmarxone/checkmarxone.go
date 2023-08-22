@@ -307,6 +307,7 @@ type System interface {
 
 	UploadProjectSourceCode(projectID string, zipFile string) (string, error)
 	CreateProject(projectName string, groupIDs []string) (Project, error)
+	CreateProjectInApplication(projectName, applicationID string, groupIDs []string) (Project, error)
 	GetPresets() ([]Preset, error)
 	GetProjectByID(projectID string) (Project, error)
 	GetProjectsByName(projectName string) ([]Project, error)
@@ -790,6 +791,33 @@ func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) 
 	data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header, []int{})
 	if err != nil {
 		return project, errors.Wrapf(err, "failed to create project %v", projectName)
+	}
+
+	err = json.Unmarshal(data, &project)
+	return project, err
+}
+
+func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID string, groupIDs []string) (Project, error) {
+	var project Project
+	jsonData := map[string]interface{}{
+		"name":        projectName,
+		"groups":      groupIDs,
+		"origin":      cxOrigin,
+		"criticality": 3, // default
+		// multiple additional parameters exist as options
+	}
+
+	jsonValue, err := json.Marshal(jsonData)
+	if err != nil {
+		return project, errors.Wrapf(err, "failed to marshal project data")
+	}
+
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+
+	data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("/projects/application/%v", applicationID), bytes.NewBuffer(jsonValue), header, []int{})
+	if err != nil {
+		return project, errors.Wrapf(err, "failed to create project %v under %v", projectName, applicationID)
 	}
 
 	err = json.Unmarshal(data, &project)

@@ -80,7 +80,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 	cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
 	if err != nil {
-		return fmt.Errorf("failed to get group: %s", err)
+		log.Entry().WithError(err).Warnf("failed to get group")
 	}
 
 	if cx1sh.Project == nil {
@@ -231,7 +231,19 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 		return nil, fmt.Errorf("Preset is required to create a project")
 	}
 
-	project, err := c.sys.CreateProject(c.config.ProjectName, []string{c.Group.GroupID})
+	var project checkmarxOne.Project
+	var err error
+	var groupIDs []string = []string{}
+	if c.Group != nil {
+		groupIDs = []string{c.Group.GroupID}
+	}
+
+	if c.App != nil {
+		project, err = c.sys.CreateProjectInApplication(c.config.ProjectName, c.App.ApplicationID, groupIDs)
+	} else {
+		project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("Error when trying to create project: %s", err)
 	}
