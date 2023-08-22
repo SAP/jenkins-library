@@ -86,7 +86,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	if cx1sh.Project == nil {
 		cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
 		if err != nil {
-			log.Entry().WithError(err).Warnf("failed to get application")
+			log.Entry().WithError(err).Warnf("Failed to get application - will attempt to create the project on the Tenant level")
 		}
 		cx1sh.Project, err = cx1sh.CreateProject() // requires groups, repoUrl, mainBranch, origin, tags, criticality
 		if err != nil {
@@ -98,8 +98,11 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 			return fmt.Errorf("failed to get project by ID: %s", err)
 		} else {
 			if len(cx1sh.Project.Applications) > 0 {
+				appId := cx1sh.Project.Applications[0]
 				cx1sh.App, err = cx1sh.GetApplicationByID(cx1sh.Project.Applications[0])
-
+				if err != nil {
+					return fmt.Errorf("failed to retrieve information for project's assigned application %v", appId)
+				}
 			}
 		}
 	}
@@ -226,7 +229,7 @@ func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) 
 		return &group, nil
 	}
 
-	return nil, fmt.Errorf("No group ID or group name provided")
+	return nil, fmt.Errorf("No group name specified in configuration")
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetApplication() (*checkmarxOne.Application, error) {
@@ -238,7 +241,7 @@ func (c *checkmarxOneExecuteScanHelper) GetApplication() (*checkmarxOne.Applicat
 
 		return &app, nil
 	}
-	return nil, fmt.Errorf("No application named %v found", c.config.ApplicationName)
+	return nil, fmt.Errorf("No application name specified in configuration")
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetApplicationByID(applicationId string) (*checkmarxOne.Application, error) {
