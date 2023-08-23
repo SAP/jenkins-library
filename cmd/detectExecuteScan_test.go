@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -66,7 +65,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 	c.header[url] = header
 	response := http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 	}
 
 	if c.errorMessageForURL[url] != "" {
@@ -75,7 +74,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 	}
 
 	if c.responseBodyForURL[url] != "" {
-		response.Body = ioutil.NopCloser(bytes.NewReader([]byte(c.responseBodyForURL[url])))
+		response.Body = io.NopCloser(bytes.NewReader([]byte(c.responseBodyForURL[url])))
 		return &response, nil
 	}
 
@@ -555,11 +554,10 @@ func TestAddDetectArgs(t *testing.T) {
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
 				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
@@ -594,11 +592,10 @@ func TestAddDetectArgs(t *testing.T) {
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
 				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
@@ -634,12 +631,11 @@ func TestAddDetectArgs(t *testing.T) {
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
 				DetectTools:             []string{"DETECTOR"},
-				ScanOnChanges:           true,
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--report",
 				"--scan=1",
+				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",

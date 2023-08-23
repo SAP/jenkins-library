@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -482,7 +483,11 @@ func expandEnv(params []string) []string {
 	expanded := []string{}
 
 	for _, param := range params {
-		expanded = append(expanded, os.ExpandEnv(param))
+		if strings.Contains(param, config.VaultCredentialEnvPrefixDefault) {
+			expanded = append(expanded, os.ExpandEnv(param))
+		} else {
+			expanded = append(expanded, param)
+		}
 	}
 
 	return expanded

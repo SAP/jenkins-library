@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http/cookiejar"
 	"strings"
 	"time"
@@ -129,7 +129,7 @@ func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.
 	// Parse response
 	var createTagResponse CreateTagResponse
 	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
+	bodyText, _ := io.ReadAll(resp.Body)
 
 	if err = json.Unmarshal(bodyText, &abapResp); err != nil {
 		return err

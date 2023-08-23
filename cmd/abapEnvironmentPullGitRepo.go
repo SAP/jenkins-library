@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http/cookiejar"
 	"reflect"
 	"time"
@@ -95,9 +95,9 @@ func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.Conne
 	logString := repo.GetPullLogString()
 	errorString := "Pull of the " + logString + " failed on the ABAP system"
 
-	log.Entry().Info("-------------------------")
+	abaputils.AddDefaultDashedLine()
 	log.Entry().Info("Start pulling the " + logString)
-	log.Entry().Info("-------------------------")
+	abaputils.AddDefaultDashedLine()
 
 	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
 	if err != nil {
@@ -151,7 +151,7 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	// Parse Response
 	var body abaputils.PullEntity
 	var abapResp map[string]*json.RawMessage
-	bodyText, errRead := ioutil.ReadAll(resp.Body)
+	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
 		return uriConnectionDetails, err
 	}
@@ -183,7 +183,7 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 }
 
 func finishPullLogs() {
-	log.Entry().Info("-------------------------")
+	abaputils.AddDefaultDashedLine()
 	log.Entry().Info("All repositories were pulled successfully")
 }
 

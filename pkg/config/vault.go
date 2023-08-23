@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -153,7 +152,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 
 		secretValue = lookupPath(client, vaultPath, &param)
 		if secretValue != nil {
-			log.Entry().Debugf("Resolved param '%s' with Vault path '%s'", param.Name, vaultPath)
+			log.Entry().Infof("Resolved param '%s' with Vault path '%s'", param.Name, vaultPath)
 			if ref.Type == "vaultSecret" {
 				config.Config[param.Name] = *secretValue
 			} else if ref.Type == "vaultSecretFile" {
@@ -426,7 +425,7 @@ func createTemporarySecretFile(namePattern string, content string) (string, erro
 		}
 	}
 
-	file, err := ioutil.TempFile(VaultSecretFileDirectory, namePattern)
+	file, err := os.CreateTemp(VaultSecretFileDirectory, namePattern)
 	if err != nil {
 		return "", err
 	}

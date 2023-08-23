@@ -85,7 +85,7 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	if checkStepActiveOptions.v1Active {
 		runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
 		runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
-		err = runConfigV1.InitRunConfigV1(projectConfig, nil, nil, nil, nil, utils, GeneralConfig.EnvRootPath)
+		err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return err
 		}

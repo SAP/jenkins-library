@@ -180,7 +180,7 @@ func (br *buildWithRepository) start() error {
 				Value: br.repo.PredecessorCommitID})
 	}
 	if br.repo.CommitID != "" {
-		// old value to be used until 2302 [can be deleted latest with 2308]
+		// old value to be used until 2302 [can be deleted earliest with 2311]
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "ACTUAL_DELIVERY_COMMIT",
 				Value: br.repo.CommitID})
@@ -188,6 +188,9 @@ func (br *buildWithRepository) start() error {
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "CURRENT_DELIVERY_COMMIT",
 				Value: br.repo.CommitID})
+	}
+	if br.repo.Tag != "" {
+		valuesInput.Values = append(valuesInput.Values, abapbuild.Value{ValueID: "CURRENT_DELIVERY_TAG", Value: br.repo.Tag})
 	}
 	if len(br.repo.Languages) > 0 {
 		valuesInput.Values = append(valuesInput.Values,

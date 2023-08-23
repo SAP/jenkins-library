@@ -21,89 +21,110 @@ const (
 	npmScriptsCondition            = "npmScripts"
 )
 
-// EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
-func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
-
-	// initialize in case not initialized
-	if r.RunConfig.RunSteps == nil {
-		r.RunConfig.RunSteps = map[string]map[string]bool{}
+// evaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema.
+// Priority of step activation/deactivation is follow:
+// - stepNotActiveCondition (highest, if any)
+// - explicit activation/deactivation (medium, if any)
+// - stepActiveConditions (lowest, step is active by default if no conditions are configured)
+func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.FileUtils, envRootPath string) error {
+	if r.RunSteps == nil {
+		r.RunSteps = make(map[string]map[string]bool, len(r.PipelineConfig.Spec.Stages))
 	}
-	if r.RunConfig.RunStages == nil {
-		r.RunConfig.RunStages = map[string]bool{}
+	if r.RunStages == nil {
+		r.RunStages = make(map[string]bool, len(r.PipelineConfig.Spec.Stages))
 	}
 
+	currentOrchestrator := orchestrator.DetectOrchestrator().String()
 	for _, stage := range r.PipelineConfig.Spec.Stages {
-		runStep := map[string]bool{}
-		stageActive := false
-
-		// currently displayName is used, may need to consider to use technical name as well
+		// Currently, the displayName is being used, but it may be necessary
+		// to also consider using the technical name.
 		stageName := stage.DisplayName
 
+		// Check #1: Apply explicit activation/deactivation from config file (if any)
+		// and then evaluate stepActive conditions
+		runStep := make(map[string]bool, len(stage.Steps))
+		stepConfigCache := make(map[string]StepConfig, len(stage.Steps))
 		for _, step := range stage.Steps {
-			// Only consider orchestrator-specific steps in case orchestrator limitation is set
-			currentOrchestrator := orchestrator.DetectOrchestrator().String()
+			// Consider only orchestrator-specific steps if the orchestrator limitation is set.
 			if len(step.Orchestrators) > 0 && !piperutils.ContainsString(step.Orchestrators, currentOrchestrator) {
 				continue
 			}
 
-			stepActive := false
-			stepNotActive := false
-
-			stepConfig, err := r.getStepConfig(config, stageName, step.Name, filters, parameters, secrets, stepAliases)
+			stepConfig, err := r.getStepConfig(config, stageName, step.Name, nil, nil, nil, nil)
 			if err != nil {
 				return err
 			}
+			stepConfigCache[step.Name] = stepConfig
 
+			// Respect explicit activation/deactivation if available.
+			// Note that this has higher priority than step conditions
 			if active, ok := stepConfig.Config[step.Name].(bool); ok {
-				// respect explicit activation/de-activation if available
-				stepActive = active
-			} else {
-				if step.Conditions == nil || len(step.Conditions) == 0 {
-					// if no condition is available, step will be active by default
-					stepActive = true
-				} else {
-					for _, condition := range step.Conditions {
-						stepActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath)
-						if err != nil {
-							return fmt.Errorf("failed to evaluate stage conditions: %w", err)
-						}
-						if stepActive {
-							// first condition which matches will be considered to activate the step
-							break
-						}
-					}
-				}
+				runStep[step.Name] = active
+				continue
 			}
 
-			// TODO: PART 1 : if explicit activation/de-activation is available should notActiveConditions be checked ?
-			// Fortify has no anchor, so if we explicitly set it to true then it may run even during commit pipelines, if we implement TODO PART 1??
-			for _, condition := range step.NotActiveConditions {
-				stepNotActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath)
+			// If no condition is available, the step will be active by default.
+			stepActive := true
+			for _, condition := range step.Conditions {
+				stepActive, err = condition.evaluateV1(stepConfig, utils, step.Name, envRootPath, runStep)
 				if err != nil {
-					return fmt.Errorf("failed to evaluate not active stage conditions: %w", err)
+					return fmt.Errorf("failed to evaluate step conditions: %w", err)
 				}
-				if stepNotActive {
-					// first condition which matches will be considered to not activate the step
+				if stepActive {
+					// The first condition that matches will be considered to activate the step.
 					break
 				}
 			}
 
-			// final decision is when step is activated and negate when not active is true
-			stepActive = stepActive && !stepNotActive
+			runStep[step.Name] = stepActive
+		}
 
-			if stepActive {
+		// Check #2: Evaluate stepNotActive conditions (if any) and deactivate the step if the condition is met.
+		//
+		// TODO: PART 1 : if explicit activation/de-activation is available should notActiveConditions be checked ?
+		// Fortify has no anchor, so if we explicitly set it to true then it may run even during commit pipelines, if we implement TODO PART 1??
+		for _, step := range stage.Steps {
+			stepConfig, found := stepConfigCache[step.Name]
+			if !found {
+				// If no stepConfig exists here, it means that this step was skipped in previous checks.
+				continue
+			}
+
+			for _, condition := range step.NotActiveConditions {
+				stepNotActive, err := condition.evaluateV1(stepConfig, utils, step.Name, envRootPath, runStep)
+				if err != nil {
+					return fmt.Errorf("failed to evaluate not active step conditions: %w", err)
+				}
+
+				// Deactivate the step if the notActive condition is met.
+				if stepNotActive {
+					runStep[step.Name] = false
+					break
+				}
+			}
+		}
+
+		r.RunSteps[stageName] = runStep
+
+		stageActive := false
+		for _, anyStepIsActive := range r.RunSteps[stageName] {
+			if anyStepIsActive {
 				stageActive = true
 			}
-			runStep[step.Name] = stepActive
-			r.RunSteps[stageName] = runStep
 		}
 		r.RunStages[stageName] = stageActive
 	}
+
 	return nil
 }
 
-func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils, stepName string, envRootPath string) (bool, error) {
+func (s *StepCondition) evaluateV1(
+	config StepConfig,
+	utils piperutils.FileUtils,
+	stepName string,
+	envRootPath string,
+	runSteps map[string]bool,
+) (bool, error) {
 
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
@@ -187,6 +208,14 @@ func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils
 		}
 
 		return false, nil
+	}
+
+	if s.OnlyActiveStepInStage {
+		// Used only in NotActiveConditions.
+		// Returns true if all other steps are inactive, so step will be deactivated
+		// if it's the only active step in stage.
+		// For example, sapCumulusUpload step must be deactivated in a stage where others steps are inactive.
+		return !anyOtherStepIsActive(stepName, runSteps), nil
 	}
 
 	// needs to be checked last:
@@ -490,4 +519,16 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 		}
 	}
 	return false, nil
+}
+
+// anyOtherStepIsActive loops through previous steps active states and returns true
+// if at least one of them is active, otherwise result is false. Ignores the step that is being checked.
+func anyOtherStepIsActive(targetStep string, runSteps map[string]bool) bool {
+	for step, isActive := range runSteps {
+		if isActive && step != targetStep {
+			return true
+		}
+	}
+
+	return false
 }

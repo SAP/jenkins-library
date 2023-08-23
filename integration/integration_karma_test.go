@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,7 +39,7 @@ func TestKarmaIntegration(t *testing.T) {
 cd /test
 /piperbin/piper karmaExecuteTests
 `
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	networkName := "sidecar-" + uuid.New().String()
 
