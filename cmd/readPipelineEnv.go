@@ -58,7 +58,7 @@ func runReadPipelineEnv(config *artifactPrepareVersionOptions) error {
 	}
 
 	// try to encrypt
-	if config.Password != "" && orchestrator.DetectOrchestrator() != orchestrator.Jenkins {
+	if config.Password != "" && orchestrator.DetectOrchestrator() == orchestrator.GitHubActions {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to encrypt CPE")
 		jsonBytes, _ := json.Marshal(cpe)
 		encrypted, err := encrypt([]byte(config.Password), jsonBytes)

@@ -65,7 +65,7 @@ func runWritePipelineEnv(config *artifactPrepareVersionOptions) error {
 	}
 
 	// try to decrypt
-	if config.Password != "" && orchestrator.DetectOrchestrator() != orchestrator.Jenkins {
+	if config.Password != "" && orchestrator.DetectOrchestrator() == orchestrator.GitHubActions {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to decrypt CPE")
 		var err error
 		inBytes, err = decrypt([]byte(config.Password), inBytes)
