@@ -2,7 +2,7 @@ package orchestrator
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 
@@ -130,7 +130,7 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 		log.Entry().Error("response code !=200 could not get log information from Jenkins, returning with empty log.")
 		return []byte{}, nil
 	}
-	logFile, err := ioutil.ReadAll(response.Body)
+	logFile, err := io.ReadAll(response.Body)
 	if err != nil {
 		return []byte{}, errors.Wrapf(err, "could not read Jenkins log file from request %v", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
@@ -109,7 +108,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 		return "", errors.Errorf("did not retrieve a valid HTTP response code: %v", httpErr)
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return "", errors.Wrap(readErr, "HTTP response body could not be read")
 	}
@@ -154,7 +153,7 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 		}
 		return nil
 	}
-	responseBody, readErr := ioutil.ReadAll(response.Body)
+	responseBody, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
 	}
@@ -182,7 +181,7 @@ func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTT
 		return nil
 	}
 	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(response.Body)
+		responseBody, readErr := io.ReadAll(response.Body)
 		if readErr != nil {
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
 		}
@@ -204,14 +203,14 @@ func (httpGetRequestParameters HttpFileUploadRequestParameters) HandleHTTPGetReq
 		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 	if response.StatusCode == http.StatusOK {
-		responseBody, readErr := ioutil.ReadAll(response.Body)
+		responseBody, readErr := io.ReadAll(response.Body)
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", response.StatusCode)
 		}
 		return string(responseBody), nil
 	}
 	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(response.Body)
+		responseBody, readErr := io.ReadAll(response.Body)
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
 		}

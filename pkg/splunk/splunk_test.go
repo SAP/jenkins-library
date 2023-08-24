@@ -5,7 +5,6 @@ package splunk
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
@@ -544,7 +543,7 @@ func Test_readPipelineEnvironment(t *testing.T) {
 
 				// creating temporarily files with dummy content
 				branch := []byte("master")
-				err = ioutil.WriteFile(path+"git/branch", branch, 0644)
+				err = os.WriteFile(path+"git/branch", branch, 0644)
 				if err != nil {
 					t.Errorf("Could not create branch file: %v", err)
 				}

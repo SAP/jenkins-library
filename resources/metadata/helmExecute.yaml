@@ -58,6 +58,7 @@ spec:
         type: string
         description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS

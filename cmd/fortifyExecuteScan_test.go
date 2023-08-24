@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -438,7 +437,7 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 		}
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
-		err := ioutil.WriteFile(path, []byte(classpathMaven), 0o644)
+		err := os.WriteFile(path, []byte(classpathMaven), 0o644)
 		if err != nil {
 			return err
 		}

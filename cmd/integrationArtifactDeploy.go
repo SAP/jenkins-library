@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -99,14 +99,14 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully deployed into CPI runtime")
-		taskId, readErr := ioutil.ReadAll(deployResp.Body)
+		taskId, readErr := io.ReadAll(deployResp.Body)
 		if readErr != nil {
 			return errors.Wrap(readErr, "Task Id not found. HTTP response body could not be read.")
 		}
 		deploymentError := pollIFlowDeploymentStatus(string(taskId), retryCount, config, httpClient, serviceKey.OAuth.Host)
 		return deploymentError
 	}
-	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
+	responseBody, readErr := io.ReadAll(deployResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", deployResp.StatusCode)
@@ -154,7 +154,7 @@ func pollIFlowDeploymentStatus(taskId string, retryCount int, config *integratio
 
 // GetHTTPErrorMessage - Return HTTP failure message
 func getHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, statusURL string) (string, error) {
-	responseBody, readErr := ioutil.ReadAll(response.Body)
+	responseBody, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", response.StatusCode)
 	}
@@ -184,7 +184,7 @@ func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("Successfully started integration flow artefact in CPI runtime")
 
-		bodyText, readErr := ioutil.ReadAll(deployStatusResp.Body)
+		bodyText, readErr := io.ReadAll(deployStatusResp.Body)
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", deployStatusResp.StatusCode)
 		}
@@ -221,7 +221,7 @@ func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("Successfully retrieved Integration Flow artefact deploy error details")
-		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
+		responseBody, readErr := io.ReadAll(errorStatusResp.Body)
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
 		}

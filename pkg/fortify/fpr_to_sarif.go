@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -502,7 +501,7 @@ func ConvertFprToSarif(sys System, projectVersion *models.ProjectVersion, result
 	log.Entry().Debug("Extracting FPR.")
 	var sarif format.SARIF
 	var sarifSimplified format.SARIF
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	defer os.RemoveAll(tmpFolder)
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
@@ -515,7 +514,7 @@ func ConvertFprToSarif(sys System, projectVersion *models.ProjectVersion, result
 	}
 
 	log.Entry().Debug("Reading audit file.")
-	data, err := ioutil.ReadFile(filepath.Join(tmpFolder, "audit.fvdl"))
+	data, err := os.ReadFile(filepath.Join(tmpFolder, "audit.fvdl"))
 	if err != nil {
 		return sarif, sarifSimplified, err
 	}

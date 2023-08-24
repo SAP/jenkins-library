@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 
@@ -75,7 +75,7 @@ func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *t
 	}
 	if downloadResp.StatusCode == 200 {
 		jsonFilePath := config.DownloadPath
-		content, err := ioutil.ReadAll(downloadResp.Body)
+		content, err := io.ReadAll(downloadResp.Body)
 		if err != nil {
 			return err
 		}
