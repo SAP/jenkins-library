@@ -51,6 +51,7 @@ func WritePipelineEnv() *cobra.Command {
 }
 
 func runWritePipelineEnv(config *artifactPrepareVersionOptions) error {
+	var err error
 	pipelineEnv, ok := os.LookupEnv("PIPER_pipelineEnv")
 	inBytes := []byte(pipelineEnv)
 	if !ok {
@@ -67,8 +68,14 @@ func runWritePipelineEnv(config *artifactPrepareVersionOptions) error {
 	// try to decrypt
 	if config.Password != "" && orchestrator.DetectOrchestrator() == orchestrator.GitHubActions {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to decrypt CPE")
-		var err error
-		inBytes, err = decrypt([]byte(config.Password), inBytes)
+
+		// Workaround: orchestrators expect json
+		encryptedJSON := struct{ Payload []byte }{}
+		if err = json.Unmarshal(inBytes, &encryptedJSON); err != nil {
+			log.Entry().Fatal(err)
+		}
+
+		inBytes, err = decrypt([]byte(config.Password), encryptedJSON.Payload)
 		if err != nil {
 			log.Entry().Fatal(err)
 		}
@@ -77,7 +84,7 @@ func runWritePipelineEnv(config *artifactPrepareVersionOptions) error {
 	commonPipelineEnv := piperenv.CPEMap{}
 	decoder := json.NewDecoder(bytes.NewReader(inBytes))
 	decoder.UseNumber()
-	err := decoder.Decode(&commonPipelineEnv)
+	err = decoder.Decode(&commonPipelineEnv)
 	if err != nil {
 		return err
 	}

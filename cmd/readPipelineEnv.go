@@ -66,7 +66,11 @@ func runReadPipelineEnv(config *artifactPrepareVersionOptions) error {
 			log.Entry().Fatal(err)
 		}
 
-		os.Stdout.Write(encrypted)
+		// Workaround: orchestrators expect json
+		encryptedJSON := struct{ Payload []byte }{Payload: encrypted}
+		encryptedJSONBytes, _ := json.Marshal(encryptedJSON)
+
+		os.Stdout.Write(encryptedJSONBytes)
 		return nil
 	}
 
