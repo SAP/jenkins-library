@@ -8,7 +8,7 @@ replace golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d => golang.org/x/c
 
 require (
 	cloud.google.com/go/storage v1.28.1
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.0
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/BurntSushi/toml v1.2.0
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
