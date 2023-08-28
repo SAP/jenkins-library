@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -155,7 +155,7 @@ func ReadConfigFile(path string) (file []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	yamlFile, err := ioutil.ReadFile(filename)
+	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, error
 
 	// Include the error message of the ABAP Environment system, if available
 	var abapErrorResponse AbapError
-	bodyText, readError := ioutil.ReadAll(resp.Body)
+	bodyText, readError := io.ReadAll(resp.Body)
 	if readError != nil {
 		return "", "", readError
 	}
@@ -398,7 +398,7 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 	return &http.Response{
 		StatusCode: c.StatusCode,
 		Header:     header,
-		Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		Body:       io.NopCloser(bytes.NewReader(body)),
 	}, c.Error
 }
 

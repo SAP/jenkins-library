@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -151,7 +152,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 	if err != nil {
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
-	atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
+	atcSystemConfiguartionJsonFile, err = os.ReadFile(filename)
 	if err != nil {
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
@@ -412,7 +413,7 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 		return false, configName, configUUID, configLastChangedAt, err
 	}
 	var body []byte
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return false, configName, configUUID, configLastChangedAt, err
 	}
@@ -443,7 +444,7 @@ func HandleHttpResponse(resp *http.Response, err error, message string, connecti
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
 		log.Entry().WithField("StatusCode", resp.Status).Info(message)
-		bodyText, readError = ioutil.ReadAll(resp.Body)
+		bodyText, readError = io.ReadAll(resp.Body)
 		if readError != nil {
 			defer resp.Body.Close()
 			return readError
