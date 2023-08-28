@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -306,7 +305,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 
 	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
 
-	err = SonarUtils.WriteReport(reportData, sonar.workingDir, ioutil.WriteFile)
+	err = SonarUtils.WriteReport(reportData, sonar.workingDir, os.WriteFile)
 
 	if err != nil {
 		return err
@@ -469,7 +468,7 @@ func getWorkingDir() string {
 }
 
 func getTempDir() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}

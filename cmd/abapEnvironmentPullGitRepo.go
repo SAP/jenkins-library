@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http/cookiejar"
 	"reflect"
 	"time"
@@ -151,7 +151,7 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	// Parse Response
 	var body abaputils.PullEntity
 	var abapResp map[string]*json.RawMessage
-	bodyText, errRead := ioutil.ReadAll(resp.Body)
+	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
 		return uriConnectionDetails, err
 	}

@@ -3,12 +3,13 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"os"
+	"path/filepath"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 // WritePipelineEnv Serializes the commonPipelineEnvironment JSON to disk
@@ -36,7 +37,7 @@ func runWritePipelineEnv() error {
 	inBytes := []byte(pipelineEnv)
 	if !ok {
 		var err error
-		inBytes, err = ioutil.ReadAll(os.Stdin)
+		inBytes, err = io.ReadAll(os.Stdin)
 		if err != nil {
 			return err
 		}

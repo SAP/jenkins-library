@@ -6,7 +6,7 @@ package abaputils
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -304,7 +304,7 @@ func TestHandleHTTPError(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
@@ -323,7 +323,7 @@ func TestHandleHTTPError(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
@@ -342,7 +342,7 @@ func TestHandleHTTPError(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"

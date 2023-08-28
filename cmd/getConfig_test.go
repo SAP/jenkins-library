@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -27,7 +26,7 @@ func configOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, e
 	default:
 		r = ""
 	}
-	return ioutil.NopCloser(strings.NewReader(r)), nil
+	return io.NopCloser(strings.NewReader(r)), nil
 }
 
 func TestConfigCommand(t *testing.T) {

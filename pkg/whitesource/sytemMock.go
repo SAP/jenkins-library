@@ -15,11 +15,16 @@ type SystemMock struct {
 	Products            []Product
 	Projects            []Project
 	Alerts              []Alert
+	IgnoredAlerts       []Alert
 	AlertType           string
 	AlertError          error
 	Libraries           []Library
 	RiskReport          []byte
 	VulnerabilityReport []byte
+}
+
+func (m *SystemMock) GetProjectIgnoredAlertsByType(projectToken string, alertType string) ([]Alert, error) {
+	return m.IgnoredAlerts, nil
 }
 
 // GetProductByName mimics retrieving a Product by name. It returns an error of no Product is stored in the mock.

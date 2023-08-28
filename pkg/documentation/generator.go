@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -72,7 +71,7 @@ func main() {
 
 		if len(customLibraryStepFile) > 0 {
 			fmt.Println("Reading custom library step mapping..")
-			content, err := ioutil.ReadFile(customLibraryStepFile)
+			content, err := os.ReadFile(customLibraryStepFile)
 			checkError(err)
 			err = yaml.Unmarshal(content, &generator.CustomLibrarySteps)
 			checkError(err)
@@ -102,7 +101,7 @@ func openDocTemplateFile(docTemplateFilePath string) (io.ReadCloser, error) {
 }
 
 func writeFile(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }
 
 func openFile(name string) (io.ReadCloser, error) {
