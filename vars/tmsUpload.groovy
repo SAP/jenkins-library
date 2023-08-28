@@ -52,7 +52,12 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'proxy',
     /**
-     * Toggle to activate the old Groovy implementation of the step. By default, the new Golang implementation of the step is being used and this flag is off.
+     * DEPRECATED: Toggle to activate a new Golang implementation of the step. The parameter has been deprecated - the new Golang implementation is used now by default.
+     * @possibleValues true, false
+     */
+    'useGoStep',
+    /**
+     * Toggle to activate the old Groovy implementation of the step. Off by default. Note that possibility to switch to the old Groovy implementation will be completely removed after January 31st, 2023.
      * @possibleValues true, false
      */
     'useGroovyStep'
