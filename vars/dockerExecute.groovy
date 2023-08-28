@@ -218,7 +218,7 @@ void call(Map parameters = [:], body) {
                     ]
                 }
                 dockerExecuteOnKubernetes(dockerExecuteOnKubernetesParams) {
-                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
+                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod. Docker image: ${config.dockerImage}"
                     body()
                 }
             }
