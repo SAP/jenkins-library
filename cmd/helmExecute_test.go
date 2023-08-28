@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"testing"
@@ -63,7 +64,7 @@ func TestRunHelmUpgrade(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmUpgrade").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &cpe)
+			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -102,7 +103,7 @@ func TestRunHelmLint(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmLint").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &cpe)
+			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -141,7 +142,7 @@ func TestRunHelmInstall(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmInstall").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &cpe)
+			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -179,7 +180,7 @@ func TestRunHelmTest(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmTest").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &cpe)
+			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -217,7 +218,7 @@ func TestRunHelmUninstall(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmUninstall").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &cpe)
+			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -255,7 +256,7 @@ func TestRunHelmDependency(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmDependency").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &cpe)
+			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -295,7 +296,7 @@ func TestRunHelmPush(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmPublish").Return(testCase.methodString, testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &cpe)
+			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -314,6 +315,8 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 		methodPackageError error
 		methodPublishError error
 		expectedErrStr     string
+		fileUtils          fileHandlerMock
+		assertFunc         func(fileHandlerMock) error
 	}{
 		{
 			config: helmExecuteOptions{
@@ -322,6 +325,32 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			methodLintError:    nil,
 			methodPackageError: nil,
 			methodPublishError: nil,
+			fileUtils:          fileHandlerMock{},
+			// we expect the values file is traversed since parsing and rendering according to cpe template is active
+			assertFunc: func(f fileHandlerMock) error {
+				if len(f.fileExistsCalled) == 1 && f.fileExistsCalled[0] == "/values.yaml" {
+					return nil
+				}
+				return fmt.Errorf("unexpected: %+v", f.fileExistsCalled)
+			},
+		},
+		{
+			// this test checks if
+			config: helmExecuteOptions{
+				HelmCommand:          "",
+				RenderValuesTemplate: false,
+			},
+			methodLintError:    nil,
+			methodPackageError: nil,
+			methodPublishError: nil,
+			fileUtils:          fileHandlerMock{},
+			// we expect the values file is not traversed since parsing and rendering according to cpe template is not active
+			assertFunc: func(f fileHandlerMock) error {
+				if len(f.fileExistsCalled) > 0 {
+					return fmt.Errorf("unexpected: %+v", f.fileExistsCalled)
+				}
+				return nil
+			},
 		},
 		{
 			config: helmExecuteOptions{
@@ -329,6 +358,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			},
 			methodLintError: errors.New("some error"),
 			expectedErrStr:  "failed to execute helm lint: some error",
+			fileUtils:       fileHandlerMock{},
 		},
 		{
 			config: helmExecuteOptions{
@@ -336,6 +366,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			},
 			methodPackageError: errors.New("some error"),
 			expectedErrStr:     "failed to execute helm dependency: some error",
+			fileUtils:          fileHandlerMock{},
 		},
 		{
 			config: helmExecuteOptions{
@@ -343,6 +374,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			},
 			methodPublishError: errors.New("some error"),
 			expectedErrStr:     "failed to execute helm publish: some error",
+			fileUtils:          fileHandlerMock{},
 		},
 	}
 
@@ -353,9 +385,12 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			helmExecute.On("RunHelmDependency").Return(testCase.methodPackageError)
 			helmExecute.On("RunHelmPublish").Return(testCase.methodPublishError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &cpe)
+			err := runHelmExecute(testCase.config, helmExecute, &testCase.fileUtils, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
+			}
+			if testCase.assertFunc != nil {
+				assert.NoError(t, testCase.assertFunc(testCase.fileUtils))
 			}
 
 		})
@@ -484,4 +519,25 @@ tag: {{ imageTag "test-image" }}
 			}
 		})
 	}
+}
+
+type fileHandlerMock struct {
+	fileExistsCalled []string
+	fileReadCalled   []string
+	fileWriteCalled  []string
+}
+
+func (f *fileHandlerMock) FileWrite(name string, content []byte, mode fs.FileMode) error {
+	f.fileWriteCalled = append(f.fileWriteCalled, name)
+	return nil
+}
+
+func (f *fileHandlerMock) FileRead(name string) ([]byte, error) {
+	f.fileReadCalled = append(f.fileReadCalled, name)
+	return []byte{}, nil
+}
+
+func (f *fileHandlerMock) FileExists(name string) (bool, error) {
+	f.fileExistsCalled = append(f.fileExistsCalled, name)
+	return true, nil
 }
