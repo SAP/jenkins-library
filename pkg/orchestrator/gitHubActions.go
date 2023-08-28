@@ -172,7 +172,7 @@ func (g *GitHubActionsConfigProvider) GetReference() string {
 
 // GetBuildURL returns the builds URL. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
-	return g.GetRepoURL() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
+	return g.GetRepoURL() + "/actions/runs/" + g.GetBuildID()
 }
 
 // GetJobURL returns the current job HTML URL (not API URL).
@@ -222,8 +222,7 @@ func isGitHubActions() bool {
 }
 
 // actionsURL returns URL to actions resource. For example,
-// https://api.github.com/repos/SAP/jenkins-library/actions              - if it's github.com
-// https://github.tools.sap/api/v3/repos/project-piper/sap-piper/actions - if it's GitHub Enterprise
+// https://api.github.com/repos/SAP/jenkins-library/actions
 func actionsURL() string {
 	return getEnv("GITHUB_API_URL", "") + "/repos/" + getEnv("GITHUB_REPOSITORY", "") + "/actions"
 }
@@ -253,7 +252,7 @@ func (g *GitHubActionsConfigProvider) fetchJobs() error {
 		return nil
 	}
 
-	url := fmt.Sprintf("%s/runs/%s/jobs", actionsURL(), getEnv("GITHUB_RUN_ID", ""))
+	url := fmt.Sprintf("%s/runs/%s/jobs", actionsURL(), g.GetBuildID())
 	resp, err := g.client.GetRequest(url, httpHeaders, nil)
 	if err != nil {
 		return fmt.Errorf("failed to get API data: %w", err)
