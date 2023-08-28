@@ -57,7 +57,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'useGoStep',
     /**
-     * Toggle to activate the old Groovy implementation of the step. Off by default. Note that possibility to switch to the old Groovy implementation will be completely removed after January 31st, 2023.
+     * Toggle to activate the old Groovy implementation of the step. Off by default. Note that possibility to switch to the old Groovy implementation will be completely removed after December 31st, 2023.
      * @possibleValues true, false
      */
     'useGroovyStep'
