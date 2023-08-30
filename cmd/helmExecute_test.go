@@ -327,7 +327,8 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			fileUtils:          fileHandlerMock{},
 		},
 		{
-			// this test checks if RenderValuesTemplate: true correctly renders values templates
+			// this test checks if parseAndRenderCPETemplate is called properly
+			// when config.RenderValuesTemplate is true
 			config: helmExecuteOptions{
 				HelmCommand:          "",
 				RenderValuesTemplate: true,
@@ -345,7 +346,8 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			},
 		},
 		{
-			// this test checks if RenderValuesTemplate: false correctly skips rendering values templates
+			// this test checks if parseAndRenderCPETemplate is NOT called
+			// when config.RenderValuesTemplate is false
 			config: helmExecuteOptions{
 				HelmCommand:          "",
 				RenderValuesTemplate: false,
