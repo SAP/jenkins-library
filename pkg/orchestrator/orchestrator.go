@@ -17,6 +17,20 @@ const (
 	Jenkins
 )
 
+const (
+	BuildStatusSuccess    = "SUCCESS"
+	BuildStatusAborted    = "ABORTED"
+	BuildStatusFailure    = "FAILURE"
+	BuildStatusInProgress = "IN_PROGRESS"
+
+	BuildReasonManual          = "Manual"
+	BuildReasonSchedule        = "Schedule"
+	BuildReasonPullRequest     = "PullRequest"
+	BuildReasonResourceTrigger = "ResourceTrigger"
+	BuildReasonIndividualCI    = "IndividualCI"
+	BuildReasonUnknown         = "Unknown"
+)
+
 type OrchestratorSpecificConfigProviding interface {
 	InitOrchestratorProvider(settings *OrchestratorSettings)
 	OrchestratorType() string
@@ -75,13 +89,13 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 // DetectOrchestrator returns the name of the current orchestrator e.g. Jenkins, Azure, Unknown
 func DetectOrchestrator() Orchestrator {
 	if isAzure() {
-		return Orchestrator(AzureDevOps)
+		return AzureDevOps
 	} else if isGitHubActions() {
-		return Orchestrator(GitHubActions)
+		return GitHubActions
 	} else if isJenkins() {
-		return Orchestrator(Jenkins)
+		return Jenkins
 	} else {
-		return Orchestrator(Unknown)
+		return Unknown
 	}
 }
 
