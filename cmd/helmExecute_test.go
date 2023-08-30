@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path"
 	"testing"
@@ -538,7 +537,7 @@ type fileHandlerMock struct {
 	fileWriteCalled  []string
 }
 
-func (f *fileHandlerMock) FileWrite(name string, content []byte, mode fs.FileMode) error {
+func (f *fileHandlerMock) FileWrite(name string, content []byte, mode os.FileMode) error {
 	f.fileWriteCalled = append(f.fileWriteCalled, name)
 	return nil
 }

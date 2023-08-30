@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/fs"
+	"os"
 	"path"
 	"path/filepath"
 
@@ -193,5 +193,5 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 type fileHandler interface {
 	FileExists(string) (bool, error)
 	FileRead(string) ([]byte, error)
-	FileWrite(string, []byte, fs.FileMode) error
+	FileWrite(string, []byte, os.FileMode) error
 }
