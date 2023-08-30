@@ -326,16 +326,27 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			methodPackageError: nil,
 			methodPublishError: nil,
 			fileUtils:          fileHandlerMock{},
+		},
+		{
+			// this test checks if RenderValuesTemplate: true correctly renders values templates
+			config: helmExecuteOptions{
+				HelmCommand:          "",
+				RenderValuesTemplate: true,
+			},
+			methodLintError:    nil,
+			methodPackageError: nil,
+			methodPublishError: nil,
+			fileUtils:          fileHandlerMock{},
 			// we expect the values file is traversed since parsing and rendering according to cpe template is active
 			assertFunc: func(f fileHandlerMock) error {
 				if len(f.fileExistsCalled) == 1 && f.fileExistsCalled[0] == "/values.yaml" {
 					return nil
 				}
-				return fmt.Errorf("unexpected: %+v", f.fileExistsCalled)
+				return fmt.Errorf("expected FileExists called for ['/values.yaml'] but was: %+v", f.fileExistsCalled)
 			},
 		},
 		{
-			// this test checks if
+			// this test checks if RenderValuesTemplate: false correctly skips rendering values templates
 			config: helmExecuteOptions{
 				HelmCommand:          "",
 				RenderValuesTemplate: false,
@@ -347,7 +358,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			// we expect the values file is not traversed since parsing and rendering according to cpe template is not active
 			assertFunc: func(f fileHandlerMock) error {
 				if len(f.fileExistsCalled) > 0 {
-					return fmt.Errorf("unexpected: %+v", f.fileExistsCalled)
+					return fmt.Errorf("expected FileExists not called, but was for: %+v", f.fileExistsCalled)
 				}
 				return nil
 			},
