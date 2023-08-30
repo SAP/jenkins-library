@@ -15,7 +15,7 @@ jobs:
       - uses: styfle/cancel-workflow-action@0.10.0
       - uses: actions/setup-go@v4
         with:
-          go-version: '1.18.x'
+          go-version: '1.19.x'
       - name: Cache Golang Packages
         uses: actions/cache@v3
         with:
@@ -31,7 +31,7 @@ jobs:
       # run code coverage upload to code climate on main branch since PR branch will not have access to secret
       - name: unit-test-code-climate-upload
         if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.head.repo.full_name == github.repository) }}
-        uses: paambaati/codeclimate-action@v4
+        uses: paambaati/codeclimate-action@v5
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
         with:
@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v4
         with:
-          go-version: '1.18.x'
+          go-version: '1.19.x'
       - name: Cache Golang Packages
         uses: actions/cache@v3
         with:
@@ -70,7 +70,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: staticcheck
-        uses: dominikh/staticcheck-action@v1.2.0
+        uses: dominikh/staticcheck-action@v1.3.0
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
           install-go: false
@@ -79,7 +79,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v4
         with:
-          go-version: '1.18.x'
+          go-version: '1.19.x'
       - name: Cache Golang Packages
         uses: actions/cache@v3
         with:
@@ -99,7 +99,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v4
         with:
-          go-version: '1.18.x'
+          go-version: '1.19.x'
       - name: Cache Golang Packages
         uses: actions/cache@v3
         with:
