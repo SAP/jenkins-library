@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net/url"
 	"os"
@@ -351,7 +350,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID))
-		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700); err != nil {
+		if err := os.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700); err != nil {
 			log.Entry().WithError(err).Error("failed to write file")
 		}
 
@@ -359,7 +358,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 		if err != nil {
 			return reports, err
 		}
-		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700); err != nil {
+		if err := os.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700); err != nil {
 			log.Entry().WithError(err).Warning("failed to write file")
 		}
 	}
@@ -883,7 +882,7 @@ func readAllClasspathFiles(file string) string {
 }
 
 func readClasspathFile(file string) string {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to read classpath from file '%v'", file)
 	}

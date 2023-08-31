@@ -314,4 +314,41 @@ class BuildExecuteTest extends BasePiperTest {
         )
         assertThat(buildToolCalled, is(true))
     }
+
+    @Test
+    void testHelmExecuteCalledWhenConfigured() {
+        def helmExecuteCalled = false
+        helper.registerAllowedMethod('helmExecute', [Map.class], { m ->
+            helmExecuteCalled = true
+            return
+        })
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+        })
+
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            helmExecute: true
+        )
+
+        assertThat(helmExecuteCalled, is(true))
+    }
+
+    @Test
+    void testHelmExecuteNotCalledWhenNotConfigured() {
+        def helmExecuteCalled = false
+        helper.registerAllowedMethod('helmExecute', [Map.class], { m ->
+            helmExecuteCalled = true
+            return
+        })
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+        })
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            helmExecute: false
+        )
+
+        assertThat(helmExecuteCalled, is(false))
+    }
 }

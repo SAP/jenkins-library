@@ -5,7 +5,6 @@ package mock
 
 import (
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
 
@@ -243,5 +242,5 @@ func OpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) 
 	default:
 		r = ""
 	}
-	return ioutil.NopCloser(strings.NewReader(r)), nil
+	return io.NopCloser(strings.NewReader(r)), nil
 }

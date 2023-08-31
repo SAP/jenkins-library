@@ -115,6 +115,30 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 	)
 	container.terminate(t)
 }
+func TestCNBIntegrationBuildSummary(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	registryContainer := setupDockerRegistry(t, ctx)
+	defer registryContainer.Terminate(ctx)
+
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   baseBuilder,
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
+		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+	})
+
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	assert.NoError(t, err)
+
+	container.assertHasOutput(t, "*** Build Summary ***",
+		"  Builder: \"paketobuildpacks/builder:base\"",
+		"  Lifecycle: \"0.16.4+683e1b46\"",
+		"  Image: \"localhost:5000/not-found@sha256:",
+		"    Project descriptor: \"/project/project.toml\"",
+		"    Env: \"TMPDIR, BP_NODE_VERSION\"")
+	container.terminate(t)
+}
 
 func TestCNBIntegrationZipPath(t *testing.T) {
 	t.Parallel()

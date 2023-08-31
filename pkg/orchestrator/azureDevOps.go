@@ -1,7 +1,7 @@
 package orchestrator
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -13,20 +13,17 @@ import (
 
 type AzureDevOpsConfigProvider struct {
 	client         piperHttp.Client
-	options        piperHttp.ClientOptions
 	apiInformation map[string]interface{}
 }
 
 // InitOrchestratorProvider initializes http client for AzureDevopsConfigProvider
 func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
-	a.client = piperHttp.Client{}
-	a.options = piperHttp.ClientOptions{
+	a.client.SetOptions(piperHttp.ClientOptions{
 		Username:         "",
 		Password:         settings.AzureToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
-	}
-	a.client.SetOptions(a.options)
+	})
 	log.Entry().Debug("Successfully initialized Azure config provider")
 }
 
@@ -102,12 +99,12 @@ func (a *AzureDevOpsConfigProvider) GetBuildStatus() string {
 	// cases to align with Jenkins: SUCCESS, FAILURE, NOT_BUILD, ABORTED
 	switch buildStatus := getEnv("AGENT_JOBSTATUS", "FAILURE"); buildStatus {
 	case "Succeeded":
-		return "SUCCESS"
+		return BuildStatusSuccess
 	case "Canceled":
-		return "ABORTED"
+		return BuildStatusAborted
 	default:
 		// Failed, SucceededWithIssues
-		return "FAILURE"
+		return BuildStatusFailure
 	}
 }
 
@@ -153,7 +150,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 			log.Entry().Errorf("response code is %v, could not get log information from AzureDevOps ", response.StatusCode)
 			return []byte{}, err
 		}
-		content, err := ioutil.ReadAll(response.Body)
+		content, err := io.ReadAll(response.Body)
 		if err != nil {
 			log.Entry().Error("failed to parse http response", err)
 			return []byte{}, err

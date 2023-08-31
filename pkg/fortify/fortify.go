@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -766,7 +765,7 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 	if err != nil {
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	defer response.Body.Close()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error reading the response data")

@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -172,7 +171,7 @@ repositories:
 - name: 'testRepo3'
   branch: 'testBranch3'`
 
-		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := abapEnvironmentCheckoutBranchOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -215,7 +214,7 @@ repositories:
 		manifestFileString := ``
 
 		manifestFileStringBody := []byte(manifestFileString)
-		err := ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+		err := os.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
 
 		config := abapEnvironmentCheckoutBranchOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -263,7 +262,7 @@ repositories:
 - repo: 'testRepo2'`
 
 		manifestFileStringBody := []byte(manifestFileString)
-		err := ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+		err := os.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
 
 		config := abapEnvironmentCheckoutBranchOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",

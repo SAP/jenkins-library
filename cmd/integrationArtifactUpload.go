@@ -5,7 +5,7 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/Jeffail/gabs/v2"
@@ -71,7 +71,7 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 	}
 
 	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(iFlowStatusResp.Body)
+		responseBody, readErr := io.ReadAll(iFlowStatusResp.Body)
 		if readErr != nil {
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", iFlowStatusResp.StatusCode)
 		}
@@ -109,7 +109,7 @@ func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 		return nil
 	}
 	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(uploadIflowStatusResp.Body)
+		responseBody, readErr := io.ReadAll(uploadIflowStatusResp.Body)
 		if readErr != nil {
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", uploadIflowStatusResp.StatusCode)
 		}
@@ -146,7 +146,7 @@ func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 		return nil
 	}
 	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(updateIflowStatusResp.Body)
+		responseBody, readErr := io.ReadAll(updateIflowStatusResp.Body)
 		if readErr != nil {
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", updateIflowStatusResp.StatusCode)
 		}
