@@ -260,7 +260,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	if config.UpdateRulePack {
 
 		fortifyUpdateParams := []string{"-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL}
-		proxyPort, proxyHost := getProxy(config.Proxy)
+		proxyPort, proxyHost := getProxyParams(config.Proxy)
 		if proxyHost != "" && proxyPort != "" {
 			fortifyUpdateParams = append(fortifyUpdateParams, "-proxyhost", proxyHost, "-proxyport", proxyPort)
 		}
@@ -1271,7 +1271,7 @@ func createToolRecordFortify(utils fortifyUtils, workspace string, config fortif
 	return record.GetFileName(), nil
 }
 
-func getProxy(proxyUrl string) (string, string) {
+func getProxyParams(proxyUrl string) (string, string) {
 	if proxyUrl == "" {
 		return "", ""
 	}
