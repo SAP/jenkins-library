@@ -84,7 +84,7 @@ type SystemInstance struct {
 }
 
 // NewSystemInstance - creates an returns a new SystemInstance
-func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Duration) *SystemInstance {
+func NewSystemInstance(serverURL, apiEndpoint, authToken, proxyUrl string, timeout time.Duration) *SystemInstance {
 	// If serverURL ends in a trailing slash, UploadResultFile() will construct a URL with two or more
 	// consecutive slashes and actually fail with a 503. https://github.com/SAP/jenkins-library/issues/1826
 	// Also, since the step outputs a lot of URLs to the log, those will look nicer without redundant slashes.
@@ -96,8 +96,16 @@ func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Du
 	encodedAuthToken := base64EndodePlainToken(authToken)
 	httpClientInstance := &piperHttp.Client{}
 	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + encodedAuthToken, TransportTimeout: timeout}
-	httpClientInstance.SetOptions(httpClientOptions)
 
+	if proxyUrl != "" {
+		transportProxy, err := url.Parse(proxyUrl)
+		if err != nil {
+			log.Entry().Warningf("Failed to parse proxy url %v", proxyUrl)
+		}
+		httpClientOptions.TransportProxy = transportProxy
+	}
+
+	httpClientInstance.SetOptions(httpClientOptions)
 	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, encodedAuthToken, timeout)
 }
 
