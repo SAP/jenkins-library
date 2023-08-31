@@ -14,13 +14,13 @@ You need to store the API token for the Detect service as _'Secret text'_ creden
 
 ## Usage of Detect 8
 
-In order to use currently supported detect 8 script you have to set to parameters:
+In order to use the currently supported detect 8 script you have to set to parameters:
 useDetect8: true
 successOnSkip: true
 
-Second parameters is needed to avoid failure of the step in case singnature scanner min interval is not met. 
+The second parameter is needed to avoid failure of the step in case the signature scanner min interval is not met. 
 
- <a href="https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/currentreleasenotes.html" target="_blank">Release notes for Detect 8</a>
+<a href="https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/currentreleasenotes.html" target="_blank">Release notes for Detect 8</a>
 
 ## Rapid scan
 
