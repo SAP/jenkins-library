@@ -100,8 +100,9 @@ func NewSystemInstance(serverURL, apiEndpoint, authToken, proxyUrl string, timeo
 		transportProxy, err := url.Parse(proxyUrl)
 		if err != nil {
 			log.Entry().Warningf("Failed to parse proxy url %v", proxyUrl)
+		} else {
+			httpClientOptions.TransportProxy = transportProxy
 		}
-		httpClientOptions.TransportProxy = transportProxy
 	}
 
 	httpClientInstance.SetOptions(httpClientOptions)
