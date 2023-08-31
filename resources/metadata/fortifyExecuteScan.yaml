@@ -626,6 +626,13 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/projectSettingsFile
+      - name: proxy
+        type: string
+        description: Proxy URL to be used for communication with the Fortify instance.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: globalSettingsFile
         type: string
         description: Path to the mvn settings file that should be used as global settings file.
