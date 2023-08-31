@@ -1,6 +1,6 @@
 module github.com/SAP/jenkins-library
 
-go 1.18
+go 1.19
 
 //downgraded for :https://cs.opensource.google/go/x/crypto/+/5d542ad81a58c89581d596f49d0ba5d435481bcf : or else will break for some github instances
 // not downgraded using go get since it breaks other dependencies.
@@ -33,7 +33,7 @@ require (
 	github.com/google/go-cmp v0.5.8
 	github.com/google/go-containerregistry v0.10.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-retryablehttp v0.7.1
 	github.com/hashicorp/vault v1.9.9
 	github.com/hashicorp/vault/api v1.3.1

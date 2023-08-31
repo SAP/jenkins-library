@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -118,7 +119,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 	auditStatus := map[string]string{}
-	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
+	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, config.Proxy, time.Minute*15)
 	utils := newFortifyUtilsBundle(client)
 
 	influx.step_data.fields.fortify = false
@@ -257,10 +258,18 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	}
 
 	if config.UpdateRulePack {
-		err := utils.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
+
+		fortifyUpdateParams := []string{"-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL}
+		proxyPort, proxyHost := getProxyParams(config.Proxy)
+		if proxyHost != "" && proxyPort != "" {
+			fortifyUpdateParams = append(fortifyUpdateParams, "-proxyhost", proxyHost, "-proxyport", proxyPort)
+		}
+
+		err := utils.RunExecutable("fortifyupdate", fortifyUpdateParams...)
 		if err != nil {
 			return reports, fmt.Errorf("failed to update rule pack, serverUrl: %v", config.ServerURL)
 		}
+
 		err = utils.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-showInstalledRules")
 		if err != nil {
 			return reports, fmt.Errorf("failed to fetch details of installed rule pack, serverUrl: %v", config.ServerURL)
@@ -1260,4 +1269,17 @@ func createToolRecordFortify(utils fortifyUtils, workspace string, config fortif
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+func getProxyParams(proxyUrl string) (string, string) {
+	if proxyUrl == "" {
+		return "", ""
+	}
+
+	urlParams, err := url.Parse(proxyUrl)
+	if err != nil {
+		log.Entry().Warningf("Failed to parse proxy url %s", proxyUrl)
+		return "", ""
+	}
+	return urlParams.Port(), urlParams.Hostname()
 }
