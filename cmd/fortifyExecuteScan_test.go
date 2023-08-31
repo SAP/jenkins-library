@@ -1122,9 +1122,9 @@ func toFortifyTime(time time.Time) models.Iso8601MilliDateTime {
 }
 
 func TestGetProxyParams(t *testing.T) {
-	t.Run("Vaild Proxy URL", func(t *testing.T) {
+	t.Run("Valid Proxy URL", func(t *testing.T) {
 		proxyPort, proxyHost := getProxyParams("http://testproxy.com:8080")
-		assert.Equal(t, 8080, proxyPort)
+		assert.Equal(t, "8080", proxyPort)
 		assert.Equal(t, "testproxy.com", proxyHost)
 	})
 
