@@ -632,7 +632,7 @@ spec:
         scope:
           - STEPS
           - STAGES
-          - PARAMETERS   
+          - PARAMETERS
       - name: globalSettingsFile
         type: string
         description: Path to the mvn settings file that should be used as global settings file.
