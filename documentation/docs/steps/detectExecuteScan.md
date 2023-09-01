@@ -12,7 +12,7 @@ You need to store the API token for the Detect service as _'Secret text'_ creden
 
 ## ${docGenConfiguration}
 
-## Usage of Detect 8
+## Testing of Detect 8 (before official upgrade)
 
 In order to use the currently supported detect 8 script you have to set to parameters:
 useDetect8: true
