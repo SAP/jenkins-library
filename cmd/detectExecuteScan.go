@@ -97,6 +97,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 					"FAILURE_BLACKDUCK_FEATURE_ERROR - Detect encountered an error while attempting an operation on Black Duck. Ensure your Black Duck is compatible with this version of detect.",
 					"FAILURE_GENERAL_ERROR - Detect encountered a known error, details of the error are provided.",
 					"FAILURE_UNKNOWN_ERROR - Detect encountered an unknown error.",
+					"FAILURE_MINIMUM_INTERVAL_NOT_MET - Detect did not wait the minimum required scan interval.",
 				},
 			},
 		},
@@ -276,6 +277,7 @@ func exitCodeMapping(exitCodeKey int) string {
 		12:  "FAILURE_POLARIS_CONNECTIVITY => Detect was unable to connect to Polaris. Check your configuration and connection.",
 		99:  "FAILURE_GENERAL_ERROR => Detect encountered a known error, details of the error are provided.",
 		100: "FAILURE_UNKNOWN_ERROR => Detect encountered an unknown error.",
+		13:  "FAILURE_MINIMUM_INTERVAL_NOT_MET => Detect did not wait the minimum required scan interval.",
 	}
 
 	if _, isKeyExists := exitCodes[exitCodeKey]; isKeyExists {
@@ -290,7 +292,12 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 		log.Entry().Infof("The scanOnChanges option is deprecated")
 	}
 
-	log.Entry().Infof("Downloading Detect7")
+	log.Entry().Infof("Downloading Detect Script")
+
+	if config.UseDetect8 {
+		return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+	}
+
 	return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
 }
 
@@ -349,6 +356,10 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	// Atleast 1, non-empty category to fail on must be provided
 	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
+	}
+
+	if config.SuccessOnSkip {
+		args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=%v\"", config.SuccessOnSkip))
 	}
 
 	codelocation := config.CodeLocation
