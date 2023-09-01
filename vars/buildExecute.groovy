@@ -110,8 +110,7 @@ void call(Map parameters = [:]) {
                 throw new AbortException("ERROR - 'cnbBuild' does not support '${config.buildTool}' as a buildTool.")
             }
             cnbBuild script: script
-        }
-        if (config.buildTool == 'kaniko' || (config.buildTool == 'docker' && !config.cnbBuild)) {
+        } else if (config.buildTool == 'kaniko' || config.buildTool == 'docker') {
             kanikoExecute script: script
         }
         if(config.helmExecute) {
