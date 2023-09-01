@@ -18,7 +18,8 @@ In order to use the currently supported detect 8 script you have to set to param
 useDetect8: true
 successOnSkip: true
 
-The second parameter is needed to avoid failure of the step in case the signature scanner min interval is not met. <a href="https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/currentreleasenotes.html" target="_blank">Release notes for Detect 8 could be found here</a>
+The first parameter useDetect8 is used to download the newer version of the script. 
+The second parameter successOnSkip represents the [detect.force.success.on.skip](https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/properties/configuration/general.html#force-success-on-skip-advanced) parameter. It is needed to avoid failure of the step in case the signature scanner min interval is not met. [Release notes for Detect 8 can be found here](https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/currentreleasenotes.html) 
 
 ## Rapid scan
 
