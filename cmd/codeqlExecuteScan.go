@@ -161,6 +161,9 @@ func initGitInfo(config *codeqlExecuteScanOptions) (RepoInfo, error) {
 		}
 		if len(config.TargetGithubBranchName) > 0 {
 			repoInfo.ref = config.TargetGithubBranchName
+			if len(strings.Split(config.TargetGithubBranchName, "/")) < 3 {
+				repoInfo.ref = "refs/heads/" + config.TargetGithubBranchName
+			}
 		}
 	}
 
@@ -331,18 +334,18 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		if !hasToken {
 			return reports, errors.New("failed running upload db sources to GitHub as githubToken was not specified")
 		}
-		ghRepoUploader := codeql.NewGithubUploaderInstance(
-			repoInfo.serverUrl,
-			repoInfo.owner,
-			repoInfo.repo,
+		repoUploader, err := codeql.NewGitUploaderInstance(
 			token,
 			repoInfo.ref,
 			config.Database,
 			repoInfo.commitId,
 			config.Repository,
-			[]string{},
+			config.TargetGithubRepoURL,
 		)
-		targetCommitId, err := ghRepoUploader.UploadProjectToGithub()
+		if err != nil {
+			return reports, err
+		}
+		targetCommitId, err := repoUploader.UploadProjectToGithub()
 		if err != nil {
 			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
 		}

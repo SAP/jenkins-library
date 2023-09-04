@@ -2,255 +2,264 @@ package codeql
 
 import (
 	"archive/zip"
-	"context"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
-	sapgithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/google/go-github/v45/github"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/storage/memory"
+	"gopkg.in/yaml.v2"
 )
 
-type GithubUploader interface {
-	UploadProjectToGithub() error
+type GitUploader interface {
+	UploadProjectToGithub() (string, error)
 }
 
-type gitService interface {
-	GetRef(ctx context.Context, owner, repo, ref string) (*github.Reference, *github.Response, error)
-	CreateRef(ctx context.Context, owner, repo string, ref *github.Reference) (*github.Reference, *github.Response, error)
-	CreateCommit(ctx context.Context, owner, repo string, commit *github.Commit) (*github.Commit, *github.Response, error)
-	UpdateRef(ctx context.Context, owner, repo string, ref *github.Reference, force bool) (*github.Reference, *github.Response, error)
-	CreateTree(ctx context.Context, owner, repo, baseTree string, entries []*github.TreeEntry) (*github.Tree, *github.Response, error)
-	GetTree(ctx context.Context, owner, repo, sha string, recursive bool) (*github.Tree, *github.Response, error)
-}
-
-type gitRepositoriesService interface {
-	GetCommit(ctx context.Context, owner, repo, sha string, opts *github.ListOptions) (*github.RepositoryCommit, *github.Response, error)
-	ListCommits(ctx context.Context, owner, repo string, opts *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error)
-	Get(ctx context.Context, owner, repo string) (*github.Repository, *github.Response, error)
-	DeleteFile(ctx context.Context, owner, repo, path string, opts *github.RepositoryContentFileOptions) (*github.RepositoryContentResponse, *github.Response, error)
-}
-
-type GithubUploaderInstance struct {
+type GitUploaderInstance struct {
 	*command.Command
 
-	serverUrl      string
-	owner          string
-	repository     string
 	token          string
 	ref            string
 	sourceCommitId string
 	sourceRepo     string
+	targetRepo     string
 	dbDir          string
-	trustedCerts   []string
 }
 
-func NewGithubUploaderInstance(serverUrl, owner, repository, token, ref, dbDir,
-	sourceCommitId, sourceRepo string,
-	trustedCerts []string) GithubUploaderInstance {
-	instance := GithubUploaderInstance{
+func NewGitUploaderInstance(token, ref, dbDir, sourceCommitId, sourceRepo, targetRepo string) (*GitUploaderInstance, error) {
+	dbAbsPath, err := filepath.Abs(dbDir)
+	if err != nil {
+		return nil, err
+	}
+	instance := &GitUploaderInstance{
 		Command:        &command.Command{},
-		serverUrl:      serverUrl,
-		owner:          owner,
-		repository:     repository,
 		token:          token,
 		ref:            ref,
 		sourceCommitId: sourceCommitId,
 		sourceRepo:     sourceRepo,
-		dbDir:          dbDir,
-		trustedCerts:   trustedCerts,
+		targetRepo:     targetRepo,
+		dbDir:          filepath.Clean(dbAbsPath),
 	}
 
 	instance.Stdout(log.Writer())
 	instance.Stderr(log.Writer())
-	return instance
+	return instance, nil
+}
+
+type gitUtils interface {
+	listRemote() ([]reference, error)
+	cloneRepo(dir string, opts *git.CloneOptions) (*git.Repository, error)
+	switchOrphan(ref string, repo *git.Repository) error
+}
+
+type repository interface {
+	Worktree() (*git.Worktree, error)
+	CommitObject(commit plumbing.Hash) (*object.Commit, error)
+	Push(o *git.PushOptions) error
+}
+
+type worktree interface {
+	RemoveGlob(pattern string) error
+	Clean(opts *git.CleanOptions) error
+	AddWithOptions(opts *git.AddOptions) error
+	Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error)
+}
+
+type reference interface {
+	Name() plumbing.ReferenceName
 }
 
 const (
-	CommitMessageRmFiles       = "branch emptying"
 	CommitMessageMirroringCode = "Mirroring code for revision %s from %s"
-	FileType                   = "blob"
-	FileMode                   = "100644"
-	TreeType                   = "tree"
 	SrcZip                     = "src.zip"
+	codeqlDatabaseYml          = "codeql-database.yml"
 )
 
-func (repoUploader *GithubUploaderInstance) UploadProjectToGithub() (string, error) {
-	apiUrl := getApiUrl(repoUploader.serverUrl)
-	ctx, client, err := sapgithub.NewClient(repoUploader.token, apiUrl, "", repoUploader.trustedCerts)
-	if err != nil {
-		return "", err
-	}
-
+func (uploader *GitUploaderInstance) UploadProjectToGithub() (string, error) {
 	tmpDir, err := os.MkdirTemp("", "tmp")
 	if err != nil {
 		return "", err
 	}
 	defer os.RemoveAll(tmpDir)
 
-	ex, err := os.Executable()
+	refExists, err := doesRefExist(uploader, uploader.ref)
 	if err != nil {
 		return "", err
 	}
-	sourceDir := filepath.Dir(ex)
 
-	newRef, err := checkoutTargetRepo(ctx, client.Git, client.Repositories, repoUploader)
+	repo, err := clone(uploader, uploader.targetRepo, uploader.token, uploader.ref, tmpDir, refExists)
 	if err != nil {
 		return "", err
 	}
-	lastCommitSHA, err := emptyTargetBranch(ctx, client.Git, client.Repositories, repoUploader, *newRef.Object.SHA, "")
-	if err != nil {
-		return "", err
-	}
-	zipPath := path.Join(sourceDir, repoUploader.dbDir, SrcZip)
-	err = unzip(zipPath, tmpDir, strings.Trim(sourceDir, fmt.Sprintf("%c", os.PathSeparator)), repoUploader.dbDir)
-	if err != nil {
-		return "", err
-	}
-	tree, err := addProjectFiles(ctx, client.Git, repoUploader, lastCommitSHA, tmpDir)
-	if err != nil {
-		return "", err
-	}
-	newCommitId, err := pushProjectToTargetRepo(ctx, client.Repositories, client.Git, repoUploader, newRef, tree)
 
-	return newCommitId, err
+	tree, err := repo.Worktree()
+	if err != nil {
+		return "", err
+	}
+	err = cleanDir(tree)
+	if err != nil {
+		return "", err
+	}
+
+	srcLocationPrefix, err := getSourceLocationPrefix(filepath.Join(uploader.dbDir, codeqlDatabaseYml))
+	if err != nil {
+		return "", err
+	}
+
+	zipPath := path.Join(uploader.dbDir, SrcZip)
+	err = unzip(zipPath, tmpDir, strings.Trim(srcLocationPrefix, fmt.Sprintf("%c", os.PathSeparator)))
+	if err != nil {
+		return "", err
+	}
+
+	err = add(tree)
+	if err != nil {
+		return "", err
+	}
+
+	newCommit, err := commit(repo, tree, uploader.sourceCommitId, uploader.sourceRepo)
+	if err != nil {
+		return "", err
+	}
+
+	err = push(repo, uploader.token)
+	if err != nil {
+		return "", err
+	}
+
+	return newCommit.ID().String(), err
 }
 
-// checks if target branch exists, creates a new one if necessary from the first commit of default branch
-func checkoutTargetRepo(ctx context.Context, gitService gitService, repoService gitRepositoriesService, uploader *GithubUploaderInstance) (*github.Reference, error) {
-	repo, _, err := repoService.Get(ctx, uploader.owner, uploader.repository)
-	if err != nil {
-		return nil, err
-	}
-	ref, _, err := gitService.GetRef(ctx, uploader.owner, uploader.repository, uploader.ref)
-	if err == nil {
-		return ref, nil
-	}
-	baseRefName := *repo.DefaultBranch
-	firstCommit, err := getFirstCommit(ctx, repoService, uploader, baseRefName)
-	if err != nil {
-		return nil, err
-	}
-	newRef := &github.Reference{Ref: &uploader.ref, Object: &github.GitObject{SHA: firstCommit.SHA}}
-	ref, _, err = gitService.CreateRef(ctx, uploader.owner, uploader.repository, newRef)
-	return ref, err
-}
+func (uploader *GitUploaderInstance) listRemote() ([]reference, error) {
+	rem := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{uploader.targetRepo},
+	})
 
-// get the first commit of branch as we don't need the whole history
-func getFirstCommit(ctx context.Context, repoService gitRepositoriesService, uploader *GithubUploaderInstance, ref string) (*github.RepositoryCommit, error) {
-	page := 1
-	firstCommit := &github.RepositoryCommit{}
-	for page != 0 {
-		opts := &github.CommitsListOptions{
-			SHA: ref,
-			ListOptions: github.ListOptions{
-				Page:    page,
-				PerPage: perPageCount,
-			},
-		}
-		commits, response, err := repoService.ListCommits(ctx, uploader.owner, uploader.repository, opts)
-		if err != nil {
-			return nil, err
-		}
-		page = response.NextPage
-		firstCommit = commits[len(commits)-1]
-	}
-	return firstCommit, nil
-}
-
-// delete all files from target branch (remote)
-func emptyTargetBranch(ctx context.Context, gitService gitService, repoService gitRepositoriesService, uploader *GithubUploaderInstance, objectSHA, entryParentPath string) (string, error) {
-	lastCommitSHA := objectSHA
-	tree, resp, err := gitService.GetTree(ctx, uploader.owner, uploader.repository, objectSHA, false)
-	if resp.Response.StatusCode == 404 {
-		return lastCommitSHA, nil
-	}
-	if err != nil {
-		return lastCommitSHA, err
-	}
-
-	for _, entry := range tree.Entries {
-		entryPath := *entry.Path
-		if entryParentPath != "" {
-			entryPath = fmt.Sprintf("%s/%s", entryParentPath, *entry.Path)
-		}
-		if *entry.Type == TreeType {
-			lastCommitSHA, err = emptyTargetBranch(ctx, gitService, repoService, uploader, *entry.SHA, entryPath)
-			if err != nil {
-				return lastCommitSHA, err
-			}
-			continue
-		}
-		content, _, err := repoService.DeleteFile(ctx, uploader.owner, uploader.repository, entryPath, &github.RepositoryContentFileOptions{
-			Message: github.String(CommitMessageRmFiles),
-			SHA:     entry.SHA,
-			Branch:  &uploader.ref,
-		})
-		if err != nil {
-			return lastCommitSHA, err
-		}
-		lastCommitSHA = *content.Commit.SHA
-	}
-	return lastCommitSHA, nil
-}
-
-func addProjectFiles(ctx context.Context, gitService gitService, uploader *GithubUploaderInstance, lastCommitSHA, dir string) (*github.Tree, error) {
-	var entries []*github.TreeEntry
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		fileName := strings.Trim(strings.TrimPrefix(path, dir), fmt.Sprintf("%c", os.PathSeparator))
-		entries = append(entries, &github.TreeEntry{
-			Path:    &fileName,
-			Type:    github.String(FileType),
-			Content: github.String(string(content)),
-			Mode:    github.String(FileMode),
-		})
-		return nil
+	list, err := rem.List(&git.ListOptions{
+		Auth: &http.BasicAuth{
+			Username: "does-not-matter",
+			Password: uploader.token,
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	newTree, _, err := gitService.CreateTree(ctx, uploader.owner, uploader.repository, lastCommitSHA, entries)
-	return newTree, err
+	var convertedList []reference
+	for _, ref := range list {
+		convertedList = append(convertedList, ref)
+	}
+	return convertedList, err
 }
 
-func pushProjectToTargetRepo(ctx context.Context, repoService gitRepositoriesService, gitService gitService, uploader *GithubUploaderInstance, ref *github.Reference, tree *github.Tree) (string, error) {
-	parent, _, err := repoService.GetCommit(ctx, uploader.owner, uploader.repository, *ref.Object.SHA, nil)
-	if err != nil {
-		return "", err
-	}
-	parent.Commit.SHA = parent.SHA
-
-	commit := &github.Commit{
-		Message: github.String(fmt.Sprintf(CommitMessageMirroringCode, uploader.sourceCommitId, uploader.sourceRepo)),
-		Tree:    tree,
-		Parents: []*github.Commit{parent.Commit},
-	}
-	newCommit, _, err := gitService.CreateCommit(ctx, uploader.owner, uploader.repository, commit)
-	if err != nil {
-		return "", err
-	}
-	ref.Object.SHA = newCommit.SHA
-	_, _, err = gitService.UpdateRef(ctx, uploader.owner, uploader.repository, ref, true)
-	return *newCommit.SHA, err
+func (uploader *GitUploaderInstance) cloneRepo(dir string, opts *git.CloneOptions) (*git.Repository, error) {
+	return git.PlainClone(dir, false, opts)
 }
 
-func unzip(zipPath, targetDir, srcDir, dbDir string) error {
+func (uploader *GitUploaderInstance) switchOrphan(ref string, r *git.Repository) error {
+	branchName := strings.Split(ref, "/")[2:]
+	newRef := plumbing.NewBranchReferenceName(strings.Join(branchName, "/"))
+	return r.Storer.SetReference(plumbing.NewSymbolicReference(plumbing.HEAD, newRef))
+}
+
+func doesRefExist(uploader gitUtils, ref string) (bool, error) {
+	// git ls-remote <repo>
+	remoteRefs, err := uploader.listRemote()
+	if err != nil {
+		return false, err
+	}
+	for _, r := range remoteRefs {
+		if string(r.Name()) == ref {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func clone(uploader gitUtils, url, token, ref, dir string, refExists bool) (*git.Repository, error) {
+	opts := &git.CloneOptions{
+		URL: url,
+		Auth: &http.BasicAuth{
+			Username: "does-not-matter",
+			Password: token,
+		},
+		SingleBranch: true,
+		Depth:        1,
+	}
+	if refExists {
+		opts.ReferenceName = plumbing.ReferenceName(ref)
+		// git clone -b <ref> --single-branch --depth=1 <url> <dir>
+		return uploader.cloneRepo(dir, opts)
+	}
+
+	// git clone --single-branch --depth=1 <url> <dir>
+	r, err := uploader.cloneRepo(dir, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// git switch --orphan <ref>
+	err = uploader.switchOrphan(ref, r)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func cleanDir(t worktree) error {
+	// git rm -r
+	err := t.RemoveGlob("*")
+	if err != nil {
+		return err
+	}
+	// git clean -d
+	err = t.Clean(&git.CleanOptions{Dir: true})
+	return err
+}
+
+func add(t worktree) error {
+	// git add --all
+	return t.AddWithOptions(&git.AddOptions{
+		All: true,
+	})
+}
+
+func commit(r repository, t worktree, sourceCommitId, sourceRepo string) (*object.Commit, error) {
+	// git commit --allow-empty -m <msg>
+	newCommit, err := t.Commit(fmt.Sprintf(CommitMessageMirroringCode, sourceCommitId, sourceRepo), &git.CommitOptions{
+		AllowEmptyCommits: true,
+		Author: &object.Signature{
+			When: time.Now(),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r.CommitObject(newCommit)
+}
+
+func push(r repository, token string) error {
+	// git push
+	return r.Push(&git.PushOptions{
+		Auth: &http.BasicAuth{
+			Username: "does-not-matter",
+			Password: token,
+		},
+	})
+}
+
+func unzip(zipPath, targetDir, srcDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return err
@@ -258,18 +267,29 @@ func unzip(zipPath, targetDir, srcDir, dbDir string) error {
 	defer r.Close()
 
 	for _, f := range r.File {
-		if !strings.Contains(f.Name, srcDir) || strings.Contains(f.Name, path.Join(srcDir, dbDir)) {
+		fName := f.Name
+
+		if runtime.GOOS == "windows" {
+			fNameSplit := strings.Split(fName, "/")
+			if len(fNameSplit) == 0 {
+				continue
+			}
+			fNameSplit[0] = strings.Replace(fNameSplit[0], "_", ":", 1)
+			fName = strings.Join(fNameSplit, fmt.Sprintf("%c", os.PathSeparator))
+		}
+		if !strings.Contains(fName, srcDir) {
 			continue
 		}
+
 		rc, err := f.Open()
 		if err != nil {
 			return err
 		}
 
-		fName := strings.TrimPrefix(f.Name, srcDir)
+		fName = strings.TrimPrefix(fName, srcDir)
 		fpath := filepath.Join(targetDir, fName)
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModeDir)
+			os.MkdirAll(fpath, os.ModePerm)
 			rc.Close()
 			continue
 		}
@@ -295,4 +315,21 @@ func unzip(zipPath, targetDir, srcDir, dbDir string) error {
 		fNew.Close()
 	}
 	return nil
+}
+
+func getSourceLocationPrefix(fileName string) (string, error) {
+	type codeqlDatabase struct {
+		SourceLocation string `yaml:"sourceLocationPrefix"`
+	}
+	var db codeqlDatabase
+	file, err := os.ReadFile(fileName)
+	if err != nil {
+		return "", err
+	}
+	err = yaml.Unmarshal(file, &db)
+	if err != nil {
+		return "", err
+	}
+
+	return db.SourceLocation, nil
 }

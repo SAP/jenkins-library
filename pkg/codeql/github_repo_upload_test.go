@@ -2,17 +2,19 @@ package codeql
 
 import (
 	"archive/zip"
-	"context"
+	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -22,189 +24,175 @@ const (
 	refsHeads = "refs/heads/"
 )
 
-type gitServiceMock struct{}
+type gitMock struct {
+	ref string
+	url string
+}
 
-func (g *gitServiceMock) GetRef(ctx context.Context, owner, repo, ref string) (*github.Reference, *github.Response, error) {
-	if ref == notExists {
-		return nil, nil, &github.Error{Message: "Not Found"}
+func newGitMock(ref, url string) *gitMock {
+	return &gitMock{ref: ref, url: url}
+}
+
+func (g *gitMock) listRemote() ([]reference, error) {
+	if g.url == notExists {
+		return nil, fmt.Errorf("repository not found")
 	}
-
-	return &github.Reference{
-		Ref: github.String(refsHeads + ref),
-		Object: &github.GitObject{
-			SHA: github.String("SHAofExistingRef"),
-		},
-	}, nil, nil
-}
-
-func (g *gitServiceMock) CreateRef(ctx context.Context, owner, repo string, ref *github.Reference) (*github.Reference, *github.Response, error) {
-	return &github.Reference{
-		Ref: ref.Ref,
-		Object: &github.GitObject{
-			SHA: github.String("SHAofNewRef"),
-		},
-	}, nil, nil
-}
-
-func (g *gitServiceMock) CreateCommit(ctx context.Context, owner, repo string, commit *github.Commit) (*github.Commit, *github.Response, error) {
-	return &github.Commit{
-		SHA: github.String("SHAofNewCommit"),
-	}, nil, nil
-}
-
-func (g *gitServiceMock) UpdateRef(ctx context.Context, owner, repo string, ref *github.Reference, force bool) (*github.Reference, *github.Response, error) {
-	return ref, nil, nil
-}
-
-func (g *gitServiceMock) CreateTree(ctx context.Context, owner, repo, baseTree string, entries []*github.TreeEntry) (*github.Tree, *github.Response, error) {
-	return &github.Tree{
-		SHA:     github.String("SHAofNewTree"),
-		Entries: entries,
-	}, nil, nil
-}
-
-func (g *gitServiceMock) GetTree(ctx context.Context, owner, repo, sha string, recursive bool) (*github.Tree, *github.Response, error) {
-	if sha == "emptyRef" {
-		return nil, &github.Response{
-			Response: &http.Response{StatusCode: 404},
-		}, &github.Error{Message: "Not Found"}
-	}
-	if sha == "withSubfolders" {
-		return &github.Tree{
-				SHA: github.String("SHAofTree"),
-				Entries: []*github.TreeEntry{
-					{
-						SHA:  github.String("SHAofTreeEntry"),
-						Path: github.String("filepath1"),
-						Type: github.String(TreeType),
-					},
-					{
-						SHA:  github.String("SHAofFileEntry"),
-						Path: github.String("filepath2"),
-						Mode: github.String(FileMode),
-						Type: github.String(FileType),
-					},
-				},
-				Truncated: github.Bool(false),
-			}, &github.Response{
-				Response: &http.Response{StatusCode: 200},
-			}, nil
-	}
-	return &github.Tree{
-			SHA: github.String("SHAofTree"),
-			Entries: []*github.TreeEntry{
-				{
-					SHA:  github.String("SHAofFileEntry"),
-					Path: github.String("filepath1"),
-					Mode: github.String(FileMode),
-					Type: github.String(FileType),
-				},
-				{
-					SHA:  github.String("SHAofFileEntry"),
-					Path: github.String("filepath2"),
-					Mode: github.String(FileMode),
-					Type: github.String(FileType),
-				},
-			},
-			Truncated: github.Bool(false),
-		}, &github.Response{
-			Response: &http.Response{StatusCode: 200},
-		}, nil
-}
-
-type gitRepositoriesServiceMock struct{}
-
-func (gr *gitRepositoriesServiceMock) Get(ctx context.Context, owner, repo string) (*github.Repository, *github.Response, error) {
-	if repo == notExists || owner == notExists {
-		return nil, nil, &github.ErrorResponse{
-			Message: "Not Found",
-		}
-	}
-	return &github.Repository{
-		DefaultBranch: github.String(exists),
-	}, nil, nil
-}
-
-func (gr *gitRepositoriesServiceMock) GetCommit(ctx context.Context, owner, repo, sha string, opts *github.ListOptions) (*github.RepositoryCommit, *github.Response, error) {
-	return &github.RepositoryCommit{
-		SHA: &sha,
-		Commit: &github.Commit{
-			SHA: github.String("SHAofCommit"),
-		},
-	}, nil, nil
-}
-
-func (gr *gitRepositoriesServiceMock) ListCommits(ctx context.Context, owner, repo string, opts *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
-	return []*github.RepositoryCommit{
+	list := []*referenceMock{
 		{
-			SHA: github.String("sha"),
-			Commit: &github.Commit{
-				SHA: github.String("SHAofCommit"),
-			},
+			name: refsHeads + "ref1",
 		},
-	}, &github.Response{NextPage: 0}, nil
+		{
+			name: refsHeads + "ref2",
+		},
+		{
+			name: refsHeads + "ref3",
+		},
+		{
+			name: refsHeads + exists,
+		},
+	}
+	var convertedList []reference
+	for _, ref := range list {
+		convertedList = append(convertedList, ref)
+	}
+	return convertedList, nil
 }
 
-func (gr *gitRepositoriesServiceMock) DeleteFile(ctx context.Context, owner, repo, path string, opts *github.RepositoryContentFileOptions) (*github.RepositoryContentResponse, *github.Response, error) {
-	return &github.RepositoryContentResponse{
-		Commit: github.Commit{
-			SHA: github.String("SHAofDeletingFile"),
-		},
-	}, nil, nil
+func (g *gitMock) cloneRepo(dir string, opts *git.CloneOptions) (*git.Repository, error) {
+	if opts.Auth == nil {
+		return nil, fmt.Errorf("error")
+	}
+	if opts.URL == notExists {
+		return nil, fmt.Errorf("error")
+	}
+	return &git.Repository{}, nil
 }
 
-func TestCloneTargetRepo(t *testing.T) {
-	ctx := context.Background()
-	ghService := gitServiceMock{}
-	ghRepoService := gitRepositoriesServiceMock{}
+func (g *gitMock) switchOrphan(branch string, repo *git.Repository) error {
+	return nil
+}
+
+type referenceMock struct {
+	name string
+}
+
+func (r *referenceMock) Name() plumbing.ReferenceName {
+	return plumbing.ReferenceName(r.name)
+}
+
+type repoMock struct{}
+
+func (r *repoMock) Worktree() (*git.Worktree, error) {
+	return &git.Worktree{}, nil
+}
+
+func (r *repoMock) CommitObject(commit plumbing.Hash) (*object.Commit, error) {
+	return &object.Commit{Hash: commit}, nil
+}
+
+func (r *repoMock) Push(opts *git.PushOptions) error {
+	if opts.Auth == nil {
+		return fmt.Errorf("error")
+	}
+	return nil
+}
+
+type worktreeMock struct{}
+
+func (t *worktreeMock) RemoveGlob(pattern string) error {
+	return nil
+}
+
+func (t *worktreeMock) Clean(opts *git.CleanOptions) error {
+	return nil
+}
+
+func (t *worktreeMock) AddWithOptions(opts *git.AddOptions) error {
+	return nil
+}
+
+func (t *worktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
+	if opts.Author == nil {
+		return plumbing.Hash{}, fmt.Errorf("error")
+	}
+	return plumbing.Hash{}, nil
+}
+
+func TestDoesRefExist(t *testing.T) {
+	t.Parallel()
+	t.Run("Invalid repository", func(t *testing.T) {
+		ghUploader := newGitMock(refsHeads+notExists, notExists)
+		_, err := doesRefExist(ghUploader, refsHeads+notExists)
+		assert.Error(t, err)
+
+	})
+	t.Run("Ref exists", func(t *testing.T) {
+		ghUploader := newGitMock(refsHeads+exists, exists)
+		ok, err := doesRefExist(ghUploader, refsHeads+exists)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+	})
+	t.Run("Ref doesn't exist", func(t *testing.T) {
+		ghUploader := newGitMock(refsHeads+notExists, exists)
+		ok, err := doesRefExist(ghUploader, refsHeads+notExists)
+		assert.NoError(t, err)
+		assert.False(t, ok)
+	})
+}
+
+func TestClone(t *testing.T) {
 	t.Parallel()
 	t.Run("Created new branch", func(t *testing.T) {
-		ghUploader := NewGithubUploaderInstance("", "", exists, "", notExists, "", "", "", []string{})
-		newRef, err := checkoutTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
+		ghUploader := newGitMock(refsHeads+notExists, exists)
+		repo, err := clone(ghUploader, ghUploader.url, "", ghUploader.ref, "", false)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, newRef)
+		assert.NotNil(t, repo)
 	})
 	t.Run("Target branch exists", func(t *testing.T) {
-		ghUploader := NewGithubUploaderInstance("", "", exists, "", exists, "", "", "", []string{})
-		newRef, err := checkoutTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
+		ghUploader := newGitMock(refsHeads+exists, exists)
+		repo, err := clone(ghUploader, ghUploader.url, "", ghUploader.ref, "", true)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, newRef)
-	})
-	t.Run("Invalid owner/repository", func(t *testing.T) {
-		ghUploader := NewGithubUploaderInstance("", notExists, notExists, "", notExists, "", "", "", []string{})
-		_, err := checkoutTargetRepo(ctx, &ghService, &ghRepoService, &ghUploader)
-		assert.Error(t, err)
+		assert.NotNil(t, repo)
 	})
 }
 
-func TestEmptyTargetBranch(t *testing.T) {
-	ctx := context.Background()
-	ghService := gitServiceMock{}
-	ghRepoService := gitRepositoriesServiceMock{}
+func TestClean(t *testing.T) {
 	t.Parallel()
-	t.Run("Success with not empty ref", func(t *testing.T) {
-		ghUploader := NewGithubUploaderInstance("", "", "repo", "", refsHeads+exists, "", "", "", []string{})
-		lastCommitSHA, err := emptyTargetBranch(ctx, &ghService, &ghRepoService, &ghUploader, "ObjectSHA", "")
+	t.Run("Success", func(t *testing.T) {
+		tree := &worktreeMock{}
+		err := cleanDir(tree)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, lastCommitSHA)
 	})
-	t.Run("Success with subfolders in non-empty ref", func(t *testing.T) {
-		ghUploader := NewGithubUploaderInstance("", "", "repo", "", refsHeads+exists, "", "", "", []string{})
-		lastCommitSHA, err := emptyTargetBranch(ctx, &ghService, &ghRepoService, &ghUploader, "withSubfolders", "")
+}
+
+func TestAdd(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		tree := &worktreeMock{}
+		err := add(tree)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, lastCommitSHA)
 	})
-	t.Run("Success with empty ref", func(t *testing.T) {
-		ghUploader := NewGithubUploaderInstance("", "", "repo", "", refsHeads+exists, "", "", "", []string{})
-		lastCommitSHA, err := emptyTargetBranch(ctx, &ghService, &ghRepoService, &ghUploader, "emptyRef", "")
+}
+
+func TestCommit(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		tree := &worktreeMock{}
+		repo := &repoMock{}
+		c, err := commit(repo, tree, "", "")
 		assert.NoError(t, err)
-		assert.NotEmpty(t, lastCommitSHA)
+		assert.NotNil(t, c)
+	})
+}
+
+func TestPush(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		repo := &repoMock{}
+		err := push(repo, "")
+		assert.NoError(t, err)
 	})
 }
 
 func TestUnzip(t *testing.T) {
 	t.Parallel()
-	dbDir := "codeqlDB"
 
 	t.Run("Success", func(t *testing.T) {
 		targetDir, err := os.MkdirTemp("", "tmp_target")
@@ -230,7 +218,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, dbDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
 		targetFilenames := []string{
 			filepath.Join(targetDir, "file1"),
 			filepath.Join(targetDir, "file2"),
@@ -259,7 +247,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, dbDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
 		checkExistedFiles(t, targetDir, filenames)
 	})
 
@@ -276,7 +264,7 @@ func TestUnzip(t *testing.T) {
 		defer os.RemoveAll(sourceDir)
 		zipPath := filepath.Join(sourceDir, "src.zip")
 
-		assert.Error(t, unzip(zipPath, targetDir, sourceDir, dbDir))
+		assert.Error(t, unzip(zipPath, targetDir, sourceDir))
 	})
 
 	t.Run("extra files in zip", func(t *testing.T) {
@@ -306,7 +294,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, dbDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
 		targetFilenames := []string{
 			filepath.Join(targetDir, "file1"),
 			filepath.Join(targetDir, "file2"),
@@ -318,64 +306,33 @@ func TestUnzip(t *testing.T) {
 	})
 }
 
-func TestAddProjectFiles(t *testing.T) {
-	ctx := context.Background()
-	ghService := gitServiceMock{}
-	tmpDir, err := os.MkdirTemp("", "tmp_test")
-	if err != nil {
-		panic(err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	filenames := []string{
-		filepath.Join(tmpDir, "file1"),
-		filepath.Join(tmpDir, "file2"),
-		filepath.Join(tmpDir, "subfolder1", "file1"),
-		filepath.Join(tmpDir, "subfolder1", "file2"),
-		filepath.Join(tmpDir, "subfolder2", "file1"),
-	}
-	err = fillFolderWithFiles(filenames)
-	if err != nil {
-		panic(err)
-	}
-
+func TestGetSourceLocationPrefix(t *testing.T) {
+	t.Parallel()
 	t.Run("Success", func(t *testing.T) {
-		commitSHA := "SHAofLastCommit"
-		ghUploader := NewGithubUploaderInstance("", "", "", "", refsHeads+exists, "", "", "", []string{})
-		tree, err := addProjectFiles(ctx, &ghService, &ghUploader, commitSHA, tmpDir)
+		filename := "test-file.yml"
+		location := "/some/location"
+		err := createFile(filename, location, false)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, tree)
-		checkExistedFiles(t, tmpDir, filenames)
+		defer os.Remove(filename)
+		srcLocationPrefix, err := getSourceLocationPrefix(filename)
+		assert.NoError(t, err)
+		assert.Equal(t, location, srcLocationPrefix)
 	})
-}
 
-func TestPushProjectToTargetRepo(t *testing.T) {
-	ctx := context.Background()
-	ghService := gitServiceMock{}
-	ghRepoService := gitRepositoriesServiceMock{}
-	ref := &github.Reference{
-		Ref: github.String(refsHeads + exists),
-		Object: &github.GitObject{
-			SHA: github.String("SHAofRef"),
-		},
-	}
-	tree := &github.Tree{
-		SHA: github.String("SHAofTree"),
-		Entries: []*github.TreeEntry{
-			{
-				SHA:     github.String("SHAofTreeEntry"),
-				Path:    github.String("filepath"),
-				Mode:    github.String(FileMode),
-				Type:    github.String(FileType),
-				Content: github.String("some content"),
-			},
-		},
-	}
-	t.Run("Success", func(t *testing.T) {
-		ghUploader := NewGithubUploaderInstance("", "", "", "", refsHeads+exists, "", "", "", []string{})
-		commitID, err := pushProjectToTargetRepo(ctx, &ghRepoService, &ghService, &ghUploader, ref, tree)
+	t.Run("No file found", func(t *testing.T) {
+		filename := "test-file-2.yml"
+		_, err := getSourceLocationPrefix(filename)
+		assert.Error(t, err)
+	})
+
+	t.Run("Empty file", func(t *testing.T) {
+		filename := "test-file-3.yml"
+		err := createFile(filename, "", true)
 		assert.NoError(t, err)
-		assert.NotEmpty(t, commitID)
+		defer os.Remove(filename)
+		srcLocationPrefix, err := getSourceLocationPrefix(filename)
+		assert.NoError(t, err)
+		assert.Empty(t, srcLocationPrefix)
 	})
 }
 
@@ -420,25 +377,33 @@ func createZIP(zipPath string, filenames []string) error {
 	return nil
 }
 
-func fillFolderWithFiles(filenames []string) error {
-	for _, fileName := range filenames {
-		err := ensureBaseDir(fileName)
-		if err != nil {
-			return err
-		}
-		f, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-		if err != nil {
-			return err
-		}
-
-		r := strings.NewReader("test content\n")
-		_, err = io.Copy(f, r)
-		f.Close()
-		if err != nil {
-			return err
-		}
+func createFile(fileName, location string, isEmpty bool) error {
+	err := ensureBaseDir(fileName)
+	if err != nil {
+		return err
 	}
-	return nil
+	f, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if isEmpty {
+		return nil
+	}
+
+	type codeqlDatabase struct {
+		SourceLocation string `yaml:"sourceLocationPrefix"`
+		OtherInfo      string `yaml:"otherInfo"`
+	}
+	db := codeqlDatabase{SourceLocation: location, OtherInfo: "test"}
+	data, err := yaml.Marshal(db)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(data)
+	return err
 }
 
 func ensureBaseDir(fpath string) error {
