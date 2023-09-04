@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 	"io"
@@ -21,9 +20,10 @@ import (
 // ReadPipelineEnv reads the commonPipelineEnvironment from disk and outputs it as JSON
 func ReadPipelineEnv() *cobra.Command {
 	var stepConfig artifactPrepareVersionOptions
+	var encryptedCPE bool
 	metadata := artifactPrepareVersionMetadata()
 
-	return &cobra.Command{
+	readPipelineEnvCmd := &cobra.Command{
 		Use:   "readPipelineEnv",
 		Short: "Reads the commonPipelineEnvironment from disk and outputs it as JSON",
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -41,15 +41,18 @@ func ReadPipelineEnv() *cobra.Command {
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
-			err := runReadPipelineEnv(&stepConfig)
+			err := runReadPipelineEnv(stepConfig.Password, encryptedCPE)
 			if err != nil {
 				log.Entry().Fatalf("error when writing reading Pipeline environment: %v", err)
 			}
 		},
 	}
+
+	readPipelineEnvCmd.Flags().BoolVar(&encryptedCPE, "encryptedCPE", false, "Bool to use encryption in CPE")
+	return readPipelineEnvCmd
 }
 
-func runReadPipelineEnv(config *artifactPrepareVersionOptions) error {
+func runReadPipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 	cpe := piperenv.CPEMap{}
 
 	err := cpe.LoadFromDisk(path.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment"))
@@ -58,10 +61,10 @@ func runReadPipelineEnv(config *artifactPrepareVersionOptions) error {
 	}
 
 	// try to encrypt
-	if config.Password != "" && orchestrator.DetectOrchestrator() == orchestrator.GitHubActions {
+	if encryptedCPE && stepConfigPassword != "" {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to encrypt CPE")
 		jsonBytes, _ := json.Marshal(cpe)
-		encrypted, err := encrypt([]byte(config.Password), jsonBytes)
+		encrypted, err := encrypt([]byte(stepConfigPassword), jsonBytes)
 		if err != nil {
 			log.Entry().Fatal(err)
 		}

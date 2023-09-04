@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 )
@@ -22,9 +21,10 @@ import (
 // WritePipelineEnv Serializes the commonPipelineEnvironment JSON to disk
 func WritePipelineEnv() *cobra.Command {
 	var stepConfig artifactPrepareVersionOptions
+	var encryptedCPE bool
 	metadata := artifactPrepareVersionMetadata()
 
-	return &cobra.Command{
+	writePipelineEnv := &cobra.Command{
 		Use:   "writePipelineEnv",
 		Short: "Serializes the commonPipelineEnvironment JSON to disk",
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -42,15 +42,18 @@ func WritePipelineEnv() *cobra.Command {
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
-			err := runWritePipelineEnv(&stepConfig)
+			err := runWritePipelineEnv(stepConfig.Password, encryptedCPE)
 			if err != nil {
 				log.Entry().Fatalf("error when writing common Pipeline environment: %v", err)
 			}
 		},
 	}
+
+	writePipelineEnv.Flags().BoolVar(&encryptedCPE, "encryptedCPE", false, "Bool to use encryption in CPE")
+	return writePipelineEnv
 }
 
-func runWritePipelineEnv(config *artifactPrepareVersionOptions) error {
+func runWritePipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 	var err error
 	pipelineEnv, ok := os.LookupEnv("PIPER_pipelineEnv")
 	inBytes := []byte(pipelineEnv)
@@ -66,7 +69,7 @@ func runWritePipelineEnv(config *artifactPrepareVersionOptions) error {
 	}
 
 	// try to decrypt
-	if config.Password != "" && orchestrator.DetectOrchestrator() == orchestrator.GitHubActions {
+	if encryptedCPE && stepConfigPassword != "" {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to decrypt CPE")
 
 		// Workaround: orchestrators expect json
@@ -75,7 +78,7 @@ func runWritePipelineEnv(config *artifactPrepareVersionOptions) error {
 			log.Entry().Fatal(err)
 		}
 
-		inBytes, err = decrypt([]byte(config.Password), encryptedJSON.Payload)
+		inBytes, err = decrypt([]byte(stepConfigPassword), encryptedJSON.Payload)
 		if err != nil {
 			log.Entry().Fatal(err)
 		}
