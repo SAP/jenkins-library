@@ -256,7 +256,7 @@ spec:
         default: "1"
       - name: groupName
         type: string
-        description: The full name of the group to assign newly created projects to which is preferred to groupId
+        description: The full name of the group to which the newly created projects will be assigned
         scope:
           - PARAMETERS
           - STAGES
