@@ -316,7 +316,6 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
 						GeneralConfig.HookConfig.SplunkConfig.Token,
@@ -330,7 +329,6 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
 						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
@@ -371,7 +369,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.IamURL, "iamUrl", os.Getenv("PIPER_iamUrl"), "The URL pointing to the access control root of the checkmarxOne IAM server to be used")
 	cmd.Flags().StringVar(&stepConfig.Tenant, "tenant", os.Getenv("PIPER_tenant"), "The name of the checkmarxOne tenant to be used")
 	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used  [Not yet supported]")
-	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to assign newly created projects to which is preferred to groupId")
+	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to which the newly created projects will be assigned")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The full name of the Checkmarx One application to which the newly created projects will be assigned")
 	cmd.Flags().StringVar(&stepConfig.ClientID, "clientId", os.Getenv("PIPER_clientId"), "The username to authenticate")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
@@ -836,7 +834,6 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "step_data", "fields": []map[string]string{{"name": "checkmarxOne"}}},
 							{"name": "checkmarxOne_data", "fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "group"}, {"name": "group_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "tool_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
-
 						},
 					},
 					{

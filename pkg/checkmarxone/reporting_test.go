@@ -83,7 +83,6 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, 5, (*lowList)[1].Audited)
 	assert.Equal(t, 5, (*lowList)[1].Total)
 
-
 	lowPerQuery = map[string]map[string]int{}
 	submap = map[string]int{}
 	submap["Issues"] = 100

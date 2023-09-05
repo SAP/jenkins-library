@@ -487,4 +487,3 @@ spec:
             type: checkmarxone
           - filePattern: "**/piper_checkmarxone_report.json"
             type: checkmarxone
-
