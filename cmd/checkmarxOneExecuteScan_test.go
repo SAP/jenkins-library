@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/SAP/jenkins-library/pkg/checkmarxone"
+	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
@@ -34,6 +34,10 @@ func (sys *checkmarxOneSystemMock) CreateApplication(appname string) (checkmarxO
 }
 
 func (sys *checkmarxOneSystemMock) GetApplicationByName(appname string) (checkmarxOne.Application, error) {
+	return checkmarxOne.Application{}, nil
+}
+
+func (sys *checkmarxOneSystemMock) GetApplicationByID(appname string) (checkmarxOne.Application, error) {
 	return checkmarxOne.Application{}, nil
 }
 
@@ -90,6 +94,10 @@ func (sys *checkmarxOneSystemMock) UploadProjectSourceCode(projectID string, zip
 }
 
 func (sys *checkmarxOneSystemMock) CreateProject(projectName string, groupIDs []string) (checkmarxOne.Project, error) {
+	return checkmarxOne.Project{}, nil
+}
+
+func (sys *checkmarxOneSystemMock) CreateProjectInApplication(projectName, applicationId string, groupIDs []string) (checkmarxOne.Project, error) {
 	return checkmarxOne.Project{}, nil
 }
 
