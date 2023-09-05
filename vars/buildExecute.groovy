@@ -106,10 +106,11 @@ void call(Map parameters = [:]) {
                 }
         }
         if (config.cnbBuild) {
-            if (!['npm', 'gradle', 'maven', 'mta', 'docker'].contains(config.buildTool)) {
+            if (config.buildTool in ['npm', 'gradle', 'maven', 'mta', 'docker']) {
+                cnbBuild script: script
+            } else {
                 throw new AbortException("ERROR - 'cnbBuild' does not support '${config.buildTool}' as a buildTool.")
             }
-            cnbBuild script: script
         } else if (config.buildTool == 'kaniko' || config.buildTool == 'docker') {
             kanikoExecute script: script
         }
