@@ -2,7 +2,6 @@ package codeql
 
 import (
 	"context"
-	"errors"
 
 	sapgithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/google/go-github/v45/github"
@@ -14,7 +13,6 @@ type CodeqlScanAudit interface {
 
 type githubCodeqlScanningService interface {
 	ListAlertsForRepo(ctx context.Context, owner, repo string, opts *github.AlertListOptions) ([]*github.Alert, *github.Response, error)
-	ListAnalysesForRepo(ctx context.Context, owner, repo string, opts *github.AnalysesListOptions) ([]*github.ScanningAnalysis, *github.Response, error)
 }
 
 const auditStateOpen string = "open"
@@ -41,9 +39,8 @@ func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef s
 	if err != nil {
 		return []CodeqlFindings{}, err
 	}
-	totalAlerts, err := getTotalAlertsFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 
-	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit, totalAlerts)
+	return getVulnerabilitiesFromClient(ctx, client.CodeScanning, analyzedRef, codeqlScanAudit)
 }
 
 func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeqlScanningService, analyzedRef string, codeqlScanAudit *CodeqlScanAuditInstance) ([]CodeqlFindings, error) {
