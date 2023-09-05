@@ -50,6 +50,7 @@ func (sm *senderMock) UploadFile(url, file, fieldName string, header http.Header
 	sm.urlCalled = url
 	sm.header = header
 	return &http.Response{StatusCode: sm.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
+
 }
 func (sm *senderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
