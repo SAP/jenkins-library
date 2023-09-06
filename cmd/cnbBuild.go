@@ -116,9 +116,14 @@ func newCnbBuildUtils() cnbutils.BuildUtils {
 func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) {
 	utils := newCnbBuildUtils()
 
+	err := os.Mkdir("/kaniko", os.ModePerm)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+
 	client := &piperhttp.Client{}
 
-	err := callCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment, client)
+	err = callCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment, client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -553,42 +558,89 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_PLATFORM_API=%s", platformAPIVersion)})
+	utils.AppendEnv([]string{"CNB_EXPERIMENTAL_MODE=warn"})
 
-	creatorArgs := []string{
-		"-no-color",
+	dockerImage, err := GetDockerImageValue("cnbBuild")
+	if err != nil {
+		log.Entry().Warnf("failed to retrieve dockerImage configuration: '%v'", err)
+	}
+
+	analyzerArgs := []string{}
+	detectorArgs := []string{
 		"-buildpacks", buildpacksPath,
-		"-order", orderPath,
 		"-platform", platformPath,
-		"-skip-restore",
+		"-order", orderPath,
+	}
+	restorerArgs := []string{
+		"-build-image", dockerImage,
+	}
+	extenderArgs := []string{
+		"-buildpacks", buildpacksPath,
+		"-platform", platformPath,
+	}
+	exporterArgs := []string{}
+
+	if config.RunImage != "" {
+		analyzerArgs = append(analyzerArgs, "-run-image", config.RunImage)
 	}
 
 	if GeneralConfig.Verbose {
-		creatorArgs = append(creatorArgs, "-log-level", "debug")
-	}
-
-	if config.RunImage != "" {
-		creatorArgs = append(creatorArgs, "-run-image", config.RunImage)
+		analyzerArgs = append(analyzerArgs, "-log-level", "debug")
 	}
 
 	if config.DefaultProcess != "" {
-		creatorArgs = append(creatorArgs, "-process-type", config.DefaultProcess)
+		exporterArgs = append(exporterArgs, "-process-type", config.DefaultProcess)
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
-		if !piperutils.ContainsString(creatorArgs, target) {
-			creatorArgs = append(creatorArgs, "-tag", target)
+		if !piperutils.ContainsString(analyzerArgs, target) {
+			analyzerArgs = append(analyzerArgs, "-tag", target)
+			exporterArgs = append(exporterArgs, target)
 		}
 	}
 
-	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
-	attr := getSysProcAttr(uid, gid)
+	image := fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag)
+	analyzerArgs = append(analyzerArgs, image)
+	exporterArgs = append(exporterArgs, image)
 
-	err = utils.RunExecutableWithAttrs(creatorPath, attr, creatorArgs...)
+	err = utils.RunExecutable("/cnb/lifecycle/analyzer", analyzerArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
+		return errors.Wrapf(err, "execution of '%s' failed", analyzerArgs)
+	}
+
+	attr := getSysProcAttr(uid, gid)
+	// NOT ROOT
+	err = utils.RunExecutableWithAttrs("/cnb/lifecycle/detector", attr, detectorArgs...)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "execution of '%s' failed", detectorArgs)
+	}
+
+	err = utils.RunExecutable("/cnb/lifecycle/restorer", restorerArgs...)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "execution of '%s' failed", restorerArgs)
+	}
+
+	err = utils.RunExecutable("/cnb/lifecycle/extender", extenderArgs...)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "execution of '%s' failed", extenderArgs)
+	}
+
+	err = utils.RunExecutable("/cnb/lifecycle/extender", append(extenderArgs, "-kind", "run")...)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "execution of '%s' failed", extenderArgs)
+	}
+
+	err = utils.RunExecutable("/cnb/lifecycle/exporter", exporterArgs...)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "execution of '%s' failed", exporterArgs)
 	}
 
 	digest, err := cnbutils.DigestFromReport(utils)
