@@ -63,17 +63,13 @@ func runReadPipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 	// try to encrypt
 	if encryptedCPE && stepConfigPassword != "" {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to encrypt CPE")
-		jsonBytes, _ := json.Marshal(cpe)
-		encrypted, err := encrypt([]byte(stepConfigPassword), jsonBytes)
+		cpeJsonBytes, _ := json.Marshal(cpe)
+		encryptedCPEBytes, err := encrypt([]byte(stepConfigPassword), cpeJsonBytes)
 		if err != nil {
 			log.Entry().Fatal(err)
 		}
 
-		// Workaround: orchestrators expect json
-		encryptedJSON := struct{ Payload []byte }{Payload: encrypted}
-		encryptedJSONBytes, _ := json.Marshal(encryptedJSON)
-
-		os.Stdout.Write(encryptedJSONBytes)
+		os.Stdout.Write(encryptedCPEBytes)
 		return nil
 	}
 

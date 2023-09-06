@@ -72,13 +72,7 @@ func runWritePipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 	if encryptedCPE && stepConfigPassword != "" {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to decrypt CPE")
 
-		// Workaround: orchestrators expect json
-		encryptedJSON := struct{ Payload []byte }{}
-		if err = json.Unmarshal(inBytes, &encryptedJSON); err != nil {
-			log.Entry().Fatal(err)
-		}
-
-		inBytes, err = decrypt([]byte(stepConfigPassword), encryptedJSON.Payload)
+		inBytes, err = decrypt([]byte(stepConfigPassword), inBytes)
 		if err != nil {
 			log.Entry().Fatal(err)
 		}
