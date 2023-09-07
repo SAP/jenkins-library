@@ -41,9 +41,9 @@ type Finding struct {
 }
 
 type LowPerQuery struct {
-	QueryName string `json:"name"`
-	Total     int    `json:"total"`
+	QueryName string `json:"query"`
 	Audited   int    `json:"audited"`
+	Total     int    `json:"total"`
 }
 
 func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
@@ -137,16 +137,18 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 
 func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData {
 	checkmarxReportData := CheckmarxOneReportData{
-		ToolName:    `CheckmarxOne`,
-		ProjectName: fmt.Sprint((*data)["ProjectName"]),
-		GroupID:     fmt.Sprint((*data)["Group"]),
-		GroupName:   fmt.Sprint((*data)["GroupFullPathOnReportDate"]),
-		DeepLink:    fmt.Sprint((*data)["DeepLink"]),
-		Preset:      fmt.Sprint((*data)["Preset"]),
-		ToolVersion: fmt.Sprint((*data)["ToolVersion"]),
-		ScanType:    fmt.Sprint((*data)["ScanType"]),
-		ProjectID:   fmt.Sprint((*data)["ProjectId"]),
-		ScanID:      fmt.Sprint((*data)["ScanId"]),
+		ToolName:        `CheckmarxOne`,
+		ProjectName:     fmt.Sprint((*data)["ProjectName"]),
+		GroupID:         fmt.Sprint((*data)["Group"]),
+		GroupName:       fmt.Sprint((*data)["GroupFullPathOnReportDate"]),
+		ApplicationID:   fmt.Sprint((*data)["Application"]),
+		ApplicationName: fmt.Sprint((*data)["ApplicationFullPathOnReportDate"]),
+		DeepLink:        fmt.Sprint((*data)["DeepLink"]),
+		Preset:          fmt.Sprint((*data)["Preset"]),
+		ToolVersion:     fmt.Sprint((*data)["ToolVersion"]),
+		ScanType:        fmt.Sprint((*data)["ScanType"]),
+		ProjectID:       fmt.Sprint((*data)["ProjectId"]),
+		ScanID:          fmt.Sprint((*data)["ScanId"]),
 	}
 
 	findings := []Finding{}
