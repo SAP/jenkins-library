@@ -137,6 +137,7 @@ spec:
         type: string
         description: Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
