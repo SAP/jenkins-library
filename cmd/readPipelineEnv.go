@@ -61,8 +61,12 @@ func runReadPipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 	}
 
 	// try to encrypt
-	if encryptedCPE && stepConfigPassword != "" {
+	if encryptedCPE {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to encrypt CPE")
+		if stepConfigPassword == "" {
+			return fmt.Errorf("empty stepConfigPassword")
+		}
+
 		cpeJsonBytes, _ := json.Marshal(cpe)
 		encryptedCPEBytes, err := encrypt([]byte(stepConfigPassword), cpeJsonBytes)
 		if err != nil {

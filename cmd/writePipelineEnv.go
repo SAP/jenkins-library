@@ -69,8 +69,11 @@ func runWritePipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 	}
 
 	// try to decrypt
-	if encryptedCPE && stepConfigPassword != "" {
+	if encryptedCPE {
 		log.Entry().Debug("found artifactPrepareVersion.Password, trying to decrypt CPE")
+		if stepConfigPassword == "" {
+			return fmt.Errorf("empty stepConfigPassword")
+		}
 
 		inBytes, err = decrypt([]byte(stepConfigPassword), inBytes)
 		if err != nil {
