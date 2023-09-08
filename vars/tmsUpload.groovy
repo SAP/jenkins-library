@@ -52,15 +52,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'proxy',
     /**
-     * DEPRECATED: Toggle to activate a new Golang implementation of the step. The parameter has been deprecated - the new Golang implementation is used now by default.
+     * The new Golang implementation of the step is used now by default. Utilizing this toggle with value true is therefore redundant and can be omitted. If used with value false, the toggle deactivates the new Golang implementation and instructs the step to use the old Groovy one. Note that possibility to switch to the old Groovy implementation will be completely removed after February 29th, 2024.
      * @possibleValues true, false
      */
-    'useGoStep',
-    /**
-     * Toggle to activate the old Groovy implementation of the step. Off by default. Note that possibility to switch to the old Groovy implementation will be completely removed after February 29th, 2024.
-     * @possibleValues true, false
-     */
-    'useGroovyStep'
+    'useGoStep'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + GENERAL_CONFIG_KEYS
 
@@ -99,7 +94,11 @@ void call(Map parameters = [:]) {
 
         def namedUser = jenkinsUtils.getJobStartedByUserId()
 
-        if (config.useGroovyStep != true) {
+        def useGoStep = config.useGoStep
+        if (useGoStep == null) {
+            useGoStep = true
+        }
+        if (useGoStep == true) {
             List credentials = [
                 [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
             ]
