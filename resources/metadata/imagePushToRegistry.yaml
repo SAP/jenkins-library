@@ -1,0 +1,90 @@
+metadata:
+  name: imagePushToRegistry
+  description: Allows you to copy a Docker image from a source container registry  to a destination container registry.
+  longDescription: |-
+    In case you want to pull an existing image from a remote container registry, a source image and source registry needs to be specified.<br />
+    This makes it possible to move an image from one registry to another.
+
+    imagePushToRegistry is not similar in functionality to containerPushToRegistry (which is currently a groovy based step and only be used in jenkins). currently imagePushToRegistry only
+
+spec:
+  inputs:
+    secrets:
+      - name: kubeConfigFileCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
+        aliases:
+          - name: kubeCredentialsId
+            deprecated: true
+        type: jenkins
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
+        type: jenkins
+      - name: targetRepositoryCredentialsId
+        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
+        type: jenkins
+    resources:
+      - name: deployDescriptor
+        type: stash
+    params:
+      - name: targetImage
+        type: string
+        description: Defines the name (incl. tag) of the target image
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceImage
+        type: string
+        description: Defines the name (incl. tag) of the source image to be pushed to a new image defined in `targetDockerImage`. This is helpful for moving images from one location to another.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceRegistryUrl
+        description: Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*"
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: sourceRegistryUser
+        type: string
+        description: Username of the source registry where the image should be pushed pulled from.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+      - name: sourceRegistryPassword
+        type: string
+        description: Password of the source registry where the image should be pushed pulled from.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+      - name: tagLatest
+        description: "Defines if the image should be tagged as `latest`"
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: tagArtifactVersion
+        description: "Defines if the image should be tagged with the artifact version"
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - image: quay.io/skopeo/stable
+      name: skopeo
