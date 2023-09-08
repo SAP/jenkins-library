@@ -69,7 +69,7 @@ func TestCreateTransportConfig(t *testing.T) {
 
 func TestNewSystemInstance(t *testing.T) {
 	t.Run("fields are initialized", func(t *testing.T) {
-		sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", 10*time.Second)
+		sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", "", 10*time.Second)
 		assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")
 		assert.IsType(t, piperHttp.Client{}, *sys.httpClient, "Expected to get a HTTP client instance")
 		assert.IsType(t, logrus.Entry{}, *sys.logger, "Expected to get a logrus entry instance")
@@ -78,7 +78,7 @@ func TestNewSystemInstance(t *testing.T) {
 		assert.Equal(t, "https://some.fortify.host.com/ssc", sys.serverURL)
 	})
 	t.Run("SSC URL is trimmed", func(t *testing.T) {
-		sys := NewSystemInstance("https://some.fortify.host.com/ssc/", "api/v1", "akjhskjhks", 10*time.Second)
+		sys := NewSystemInstance("https://some.fortify.host.com/ssc/", "api/v1", "akjhskjhks", "", 10*time.Second)
 		assert.Equal(t, "https://some.fortify.host.com/ssc", sys.serverURL)
 	})
 }
