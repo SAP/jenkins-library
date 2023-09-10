@@ -152,7 +152,16 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 	influx.step_data.fields.whitesource = true
 }
 
+const golangBuildTool = "golang"
+
 func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+
+	if config.BuildTool == golangBuildTool {
+		if err := prepareGolangPrivatePackages(config); err != nil {
+			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())
+		}
+	}
+
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
 		return errors.Wrapf(err, "failed to resolve and aggregate project name")
 	}
@@ -1056,4 +1065,26 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+// prepare golang private environment for whitesource
+func prepareGolangPrivatePackages(config *ScanOptions) error {
+
+	goConfig := golangBuildOptions{
+		PrivateModules:         config.PrivateModules,
+		PrivateModulesGitToken: config.PrivateModulesGitToken,
+	}
+
+	utils := newGolangBuildUtils(goConfig)
+
+	goModFile, err := readGoModFile(utils) // returns nil if go.mod doesnt exist
+	if err != nil {
+		return err
+	}
+
+	if err = prepareGolangEnvironment(&goConfig, goModFile, utils); err != nil {
+		return err
+	}
+
+	return nil
 }

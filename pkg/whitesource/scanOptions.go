@@ -47,4 +47,7 @@ type ScanOptions struct {
 	InstallCommand string
 
 	Verbose bool
+
+	PrivateModules         string
+	PrivateModulesGitToken string
 }

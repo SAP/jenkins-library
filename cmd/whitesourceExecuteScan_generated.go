@@ -74,6 +74,8 @@ type whitesourceExecuteScanOptions struct {
 	Repository                           string   `json:"repository,omitempty"`
 	Assignees                            []string `json:"assignees,omitempty"`
 	CustomTLSCertificateLinks            []string `json:"customTlsCertificateLinks,omitempty"`
+	PrivateModules                       string   `json:"privateModules,omitempty"`
+	PrivateModulesGitToken               string   `json:"privateModulesGitToken,omitempty"`
 }
 
 type whitesourceExecuteScanCommonPipelineEnvironment struct {
