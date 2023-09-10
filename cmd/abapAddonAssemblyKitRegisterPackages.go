@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
@@ -98,7 +98,7 @@ func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, read
 type readFile func(path string) ([]byte, error)
 
 func reader(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
+	return os.ReadFile(path)
 }
 
 func registerPackages(repos []abaputils.Repository, conn abapbuild.Connector) ([]abaputils.Repository, error) {

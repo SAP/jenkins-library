@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,7 +56,7 @@ func (f Files) TempDir(dir, pattern string) (name string, err error) {
 		}
 	}
 
-	return ioutil.TempDir(dir, pattern)
+	return os.MkdirTemp(dir, pattern)
 }
 
 // FileExists returns true if the file system entry for the given path exists and is not a directory.

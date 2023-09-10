@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,7 +43,7 @@ type StepConfig struct {
 func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 	defer configuration.Close()
 
-	content, err := ioutil.ReadAll(configuration)
+	content, err := io.ReadAll(configuration)
 	if err != nil {
 		return errors.Wrapf(err, "error reading %v", configuration)
 	}

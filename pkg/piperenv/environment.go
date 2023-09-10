@@ -3,7 +3,6 @@ package piperenv
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,7 +65,7 @@ func writeToDisk(filename string, data []byte) error {
 	//ToDo: make sure to not overwrite file but rather add another file? Create error if already existing?
 	if len(data) > 0 {
 		log.Entry().Debugf("Writing file to disk: %v", filename)
-		return ioutil.WriteFile(filename, data, 0766)
+		return os.WriteFile(filename, data, 0766)
 	}
 	return nil
 }
@@ -74,7 +73,7 @@ func writeToDisk(filename string, data []byte) error {
 func readFromDisk(filename string) string {
 	//ToDo: if multiple files exist, read from latest file
 	log.Entry().Debugf("Reading file from disk: %v", filename)
-	v, err := ioutil.ReadFile(filename)
+	v, err := os.ReadFile(filename)
 	val := string(v)
 	if err != nil {
 		val = ""

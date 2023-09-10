@@ -58,6 +58,7 @@ spec:
         type: string
         description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -356,6 +357,13 @@ spec:
         type: string
         description: When templating value files, use this end delimiter.
         default: "}}"
+        scope:
+          - STEPS
+          - PARAMETERS
+      - name: renderValuesTemplate
+        type: bool
+        description: A flag to turn templating value files on or off.
+        default: true
         scope:
           - STEPS
           - PARAMETERS

@@ -3,7 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"reflect"
@@ -149,7 +149,7 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 	// Parse Response
 	var body abaputils.CloneEntity
 	var abapResp map[string]*json.RawMessage
-	bodyText, errRead := ioutil.ReadAll(resp.Body)
+	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
 		return uriConnectionDetails, err, false
 	}

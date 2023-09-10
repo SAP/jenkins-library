@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http/cookiejar"
 	"net/url"
 
@@ -156,7 +156,7 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 			return "", errors.New("did not retrieve a HTTP response")
 		}
 
-		bodyText, readErr := ioutil.ReadAll(resp.Body)
+		bodyText, readErr := io.ReadAll(resp.Body)
 
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read")

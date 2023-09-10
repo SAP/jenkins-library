@@ -5,7 +5,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -155,7 +154,7 @@ func TestVaultSecretFiles(t *testing.T) {
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.NotNil(t, stepConfig.Config[secretName])
 		path := stepConfig.Config[secretName].(string)
-		contentByte, err := ioutil.ReadFile(path)
+		contentByte, err := os.ReadFile(path)
 		assert.NoError(t, err)
 		content := string(contentByte)
 		assert.Equal(t, "value1", content)

@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -24,7 +23,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
-	"golang.org/x/mod/module"
 )
 
 const (
@@ -341,24 +339,9 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	// pass private repos to go process
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
-	repoURLs, err := lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, utils)
-
+	err = gitConfigurationForPrivateModules(config.PrivateModules, config.PrivateModulesGitToken, utils)
 	if err != nil {
 		return err
-	}
-
-	// configure credentials git shall use for pulling repos
-	for _, repoURL := range repoURLs {
-		if match, _ := regexp.MatchString("(?i)^https?://", repoURL); !match {
-			continue
-		}
-
-		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
-
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoURL)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -539,38 +522,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	return binaryNames, nil
 }
 
-// lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern
-func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern string, utils golangBuildUtils) ([]string, error) {
-	if globPattern == "" {
-		return []string{}, nil
-	}
-
-	if goModFile == nil {
-		return nil, fmt.Errorf("couldn't find go.mod file")
-	} else if goModFile.Require == nil {
-		return []string{}, nil // no modules referenced, nothing to do
-	}
-
-	privateModules := []string{}
-
-	for _, goModule := range goModFile.Require {
-		if !module.MatchPrefixPatterns(globPattern, goModule.Mod.Path) {
-			continue
-		}
-
-		repo, err := utils.GetRepositoryURL(goModule.Mod.Path)
-
-		if err != nil {
-			return nil, err
-		}
-
-		privateModules = append(privateModules, repo)
-	}
-	return privateModules, nil
-}
-
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-
 	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
@@ -630,4 +582,21 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func gitConfigurationForPrivateModules(privateMod string, token string, utils golangBuildUtils) error {
+	privateMod = strings.ReplaceAll(privateMod, "/*", "")
+	privateMod = strings.ReplaceAll(privateMod, "*.", "")
+	modules := strings.Split(privateMod, ",")
+	for _, v := range modules {
+		authenticatedRepoURL := fmt.Sprintf("https://%s@%s", token, v)
+		repoBaseURL := fmt.Sprintf("https://%s", v)
+		err := utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }
