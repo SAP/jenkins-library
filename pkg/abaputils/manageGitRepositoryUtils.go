@@ -3,7 +3,7 @@ package abaputils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"reflect"
 	"sort"
 	"strconv"
@@ -183,7 +183,7 @@ func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, c
 
 	// Parse response
 	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
+	bodyText, _ := io.ReadAll(resp.Body)
 
 	marshallError := json.Unmarshal(bodyText, &abapResp)
 	if marshallError != nil {
@@ -214,7 +214,7 @@ func GetProtocol(failureMessage string, connectionDetails ConnectionDetailsHTTP,
 
 	// Parse response
 	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
+	bodyText, _ := io.ReadAll(resp.Body)
 
 	marshallError := json.Unmarshal(bodyText, &abapResp)
 	if marshallError != nil {

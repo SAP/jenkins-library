@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -258,7 +257,7 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 }
 
 func getTempDirForCertFile() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}

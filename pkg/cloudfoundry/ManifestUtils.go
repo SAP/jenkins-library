@@ -2,10 +2,11 @@ package cloudfoundry
 
 import (
 	"fmt"
+	"os"
+	"reflect"
+
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"reflect"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -33,8 +34,8 @@ type manifest struct {
 	name     string
 }
 
-var _readFile = ioutil.ReadFile
-var _writeFile = ioutil.WriteFile
+var _readFile = os.ReadFile
+var _writeFile = os.WriteFile
 
 // ReadManifest Reads the manifest denoted by 'name'
 func ReadManifest(name string) (Manifest, error) {

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 
 	//"strconv"
 	"strings"
@@ -62,16 +62,17 @@ type Preset struct {
 // Project - Project Structure
 // Updated for Cx1
 type Project struct {
-	ProjectID   string            `json:"id"`
-	Name        string            `json:"name"`
-	CreatedAt   string            `json:"createdAt"`
-	UpdatedAt   string            `json:"updatedAt"`
-	Groups      []string          `json:"groups"`
-	Tags        map[string]string `json:"tags"`
-	RepoUrl     string            `json:"repoUrl"`
-	MainBranch  string            `json:"mainBranch"`
-	Origin      string            `json:"origin"`
-	Criticality int               `json:"criticality"`
+	ProjectID    string            `json:"id"`
+	Name         string            `json:"name"`
+	CreatedAt    string            `json:"createdAt"`
+	UpdatedAt    string            `json:"updatedAt"`
+	Groups       []string          `json:"groups"`
+	Applications []string          `json:"applicationIds"`
+	Tags         map[string]string `json:"tags"`
+	RepoUrl      string            `json:"repoUrl"`
+	MainBranch   string            `json:"mainBranch"`
+	Origin       string            `json:"origin"`
+	Criticality  int               `json:"criticality"`
 }
 
 // New for Cx1
@@ -290,6 +291,7 @@ type System interface {
 
 	CreateApplication(appname string) (Application, error)
 	GetApplicationByName(appname string) (Application, error)
+	GetApplicationByID(appId string) (Application, error)
 	UpdateApplication(app *Application) error
 
 	GetScan(scanID string) (Scan, error)
@@ -307,6 +309,7 @@ type System interface {
 
 	UploadProjectSourceCode(projectID string, zipFile string) (string, error)
 	CreateProject(projectName string, groupIDs []string) (Project, error)
+	CreateProjectInApplication(projectName, applicationID string, groupIDs []string) (Project, error)
 	GetPresets() ([]Preset, error)
 	GetProjectByID(projectID string) (Project, error)
 	GetProjectsByName(projectName string) ([]Project, error)
@@ -386,8 +389,8 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	var requestBody io.Reader
 	var reqBody string
 	if body != nil {
-		closer := ioutil.NopCloser(body)
-		bodyBytes, _ := ioutil.ReadAll(closer)
+		closer := io.NopCloser(body)
+		bodyBytes, _ := io.ReadAll(closer)
 		reqBody = string(bodyBytes)
 		requestBody = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
@@ -450,7 +453,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 		}
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	//sys.logger.Debugf("Valid response body: %v", string(data))
 	defer response.Body.Close()
 	return data, nil
@@ -536,6 +539,21 @@ func (sys *SystemInstance) GetApplicationsByName(name string, limit uint64) ([]A
 	err = json.Unmarshal(response, &ApplicationResponse)
 	sys.logger.Tracef("Retrieved %d applications", len(ApplicationResponse.Applications))
 	return ApplicationResponse.Applications, err
+}
+
+func (sys *SystemInstance) GetApplicationByID(appId string) (Application, error) {
+	sys.logger.Debugf("Get Cx1 Application by ID: %v", appId)
+
+	var ret Application
+
+	response, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/applications/%v", appId), nil, nil, []int{})
+
+	if err != nil {
+		return ret, err
+	}
+
+	err = json.Unmarshal(response, &ret)
+	return ret, err
 }
 
 func (sys *SystemInstance) GetApplicationByName(name string) (Application, error) {
@@ -796,6 +814,33 @@ func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) 
 	return project, err
 }
 
+func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID string, groupIDs []string) (Project, error) {
+	var project Project
+	jsonData := map[string]interface{}{
+		"name":        projectName,
+		"groups":      groupIDs,
+		"origin":      cxOrigin,
+		"criticality": 3, // default
+		// multiple additional parameters exist as options
+	}
+
+	jsonValue, err := json.Marshal(jsonData)
+	if err != nil {
+		return project, errors.Wrapf(err, "failed to marshal project data")
+	}
+
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+
+	data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("/projects/application/%v", applicationID), bytes.NewBuffer(jsonValue), header, []int{})
+	if err != nil {
+		return project, errors.Wrapf(err, "failed to create project %v under %v", projectName, applicationID)
+	}
+
+	err = json.Unmarshal(data, &project)
+	return project, err
+}
+
 // New for Cx1
 func (sys *SystemInstance) GetUploadURI() (string, error) {
 	sys.logger.Debug("Retrieving upload URI")
@@ -828,7 +873,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 	header.Add("Content-Type", "application/zip")
 	header.Add("Accept", "application/json")
 
-	zipContents, err := ioutil.ReadFile(zipFile)
+	zipContents, err := os.ReadFile(zipFile)
 	if err != nil {
 		sys.logger.Error("Failed to Read the File " + zipFile + ": " + err.Error())
 		return "", err

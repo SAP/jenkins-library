@@ -3,7 +3,6 @@ package build
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -37,7 +36,7 @@ func (c *ClMock) SendRequest(method string, url string, bdy io.Reader, hdr http.
 		body := []byte(fakeResponse(method, url))
 		return &http.Response{
 			StatusCode: c.StatusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}, c.Error
 	} else if method == "HEAD" {
 		var body []byte
@@ -47,7 +46,7 @@ func (c *ClMock) SendRequest(method string, url string, bdy io.Reader, hdr http.
 		return &http.Response{
 			StatusCode: c.StatusCode,
 			Header:     header,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}, c.Error
 	} else {
 		return nil, c.Error
