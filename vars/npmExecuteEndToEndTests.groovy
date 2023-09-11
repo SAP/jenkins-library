@@ -54,7 +54,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'credentialsId',
     /**
-     * Distinguish if these are wdi5 tests. If set to `true` `wdi5_username` and `wdi5_password` environment variables to enable [autologin](https://ui5-community.github.io/wdi5/#/authentication?id=credentials).
+     * Distinguish if these are wdi5 tests. If set to `true` `wdi5_username` and `wdi5_password` environment variables are used to enable [autologin](https://ui5-community.github.io/wdi5/#/authentication?id=credentials).
      * @possibleValues `true`, `false`
      */
     'wdi5'
