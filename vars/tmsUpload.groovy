@@ -95,7 +95,7 @@ void call(Map parameters = [:]) {
         def namedUser = jenkinsUtils.getJobStartedByUserId()
 
         def useGoStep = config.useGoStep ?: true
-        if (useGoStep == true) {
+        if (useGoStep != false) {
             List credentials = [
                 [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
             ]
