@@ -2,21 +2,28 @@ package orchestrator
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
-	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/google/go-github/v45/github"
+	"github.com/pkg/errors"
 
 	"golang.org/x/sync/errgroup"
 )
 
 type GitHubActionsConfigProvider struct {
-	client      piperHttp.Client
+	github      *github.Client
+	githubCtx   context.Context
+	githubOwner string
+	githubRepo  string
 	runData     run
 	jobs        []job
 	jobsFetched bool
@@ -30,7 +37,7 @@ type run struct {
 }
 
 type job struct {
-	ID      int    `json:"id"`
+	ID      int64  `json:"id"`
 	Name    string `json:"name"`
 	HtmlURL string `json:"html_url"`
 }
@@ -40,18 +47,17 @@ type fullLog struct {
 	b [][]byte
 }
 
-var httpHeaders = http.Header{
-	"Accept":               {"application/vnd.github+json"},
-	"X-GitHub-Api-Version": {"2022-11-28"},
-}
-
 // InitOrchestratorProvider initializes http client for GitHubActionsDevopsConfigProvider
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
-	g.client.SetOptions(piperHttp.ClientOptions{
-		Token:            "Bearer " + settings.GitHubToken,
-		MaxRetries:       3,
-		TransportTimeout: time.Second * 10,
-	})
+	var err error
+	g.githubCtx, g.github, err = piperGithub.
+		NewClientBuilder(settings.GitHubToken, getEnv("GITHUB_API_URL", "")).Build()
+	if err != nil {
+		log.Entry().Errorf("failed to create github client: %v", err)
+		return
+	}
+
+	g.githubOwner, g.githubRepo = getOwnerAndRepoNames()
 
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
@@ -94,9 +100,9 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	for i := range jobs {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
 		wg.Go(func() error {
-			resp, err := g.client.GetRequest(fmt.Sprintf("%s/jobs/%d/logs", actionsURL(), jobs[i].ID), httpHeaders, nil)
+			_, resp, err := g.github.Actions.GetWorkflowJobLogs(g.githubCtx, g.githubOwner, g.githubRepo, jobs[i].ID, true)
 			if err != nil {
-				return fmt.Errorf("failed to get API data: %w", err)
+				return err
 			}
 			defer resp.Body.Close()
 
@@ -232,19 +238,27 @@ func (g *GitHubActionsConfigProvider) fetchRunData() {
 		return
 	}
 
-	url := fmt.Sprintf("%s/runs/%s", actionsURL(), getEnv("GITHUB_RUN_ID", ""))
-	resp, err := g.client.GetRequest(url, httpHeaders, nil)
+	runId, err := g.runIdInt64()
+	if err != nil {
+		log.Entry().Errorf("fetchRunData: %s", err)
+	}
+
+	runData, resp, err := g.github.Actions.GetWorkflowRunByID(g.githubCtx, g.githubOwner, g.githubRepo, runId)
 	if err != nil || resp.StatusCode != 200 {
 		log.Entry().Errorf("failed to get API data: %s", err)
 		return
 	}
 
-	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &g.runData)
-	if err != nil {
-		log.Entry().Errorf("failed to parse JSON data: %s", err)
-		return
-	}
+	g.runData = convertRunData(runData)
 	g.runData.fetched = true
+}
+
+func convertRunData(runData *github.WorkflowRun) run {
+	startedAtTs := piperutils.SafeDereference(runData.RunStartedAt)
+	return run{
+		Status:    piperutils.SafeDereference(runData.Status),
+		StartedAt: startedAtTs.Time,
+	}
 }
 
 func (g *GitHubActionsConfigProvider) fetchJobs() error {
@@ -252,27 +266,35 @@ func (g *GitHubActionsConfigProvider) fetchJobs() error {
 		return nil
 	}
 
-	url := fmt.Sprintf("%s/runs/%s/jobs", actionsURL(), g.GetBuildID())
-	resp, err := g.client.GetRequest(url, httpHeaders, nil)
+	runId, err := g.runIdInt64()
 	if err != nil {
-		return fmt.Errorf("failed to get API data: %w", err)
+		return err
 	}
 
-	var result struct {
-		Jobs []job `json:"jobs"`
+	jobs, resp, err := g.github.Actions.ListWorkflowJobs(g.githubCtx, g.githubOwner, g.githubRepo, runId, nil)
+	if err != nil || resp.StatusCode != 200 {
+		return errors.Wrap(err, "failed to get API data")
 	}
-	err = piperHttp.ParseHTTPResponseBodyJSON(resp, &result)
-	if err != nil {
-		return fmt.Errorf("failed to parse JSON data: %w", err)
-	}
-
-	if len(result.Jobs) == 0 {
+	if len(jobs.Jobs) == 0 {
 		return fmt.Errorf("no jobs found in response")
 	}
-	g.jobs = result.Jobs
+
+	g.jobs = convertJobs(jobs.Jobs)
 	g.jobsFetched = true
 
 	return nil
+}
+
+func convertJobs(jobs []*github.WorkflowJob) []job {
+	result := make([]job, 0, len(jobs))
+	for _, j := range jobs {
+		result = append(result, job{
+			ID:      j.GetID(),
+			Name:    j.GetName(),
+			HtmlURL: j.GetHTMLURL(),
+		})
+	}
+	return result
 }
 
 func (g *GitHubActionsConfigProvider) guessCurrentJob() {
@@ -299,4 +321,25 @@ func (g *GitHubActionsConfigProvider) guessCurrentJob() {
 			return
 		}
 	}
+}
+
+func (g *GitHubActionsConfigProvider) runIdInt64() (int64, error) {
+	strRunId := g.GetBuildID()
+	runId, err := strconv.ParseInt(strRunId, 10, 64)
+	if err != nil {
+		return 0, errors.Wrapf(err, "invalid GITHUB_RUN_ID value %s: %s", strRunId, err)
+	}
+
+	return runId, nil
+}
+
+func getOwnerAndRepoNames() (string, string) {
+	ownerAndRepo := getEnv("GITHUB_REPOSITORY", "")
+	s := strings.Split(ownerAndRepo, "/")
+	if len(s) != 2 {
+		log.Entry().Errorf("unable to determine owner and repo: invalid value of GITHUB_REPOSITORY envvar: %s", ownerAndRepo)
+		return "", ""
+	}
+
+	return s[0], s[1]
 }
