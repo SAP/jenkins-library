@@ -167,7 +167,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
     }
 
     @Test
-    void oneAppUrlWithWdi5Credential() {
+    void oneAppUrl__whenWdi5IsTrue__wdi5CredentialIsProvided() {
         def appUrl = [url: "http://my-url.com", credentialId: "testCred"]
 
         nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
@@ -193,7 +193,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
     }
 
     @Test
-    void oneAppUrlWithoutWdi5Credential() {
+    void oneAppUrl__whenWdi5IsNotSet__noWdi5CredentialIsProvided() {
         def appUrl = [url: "http://my-url.com", credentialId: "testCred"]
 
         nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
@@ -218,7 +218,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
     }
 
     @Test
-    void wdi5Credential() {
+    void whenWdi5IsTrue__wdi5CredentialIsProvided() {
 
         nullScript.commonPipelineEnvironment.configuration = [
                 stages: [
@@ -247,7 +247,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
     }
 
     @Test
-    void withoutWdi5NoCredential() {
+    void whenWdi5IsNoSet__noWdi5CredentialIsProvided() {
 
         nullScript.commonPipelineEnvironment.configuration = [
                 stages: [
