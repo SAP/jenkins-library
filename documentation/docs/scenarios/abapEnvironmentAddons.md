@@ -250,33 +250,33 @@ Pipeline steps can be restarted without causing double execution of already perf
 In case of an error during execution of the pipeline steps:
 
 * Stage: [Prepare System](https://www.project-piper.io/pipelines/abapEnvironment/stages/prepareSystem/)
-      * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
-          * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
-          <br>ABAP System provisioning requires sufficient entitlements for `abap/standard` as well as `abap/hana_compute_unit` and `abap/abap_compute_unit` to be assigned to the subaccount.
+  * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
+    * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
+    <br>ABAP System provisioning requires sufficient entitlements for `abap/standard` as well as `abap/hana_compute_unit` and `abap/abap_compute_unit` to be assigned to the subaccount.
 * Stage: [Clone Repositories](https://www.project-piper.io/pipelines/abapEnvironment/stages/cloneRepositories/)
-      * Step: [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)
-          * __e.g. `A4C_A2G/000 - Branch checkout for /NAMESPC/COMPONENTA is currently performed; Try again later...`__
-          <br>Parallel execution of multiple actions on the same software component (like checkout, pull etc.) is not supported.
+  * Step: [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)
+    * __e.g. `A4C_A2G/000 - Branch checkout for /NAMESPC/COMPONENTA is currently performed; Try again later...`__
+    <br>Parallel execution of multiple actions on the same software component (like checkout, pull etc.) is not supported.
 * Stage: [ATC](https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/)
-      * Step: [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)
-          * __*Long-running step execution*__
-          <br>[Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings. Resolve ATC findings early on during development, e.g. by [working with ATC during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html).
+  * Step: [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)
+    * __*Long-running step execution*__
+    <br>[Create a custom check variant](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html) and utilize [ATC Exemptions](https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html) to reduce the test scope and irrelevant findings. Resolve ATC findings early on during development, e.g. by [working with ATC during transport release](https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html).
 * Stage: [Build](https://www.project-piper.io/pipelines/abapEnvironment/stages/build/)
-      * Step: [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/)
-          * __e.g. `Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3`__
-          <br>New `commitID`, but no new software component `version` in add-on descriptor: Only by changing the `version` a new delivery package is created.
-          * __e.g. `CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.`__
-          <br>New Patch Level of software component, but same `commitID` in add-on descriptor: The same `commitID` cannot be used as previous/current commit id for a correction package.
+  * Step: [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/)
+    * __e.g. `Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3`__
+    <br>New `commitID`, but no new software component `version` in add-on descriptor: Only by changing the `version` a new delivery package is created.
+    * __e.g. `CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.`__
+    <br>New Patch Level of software component, but same `commitID` in add-on descriptor: The same `commitID` cannot be used as previous/current commit id for a correction package.
 * Stage: [Integration Tests](https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/)
-      * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
-          * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
-          <br>ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.
-          * __`Product installation failed because AddOn XYZ has not been registered in PPMS for productive development`__
-          <br>The add-on product is not yet registered for add-on installation, please follow steps in [Register Add-on Product for a Global Account](https://www.project-piper.io/scenarios/abapEnvironmentAddons/)#register-add-on-product-for-a-global-account
+  * Step: [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/)
+    * __`A service instance for the selected plan cannot be created in this organization` or `Quota is not sufficient for this request.`__
+    <br>ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.
+    * __`Product installation failed because AddOn XYZ has not been registered in PPMS for productive development`__
+    <br>The add-on product is not yet registered for add-on installation, please follow steps in [Register Add-on Product for a Global Account](https://www.project-piper.io/scenarios/abapEnvironmentAddons/)#register-add-on-product-for-a-global-account
 * Stage: [Post](https://www.project-piper.io/pipelines/abapEnvironment/stages/post/)
-      * Step: [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)
-          * __*Add-on assembly system is deleted unexpectedly*__
-          <br>Create a Piper extension of the `Post` stage, similar to [Post.groovy](https://github.com/SAP-samples/abap-platform-ci-cd-samples/blob/addon-build-static/.pipeline/extensions/Post.groovy)
+  * Step: [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)
+    * __*Add-on assembly system is deleted unexpectedly*__
+    <br>Create a Piper extension of the `Post` stage, similar to [Post.groovy](https://github.com/SAP-samples/abap-platform-ci-cd-samples/blob/addon-build-static/.pipeline/extensions/Post.groovy)
 
 ### Support Components
 

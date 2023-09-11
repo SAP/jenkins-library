@@ -360,6 +360,13 @@ spec:
         scope:
           - STEPS
           - PARAMETERS
+      - name: renderValuesTemplate
+        type: bool
+        description: A flag to turn templating value files on or off.
+        default: true
+        scope:
+          - STEPS
+          - PARAMETERS
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config
