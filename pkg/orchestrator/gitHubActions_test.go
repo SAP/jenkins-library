@@ -172,7 +172,7 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 	// setup provider
 	g := &GitHubActionsConfigProvider{}
 	g.InitOrchestratorProvider(&OrchestratorSettings{})
-	g.github = github.NewClient(http.DefaultClient)
+	g.client = github.NewClient(http.DefaultClient)
 
 	// setup http mock
 	httpmock.Activate()
@@ -228,7 +228,7 @@ func TestGitHubActionsConfigProvider_fetchJobs(t *testing.T) {
 	// setup provider
 	g := &GitHubActionsConfigProvider{}
 	g.InitOrchestratorProvider(&OrchestratorSettings{})
-	g.github = github.NewClient(http.DefaultClient)
+	g.client = github.NewClient(http.DefaultClient)
 
 	// setup http mock
 	httpmock.Activate()
@@ -273,7 +273,7 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 		jobsFetched: true,
 	}
 	g.InitOrchestratorProvider(&OrchestratorSettings{})
-	g.github = github.NewClient(http.DefaultClient)
+	g.client = github.NewClient(http.DefaultClient)
 
 	// setup http mock
 	rand.Seed(time.Now().UnixNano())

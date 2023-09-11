@@ -20,10 +20,11 @@ import (
 )
 
 type GitHubActionsConfigProvider struct {
-	github      *github.Client
-	githubCtx   context.Context
-	githubOwner string
-	githubRepo  string
+	client *github.Client
+	ctx    context.Context
+	owner  string
+	repo   string
+
 	runData     run
 	jobs        []job
 	jobsFetched bool
@@ -50,14 +51,13 @@ type fullLog struct {
 // InitOrchestratorProvider initializes http client for GitHubActionsDevopsConfigProvider
 func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
 	var err error
-	g.githubCtx, g.github, err = piperGithub.
-		NewClientBuilder(settings.GitHubToken, getEnv("GITHUB_API_URL", "")).Build()
+	g.ctx, g.client, err = piperGithub.NewClientBuilder(settings.GitHubToken, getEnv("GITHUB_API_URL", "")).Build()
 	if err != nil {
 		log.Entry().Errorf("failed to create github client: %v", err)
 		return
 	}
 
-	g.githubOwner, g.githubRepo = getOwnerAndRepoNames()
+	g.owner, g.repo = getOwnerAndRepoNames()
 
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
@@ -100,7 +100,7 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	for i := range jobs {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
 		wg.Go(func() error {
-			_, resp, err := g.github.Actions.GetWorkflowJobLogs(g.githubCtx, g.githubOwner, g.githubRepo, jobs[i].ID, true)
+			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, true)
 			if err != nil {
 				return err
 			}
@@ -243,7 +243,7 @@ func (g *GitHubActionsConfigProvider) fetchRunData() {
 		log.Entry().Errorf("fetchRunData: %s", err)
 	}
 
-	runData, resp, err := g.github.Actions.GetWorkflowRunByID(g.githubCtx, g.githubOwner, g.githubRepo, runId)
+	runData, resp, err := g.client.Actions.GetWorkflowRunByID(g.ctx, g.owner, g.repo, runId)
 	if err != nil || resp.StatusCode != 200 {
 		log.Entry().Errorf("failed to get API data: %s", err)
 		return
@@ -271,7 +271,7 @@ func (g *GitHubActionsConfigProvider) fetchJobs() error {
 		return err
 	}
 
-	jobs, resp, err := g.github.Actions.ListWorkflowJobs(g.githubCtx, g.githubOwner, g.githubRepo, runId, nil)
+	jobs, resp, err := g.client.Actions.ListWorkflowJobs(g.ctx, g.owner, g.repo, runId, nil)
 	if err != nil || resp.StatusCode != 200 {
 		return errors.Wrap(err, "failed to get API data")
 	}
