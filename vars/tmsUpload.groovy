@@ -109,6 +109,9 @@ void call(Map parameters = [:]) {
             return
         }
 
+        echo "[TransportManagementService] Using old Groovy implementation of '${STEP_NAME}' step instead of the default Golang one, since useGoStep toggle parameter is explicitly set to false..."
+        echo "[TransportManagementService] WARNING: Note that possibility to switch to the old Groovy implementation will be completely removed and the useGoStep toggle parameter will be deprecated after February 29th, 2024"
+
         // telemetry reporting
         new Utils().pushToSWA([
             step         : STEP_NAME,
