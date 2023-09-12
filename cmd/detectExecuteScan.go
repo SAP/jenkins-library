@@ -345,28 +345,68 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.Token))
 	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
 	// Hence the string need to be surrounded by \"
-	args = append(args, fmt.Sprintf("\"--detect.project.name='%v'\"", config.ProjectName))
-	args = append(args, fmt.Sprintf("\"--detect.project.version.name='%v'\"", detectVersionName))
 
-	// Groups parameter is added only when there is atleast one non-empty groupname provided
-	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
-		args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
+	// Maven Parameters
+	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
+	if err != nil {
+		return nil, err
 	}
 
-	// Atleast 1, non-empty category to fail on must be provided
-	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
-		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
-	}
-
-	if config.SuccessOnSkip {
-		args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=%v\"", config.SuccessOnSkip))
+	if len(config.M2Path) > 0 {
+		absolutePath, err := utils.Abs(config.M2Path)
+		if err != nil {
+			return nil, err
+		}
+		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
 	}
 
 	codelocation := config.CodeLocation
 	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
 		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
-	args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
+
+	// Since detect8 adds quotes by default, to avoid double quotation they should be removed for several arguments
+	if config.UseDetect8 {
+
+		args = append(args, fmt.Sprintf("\"--detect.project.name=%v\"", config.ProjectName))
+		args = append(args, fmt.Sprintf("\"--detect.project.version.name=%v\"", detectVersionName))
+
+		// Groups parameter is added only when there is atleast one non-empty groupname provided
+		if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
+			args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
+		}
+
+		args = append(args, fmt.Sprintf("\"--detect.code.location.name=%v\"", codelocation))
+
+		if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
+			args = append(args, fmt.Sprintf("\"--detect.maven.build.command=%v\"", strings.Join(mavenArgs, " ")))
+		}
+
+	} else {
+
+		args = append(args, fmt.Sprintf("\"--detect.project.name='%v'\"", config.ProjectName))
+		args = append(args, fmt.Sprintf("\"--detect.project.version.name='%v'\"", detectVersionName))
+
+		// Groups parameter is added only when there is atleast one non-empty groupname provided
+		if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
+			args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
+		}
+
+		args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
+
+		if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
+			args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
+		}
+	}
+
+	if config.SuccessOnSkip {
+		args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=%v\"", config.SuccessOnSkip))
+	}
+
+	// Atleast 1, non-empty category to fail on must be provided
+	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
+		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
+	}
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
@@ -402,23 +442,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	// A space-separated list of additional arguments that Detect will add at then end of the npm ls command line
 	if len(config.NpmArguments) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.arguments") {
 		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.ToUpper(strings.Join(config.NpmArguments, " "))))
-	}
-
-	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(config.M2Path) > 0 {
-		absolutePath, err := utils.Abs(config.M2Path)
-		if err != nil {
-			return nil, err
-		}
-		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
-	}
-
-	if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
-		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 	}
 
 	// rapid scan on pull request
