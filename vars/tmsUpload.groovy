@@ -109,8 +109,8 @@ void call(Map parameters = [:]) {
             return
         }
 
-        echo "[TransportManagementService] Using deprecated Groovy implementation of '${STEP_NAME}' step instead of the default Golang one, since `useGoStep` toggle parameter is explicitly set to `false`."
-        echo "[TransportManagementService] WARNING: Note that the deprecated Groovy implementation will be completely removed after February 29th, 2024. Consider using the Golang implementation by not setting the `useGoStep` toggle parameter to `false`."
+        echo "[TransportManagementService] Using deprecated Groovy implementation of '${STEP_NAME}' step instead of the default Golang one, since 'useGoStep' toggle parameter is explicitly set to 'false'."
+        echo "[TransportManagementService] WARNING: Note that the deprecated Groovy implementation will be completely removed after February 29th, 2024. Consider using the Golang implementation by not setting the 'useGoStep' toggle parameter to 'false'."
 
         // telemetry reporting
         new Utils().pushToSWA([
