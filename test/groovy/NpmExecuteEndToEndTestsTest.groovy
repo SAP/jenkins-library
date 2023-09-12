@@ -247,7 +247,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
     }
 
     @Test
-    void whenWdi5IsNoSet__noWdi5CredentialIsProvided() {
+    void whenWdi5IsNotSet__noWdi5CredentialIsProvided() {
 
         nullScript.commonPipelineEnvironment.configuration = [
                 stages: [
