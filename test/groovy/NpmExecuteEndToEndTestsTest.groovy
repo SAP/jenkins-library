@@ -167,6 +167,114 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
     }
 
     @Test
+    void oneAppUrl__whenWdi5IsTrue__wdi5CredentialIsProvided() {
+        def appUrl = [url: "http://my-url.com", credentialId: "testCred"]
+
+        nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
+            appUrls: [appUrl],
+            wdi5: true
+        ]]]
+
+        stepRule.step.npmExecuteEndToEndTests(
+            script: nullScript,
+            stageName: "myStage"
+        )
+
+        assertFalse(executedInParallel)
+        assert npmExecuteScriptsRule.hasParameter('script', nullScript)
+        assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
+        assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
+        assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
+        assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}"])
+        assert binding.hasVariable('e2e_username')
+        assert binding.hasVariable('e2e_password')
+        assert binding.hasVariable('wdi5_username')
+        assert binding.hasVariable('wdi5_password')
+    }
+
+    @Test
+    void oneAppUrl__whenWdi5IsNotSet__noWdi5CredentialIsProvided() {
+        def appUrl = [url: "http://my-url.com", credentialId: "testCred"]
+
+        nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
+            appUrls: [appUrl]
+        ]]]
+
+        stepRule.step.npmExecuteEndToEndTests(
+            script: nullScript,
+            stageName: "myStage"
+        )
+
+        assertFalse(executedInParallel)
+        assert npmExecuteScriptsRule.hasParameter('script', nullScript)
+        assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
+        assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
+        assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
+        assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}"])
+        assert binding.hasVariable('e2e_username')
+        assert binding.hasVariable('e2e_password')
+        assertFalse binding.hasVariable('wdi5_username')
+        assertFalse binding.hasVariable('wdi5_password')
+    }
+
+    @Test
+    void whenWdi5IsTrue__wdi5CredentialIsProvided() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+                stages: [
+                        myStage: [
+                            wdi5: true,
+                            credentialsId: "testCred"
+                        ]
+                ]
+        ]
+
+        stepRule.step.npmExecuteEndToEndTests(
+                script: nullScript,
+                stageName: "myStage"
+        )
+
+        assertFalse(executedInParallel)
+        assert npmExecuteScriptsRule.hasParameter('script', nullScript)
+        assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
+        assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
+        assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
+        assert binding.hasVariable('e2e_username')
+        assert binding.hasVariable('e2e_password')
+        assert binding.hasVariable('wdi5_username')
+        assert binding.hasVariable('wdi5_password')
+
+    }
+
+    @Test
+    void whenWdi5IsNotSet__noWdi5CredentialIsProvided() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+                stages: [
+                        myStage: [
+                            credentialsId: "testCred"
+                        ]
+                ]
+        ]
+
+        stepRule.step.npmExecuteEndToEndTests(
+                script: nullScript,
+                stageName: "myStage"
+        )
+
+        assertFalse(executedInParallel)
+        assert npmExecuteScriptsRule.hasParameter('script', nullScript)
+        assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
+        assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
+        assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
+        assert binding.hasVariable('e2e_username')
+        assert binding.hasVariable('e2e_password')
+        assertFalse binding.hasVariable('wdi5_username')
+        assertFalse binding.hasVariable('wdi5_password')
+
+    }
+
+    @Test
     void chooseScript() {
 
         nullScript.commonPipelineEnvironment.configuration = [
