@@ -303,7 +303,6 @@ func {{ .StepName }}Metadata() config.StepData {
 					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: {{ $env.Name | quote }}, Value: {{ $env.Value | quote }}}, {{ end -}}  },{{- end }}
 					{{- if $container.WorkingDir -}} WorkingDir: {{ $container.WorkingDir | quote }},{{- end }}
 					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: {{ $option.Name | quote }}, Value: {{ $option.Value | quote }}}, {{ end -}} },{{ end }}
-					{{- if $container.SecurityContext -}} SecurityContext: &config.SecurityContext{ RunAsUser: {{ $container.SecurityContext.RunAsUser }} },{{ end }}
 					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{ end }}
 				}, {{ end }}
 			},

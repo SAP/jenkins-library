@@ -124,14 +124,7 @@ import groovy.transform.Field
     /**
      * Specific stashes that should be considered for the step execution.
      */
-    'stashContent',
-    /**
-     * Kubernetes only:
-     * Kubernetes Security Context used for the pod.
-     * Can be used to specify uid and fsGroup.
-     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-     */
-    'securityContext',
+    'stashContent'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /**
@@ -188,6 +181,8 @@ void call(Map parameters = [:], body) {
             config.dockerEnvVars?.each { key, value ->
                 dockerEnvVars << "$key=$value"
             }
+
+            def securityContext = securityContextFromOptions(config.dockerOptions)
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
                     withEnv(dockerEnvVars) {
@@ -211,8 +206,8 @@ void call(Map parameters = [:], body) {
                     dockerEnvVars: config.dockerEnvVars,
                     dockerWorkspace: config.dockerWorkspace,
                     stashContent: config.stashContent,
-                    securityContext: config.securityContext,
                     stashNoDefaultExcludes: config.stashNoDefaultExcludes,
+                    securityContext: securityContext,
                 ]
 
                 if (config.sidecarImage) {
@@ -349,20 +344,35 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
     }
 
     if (dockerOptions) {
-        if (dockerOptions instanceof CharSequence) {
-            dockerOptions = [dockerOptions]
-        }
-        if (dockerOptions instanceof List) {
-            dockerOptions.each { String option ->
-                options << escapeBlanks(option)
-            }
-        } else {
-            throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
-        }
+        options.addAll(dockerOptionsToList(dockerOptions))
     }
+
     return options.join(' ')
 }
 
+@NonCPS
+def securityContextFromOptions(dockerOptions) {
+    Map securityContext = [:]
+
+    if (!dockerOptions) {
+        return null
+    }
+
+    def userOption = dockerOptionsToList(dockerOptions).find { (it.startsWith("-u ") || it.startsWith("--user ")) }
+    if (!userOption) {
+        return null
+    }
+
+    def userGroupIds = userOption.split(" ")[1].split(":")
+
+    securityContext.runAsUser = userGroupIds[0].isInteger() ? userGroupIds[0].toInteger() : userGroupIds[0]
+
+    if (userGroupIds.size() == 2) {
+        securityContext.runAsGroup = userGroupIds[1].isInteger() ? userGroupIds[1].toInteger() : userGroupIds[1]
+    }
+
+    return securityContext
+}
 
 boolean isContainerDefined(config) {
     Map containerMap = ContainerMap.instance.getMap()
@@ -390,6 +400,28 @@ def getContainerDefined(config) {
 
 boolean isKubernetes() {
     return Boolean.valueOf(env.ON_K8S)
+}
+
+@NonCPS
+def dockerOptionsToList(dockerOptions) {
+    def options = []
+    if (!dockerOptions) {
+        return options
+    }
+
+    if (dockerOptions instanceof CharSequence) {
+        dockerOptions = [dockerOptions]
+    }
+
+    if (dockerOptions instanceof List) {
+        dockerOptions.each { String option ->
+            options << escapeBlanks(option)
+        }
+    } else {
+        throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
+    }
+
+    return options
 }
 
 /*
