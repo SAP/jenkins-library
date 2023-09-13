@@ -360,11 +360,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
 	}
 
-	// Atleast 1, non-empty category to fail on must be provided
-	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
-		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
-	}
-
 	codelocation := config.CodeLocation
 	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
 		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
@@ -381,6 +376,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 			args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
 		}
 
+		// Atleast 1, non-empty category to fail on must be provided
+		if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
+			args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
+		}
+
 		args = append(args, fmt.Sprintf("\"--detect.code.location.name=%v\"", codelocation))
 
 		if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
@@ -395,6 +395,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		// Groups parameter is added only when there is atleast one non-empty groupname provided
 		if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
 			args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
+		}
+
+		// Atleast 1, non-empty category to fail on must be provided
+		if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
+			args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 		}
 
 		args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
