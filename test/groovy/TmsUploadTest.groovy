@@ -280,7 +280,8 @@ public class TmsUploadTest extends BasePiperTest {
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
             credentialsId: 'TMS_ServiceKey',
-            customDescription: 'My custom description for testing.'
+            customDescription: 'My custom description for testing.',
+            useGoStep: false
         )
     }
 
@@ -326,6 +327,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '0.0.1',
+            useGoStep: false
         )
     }
 
@@ -350,6 +352,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '0.0.1',
+            useGoStep: false
         )
     }
 
@@ -375,6 +378,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '0.0.1',
+            useGoStep: false
         )
     }
 
