@@ -363,7 +363,12 @@ def securityContextFromOptions(dockerOptions) {
         return null
     }
 
-    def userGroupIds = userOption.split(" ")[1].split(":")
+    def userOptionParts = userOption.split(" ")
+    if (userOptionParts.size() != 2) {
+        throw new IllegalArgumentException("Unexpected --user flag value in dockerOptions '${userOption}'")
+    }
+
+    def userGroupIds = userOptionParts[1].split(":")
 
     securityContext.runAsUser = userGroupIds[0].isInteger() ? userGroupIds[0].toInteger() : userGroupIds[0]
 
