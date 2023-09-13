@@ -16,7 +16,9 @@ import util.JenkinsReadYamlRule
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 public class TmsUploadTest extends BasePiperTest {
 
@@ -82,6 +84,42 @@ public class TmsUploadTest extends BasePiperTest {
     void tearDown() {
         Utils.metaClass = null
         calledTmsMethodsWithArgs.clear()
+    }
+
+    @Test
+    public void defaultUseGoStep__callsPiperExecuteBin() {
+        String calledStep = ''
+        String usedMetadataFile = ''
+        List credInfo = []
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+                usedMetadataFile = metadataFile
+                credInfo = credentialInfo
+        })
+
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+
+        stepRule.step.tmsUpload(
+            script: nullScript,
+            jenkinsUtilsStub: jenkinsUtilsStub,
+            mtaPath: 'dummy.mtar',
+            nodeName: 'myNode',
+            credentialsId: 'TMS_ServiceKey'
+        )
+
+        assertEquals('tmsUpload', calledStep)
+        assertEquals('metadata/tmsUpload.yaml', usedMetadataFile)
+
+        // contains assertion does not work apparently when comparing a list of lists against an expected list
+        boolean found = false
+        credInfo.each { entry ->
+            if (entry == [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]) {
+                found = true
+            }
+        }
+        assertTrue(found)
     }
 
     @Test
