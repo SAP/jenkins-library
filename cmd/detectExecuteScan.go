@@ -360,6 +360,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
 	}
 
+	// Atleast 1, non-empty category to fail on must be provided
+	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
+		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
+	}
+
 	codelocation := config.CodeLocation
 	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
 		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
@@ -401,11 +406,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if config.SuccessOnSkip {
 		args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=%v\"", config.SuccessOnSkip))
-	}
-
-	// Atleast 1, non-empty category to fail on must be provided
-	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
-		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 	}
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
