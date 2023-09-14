@@ -15,16 +15,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/google/go-github/v45/github"
 	"github.com/pkg/errors"
-
 	"golang.org/x/sync/errgroup"
 )
 
 type GitHubActionsConfigProvider struct {
-	client *github.Client
-	ctx    context.Context
-	owner  string
-	repo   string
-
+	client      *github.Client
+	ctx         context.Context
+	owner       string
+	repo        string
 	runData     run
 	jobs        []job
 	jobsFetched bool
@@ -102,13 +100,13 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 		wg.Go(func() error {
 			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, true)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "fetching job logs failed")
 			}
 			defer resp.Body.Close()
 
 			b, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return fmt.Errorf("failed to read response body: %w", err)
+				return errors.Wrap(err, "failed to read response body")
 			}
 
 			fullLogs.Lock()
@@ -119,7 +117,7 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 		})
 	}
 	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("failed to get logs: %w", err)
+		return nil, errors.Wrap(err, "failed to fetch all logs")
 	}
 
 	return bytes.Join(fullLogs.b, []byte("")), nil

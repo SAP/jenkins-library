@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/url"
 	"strings"
+	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/google/go-github/v45/github"
+	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
 
@@ -23,9 +25,11 @@ type githubCreateCommentService interface {
 }
 
 type ClientBuilder struct {
-	token        string   // GitHub token, required
-	baseURL      string   // GitHub API URL, required
-	uploadURL    string   // Base URL for uploading files, optional
+	token        string // GitHub token, required
+	baseURL      string // GitHub API URL, required
+	uploadURL    string // Base URL for uploading files, optional
+	timeout      time.Duration
+	maxRetries   int
 	trustedCerts []string // Trusted TLS certificates, optional
 }
 
@@ -38,6 +42,8 @@ func NewClientBuilder(token, baseURL string) *ClientBuilder {
 		token:        token,
 		baseURL:      baseURL,
 		uploadURL:    "",
+		timeout:      0,
+		maxRetries:   0,
 		trustedCerts: nil,
 	}
 }
@@ -56,15 +62,33 @@ func (b *ClientBuilder) WithUploadURL(uploadURL string) *ClientBuilder {
 	return b
 }
 
+func (b *ClientBuilder) WithTimeout(timeout time.Duration) *ClientBuilder {
+	b.timeout = timeout
+	return b
+}
+
+func (b *ClientBuilder) WithMaxRetries(maxRetries int) *ClientBuilder {
+	b.maxRetries = maxRetries
+	return b
+}
+
 func (b *ClientBuilder) Build() (context.Context, *github.Client, error) {
 	baseURL, err := url.Parse(b.baseURL)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "failed to parse baseURL")
 	}
 
-	uploadTargetURL, err := url.Parse(b.uploadURL)
+	uploadURL, err := url.Parse(b.uploadURL)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "failed to parse uploadURL")
+	}
+
+	if b.timeout == 0 {
+		b.timeout = 30 * time.Second
+	}
+
+	if b.maxRetries == 0 {
+		b.maxRetries = 5
 	}
 
 	piperHttp := piperhttp.Client{}
@@ -72,12 +96,14 @@ func (b *ClientBuilder) Build() (context.Context, *github.Client, error) {
 		TrustedCerts:             b.trustedCerts,
 		DoLogRequestBodyOnDebug:  true,
 		DoLogResponseBodyOnDebug: true,
+		TransportTimeout:         b.timeout,
+		MaxRetries:               b.maxRetries,
 	})
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, piperHttp.StandardClient())
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: b.token, TokenType: "Bearer"})
 
 	client := github.NewClient(oauth2.NewClient(ctx, tokenSource))
 	client.BaseURL = baseURL
-	client.UploadURL = uploadTargetURL
+	client.UploadURL = uploadURL
 	return ctx, client, nil
 }
