@@ -337,11 +337,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	} else {
 		// When unmap is set to false, any occurances of unmap=true from scanProperties must be removed
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=true")
-	}
 
-	// TEMPORARY OPTION DURING THE MIGRATION TO DETECT8
-	args = append(args, "--detect.project.codelocation.unmap=true")
-	// REMOVE AFTER 25.09.2023
+		// TEMPORARY OPTION DURING THE MIGRATION TO DETECT8
+		args = append(args, "--detect.project.codelocation.unmap=true")
+		// REMOVE AFTER 25.09.2023
+	}
 
 	args = append(args, config.ScanProperties...)
 
