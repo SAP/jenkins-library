@@ -226,7 +226,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					"--context-sub-path", entry.ContextSubPath,
 					"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag),
 				)
-				if err = runKaniko(config.DockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+
+				dockerfilePath := config.DockerfilePath
+				if entry.ContainerDockerfilePath != "" {
+					dockerfilePath = entry.ContainerDockerfilePath
+				}
+
+				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", entry.ContainerImageName, config.DockerfilePath, err)
 				}
 
@@ -251,7 +257,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					"--context-sub-path", entry.ContextSubPath,
 					"--destination", entry.ContainerImage,
 				)
-				if err = runKaniko(config.DockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+
+				dockerfilePath := config.DockerfilePath
+				if entry.ContainerDockerfilePath != "" {
+					dockerfilePath = entry.ContainerDockerfilePath
+				}
+
+				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", containerImageName, config.DockerfilePath, err)
 				}
 
@@ -404,10 +416,11 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 }
 
 type multipleImageConf struct {
-	ContextSubPath     string `json:"contextSubPath,omitempty"`
-	ContainerImageName string `json:"containerImageName,omitempty"`
-	ContainerImageTag  string `json:"containerImageTag,omitempty"`
-	ContainerImage     string `json:"containerImage,omitempty"`
+	ContextSubPath          string `json:"contextSubPath,omitempty"`
+	ContainerDockerfilePath string `json:"containerDockerfilePath,omitempty"`
+	ContainerImageName      string `json:"containerImageName,omitempty"`
+	ContainerImageTag       string `json:"containerImageTag,omitempty"`
+	ContainerImage          string `json:"containerImage,omitempty"`
 }
 
 func parseMultipleImages(src []map[string]interface{}) ([]multipleImageConf, error) {
