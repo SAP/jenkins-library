@@ -302,12 +302,15 @@ func TestRunDetect(t *testing.T) {
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(ctx, detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
-		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect7.sh"], "detect.sh")
+		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect8.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
+		// TEMPRORARY CHANGED until 25.09.2023
+		expectedScript := "./detect.sh 
+		--detect.project.codelocation.unmap=true 
+		--blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'"
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
@@ -315,7 +318,7 @@ func TestRunDetect(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle(false)
-		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
+		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(ctx, detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
@@ -341,7 +344,7 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
 
-		expectedParam := "\"--detect.maven.build.command='--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "'\""
+		expectedParam := "\"--detect.maven.build.command=--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "\""
 		assert.Contains(t, utilsMock.Calls[0], expectedParam)
 	})
 }
@@ -702,10 +705,10 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
 				//Temp until 25.09.2023
 				"--detect.project.codelocation.unmap=true",
 				// --------------------
-				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -735,10 +738,10 @@ func TestAddDetectArgs(t *testing.T) {
 			isPullRequest: true,
 			expected: []string{
 				"--testProp1=1",
+				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
 				//Temp until 25.09.2023
 				"--detect.project.codelocation.unmap=true",
 				// --------------------
-				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=Rapid_scan_on_PRs\"",
