@@ -316,6 +316,7 @@ func TestRunDetect(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle(false)
+		// TEMPRORARY CHANGED until 25.09.2023
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --detect.project.codelocation.unmap=true --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
@@ -360,18 +361,15 @@ func TestAddDetectArgs(t *testing.T) {
 			options: detectExecuteScanOptions{
 				BuildTool:           "mta",
 				ExcludedDirectories: []string{"dir1", "dir2"},
-				//Temp until 25.09.2023
-				//Unmap: true,
-				// --------------------
-				ScanProperties:  []string{"--scan1=1", "--scan2=2"},
-				ServerURL:       "https://server.url",
-				Token:           "apiToken",
-				ProjectName:     "testName",
-				Version:         "1.0",
-				VersioningModel: "major-minor",
-				CodeLocation:    "",
-				Scanners:        []string{"signature"},
-				ScanPaths:       []string{"path1", "path2"},
+				ScanProperties:      []string{"--scan1=1", "--scan2=2"},
+				ServerURL:           "https://server.url",
+				Token:               "apiToken",
+				ProjectName:         "testName",
+				Version:             "1.0",
+				VersioningModel:     "major-minor",
+				CodeLocation:        "",
+				Scanners:            []string{"signature"},
+				ScanPaths:           []string{"path1", "path2"},
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -389,7 +387,6 @@ func TestAddDetectArgs(t *testing.T) {
 				"\"--detect.project.version.name=1.0\"",
 				"\"--detect.code.location.name=testName/1.0\"",
 				"\"--detect.force.success.on.skip=true\"",
-				//"--detect.project.codelocation.unmap=true", redundant
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 				"--detect.source.path='.'",
 			},
@@ -407,9 +404,6 @@ func TestAddDetectArgs(t *testing.T) {
 				Scanners:        []string{"source"},
 				ScanPaths:       []string{"path1", "path2"},
 				Groups:          []string{"testGroup"},
-				//Temp until 25.09.2023
-				//Unmap: true,
-				// --------------------
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -441,9 +435,6 @@ func TestAddDetectArgs(t *testing.T) {
 				Groups:          []string{"testGroup", "testGroup2"},
 				Version:         "1.0",
 				VersioningModel: "major-minor",
-				//Temp until 25.09.2023
-				//Unmap: true,
-				// --------------------
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -476,9 +467,6 @@ func TestAddDetectArgs(t *testing.T) {
 				Version:         "1.0",
 				VersioningModel: "major-minor",
 				DependencyPath:  "pathx",
-				//Temp until 25.09.2023
-				//Unmap: true,
-				// --------------------
 			},
 			expected: []string{
 				"--testProp1=1",
