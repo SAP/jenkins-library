@@ -316,7 +316,7 @@ func TestRunDetect(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle(false)
-		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'": fmt.Errorf("")}
+		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --detect.project.codelocation.unmap=true --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(ctx, detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
