@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -19,6 +20,7 @@ import (
 
 const (
 	gradleBomFilename = "bom-gradle"
+	stepName          = "gradleExecuteBuild"
 )
 
 var (
@@ -188,6 +190,25 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		log.Entry().WithError(err).Errorf("gradle build execution was failed: %v", err)
 		return err
 	}
+
+	log.Entry().Debugf("creating build settings information...")
+
+	dockerImage, err := GetDockerImageValue(stepName)
+	if err != nil {
+		return err
+	}
+
+	gradleConfig := buildsettings.BuildOptions{
+		CreateBOM:         config.CreateBOM,
+		Publish:           config.Publish,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+		DockerImage:       dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&gradleConfig, stepName)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	pipelineEnv.custom.buildSettingsInfo = buildSettingsInfo
 
 	log.Entry().Info("Publishing of artifacts to staging repository...")
 	if config.Publish {
