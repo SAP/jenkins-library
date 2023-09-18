@@ -64,10 +64,6 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 
 func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[string]string {
 	newConfig := map[string]string{}
-	for k, v := range *originalConfig {
-		newConfig[k] = v
-	}
-
 	for _, cOpt := range *c {
 		//omit default if value present
 		var dependentValue string
@@ -87,6 +83,10 @@ func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[stri
 			}
 		}
 	}
+	for k, v := range *originalConfig {
+		newConfig[k] = v
+	}
+
 	return newConfig
 }
 
