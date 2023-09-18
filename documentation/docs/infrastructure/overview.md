@@ -125,4 +125,4 @@ If you choose to go this path, follow the [Custom Jenkins Setup guide][resources
 [resources-custom-jenkins]:          customjenkins.md
 [build-agents]:                      https://wiki.jenkins.io/display/jenkins/distributed+builds
 [ssh-documentation]:                 https://www.openssh.com/manual.html
-[jenkins-helm]:                      https://github.com/helm/charts/tree/master/stable/jenkins
+[jenkins-helm]:                      https://github.com/jenkinsci/helm-charts
