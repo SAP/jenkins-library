@@ -297,28 +297,43 @@ spec:
           - STAGES
           - STEPS
         deprecated: true
+      - name: useDetect7
+        description:
+          "This flag allows to use the currently supported 8 version of Detect Script instead of v7"
+        aliases:
+          - name: detect/useDetect7
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: useDetect8
         description:
           "This flag allows to use the currently supported 8 version of Detect Script instead of v7"
         aliases:
           - name: detect/useDetect8
+            deprecated: true
         type: bool
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: false
+        default: true
+        deprecated: true
       - name: successOnSkip
         description:
           "This flag allows forces Black Duck to exit with 0 error code if any step is skipped"
         aliases:
           - name: detect/successOnSkip
+            deprecated: true
         type: bool
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: false
+        default: true
+        deprecated: true
       - name: customEnvironmentVariables
         description:
           "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by
