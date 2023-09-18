@@ -283,6 +283,9 @@ func mavenBuildMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "altDeploymentRepositoryPasswordId", Description: "Jenkins credentials ID containing the artifact deployment repository password.", Type: "jenkins"},
 				},
+				Resources: []config.StepResources{
+					{Name: "source", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "pomPath",
