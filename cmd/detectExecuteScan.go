@@ -339,7 +339,9 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=true")
 
 		// TEMPORARY OPTION DURING THE MIGRATION TO DETECT8
-		args = append(args, "--detect.project.codelocation.unmap=true")
+		if !config.UseDetect7 {
+			args = append(args, "--detect.project.codelocation.unmap=true")
+		}
 		// REMOVE AFTER 25.09.2023
 	}
 
