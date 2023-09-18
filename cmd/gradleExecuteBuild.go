@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	gradleBomFilename = "bom-gradle"
-	stepName          = "gradleExecuteBuild"
+	gradleBomFilename        = "bom-gradle"
+	stepNameForBuildSettings = "gradleExecuteBuild"
 )
 
 var (
@@ -193,7 +193,7 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 
 	log.Entry().Debugf("creating build settings information...")
 
-	dockerImage, err := GetDockerImageValue(stepName)
+	dockerImage, err := GetDockerImageValue(stepNameForBuildSettings)
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		BuildSettingsInfo: config.BuildSettingsInfo,
 		DockerImage:       dockerImage,
 	}
-	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&gradleConfig, stepName)
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&gradleConfig, stepNameForBuildSettings)
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
