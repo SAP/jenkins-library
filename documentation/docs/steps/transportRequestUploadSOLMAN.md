@@ -7,7 +7,7 @@
 * You have an SAP Solution Manager user account and the roles required for uploading. See [SAP Solution Manager Administration](https://help.sap.com/viewer/c413647f87a54db59d18cb074ce3dafd/7.2.12/en-US/11505ddff03c4d74976dae648743e10e.html).
 * You have a change document to which your transport request is coupled.
 * You have a transport request, which is the target container of the upload.
-* You have installed the Change Management Client with the needed certificates. See [Change Management Client](#Change-Management-Client).
+* You have installed the Change Management Client with the needed certificates. See [Change Management Client](#change-management-client).
 
 ## Change Management Client
 
