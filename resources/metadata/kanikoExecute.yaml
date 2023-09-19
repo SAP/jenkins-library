@@ -158,7 +158,7 @@ spec:
 
           Array keys:
             contextSubPath - Set a context subpath.
-            containerDockerfilePath - Dockerfile path (optional). If empty, root will be used. 
+            dockerfilePath - Dockerfile path (optional). If empty, root will be used. 
             containerImageName - Name of the container which will be built.
             containerImageTag - Tag of the container which will be built. If empty - root containerImageTag will be used.
             containerImage - Defines the full name of the Docker image to be created including registry.

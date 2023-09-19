@@ -228,8 +228,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				)
 
 				dockerfilePath := config.DockerfilePath
-				if entry.ContainerDockerfilePath != "" {
-					dockerfilePath = entry.ContainerDockerfilePath
+				if entry.DockerfilePath != "" {
+					dockerfilePath = entry.DockerfilePath
 				}
 
 				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
@@ -259,8 +259,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				)
 
 				dockerfilePath := config.DockerfilePath
-				if entry.ContainerDockerfilePath != "" {
-					dockerfilePath = entry.ContainerDockerfilePath
+				if entry.DockerfilePath != "" {
+					dockerfilePath = entry.DockerfilePath
 				}
 
 				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
@@ -416,11 +416,11 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 }
 
 type multipleImageConf struct {
-	ContextSubPath          string `json:"contextSubPath,omitempty"`
-	ContainerDockerfilePath string `json:"containerDockerfilePath,omitempty"`
-	ContainerImageName      string `json:"containerImageName,omitempty"`
-	ContainerImageTag       string `json:"containerImageTag,omitempty"`
-	ContainerImage          string `json:"containerImage,omitempty"`
+	ContextSubPath     string `json:"contextSubPath,omitempty"`
+	DockerfilePath     string `json:"dockerfilePath,omitempty"`
+	ContainerImageName string `json:"containerImageName,omitempty"`
+	ContainerImageTag  string `json:"containerImageTag,omitempty"`
+	ContainerImage     string `json:"containerImage,omitempty"`
 }
 
 func parseMultipleImages(src []map[string]interface{}) ([]multipleImageConf, error) {
