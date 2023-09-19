@@ -163,7 +163,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// 		npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
 		// }
 
-		tarballs, err := exec.Utils.Glob(filepath.Join(filepath.Dir(packageJSON), "*.tgz"))
+		// ToDo: maybe we should only be in the current directory and not from the file path ----
+		tarballs, err := exec.Utils.Glob(filepath.Join(".", "*.tgz"))
 
 		if err != nil {
 			return err
@@ -179,7 +180,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		projectNpmrc := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
+		// ToDo: the search may fail from the root of the package json file
+		projectNpmrc := filepath.Join(".", ".npmrc")
 		projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
 
 		if projectNpmrcExists {
