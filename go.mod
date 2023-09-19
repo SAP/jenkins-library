@@ -56,7 +56,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.10.0
 	github.com/xuri/excelize/v2 v2.4.1
-	golang.org/x/mod v0.9.0
+	golang.org/x/mod v0.12.0
 	golang.org/x/oauth2 v0.8.0
 	golang.org/x/text v0.9.0
 	google.golang.org/api v0.124.0
