@@ -447,7 +447,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	// A space-separated list of additional arguments that Detect will add at then end of the npm ls command line
 	if len(config.NpmArguments) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.arguments") {
-		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.ToUpper(strings.Join(config.NpmArguments, " "))))
+		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.Join(config.NpmArguments, " ")))
 	}
 
 	// rapid scan on pull request
