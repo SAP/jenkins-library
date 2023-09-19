@@ -132,21 +132,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
-		// tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
 
-		// if err != nil {
-		// 	return errors.Wrap(err, "creating temp directory failed")
-		// }
-
-		// defer exec.Utils.RemoveAll(tmpDirectory)
-
-		// copy the piper staging npmrc into the package / sub package
-		// _, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(filepath.Dir(packageJSON), ".piperNpmrc"))
-		// if err != nil {
-		// 	return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
-		// 		npmrc.filepath, filepath.Join(packageJSON, ".piperNpmrc"), err)
-		// }
-
+		// change directory in package json file , since npm pack will run only for that packages
 		err = exec.Utils.Chdir(filepath.Dir(packageJSON))
 		if err != nil {
 			return fmt.Errorf("failed to change into directory for executing script: %w", err)
@@ -157,19 +144,14 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		// _, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
-		// if err != nil {
-		// 	return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
-		// 		npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
-		// }
-
-		// ToDo: maybe we should only be in the current directory and not from the file path ----
 		tarballs, err := exec.Utils.Glob(filepath.Join(".", "*.tgz"))
 
 		if err != nil {
 			return err
 		}
 
+		// we do not maintain the tarball file name and hence expect only one tarball that comes
+		// from the npm pack command
 		if len(tarballs) != 1 {
 			return fmt.Errorf("found more tarballs than expected: %v", tarballs)
 		}
@@ -180,7 +162,13 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		// ToDo: the search may fail from the root of the package json file
+		// if a user has a .npmrc file and if it has a scope (e.g @sap to download scoped dependencies)
+		// if the package to be published also has the same scope (@sap) then npm gets confused
+		// and tries to publish to the scope that comes from the npmrc file
+		// and is not the desired publish since we want to publish to the other registry (from .piperNpmrc)
+		// file and not to the one mentioned in the users npmrc file
+		// to solve this we rename the users npmrc file before publish, the original npmrc is already
+		// packaged in the tarball and hence renaming it before publish should not have an effect
 		projectNpmrc := filepath.Join(".", ".npmrc")
 		projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
 
