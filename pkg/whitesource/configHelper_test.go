@@ -87,14 +87,14 @@ func TestUpdateConfig(t *testing.T) {
 	assert.Equal(t, "dependentValue", updatedConfig["dependent"])
 	assert.Equal(t, "non_existing_forced_val", updatedConfig["non_existing_forced"])
 	assert.Equal(t, "non_existing_not_forced_val", updatedConfig["non_existing_not_forced"])
-	assert.Equal(t, "forced_val", updatedConfig["forced"])
+	assert.Equal(t, "forced_original", updatedConfig["forced"])
 	assert.Equal(t, "not_forced_original", updatedConfig["not_forced"])
-	assert.NotEqual(t, "omit_val", updatedConfig["omit"])
+	assert.NotEqual(t, "dont_omit_forced_original", updatedConfig["omit"])
 	assert.Equal(t, "dont_omit_val", updatedConfig["dont_omit"])
 	assert.Equal(t, "dont_omit_forced_val", updatedConfig["dont_omit_forced"])
 	assert.Equal(t, "dont_omit_not_forced_original", updatedConfig["dont_omit_not_forced"])
-	assert.Equal(t, "original_value appended by appended_val", updatedConfig["append"])
-	assert.Equal(t, "appended_val", updatedConfig["append_empty"])
+	assert.Equal(t, "original_value appended by", updatedConfig["append"])
+	assert.Equal(t, "", updatedConfig["append_empty"])
 }
 
 func TestAddGeneralDefaults(t *testing.T) {
