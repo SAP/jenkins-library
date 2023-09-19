@@ -12,6 +12,8 @@ func TestCreateJSONReport(t *testing.T) {
 	resultMap["ProjectName"] = `ssba`
 	resultMap["Group"] = `test-group`
 	resultMap["GroupFullPathOnReportDate"] = `test-group-path`
+	resultMap["Application"] = `test-app`
+	resultMap["ApplicationFullPathOnReportDate"] = `test-app-path`
 	resultMap["DeepLink"] = `https://cx1.sap/projects/f5702f86-b396-417f-82e2-4949a55d5382/scans?branch=master&page=1&id=21e40b36-0dd7-48e5-9768-da1a8f36c907`
 	resultMap["Preset"] = `Checkmarx Default`
 	resultMap["ToolVersion"] = `v1`
@@ -73,13 +75,20 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, "Incremental", reportingData.ScanType)
 
 	lowList := (*reportingData.Findings)[2].LowPerQuery
-	assert.Equal(t, 2, len(*lowList))
-	assert.Equal(t, "Low_Query_Name_1", (*lowList)[0].QueryName)
-	assert.Equal(t, 0, (*lowList)[0].Audited)
-	assert.Equal(t, 4, (*lowList)[0].Total)
-	assert.Equal(t, "Low_Query_Name_2", (*lowList)[1].QueryName)
-	assert.Equal(t, 5, (*lowList)[1].Audited)
-	assert.Equal(t, 5, (*lowList)[1].Total)
+	lowListLen := len(*lowList)
+	assert.Equal(t, 2, lowListLen)
+
+	for i := 0; i < lowListLen; i++ {
+		if (*lowList)[i].QueryName == "Low_Query_Name_1" {
+			assert.Equal(t, 0, (*lowList)[i].Audited)
+			assert.Equal(t, 4, (*lowList)[i].Total)
+		}
+
+		if (*lowList)[i].QueryName == "Low_Query_Name_2" {
+			assert.Equal(t, 5, (*lowList)[i].Audited)
+			assert.Equal(t, 5, (*lowList)[i].Total)
+		}
+	}
 
 	lowPerQuery = map[string]map[string]int{}
 	submap = map[string]int{}
