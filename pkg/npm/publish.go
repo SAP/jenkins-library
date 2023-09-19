@@ -55,6 +55,8 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool) error {
 	execRunner := exec.Utils.GetExecRunner()
 
+	oldWorkingDirectory, err := exec.Utils.Getwd()
+
 	scope, err := exec.readPackageScope(packageJSON)
 
 	if err != nil {
@@ -145,7 +147,12 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// 		npmrc.filepath, filepath.Join(packageJSON, ".piperNpmrc"), err)
 		// }
 
-		err = execRunner.RunExecutable("cd", filepath.Dir(packageJSON), "&&", "npm", "pack")
+		err = exec.Utils.Chdir(filepath.Dir(packageJSON))
+		if err != nil {
+			return fmt.Errorf("failed to change into directory for executing script: %w", err)
+		}
+
+		err = execRunner.RunExecutable("npm", "pack")
 		if err != nil {
 			return err
 		}
@@ -195,6 +202,12 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 				log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
 			}
 		}
+
+		err = exec.Utils.Chdir(oldWorkingDirectory)
+		if err != nil {
+			return fmt.Errorf("failed to change back into original directory: %w", err)
+		}
+
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 		if err != nil {
