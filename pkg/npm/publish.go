@@ -130,26 +130,33 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
-		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
+		// tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
 
-		if err != nil {
-			return errors.Wrap(err, "creating temp directory failed")
-		}
+		// if err != nil {
+		// 	return errors.Wrap(err, "creating temp directory failed")
+		// }
 
-		defer exec.Utils.RemoveAll(tmpDirectory)
+		// defer exec.Utils.RemoveAll(tmpDirectory)
 
-		err = execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
+		// copy the piper staging npmrc into the package / sub package
+		// _, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(filepath.Dir(packageJSON), ".piperNpmrc"))
+		// if err != nil {
+		// 	return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
+		// 		npmrc.filepath, filepath.Join(packageJSON, ".piperNpmrc"), err)
+		// }
+
+		err = execRunner.RunExecutable("cd", filepath.Dir(packageJSON), "&&", "npm", "pack")
 		if err != nil {
 			return err
 		}
 
-		_, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
-		if err != nil {
-			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
-				npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
-		}
+		// _, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
+		// if err != nil {
+		// 	return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
+		// 		npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
+		// }
 
-		tarballs, err := exec.Utils.Glob(filepath.Join(tmpDirectory, "*.tgz"))
+		tarballs, err := exec.Utils.Glob(filepath.Join(filepath.Dir(packageJSON), "*.tgz"))
 
 		if err != nil {
 			return err
@@ -176,7 +183,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", filepath.Join(tmpDirectory, ".piperNpmrc"), "--registry", registry)
+		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
