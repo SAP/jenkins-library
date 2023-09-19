@@ -516,7 +516,8 @@ func TestNpmPublish(t *testing.T) {
 
 			// This stub simulates the behavior of npm pack and puts a tgz into the requested
 			utils.execRunner.Stub = func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-				r := regexp.MustCompile(`npm\s+pack\s+.*--pack-destination\s+(?P<destination>[^\s]+).*`)
+				// r := regexp.MustCompile(`npm\s+pack\s+.*--pack-destination\s+(?P<destination>[^\s]+).*`)
+				r := regexp.MustCompile(`npm\s+pack`)
 
 				matches := r.FindStringSubmatch(call)
 
