@@ -158,6 +158,7 @@ const golangBuildTool = "golang"
 func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
 
 	if config.BuildTool == golangBuildTool {
+		fmt.Println(">>>>>>>> come")
 		if err := prepareGolangPrivatePackages(config); err != nil {
 			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())
 		}

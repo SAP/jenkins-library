@@ -327,6 +327,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils) error {
 	// configure truststore
 	err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, utils, utils, "/etc/ssl/certs/ca-certificates.crt") // TODO reimplement
+	fmt.Println(">>>>>>>> come 2")
 
 	if config.PrivateModules == "" {
 		return nil
@@ -543,6 +544,8 @@ func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {
 		return nil, err
 	}
 
+	fmt.Println(string(modFileContent))
+
 	return modfile.Parse(modFilePath, modFileContent, nil)
 }
 
@@ -592,6 +595,7 @@ func gitConfigurationForPrivateModules(privateMod string, token string, utils go
 		authenticatedRepoURL := fmt.Sprintf("https://%s@%s", token, v)
 		repoBaseURL := fmt.Sprintf("https://%s", v)
 		err := utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
+		fmt.Printf("url.%s.insteadOf: %s", authenticatedRepoURL, repoBaseURL)
 		if err != nil {
 			return err
 		}
