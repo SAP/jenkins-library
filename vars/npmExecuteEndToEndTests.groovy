@@ -52,7 +52,12 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Credentials to access the application to be tested
      */
-    'credentialsId'
+    'credentialsId',
+    /**
+     * Distinguish if these are wdi5 tests. If set to `true` `wdi5_username` and `wdi5_password` environment variables are used to enable [autologin](https://ui5-community.github.io/wdi5/#/authentication?id=credentials).
+     * @possibleValues `true`, `false`
+     */
+    'wdi5'
 
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -112,6 +117,9 @@ void call(Map parameters = [:]) {
                 }
                 if (appUrl.credentialId) {
                     credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+                    if (config.wdi5) {
+                        credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username'))
+                    }
                 }
                 List scriptOptions = ["--launchUrl=${appUrl.url}"]
                 if (appUrl.parameters) {
@@ -127,6 +135,9 @@ void call(Map parameters = [:]) {
         }else{
             if (config.credentialsId) {
                 credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+                if (config.wdi5) {
+                    credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username'))
+                }
             }
             List scriptOptions = []
             if (config.baseUrl){

@@ -10,7 +10,7 @@ stages:
     cfService: 'abap'
     cfServicePlan: 'standard'
     abapSystemIsDevelopmentAllowed: 'false'
-    abapSystemSizeOfPersistence: 4
+    abapSystemSizeOfPersistence: 2
     abapSystemSizeOfRuntime: 1
     cfServiceKeyName: 'sap_com_0510'
     cfAsync: false
@@ -44,7 +44,7 @@ stages:
     cfService: 'abap'
     cfServicePlan: 'saas_oem'
     abapSystemIsDevelopmentAllowed: 'false'
-    abapSystemSizeOfPersistence: 4
+    abapSystemSizeOfPersistence: 2
     abapSystemSizeOfRuntime: 1
     confirmDeletion: 'true'
     includeAddon: 'true'
