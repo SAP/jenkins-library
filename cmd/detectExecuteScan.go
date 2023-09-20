@@ -132,7 +132,9 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", config.CustomTLSCertificateLinks)
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.GithubToken, config.GithubAPIURL).
+		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
