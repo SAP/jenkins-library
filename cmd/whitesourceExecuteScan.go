@@ -156,7 +156,7 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 const golangBuildTool = "golang"
 
 func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
-
+	fmt.Println(">>>>>>>> ", config.BuildTool)
 	if config.BuildTool == golangBuildTool {
 		fmt.Println(">>>>>>>> come")
 		if err := prepareGolangPrivatePackages(config); err != nil {
