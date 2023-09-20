@@ -139,7 +139,9 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 }
 
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) {
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", config.CustomTLSCertificateLinks)
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.GithubToken, config.GithubAPIURL).
+		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
