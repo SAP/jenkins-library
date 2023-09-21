@@ -114,7 +114,7 @@ var execInPath = exec.LookPath
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	ctx, client, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
@@ -1116,7 +1116,7 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
 	author := ""
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	ctx, client, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 	if err == nil && ctx != nil && client != nil {
 		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
 		if err != nil {
