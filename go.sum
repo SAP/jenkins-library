@@ -294,8 +294,6 @@ github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnweb
 github.com/bmatcuk/doublestar v1.3.4 h1:gPypJ5xD31uhX6Tf54sDPUOBXTqKH4c9aPY66CyQrS0=
 github.com/bmatcuk/doublestar v1.3.4/go.mod h1:wiQtGV+rzVYxB7WIlirSN++5HPtPlXEo9MEoZQC/PmE=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
-github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6 h1:yHK3nXjSRklq0SWhK6KW6kJtTebTUvVxN3gPmUtoVJ4=
-github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6/go.mod h1:QeskxN9F/Csz0XV/01IC8y37CapKKWvOHa0UHLLX1fM=
 github.com/bndr/gojenkins v1.1.1-0.20221212185249-45fe3142a0a1 h1:DXCJabDKrmrgTr427mz/HUSEt07r6T+FiuSUWWxLm98=
 github.com/bndr/gojenkins v1.1.1-0.20221212185249-45fe3142a0a1/go.mod h1:kfW4UFryDa6Jy2d+U3dfZEG9SvwUE9mpkWDWnTE+74g=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
