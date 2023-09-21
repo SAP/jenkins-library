@@ -71,7 +71,7 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
-      - name: virutalEnvironmentName
+      - name: virtualEnvironmentName
         type: string
         description: name of the virtual environment that will be used for the build
         scope:
