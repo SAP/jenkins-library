@@ -348,8 +348,8 @@ github.com/blizzy78/varnamelen v0.3.0/go.mod h1:hbwRdBvoBqxk34XyQ6HA0UH3G0/1TKuv
 github.com/bmatcuk/doublestar v1.3.4 h1:gPypJ5xD31uhX6Tf54sDPUOBXTqKH4c9aPY66CyQrS0=
 github.com/bmatcuk/doublestar v1.3.4/go.mod h1:wiQtGV+rzVYxB7WIlirSN++5HPtPlXEo9MEoZQC/PmE=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
-github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6 h1:yHK3nXjSRklq0SWhK6KW6kJtTebTUvVxN3gPmUtoVJ4=
-github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6/go.mod h1:QeskxN9F/Csz0XV/01IC8y37CapKKWvOHa0UHLLX1fM=
+github.com/bndr/gojenkins v1.1.1-0.20221212185249-45fe3142a0a1 h1:DXCJabDKrmrgTr427mz/HUSEt07r6T+FiuSUWWxLm98=
+github.com/bndr/gojenkins v1.1.1-0.20221212185249-45fe3142a0a1/go.mod h1:kfW4UFryDa6Jy2d+U3dfZEG9SvwUE9mpkWDWnTE+74g=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bombsimon/wsl/v3 v3.3.0/go.mod h1:st10JtZYLE4D5sC7b8xV4zTKZwAQjCH/Hy2Pm1FNZIc=
 github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc h1:biVzkmvwrH8WK8raXaxBx6fRVTlJILwEwQGL1I/ByEI=

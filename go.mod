@@ -16,7 +16,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.15.10
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.3
 	github.com/bmatcuk/doublestar v1.3.4
-	github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6
+	github.com/bndr/gojenkins v1.1.1-0.20221212185249-45fe3142a0a1
 	github.com/buildpacks/lifecycle v0.13.0
 	github.com/docker/cli v20.10.17+incompatible
 	github.com/elliotchance/orderedmap v1.4.0
