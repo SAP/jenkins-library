@@ -12,7 +12,7 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.10.0
+      - uses: styfle/cancel-workflow-action@0.11.0
       - uses: actions/setup-go@v4
         with:
           go-version: '1.19.x'
@@ -24,7 +24,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: unit-test
         id: unit-test
         run: go test -tags=unit ./... -coverprofile cover.out
@@ -53,7 +53,7 @@ jobs:
             ${{ runner.os }}-golang-format
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: format
         run: go fmt ./...
       - name: verify
@@ -66,7 +66,7 @@ jobs:
           go-version: '1.19.x'
           # action requires go@1.19
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: staticcheck
@@ -89,7 +89,7 @@ jobs:
             ${{ runner.os }}-golang-generate
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: generate
         run: go run pkg/generator/step-metadata.go
       - name: verify
@@ -109,7 +109,7 @@ jobs:
             ${{ runner.os }}-golang-dependencies
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: cleanup dependencies
         run: go mod tidy
       - name: verify
