@@ -1,13 +1,14 @@
 package git
 
 import (
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // utilsWorkTree interface abstraction of git.Worktree to enable tests
@@ -72,16 +73,21 @@ func pushChangesToRepository(username, password string, force *bool, repository 
 }
 
 // PlainClone Clones a non-bare repository to the provided directory
-func PlainClone(username, password, serverURL, directory string) (*git.Repository, error) {
+func PlainClone(username, password, serverURL, directory string, caCerts []byte) (*git.Repository, error) {
 	abstractedGit := &abstractionGit{}
-	return plainClone(username, password, serverURL, directory, abstractedGit)
+	return plainClone(username, password, serverURL, directory, abstractedGit, caCerts)
 }
 
-func plainClone(username, password, serverURL, directory string, abstractionGit utilsGit) (*git.Repository, error) {
+func plainClone(username, password, serverURL, directory string, abstractionGit utilsGit, caCerts []byte) (*git.Repository, error) {
 	gitCloneOptions := git.CloneOptions{
 		Auth: &http.BasicAuth{Username: username, Password: password},
 		URL:  serverURL,
 	}
+
+	if len(caCerts) > 0 {
+		gitCloneOptions.CABundle = caCerts
+	}
+
 	repository, err := abstractionGit.plainClone(directory, false, &gitCloneOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to clone git")
