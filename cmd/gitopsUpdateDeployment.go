@@ -329,11 +329,13 @@ func downloadCACertbunde(customTlsCertificateLinks []string, gitUtils iGitopsUpd
 		if err != nil {
 			return certs, nil
 		}
+		log.Entry().Infof("Downloaded CA certs successfully from '%s'", customTlsCertificateLink)
 
 		content, err := fileUtils.FileRead(path.Base(customTlsCertificateLink))
 		if err != nil {
 			return certs, nil
 		}
+		log.Entry().Infof("CA certs added successfully to cert pool")
 
 		certs = append(certs, content...)
 	}
