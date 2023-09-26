@@ -325,6 +325,7 @@ func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUt
 func downloadCACertbunde(customTlsCertificateLinks []string, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) ([]byte, error) {
 	certs := []byte{}
 	for _, customTlsCertificateLink := range customTlsCertificateLinks {
+		log.Entry().Infof("Downloading CA certs %s into file '%s'", customTlsCertificateLink, path.Base(customTlsCertificateLink))
 		err := gitUtils.DownloadFile(customTlsCertificateLink, path.Base(customTlsCertificateLink), nil, nil)
 		if err != nil {
 			return certs, nil
