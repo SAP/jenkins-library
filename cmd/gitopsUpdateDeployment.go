@@ -326,13 +326,13 @@ func downloadCACertbunde(customTlsCertificateLinks []string, gitUtils iGitopsUpd
 	certs := []byte{}
 	for _, customTlsCertificateLink := range customTlsCertificateLinks {
 		log.Entry().Infof("Downloading CA certs %s into file '%s'", customTlsCertificateLink, path.Base(customTlsCertificateLink))
-		err := gitUtils.DownloadFile(customTlsCertificateLink, path.Base(customTlsCertificateLink), nil, nil)
+		err := gitUtils.DownloadFile(customTlsCertificateLink, "SAPNetCA_G2.crt", nil, nil)
 		if err != nil {
 			return certs, nil
 		}
 		log.Entry().Infof("Downloaded CA certs successfully from '%s'", customTlsCertificateLink)
 
-		content, err := fileUtils.FileRead(path.Base(customTlsCertificateLink))
+		content, err := fileUtils.FileRead("SAPNetCA_G2.crt")
 		if err != nil {
 			return certs, nil
 		}
