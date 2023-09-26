@@ -3,7 +3,7 @@ package codeql
 import (
 	"context"
 
-	sapgithub "github.com/SAP/jenkins-library/pkg/github"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/google/go-github/v45/github"
 )
 
@@ -35,7 +35,9 @@ type CodeqlScanAuditInstance struct {
 
 func (codeqlScanAudit *CodeqlScanAuditInstance) GetVulnerabilities(analyzedRef string) ([]CodeqlFindings, error) {
 	apiUrl := getApiUrl(codeqlScanAudit.serverUrl)
-	ctx, client, err := sapgithub.NewClient(codeqlScanAudit.token, apiUrl, "", codeqlScanAudit.trustedCerts)
+	ctx, client, err := piperGithub.
+		NewClientBuilder(codeqlScanAudit.token, apiUrl).
+		WithTrustedCerts(codeqlScanAudit.trustedCerts).Build()
 	if err != nil {
 		return []CodeqlFindings{}, err
 	}

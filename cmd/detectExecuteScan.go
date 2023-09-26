@@ -132,7 +132,9 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", config.CustomTLSCertificateLinks)
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.GithubToken, config.GithubAPIURL).
+		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
@@ -337,12 +339,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	} else {
 		// When unmap is set to false, any occurances of unmap=true from scanProperties must be removed
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=true")
-
-		// TEMPORARY OPTION DURING THE MIGRATION TO DETECT8
-		if !config.UseDetect7 {
-			args = append(args, "--detect.project.codelocation.unmap=true")
-		}
-		// REMOVE AFTER 25.09.2023
 	}
 
 	args = append(args, config.ScanProperties...)
@@ -447,7 +443,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	// A space-separated list of additional arguments that Detect will add at then end of the npm ls command line
 	if len(config.NpmArguments) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.arguments") {
-		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.ToUpper(strings.Join(config.NpmArguments, " "))))
+		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.Join(config.NpmArguments, " ")))
 	}
 
 	// rapid scan on pull request
