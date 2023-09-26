@@ -34,7 +34,6 @@ type iGitopsUpdateDeploymentGitUtils interface {
 	PushChangesToRepository(username, password string, force *bool) error
 	PlainClone(username, password, serverURL, directory string, caCerts []byte) error
 	ChangeBranch(branchName string) error
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type gitopsUpdateDeploymentFileUtils interface {
@@ -55,11 +54,25 @@ type gitopsUpdateDeploymentExecRunner interface {
 type gitopsUpdateDeploymentGitUtils struct {
 	worktree   *git.Worktree
 	repository *git.Repository
-	httpClient *piperhttp.Client
 }
 
-func (g *gitopsUpdateDeploymentGitUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return g.httpClient.DownloadFile(url, filename, header, cookies)
+type gitopsUpdateDeploymentUtilsBundle struct {
+	*piperhttp.Client
+}
+
+type gitopsUpdateDeploymentUtils interface {
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+}
+
+func newGitopsUpdateDeploymentUtilsBundle() gitopsUpdateDeploymentUtils {
+	utils := gitopsUpdateDeploymentUtilsBundle{
+		Client: &piperhttp.Client{},
+	}
+	return &utils
+}
+
+func (g *gitopsUpdateDeploymentUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return g.Client.DownloadFile(url, filename, header, cookies)
 }
 
 func (g *gitopsUpdateDeploymentGitUtils) CommitFiles(filePaths []string, commitMessage, author string) (plumbing.Hash, error) {
@@ -324,9 +337,10 @@ func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUt
 
 func downloadCACertbunde(customTlsCertificateLinks []string, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) ([]byte, error) {
 	certs := []byte{}
+	utils := newGitopsUpdateDeploymentUtilsBundle()
 	for _, customTlsCertificateLink := range customTlsCertificateLinks {
 		log.Entry().Infof("Downloading CA certs %s into file '%s'", customTlsCertificateLink, path.Base(customTlsCertificateLink))
-		err := gitUtils.DownloadFile(customTlsCertificateLink, "SAPNetCA_G2.crt", nil, nil)
+		err := utils.DownloadFile(customTlsCertificateLink, "SAPNetCA_G2.crt", nil, nil)
 		if err != nil {
 			return certs, nil
 		}
