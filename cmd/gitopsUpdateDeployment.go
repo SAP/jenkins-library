@@ -31,7 +31,7 @@ const toolKustomize = "kustomize"
 
 type iGitopsUpdateDeploymentGitUtils interface {
 	CommitFiles(filePaths []string, commitMessage, author string) (plumbing.Hash, error)
-	PushChangesToRepository(username, password string, force *bool) error
+	PushChangesToRepository(username, password string, force *bool, caCerts []byte) error
 	PlainClone(username, password, serverURL, directory string, caCerts []byte) error
 	ChangeBranch(branchName string) error
 }
@@ -95,8 +95,8 @@ func (g *gitopsUpdateDeploymentGitUtils) CommitFiles(filePaths []string, commitM
 	return commit, nil
 }
 
-func (g *gitopsUpdateDeploymentGitUtils) PushChangesToRepository(username, password string, force *bool) error {
-	return gitUtil.PushChangesToRepository(username, password, force, g.repository)
+func (g *gitopsUpdateDeploymentGitUtils) PushChangesToRepository(username, password string, force *bool, caCerts []byte) error {
+	return gitUtil.PushChangesToRepository(username, password, force, g.repository, caCerts)
 }
 
 func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverURL, directory string, caCerts []byte) error {
@@ -150,7 +150,12 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		}
 	}()
 
-	err = cloneRepositoryAndChangeBranch(config, gitUtils, fileUtils, temporaryFolder)
+	certs, err := downloadCACertbunde(config.CustomTLSCertificateLinks, gitUtils, fileUtils)
+	if err != nil {
+		return err
+	}
+
+	err = cloneRepositoryAndChangeBranch(config, gitUtils, fileUtils, temporaryFolder, certs)
 	if err != nil {
 		return errors.Wrap(err, "repository could not get prepared")
 	}
@@ -214,7 +219,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		}
 	}
 
-	commit, err := commitAndPushChanges(config, gitUtils, allFiles)
+	commit, err := commitAndPushChanges(config, gitUtils, allFiles, certs)
 	if err != nil {
 		return errors.Wrap(err, "failed to commit and push changes")
 	}
@@ -316,14 +321,9 @@ func logNotRequiredButFilledFieldForKustomize(config *gitopsUpdateDeploymentOpti
 	}
 }
 
-func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils, temporaryFolder string) error {
+func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils, temporaryFolder string, certs []byte) error {
 
-	certs, err := downloadCACertbunde(config.CustomTLSCertificateLinks, gitUtils, fileUtils)
-	if err != nil {
-		return err
-	}
-
-	err = gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder, certs)
+	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder, certs)
 	if err != nil {
 		return errors.Wrap(err, "failed to plain clone repository")
 	}
@@ -496,7 +496,7 @@ func buildRegistryPlusImageAndTagSeparately(config *gitopsUpdateDeploymentOption
 
 }
 
-func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, filePaths []string) (plumbing.Hash, error) {
+func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, filePaths []string, certs []byte) (plumbing.Hash, error) {
 	commitMessage := config.CommitMessage
 
 	if commitMessage == "" {
@@ -508,7 +508,7 @@ func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitop
 		return [20]byte{}, errors.Wrap(err, "committing changes failed")
 	}
 
-	err = gitUtils.PushChangesToRepository(config.Username, config.Password, &config.ForcePush)
+	err = gitUtils.PushChangesToRepository(config.Username, config.Password, &config.ForcePush, certs)
 	if err != nil {
 		return [20]byte{}, errors.Wrap(err, "pushing changes failed")
 	}
