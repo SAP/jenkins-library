@@ -208,7 +208,6 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 		return "", err
 	}
 
-	log.Entry().Info(bufferErr.String())
 	url := bufferOut.String()
 	return strings.TrimSpace(url), nil
 }
