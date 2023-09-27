@@ -78,7 +78,12 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	case AzureDevOps:
 		return &AzureDevOpsConfigProvider{}, nil
 	case GitHubActions:
-		return &GitHubActionsConfigProvider{}, nil
+		ghProvider := &GitHubActionsConfigProvider{}
+		// Temporary workaround: The orchestrator provider is not always initialized after being created,
+		// which causes a panic in some places for GitHub Actions provider, as it needs to initialize
+		// github sdk client.
+		ghProvider.InitOrchestratorProvider(&OrchestratorSettings{})
+		return ghProvider, nil
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
 	default:
