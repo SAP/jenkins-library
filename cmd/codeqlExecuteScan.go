@@ -206,19 +206,27 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 		cmd = append(cmd, "--ref="+repoInfo.ref)
 	}
 
-	//if no git pramas are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
+	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
 	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
 
-	var buffer bytes.Buffer
-	utils.Stdout(&buffer)
+	var bufferOut, bufferErr bytes.Buffer
+	utils.Stdout(&bufferOut)
+	defer utils.Stdout(log.Writer())
+	utils.Stderr(&bufferErr)
+	defer utils.Stderr(log.Writer())
+
 	err := execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
+		e := bufferErr.String()
+		log.Entry().Error(e)
+		if strings.Contains(e, "Unauthorized") {
+			log.Entry().Error("Either your Github Token is invalid or you use both Vault and Jenkins credentials where your Vault credentials are invalid, to use your Jenkins credentials try setting 'skipVault:true'")
+		}
 		log.Entry().Error("failed to upload sarif results")
 		return "", err
 	}
-	utils.Stdout(log.Writer())
 
-	url := buffer.String()
+	url := bufferOut.String()
 	return strings.TrimSpace(url), nil
 }
 
