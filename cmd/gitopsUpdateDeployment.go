@@ -338,20 +338,22 @@ func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUt
 func downloadCACertbunde(customTlsCertificateLinks []string, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) ([]byte, error) {
 	certs := []byte{}
 	utils := newGitopsUpdateDeploymentUtilsBundle()
-	for _, customTlsCertificateLink := range customTlsCertificateLinks {
-		log.Entry().Infof("Downloading CA certs %s into file '%s'", customTlsCertificateLink, path.Base(customTlsCertificateLink))
-		err := utils.DownloadFile(customTlsCertificateLink, path.Base(customTlsCertificateLink), nil, nil)
-		if err != nil {
-			return certs, nil
-		}
+	if len(customTlsCertificateLinks) > 0 {
+		for _, customTlsCertificateLink := range customTlsCertificateLinks {
+			log.Entry().Infof("Downloading CA certs %s into file '%s'", customTlsCertificateLink, path.Base(customTlsCertificateLink))
+			err := utils.DownloadFile(customTlsCertificateLink, path.Base(customTlsCertificateLink), nil, nil)
+			if err != nil {
+				return certs, nil
+			}
 
-		content, err := fileUtils.FileRead(path.Base(customTlsCertificateLink))
-		if err != nil {
-			return certs, nil
-		}
-		log.Entry().Infof("CA certs added successfully to cert pool")
+			content, err := fileUtils.FileRead(path.Base(customTlsCertificateLink))
+			if err != nil {
+				return certs, nil
+			}
+			log.Entry().Infof("CA certs added successfully to cert pool")
 
-		certs = append(certs, content...)
+			certs = append(certs, content...)
+		}
 	}
 
 	return certs, nil

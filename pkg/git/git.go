@@ -60,8 +60,11 @@ func PushChangesToRepository(username, password string, force *bool, repository 
 
 func pushChangesToRepository(username, password string, force *bool, repository utilsRepository, caCerts []byte) error {
 	pushOptions := &git.PushOptions{
-		Auth:     &http.BasicAuth{Username: username, Password: password},
-		CABundle: caCerts,
+		Auth: &http.BasicAuth{Username: username, Password: password},
+	}
+
+	if len(caCerts) > 0 {
+		pushOptions.CABundle = caCerts
 	}
 	if force != nil {
 		pushOptions.Force = *force
