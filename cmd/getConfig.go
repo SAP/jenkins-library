@@ -40,7 +40,7 @@ type getConfigUtilsBundle struct {
 	*piperutils.Files
 }
 
-func newGetConfigUtilsUtils() getConfigUtils {
+func NewGetConfigUtilsUtils() getConfigUtils {
 	utils := getConfigUtilsBundle{
 		Files: &piperutils.Files{},
 	}
@@ -62,8 +62,7 @@ func ConfigCommand() *cobra.Command {
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
-			utils := newGetConfigUtilsUtils()
-			err := generateConfig(utils)
+			err := GenerateConfig(NewGetConfigUtilsUtils(), config.GetJSON)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
@@ -215,14 +214,14 @@ func getConfig() (config.StepConfig, error) {
 	return stepConfig, nil
 }
 
-func generateConfig(utils getConfigUtils) error {
+func GenerateConfig(utils getConfigUtils, formatter func(interface{}) (string, error)) error {
 
 	stepConfig, err := getConfig()
 	if err != nil {
 		return err
 	}
 
-	myConfigJSON, err := config.GetJSON(stepConfig.Config)
+	myConfigJSON, err := formatter(stepConfig.Config)
 	if err != nil {
 		return fmt.Errorf("failed to get JSON from config: %w", err)
 	}
