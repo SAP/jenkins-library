@@ -544,13 +544,13 @@ func TestNpmPublish(t *testing.T) {
 
 					if len(test.wants.tarballPath) > 0 && assert.Contains(t, publishCmd.Params, "--tarball") {
 						tarballPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--tarball")+1]
-						assert.Equal(t, test.wants.tarballPath, tarballPath)
+						assert.Equal(t, test.wants.tarballPath, filepath.ToSlash(tarballPath))
 					}
 
 					if assert.Contains(t, publishCmd.Params, "--userconfig") {
 						effectivePublishConfigPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--userconfig")+1]
 
-						assert.Regexp(t, test.wants.publishConfigPath, effectivePublishConfigPath)
+						assert.Regexp(t, test.wants.publishConfigPath, filepath.ToSlash(effectivePublishConfigPath))
 
 						effectiveConfig, err := utils.FileRead(effectivePublishConfigPath)
 
