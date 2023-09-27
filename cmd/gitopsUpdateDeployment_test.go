@@ -848,7 +848,7 @@ func (v *gitUtilsMock) CommitFiles(newFiles []string, commitMessage string, _ st
 	return [20]byte{123}, nil
 }
 
-func (v gitUtilsMock) PushChangesToRepository(_ string, _ string, force *bool) error {
+func (v gitUtilsMock) PushChangesToRepository(_ string, _ string, force *bool, caCerts []byte) error {
 	if v.failOnPush {
 		return errors.New("error on push")
 	}
@@ -858,7 +858,7 @@ func (v gitUtilsMock) PushChangesToRepository(_ string, _ string, force *bool) e
 	return nil
 }
 
-func (v *gitUtilsMock) PlainClone(_, _, _, directory string) error {
+func (v *gitUtilsMock) PlainClone(_, _, _, directory string, caCerts []byte) error {
 	if v.skipClone {
 		return nil
 	}
