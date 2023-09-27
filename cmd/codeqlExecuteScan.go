@@ -191,8 +191,7 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
 	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
 
-	var bufferOut bytes.Buffer
-	var bufferErr bytes.Buffer
+	var bufferOut, bufferErr bytes.Buffer
 	utils.Stdout(&bufferOut)
 	defer utils.Stdout(log.Writer())
 	utils.Stderr(&bufferErr)
