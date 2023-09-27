@@ -772,7 +772,7 @@ type filesMock struct {
 	failOnCreation bool
 	failOnDeletion bool
 	failOnWrite    bool
-	failOnRead	   bool
+	failOnRead     bool
 	failOnGlob     bool
 	path           string
 }
@@ -784,9 +784,9 @@ func (f filesMock) FileWrite(path string, content []byte, perm os.FileMode) erro
 	return piperutils.Files{}.FileWrite(path, content, perm)
 }
 
-func (f filesMock) FileRead(path string) ([]byte,error) {
+func (f filesMock) FileRead(path string) ([]byte, error) {
 	if f.failOnRead {
-		return errors.New("error appeared")
+		return []byte{}, errors.New("error appeared")
 	}
 	return piperutils.Files{}.FileRead(path)
 }
