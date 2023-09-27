@@ -152,8 +152,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 		// we do not maintain the tarball file name and hence expect only one tarball that comes
 		// from the npm pack command
-		if len(tarballs) != 1 {
-			return fmt.Errorf("found more tarballs than expected: %v", tarballs)
+		if len(tarballs) < 1 {
+			return errors.Wrap(err, "no tarballs found")
+		}
+		if len(tarballs) > 1 {
+			return errors.Wrapf(err, "found more tarballs than expected: %v", tarballs)
 		}
 
 		tarballFilePath, err := exec.Utils.Abs(tarballs[0])
