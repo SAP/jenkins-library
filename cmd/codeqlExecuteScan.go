@@ -200,13 +200,15 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token st
 	err := execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		e := bufferErr.String()
+		log.Entry().Error(e)
 		if strings.Contains(e, "Unauthorized") {
-			log.Entry().Info("Probably you use both Vault and Jenkins credentials, try to set param 'skipVault:true'")
+			log.Entry().Error("Either your token is invalid or you use both Vault and Jenkins credentials, to use your Jenkins credentials try setting 'skipVault:true'")
 		}
 		log.Entry().Error("failed to upload sarif results")
 		return "", err
 	}
 
+	log.Entry().Info(bufferErr.String())
 	url := bufferOut.String()
 	return strings.TrimSpace(url), nil
 }
