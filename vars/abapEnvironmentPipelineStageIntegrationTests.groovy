@@ -41,9 +41,7 @@ void call(Map parameters = [:]) {
     } else {
         piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
             try {
-                abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
-                cloudFoundryCreateServiceKey(script: parameters.script)
-                abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
+                abapEnvironmentUpdateAddOnProduct(script: parameters.script)
             } catch (Exception e) {
                 echo "Deployment test of add-on product failed."
                 throw e
