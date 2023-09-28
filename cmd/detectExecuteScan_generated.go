@@ -45,6 +45,7 @@ type detectExecuteScanOptions struct {
 	MavenExcludedScopes         []string `json:"mavenExcludedScopes,omitempty"`
 	DetectTools                 []string `json:"detectTools,omitempty"`
 	ScanOnChanges               bool     `json:"scanOnChanges,omitempty"`
+	UseDetect7                  bool     `json:"useDetect7,omitempty"`
 	UseDetect8                  bool     `json:"useDetect8,omitempty"`
 	SuccessOnSkip               bool     `json:"successOnSkip,omitempty"`
 	CustomEnvironmentVariables  []string `json:"customEnvironmentVariables,omitempty"`
@@ -287,8 +288,9 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.MavenExcludedScopes, "mavenExcludedScopes", []string{}, "The maven scopes that need to be excluded from the scan. For example, setting the value 'test' will exclude all components which are defined with a test scope in maven")
 	cmd.Flags().StringSliceVar(&stepConfig.DetectTools, "detectTools", []string{}, "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included. For the complete list of possible values, Please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fpaths.html&_LANG=enus&anchor=detect-tools-included)")
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", false, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "This flag allows to use the currently supported 8 version of Detect Script instead of v7")
-	cmd.Flags().BoolVar(&stepConfig.SuccessOnSkip, "successOnSkip", false, "This flag allows forces Black Duck to exit with 0 error code if any step is skipped")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect7, "useDetect7", false, "This flag allows to use the currently supported 8 version of Detect Script instead of v7")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", true, "This flag allows to use the currently supported 8 version of Detect Script instead of v7")
+	cmd.Flags().BoolVar(&stepConfig.SuccessOnSkip, "successOnSkip", true, "This flag allows forces Black Duck to exit with 0 error code if any step is skipped")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by Synopsys. The full list can be found [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=configuring%2Fenvvars.html&_LANG=enus) This list affects the detect script downloaded while running the scan. Right now only detect7.sh is available for downloading")
 	cmd.Flags().IntVar(&stepConfig.MinScanInterval, "minScanInterval", 0, "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
@@ -552,13 +554,22 @@ func detectExecuteScanMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "useDetect7",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/useDetect7"}},
+						Default:     false,
+					},
+					{
 						Name:        "useDetect8",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect8"}},
-						Default:     false,
+						Aliases:     []config.Alias{{Name: "detect/useDetect8", Deprecated: true}},
+						Default:     true,
 					},
 					{
 						Name:        "successOnSkip",
@@ -566,8 +577,8 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/successOnSkip"}},
-						Default:     false,
+						Aliases:     []config.Alias{{Name: "detect/successOnSkip", Deprecated: true}},
+						Default:     true,
 					},
 					{
 						Name:        "customEnvironmentVariables",
