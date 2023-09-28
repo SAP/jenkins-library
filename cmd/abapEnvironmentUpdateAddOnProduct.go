@@ -44,16 +44,16 @@ type accessTokenResp struct {
 }
 
 type systemEntity struct {
-	SystemId     string `json:"systemId"`
-	SystemNumber string `json:"systemNumber"`
-	ZoneId       string `json:"zoneId"`
+	SystemId     string `json:"SystemId"`
+	SystemNumber string `json:"SystemNumber"`
+	ZoneId       string `json:"zone_id"`
 }
 
 type reqEntity struct {
-	RequestId string `json:"requestId"`
-	ZoneId    string `json:"zoneId"`
-	Status    string `json:"status"`
-	SystemId  string `json:"systemId"`
+	RequestId string `json:"RequestId"`
+	ZoneId    string `json:"zone_id"`
+	Status    string `json:"Status"`
+	SystemId  string `json:"SystemId"`
 }
 
 type updateAddOnReq struct {
@@ -81,7 +81,7 @@ func abapEnvironmentUpdateAddOnProduct(config abapEnvironmentUpdateAddOnProductO
 
 func runAbapEnvironmentUpdateAddOnProduct(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client) error {
 	// declare variables
-	var reqId, reqStatus string
+	var systemId, reqId, reqStatus string
 	var clientAT http.Client
 	var servKey serviceKey
 	var getStatusReq http.Request
@@ -95,14 +95,14 @@ func runAbapEnvironmentUpdateAddOnProduct(config *abapEnvironmentUpdateAddOnProd
 	}
 
 	// get system
-	getSystemErr := getSystemBySystemNumber(config, client, clientAT, servKey)
+	getSystemErr := getSystemBySystemNumber(config, client, clientAT, servKey, &systemId)
 	if getSystemErr != nil {
 		err = fmt.Errorf("Failed to get system with systemNumber %v. Error: %v", config.AbapSystemNumber, getSystemErr)
 		return err
 	}
 
 	// update addon in the system
-	updateAddOnErr := updateAddOn(config, client, clientAT, servKey, &reqId)
+	updateAddOnErr := updateAddOn(config, client, clientAT, servKey, systemId, &reqId)
 	if updateAddOnErr != nil {
 		err = fmt.Errorf("Failed to update addon in the system with systemNumber %v. Error: %v", config.AbapSystemNumber, updateAddOnErr)
 		return err
@@ -216,7 +216,7 @@ func getLPAPIAccessToken(config *abapEnvironmentUpdateAddOnProductOptions, clien
 }
 
 // this function is used to check the existence of integration test system
-func getSystemBySystemNumber(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey) error {
+func getSystemBySystemNumber(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId *string) error {
 	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(config, clientAT, servKey)
 
@@ -265,6 +265,8 @@ func getSystemBySystemNumber(config *abapEnvironmentUpdateAddOnProductOptions, c
 	if parseRespBodyErr != nil {
 		return parseRespBodyErr
 	}
+
+	*systemId = respBody.SystemId
 
 	return nil
 }
@@ -341,7 +343,7 @@ func pullStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string
 }
 
 // this function is used to update addon
-func updateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId *string) error {
+func updateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId string, reqId *string) error {
 	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(config, clientAT, servKey)
 
@@ -357,7 +359,7 @@ func updateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.C
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	updateAddOnRawURL := servKey.Url + "/api/v1.0/systems/:" + config.AbapSystemNumber + "/deployProduct"
+	updateAddOnRawURL := servKey.Url + "/api/v1.0/systems/:" + systemId + "/deployProduct"
 
 	// define the request body as a struct
 	reqBody := updateAddOnReq{

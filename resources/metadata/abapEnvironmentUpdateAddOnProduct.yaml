@@ -50,4 +50,3 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: abap/addonDescriptor
-
