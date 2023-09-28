@@ -415,6 +415,9 @@ func (f *FilesMock) Glob(pattern string) ([]string, error) {
 		return matches, nil
 	}
 	for path := range f.files {
+		//if !filepath.IsAbs(pattern) {
+		//	path = strings.TrimLeft(path, f.Separator+f.CurrentDir)
+		//}
 		path = strings.TrimLeft(path, f.Separator)
 		matched, _ := doublestar.PathMatch(pattern, path)
 		if matched {
@@ -670,4 +673,29 @@ func (f *FilesMock) Open(name string) (io.ReadWriteCloser, error) {
 
 func (f *FilesMock) Create(name string) (io.ReadWriteCloser, error) {
 	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
+}
+
+type FilesMockRelativeGlob struct {
+	*FilesMock
+}
+
+// Glob of FilesMockRelativeGlob cuts current directory path part from files if pattern is relative
+func (f *FilesMockRelativeGlob) Glob(pattern string) ([]string, error) {
+	var matches []string
+	if f.files == nil {
+		return matches, nil
+	}
+	for path := range f.files {
+		if !filepath.IsAbs(pattern) {
+			path = strings.TrimLeft(path, f.Separator+f.CurrentDir)
+		}
+		path = strings.TrimLeft(path, f.Separator)
+		matched, _ := doublestar.PathMatch(pattern, path)
+		if matched {
+			matches = append(matches, path)
+		}
+	}
+	// The order in f.files is not deterministic, this would result in flaky tests.
+	sort.Strings(matches)
+	return matches, nil
 }
