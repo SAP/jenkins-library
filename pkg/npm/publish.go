@@ -132,20 +132,16 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
-
 		// change directory in package json file , since npm pack will run only for that packages
-		err = exec.Utils.Chdir(filepath.Dir(packageJSON))
-		if err != nil {
+		if err := exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
 			return fmt.Errorf("failed to change into directory for executing script: %w", err)
 		}
 
-		err = execRunner.RunExecutable("npm", "pack")
-		if err != nil {
+		if err := execRunner.RunExecutable("npm", "pack"); err != nil {
 			return err
 		}
 
 		tarballs, err := exec.Utils.Glob(filepath.Join(".", "*.tgz"))
-
 		if err != nil {
 			return err
 		}
@@ -153,14 +149,13 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// we do not maintain the tarball file name and hence expect only one tarball that comes
 		// from the npm pack command
 		if len(tarballs) < 1 {
-			return errors.Wrap(err, "no tarballs found")
+			return fmt.Errorf("no tarballs found")
 		}
 		if len(tarballs) > 1 {
-			return errors.Wrapf(err, "found more tarballs than expected: %v", tarballs)
+			return fmt.Errorf("found more tarballs than expected: %v", tarballs)
 		}
 
 		tarballFilePath, err := exec.Utils.Abs(tarballs[0])
-
 		if err != nil {
 			return err
 		}
@@ -196,11 +191,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		err = exec.Utils.Chdir(oldWorkingDirectory)
-		if err != nil {
+		if err := exec.Utils.Chdir(oldWorkingDirectory); err != nil {
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
-
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
 		if err != nil {
