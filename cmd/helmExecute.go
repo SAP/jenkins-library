@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -157,10 +158,21 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 	}
 
 	valueFiles := []string{}
-	defaultValueFile := fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")
-	defaultValueFileExists, err := utils.FileExists(defaultValueFile)
-	if err != nil {
-		return err
+	var defaultValueFile string
+	var defaultValueFileExists bool
+	valuesFileDefaultName := "Values.yaml"
+	// The default values file is uppercase, for backward compatibility we lookup also with lower case
+	for _, vFile := range []string{valuesFileDefaultName, strings.ToLower(valuesFileDefaultName)} {
+		defaultValueFile = fmt.Sprintf("%s/%s", config.ChartPath, vFile)
+		defaultValueFileExists, err = utils.FileExists(defaultValueFile)
+		if err != nil {
+			return err
+		}
+		if defaultValueFileExists {
+			// would be better to check if upper and lower case are present at the same time and to
+			// fail in that case. But this does not work since we have file systems which are not case sensitive.
+			break
+		}
 	}
 
 	if defaultValueFileExists {
