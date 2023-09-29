@@ -157,7 +157,13 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 	}
 
 	valueFiles := []string{}
-	defaultValueFile := fmt.Sprintf("%s/%s", config.ChartPath, "values.yaml")
+	var chartPath string
+	if len(config.ChartPath) == 0 {
+		chartPath = "."
+	} else {
+		chartPath = config.ChartPath
+	}
+	defaultValueFile := fmt.Sprintf("%s/%s", chartPath, "values.yaml")
 	defaultValueFileExists, err := utils.FileExists(defaultValueFile)
 	if err != nil {
 		return err

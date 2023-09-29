@@ -339,7 +339,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			fileUtils:          fileHandlerMock{},
 			// we expect the values file is traversed since parsing and rendering according to cpe template is active
 			assertFunc: func(f fileHandlerMock) error {
-				if len(f.fileExistsCalled) == 1 && f.fileExistsCalled[0] == "/values.yaml" {
+				if len(f.fileExistsCalled) == 1 && f.fileExistsCalled[0] == "./values.yaml" {
 					return nil
 				}
 				return fmt.Errorf("expected FileExists called for ['/values.yaml'] but was: %+v", f.fileExistsCalled)
