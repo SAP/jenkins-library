@@ -74,7 +74,6 @@ jobs:
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
           install-go: false
-          name: Sample workflow using golang-security-action
   security:
     runs-on: ubuntu-latest
     steps:
