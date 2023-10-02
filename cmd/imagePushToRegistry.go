@@ -4,9 +4,11 @@ import (
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 type imagePushToRegistryUtils interface {
@@ -45,6 +47,7 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newImagePushToRegistryUtils()
+	fileUtils := &piperutils.Files{}
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -52,13 +55,36 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runImagePushToRegistry(&config, telemetryData, utils)
+	err := runImagePushToRegistry(&config, telemetryData, utils, fileUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
+func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils, fileUtils piperutils.FileUtils) error {
+
+	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
+	if err != nil {
+		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
+	}
+
+	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, fileUtils)
+	if err != nil {
+		return fmt.Errorf("failed to handle registry credentials for target registry: %w", err)
+	}
+
+	if len(config.LocalDockerImagePath) > 0 {
+		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, config.TargetRegistryURL)
+		if err != nil {
+			return fmt.Errorf("failed to push to local image to registry: %w", err)
+		}
+	} else {
+		err = copyImage(config.SourceRegistryURL, config.TargetRegistryURL)
+		if err != nil {
+			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
+		}
+	}
+
 	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
 	// Example of calling methods from external dependencies directly on utils:
@@ -77,6 +103,56 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 
 	return nil
 
+}
+
+func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registryURL string, username string, password string, fileUtils piperutils.FileUtils) error {
+	dockerConfig := []byte(`{"auths":{}}`)
+
+	// respect user provided docker config json file
+	if len(dockerConfigJsonPath) > 0 {
+		var err error
+		dockerConfig, err = fileUtils.FileRead(dockerConfigJsonPath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read existing docker config json at '%v'", dockerConfigJsonPath)
+		}
+	}
+
+	if len(dockerConfigJsonPath) > 0 && len(registryURL) > 0 && len(password) > 0 && len(registryURL) > 0 {
+		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", dockerConfigJsonPath, fileUtils)
+		if err != nil {
+			return errors.Wrapf(err, "failed to update existing docker config json file '%v'", dockerConfigJsonPath)
+		}
+
+		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read enhanced file '%v'", dockerConfigJsonPath)
+		}
+	} else if len(dockerConfigJsonPath) == 0 && len(registryURL) > 0 && len(password) > 0 && len(username) > 0 {
+		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", "/crane/.docker/config.json", fileUtils)
+		if err != nil {
+			return errors.Wrap(err, "failed to create new docker config json at /crane/.docker/config.json")
+		}
+
+		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read new docker config file at /crane/.docker/config.json")
+		}
+	}
+
+	if err := fileUtils.FileWrite("/crane/.docker/config.json", dockerConfig, 0644); err != nil {
+		return errors.Wrap(err, "failed to write file '/crane/.docker/config.json'")
+	}
+	return nil
+}
+
+func pushLocalImageToTargetRegistry(localDockerImagePath string, targetRegistryURL string) error {
+
+	return nil
+}
+
+func copyImage(sourceRegistry string, targetRegistry string) error {
+
+	return nil
 }
 
 func skopeoMoveImage(sourceImageFullName string, sourceRegistryUser string, sourceRegistryPassword string, targetImageFullName string, targetRegistryUser string, targetRegistryPassword string, utils imagePushToRegistryUtils) error {

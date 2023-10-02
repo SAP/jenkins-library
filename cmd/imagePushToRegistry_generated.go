@@ -16,15 +16,21 @@ import (
 )
 
 type imagePushToRegistryOptions struct {
-	TargetImage         string `json:"targetImage,omitempty"`
-	SourceImage         string `json:"sourceImage,omitempty"`
-	SourceRegistryURL   string `json:"sourceRegistryUrl,omitempty"`
-	SourceCredentialsID string `json:"sourceCredentialsId,omitempty"`
-	TagLatest           string `json:"tagLatest,omitempty"`
-	TagArtifactVersion  string `json:"tagArtifactVersion,omitempty"`
+	TargetImage            string `json:"targetImage,omitempty"`
+	SourceImage            string `json:"sourceImage,omitempty"`
+	SourceRegistryURL      string `json:"sourceRegistryUrl,omitempty"`
+	SourceRegistryUser     string `json:"sourceRegistryUser,omitempty"`
+	SourceRegistryPassword string `json:"sourceRegistryPassword,omitempty"`
+	TargetRegistryURL      string `json:"targetRegistryUrl,omitempty"`
+	TargetRegistryUser     string `json:"targetRegistryUser,omitempty"`
+	TargetRegistryPassword string `json:"targetRegistryPassword,omitempty"`
+	TagLatest              string `json:"tagLatest,omitempty"`
+	TagArtifactVersion     string `json:"tagArtifactVersion,omitempty"`
+	DockerConfigJSON       string `json:"dockerConfigJSON,omitempty"`
+	LocalDockerImagePath   string `json:"localDockerImagePath,omitempty"`
 }
 
-// ImagePushToRegistryCommand Allows you to push a Docker image into a dedicated Container registry.
+// ImagePushToRegistryCommand Allows you to copy a Docker image from a source container registry  to a destination container registry.
 func ImagePushToRegistryCommand() *cobra.Command {
 	const STEP_NAME = "imagePushToRegistry"
 
@@ -37,13 +43,11 @@ func ImagePushToRegistryCommand() *cobra.Command {
 
 	var createImagePushToRegistryCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Allows you to push a Docker image into a dedicated Container registry.",
-		Long: `By default an image available via the local Docker daemon will be pushed.
-In case you want to pull an existing image from a remote container registry, a source image and source registry needs to be specified.<br />
+		Short: "Allows you to copy a Docker image from a source container registry  to a destination container registry.",
+		Long: `In case you want to pull an existing image from a remote container registry, a source image and source registry needs to be specified.<br />
 This makes it possible to move an image from one registry to another.
 
-imagePushToRegistry is similar in functionality to containerPushToRegistry (which is currently a groovy based step). containerPushToRegistry can currently be used in jenkins pipelines whereas
-imagePushToRegistry is orchestrator agnostic and will replace containerPushToRegistry in future.`,
+imagePushToRegistry is not similar in functionality to containerPushToRegistry (which is currently a groovy based step and only be used in jenkins). currently imagePushToRegistry only`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -60,6 +64,7 @@ imagePushToRegistry is orchestrator agnostic and will replace containerPushToReg
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.DockerConfigJSON)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -131,9 +136,15 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().StringVar(&stepConfig.TargetImage, "targetImage", os.Getenv("PIPER_targetImage"), "Defines the name (incl. tag) of the target image")
 	cmd.Flags().StringVar(&stepConfig.SourceImage, "sourceImage", os.Getenv("PIPER_sourceImage"), "Defines the name (incl. tag) of the source image to be pushed to a new image defined in `targetDockerImage`. This is helpful for moving images from one location to another.")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryURL, "sourceRegistryUrl", os.Getenv("PIPER_sourceRegistryUrl"), "Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*\"")
-	cmd.Flags().StringVar(&stepConfig.SourceCredentialsID, "sourceCredentialsId", os.Getenv("PIPER_sourceCredentialsId"), "Defines the id of the Jenkins username/password credentials containing the credentials for the source Docker registry.")
+	cmd.Flags().StringVar(&stepConfig.SourceRegistryUser, "sourceRegistryUser", os.Getenv("PIPER_sourceRegistryUser"), "Username of the source registry where the image should be pushed pulled from.")
+	cmd.Flags().StringVar(&stepConfig.SourceRegistryPassword, "sourceRegistryPassword", os.Getenv("PIPER_sourceRegistryPassword"), "Password of the source registry where the image should be pushed pulled from.")
+	cmd.Flags().StringVar(&stepConfig.TargetRegistryURL, "targetRegistryUrl", os.Getenv("PIPER_targetRegistryUrl"), "Defines a registry url from where the image should optionally be pushed to, incl. the protocol like `https://my.registry.com`*\"")
+	cmd.Flags().StringVar(&stepConfig.TargetRegistryUser, "targetRegistryUser", os.Getenv("PIPER_targetRegistryUser"), "Username of the target registry where the image should be pushed to.")
+	cmd.Flags().StringVar(&stepConfig.TargetRegistryPassword, "targetRegistryPassword", os.Getenv("PIPER_targetRegistryPassword"), "Password of the target registry where the image should be pushed to.")
 	cmd.Flags().StringVar(&stepConfig.TagLatest, "tagLatest", os.Getenv("PIPER_tagLatest"), "Defines if the image should be tagged as `latest`")
 	cmd.Flags().StringVar(&stepConfig.TagArtifactVersion, "tagArtifactVersion", os.Getenv("PIPER_tagArtifactVersion"), "Defines if the image should be tagged with the artifact version")
+	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
+	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 
 }
 
@@ -143,7 +154,7 @@ func imagePushToRegistryMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "imagePushToRegistry",
 			Aliases:     []config.Alias{},
-			Description: "Allows you to push a Docker image into a dedicated Container registry.",
+			Description: "Allows you to copy a Docker image from a source container registry  to a destination container registry.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -175,22 +186,73 @@ func imagePushToRegistryMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_sourceImage"),
 					},
 					{
-						Name:        "sourceRegistryUrl",
+						Name: "sourceRegistryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_sourceRegistryUrl"),
+					},
+					{
+						Name: "sourceRegistryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_sourceRegistryUser"),
+					},
+					{
+						Name: "sourceRegistryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_sourceRegistryPassword"),
+					},
+					{
+						Name:        "targetRegistryUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_sourceRegistryUrl"),
+						Default:     os.Getenv("PIPER_targetRegistryUrl"),
 					},
 					{
-						Name:        "sourceCredentialsId",
+						Name:        "targetRegistryUser",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_sourceCredentialsId"),
+						Default:     os.Getenv("PIPER_targetRegistryUser"),
+					},
+					{
+						Name:        "targetRegistryPassword",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetRegistryPassword"),
 					},
 					{
 						Name:        "tagLatest",
@@ -210,10 +272,39 @@ func imagePushToRegistryMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_tagArtifactVersion"),
 					},
+					{
+						Name: "dockerConfigJSON",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "dockerConfigJsonCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
+					},
+					{
+						Name:        "localDockerImagePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_localDockerImagePath"),
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "skopeo", Image: "quay.io/skopeo/stable"},
+				{Image: "gcr.io/go-containerregistry/crane:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 		},
 	}
