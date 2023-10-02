@@ -79,7 +79,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@v2
+        uses: securego/gosec@v2.17.0
         with:
           args: -exclude-generated ./...
   generate:
