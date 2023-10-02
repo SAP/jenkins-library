@@ -78,9 +78,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ynniss/golang-security-action@master
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
         with:
-          CODE_PATH: ./...
+          args: -exclude-generated ./...
   generate:
     runs-on: ubuntu-latest
     steps:
