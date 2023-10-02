@@ -1,8 +1,10 @@
 package vault
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
@@ -40,6 +42,25 @@ func NewClient(config *Config, token string) (Client, error) {
 	if err != nil {
 		return Client{}, err
 	}
+
+	client.SetMinRetryWait(time.Second * 3)
+	client.SetMaxRetryWait(time.Second * 5)
+	client.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		if resp != nil {
+			log.Entry().Infoln("Vault retry: ", resp.Status, resp.StatusCode, err)
+		} else {
+			log.Entry().Infoln("Vault retry: ", err)
+		}
+
+		retry, err := api.DefaultRetryPolicy(ctx, resp, err)
+		if err != nil || retry {
+			return true, nil
+		}
+		if resp != nil && resp.StatusCode >= 400 {
+			return true, nil
+		}
+		return false, nil
+	})
 
 	if config.Namespace != "" {
 		client.SetNamespace(config.Namespace)
