@@ -79,6 +79,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ynniss/golang-security-action@master
+        with:
+          CODE_PATH: ./...
   generate:
     runs-on: ubuntu-latest
     steps:
