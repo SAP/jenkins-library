@@ -74,6 +74,12 @@ jobs:
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
           install-go: false
+          name: Sample workflow using golang-security-action
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ynniss/golang-security-action@master
   generate:
     runs-on: ubuntu-latest
     steps:
