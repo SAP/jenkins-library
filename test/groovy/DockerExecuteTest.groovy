@@ -144,6 +144,101 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testExecuteInsidePodWithCustomUserShort() throws Exception {
+        Map kubernetesConfig = [:]
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body ->
+            kubernetesConfig = config
+            return body()
+        })
+        binding.setVariable('env', [ON_K8S: 'true'])
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerOptions: ["-u 0:0", "-v foo:bar"]
+        ) {
+            bodyExecuted = true
+        }
+
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
+        assertThat(kubernetesConfig.securityContext, is([
+            'runAsUser': 0,
+            'runAsGroup': 0
+        ]))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testExecuteInsidePodWithCustomUserLong() throws Exception {
+        Map kubernetesConfig = [:]
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body ->
+            kubernetesConfig = config
+            return body()
+        })
+        binding.setVariable('env', [ON_K8S: 'true'])
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerOptions: ["--user 0:0", "-v foo:bar"]
+        ) {
+            bodyExecuted = true
+        }
+
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
+        assertThat(kubernetesConfig.securityContext, is([
+            'runAsUser': 0,
+            'runAsGroup': 0
+        ]))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testExecuteInsidePodWithCustomUserNoGroup() throws Exception {
+        Map kubernetesConfig = [:]
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body ->
+            kubernetesConfig = config
+            return body()
+        })
+        binding.setVariable('env', [ON_K8S: 'true'])
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerOptions: ["-v foo:bar", "-u 0"]
+        ) {
+            bodyExecuted = true
+        }
+
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
+        assertThat(kubernetesConfig.securityContext, is([
+            'runAsUser': 0
+        ]))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testExecuteInsidePodWithCustomUserGroupString() throws Exception {
+        Map kubernetesConfig = [:]
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body ->
+            kubernetesConfig = config
+            return body()
+        })
+        binding.setVariable('env', [ON_K8S: 'true'])
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerOptions: ["-v foo:bar", "-u root:wheel"]
+        ) {
+            bodyExecuted = true
+        }
+
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
+        assertThat(kubernetesConfig.securityContext, is([
+            'runAsUser': 'root',
+            'runAsGroup': 'wheel'
+        ]))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
     void testExecuteInsideDockerContainer() throws Exception {
         stepRule.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true

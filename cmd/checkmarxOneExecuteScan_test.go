@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/SAP/jenkins-library/pkg/checkmarxone"
+	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
@@ -34,6 +34,10 @@ func (sys *checkmarxOneSystemMock) CreateApplication(appname string) (checkmarxO
 }
 
 func (sys *checkmarxOneSystemMock) GetApplicationByName(appname string) (checkmarxOne.Application, error) {
+	return checkmarxOne.Application{}, nil
+}
+
+func (sys *checkmarxOneSystemMock) GetApplicationByID(appname string) (checkmarxOne.Application, error) {
 	return checkmarxOne.Application{}, nil
 }
 
@@ -90,6 +94,10 @@ func (sys *checkmarxOneSystemMock) UploadProjectSourceCode(projectID string, zip
 }
 
 func (sys *checkmarxOneSystemMock) CreateProject(projectName string, groupIDs []string) (checkmarxOne.Project, error) {
+	return checkmarxOne.Project{}, nil
+}
+
+func (sys *checkmarxOneSystemMock) CreateProjectInApplication(projectName, applicationId string, groupIDs []string) (checkmarxOne.Project, error) {
 	return checkmarxOne.Project{}, nil
 }
 
@@ -285,7 +293,7 @@ func TestGetGroup(t *testing.T) {
 
 		cx1sh := checkmarxOneExecuteScanHelper{nil, options, sys, nil, nil, nil, nil, nil, nil}
 		_, err := cx1sh.GetGroup()
-		assert.Contains(t, fmt.Sprint(err), "No group ID or group name provided")
+		assert.Contains(t, fmt.Sprint(err), "No group name specified in configuration")
 	})
 
 	t.Run("group name not found", func(t *testing.T) {

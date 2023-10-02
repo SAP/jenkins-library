@@ -279,7 +279,7 @@ func kubernetesDeployMetadata() config.StepData {
 								Param: "custom/localHelmChartPath",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "helmChartPath"}},

@@ -102,8 +102,5 @@ If you face such a [user permission issue][piper-issue-781], choose between the 
 [docker-getstarted]: https://docs.docker.com/get-started/
 [jenkins-doc-client]: https://jenkins.io/doc/book/managing/cli/
 [jenkins-docker-image]: https://github.com/jenkinsci/docker/
-[piper-library-pages]: https://sap.github.io/jenkins-library
 [piper-issue-781]: https://github.com/SAP/jenkins-library/issues/781
-
-[devops-docker-images]: https://github.com/SAP/devops-docker-images
 [devops-cxs-plugins]: https://github.com/SAP/devops-docker-cx-server/blob/master/jenkins-master/plugins.txt

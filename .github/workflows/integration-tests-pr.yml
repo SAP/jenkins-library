@@ -23,7 +23,7 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.10.0
+      - uses: styfle/cancel-workflow-action@0.11.0
       - name: Get pull request URL
         id: pull_request
         run: |
@@ -42,7 +42,7 @@ jobs:
           echo "branch_name=$(curl ${{ steps.pull_request.outputs.pull_request }} |
           jq '.head.ref' |
           sed 's/\"//g')" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: ${{ steps.repository.outputs.repository }}
           ref: ${{ steps.branch_name.outputs.branch_name }}
@@ -71,7 +71,7 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v4
@@ -95,7 +95,7 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v4
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v4

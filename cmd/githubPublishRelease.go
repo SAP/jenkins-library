@@ -31,7 +31,9 @@ type githubIssueClient interface {
 
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, config.UploadURL, []string{})
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.Token, config.APIURL).
+		WithUploadURL(config.UploadURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
 	}
