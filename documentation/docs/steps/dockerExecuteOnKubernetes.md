@@ -71,7 +71,7 @@ dockerExecuteOnKubernetes(
   containerCommands: ['selenium/standalone-chrome': ''],
   containerMap: ['maven:3.5-jdk-8-alpine': 'maven', 'selenium/standalone-chrome': 'selenium'],
   containerName: 'maven',
-  containerPortMappings: ['selenium/standalone-chrome': [containerPort: 4444, hostPort: 4444]]
+  containerPortMappings: ['selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]],
   containerWorkspaces: ['selenium/standalone-chrome': '']
 ){
   echo "Executing inside a Kubernetes Pod inside 'maven' container to run Selenium tests"

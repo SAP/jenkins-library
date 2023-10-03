@@ -17,6 +17,20 @@ const (
 	Jenkins
 )
 
+const (
+	BuildStatusSuccess    = "SUCCESS"
+	BuildStatusAborted    = "ABORTED"
+	BuildStatusFailure    = "FAILURE"
+	BuildStatusInProgress = "IN_PROGRESS"
+
+	BuildReasonManual          = "Manual"
+	BuildReasonSchedule        = "Schedule"
+	BuildReasonPullRequest     = "PullRequest"
+	BuildReasonResourceTrigger = "ResourceTrigger"
+	BuildReasonIndividualCI    = "IndividualCI"
+	BuildReasonUnknown         = "Unknown"
+)
+
 type OrchestratorSpecificConfigProviding interface {
 	InitOrchestratorProvider(settings *OrchestratorSettings)
 	OrchestratorType() string
@@ -64,7 +78,12 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	case AzureDevOps:
 		return &AzureDevOpsConfigProvider{}, nil
 	case GitHubActions:
-		return &GitHubActionsConfigProvider{}, nil
+		ghProvider := &GitHubActionsConfigProvider{}
+		// Temporary workaround: The orchestrator provider is not always initialized after being created,
+		// which causes a panic in some places for GitHub Actions provider, as it needs to initialize
+		// github sdk client.
+		ghProvider.InitOrchestratorProvider(&OrchestratorSettings{})
+		return ghProvider, nil
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
 	default:
@@ -75,13 +94,13 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 // DetectOrchestrator returns the name of the current orchestrator e.g. Jenkins, Azure, Unknown
 func DetectOrchestrator() Orchestrator {
 	if isAzure() {
-		return Orchestrator(AzureDevOps)
+		return AzureDevOps
 	} else if isGitHubActions() {
-		return Orchestrator(GitHubActions)
+		return GitHubActions
 	} else if isJenkins() {
-		return Orchestrator(Jenkins)
+		return Jenkins
 	} else {
-		return Orchestrator(Unknown)
+		return Unknown
 	}
 }
 
