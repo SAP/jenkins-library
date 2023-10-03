@@ -32,7 +32,7 @@ func TestCreateSarifResultFile(t *testing.T) {
 				BaseScore:         9.8, OverallScore: 10,
 				RemediationStatus:  "IGNORED",
 				RemediationComment: "CWE-45456543 Auto-remediated: CWE-45456543 is related to CVE-1, but the CWE team has determined that this component version is not affected.",
-				RemidiatedBy: "technical_user",
+				RemidiatedBy:       "technical_user",
 			},
 		},
 		{
@@ -112,13 +112,13 @@ func TestCreateSarifResultFile(t *testing.T) {
 	// Test correctness of audit information
 	assert.Equal(t, true, sarif.Runs[0].Results[0].Properties.Audited)
 	assert.Equal(t, "IGNORED", sarif.Runs[0].Results[0].Properties.ToolState)
-	assert.Equal(t, 	alerts[0].BaseScore, sarif.Runs[0].Results[0].Properties.UnifiedCriticality)
-	assert.Equal(t, 	"critical", sarif.Runs[0].Results[0].Properties.UnifiedSeverity)
-	assert.Equal(t, 	"new", sarif.Runs[0].Results[1].Properties.UnifiedAuditState)
-	assert.Equal(t, 	"notRelevant", sarif.Runs[0].Results[0].Properties.UnifiedAuditState)
-	assert.Equal(t, 	"technical_user", sarif.Runs[0].Results[0].Properties.UnifiedAuditUser)
-	assert.Equal(t, 	format.AUDIT_REQUIREMENT_GROUP_1_DESC, sarif.Runs[0].Results[0].Properties.AuditRequirement)
-	assert.Equal(t, 	format.AUDIT_REQUIREMENT_GROUP_1_INDEX, sarif.Runs[0].Results[0].Properties.AuditRequirementIndex)
+	assert.Equal(t, alerts[0].BaseScore, sarif.Runs[0].Results[0].Properties.UnifiedCriticality)
+	assert.Equal(t, "critical", sarif.Runs[0].Results[0].Properties.UnifiedSeverity)
+	assert.Equal(t, "new", sarif.Runs[0].Results[1].Properties.UnifiedAuditState)
+	assert.Equal(t, "notRelevant", sarif.Runs[0].Results[0].Properties.UnifiedAuditState)
+	assert.Equal(t, "technical_user", sarif.Runs[0].Results[0].Properties.UnifiedAuditUser)
+	assert.Equal(t, format.AUDIT_REQUIREMENT_GROUP_1_DESC, sarif.Runs[0].Results[0].Properties.AuditRequirement)
+	assert.Equal(t, format.AUDIT_REQUIREMENT_GROUP_1_INDEX, sarif.Runs[0].Results[0].Properties.AuditRequirementIndex)
 	assert.Equal(t,
 		"CWE-45456543 Auto-remediated: CWE-45456543 is related to CVE-1, but the CWE team has determined that this component version is not affected.",
 		sarif.Runs[0].Results[0].Properties.ToolAuditMessage,

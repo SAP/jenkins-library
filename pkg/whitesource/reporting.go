@@ -301,7 +301,7 @@ func getAuditInformation(alert Alert) *format.SarifProperties {
 		AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
 		AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
 		UnifiedSeverity:       alert.Vulnerability.CVSS3Severity,
-		UnifiedCriticality: float32(alert.Vulnerability.CVSS3Score),
+		UnifiedCriticality:    float32(alert.Vulnerability.CVSS3Score),
 	}
 }
 
