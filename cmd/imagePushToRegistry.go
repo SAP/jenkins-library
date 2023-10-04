@@ -128,19 +128,19 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 			return errors.Wrapf(err, "failed to read enhanced file '%v'", dockerConfigJsonPath)
 		}
 	} else if len(dockerConfigJsonPath) == 0 && len(registryURL) > 0 && len(password) > 0 && len(username) > 0 {
-		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", "/crane/.docker/config.json", fileUtils)
+		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", "~/.docker/config.json", fileUtils)
 		if err != nil {
-			return errors.Wrap(err, "failed to create new docker config json at /crane/.docker/config.json")
+			return errors.Wrap(err, "failed to create new docker config json at ~/.docker/config.json")
 		}
 
 		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read new docker config file at /crane/.docker/config.json")
+			return errors.Wrapf(err, "failed to read new docker config file at ~/.docker/config.json")
 		}
 	}
 
-	if err := fileUtils.FileWrite("/crane/.docker/config.json", dockerConfig, 0644); err != nil {
-		return errors.Wrap(err, "failed to write file '/crane/.docker/config.json'")
+	if err := fileUtils.FileWrite("~/.docker/config.json", dockerConfig, 0644); err != nil {
+		return errors.Wrap(err, "failed to write file '~/.docker/config.json'")
 	}
 	return nil
 }
@@ -151,7 +151,7 @@ func pushLocalImageToTargetRegistry(localDockerImagePath string, targetRegistryU
 }
 
 func copyImage(sourceRegistry string, targetRegistry string) error {
-
+	docker.CopyImage(sourceRegistry, targetRegistry)
 	return nil
 }
 
