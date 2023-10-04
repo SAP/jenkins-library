@@ -329,7 +329,7 @@ func ImageListWithFilePath(imageName string, excludes []string, trimDir string, 
 	return imageList, nil
 }
 
-func (c *Client) CopyImage(src string, dest string) error {
+func CopyImage(src string, dest string) error {
 	crane.Copy(src, dest)
 	return nil
 }
