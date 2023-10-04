@@ -139,7 +139,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 
-	if config.BuildTool == golangBuildTool {
+	if config.PrivateModulesGitToken != "" {
 		//configuring go private packages
 		if err := prepareGolangPrivatePackages(config.PrivateModules, config.PrivateModulesGitToken); err != nil {
 			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())

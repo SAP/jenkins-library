@@ -157,7 +157,7 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 }
 
 func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
-	if config.BuildTool == golangBuildTool && config != nil {
+	if config != nil && config.PrivateModulesGitToken != "" {
 		//configuring go private packages
 		if err := prepareGolangPrivatePackages(config.PrivateModules, config.PrivateModulesGitToken); err != nil {
 			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())

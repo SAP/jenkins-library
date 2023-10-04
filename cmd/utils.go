@@ -13,8 +13,6 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-const golangBuildTool = "golang"
-
 // prepare golang private packages for whitesource and blackduck(detectExecuteScan)
 func prepareGolangPrivatePackages(privateModules, privateModulesGitToken string) error {
 
