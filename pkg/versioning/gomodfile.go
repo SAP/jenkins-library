@@ -91,15 +91,9 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 	if parsed.Module == nil {
 		return result, errors.Wrap(err, "failed to parse go.mod file")
 	}
-	if parsed.Module.Mod.Path != "" {
-		artifactSplit := strings.Split(parsed.Module.Mod.Path, "/")
-		artifactID := artifactSplit[len(artifactSplit)-1]
-		result.ArtifactID = artifactID
-
-		goModPath := parsed.Module.Mod.Path
-		lastIndex := strings.LastIndex(goModPath, "/")
-		groupID := goModPath[0:lastIndex]
-		result.GroupID = groupID
+	if lastIndex := strings.LastIndex(parsed.Module.Mod.Path, "/"); lastIndex != -1 {
+		result.ArtifactID = parsed.Module.Mod.Path[lastIndex+1:]
+		result.GroupID = parsed.Module.Mod.Path[:lastIndex]
 	}
 	result.Version = parsed.Module.Mod.Version
 	if result.Version == "" {
