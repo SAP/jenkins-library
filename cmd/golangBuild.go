@@ -600,3 +600,25 @@ func gitConfigurationForPrivateModules(privateMod string, token string, utils go
 
 	return nil
 }
+
+// prepare golang private packages for whitesource and blackduck(detectExecuteScan)
+func prepareGolangPrivatePackages(privateModules, privateModulesGitToken string) error {
+
+	goConfig := golangBuildOptions{
+		PrivateModules:         privateModules,
+		PrivateModulesGitToken: privateModulesGitToken,
+	} // only these parameters are enough to configure
+
+	utils := newGolangBuildUtils(goConfig)
+
+	goModFile, err := readGoModFile(utils) // returns nil if go.mod doesnt exist
+	if err != nil {
+		return err
+	}
+
+	if err = prepareGolangEnvironment(&goConfig, goModFile, utils); err != nil {
+		return err
+	}
+
+	return nil
+}
