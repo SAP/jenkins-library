@@ -10,10 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Sender interface {
-	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
-}
-
 // CertificateUpdate adds certificates to the given truststore
 func CertificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, caCertsFile string) error {
 	// TODO this implementation doesn't work on non-linux machines, is not failsafe and should be implemented differently
