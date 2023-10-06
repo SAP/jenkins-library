@@ -55,9 +55,8 @@ func CertificateDownload(certLinks []string, client piperhttp.Sender) ([]byte, e
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read response")
 		}
-		defer response.Body.Close()
-
-		content = append(content, "\n"...)
+		_ = response.Body.Close()
+		content = append(content, []byte("\n")...)
 		certs = append(certs, content...)
 	}
 
