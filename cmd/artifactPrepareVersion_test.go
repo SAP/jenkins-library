@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -176,6 +173,7 @@ func (w *gitWorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.
 type artifactPrepareVersionMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	*mock.HttpClientMock
 }
 
 func newArtifactPrepareVersionMockUtils() *artifactPrepareVersionMockUtils {
@@ -619,7 +617,7 @@ func TestPushChanges(t *testing.T) {
 		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
@@ -633,10 +631,11 @@ func TestPushChanges(t *testing.T) {
 		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
+		customCerts := []byte("custom certs")
 
 		originalSSHAgentAuth := sshAgentAuth
 		sshAgentAuth = func(u string) (*ssh.PublicKeysCallback, error) { return &ssh.PublicKeysCallback{}, nil }
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, customCerts)
 		sshAgentAuth = originalSSHAgentAuth
 
 		assert.NoError(t, err)
@@ -645,7 +644,7 @@ func TestPushChanges(t *testing.T) {
 		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
-		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}, CABundle: customCerts}, repo.pushOptions)
 	})
 
 	t.Run("success - ssh", func(t *testing.T) {
@@ -658,7 +657,7 @@ func TestPushChanges(t *testing.T) {
 
 		originalSSHAgentAuth := sshAgentAuth
 		sshAgentAuth = func(u string) (*ssh.PublicKeysCallback, error) { return &ssh.PublicKeysCallback{}, nil }
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
 		sshAgentAuth = originalSSHAgentAuth
 
 		assert.NoError(t, err)
@@ -671,7 +670,7 @@ func TestPushChanges(t *testing.T) {
 		repo := gitRepositoryMock{}
 		worktree := gitWorktreeMock{commitError: "commit error", commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
 		assert.Equal(t, "0000000000000000000000000000000000000000", commitID)
 		assert.EqualError(t, err, "failed to commit new version: commit error")
 	})
@@ -681,7 +680,7 @@ func TestPushChanges(t *testing.T) {
 		repo := gitRepositoryMock{tagError: "tag error"}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.EqualError(t, err, "tag error")
 	})
@@ -691,7 +690,7 @@ func TestPushChanges(t *testing.T) {
 		repo := gitRepositoryMock{}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.EqualError(t, err, "no remote url maintained")
 	})
@@ -720,7 +719,7 @@ func TestPushChanges(t *testing.T) {
 
 		for _, test := range tt {
 			sshAgentAuth = test.sshAgentAuth
-			commitID, err := pushChanges(&config, newVersion, &test.repo, &worktree, testTime)
+			commitID, err := pushChanges(&config, newVersion, &test.repo, &worktree, testTime, nil)
 			sshAgentAuth = originalSSHAgentAuth
 
 			assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
@@ -733,7 +732,7 @@ func TestPushChanges(t *testing.T) {
 		repo := gitRepositoryMock{remote: remote, pushError: "push error"}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.EqualError(t, err, "push error")
 	})
