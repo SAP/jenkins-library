@@ -25,7 +25,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"abapEnvironmentPushATCSystemConfig":        abapEnvironmentPushATCSystemConfigMetadata(),
 		"abapEnvironmentRunATCCheck":                abapEnvironmentRunATCCheckMetadata(),
 		"abapEnvironmentRunAUnitTest":               abapEnvironmentRunAUnitTestMetadata(),
-		"abapEnvironmentUpdateAddOnProduct":         abapEnvironmentUpdateAddOnProductMetadata(),
+		"abapLandscapePortalUpdateAddOnProduct":     abapLandscapePortalUpdateAddOnProductMetadata(),
 		"ansSendEvent":                              ansSendEventMetadata(),
 		"apiKeyValueMapDownload":                    apiKeyValueMapDownloadMetadata(),
 		"apiKeyValueMapUpload":                      apiKeyValueMapUploadMetadata(),
