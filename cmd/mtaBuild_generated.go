@@ -42,6 +42,7 @@ type mtaBuildOptions struct {
 	Publish                         bool     `json:"publish,omitempty"`
 	Profiles                        []string `json:"profiles,omitempty"`
 	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
+	CreateBOM                       bool     `json:"createBOM,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
@@ -243,6 +244,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build . This information is typically used for compliance related processes.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 
 }
 
@@ -488,10 +490,19 @@ func mtaBuildMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
+					{
+						Name:        "createBOM",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Image: "devxci/mbtci-java11-node14"},
+				{Image: "cobra217/mbtci-java19-node14:1.2.224"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

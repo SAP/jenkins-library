@@ -227,6 +227,15 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -246,4 +255,4 @@ spec:
           - filePattern: "**/jacoco.xml"
             type: jacoco-coverage
   containers:
-    - image: devxci/mbtci-java11-node14
+    - image: cobra217/mbtci-java19-node14:1.2.224

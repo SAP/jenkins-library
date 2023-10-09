@@ -223,6 +223,11 @@ func runMtaBuild(config mtaBuildOptions,
 		utils.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
 	}
 
+	if config.CreateBOM {
+		log.Entry().Infof("createBOM enabled")
+		call = append(call, "--sbom-file-path=sbom-mta.xml")
+	}
+
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
 	if err := utils.RunExecutable(call[0], call[1:]...); err != nil {
