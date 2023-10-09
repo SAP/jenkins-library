@@ -498,7 +498,7 @@ func golangBuildMetadata() config.StepData {
 					{
 						Name:        "privateModules",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
