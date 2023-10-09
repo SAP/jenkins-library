@@ -15,6 +15,7 @@ import (
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
+	"github.com/SAP/jenkins-library/pkg/golang"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -138,6 +139,14 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
+
+	if config.PrivateModules == "" && config.PrivateModulesGitToken != "" {
+		//configuring go private packages
+		if err := golang.PrepareGolangPrivatePackages("detectExecuteStep", config.PrivateModules, config.PrivateModulesGitToken); err != nil {
+			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())
+		}
+	}
+
 	utils := newDetectUtils(client)
 	if err := runDetect(ctx, config, utils, influx); err != nil {
 		log.Entry().
