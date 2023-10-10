@@ -72,15 +72,14 @@ func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, erro
 	client.SetMaxRetryWait(time.Second * 90)
 	client.SetMaxRetries(3)
 	client.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
-		log.Entry().Infoln("Unique sentence for Stefan to find")
 		if resp != nil {
-			log.Entry().Infoln("Vault retry: ", resp.Status, resp.StatusCode, err)
+			log.Entry().Infoln("Vault response: ", resp.Status, resp.StatusCode, err)
 		} else {
-			log.Entry().Infoln("Vault retry: ", err)
+			log.Entry().Infoln("Vault response: ", err)
 		}
 
 		isEOF := false
-		if strings.Contains(err.Error(), "EOF") {
+		if err != nil && strings.Contains(err.Error(), "EOF") {
 			log.Entry().Infoln("isEOF is true")
 			isEOF = true
 		}
@@ -92,9 +91,8 @@ func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, erro
 		retry, err := api.DefaultRetryPolicy(ctx, resp, err)
 
 		if err != nil || err == io.EOF || isEOF || retry {
-			return true, nil
-		}
-		if resp != nil {
+			log.Entry().Infoln("Unique sentence for Stefan to find")
+			log.Entry().Infoln("Retrying...")
 			return true, nil
 		}
 		return false, nil
