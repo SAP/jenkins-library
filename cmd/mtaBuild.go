@@ -135,6 +135,7 @@ func mtaBuild(config mtaBuildOptions,
 	telemetryData *telemetry.CustomData,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Debugf("Launching mta build")
+	log.Entry().Infof("I am here...")
 	utils := newMtaBuildUtilsBundle()
 
 	err := runMtaBuild(config, commonPipelineEnvironment, utils)
@@ -205,8 +206,6 @@ func runMtaBuild(config mtaBuildOptions,
 
 	call = append(call, "--source", getSourcePath(config))
 	call = append(call, "--target", getAbsPath(getMtarFileRoot(config)))
-
-	log.Entry().Infof("I am here...")
 
 	if config.CreateBOM {
 		log.Entry().Infof("createBOM enabled")
