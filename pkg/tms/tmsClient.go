@@ -205,7 +205,7 @@ func (communicationInstance *CommunicationInstance) UploadFileToNode(fileInfo Fi
 	json.Unmarshal(data, &nodeUploadResponseEntity)
 	communicationInstance.logger.Info("Node upload executed successfully")
 
-	// Important: there are Customers, who might rely on structure of this log message to parse transport request id
+	// Important: there are Customers, who might rely on format of this log message to parse transport request id
 	communicationInstance.logger.Infof("nodeName: %v, nodeId: %v, uploadedFile: %v, createdTransportRequestDescription: %v, createdTransportRequestId: %v", nodeUploadResponseEntity.QueueEntries[0].NodeName, nodeUploadResponseEntity.QueueEntries[0].NodeId, fileInfo.Name, nodeUploadResponseEntity.TransportRequestDescription, nodeUploadResponseEntity.TransportRequestId)
 
 	return nodeUploadResponseEntity, nil
@@ -239,7 +239,7 @@ func (communicationInstance *CommunicationInstance) ExportFileToNode(fileInfo Fi
 	json.Unmarshal(data, &nodeUploadResponseEntity)
 	communicationInstance.logger.Info("Node export executed successfully")
 
-	// Important: there are Customers, who might rely on structure of this log message to parse transport request id
+	// Important: there are Customers, who might rely on format of this log message to parse transport request id
 	communicationInstance.logger.Infof("nodeName: %v, nodeId: %v, uploadedFile: %v, createdTransportRequestDescription: %v, createdTransportRequestId: %v", nodeUploadResponseEntity.QueueEntries[0].NodeName, nodeUploadResponseEntity.QueueEntries[0].NodeId, fileInfo.Name, nodeUploadResponseEntity.TransportRequestDescription, nodeUploadResponseEntity.TransportRequestId)
 	return nodeUploadResponseEntity, nil
 
