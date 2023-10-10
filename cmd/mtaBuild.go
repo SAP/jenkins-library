@@ -135,7 +135,6 @@ func mtaBuild(config mtaBuildOptions,
 	telemetryData *telemetry.CustomData,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Debugf("Launching mta build")
-	log.Entry().Infof("I am here...")
 	utils := newMtaBuildUtilsBundle()
 
 	err := runMtaBuild(config, commonPipelineEnvironment, utils)
@@ -209,7 +208,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	if config.CreateBOM {
 		log.Entry().Infof("createBOM enabled")
-		call = append(call, "--sbom-file-path=sbom-mta.xml")
+		call = append(call, "--sbom-file-path", "sbom-mta.xml")
 	}
 
 	if config.Jobs > 0 {
