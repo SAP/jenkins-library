@@ -45,7 +45,7 @@ func CertificateDownload(certLinks []string, client piperhttp.Sender) ([]byte, e
 
 	var certs []byte
 	for _, certLink := range certLinks {
-		log.Entry().Infof("Downloading CA certificate from URL: %s", certLink)
+		log.Entry().Debugf("Downloading CA certificate from URL: %s", certLink)
 		response, err := client.SendRequest(http.MethodGet, certLink, nil, nil, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to load certificate from url")
