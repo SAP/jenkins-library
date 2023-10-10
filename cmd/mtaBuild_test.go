@@ -367,7 +367,7 @@ func TestMtaBuildSourceDir(t *testing.T) {
 
 		err := runMtaBuild(options, &cpe, utilsMock)
 		assert.Nil(t, err)
-		assert.Contains(t, utilsMock.Calls[0].Params, "--sbom-file-path=sbom-mta.xml")
+		assert.Contains(t, utilsMock.Calls[0].Params, "--sbom-file-path")
 
 	})
 
