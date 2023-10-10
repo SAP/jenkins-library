@@ -206,6 +206,13 @@ func runMtaBuild(config mtaBuildOptions,
 	call = append(call, "--source", getSourcePath(config))
 	call = append(call, "--target", getAbsPath(getMtarFileRoot(config)))
 
+	log.Entry().Infof("I am here...")
+
+	if config.CreateBOM {
+		log.Entry().Infof("createBOM enabled")
+		call = append(call, "--sbom-file-path=sbom-mta.xml")
+	}
+
 	if config.Jobs > 0 {
 		call = append(call, "--mode=verbose")
 		call = append(call, "--jobs="+strconv.Itoa(config.Jobs))
@@ -221,11 +228,6 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 		utils.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
-	}
-
-	if config.CreateBOM {
-		log.Entry().Infof("createBOM enabled")
-		call = append(call, "--sbom-file-path=sbom-mta.xml")
 	}
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
