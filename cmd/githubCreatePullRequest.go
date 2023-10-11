@@ -21,7 +21,7 @@ type githubIssueService interface {
 
 func githubCreatePullRequest(config githubCreatePullRequestOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, "", []string{})
+	ctx, client, err := piperGithub.NewClientBuilder(config.Token, config.APIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
 	}

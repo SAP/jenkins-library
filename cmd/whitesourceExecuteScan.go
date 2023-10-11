@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/format"
+	"github.com/SAP/jenkins-library/pkg/golang"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -139,7 +141,9 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 }
 
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) {
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", config.CustomTLSCertificateLinks)
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.GithubToken, config.GithubAPIURL).
+		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
@@ -154,6 +158,13 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 }
 
 func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+	if config != nil && config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
+		//configuring go private packages
+		if err := golang.PrepareGolangPrivatePackages("WhitesourceExecuteStep", config.PrivateModules, config.PrivateModulesGitToken); err != nil {
+			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())
+		}
+	}
+
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
 		return errors.Wrapf(err, "failed to resolve and aggregate project name")
 	}
@@ -1041,9 +1052,14 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 // create toolrecord file for whitesource
 func createToolRecordWhitesource(utils whitesourceUtils, workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(utils, workspace, "whitesource", config.ServiceURL)
-	wsUiRoot := "https://saas.whitesourcesoftware.com"
+	// rest api url https://.../api/v1.x
+	apiUrl, err := url.Parse(config.ServiceURL)
+	if err != nil {
+		return "", err
+	}
+	wsUiRoot := "https://" + apiUrl.Hostname()
 	productURL := wsUiRoot + "/Wss/WSS.html#!product;token=" + config.ProductToken
-	err := record.AddKeyData("product",
+	err = record.AddKeyData("product",
 		config.ProductToken,
 		config.ProductName,
 		productURL)
@@ -1054,11 +1070,13 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 	for idx, project := range scan.ScannedProjects() {
 		max_idx = idx
 		name := project.Name
+		projectId := strconv.FormatInt(project.ID, 10)
 		token := project.Token
 		projectURL := ""
-		if token != "" {
-			projectURL = wsUiRoot + "/Wss/WSS.html#!project;token=" + token
-		} else {
+		if projectId != "" {
+			projectURL = wsUiRoot + "/Wss/WSS.html#!project;id=" + projectId
+		}
+		if token == "" {
 			// token is empty, provide a dummy to have an indication
 			token = "unknown"
 		}

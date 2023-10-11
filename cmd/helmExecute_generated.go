@@ -48,6 +48,7 @@ type helmExecuteOptions struct {
 	RenderSubchartNotes       bool     `json:"renderSubchartNotes,omitempty"`
 	TemplateStartDelimiter    string   `json:"templateStartDelimiter,omitempty"`
 	TemplateEndDelimiter      string   `json:"templateEndDelimiter,omitempty"`
+	RenderValuesTemplate      bool     `json:"renderValuesTemplate,omitempty"`
 }
 
 type helmExecuteCommonPipelineEnvironment struct {
@@ -236,6 +237,7 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().BoolVar(&stepConfig.RenderSubchartNotes, "renderSubchartNotes", true, "If set, render subchart notes along with the parent.")
 	cmd.Flags().StringVar(&stepConfig.TemplateStartDelimiter, "templateStartDelimiter", `{{`, "When templating value files, use this start delimiter.")
 	cmd.Flags().StringVar(&stepConfig.TemplateEndDelimiter, "templateEndDelimiter", `}}`, "When templating value files, use this end delimiter.")
+	cmd.Flags().BoolVar(&stepConfig.RenderValuesTemplate, "renderValuesTemplate", true, "A flag to turn templating value files on or off.")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -253,7 +255,8 @@ func helmExecuteMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "kubeConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).", Type: "jenkins", Aliases: []config.Alias{{Name: "kubeCredentialsId", Deprecated: true}}},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
-					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication", Type: "jenkins"},
+					{Name: "sourceRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (source repo)", Type: "jenkins"},
+					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (target repo)", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
@@ -633,6 +636,15 @@ func helmExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `}}`,
+					},
+					{
+						Name:        "renderValuesTemplate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 				},
 			},

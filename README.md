@@ -29,6 +29,5 @@ before opening a pull request.
 
 [piper-library-user-doc]: https://sap.github.io/jenkins-library/
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
-[piper-library-license]: ./LICENSE
 [piper-library-contribution]: .github/CONTRIBUTING.md
 [google-group]: https://groups.google.com/forum/#!forum/project-piper
