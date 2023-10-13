@@ -27,7 +27,8 @@ func newTmsExportTestsUtils() tmsExportMockUtils {
 	return utils
 }
 
-func (cim *communicationInstanceMock) ExportFileToNode(fileInfo FileInfo, nodeName, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
+func (cim *communicationInstanceMock) ExportFileToNode(fileInfo tms.FileInfo, nodeName, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
+	fileId := strconv.FormatInt(fileInfo.Id, 10)
 	var nodeUploadResponseEntity tms.NodeUploadResponseEntity
 	if description != CUSTOM_DESCRIPTION || nodeName != NODE_NAME || fileId != strconv.FormatInt(FILE_ID, 10) || namedUser != NAMED_USER {
 		return nodeUploadResponseEntity, errors.New(INVALID_INPUT_MSG)

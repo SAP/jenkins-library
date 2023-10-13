@@ -469,7 +469,7 @@ func TestUploadFileToNode(t *testing.T) {
 
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
-		fileInfo := FileInfo{Id: "111", Name: "test.mtar"}
+		fileInfo := FileInfo{Id: 111, Name: "test.mtar"}
 		namedUser := "testUser"
 		nodeUploadResponseEntity, err := communicationInstance.UploadFileToNode(fileInfo, nodeName, transportRequestDescription, namedUser)
 
@@ -478,7 +478,7 @@ func TestUploadFileToNode(t *testing.T) {
 		assert.Equal(t, http.MethodPost, uploaderMock.httpMethod, "Http method incorrect")
 		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
 
-		entryString := fmt.Sprintf(`{"uri":"%v"}`, fileId)
+		entryString := fmt.Sprintf(`{"uri":"%v"}`, strconv.FormatInt(fileInfo.Id, 10))
 		assert.Equal(t, fmt.Sprintf(`{"contentType":"MTA","storageType":"FILE","nodeName":"%v","description":"%v","namedUser":"%v","entries":[%v]}`, nodeName, transportRequestDescription, namedUser, entryString), uploaderMock.requestBody, "Request body incorrect")
 
 		assert.Equal(t, transportRequestId, nodeUploadResponseEntity.TransportRequestId, "TransportRequestId field of node upload response incorrect")
@@ -493,7 +493,7 @@ func TestUploadFileToNode(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
-		fileInfo := FileInfo{Id: "111", Name: "test.mtar"}
+		fileInfo := FileInfo{Id: 111, Name: "test.mtar"}
 		nodeName := "TEST_NODE"
 		transportRequestDescription := "This is a test description"
 		namedUser := "testUser"
