@@ -289,6 +289,7 @@ func TestMtaBuild(t *testing.T) {
 
 func TestMtaBuildSourceDir(t *testing.T) {
 
+	cpe := mtaBuildCommonPipelineEnvironment{}
 	t.Run("getSourcePath", func(t *testing.T) {
 		t.Parallel()
 
@@ -328,7 +329,6 @@ func TestMtaBuildSourceDir(t *testing.T) {
 
 	t.Run("find build tool descriptor from configuration", func(t *testing.T) {
 		t.Parallel()
-		cpe := mtaBuildCommonPipelineEnvironment{}
 		t.Run("default mta.yaml", func(t *testing.T) {
 			utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -358,6 +358,18 @@ func TestMtaBuildSourceDir(t *testing.T) {
 		})
 	})
 
+	// Enable test once the sbom generation feature is available in the mbt build.
+	/*t.Run("MTA build should enable create BOM", func(t *testing.T) {
+		utilsMock := newMtaBuildTestUtilsBundle()
+
+		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName", Source: "./", Target: "./", CreateBOM: true}
+		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+		assert.Nil(t, err)
+		assert.Contains(t, utilsMock.Calls[0].Params, "--sbom-file-path")
+
+	})*/
 }
 
 func TestMtaBuildMtar(t *testing.T) {
