@@ -35,7 +35,7 @@ require (
 	github.com/google/go-github/v45 v45.2.0
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-retryablehttp v0.7.2
-	github.com/hashicorp/vault v1.14.3
+	github.com/hashicorp/vault v1.14.1
 	github.com/hashicorp/vault/api v1.9.2
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/imdario/mergo v0.3.15
@@ -196,7 +196,6 @@ require (
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/frankban/quicktest v1.14.4 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
