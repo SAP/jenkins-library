@@ -851,7 +851,7 @@ func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID
 		const delay = 1
 		retry_counter := 1
 		for retry_counter <= max_retry && err != nil {
-			sys.logger.Debug("Waiting for project assignment to application, retry #%d ", retry_counter)
+			sys.logger.Debug("Waiting for project assignment to application, retry #", retry_counter)
 			time.Sleep(delay * time.Second)
 			retry_counter++
 			project, err = sys.GetProjectByID(projectID)
