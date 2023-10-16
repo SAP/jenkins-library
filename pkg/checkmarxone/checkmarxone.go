@@ -838,6 +838,26 @@ func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID
 	}
 
 	err = json.Unmarshal(data, &project)
+	if err != nil {
+		return project, errors.Wrapf(err, "failed to unmarshal project data")
+	}
+
+	// since there is a delay to assign a project to an application, adding a check to ensure project is ready after creation
+	// (if project is not ready, 403 will be returned)
+	projectID := project.ProjectID
+	project, err = sys.GetProjectByID(projectID)
+	if err != nil {
+		const max_retry = 12 // 3 minutes
+		const delay = 15
+		retry_counter := 1
+		for retry_counter <= max_retry && err != nil {
+			sys.logger.Debug("Waiting for project assignment to application, retry #", retry_counter)
+			time.Sleep(delay * time.Second)
+			retry_counter++
+			project, err = sys.GetProjectByID(projectID)
+		}
+	}
+
 	return project, err
 }
 

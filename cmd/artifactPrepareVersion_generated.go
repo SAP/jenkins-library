@@ -40,6 +40,7 @@ type artifactPrepareVersionOptions struct {
 	Username                    string   `json:"username,omitempty"`
 	VersioningTemplate          string   `json:"versioningTemplate,omitempty"`
 	VersioningType              string   `json:"versioningType,omitempty" validate:"possible-values=cloud cloud_noTag library"`
+	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
@@ -271,6 +272,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
 	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", `cloud`, "Defines the type of versioning")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -516,6 +518,16 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `cloud`,
+					},
+					{
+						Name:        "customTlsCertificateLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}, {Name: "buildTool", Value: "gradle"}}}},
 					},
 				},
 			},
