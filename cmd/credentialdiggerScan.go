@@ -96,17 +96,21 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 	}
 	// err is an error exit number when there are findings
 	if err == nil {
-		log.Entry().Info("credentialdiggerScan: No discoveries found in this repo")
-		// If there are no findings, there is no need to export an empty report
-		return nil
+		log.Entry().Info("credentialdiggerScan: No leaks found in this repo with scan")
+		// Even if there are no leaks, the user may still want to export all
+		// the discoveries (param exportAll set to true)
 	}
 
 	// 3: Get discoveries
 	err = credentialdiggerGetDiscoveries(&config, telemetryData, utils)
 	if err != nil {
-		// The exit number is the number of discoveries
+		// The exit number is the number of discoveries exported
 		// Therefore, this error is not relevant, if raised
 		log.Entry().Warn("credentialdiggerScan: There are findings to review")
+	} else {
+		// There are no discoveries exported, so no need to generate the
+		// artifact
+		return nil
 	}
 
 	// 4: Export report in workspace
@@ -171,10 +175,12 @@ func credentialdiggerGetDiscoveries(config *credentialdiggerScanOptions, telemet
 	// Export all the discoveries or export only new ones
 	if !config.ExportAll {
 		cmd_list = append(cmd_list, "--state", "new")
+	} else {
+		log.Entry().Info("credentialdiggerScan: Export all discoveries")
 	}
 	err := executeCredentialDiggerProcess(service, cmd_list)
 	if err != nil {
-		log.Entry().Warn("credentialdiggerScan: The report shows potential leaks")
+		log.Entry().Warn("credentialdiggerScan: Report generated")
 		return err
 	}
 	log.Entry().Info("credentialdiggerScan: Scan complete with no potential leaks")
