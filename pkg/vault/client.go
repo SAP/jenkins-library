@@ -1,10 +1,8 @@
 package vault
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"path"
 	"strconv"
 	"strings"
@@ -42,32 +40,10 @@ func NewClient(config *Config, token string) (Client, error) {
 	if err != nil {
 		return Client{}, err
 	}
-
-	client.SetMinRetryWait(time.Second * 3)
-	client.SetMaxRetryWait(time.Second * 5)
-	client.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
-		if resp != nil {
-			log.Entry().Infoln("Vault retry: ", resp.Status, resp.StatusCode, err)
-		} else {
-			log.Entry().Infoln("Vault retry: ", err)
-		}
-
-		retry, err := api.DefaultRetryPolicy(ctx, resp, err)
-		if err != nil || retry {
-			return true, nil
-		}
-		if resp != nil && resp.StatusCode >= 400 {
-			return true, nil
-		}
-		return false, nil
-	})
-
 	if config.Namespace != "" {
 		client.SetNamespace(config.Namespace)
 	}
-
 	client.SetToken(token)
-	log.Entry().Debugf("Login to Vault %s in namespace %s successfull", config.Address, config.Namespace)
 	return Client{client.Logical(), config}, nil
 }
 
@@ -76,26 +52,21 @@ func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, erro
 	if config == nil {
 		config = &Config{Config: api.DefaultConfig()}
 	}
-
 	if config.AppRoleMountPoint == "" {
 		config.AppRoleMountPoint = "auth/approle"
 	}
-
 	client, err := api.NewClient(config.Config)
 	if err != nil {
 		return Client{}, err
 	}
-
 	if config.Namespace != "" {
 		client.SetNamespace(config.Namespace)
 	}
 
-	log.Entry().Debug("Using AppRole login")
 	result, err := client.Logical().Write(path.Join(config.AppRoleMountPoint, "/login"), map[string]interface{}{
 		"role_id":   roleID,
 		"secret_id": secretID,
 	})
-
 	if err != nil {
 		return Client{}, err
 	}

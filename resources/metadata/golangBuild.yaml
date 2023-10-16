@@ -209,6 +209,7 @@ spec:
         type: "string"
         description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
         scope:
+          - GENERAL
           - STEPS
           - STAGES
           - PARAMETERS

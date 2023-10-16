@@ -231,6 +231,8 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+    resources:
+      - type: stash
   outputs:
     resources:
       - name: commonPipelineEnvironment
