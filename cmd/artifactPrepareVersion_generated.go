@@ -527,6 +527,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}, {Name: "buildTool", Value: "gradle"}}}},
 					},
 				},
 			},
