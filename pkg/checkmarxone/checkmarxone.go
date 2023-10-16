@@ -847,8 +847,8 @@ func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID
 	projectID := project.ProjectID
 	project, err = sys.GetProjectByID(projectID)
 	if err != nil {
-		const max_retry = 180 // 3 minutes
-		const delay = 1
+		const max_retry = 12 // 3 minutes
+		const delay = 15
 		retry_counter := 1
 		for retry_counter <= max_retry && err != nil {
 			sys.logger.Debug("Waiting for project assignment to application, retry #", retry_counter)
