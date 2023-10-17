@@ -21,7 +21,7 @@ func tmsUpload(uploadConfig tmsUploadOptions, telemetryData *telemetry.CustomDat
 
 func runTmsUpload(uploadConfig tmsUploadOptions, communicationInstance tms.CommunicationInterface, utils tms.TmsUtils) error {
 	config := convertUploadOptions(uploadConfig)
-	fileId, errUploadFile := tms.UploadFile(config, communicationInstance, utils)
+	fileInfo, errUploadFile := tms.UploadFile(config, communicationInstance, utils)
 	if errUploadFile != nil {
 		return errUploadFile
 	}
@@ -31,7 +31,7 @@ func runTmsUpload(uploadConfig tmsUploadOptions, communicationInstance tms.Commu
 		return errUploadDescriptors
 	}
 
-	_, errUploadFileToNode := communicationInstance.UploadFileToNode(config.NodeName, fileId, config.CustomDescription, config.NamedUser)
+	_, errUploadFileToNode := communicationInstance.UploadFileToNode(fileInfo, config.NodeName, config.CustomDescription, config.NamedUser)
 	if errUploadFileToNode != nil {
 		log.SetErrorCategory(log.ErrorService)
 		return fmt.Errorf("failed to upload file to node: %w", errUploadFileToNode)

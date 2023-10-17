@@ -337,6 +337,21 @@ spec:
           - cloud
           - cloud_noTag
           - library
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        conditions:
+          - conditionRef: strings-equal
+            params:
+              - name: buildTool
+                value: maven
+              - name: buildTool
+                value: gradle
   outputs:
     resources:
       - name: commonPipelineEnvironment

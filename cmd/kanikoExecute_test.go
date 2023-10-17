@@ -50,12 +50,12 @@ func TestRunKanikoExecute(t *testing.T) {
 
 	// required due to config resolution during build settings retrieval
 	// ToDo: proper mocking
-	openFileBak := configOptions.openFile
+	openFileBak := configOptions.OpenFile
 	defer func() {
-		configOptions.openFile = openFileBak
+		configOptions.OpenFile = openFileBak
 	}()
 
-	configOptions.openFile = configOpenFileMock
+	configOptions.OpenFile = configOpenFileMock
 
 	t.Run("success case", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
