@@ -31,8 +31,9 @@ func newNpmMockUtilsBundleRelativeGlob() npmMockUtilsBundleRelativeGlob {
 
 func TestNpmPublish(t *testing.T) {
 	type wants struct {
-		publishConfigPath string
-		publishConfig     string
+		publishConfigPath   string
+		publishConfig       string
+		publishRegistryFlag string
 
 		tarballPath string
 
@@ -196,8 +197,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsThePassword",
 
 			wants: wants{
-				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfigPath:   `\.piperNpmrc`,
+				publishConfig:       "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishRegistryFlag: "--@piper:registry=https://my.private.npm.registry/",
 			},
 		},
 		{
@@ -215,8 +217,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsTheOtherPassword",
 
 			wants: wants{
-				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nalways-auth=true\n",
+				publishConfigPath:   `\.piperNpmrc`,
+				publishConfig:       "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nalways-auth=true\n",
+				publishRegistryFlag: "--@piper:registry=https://my.other.private.npm.registry/",
 			},
 		},
 		{
@@ -424,8 +427,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsThePassword",
 
 			wants: wants{
-				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishConfigPath:   `\.piperNpmrc`,
+				publishConfig:       "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishRegistryFlag: "--@piper:registry=https://my.private.npm.registry/",
 			},
 		},
 		{
@@ -443,8 +447,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsTheOtherPassword",
 
 			wants: wants{
-				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nalways-auth=true\n",
+				publishConfigPath:   `\.piperNpmrc`,
+				publishConfig:       "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nalways-auth=true\n",
+				publishRegistryFlag: "--@piper:registry=https://my.other.private.npm.registry/",
 			},
 		},
 		{
@@ -547,6 +552,10 @@ func TestNpmPublish(t *testing.T) {
 					if len(test.wants.tarballPath) > 0 && assert.Contains(t, publishCmd.Params, "--tarball") {
 						tarballPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--tarball")+1]
 						assert.Equal(t, test.wants.tarballPath, filepath.ToSlash(tarballPath))
+					}
+
+					if len(test.wants.publishRegistryFlag) > 0 {
+						assert.Contains(t, publishCmd.Params, test.wants.publishRegistryFlag)
 					}
 
 					if assert.Contains(t, publishCmd.Params, "--userconfig") {

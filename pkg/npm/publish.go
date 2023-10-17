@@ -195,7 +195,13 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
-		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
+		publishArgs := append(make([]string, 0), "publish", "--userconfig", npmrc.filepath, "--registry", registry)
+
+		if len(scope) > 0 {
+			publishArgs = append(publishArgs, fmt.Sprintf("--%s:registry=%s", scope, registry))
+		}
+
+		err = execRunner.RunExecutable("npm", publishArgs...)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
