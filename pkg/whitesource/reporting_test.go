@@ -349,9 +349,11 @@ func TestGetAuditInformation(t *testing.T) {
 				Status: "OPEN",
 			},
 			expected: &format.SarifProperties{
-				Audited:           false,
-				ToolAuditMessage:  "",
-				UnifiedAuditState: "new",
+				Audited:               false,
+				ToolAuditMessage:      "",
+				UnifiedAuditState:     "new",
+				AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+				AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
 			},
 		},
 		{
@@ -359,11 +361,19 @@ func TestGetAuditInformation(t *testing.T) {
 			alert: Alert{
 				Status:   "IGNORE",
 				Comments: "Not relevant alert",
+				Vulnerability: Vulnerability{
+					CVSS3Score:    9.3,
+					CVSS3Severity: "critical",
+				},
 			},
 			expected: &format.SarifProperties{
-				Audited:           true,
-				ToolAuditMessage:  "Not relevant alert",
-				UnifiedAuditState: "notRelevant",
+				Audited:               true,
+				ToolAuditMessage:      "Not relevant alert",
+				UnifiedAuditState:     "notRelevant",
+				UnifiedSeverity:       "critical",
+				UnifiedCriticality:    9.3,
+				AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+				AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
 			},
 		},
 		{
@@ -373,13 +383,15 @@ func TestGetAuditInformation(t *testing.T) {
 				Comments: "Some comment",
 			},
 			expected: &format.SarifProperties{
-				Audited:           false,
-				ToolAuditMessage:  "",
-				UnifiedAuditState: "new",
+				Audited:               false,
+				ToolAuditMessage:      "",
+				UnifiedAuditState:     "new",
+				AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+				AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
 			},
 		},
 		{
-			name: "Audited alert",
+			name: "Not audited alert",
 			alert: Alert{
 				Assessment: &format.Assessment{
 					Status:   format.NotRelevant,
@@ -389,16 +401,18 @@ func TestGetAuditInformation(t *testing.T) {
 				Comments: "New alert",
 			},
 			expected: &format.SarifProperties{
-				Audited:           true,
-				ToolAuditMessage:  string(format.FixedByDevTeam),
-				UnifiedAuditState: "notRelevant",
+				Audited:               true,
+				ToolAuditMessage:      string(format.FixedByDevTeam),
+				UnifiedAuditState:     "notRelevant",
+				AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+				AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
 			},
 		},
 	}
 
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, getAuditInformation(test.alert), test.expected)
+			assert.Equal(t, test.expected, getAuditInformation(test.alert))
 		})
 	}
 }
