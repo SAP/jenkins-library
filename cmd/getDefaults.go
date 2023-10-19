@@ -128,7 +128,7 @@ func generateDefaults(utils getDefaultsUtils) ([]byte, error) {
 	if len(defaultsOptions.outputFile) > 0 {
 		err := utils.FileWrite(defaultsOptions.outputFile, []byte(jsonOutput), 0666)
 		if err != nil {
-			return jsonOutput, fmt.Errorf("failed to write output file %v: %w", configOptions.outputFile, err)
+			return jsonOutput, fmt.Errorf("failed to write output file %v: %w", defaultsOptions.outputFile, err)
 		}
 		return jsonOutput, nil
 	}

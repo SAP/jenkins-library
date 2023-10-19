@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -16,19 +17,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type configCommandOptions struct {
-	output                        string // output format, so far only JSON
-	outputFile                    string // if set: path to file where the output should be written to
-	parametersJSON                string // parameters to be considered in JSON format
-	stageConfig                   bool
-	stageConfigAcceptedParameters []string
-	stepMetadata                  string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	stepName                      string
-	contextConfig                 bool
-	openFile                      func(s string, t map[string]string) (io.ReadCloser, error)
+type ConfigCommandOptions struct {
+	Output                        string // output format, so far only JSON, YAML
+	OutputFile                    string // if set: path to file where the output should be written to
+	ParametersJSON                string // parameters to be considered in JSON format
+	StageConfig                   bool
+	StageConfigAcceptedParameters []string
+	StepMetadata                  string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepName                      string
+	ContextConfig                 bool
+	OpenFile                      func(s string, t map[string]string) (io.ReadCloser, error)
 }
 
-var configOptions configCommandOptions
+var configOptions ConfigCommandOptions
+
+func SetConfigOptions(c ConfigCommandOptions) {
+	configOptions.ContextConfig = c.ContextConfig
+	configOptions.OpenFile = c.OpenFile
+	configOptions.Output = c.Output
+	configOptions.OutputFile = c.OutputFile
+	configOptions.ParametersJSON = c.ParametersJSON
+	configOptions.StageConfig = c.StageConfig
+	configOptions.StageConfigAcceptedParameters = c.StageConfigAcceptedParameters
+	configOptions.StepMetadata = c.StepMetadata
+	configOptions.StepName = c.StepName
+}
 
 type getConfigUtils interface {
 	FileExists(filename string) (bool, error)
@@ -41,16 +54,17 @@ type getConfigUtilsBundle struct {
 }
 
 func newGetConfigUtilsUtils() getConfigUtils {
-	utils := getConfigUtilsBundle{
+	return &getConfigUtilsBundle{
 		Files: &piperutils.Files{},
 	}
-	return &utils
 }
 
 // ConfigCommand is the entry command for loading the configuration of a pipeline step
 func ConfigCommand() *cobra.Command {
+	SetConfigOptions(ConfigCommandOptions{
+		OpenFile: config.OpenPiperFile,
+	})
 
-	configOptions.openFile = config.OpenPiperFile
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
@@ -62,9 +76,7 @@ func ConfigCommand() *cobra.Command {
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
-			utils := newGetConfigUtilsUtils()
-			err := generateConfig(utils)
-			if err != nil {
+			if err := generateConfigWrapper(); err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
 			}
@@ -77,8 +89,8 @@ func ConfigCommand() *cobra.Command {
 
 // GetDockerImageValue provides Piper commands additional access to configuration of step execution image if required
 func GetDockerImageValue(stepName string) (string, error) {
-	configOptions.contextConfig = true
-	configOptions.stepName = stepName
+	configOptions.ContextConfig = true
+	configOptions.StepName = stepName
 	stepConfig, err := getConfig()
 	if err != nil {
 		return "", err
@@ -94,8 +106,8 @@ func GetDockerImageValue(stepName string) (string, error) {
 }
 
 func getBuildToolFromStageConfig(stepName string) (string, error) {
-	configOptions.contextConfig = true
-	configOptions.stepName = stepName
+	configOptions.ContextConfig = true
+	configOptions.StepName = stepName
 	stageConfig, err := GetStageConfig()
 	if err != nil {
 		return "", err
@@ -116,7 +128,7 @@ func GetStageConfig() (config.StepConfig, error) {
 	stepConfig := config.StepConfig{}
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
-	customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
+	customConfig, err := configOptions.OpenFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
@@ -126,7 +138,7 @@ func GetStageConfig() (config.StepConfig, error) {
 
 	defaultConfig := []io.ReadCloser{}
 	for _, f := range GeneralConfig.DefaultConfig {
-		fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
+		fc, err := configOptions.OpenFile(f, GeneralConfig.GitHubAccessTokens)
 		// only create error for non-default values
 		if err != nil && f != ".pipeline/defaults.yaml" {
 			return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
@@ -136,7 +148,7 @@ func GetStageConfig() (config.StepConfig, error) {
 		}
 	}
 
-	return myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.stageConfigAcceptedParameters, GeneralConfig.StageName)
+	return myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 }
 
 func getConfig() (config.StepConfig, error) {
@@ -144,17 +156,17 @@ func getConfig() (config.StepConfig, error) {
 	var stepConfig config.StepConfig
 	var err error
 
-	if configOptions.stageConfig {
+	if configOptions.StageConfig {
 		stepConfig, err = GetStageConfig()
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting stage config failed")
 		}
 	} else {
-		log.Entry().Infof("Printing stepName %s", configOptions.stepName)
+		log.Entry().Infof("Printing stepName %s", configOptions.StepName)
 		if GeneralConfig.MetaDataResolver == nil {
 			GeneralConfig.MetaDataResolver = GetAllStepMetadata
 		}
-		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GeneralConfig.MetaDataResolver, configOptions.stepMetadata, configOptions.stepName)
+		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GeneralConfig.MetaDataResolver, configOptions.StepMetadata, configOptions.StepName)
 		if err != nil {
 			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
 		}
@@ -172,7 +184,7 @@ func getConfig() (config.StepConfig, error) {
 
 		projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
-		customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
+		customConfig, err := configOptions.OpenFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
 				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
@@ -186,7 +198,7 @@ func getConfig() (config.StepConfig, error) {
 		}
 
 		for _, f := range GeneralConfig.DefaultConfig {
-			fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
+			fc, err := configOptions.OpenFile(f, GeneralConfig.GitHubAccessTokens)
 			// only create error for non-default values
 			if err != nil && f != ".pipeline/defaults.yaml" {
 				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
@@ -198,7 +210,7 @@ func getConfig() (config.StepConfig, error) {
 
 		var flags map[string]interface{}
 
-		if configOptions.contextConfig {
+		if configOptions.ContextConfig {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
 
@@ -208,33 +220,46 @@ func getConfig() (config.StepConfig, error) {
 		}
 
 		// apply context conditions if context configuration is requested
-		if configOptions.contextConfig {
+		if configOptions.ContextConfig {
 			applyContextConditions(metadata, &stepConfig)
 		}
 	}
 	return stepConfig, nil
 }
 
-func generateConfig(utils getConfigUtils) error {
+func generateConfigWrapper() error {
+	var formatter func(interface{}) (string, error)
+	switch strings.ToLower(configOptions.Output) {
+	case "yaml", "yml":
+		formatter = config.GetYAML
+	case "json":
+		formatter = config.GetJSON
+	default:
+		formatter = config.GetJSON
+	}
+	return GenerateConfig(formatter)
+}
+
+func GenerateConfig(formatter func(interface{}) (string, error)) error {
+	utils := newGetConfigUtilsUtils()
 
 	stepConfig, err := getConfig()
 	if err != nil {
 		return err
 	}
 
-	myConfigJSON, err := config.GetJSON(stepConfig.Config)
+	myConfig, err := formatter(stepConfig.Config)
 	if err != nil {
-		return fmt.Errorf("failed to get JSON from config: %w", err)
+		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if len(configOptions.outputFile) > 0 {
-		err := utils.FileWrite(configOptions.outputFile, []byte(myConfigJSON), 0666)
-		if err != nil {
-			return fmt.Errorf("failed to write output file %v: %w", configOptions.outputFile, err)
+	if len(configOptions.OutputFile) > 0 {
+		if err := utils.FileWrite(configOptions.OutputFile, []byte(myConfig), 0666); err != nil {
+			return fmt.Errorf("failed to write output file %v: %w", configOptions.OutputFile, err)
 		}
 		return nil
 	}
-	fmt.Println(myConfigJSON)
+	fmt.Println(myConfig)
 
 	return nil
 }
@@ -242,20 +267,20 @@ func generateConfig(utils getConfigUtils) error {
 func addConfigFlags(cmd *cobra.Command) {
 
 	// ToDo: support more output options, like https://kubernetes.io/docs/reference/kubectl/overview/#formatting-output
-	cmd.Flags().StringVar(&configOptions.output, "output", "json", "Defines the output format")
-	cmd.Flags().StringVar(&configOptions.outputFile, "outputFile", "", "Defines a file path. f set, the output will be written to the defines file")
+	cmd.Flags().StringVar(&configOptions.Output, "output", "json", "Defines the output format")
+	cmd.Flags().StringVar(&configOptions.OutputFile, "outputFile", "", "Defines a file path. f set, the output will be written to the defines file")
 
-	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
-	cmd.Flags().BoolVar(&configOptions.stageConfig, "stageConfig", false, "Defines if step stage configuration should be loaded and no step-specific config")
-	cmd.Flags().StringArrayVar(&configOptions.stageConfigAcceptedParameters, "stageConfigAcceptedParams", []string{}, "Defines the parameters used for filtering stage/general configuration when accessing stage config")
-	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
-	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
-	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
+	cmd.Flags().StringVar(&configOptions.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
+	cmd.Flags().BoolVar(&configOptions.StageConfig, "stageConfig", false, "Defines if step stage configuration should be loaded and no step-specific config")
+	cmd.Flags().StringArrayVar(&configOptions.StageConfigAcceptedParameters, "stageConfigAcceptedParams", []string{}, "Defines the parameters used for filtering stage/general configuration when accessing stage config")
+	cmd.Flags().StringVar(&configOptions.StepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
+	cmd.Flags().StringVar(&configOptions.StepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
+	cmd.Flags().BoolVar(&configOptions.ContextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
 
 }
 
 func defaultsAndFilters(metadata *config.StepData, stepName string) ([]io.ReadCloser, config.StepFilters, error) {
-	if configOptions.contextConfig {
+	if configOptions.ContextConfig {
 		defaults, err := metadata.GetContextDefaults(stepName)
 		if err != nil {
 			return nil, config.StepFilters{}, errors.Wrap(err, "metadata: getting context defaults failed")

@@ -123,8 +123,8 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 		CorrelationID:   s.correlationID,
 		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
-		GitOwner:        readCommonPipelineEnvironment("github/owner"),
-		GitRepository:   readCommonPipelineEnvironment("github/repository"),
+		GitOwner:        readCommonPipelineEnvironment("git/organization"),
+		GitRepository:   readCommonPipelineEnvironment("git/repository"),
 	}
 	monitoringJson, err := json.Marshal(monitoringData)
 	if err != nil {
