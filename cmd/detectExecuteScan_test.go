@@ -307,8 +307,7 @@ func TestRunDetect(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		// TEMPRORARY CHANGED until 25.09.2023
-		expectedScript := "./detect.sh --detect.project.codelocation.unmap=true --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'"
+		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'"
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
@@ -316,8 +315,7 @@ func TestRunDetect(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle(false)
-		// TEMPRORARY CHANGED until 25.09.2023
-		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --detect.project.codelocation.unmap=true --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'": fmt.Errorf("")}
+		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(ctx, detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
@@ -376,9 +374,6 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.detector.search.depth=100",
 				"--detect.detector.search.continue=true",
 				"--detect.excluded.directories=dir1,dir2",
-				//Temp until 25.09.2023
-				"--detect.project.codelocation.unmap=true",
-				// --------------------
 				"--scan1=1",
 				"--scan2=2",
 				"--blackduck.url=https://server.url",
@@ -407,9 +402,6 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
-				//Temp until 25.09.2023
-				"--detect.project.codelocation.unmap=true",
-				// --------------------
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -438,9 +430,6 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
-				//Temp until 25.09.2023
-				"--detect.project.codelocation.unmap=true",
-				// --------------------
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -470,9 +459,6 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
-				//Temp until 25.09.2023
-				"--detect.project.codelocation.unmap=true",
-				// --------------------
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -685,16 +671,10 @@ func TestAddDetectArgs(t *testing.T) {
 				CodeLocation:    "",
 				ScanPaths:       []string{"path1", "path2"},
 				MinScanInterval: 4,
-				//Temp until 25.09.2023
-				//Unmap: true,
-				// --------------------
 			},
 			expected: []string{
 				"--testProp1=1",
 				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
-				//Temp until 25.09.2023
-				"--detect.project.codelocation.unmap=true",
-				// --------------------
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -717,17 +697,11 @@ func TestAddDetectArgs(t *testing.T) {
 				ScanPaths:         []string{"path1", "path2"},
 				MinScanInterval:   4,
 				CustomScanVersion: "1.0",
-				//Temp until 25.09.2023
-				//Unmap: true,
-				// --------------------
 			},
 			isPullRequest: true,
 			expected: []string{
 				"--testProp1=1",
 				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
-				//Temp until 25.09.2023
-				"--detect.project.codelocation.unmap=true",
-				// --------------------
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=Rapid_scan_on_PRs\"",
@@ -760,18 +734,12 @@ func TestAddDetectArgs(t *testing.T) {
 				},
 				ExcludedDirectories: []string{"dir3,dir4"},
 				MinScanInterval:     4,
-				//Temp until 25.09.2023
-				//Unmap: true,
-				// --------------------
-				CustomScanVersion: "2.0",
+				CustomScanVersion:   "2.0",
 			},
 			isPullRequest: true,
 			expected: []string{
 				"--testProp1=1",
 				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
-				//Temp until 25.09.2023
-				"--detect.project.codelocation.unmap=true",
-				// --------------------
 				"--detect.detector.search.depth=5",
 				"--detect.detector.search.continue=false",
 				"--detect.excluded.directories=dir1,dir2",
@@ -804,19 +772,13 @@ func TestAddDetectArgs(t *testing.T) {
 				ScanProperties: []string{
 					"--detect.maven.build.command= --settings .pipeline/settings.xml -DskipTests install",
 				},
-				MinScanInterval: 4,
-				//Temp until 25.09.2023
-				//Unmap: true,
-				// --------------------
+				MinScanInterval:   4,
 				CustomScanVersion: "2.0",
 			},
 			isPullRequest: true,
 			expected: []string{
 				"--testProp1=1",
 				"--detect.blackduck.signature.scanner.arguments='--min-scan-interval=4'",
-				//Temp until 25.09.2023
-				"--detect.project.codelocation.unmap=true",
-				// --------------------
 				"--detect.maven.build.command=",
 				"--settings",
 				".pipeline/settings.xml",
