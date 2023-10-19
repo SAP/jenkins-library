@@ -120,12 +120,13 @@ func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 	return fmt.Errorf("Invalid repository %s", repoUri)
 }
 
-func initGitInfo(config *codeqlExecuteScanOptions) RepoInfo {
+func initGitInfo(config *codeqlExecuteScanOptions) (RepoInfo, error) {
 	var repoInfo RepoInfo
 	err := getGitRepoInfo(config.Repository, &repoInfo)
 	if err != nil {
 		log.Entry().Error(err)
 	}
+
 	repoInfo.ref = config.AnalyzedRef
 	repoInfo.commitId = config.CommitID
 
@@ -148,8 +149,25 @@ func initGitInfo(config *codeqlExecuteScanOptions) RepoInfo {
 			}
 		}
 	}
+	if len(config.TargetGithubRepoURL) > 0 {
+		if strings.Contains(repoInfo.serverUrl, "github") {
+			log.Entry().Errorf("TargetGithubRepoURL should not be set as the source repo is on github.")
+			return repoInfo, errors.New("TargetGithubRepoURL should not be set as the source repo is on github.")
+		}
+		err := getGitRepoInfo(config.TargetGithubRepoURL, &repoInfo)
+		if err != nil {
+			log.Entry().Error(err)
+			return repoInfo, err
+		}
+		if len(config.TargetGithubBranchName) > 0 {
+			repoInfo.ref = config.TargetGithubBranchName
+			if len(strings.Split(config.TargetGithubBranchName, "/")) < 3 {
+				repoInfo.ref = "refs/heads/" + config.TargetGithubBranchName
+			}
+		}
+	}
 
-	return repoInfo
+	return repoInfo, nil
 }
 
 func getToken(config *codeqlExecuteScanOptions) (bool, string) {
@@ -311,10 +329,36 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	reports = append(reports, piperutils.Path{Target: filepath.Join(config.ModulePath, "target", "codeqlReport.csv")})
 
-	repoInfo := initGitInfo(config)
+	repoInfo, err := initGitInfo(config)
+	if err != nil {
+		return reports, err
+	}
 	repoUrl := fmt.Sprintf("%s/%s/%s", repoInfo.serverUrl, repoInfo.owner, repoInfo.repo)
 	repoReference, err := buildRepoReference(repoUrl, repoInfo.ref)
 	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref)
+
+	if len(config.TargetGithubRepoURL) > 0 {
+		hasToken, token := getToken(config)
+		if !hasToken {
+			return reports, errors.New("failed running upload db sources to GitHub as githubToken was not specified")
+		}
+		repoUploader, err := codeql.NewGitUploaderInstance(
+			token,
+			repoInfo.ref,
+			config.Database,
+			repoInfo.commitId,
+			config.Repository,
+			config.TargetGithubRepoURL,
+		)
+		if err != nil {
+			return reports, err
+		}
+		targetCommitId, err := repoUploader.UploadProjectToGithub()
+		if err != nil {
+			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
+		}
+		repoInfo.commitId = targetCommitId
+	}
 
 	if !config.UploadResults {
 		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
