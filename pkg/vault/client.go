@@ -1,8 +1,11 @@
 package vault
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
@@ -59,6 +62,36 @@ func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, erro
 	if err != nil {
 		return Client{}, err
 	}
+
+	client.SetMinRetryWait(time.Second * 5)
+	client.SetMaxRetryWait(time.Second * 90)
+	client.SetMaxRetries(3)
+	client.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		if resp != nil {
+			log.Entry().Debugln("Vault response: ", resp.Status, resp.StatusCode, err)
+		} else {
+			log.Entry().Debugln("Vault response: ", err)
+		}
+
+		isEOF := false
+		if err != nil && strings.Contains(err.Error(), "EOF") {
+			log.Entry().Infoln("isEOF is true")
+			isEOF = true
+		}
+
+		if err == io.EOF {
+			log.Entry().Infoln("err = io.EOF is true")
+		}
+
+		retry, err := api.DefaultRetryPolicy(ctx, resp, err)
+
+		if err != nil || err == io.EOF || isEOF || retry {
+			log.Entry().Infoln("Retrying vault request...")
+			return true, nil
+		}
+		return false, nil
+	})
+
 	if config.Namespace != "" {
 		client.SetNamespace(config.Namespace)
 	}
