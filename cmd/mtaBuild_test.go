@@ -358,8 +358,7 @@ func TestMtaBuildSourceDir(t *testing.T) {
 		})
 	})
 
-	// Enable test once the sbom generation feature is available in the mbt build.
-	/*t.Run("MTA build should enable create BOM", func(t *testing.T) {
+	t.Run("MTA build should enable create BOM", func(t *testing.T) {
 		utilsMock := newMtaBuildTestUtilsBundle()
 
 		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName", Source: "./", Target: "./", CreateBOM: true}
@@ -369,7 +368,7 @@ func TestMtaBuildSourceDir(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Contains(t, utilsMock.Calls[0].Params, "--sbom-file-path")
 
-	})*/
+	})
 }
 
 func TestMtaBuildMtar(t *testing.T) {
