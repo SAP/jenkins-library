@@ -75,12 +75,12 @@ func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, erro
 
 		isEOF := false
 		if err != nil && strings.Contains(err.Error(), "EOF") {
-			log.Entry().Debugln("isEOF is true")
+			log.Entry().Infoln("isEOF is true")
 			isEOF = true
 		}
 
 		if err == io.EOF {
-			log.Entry().Debugln("err = io.EOF is true")
+			log.Entry().Infoln("err = io.EOF is true")
 		}
 
 		retry, err := api.DefaultRetryPolicy(ctx, resp, err)
