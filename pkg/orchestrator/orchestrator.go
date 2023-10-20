@@ -1,14 +1,9 @@
 package orchestrator
 
 import (
-	"errors"
-	"os"
+	"github.com/pkg/errors"
 	"time"
-
-	"github.com/SAP/jenkins-library/pkg/log"
 )
-
-type Orchestrator int
 
 const (
 	Unknown Orchestrator = iota
@@ -31,67 +26,84 @@ const (
 	BuildReasonUnknown         = "Unknown"
 )
 
-type OrchestratorSpecificConfigProviding interface {
-	InitOrchestratorProvider(settings *OrchestratorSettings)
+var (
+	provider            ConfigProvider
+	providerInitialized bool
+)
+
+type ConfigProvider interface {
+	Configure(opts *Options) error
 	OrchestratorType() string
 	OrchestratorVersion() string
-	GetStageName() string
-	GetBranch() string
-	GetReference() string
-	GetBuildURL() string
-	GetBuildID() string
-	GetJobURL() string
-	GetJobName() string
-	GetCommit() string
-	GetPullRequestConfig() PullRequestConfig
-	GetRepoURL() string
+	StageName() string
+	Branch() string
+	GitReference() string
+	RepoURL() string
+	BuildURL() string
+	BuildID() string
+	BuildStatus() string
+	BuildReason() string
+	JobURL() string
+	JobName() string
+	CommitSHA() string
+	PullRequestConfig() PullRequestConfig
 	IsPullRequest() bool
-	GetLog() ([]byte, error)
-	GetPipelineStartTime() time.Time
-	GetBuildStatus() string
-	GetBuildReason() string
-	GetChangeSet() []ChangeSet
+	FullLogs() ([]byte, error)
+	PipelineStartTime() time.Time
+	ChangeSets() []ChangeSet
 }
 
-type PullRequestConfig struct {
-	Branch string
-	Base   string
-	Key    string
-}
+type (
+	Orchestrator int
 
-type ChangeSet struct {
-	CommitId  string
-	Timestamp string
-	PrNumber  int
-}
+	// Options used to set orchestrator specific settings.
+	Options struct {
+		User      string
+		AuthToken string
+	}
 
-// OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
-type OrchestratorSettings struct {
-	JenkinsUser  string
-	JenkinsToken string
-	AzureToken   string
-	GitHubToken  string
-}
+	PullRequestConfig struct {
+		Branch string
+		Base   string
+		Key    string
+	}
 
-func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
+	ChangeSet struct {
+		CommitId  string
+		Timestamp string
+		PrNumber  int
+	}
+)
+
+func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
+	if providerInitialized {
+		return provider, nil
+	}
+
+	defer func() {
+		providerInitialized = true
+	}()
+
 	switch DetectOrchestrator() {
 	case AzureDevOps:
-		return &AzureDevOpsConfigProvider{}, nil
+		provider = &AzureDevOpsConfigProvider{}
 	case GitHubActions:
-		ghProvider := &GitHubActionsConfigProvider{}
-		// Temporary workaround: The orchestrator provider is not always initialized after being created,
-		// which causes a panic in some places for GitHub Actions provider, as it needs to initialize
-		// github sdk client.
-		ghProvider.InitOrchestratorProvider(&OrchestratorSettings{})
-		return ghProvider, nil
+		provider = &GitHubActionsConfigProvider{}
 	case Jenkins:
-		return &JenkinsConfigProvider{}, nil
+		provider = &JenkinsConfigProvider{}
 	default:
-		return &UnknownOrchestratorConfigProvider{}, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
+		provider = &UnknownOrchestratorConfigProvider{}
+		return provider, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 	}
+
+	if err := provider.Configure(opts); err != nil {
+		return nil, errors.Wrap(err, "provider initialization failed")
+	}
+
+	return provider, nil
 }
 
-// DetectOrchestrator returns the name of the current orchestrator e.g. Jenkins, Azure, Unknown
+// DetectOrchestrator function determines in which orchestrator Piper is running by examining environment variables.
 func DetectOrchestrator() Orchestrator {
 	if isAzure() {
 		return AzureDevOps
@@ -108,34 +120,43 @@ func (o Orchestrator) String() string {
 	return [...]string{"Unknown", "AzureDevOps", "GitHubActions", "Jenkins"}[o]
 }
 
-func areIndicatingEnvVarsSet(envVars []string) bool {
-	for _, v := range envVars {
-		if truthy(v) {
-			return true
-		}
-	}
-	return false
-}
+//
+//
+//
+//
+//
+//
 
-// Checks if var is set and neither empty nor false
-func truthy(key string) bool {
-	val, exists := os.LookupEnv(key)
-	if !exists {
-		return false
-	}
-	if len(val) == 0 || val == "no" || val == "false" || val == "off" || val == "0" {
-		return false
-	}
-
-	return true
-}
-
-// Wrapper function to read env variable and set default value
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		log.Entry().Debugf("For: %s, found: %s", key, value)
-		return value
-	}
-	log.Entry().Debugf("Could not read env variable %v using fallback value %v", key, fallback)
-	return fallback
-}
+//type OrchestratorSpecificConfigProviding interface {
+//	Configure(settings *OrchestratorSettings)
+//	OrchestratorType() string
+//	OrchestratorVersion() string
+//	StageName() string
+//	Branch() string
+//	GitReference() string
+//	BuildURL() string
+//	BuildID() string
+//	JobURL() string
+//	JobName() string
+//	CommitSHA() string
+//	PullRequestConfig() PullRequestConfig
+//	RepoURL() string
+//	IsPullRequest() bool
+//	FullLogs() ([]byte, error)
+//	PipelineStartTime() time.Time
+//	BuildStatus() string
+//	BuildReason() string
+//	ChangeSets() []ChangeSet
+//}
+//
+//// OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
+//type OrchestratorSettings struct {
+//	JenkinsUser  string
+//	JenkinsToken string
+//	AzureToken   string
+//	GitHubToken  string
+//}
+//
+//func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
+//	return nil, nil
+//}

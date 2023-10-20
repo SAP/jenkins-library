@@ -17,14 +17,16 @@ type AzureDevOpsConfigProvider struct {
 }
 
 // InitOrchestratorProvider initializes http client for AzureDevopsConfigProvider
-func (a *AzureDevOpsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
+func (a *AzureDevOpsConfigProvider) Configure(opts *Options) error {
 	a.client.SetOptions(piperHttp.ClientOptions{
 		Username:         "",
-		Password:         settings.AzureToken,
+		Password:         opts.AuthToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
 	})
+
 	log.Entry().Debug("Successfully initialized Azure config provider")
+	return nil
 }
 
 // fetchAPIInformation fetches Azure API information of current build
@@ -57,8 +59,8 @@ func (a *AzureDevOpsConfigProvider) fetchAPIInformation() {
 	}
 }
 
-func (a *AzureDevOpsConfigProvider) GetChangeSet() []ChangeSet {
-	log.Entry().Warn("GetChangeSet for AzureDevOps not yet implemented")
+func (a *AzureDevOpsConfigProvider) ChangeSets() []ChangeSet {
+	log.Entry().Warn("ChangeSets for AzureDevOps not yet implemented")
 	return []ChangeSet{}
 }
 
@@ -80,7 +82,7 @@ func (a *AzureDevOpsConfigProvider) getAzureBuildID() string {
 }
 
 // GetJobName returns the pipeline job name, currently org/repo
-func (a *AzureDevOpsConfigProvider) GetJobName() string {
+func (a *AzureDevOpsConfigProvider) JobName() string {
 	return getEnv("BUILD_REPOSITORY_NAME", "n/a")
 }
 
@@ -95,7 +97,7 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 }
 
 // GetBuildStatus returns status of the build. Return variables are aligned with Jenkins build statuses.
-func (a *AzureDevOpsConfigProvider) GetBuildStatus() string {
+func (a *AzureDevOpsConfigProvider) BuildStatus() string {
 	// cases to align with Jenkins: SUCCESS, FAILURE, NOT_BUILD, ABORTED
 	switch buildStatus := getEnv("AGENT_JOBSTATUS", "FAILURE"); buildStatus {
 	case "Succeeded":
@@ -109,7 +111,7 @@ func (a *AzureDevOpsConfigProvider) GetBuildStatus() string {
 }
 
 // GetLog returns the whole logfile for the current pipeline run
-func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
+func (a *AzureDevOpsConfigProvider) FullLogs() ([]byte, error) {
 	URL := a.getSystemCollectionURI() + a.getTeamProjectID() + "/_apis/build/builds/" + a.getAzureBuildID() + "/logs"
 
 	response, err := a.client.GetRequest(URL, nil, nil)
@@ -162,7 +164,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 }
 
 // GetPipelineStartTime returns the pipeline start time in UTC
-func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
+func (a *AzureDevOpsConfigProvider) PipelineStartTime() time.Time {
 	//"2022-03-18T07:30:31.1915758Z"
 	a.fetchAPIInformation()
 	if val, ok := a.apiInformation["startTime"]; ok {
@@ -177,7 +179,7 @@ func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() time.Time {
 }
 
 // GetBuildID returns the BuildNumber displayed in the ADO UI
-func (a *AzureDevOpsConfigProvider) GetBuildID() string {
+func (a *AzureDevOpsConfigProvider) BuildID() string {
 	// INFO: ADO has BUILD_ID and buildNumber, as buildNumber is used in the UI we return this value
 	// for the buildID used only for API requests we have a private method getAzureBuildID
 	// example: buildNumber: 20220318.16 buildId: 76443
@@ -185,50 +187,50 @@ func (a *AzureDevOpsConfigProvider) GetBuildID() string {
 }
 
 // GetStageName returns the human-readable name given to a stage. e.g. "Promote" or "Init"
-func (a *AzureDevOpsConfigProvider) GetStageName() string {
+func (a *AzureDevOpsConfigProvider) StageName() string {
 	return getEnv("SYSTEM_STAGEDISPLAYNAME", "n/a")
 }
 
 // GetBranch returns the source branch name, e.g. main
-func (a *AzureDevOpsConfigProvider) GetBranch() string {
+func (a *AzureDevOpsConfigProvider) Branch() string {
 	tmp := getEnv("BUILD_SOURCEBRANCH", "n/a")
 	return strings.TrimPrefix(tmp, "refs/heads/")
 }
 
 // GetReference return the git reference
-func (a *AzureDevOpsConfigProvider) GetReference() string {
+func (a *AzureDevOpsConfigProvider) GitReference() string {
 	return getEnv("BUILD_SOURCEBRANCH", "n/a")
 }
 
 // GetBuildURL returns the builds URL e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build/results?buildId=1234
-func (a *AzureDevOpsConfigProvider) GetBuildURL() string {
+func (a *AzureDevOpsConfigProvider) BuildURL() string {
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/" + os.Getenv("SYSTEM_DEFINITIONNAME") + "/_build/results?buildId=" + a.getAzureBuildID()
 }
 
 // GetJobURL returns tje current job url e.g. https://dev.azure.com/fabrikamfiber/your-repo-name/_build?definitionId=1234
-func (a *AzureDevOpsConfigProvider) GetJobURL() string {
+func (a *AzureDevOpsConfigProvider) JobURL() string {
 	// TODO: Check if this is the correct URL
 	return os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI") + os.Getenv("SYSTEM_TEAMPROJECT") + "/" + os.Getenv("SYSTEM_DEFINITIONNAME") + "/_build?definitionId=" + os.Getenv("SYSTEM_DEFINITIONID")
 }
 
 // GetCommit returns commit SHA of current build
-func (a *AzureDevOpsConfigProvider) GetCommit() string {
+func (a *AzureDevOpsConfigProvider) CommitSHA() string {
 	return getEnv("BUILD_SOURCEVERSION", "n/a")
 }
 
 // GetRepoURL returns current repo URL e.g. https://github.com/SAP/jenkins-library
-func (a *AzureDevOpsConfigProvider) GetRepoURL() string {
+func (a *AzureDevOpsConfigProvider) RepoURL() string {
 	return getEnv("BUILD_REPOSITORY_URI", "n/a")
 }
 
 // GetBuildReason returns the build reason
-func (a *AzureDevOpsConfigProvider) GetBuildReason() string {
+func (a *AzureDevOpsConfigProvider) BuildReason() string {
 	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
 	return getEnv("BUILD_REASON", "n/a")
 }
 
 // GetPullRequestConfig returns pull request configuration
-func (a *AzureDevOpsConfigProvider) GetPullRequestConfig() PullRequestConfig {
+func (a *AzureDevOpsConfigProvider) PullRequestConfig() PullRequestConfig {
 	prKey := getEnv("SYSTEM_PULLREQUEST_PULLREQUESTID", "n/a")
 
 	// This variable is populated for pull requests which have a different pull request ID and pull request number.
@@ -253,5 +255,5 @@ func (a *AzureDevOpsConfigProvider) IsPullRequest() bool {
 
 func isAzure() bool {
 	envVars := []string{"AZURE_HTTP_USER_AGENT"}
-	return areIndicatingEnvVarsSet(envVars)
+	return envVarsAreSet(envVars)
 }

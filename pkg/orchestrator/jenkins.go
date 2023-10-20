@@ -18,14 +18,16 @@ type JenkinsConfigProvider struct {
 }
 
 // InitOrchestratorProvider initializes the Jenkins orchestrator with credentials
-func (j *JenkinsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
+func (j *JenkinsConfigProvider) Configure(opts *Options) error {
 	j.client.SetOptions(piperHttp.ClientOptions{
-		Username:         settings.JenkinsUser,
-		Password:         settings.JenkinsToken,
+		Username:         opts.User,
+		Password:         opts.AuthToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
 	})
+
 	log.Entry().Debug("Successfully initialized Jenkins config provider")
+	return nil
 }
 
 // OrchestratorVersion returns the orchestrator version currently running on
@@ -41,7 +43,7 @@ func (j *JenkinsConfigProvider) OrchestratorType() string {
 func (j *JenkinsConfigProvider) fetchAPIInformation() {
 	if len(j.apiInformation) == 0 {
 		log.Entry().Debugf("apiInformation is empty, getting infos from API")
-		URL := j.GetBuildURL() + "api/json"
+		URL := j.BuildURL() + "api/json"
 		log.Entry().Debugf("API URL: %s", URL)
 		response, err := j.client.GetRequest(URL, nil, nil)
 		if err != nil {
@@ -68,7 +70,7 @@ func (j *JenkinsConfigProvider) fetchAPIInformation() {
 }
 
 // GetBuildStatus returns build status of the current job
-func (j *JenkinsConfigProvider) GetBuildStatus() string {
+func (j *JenkinsConfigProvider) BuildStatus() string {
 	j.fetchAPIInformation()
 	if val, ok := j.apiInformation["result"]; ok {
 		// cases in ADO: succeeded, failed, canceled, none, partiallySucceeded
@@ -86,7 +88,7 @@ func (j *JenkinsConfigProvider) GetBuildStatus() string {
 }
 
 // GetChangeSet returns the commitIds and timestamp of the changeSet of the current run
-func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
+func (j *JenkinsConfigProvider) ChangeSets() []ChangeSet {
 	j.fetchAPIInformation()
 
 	marshal, err := json.Marshal(j.apiInformation)
@@ -117,8 +119,8 @@ func (j *JenkinsConfigProvider) GetChangeSet() []ChangeSet {
 }
 
 // GetLog returns the logfile from the current job as byte object
-func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
-	URL := j.GetBuildURL() + "consoleText"
+func (j *JenkinsConfigProvider) FullLogs() ([]byte, error) {
+	URL := j.BuildURL() + "consoleText"
 
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
@@ -136,8 +138,8 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 }
 
 // GetPipelineStartTime returns the pipeline start time in UTC
-func (j *JenkinsConfigProvider) GetPipelineStartTime() time.Time {
-	URL := j.GetBuildURL() + "api/json"
+func (j *JenkinsConfigProvider) PipelineStartTime() time.Time {
+	URL := j.BuildURL() + "api/json"
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
 		log.Entry().WithError(err).Errorf("could not getRequest to URL %s", URL)
@@ -164,12 +166,12 @@ func (j *JenkinsConfigProvider) GetPipelineStartTime() time.Time {
 }
 
 // GetJobName returns the job name of the current job e.g. foo/bar/BRANCH
-func (j *JenkinsConfigProvider) GetJobName() string {
+func (j *JenkinsConfigProvider) JobName() string {
 	return getEnv("JOB_NAME", "n/a")
 }
 
 // GetJobURL returns the current job URL e.g. https://jaas.url/job/foo/job/bar/job/main
-func (j *JenkinsConfigProvider) GetJobURL() string {
+func (j *JenkinsConfigProvider) JobURL() string {
 	return getEnv("JOB_URL", "n/a")
 }
 
@@ -179,17 +181,17 @@ func (j *JenkinsConfigProvider) getJenkinsHome() string {
 }
 
 // GetBuildID returns the build ID of the current job, e.g. 1234
-func (j *JenkinsConfigProvider) GetBuildID() string {
+func (j *JenkinsConfigProvider) BuildID() string {
 	return getEnv("BUILD_ID", "n/a")
 }
 
 // GetStageName returns the stage name the job is currently in, e.g. Promote
-func (j *JenkinsConfigProvider) GetStageName() string {
+func (j *JenkinsConfigProvider) StageName() string {
 	return getEnv("STAGE_NAME", "n/a")
 }
 
 // GetBuildReason returns the build reason of the current build
-func (j *JenkinsConfigProvider) GetBuildReason() string {
+func (j *JenkinsConfigProvider) BuildReason() string {
 	// BuildReasons are unified with AzureDevOps build reasons,see
 	// https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
 	// ResourceTrigger, PullRequest, Manual, IndividualCI, Schedule
@@ -232,12 +234,12 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 }
 
 // GetBranch returns the branch name, only works with the git plugin enabled
-func (j *JenkinsConfigProvider) GetBranch() string {
+func (j *JenkinsConfigProvider) Branch() string {
 	return getEnv("BRANCH_NAME", "n/a")
 }
 
 // GetReference returns the git reference, only works with the git plugin enabled
-func (j *JenkinsConfigProvider) GetReference() string {
+func (j *JenkinsConfigProvider) GitReference() string {
 	ref := getEnv("BRANCH_NAME", "n/a")
 	if ref == "n/a" {
 		return ref
@@ -249,22 +251,22 @@ func (j *JenkinsConfigProvider) GetReference() string {
 }
 
 // GetBuildURL returns the build url, e.g. https://jaas.url/job/foo/job/bar/job/main/1234/
-func (j *JenkinsConfigProvider) GetBuildURL() string {
+func (j *JenkinsConfigProvider) BuildURL() string {
 	return getEnv("BUILD_URL", "n/a")
 }
 
 // GetCommit returns the commit SHA from the current build, only works with the git plugin enabled
-func (j *JenkinsConfigProvider) GetCommit() string {
+func (j *JenkinsConfigProvider) CommitSHA() string {
 	return getEnv("GIT_COMMIT", "n/a")
 }
 
 // GetRepoURL returns the repo URL of the current build, only works with the git plugin enabled
-func (j *JenkinsConfigProvider) GetRepoURL() string {
+func (j *JenkinsConfigProvider) RepoURL() string {
 	return getEnv("GIT_URL", "n/a")
 }
 
 // GetPullRequestConfig returns the pull request config
-func (j *JenkinsConfigProvider) GetPullRequestConfig() PullRequestConfig {
+func (j *JenkinsConfigProvider) PullRequestConfig() PullRequestConfig {
 	return PullRequestConfig{
 		Branch: getEnv("CHANGE_BRANCH", "n/a"),
 		Base:   getEnv("CHANGE_TARGET", "n/a"),
@@ -274,10 +276,10 @@ func (j *JenkinsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 
 // IsPullRequest returns boolean indicating if current job is a PR
 func (j *JenkinsConfigProvider) IsPullRequest() bool {
-	return truthy("CHANGE_ID")
+	return envVarIsTrue("CHANGE_ID")
 }
 
 func isJenkins() bool {
 	envVars := []string{"JENKINS_HOME", "JENKINS_URL"}
-	return areIndicatingEnvVarsSet(envVars)
+	return envVarsAreSet(envVars)
 }
