@@ -29,7 +29,7 @@ type Telemetry struct {
 	baseData             BaseData
 	baseMetaData         BaseMetaData
 	data                 Data
-	provider             orchestrator.OrchestratorSpecificConfigProviding
+	provider             orchestrator.ConfigProvider
 	disabled             bool
 	client               *piperhttp.Client
 	CustomReportingDsn   string
@@ -44,8 +44,8 @@ type Telemetry struct {
 func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	t.disabled = telemetryDisabled
 
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
-	if err != nil || provider == nil {
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
 		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
@@ -74,8 +74,8 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	}
 
 	t.baseData = BaseData{
-		Orchestrator:    provider.OrchestratorType(),
-		StageName:       provider.GetStageName(),
+		Orchestrator:    t.provider.OrchestratorType(),
+		StageName:       t.provider.StageName(),
 		URL:             LibraryRepository,
 		ActionName:      actionName,
 		EventType:       eventType,
@@ -88,12 +88,12 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	jobURL := t.provider.GetJobURL()
+	jobURL := t.provider.JobURL()
 	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	buildURL := t.provider.GetBuildURL()
+	buildURL := t.provider.BuildURL()
 	return t.toSha1OrNA(buildURL)
 }
 
@@ -161,7 +161,7 @@ func (t *Telemetry) logStepTelemetryData() {
 		StepDuration:    t.data.CustomData.Duration,
 		ErrorCategory:   t.data.CustomData.ErrorCategory,
 		ErrorDetail:     fatalError,
-		CorrelationID:   t.provider.GetBuildURL(),
+		CorrelationID:   t.provider.BuildURL(),
 		PiperCommitHash: t.data.CustomData.PiperCommitHash,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)

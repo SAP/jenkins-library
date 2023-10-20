@@ -130,20 +130,20 @@ func initGitInfo(config *codeqlExecuteScanOptions) (RepoInfo, error) {
 	repoInfo.ref = config.AnalyzedRef
 	repoInfo.commitId = config.CommitID
 
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().Warn("No orchestrator found. We assume piper is running locally.")
 	} else {
 		if repoInfo.ref == "" {
-			repoInfo.ref = provider.GetReference()
+			repoInfo.ref = provider.GitReference()
 		}
 
 		if repoInfo.commitId == "" || repoInfo.commitId == "NA" {
-			repoInfo.commitId = provider.GetCommit()
+			repoInfo.commitId = provider.CommitSHA()
 		}
 
 		if repoInfo.serverUrl == "" {
-			err = getGitRepoInfo(provider.GetRepoURL(), &repoInfo)
+			err = getGitRepoInfo(provider.RepoURL(), &repoInfo)
 			if err != nil {
 				log.Entry().Error(err)
 			}
