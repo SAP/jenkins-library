@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -96,8 +97,13 @@ func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
 		return provider, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 	}
 
+	if opts == nil {
+		log.Entry().Debug("ConfigProvider initialized without options. Some data may be unavailable")
+		return provider, nil
+	}
+
 	if err := provider.Configure(opts); err != nil {
-		return nil, errors.Wrap(err, "provider initialization failed")
+		return provider, errors.Wrap(err, "provider initialization failed")
 	}
 
 	return provider, nil
