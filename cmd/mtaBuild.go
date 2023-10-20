@@ -521,7 +521,7 @@ func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
 func getSourcePath(config mtaBuildOptions) string {
 	path := config.Source
 	if path == "" {
-		path = "./"
+		path = "/"
 	}
 	return filepath.FromSlash(path)
 }
