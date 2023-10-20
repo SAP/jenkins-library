@@ -208,7 +208,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	if config.CreateBOM {
 		log.Entry().Debugf("This feature is not included in the current version of the mta builder")
-		call = append(call, "--sbom-file-path", filepath.FromSlash("sbom-mta.xml"))
+		call = append(call, "--sbom-file-path", filepath.FromSlash("sbom-gen/sbom-mta.xml"))
 	}
 
 	if config.Jobs > 0 {
@@ -521,7 +521,7 @@ func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
 func getSourcePath(config mtaBuildOptions) string {
 	path := config.Source
 	if path == "" {
-		path = "/"
+		path = "./"
 	}
 	return filepath.FromSlash(path)
 }
