@@ -29,7 +29,7 @@ func TestJenkins(t *testing.T) {
 		os.Setenv("GIT_COMMIT", "abcdef42713")
 		os.Setenv("GIT_URL", "github.com/foo/bar")
 
-		p := &JenkinsConfigProvider{}
+		p := &jenkinsConfigProvider{}
 
 		assert.False(t, p.IsPullRequest())
 		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.BuildURL())
@@ -48,7 +48,7 @@ func TestJenkins(t *testing.T) {
 		os.Setenv("CHANGE_TARGET", "main")
 		os.Setenv("CHANGE_ID", "42")
 
-		p := JenkinsConfigProvider{}
+		p := jenkinsConfigProvider{}
 		c := p.PullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
@@ -70,7 +70,7 @@ func TestJenkins(t *testing.T) {
 		os.Setenv("BUILD_URL", "https://jaas.url/job/foo/job/bar/job/main/1234/")
 		os.Setenv("STAGE_NAME", "Promote")
 
-		p := JenkinsConfigProvider{}
+		p := jenkinsConfigProvider{}
 
 		assert.Equal(t, "/var/lib/jenkins", p.getJenkinsHome())
 		assert.Equal(t, "1234", p.BuildID())
@@ -130,7 +130,7 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 		},
 	}
 
-	j := &JenkinsConfigProvider{
+	j := &jenkinsConfigProvider{
 		client: piperhttp.Client{},
 	}
 	j.client.SetOptions(piperhttp.ClientOptions{
@@ -228,7 +228,7 @@ func TestJenkinsConfigProvider_GetBuildStatus(t *testing.T) {
 			if err != nil {
 				t.Fatal("could not parse json:", err)
 			}
-			j := &JenkinsConfigProvider{
+			j := &jenkinsConfigProvider{
 				apiInformation: apiInformation,
 			}
 			assert.Equalf(t, tt.want, j.BuildStatus(), "BuildStatus()")
@@ -367,7 +367,7 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 			if err != nil {
 				t.Fatal("could not parse json:", err)
 			}
-			j := &JenkinsConfigProvider{apiInformation: apiInformation}
+			j := &jenkinsConfigProvider{apiInformation: apiInformation}
 
 			assert.Equalf(t, tt.want, j.BuildReason(), "BuildReason()")
 		})
@@ -415,7 +415,7 @@ func TestJenkinsConfigProvider_getAPIInformation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			j := &JenkinsConfigProvider{
+			j := &jenkinsConfigProvider{
 				apiInformation: tt.apiInformation,
 			}
 			j.client.SetOptions(piperhttp.ClientOptions{
@@ -487,7 +487,7 @@ func TestJenkinsConfigProvider_GetLog(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			j := &JenkinsConfigProvider{}
+			j := &jenkinsConfigProvider{}
 			j.client.SetOptions(piperhttp.ClientOptions{
 				MaxRequestDuration:        5 * time.Second,
 				Token:                     "TOKEN",
@@ -642,7 +642,7 @@ func TestJenkinsConfigProvider_GetChangeSet(t *testing.T) {
 			if err != nil {
 				t.Fatal("could not parse json:", err)
 			}
-			j := &JenkinsConfigProvider{apiInformation: apiInformation}
+			j := &jenkinsConfigProvider{apiInformation: apiInformation}
 			assert.Equalf(t, tt.want, j.ChangeSets(), "ChangeSets()")
 		})
 	}

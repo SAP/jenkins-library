@@ -50,7 +50,7 @@ func TestAzure(t *testing.T) {
 		os.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
 		os.Setenv("BUILD_REASON", "PullRequest")
 
-		p := AzureDevOpsConfigProvider{}
+		p := azureDevopsConfigProvider{}
 		c := p.PullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
@@ -68,7 +68,7 @@ func TestAzure(t *testing.T) {
 		os.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTNUMBER", "42")
 		os.Setenv("BUILD_REASON", "PullRequest")
 
-		p := AzureDevOpsConfigProvider{}
+		p := azureDevopsConfigProvider{}
 		c := p.PullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
@@ -98,7 +98,7 @@ func TestAzure(t *testing.T) {
 		os.Setenv("BUILD_BUILDNUMBER", "20220318.16")
 		os.Setenv("BUILD_REPOSITORY_NAME", "repo-org/repo-name")
 
-		p := AzureDevOpsConfigProvider{}
+		p := azureDevopsConfigProvider{}
 
 		assert.Equal(t, "https://dev.azure.com/fabrikamfiber/", p.getSystemCollectionURI())
 		assert.Equal(t, "123a4567-ab1c-12a1-1234-123456ab7890", p.getTeamProjectID())
@@ -140,7 +140,7 @@ func TestAzureDevOpsConfigProvider_GetPipelineStartTime(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &AzureDevOpsConfigProvider{}
+			a := &azureDevopsConfigProvider{}
 			a.apiInformation = tt.apiInformation
 			pipelineStartTime := a.PipelineStartTime()
 			assert.Equalf(t, tt.want, pipelineStartTime, "PipelineStartTime()")
@@ -181,7 +181,7 @@ func TestAzureDevOpsConfigProvider_GetBuildStatus(t *testing.T) {
 			defer resetEnv(os.Environ())
 			os.Clearenv()
 			os.Setenv("AGENT_JOBSTATUS", tt.envVar)
-			a := &AzureDevOpsConfigProvider{}
+			a := &azureDevopsConfigProvider{}
 
 			assert.Equalf(t, tt.want, a.BuildStatus(), "BuildStatus()")
 		})
@@ -229,7 +229,7 @@ func TestAzureDevOpsConfigProvider_getAPIInformation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &AzureDevOpsConfigProvider{
+			a := &azureDevopsConfigProvider{
 				apiInformation: tt.apiInformation,
 			}
 
@@ -311,7 +311,7 @@ func TestAzureDevOpsConfigProvider_GetLog(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &AzureDevOpsConfigProvider{}
+			a := &azureDevopsConfigProvider{}
 			a.client.SetOptions(piperhttp.ClientOptions{
 				MaxRequestDuration:        5 * time.Second,
 				Token:                     "TOKEN",

@@ -87,11 +87,11 @@ func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
 
 	switch DetectOrchestrator() {
 	case AzureDevOps:
-		provider = &AzureDevOpsConfigProvider{}
+		provider = &azureDevopsConfigProvider{}
 	case GitHubActions:
-		provider = &GitHubActionsConfigProvider{}
+		provider = &githubActionsConfigProvider{}
 	case Jenkins:
-		provider = &JenkinsConfigProvider{}
+		provider = &jenkinsConfigProvider{}
 	default:
 		provider = &UnknownOrchestratorConfigProvider{}
 		return provider, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
@@ -125,44 +125,3 @@ func DetectOrchestrator() Orchestrator {
 func (o Orchestrator) String() string {
 	return [...]string{"Unknown", "AzureDevOps", "GitHubActions", "Jenkins"}[o]
 }
-
-//
-//
-//
-//
-//
-//
-
-//type OrchestratorSpecificConfigProviding interface {
-//	Configure(settings *OrchestratorSettings)
-//	OrchestratorType() string
-//	OrchestratorVersion() string
-//	StageName() string
-//	Branch() string
-//	GitReference() string
-//	BuildURL() string
-//	BuildID() string
-//	JobURL() string
-//	JobName() string
-//	CommitSHA() string
-//	PullRequestConfig() PullRequestConfig
-//	RepoURL() string
-//	IsPullRequest() bool
-//	FullLogs() ([]byte, error)
-//	PipelineStartTime() time.Time
-//	BuildStatus() string
-//	BuildReason() string
-//	ChangeSets() []ChangeSet
-//}
-//
-//// OrchestratorSettings struct to set orchestrator specific settings e.g. Jenkins credentials
-//type OrchestratorSettings struct {
-//	JenkinsUser  string
-//	JenkinsToken string
-//	AzureToken   string
-//	GitHubToken  string
-//}
-//
-//func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
-//	return nil, nil
-//}

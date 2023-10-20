@@ -30,7 +30,7 @@ func TestGitHubActionsConfigProvider_GetBuildStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &GitHubActionsConfigProvider{
+			g := &githubActionsConfigProvider{
 				runData: tt.runData,
 			}
 			assert.Equalf(t, tt.want, g.BuildStatus(), "BuildStatus()")
@@ -54,7 +54,7 @@ func TestGitHubActionsConfigProvider_GetBuildReason(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &GitHubActionsConfigProvider{}
+			g := &githubActionsConfigProvider{}
 
 			_ = os.Setenv("GITHUB_EVENT_NAME", tt.envGithubRef)
 			assert.Equalf(t, tt.want, g.BuildReason(), "BuildReason()")
@@ -73,7 +73,7 @@ func TestGitHubActionsConfigProvider_GetRepoURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &GitHubActionsConfigProvider{}
+			g := &githubActionsConfigProvider{}
 
 			_ = os.Setenv("GITHUB_SERVER_URL", tt.envServerURL)
 			_ = os.Setenv("GITHUB_REPOSITORY", tt.envRepo)
@@ -94,7 +94,7 @@ func TestGitHubActionsConfigProvider_GetPullRequestConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &GitHubActionsConfigProvider{}
+			g := &githubActionsConfigProvider{}
 
 			_ = os.Setenv("GITHUB_REF", tt.envRef)
 			_ = os.Setenv("GITHUB_HEAD_REF", "n/a")
@@ -136,7 +136,7 @@ func TestGitHubActionsConfigProvider_guessCurrentJob(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &GitHubActionsConfigProvider{
+			g := &githubActionsConfigProvider{
 				jobs:        tt.jobs,
 				jobsFetched: tt.jobsFetched,
 			}
@@ -170,7 +170,7 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 	_ = os.Setenv("GITHUB_RUN_ID", "11111")
 
 	// setup provider
-	g := &GitHubActionsConfigProvider{}
+	g := &githubActionsConfigProvider{}
 	assert.NoError(t, g.Configure(&Options{}))
 	g.client = github.NewClient(http.DefaultClient)
 
@@ -226,7 +226,7 @@ func TestGitHubActionsConfigProvider_fetchJobs(t *testing.T) {
 	_ = os.Setenv("GITHUB_RUN_ID", "11111")
 
 	// setup provider
-	g := &GitHubActionsConfigProvider{}
+	g := &githubActionsConfigProvider{}
 	assert.NoError(t, g.Configure(&Options{}))
 	g.client = github.NewClient(http.DefaultClient)
 
@@ -268,7 +268,7 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
 
 	// setup provider
-	g := &GitHubActionsConfigProvider{
+	g := &githubActionsConfigProvider{
 		jobs:        jobs,
 		jobsFetched: true,
 	}
@@ -326,7 +326,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	_ = os.Setenv("GITHUB_SERVER_URL", "https://github.com")
 	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
 
-	p := GitHubActionsConfigProvider{}
+	p := githubActionsConfigProvider{}
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
 	p.runData = run{
 		fetched:   true,
