@@ -236,8 +236,6 @@ func (communicationInstance *CommunicationInstance) ExportFileToNode(fileInfo Fi
 
 	json.Unmarshal(data, &nodeUploadResponseEntity)
 	communicationInstance.logger.Info("Node export executed successfully")
-
-	// Important:
 	communicationInstance.logger.Infof("nodeName: %v, nodeId: %v, uploadedFile: %v, createdTransportRequestDescription: %v, createdTransportRequestId: %v", nodeUploadResponseEntity.QueueEntries[0].NodeName, nodeUploadResponseEntity.QueueEntries[0].NodeId, fileInfo.Name, nodeUploadResponseEntity.TransportRequestDescription, nodeUploadResponseEntity.TransportRequestId)
 	return nodeUploadResponseEntity, nil
 
