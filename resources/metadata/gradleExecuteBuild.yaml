@@ -124,14 +124,14 @@ spec:
           - PARAMETERS
         default: false
       - name: excludeCreateBOMForProjects
-        description: Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true
+        description: Defines which projects/subprojects will be ignored during bom creation.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         type: "[]string"
       - name: excludePublishingForProjects
-        description: Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true
+        description: Defines which projects/subprojects will be ignored during publishing. Only if applyPublishingForAllProjects is set to true
         scope:
           - PARAMETERS
           - STAGES
