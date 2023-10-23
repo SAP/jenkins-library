@@ -208,7 +208,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	if config.CreateBOM {
 		log.Entry().Debugf("This feature is not included in the current version of the mta builder")
-		call = append(call, "--sbom-file-path", filepath.FromSlash("sbom-gen/sbom-mta.xml"))
+		call = append(call, "--sbom-file-path", filepath.FromSlash("sbom-mta.xml"))
 	}
 
 	if config.Jobs > 0 {
