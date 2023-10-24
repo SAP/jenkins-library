@@ -62,8 +62,13 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 }
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils, fileUtils piperutils.FileUtils) error {
+	dockerConfigDir, err := fileUtils.TempDir("", ".docker")
+	if err != nil {
+		return errors.Wrap(err, "unable to create docker config dir")
+	}
+	log.Entry().Infoln("dockerConfigDir:", dockerConfigDir)
 
-	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
+	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
 	if err != nil {
 		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
 	}
@@ -128,19 +133,19 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 			return errors.Wrapf(err, "failed to read enhanced file '%v'", dockerConfigJsonPath)
 		}
 	} else if len(dockerConfigJsonPath) == 0 && len(registryURL) > 0 && len(password) > 0 && len(username) > 0 {
-		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", "~/.docker/config.json", fileUtils)
+		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", ".docker/config.json", fileUtils)
 		if err != nil {
-			return errors.Wrap(err, "failed to create new docker config json at ~/.docker/config.json")
+			return errors.Wrap(err, "failed to create new docker config json at .docker/config.json")
 		}
 
 		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read new docker config file at ~/.docker/config.json")
+			return errors.Wrapf(err, "failed to read new docker config file at .docker/config.json")
 		}
 	}
 
-	if err := fileUtils.FileWrite("~/.docker/config.json", dockerConfig, 0644); err != nil {
-		return errors.Wrap(err, "failed to write file '~/.docker/config.json'")
+	if err := fileUtils.FileWrite(".docker/config.json", dockerConfig, 0644); err != nil {
+		return errors.Wrap(err, "failed to write file "+dockerConfigFile)
 	}
 	return nil
 }
@@ -178,3 +183,8 @@ func skopeoMoveImage(sourceImageFullName string, sourceRegistryUser string, sour
 	}
 	return nil
 }
+
+// https://f61e79198081-20231024-082222420-132.staging.repositories.cloud.sap
+// password: ufrZ9a1Q4db0Lbv
+// username: K3BGjVT5b1MvsZh
+// sourceImage: azure-demo-k8s-go:0.1.0-20231024082209-cbe4e4e9e1f58f748fc8970671a59b4474b38ba8
