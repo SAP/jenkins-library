@@ -330,12 +330,13 @@ func ImageListWithFilePath(imageName string, excludes []string, trimDir string, 
 }
 
 func CopyImage(src string, dest string) error {
-	crane.Copy(src, dest)
-	return nil
+	return crane.Copy(src, dest)
 }
 
-// func (c *Client) PushImage(localDockerPath string, dest string) error {
-// 	crane.
-// 	crane.Push(localDockerPath, dest)
-// 	return nil
-// }
+func PushImage(im v1.Image, dest string) error {
+	return crane.Push(im, dest)
+}
+
+func LoadImage(src string) (v1.Image, error) {
+	return crane.Load(src)
+}
