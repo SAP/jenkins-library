@@ -255,4 +255,4 @@ spec:
           - filePattern: "**/jacoco.xml"
             type: jacoco-coverage
   containers:
-    - image: cobra217/mbtci-java11-node14
+    - image: devxci/mbtci-java11-node14
