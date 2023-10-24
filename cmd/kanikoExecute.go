@@ -170,7 +170,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		for image, file := range imageListWithFilePath {
 			log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
 			containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
-			buildOpts := append(config.BuildOptions, "--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag))
+			buildOpts := append(config.BuildOptions,
+				"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag),
+				"--cleanup",
+			)
 			if err = runKaniko(file, buildOpts, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 				return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 			}
@@ -225,6 +228,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				buildOptions := append(config.BuildOptions,
 					"--context-sub-path", entry.ContextSubPath,
 					"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag),
+					"--cleanup",
 				)
 
 				dockerfilePath := config.DockerfilePath
@@ -256,6 +260,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				buildOptions := append(config.BuildOptions,
 					"--context-sub-path", entry.ContextSubPath,
 					"--destination", entry.ContainerImage,
+					"--cleanup",
 				)
 
 				dockerfilePath := config.DockerfilePath

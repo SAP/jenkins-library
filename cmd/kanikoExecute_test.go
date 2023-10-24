@@ -390,9 +390,9 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage:myTag", "--cleanup"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag", "--cleanup"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag", "--cleanup"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range execRunner.Calls {
@@ -446,8 +446,8 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag", "--cleanup"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag", "--cleanup"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for _, call := range execRunner.Calls {
@@ -506,9 +506,9 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
-			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
-			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
+			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage:myTag", "--cleanup"},
+			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag", "--cleanup"},
+			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag", "--cleanup"},
 			{"packages", "registry:my.registry.com:50000/myImage:myTag", "-o", "cyclonedx-xml", "--file"},
 			{"packages", "registry:my.registry.com:50000/myImage-sub1:myTag", "-o", "cyclonedx-xml", "--file"},
 			{"packages", "registry:my.registry.com:50000/myImage-sub2:myTag", "-o", "cyclonedx-xml", "--file"},
@@ -660,8 +660,8 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		cwd, _ := fileUtils.Getwd()
 		expectedParams := [][]string{
-			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--context-sub-path", "/test1", "--destination", "my.registry.com:50000/myImageOne:myTag"},
-			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--context-sub-path", "/test2", "--destination", "my.registry.com:50000/myImageTwo:myTagTwo"},
+			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--context-sub-path", "/test1", "--destination", "my.registry.com:50000/myImageOne:myTag", "--cleanup"},
+			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--context-sub-path", "/test2", "--destination", "my.registry.com:50000/myImageTwo:myTagTwo", "--cleanup"},
 			{"packages", "registry:my.registry.com:50000/myImageOne:myTag", "-o", "cyclonedx-xml", "--file"},
 			{"packages", "registry:my.registry.com:50000/myImageTwo:myTagTwo", "-o", "cyclonedx-xml", "--file"},
 		}
