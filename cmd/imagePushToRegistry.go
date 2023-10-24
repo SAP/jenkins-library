@@ -146,13 +146,15 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 }
 
 func pushLocalImageToTargetRegistry(localDockerImagePath string, targetRegistryURL string) error {
-
-	return nil
+	img, err := docker.LoadImage(localDockerImagePath)
+	if err != nil {
+		return err
+	}
+	return docker.PushImage(img, targetRegistryURL)
 }
 
 func copyImage(sourceRegistry string, targetRegistry string) error {
-	docker.CopyImage(sourceRegistry, targetRegistry)
-	return nil
+	return docker.CopyImage(sourceRegistry, targetRegistry)
 }
 
 func skopeoMoveImage(sourceImageFullName string, sourceRegistryUser string, sourceRegistryPassword string, targetImageFullName string, targetRegistryUser string, targetRegistryPassword string, utils imagePushToRegistryUtils) error {

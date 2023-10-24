@@ -1,9 +1,11 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/stretchr/testify/assert"
 )
 
 type imagePushToRegistryMockUtils struct {
@@ -31,7 +33,7 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		utils.AddFile("file.txt", []byte("dummy content"))
 
 		// test
-		err := runImagePushToRegistry(&config, nil, utils)
+		err := runImagePushToRegistry(&config, nil, utils, &piperutils.Files{})
 
 		// assert
 		assert.NoError(t, err)
@@ -45,7 +47,7 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		utils := newImagePushToRegistryTestsUtils()
 
 		// test
-		err := runImagePushToRegistry(&config, nil, utils)
+		err := runImagePushToRegistry(&config, nil, utils, &piperutils.Files{})
 
 		// assert
 		assert.EqualError(t, err, "cannot run without important file")
