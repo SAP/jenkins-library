@@ -255,14 +255,23 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
 
+	// Sarif generation
+	sarif := protecode.CreateSarifResultsFile(result.Result, config.ExcludeCVEs)
+	WriteSarifFilePaths, err := protecode.WriteSarifFile(sarif, utils)
+	if err != nil {
+		log.Entry().Warning("failed to create a SARIF file ...", err)
+	} else {
+		reports = append(reports, WriteSarifFilePaths...)
+	}
+
 	// write custom report
 	scanReport := protecode.CreateCustomReport(fileName, productID, parsedResult, vulns)
-	paths, err := protecode.WriteCustomReports(scanReport, fileName, fmt.Sprint(productID), utils)
+	WriteCustomReportsPaths, err := protecode.WriteCustomReports(scanReport, fileName, fmt.Sprint(productID), utils)
 	if err != nil {
 		// do not fail - consider failing later on
 		log.Entry().Warning("failed to create custom HTML/MarkDown file ...", err)
 	} else {
-		reports = append(reports, paths...)
+		reports = append(reports, WriteCustomReportsPaths...)
 	}
 
 	// create toolrecord file

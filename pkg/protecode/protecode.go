@@ -46,7 +46,9 @@ type Result struct {
 
 // Component the protecode component information
 type Component struct {
-	Vulns []Vulnerability `json:"vulns,omitempty"`
+	Lib     string          `json:"lib,omitempty"`
+	Objests []string        `json:"objects,omitempty"`
+	Vulns   []Vulnerability `json:"vulns,omitempty"`
 }
 
 // Vulnerability the protecode vulnerability information
@@ -58,9 +60,10 @@ type Vulnerability struct {
 
 // Vuln holds the information about the vulnerability
 type Vuln struct {
-	Cve        string `json:"cve,omitempty"`
-	Cvss       string `json:"cvss,omitempty"`
-	Cvss3Score string `json:"cvss3_score,omitempty"`
+	Cve         string `json:"cve,omitempty"`
+	Cvss        string `json:"cvss,omitempty"`
+	Cvss3Score  string `json:"cvss3_score,omitempty"`
+	VulnSummary string `json:"summary,omitempty"`
 }
 
 // Triage holds the triaging information

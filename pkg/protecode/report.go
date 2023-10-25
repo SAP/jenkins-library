@@ -2,14 +2,17 @@ package protecode
 
 import (
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -136,4 +139,119 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 func reportShaProtecode(parts []string) string {
 	reportShaData := []byte(strings.Join(parts, ","))
 	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
+}
+
+// Create SARIF results file from the vulnerabilities that were detected by the scan.
+func CreateSarifResultsFile(allResults Result, excludeCVEs string) *format.SARIF {
+	log.Entry().Debug("Creating SARIF file for data transfer")
+
+	var sarif format.SARIF
+	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
+	sarif.Version = "2.1.0"
+	var protecodeRun format.Runs
+	sarif.Runs = append(sarif.Runs, protecodeRun)
+
+	//handle the tool object
+	tool := *new(format.Tool)
+	tool.Driver = *new(format.Driver)
+	tool.Driver.Name = "Black Duck Binary Analysis (Protecode)"
+	tool.Driver.Version = "unknown"
+	tool.Driver.InformationUri = "https://community.synopsys.com/s/black-duck-binary-analysis"
+
+	// Another option
+	for _, components := range allResults.Components {
+		for _, vulnerability := range components.Vulns {
+
+			// Filter only active vulnerabilities and skip historical ones
+			if isExact(vulnerability) && !isExcluded(vulnerability, excludeCVEs) {
+
+				// In case of multiple file objects, we make a separate object for each of them with the same CVE info
+				for _, file_object := range components.Objests {
+
+					result := *new(format.Results)
+
+					// Rule ID
+					ruleId := vulnerability.Vuln.Cve
+					log.Entry().Debugf("Transforming vulnerability %v into SARIF format", ruleId)
+					result.RuleID = ruleId
+
+					// Message
+					result.Message = new(format.Message)
+					result.Message.Text = vulnerability.Vuln.VulnSummary
+
+					// Analysis Target
+					artLoc := new(format.ArtifactLocation)
+					artLoc.URI = file_object
+					artLoc.Index = 0
+					result.AnalysisTarget = artLoc
+
+					// Locations
+					location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: artLoc.URI}}}
+					result.Locations = append(result.Locations, location)
+
+					// Partial Fingerprints
+					partialFingerprints := new(format.PartialFingerprints)
+					partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", artLoc.URI, vulnerability.Vuln.Cve)))
+					result.PartialFingerprints = *partialFingerprints
+
+					// Properties
+					triageDesc := "None"
+					unifiedStatusValue := "new"
+
+					if len(vulnerability.Triage) > 0 {
+						// when CVE is triaged then:
+						unifiedStatusValue = "notRelevant"
+						triageDesc = vulnerability.Triage[0].Description
+					}
+
+					result.Properties = &format.SarifProperties{
+						Audited:           isTriaged(vulnerability),
+						ToolAuditMessage:  triageDesc,
+						UnifiedAuditState: unifiedStatusValue,
+					}
+
+					//append the result
+					sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
+				}
+			}
+		}
+	}
+
+	//Finalize: tool
+	sarif.Runs[0].Tool = tool
+
+	// Add a conversion object to highlight this isn't native SARIF
+	conversion := new(format.Conversion)
+	conversion.Tool.Driver.Name = "Piper FPR to SARIF converter"
+	conversion.Tool.Driver.InformationUri = "https://github.com/SAP/jenkins-library"
+	conversion.Invocation.ExecutionSuccessful = true
+	convInvocProp := new(format.InvocationProperties)
+	convInvocProp.Platform = runtime.GOOS
+	conversion.Invocation.Properties = convInvocProp
+	sarif.Runs[0].Conversion = conversion
+
+	return &sarif
+}
+
+// Write a JSON sarif format file for upload into the remote server;
+func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperutils.Path, error) {
+	reportPaths := []piperutils.Path{}
+
+	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
+	sarifReport, errorMarshall := json.Marshal(sarif)
+	if errorMarshall != nil {
+		return reportPaths, errors.Wrapf(errorMarshall, "failed to marshall SARIF json file")
+	}
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	sarifReportPath := filepath.Join(ReportsDirectory, "piper_protecode_vulnerability.sarif")
+	if err := utils.FileWrite(sarifReportPath, sarifReport, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write SARIF file")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Black Duck Binary Analysis (Protecode) Vulnerability SARIF file", Target: sarifReportPath})
+
+	return reportPaths, nil
 }
