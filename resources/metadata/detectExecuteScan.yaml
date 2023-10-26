@@ -302,7 +302,7 @@ spec:
         deprecated: true
       - name: useDetect7
         description:
-          "This flag allows to use the currently supported 8 version of Detect Script instead of v7"
+          "This flag allows to use version 7 of Detect Script"
         aliases:
           - name: detect/useDetect7
         type: bool
@@ -313,7 +313,7 @@ spec:
         default: false
       - name: useDetect8
         description:
-          "This flag allows to use the currently supported 8 version of Detect Script instead of v7"
+          "This flag allows to use the currently supported version 8 of Detect Script"
         aliases:
           - name: detect/useDetect8
             deprecated: true
