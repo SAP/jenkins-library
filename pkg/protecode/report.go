@@ -158,7 +158,7 @@ func CreateSarifResultsFile(allResults Result, excludeCVEs string) *format.SARIF
 	tool.Driver.Version = "unknown"
 	tool.Driver.InformationUri = "https://community.synopsys.com/s/black-duck-binary-analysis"
 
-	// Another option
+	// Go through each component and vuln
 	for _, components := range allResults.Components {
 		for _, vulnerability := range components.Vulns {
 
