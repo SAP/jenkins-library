@@ -248,6 +248,8 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 	// deploy command will be provided by the prepare functions below
 
 	if deployType == "blue-green" {
+		log.Entry().Warn("[WARN] Blue-green deployment type will be deprecated soon for cf native builds. " +
+			"Instead set parameter `cfnativedeployparameters: '--strategy rolling'`.")
 		deployCommand, deployOptions, smokeTestScript, err = prepareBlueGreenCfNativeDeploy(config)
 		if err != nil {
 			return errors.Wrapf(err, "Cannot prepare cf native deployment. DeployType '%s'", deployType)
