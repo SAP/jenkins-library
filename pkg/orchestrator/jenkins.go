@@ -20,8 +20,8 @@ type jenkinsConfigProvider struct {
 // Configure initializes the Jenkins orchestrator with credentials
 func (j *jenkinsConfigProvider) Configure(opts *Options) error {
 	j.client.SetOptions(piperHttp.ClientOptions{
-		Username:         opts.User,
-		Password:         opts.AuthToken,
+		Username:         opts.JenkinsUser,
+		Password:         opts.JenkinsToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
 	})

@@ -60,8 +60,10 @@ type (
 
 	// Options used to set orchestrator specific settings.
 	Options struct {
-		User      string
-		AuthToken string
+		JenkinsUser  string
+		JenkinsToken string
+		AzureToken   string
+		GitHubToken  string
 	}
 
 	PullRequestConfig struct {

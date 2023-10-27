@@ -20,7 +20,7 @@ type azureDevopsConfigProvider struct {
 func (a *azureDevopsConfigProvider) Configure(opts *Options) error {
 	a.client.SetOptions(piperHttp.ClientOptions{
 		Username:         "",
-		Password:         opts.AuthToken,
+		Password:         opts.AzureToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
 	})

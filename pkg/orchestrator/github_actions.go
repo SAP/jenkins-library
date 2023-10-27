@@ -49,7 +49,7 @@ type fullLog struct {
 // Configure initializes http client for GitHubActionsDevopsConfigProvider
 func (g *githubActionsConfigProvider) Configure(opts *Options) error {
 	var err error
-	g.ctx, g.client, err = piperGithub.NewClientBuilder(opts.AuthToken, getEnv("GITHUB_API_URL", "")).Build()
+	g.ctx, g.client, err = piperGithub.NewClientBuilder(opts.GitHubToken, getEnv("GITHUB_API_URL", "")).Build()
 	if err != nil {
 		return errors.Wrap(err, "failed to create github client")
 	}
