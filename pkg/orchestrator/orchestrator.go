@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
+	"sync"
 	"time"
 )
 
@@ -28,8 +29,8 @@ const (
 )
 
 var (
-	provider            ConfigProvider
-	providerInitialized bool
+	provider     ConfigProvider
+	providerOnce sync.Once
 )
 
 type ConfigProvider interface {
@@ -77,36 +78,31 @@ type (
 )
 
 func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
-	if providerInitialized {
-		return provider, nil
-	}
+	var err error
+	providerOnce.Do(func() {
+		switch DetectOrchestrator() {
+		case AzureDevOps:
+			provider = &azureDevopsConfigProvider{}
+		case GitHubActions:
+			provider = &githubActionsConfigProvider{}
+		case Jenkins:
+			provider = &jenkinsConfigProvider{}
+		default:
+			provider = &UnknownOrchestratorConfigProvider{}
+			err = errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
+		}
 
-	defer func() {
-		providerInitialized = true
-	}()
+		if opts == nil {
+			log.Entry().Debug("ConfigProvider initialized without options. Some data may be unavailable")
+			return
+		}
 
-	switch DetectOrchestrator() {
-	case AzureDevOps:
-		provider = &azureDevopsConfigProvider{}
-	case GitHubActions:
-		provider = &githubActionsConfigProvider{}
-	case Jenkins:
-		provider = &jenkinsConfigProvider{}
-	default:
-		provider = &UnknownOrchestratorConfigProvider{}
-		return provider, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
-	}
+		if cfgErr := provider.Configure(opts); cfgErr != nil {
+			err = errors.Wrap(cfgErr, "provider configuration failed")
+		}
+	})
 
-	if opts == nil {
-		log.Entry().Debug("ConfigProvider initialized without options. Some data may be unavailable")
-		return provider, nil
-	}
-
-	if err := provider.Configure(opts); err != nil {
-		return provider, errors.Wrap(err, "provider initialization failed")
-	}
-
-	return provider, nil
+	return provider, err
 }
 
 // DetectOrchestrator function determines in which orchestrator Piper is running by examining environment variables.
