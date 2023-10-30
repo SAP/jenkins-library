@@ -64,6 +64,8 @@ type detectExecuteScanOptions struct {
 	NpmArguments                []string `json:"npmArguments,omitempty"`
 	PrivateModules              string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken      string   `json:"privateModulesGitToken,omitempty"`
+	ContainerDistro             string   `json:"containerDistro,omitempty" validate:"possible-values=ubuntu centos alpine"`
+	ScanImages                  bool     `json:"scanImages,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -310,6 +312,8 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.NpmArguments, "npmArguments", []string{}, "List of additional arguments that Detect will add at then end of the npm ls command line when Detect executes the NPM CLI Detector on an NPM project.")
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
+	cmd.Flags().StringVar(&stepConfig.ContainerDistro, "containerDistro", `ubuntu`, "distro of the container that is scanned")
+	cmd.Flags().BoolVar(&stepConfig.ScanImages, "scanImages", true, "if images found in the cpe, they will also be scanned")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -773,10 +777,33 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_privateModulesGitToken"),
 					},
+					{
+						Name:        "containerDistro",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `ubuntu`,
+					},
+					{
+						Name:        "scanImages",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
 				},
 			},
 			Containers: []config.Container{
 				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+			},
+			Sidecars: []config.Container{
+				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.0.15", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "ubuntu"}}}}},
+				{Name: "inspector-alpine", Image: "blackducksoftware/blackduck-imageinspector-alpine:5.0.15", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "alpine"}}}}},
+				{Name: "inspector-centos", Image: "blackducksoftware/blackduck-imageinspector-centos:5.0.15", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "centos"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
