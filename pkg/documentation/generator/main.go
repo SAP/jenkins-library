@@ -155,6 +155,12 @@ func getContainerParameters(container config.Container, sidecar bool) map[string
 		containerParams[ifThenElse(sidecar, "sidecarWorkspace", "dockerWorkspace")] = container.WorkingDir
 	}
 
+	if len(container.VolumeMounts) > 0 {
+		for _, mount := range container.VolumeMounts {
+			containerParams["containerMountPath"] = mount.MountPath
+		}
+	}
+
 	if sidecar {
 		if len(container.ReadyCommand) > 0 {
 			containerParams["sidecarReadyCommand"] = container.ReadyCommand
