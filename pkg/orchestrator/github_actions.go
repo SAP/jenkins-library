@@ -46,6 +46,14 @@ type fullLog struct {
 	b [][]byte
 }
 
+func newGithubActionsConfigProvider() *githubActionsConfigProvider {
+	owner, repo := getOwnerAndRepoNames()
+	return &githubActionsConfigProvider{
+		owner: owner,
+		repo:  repo,
+	}
+}
+
 // Configure initializes http client for GitHubActionsDevopsConfigProvider
 func (g *githubActionsConfigProvider) Configure(opts *Options) error {
 	var err error
@@ -53,7 +61,6 @@ func (g *githubActionsConfigProvider) Configure(opts *Options) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create github client")
 	}
-	g.owner, g.repo = getOwnerAndRepoNames()
 
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 	return nil
@@ -85,6 +92,11 @@ func (g *githubActionsConfigProvider) BuildStatus() string {
 
 // FullLogs returns the whole logfile for the current pipeline run
 func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
+	if g.client == nil {
+		log.Entry().Warning("ConfigProvider for GitHub Actions is not configured. Unable to fetch logs")
+		return []byte{}, nil
+	}
+
 	if err := g.fetchJobs(); err != nil {
 		return nil, err
 	}
@@ -231,6 +243,11 @@ func actionsURL() string {
 }
 
 func (g *githubActionsConfigProvider) fetchRunData() {
+	if g.client == nil {
+		log.Entry().Warning("ConfigProvider for GitHub Actions is not configured. Unable to fetch run data")
+		return
+	}
+
 	if g.runData.fetched {
 		return
 	}
@@ -259,6 +276,11 @@ func convertRunData(runData *github.WorkflowRun) run {
 }
 
 func (g *githubActionsConfigProvider) fetchJobs() error {
+	if g.client == nil {
+		log.Entry().Warning("ConfigProvider for GitHub Actions is not configured. Unable to fetch jobs")
+		return nil
+	}
+
 	if g.jobsFetched {
 		return nil
 	}

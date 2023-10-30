@@ -16,6 +16,10 @@ type azureDevopsConfigProvider struct {
 	apiInformation map[string]interface{}
 }
 
+func newAzureDevopsConfigProvider() *azureDevopsConfigProvider {
+	return &azureDevopsConfigProvider{}
+}
+
 // Configure initializes http client for AzureDevopsConfigProvider
 func (a *azureDevopsConfigProvider) Configure(opts *Options) error {
 	a.client.SetOptions(piperHttp.ClientOptions{

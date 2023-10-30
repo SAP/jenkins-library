@@ -17,6 +17,10 @@ type jenkinsConfigProvider struct {
 	apiInformation map[string]interface{}
 }
 
+func newJenkinsConfigProvider() *jenkinsConfigProvider {
+	return &jenkinsConfigProvider{}
+}
+
 // Configure initializes the Jenkins orchestrator with credentials
 func (j *jenkinsConfigProvider) Configure(opts *Options) error {
 	j.client.SetOptions(piperHttp.ClientOptions{

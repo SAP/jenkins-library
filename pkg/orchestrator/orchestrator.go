@@ -84,13 +84,13 @@ func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
 	providerOnce.Do(func() {
 		switch DetectOrchestrator() {
 		case AzureDevOps:
-			provider = &azureDevopsConfigProvider{}
+			provider = newAzureDevopsConfigProvider()
 		case GitHubActions:
-			provider = &githubActionsConfigProvider{}
+			provider = newGithubActionsConfigProvider()
 		case Jenkins:
-			provider = &jenkinsConfigProvider{}
+			provider = newJenkinsConfigProvider()
 		default:
-			provider = &UnknownOrchestratorConfigProvider{}
+			provider = newUnknownOrchestratorConfigProvider()
 			err = errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 		}
 

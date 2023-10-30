@@ -10,6 +10,10 @@ type UnknownOrchestratorConfigProvider struct{}
 
 const unknownOrchestratorWarning = "Unknown orchestrator - returning default values."
 
+func newUnknownOrchestratorConfigProvider() *UnknownOrchestratorConfigProvider {
+	return &UnknownOrchestratorConfigProvider{}
+}
+
 func (u *UnknownOrchestratorConfigProvider) Configure(_ *Options) error {
 	log.Entry().Warning(unknownOrchestratorWarning)
 	return nil
