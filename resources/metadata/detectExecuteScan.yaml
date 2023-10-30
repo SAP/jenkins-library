@@ -326,6 +326,17 @@ spec:
           - STAGES
           - STEPS
         deprecated: true
+      - name: useDetect9
+        description:
+          "This flag allows to use version 9 of Detect Script"
+        aliases:
+          - name: detect/useDetect9
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: successOnSkip
         description:
           "This flag allows forces Black Duck to exit with 0 error code if any step is skipped"

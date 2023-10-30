@@ -389,6 +389,17 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	log.Entry().Infof("Downloading Detect Script")
 
+	if config.UseDetect9 {
+		err := utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+		if err != nil {
+			time.Sleep(time.Second * 5)
+			err = utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	err := utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
 	if err != nil {
 		time.Sleep(time.Second * 5)
@@ -474,7 +485,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
 	}
 
-	// Atleast 1, non-empty category to fail on must be provided
+	// At least 1, non-empty category to fail on must be provided
 	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 	}
