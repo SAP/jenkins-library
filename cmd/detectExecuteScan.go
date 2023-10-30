@@ -309,6 +309,10 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 		return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
 	}
 
+	if config.UseDetect9 {
+		return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+	}
+
 	return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
 }
 
@@ -381,12 +385,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("\"--detect.project.name='%v'\"", config.ProjectName))
 		args = append(args, fmt.Sprintf("\"--detect.project.version.name='%v'\"", detectVersionName))
 
-		// Groups parameter is added only when there is atleast one non-empty groupname provided
+		// Groups parameter is added only when there is at least one non-empty groupname provided
 		if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
 			args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
 		}
 
-		// Atleast 1, non-empty category to fail on must be provided
+		// At least 1, non-empty category to fail on must be provided
 		if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
 			args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 		}
@@ -405,7 +409,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 			args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
 		}
 
-		// Atleast 1, non-empty category to fail on must be provided
+		// At least 1, non-empty category to fail on must be provided
 		if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
 			args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 		}
