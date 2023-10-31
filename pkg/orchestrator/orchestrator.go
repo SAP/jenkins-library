@@ -123,3 +123,11 @@ func DetectOrchestrator() Orchestrator {
 func (o Orchestrator) String() string {
 	return [...]string{"Unknown", "AzureDevOps", "GitHubActions", "Jenkins"}[o]
 }
+
+// ResetConfigProvider is intended to be used only for unit tests because some of these tests
+// run with different environment variables (for example, mock runs in various orchestrators).
+// Usage in production code is not recommended.
+func ResetConfigProvider() {
+	provider = nil
+	providerOnce = sync.Once{}
+}
