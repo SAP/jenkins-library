@@ -133,6 +133,12 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 
+	// Print blackduck step config in verbose mode
+	err := printBlackduckConfig(config)
+	if err != nil {
+		log.Entry().WithError(err).Warning("Failed to print blackduck step config")
+	}
+
 	ctx, client, err := piperGithub.
 		NewClientBuilder(config.GithubToken, config.GithubAPIURL).
 		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
@@ -911,4 +917,19 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+func printBlackduckConfig(config detectExecuteScanOptions) error {
+	config.Token = "***"
+	config.GithubToken = "***"
+	config.PrivateModulesGitToken = "***"
+
+	configData, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	log.Entry().Debugf("Blackduck step config: %s", configData)
+
+	return nil
 }
