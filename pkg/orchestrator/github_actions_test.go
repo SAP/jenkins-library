@@ -170,7 +170,7 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 	_ = os.Setenv("GITHUB_RUN_ID", "11111")
 
 	// setup provider
-	g := &githubActionsConfigProvider{}
+	g := newGithubActionsConfigProvider()
 	assert.NoError(t, g.Configure(&Options{}))
 	g.client = github.NewClient(http.DefaultClient)
 
@@ -226,7 +226,7 @@ func TestGitHubActionsConfigProvider_fetchJobs(t *testing.T) {
 	_ = os.Setenv("GITHUB_RUN_ID", "11111")
 
 	// setup provider
-	g := &githubActionsConfigProvider{}
+	g := newGithubActionsConfigProvider()
 	assert.NoError(t, g.Configure(&Options{}))
 	g.client = github.NewClient(http.DefaultClient)
 
@@ -268,10 +268,10 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
 
 	// setup provider
-	g := &githubActionsConfigProvider{
-		jobs:        jobs,
-		jobsFetched: true,
-	}
+	g := newGithubActionsConfigProvider()
+	g.jobs = jobs
+	g.jobsFetched = true
+
 	assert.NoError(t, g.Configure(&Options{}))
 	g.client = github.NewClient(http.DefaultClient)
 
