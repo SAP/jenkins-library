@@ -31,7 +31,9 @@ type githubIssueClient interface {
 
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, config.UploadURL, []string{})
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.Token, config.APIURL).
+		WithUploadURL(config.UploadURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
 	}
@@ -115,9 +117,19 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, conf
 	if len(config.Labels) > 0 {
 		options.Labels = config.Labels
 	}
-	ghIssues, _, err := ghIssueClient.ListByRepo(ctx, config.Owner, config.Repository, &options)
-	if err != nil {
-		log.Entry().WithError(err).Error("Failed to get GitHub issues.")
+
+	var ghIssues []*github.Issue
+	for {
+		issues, resp, err := ghIssueClient.ListByRepo(ctx, config.Owner, config.Repository, &options)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to get GitHub issues")
+		}
+
+		ghIssues = append(ghIssues, issues...)
+		if resp.NextPage == 0 {
+			break
+		}
+		options.Page = resp.NextPage
 	}
 
 	prTexts := []string{"**List of closed pull-requests since last release**"}

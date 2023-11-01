@@ -2,7 +2,7 @@ package orchestrator
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 
@@ -14,20 +14,17 @@ import (
 
 type JenkinsConfigProvider struct {
 	client         piperHttp.Client
-	options        piperHttp.ClientOptions
 	apiInformation map[string]interface{}
 }
 
 // InitOrchestratorProvider initializes the Jenkins orchestrator with credentials
 func (j *JenkinsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
-	j.client = piperHttp.Client{}
-	j.options = piperHttp.ClientOptions{
+	j.client.SetOptions(piperHttp.ClientOptions{
 		Username:         settings.JenkinsUser,
 		Password:         settings.JenkinsToken,
 		MaxRetries:       3,
 		TransportTimeout: time.Second * 10,
-	}
-	j.client.SetOptions(j.options)
+	})
 	log.Entry().Debug("Successfully initialized Jenkins config provider")
 }
 
@@ -77,15 +74,15 @@ func (j *JenkinsConfigProvider) GetBuildStatus() string {
 		// cases in ADO: succeeded, failed, canceled, none, partiallySucceeded
 		switch result := val; result {
 		case "SUCCESS":
-			return "SUCCESS"
+			return BuildStatusSuccess
 		case "ABORTED":
-			return "ABORTED"
+			return BuildStatusAborted
 		default:
 			// FAILURE, NOT_BUILT
-			return "FAILURE"
+			return BuildStatusFailure
 		}
 	}
-	return "FAILURE"
+	return BuildStatusFailure
 }
 
 // GetChangeSet returns the commitIds and timestamp of the changeSet of the current run
@@ -130,7 +127,7 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 		log.Entry().Error("response code !=200 could not get log information from Jenkins, returning with empty log.")
 		return []byte{}, nil
 	}
-	logFile, err := ioutil.ReadAll(response.Body)
+	logFile, err := io.ReadAll(response.Body)
 	if err != nil {
 		return []byte{}, errors.Wrapf(err, "could not read Jenkins log file from request %v", err)
 	}
@@ -200,12 +197,12 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 	marshal, err := json.Marshal(j.apiInformation)
 	if err != nil {
 		log.Entry().WithError(err).Debugf("could not marshal apiInformation")
-		return "Unknown"
+		return BuildReasonUnknown
 	}
 	jsonParsed, err := gabs.ParseJSON(marshal)
 	if err != nil {
 		log.Entry().WithError(err).Debugf("could not parse apiInformation")
-		return "Unknown"
+		return BuildReasonUnknown
 	}
 
 	for _, child := range jsonParsed.Path("actions").Children() {
@@ -217,21 +214,21 @@ func (j *JenkinsConfigProvider) GetBuildReason() string {
 			for _, val := range child.Path("causes").Children() {
 				subclass := val.S("_class")
 				if subclass.Data().(string) == "hudson.model.Cause$UserIdCause" {
-					return "Manual"
+					return BuildReasonManual
 				} else if subclass.Data().(string) == "hudson.triggers.TimerTrigger$TimerTriggerCause" {
-					return "Schedule"
+					return BuildReasonSchedule
 				} else if subclass.Data().(string) == "jenkins.branch.BranchEventCause" {
-					return "PullRequest"
+					return BuildReasonPullRequest
 				} else if subclass.Data().(string) == "org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause" {
-					return "ResourceTrigger"
+					return BuildReasonResourceTrigger
 				} else {
-					return "Unknown"
+					return BuildReasonUnknown
 				}
 			}
 		}
 
 	}
-	return "Unknown"
+	return BuildReasonUnknown
 }
 
 // GetBranch returns the branch name, only works with the git plugin enabled

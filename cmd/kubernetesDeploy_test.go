@@ -465,6 +465,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--kube-context",
+			"testCluster",
 			"--timeout",
 			"400s",
 		}, mockUtils.Calls[2].Params, "Wrong test parameters")
@@ -547,6 +549,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--kube-context",
+			"testCluster",
 			"--timeout",
 			"400s",
 			"--logs",

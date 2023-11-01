@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -27,7 +26,7 @@ func configOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, e
 	default:
 		r = ""
 	}
-	return ioutil.NopCloser(strings.NewReader(r)), nil
+	return io.NopCloser(strings.NewReader(r)), nil
 }
 
 func TestConfigCommand(t *testing.T) {
@@ -57,8 +56,8 @@ func TestConfigCommand(t *testing.T) {
 
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
-			configOptions.openFile = configOpenFileMock
-			configOptions.stepName = "githubCreateIssue"
+			configOptions.OpenFile = configOpenFileMock
+			configOptions.StepName = "githubCreateIssue"
 			cmd.Run(cmd, []string{})
 		})
 	})
@@ -76,8 +75,8 @@ func TestDefaultsAndFilters(t *testing.T) {
 	}
 
 	t.Run("Context config", func(t *testing.T) {
-		configOptions.contextConfig = true
-		defer func() { configOptions.contextConfig = false }()
+		configOptions.ContextConfig = true
+		defer func() { configOptions.ContextConfig = false }()
 		defaults, filters, err := defaultsAndFilters(&metadata, "stepName")
 
 		assert.Equal(t, 1, len(defaults), "getting defaults failed")

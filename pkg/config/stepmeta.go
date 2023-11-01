@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -163,7 +162,7 @@ type StepFilters struct {
 // ReadPipelineStepData loads step definition in yaml format
 func (m *StepData) ReadPipelineStepData(metadata io.ReadCloser) error {
 	defer metadata.Close()
-	content, err := ioutil.ReadAll(metadata)
+	content, err := io.ReadAll(metadata)
 	if err != nil {
 		return errors.Wrapf(err, "error reading %v", metadata)
 	}
@@ -355,7 +354,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		return nil, errors.Wrap(err, "failed to create context defaults")
 	}
 
-	r := ioutil.NopCloser(bytes.NewReader(JSON))
+	r := io.NopCloser(bytes.NewReader(JSON))
 	return r, nil
 }
 

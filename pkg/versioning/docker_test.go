@@ -5,7 +5,6 @@ package versioning
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,7 +45,7 @@ func TestDockerGetVersion(t *testing.T) {
 
 		dir := t.TempDir()
 		filePath := filepath.Join(dir, "package.json")
-		err := ioutil.WriteFile(filePath, []byte(`{"version": "1.2.3"}`), 0700)
+		err := os.WriteFile(filePath, []byte(`{"version": "1.2.3"}`), 0700)
 		if err != nil {
 			t.Fatal("Failed to create test file")
 		}
@@ -123,7 +122,7 @@ func TestDockerSetVersion(t *testing.T) {
 	t.Run("success case - buildTool", func(t *testing.T) {
 		dir := t.TempDir()
 		filePath := filepath.Join(dir, "package.json")
-		err := ioutil.WriteFile(filePath, []byte(`{"version": "1.2.3"}`), 0700)
+		err := os.WriteFile(filePath, []byte(`{"version": "1.2.3"}`), 0700)
 		if err != nil {
 			t.Fatal("Failed to create test file")
 		}
@@ -135,9 +134,9 @@ func TestDockerSetVersion(t *testing.T) {
 		assert.NoError(t, err)
 		err = docker.SetVersion("1.2.4")
 		assert.NoError(t, err)
-		packageJSON, err := ioutil.ReadFile(filePath)
+		packageJSON, err := os.ReadFile(filePath)
 		assert.Contains(t, string(packageJSON), `"version": "1.2.4"`)
-		versionContent, err := ioutil.ReadFile(filepath.Join(dir, "VERSION"))
+		versionContent, err := os.ReadFile(filepath.Join(dir, "VERSION"))
 		assert.Equal(t, "1.2.4", string(versionContent))
 	})
 }

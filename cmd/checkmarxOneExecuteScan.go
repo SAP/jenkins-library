@@ -80,17 +80,30 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 	cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
 	if err != nil {
-		return fmt.Errorf("failed to get group: %s", err)
+		log.Entry().WithError(err).Warnf("failed to get group")
 	}
 
 	if cx1sh.Project == nil {
 		cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
 		if err != nil {
-			log.Entry().WithError(err).Warnf("failed to get application")
+			log.Entry().WithError(err).Warnf("Failed to get application - will attempt to create the project on the Tenant level")
 		}
 		cx1sh.Project, err = cx1sh.CreateProject() // requires groups, repoUrl, mainBranch, origin, tags, criticality
 		if err != nil {
 			return fmt.Errorf("failed to create project: %s", err)
+		}
+	} else {
+		cx1sh.Project, err = cx1sh.GetProjectByID(cx1sh.Project.ProjectID)
+		if err != nil {
+			return fmt.Errorf("failed to get project by ID: %s", err)
+		} else {
+			if len(cx1sh.Project.Applications) > 0 {
+				appId := cx1sh.Project.Applications[0]
+				cx1sh.App, err = cx1sh.GetApplicationByID(cx1sh.Project.Applications[0])
+				if err != nil {
+					return fmt.Errorf("failed to retrieve information for project's assigned application %v", appId)
+				}
+			}
 		}
 	}
 
@@ -168,7 +181,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) (checkmarxOneExecuteScanHelper, error) {
 	client := &piperHttp.Client{}
 
-	ctx, ghClient, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	ctx, ghClient, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
@@ -202,6 +215,11 @@ func (c *checkmarxOneExecuteScanHelper) GetProjectByName() (*checkmarxOne.Projec
 	return nil, fmt.Errorf("project not found")
 }
 
+func (c *checkmarxOneExecuteScanHelper) GetProjectByID(projectId string) (*checkmarxOne.Project, error) {
+	project, err := c.sys.GetProjectByID(projectId)
+	return &project, err
+}
+
 func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) {
 	if len(c.config.GroupName) > 0 {
 		group, err := c.sys.GetGroupByName(c.config.GroupName)
@@ -210,8 +228,7 @@ func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) 
 		}
 		return &group, nil
 	}
-
-	return nil, fmt.Errorf("No group ID or group name provided")
+	return nil, fmt.Errorf("No group name specified in configuration")
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetApplication() (*checkmarxOne.Application, error) {
@@ -223,7 +240,16 @@ func (c *checkmarxOneExecuteScanHelper) GetApplication() (*checkmarxOne.Applicat
 
 		return &app, nil
 	}
-	return nil, fmt.Errorf("No application named %v found", c.config.ApplicationName)
+	return nil, fmt.Errorf("No application name specified in configuration")
+}
+
+func (c *checkmarxOneExecuteScanHelper) GetApplicationByID(applicationId string) (*checkmarxOne.Application, error) {
+	app, err := c.sys.GetApplicationByID(applicationId)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Checkmarx One application by Name %v: %s", c.config.ApplicationName, err)
+	}
+
+	return &app, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, error) {
@@ -231,7 +257,19 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 		return nil, fmt.Errorf("Preset is required to create a project")
 	}
 
-	project, err := c.sys.CreateProject(c.config.ProjectName, []string{c.Group.GroupID})
+	var project checkmarxOne.Project
+	var err error
+	var groupIDs []string = []string{}
+	if c.Group != nil {
+		groupIDs = []string{c.Group.GroupID}
+	}
+
+	if c.App != nil {
+		project, err = c.sys.CreateProjectInApplication(c.config.ProjectName, c.App.ApplicationID, groupIDs)
+	} else {
+		project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("Error when trying to create project: %s", err)
 	}
@@ -272,13 +310,17 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	}
 
 	if c.config.Preset == "" {
-		log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		if currentPreset == "" {
+			return fmt.Errorf("must specify the preset in either the pipeline yaml or in the CheckmarxOne project configuration")
+		} else {
+			log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		}
 		c.config.Preset = currentPreset
 	} else if currentPreset != c.config.Preset {
 		log.Entry().Infof("Project configured preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentPreset, c.config.Preset)
 		c.sys.SetProjectPreset(c.Project.ProjectID, c.config.Preset, true)
 	} else {
-		log.Entry().Infof("Project is configured to use preset %v", currentPreset)
+		log.Entry().Infof("Project is already configured to use pipeline preset %v", currentPreset)
 	}
 	return nil
 }
@@ -532,12 +574,17 @@ func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (m
 		return detailedResults, fmt.Errorf("Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err)
 	}
 
+	totalResultCount := uint64(0)
+
 	scansummary, err := c.sys.GetScanSummary(scan.ScanID)
 	if err != nil {
-		return detailedResults, fmt.Errorf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+		/* TODO: scansummary throws a 404 for 0-result scans, once the bug is fixed put this code back. */
+		// return detailedResults, fmt.Errorf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+	} else {
+		totalResultCount = scansummary.TotalCount()
 	}
 
-	results, err := c.sys.GetScanResults(scan.ScanID, scansummary.TotalCount())
+	results, err := c.sys.GetScanResults(scan.ScanID, totalResultCount)
 	if err != nil {
 		return detailedResults, fmt.Errorf("Unable to fetch scan results for scan %v: %s", scan.ScanID, err)
 	}
@@ -606,12 +653,15 @@ func (c *checkmarxOneExecuteScanHelper) generateAndDownloadReport(scan *checkmar
 
 		if finalStatus.Status == "completed" {
 			break
+		} else if finalStatus.Status == "failed" {
+			return []byte{}, fmt.Errorf("report generation failed")
 		}
 		time.Sleep(10 * time.Second)
 	}
 	if finalStatus.Status == "completed" {
 		return c.sys.DownloadReport(finalStatus.ReportURL)
 	}
+
 	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus.Status)
 }
 
@@ -636,8 +686,18 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	resultMap["ScanId"] = scan.ScanID
 	resultMap["ProjectId"] = c.Project.ProjectID
 	resultMap["ProjectName"] = c.Project.Name
-	resultMap["Group"] = c.Group.GroupID
-	resultMap["GroupFullPathOnReportDate"] = c.Group.Name
+
+	resultMap["Group"] = ""
+	resultMap["GroupFullPathOnReportDate"] = ""
+
+	if c.App != nil {
+		resultMap["Application"] = c.App.ApplicationID
+		resultMap["ApplicationFullPathOnReportDate"] = c.App.Name
+	} else {
+		resultMap["Application"] = ""
+		resultMap["ApplicationFullPathOnReportDate"] = ""
+	}
+
 	resultMap["ScanStart"] = scan.CreatedAt
 
 	scanCreated, err := time.Parse(time.RFC3339, scan.CreatedAt)
@@ -657,8 +717,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 
 	resultMap["LinesOfCodeScanned"] = scanmeta.LOC
 	resultMap["FilesScanned"] = scanmeta.FileCount
-
-	resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this"
+	resultMap["ToolVersion"] = "Cx1 Gap: No API for this"
 
 	if scanmeta.IsIncremental {
 		resultMap["ScanType"] = "Incremental"
@@ -954,8 +1013,9 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 		}
 		// if the flag is switched on, calculate the Low findings threshold per query
 		if cxLowThresholdPerQuery {
-			lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
-			if lowPerQueryMap != nil {
+			if (*results)["LowPerQuery"] != nil {
+				lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
+
 				for lowQuery, resultsLowQuery := range lowPerQueryMap {
 					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
 					lowOverallPerQuery := resultsLowQuery["Issues"]
@@ -1063,7 +1123,8 @@ func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]inter
 	c.influx.checkmarxOne_data.fields.scan_time = (*results)["ScanTime"].(string)
 	c.influx.checkmarxOne_data.fields.lines_of_code_scanned = (*results)["LinesOfCodeScanned"].(int)
 	c.influx.checkmarxOne_data.fields.files_scanned = (*results)["FilesScanned"].(int)
-	c.influx.checkmarxOne_data.fields.checkmarxOne_version = (*results)["CheckmarxVersion"].(string)
+	c.influx.checkmarxOne_data.fields.tool_version = (*results)["ToolVersion"].(string)
+
 	c.influx.checkmarxOne_data.fields.scan_type = (*results)["ScanType"].(string)
 	c.influx.checkmarxOne_data.fields.preset = (*results)["Preset"].(string)
 	c.influx.checkmarxOne_data.fields.deep_link = (*results)["DeepLink"].(string)

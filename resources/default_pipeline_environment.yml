@@ -394,7 +394,7 @@ steps:
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties, **/*.cds'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, **/*.d, **/*.di, **/*.ts'
       checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, **/*.d, **/*.di, **/*.ts'
     stashExcludes:
@@ -481,6 +481,7 @@ steps:
       active: false
     jmeter:
       pattern: '**/*.jtl'
+      filterRegex: ''
       errorFailedThreshold: 20
       errorUnstableThreshold: 10
       errorUnstableResponseTimeThreshold: ''

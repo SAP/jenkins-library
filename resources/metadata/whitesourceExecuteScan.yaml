@@ -38,6 +38,9 @@ spec:
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
+      - name: golangPrivateModulesGitTokenCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.
+        type: jenkins
     params:
       - name: agentDownloadUrl
         type: string
@@ -234,7 +237,7 @@ spec:
           - STEPS
       - name: installCommand
         type: string
-        description: "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios."
+        description: "Install command that can be used to populate the default docker image for some scenarios."
         scope:
           - PARAMETERS
           - STAGES
@@ -597,12 +600,40 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: privateModules
+        type: "string"
+        description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        alias:
+          - goprivate
+      - name: privateModulesGitToken
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: golangPrivateModulesGitTokenCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: golangPrivateModulesGitTokenVaultSecret
+            default: golang
     resources:
       - name: buildDescriptor
         type: stash
       - name: opensourceConfiguration
         type: stash
       - name: checkmarx
+        type: stash
+      - name: checkmarxOne
         type: stash
   outputs:
     resources:

@@ -62,10 +62,13 @@ type SentryConfiguration struct {
 
 // SplunkConfiguration defines the configuration options for the Splunk logging system
 type SplunkConfiguration struct {
-	Dsn      string `json:"dsn,omitempty"`
-	Token    string `json:"token,omitempty"`
-	Index    string `json:"index,omitempty"`
-	SendLogs bool   `json:"sendLogs"`
+	Dsn               string `json:"dsn,omitempty"`
+	Token             string `json:"token,omitempty"`
+	Index             string `json:"index,omitempty"`
+	SendLogs          bool   `json:"sendLogs"`
+	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
+	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
+	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
@@ -82,6 +85,7 @@ var GeneralConfig GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
+	log.Entry().Infof("Version %s", GitCommit)
 
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())

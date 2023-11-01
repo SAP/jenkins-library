@@ -9,7 +9,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -43,7 +42,8 @@ func runTest(t *testing.T, languageRunner string) {
 cd /test
 /piperbin/piper gaugeExecuteTests --installCommand="%v" --languageRunner=%v --runCommand="run" >test-log.txt 2>&1
 `, installCommand, languageRunner)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
 		Image: "getgauge/gocd-jdk-mvn-node",
@@ -52,6 +52,10 @@ cd /test
 			pwd:     "/piperbin",
 			tempDir: "/test",
 		},
+	}
+
+	if languageRunner == "js" {
+		reqNode.Image = "node:lts-buster"
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -72,7 +76,7 @@ cd /test
 		assert.NoError(t, nodeContainer.Terminate(ctx))
 	})
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
 		t.Fatal("Could not read test-log.txt.", err)
 	}

@@ -55,6 +55,8 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool) error {
 	execRunner := exec.Utils.GetExecRunner()
 
+	oldWorkingDirectory, err := exec.Utils.Getwd()
+
 	scope, err := exec.readPackageScope(packageJSON)
 
 	if err != nil {
@@ -77,6 +79,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	npmignore.Add("**/piper")
 	log.Entry().Debug("adding **/sap-piper")
 	npmignore.Add("**/sap-piper")
+	// temporary installation folder used to install BOM to be ignored
+	log.Entry().Debug("adding tmp to npmignore")
+	npmignore.Add("tmp/")
 
 	npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
@@ -127,42 +132,42 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	}
 
 	if packBeforePublish {
-		tmpDirectory, err := exec.Utils.TempDir(".", "temp-")
-
-		if err != nil {
-			return errors.Wrap(err, "creating temp directory failed")
+		// change directory in package json file , since npm pack will run only for that packages
+		if err := exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
+			return fmt.Errorf("failed to change into directory for executing script: %w", err)
 		}
 
-		defer exec.Utils.RemoveAll(tmpDirectory)
+		if err := execRunner.RunExecutable("npm", "pack"); err != nil {
+			return err
+		}
 
-		err = execRunner.RunExecutable("npm", "pack", "--pack-destination", tmpDirectory)
+		tarballs, err := exec.Utils.Glob(filepath.Join(".", "*.tgz"))
 		if err != nil {
 			return err
 		}
 
-		_, err = exec.Utils.Copy(npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"))
-		if err != nil {
-			return fmt.Errorf("error copying piperNpmrc file from %v to %v with error: %w",
-				npmrc.filepath, filepath.Join(tmpDirectory, ".piperNpmrc"), err)
+		// we do not maintain the tarball file name and hence expect only one tarball that comes
+		// from the npm pack command
+		if len(tarballs) < 1 {
+			return fmt.Errorf("no tarballs found")
 		}
-
-		tarballs, err := exec.Utils.Glob(filepath.Join(tmpDirectory, "*.tgz"))
-
-		if err != nil {
-			return err
-		}
-
-		if len(tarballs) != 1 {
+		if len(tarballs) > 1 {
 			return fmt.Errorf("found more tarballs than expected: %v", tarballs)
 		}
 
 		tarballFilePath, err := exec.Utils.Abs(tarballs[0])
-
 		if err != nil {
 			return err
 		}
 
-		projectNpmrc := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
+		// if a user has a .npmrc file and if it has a scope (e.g @sap to download scoped dependencies)
+		// if the package to be published also has the same scope (@sap) then npm gets confused
+		// and tries to publish to the scope that comes from the npmrc file
+		// and is not the desired publish since we want to publish to the other registry (from .piperNpmrc)
+		// file and not to the one mentioned in the users npmrc file
+		// to solve this we rename the users npmrc file before publish, the original npmrc is already
+		// packaged in the tarball and hence renaming it before publish should not have an effect
+		projectNpmrc := filepath.Join(".", ".npmrc")
 		projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
 
 		if projectNpmrcExists {
@@ -173,7 +178,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", filepath.Join(tmpDirectory, ".piperNpmrc"), "--registry", registry)
+		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
@@ -184,6 +189,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			if err != nil {
 				log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
 			}
+		}
+
+		if err := exec.Utils.Chdir(oldWorkingDirectory); err != nil {
+			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)

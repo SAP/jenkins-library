@@ -58,7 +58,9 @@ import groovy.transform.Field
       */
     'dockerRegistryUrl',
     /**
+      * Non Kubernetes only:
       * The credentials for the docker registry of type username/password as we rely on docker jenkins plugin. If left empty, images are pulled anonymously.
+      * For Kubernetes cases, pass secret name of type `kubernetes.io/dockerconfigjson` via `additionalPodProperties` parameter (The secret should already be created and present in the environment)
       */
     'dockerRegistryCredentialsId',
     /**
@@ -166,7 +168,7 @@ void call(Map parameters = [:], body) {
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
 
-        new Utils().pushToSWA([
+        utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null,
@@ -179,6 +181,8 @@ void call(Map parameters = [:], body) {
             config.dockerEnvVars?.each { key, value ->
                 dockerEnvVars << "$key=$value"
             }
+
+            def securityContext = securityContextFromOptions(config.dockerOptions)
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
                     withEnv(dockerEnvVars) {
@@ -203,6 +207,7 @@ void call(Map parameters = [:], body) {
                     dockerWorkspace: config.dockerWorkspace,
                     stashContent: config.stashContent,
                     stashNoDefaultExcludes: config.stashNoDefaultExcludes,
+                    securityContext: securityContext,
                 ]
 
                 if (config.sidecarImage) {
@@ -215,6 +220,7 @@ void call(Map parameters = [:], body) {
                         sidecarEnvVars: parameters.sidecarEnvVars,
                     ]
                 }
+
                 dockerExecuteOnKubernetes(dockerExecuteOnKubernetesParams) {
                     echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                     body()
@@ -338,20 +344,40 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
     }
 
     if (dockerOptions) {
-        if (dockerOptions instanceof CharSequence) {
-            dockerOptions = [dockerOptions]
-        }
-        if (dockerOptions instanceof List) {
-            dockerOptions.each { String option ->
-                options << escapeBlanks(option)
-            }
-        } else {
-            throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
-        }
+        options.addAll(dockerOptionsToList(dockerOptions))
     }
+
     return options.join(' ')
 }
 
+@NonCPS
+def securityContextFromOptions(dockerOptions) {
+    Map securityContext = [:]
+
+    if (!dockerOptions) {
+        return null
+    }
+
+    def userOption = dockerOptionsToList(dockerOptions).find { (it.startsWith("-u ") || it.startsWith("--user ")) }
+    if (!userOption) {
+        return null
+    }
+
+    def userOptionParts = userOption.split(" ")
+    if (userOptionParts.size() != 2) {
+        throw new IllegalArgumentException("Unexpected --user flag value in dockerOptions '${userOption}'")
+    }
+
+    def userGroupIds = userOptionParts[1].split(":")
+
+    securityContext.runAsUser = userGroupIds[0].isInteger() ? userGroupIds[0].toInteger() : userGroupIds[0]
+
+    if (userGroupIds.size() == 2) {
+        securityContext.runAsGroup = userGroupIds[1].isInteger() ? userGroupIds[1].toInteger() : userGroupIds[1]
+    }
+
+    return securityContext
+}
 
 boolean isContainerDefined(config) {
     Map containerMap = ContainerMap.instance.getMap()
@@ -379,6 +405,28 @@ def getContainerDefined(config) {
 
 boolean isKubernetes() {
     return Boolean.valueOf(env.ON_K8S)
+}
+
+@NonCPS
+def dockerOptionsToList(dockerOptions) {
+    def options = []
+    if (!dockerOptions) {
+        return options
+    }
+
+    if (dockerOptions instanceof CharSequence) {
+        dockerOptions = [dockerOptions]
+    }
+
+    if (dockerOptions instanceof List) {
+        dockerOptions.each { String option ->
+            options << escapeBlanks(option)
+        }
+    } else {
+        throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
+    }
+
+    return options
 }
 
 /*
