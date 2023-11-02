@@ -363,3 +363,6 @@ spec:
             type: sbom
   containers:
     - image: "paketobuildpacks/builder:base"
+      options:
+        - name: -u
+          value: "0"
