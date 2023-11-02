@@ -259,6 +259,12 @@ type Status struct {
 	Details ScanStatusDetails `json:"details"`
 }
 
+type VersionInfo struct {
+	CxOne string `json:"CxOne"`
+	KICS  string `json:"KICS"`
+	SAST  string `json:"SAST"`
+}
+
 type WorkflowLog struct {
 	Source    string `json:"Source"`
 	Info      string `json:"Info"`
@@ -327,6 +333,8 @@ type System interface {
 
 	GetProjectConfiguration(projectID string) ([]ProjectConfigurationSetting, error)
 	UpdateProjectConfiguration(projectID string, settings []ProjectConfigurationSetting) error
+
+	GetVersion() (VersionInfo, error)
 }
 
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
@@ -973,10 +981,6 @@ func (sys *SystemInstance) ScanProject(projectID, sourceUrl, branch, scanType st
 	return Scan{}, errors.New("Invalid scanType provided, must be 'upload' or 'git'")
 }
 
-//func (sys *SystemInstance) UpdateProjectExcludeSettings(projectID string, excludeFolders string, excludeFiles string) error {
-// replaced by SetProjectFileFilter
-
-// Updated for Cx1: GetPresets loads the preset values defined in the Checkmarx backend
 func (sys *SystemInstance) GetPresets() ([]Preset, error) {
 	sys.logger.Debug("Getting Presets...")
 	var presets []Preset
@@ -991,7 +995,6 @@ func (sys *SystemInstance) GetPresets() ([]Preset, error) {
 	return presets, err
 }
 
-// New for Cx1
 func (sys *SystemInstance) GetProjectConfiguration(projectID string) ([]ProjectConfigurationSetting, error) {
 	sys.logger.Debug("Getting project configuration")
 	var projectConfigurations []ProjectConfigurationSetting
@@ -1009,8 +1012,6 @@ func (sys *SystemInstance) GetProjectConfiguration(projectID string) ([]ProjectC
 	return projectConfigurations, err
 }
 
-// UpdateProjectConfiguration updates the configuration of the project addressed by projectID
-// Updated for Cx1
 func (sys *SystemInstance) UpdateProjectConfiguration(projectID string, settings []ProjectConfigurationSetting) error {
 	if len(settings) == 0 {
 		return errors.New("Empty list of settings provided.")
@@ -1101,7 +1102,6 @@ func (sys *SystemInstance) GetScanMetadata(scanID string) (ScanMetadata, error) 
 	return scanmeta, nil
 }
 
-// GetScans returns all scan status on the project addressed by projectID
 func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error) {
 	var workflow []WorkflowLog
 
@@ -1115,7 +1115,6 @@ func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error)
 	return workflow, nil
 }
 
-// GetScans returns all scan status on the project addressed by projectID
 func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, error) {
 	var scanResponse struct {
 		TotalCount         uint64
@@ -1378,4 +1377,18 @@ func (sys *SystemInstance) DownloadReport(reportUrl string) ([]byte, error) {
 		return []byte{}, errors.Wrapf(err, "failed to download report from url: %v", reportUrl)
 	}
 	return data, nil
+}
+
+func (sys *SystemInstance) GetVersion() (VersionInfo, error) {
+	sys.logger.Debug("Getting Version information...")
+	var version VersionInfo
+
+	data, err := sendRequest(sys, http.MethodGet, "/versions", nil, http.Header{}, []int{})
+	if err != nil {
+		sys.logger.Errorf("Fetching versions failed: %s", err)
+		return version, err
+	}
+
+	err = json.Unmarshal(data, &version)
+	return version, err
 }
