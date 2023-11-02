@@ -75,13 +75,20 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, "Incremental", reportingData.ScanType)
 
 	lowList := (*reportingData.Findings)[2].LowPerQuery
-	assert.Equal(t, 2, len(*lowList))
-	assert.Equal(t, "Low_Query_Name_1", (*lowList)[0].QueryName)
-	assert.Equal(t, 0, (*lowList)[0].Audited)
-	assert.Equal(t, 4, (*lowList)[0].Total)
-	assert.Equal(t, "Low_Query_Name_2", (*lowList)[1].QueryName)
-	assert.Equal(t, 5, (*lowList)[1].Audited)
-	assert.Equal(t, 5, (*lowList)[1].Total)
+	lowListLen := len(*lowList)
+	assert.Equal(t, 2, lowListLen)
+
+	for i := 0; i < lowListLen; i++ {
+		if (*lowList)[i].QueryName == "Low_Query_Name_1" {
+			assert.Equal(t, 0, (*lowList)[i].Audited)
+			assert.Equal(t, 4, (*lowList)[i].Total)
+		}
+
+		if (*lowList)[i].QueryName == "Low_Query_Name_2" {
+			assert.Equal(t, 5, (*lowList)[i].Audited)
+			assert.Equal(t, 5, (*lowList)[i].Total)
+		}
+	}
 
 
 	lowPerQuery = map[string]map[string]int{}

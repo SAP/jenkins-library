@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/format"
+	"github.com/SAP/jenkins-library/pkg/golang"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -139,7 +141,9 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 }
 
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) {
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", config.CustomTLSCertificateLinks)
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.GithubToken, config.GithubAPIURL).
+		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
@@ -154,6 +158,13 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 }
 
 func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+	if config != nil && config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
+		//configuring go private packages
+		if err := golang.PrepareGolangPrivatePackages("WhitesourceExecuteStep", config.PrivateModules, config.PrivateModulesGitToken); err != nil {
+			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())
+		}
+	}
+
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
 		return errors.Wrapf(err, "failed to resolve and aggregate project name")
 	}
@@ -513,13 +524,6 @@ func checkPolicyViolations(ctx context.Context, config *ScanOptions, scan *ws.Sc
 			return piperutils.Path{}, fmt.Errorf("failed to retrieve project policy alerts from WhiteSource: %w", err)
 		}
 
-		// TODO add ignored alerts to list of all alerts
-		_, err = sys.GetProjectIgnoredAlertsByType(project.Token, "REJECTED_BY_POLICY_RESOURCE")
-		if err != nil {
-			return piperutils.Path{}, fmt.Errorf("failed to retrieve project policy ignored alerts from WhiteSource: %w", err)
-		}
-		// alerts = append(alerts, ignoredAlerts...)
-
 		policyViolationCount += len(alerts)
 		allAlerts = append(allAlerts, alerts...)
 	}
@@ -755,7 +759,11 @@ func reportGitHubIssuesAndCreateReports(
 
 	reportPaths = append(reportPaths, paths...)
 
-	sarif := ws.CreateSarifResultFile(scan, &allAlerts)
+	combinedAlerts := make([]ws.Alert, 0, len(allAlerts)+len(allAssessedAlerts))
+	combinedAlerts = append(combinedAlerts, allAlerts...)
+	combinedAlerts = append(combinedAlerts, allAssessedAlerts...)
+
+	sarif := ws.CreateSarifResultFile(scan, &combinedAlerts)
 	paths, err = ws.WriteSarifFile(sarif, utils)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))
@@ -805,18 +813,15 @@ func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed. Besides the potential error the list of unassessed and assessed alerts are being returned to allow generating reports and issues from the data.
 func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, assessments *[]format.Assessment, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
-	assessedAlerts := []ws.Alert{}
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
-		return 0, alerts, assessedAlerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
+		return 0, alerts, []ws.Alert{}, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
 	}
 
-	// TODO add ignored alerts to list of all alerts
-	_, err = sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
+	assessedAlerts, err := sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
-		return 0, alerts, assessedAlerts, fmt.Errorf("failed to retrieve project ignored alerts from WhiteSource: %w", err)
+		return 0, alerts, []ws.Alert{}, fmt.Errorf("failed to retrieve project ignored alerts from WhiteSource: %w", err)
 	}
-	// alerts = append(alerts, ignoredAlerts...)
 
 	// filter alerts related to existing assessments
 	filteredAlerts := []ws.Alert{}
@@ -903,13 +908,6 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 			if err != nil {
 				return errors.Wrapf(err, "failed to get project alerts by type")
 			}
-
-			// TODO add ignored alerts to list of all alerts
-			_, err = sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
-			if err != nil {
-				return errors.Wrapf(err, "failed to get project ignored alerts by type")
-			}
-			// alerts = append(alerts, ignoredAlerts...)
 
 			log.Entry().Infof("Found project: %s with %v vulnerabilities.", project.Name, len(alerts))
 			versionWideAlerts = append(versionWideAlerts, alerts...)
@@ -1041,9 +1039,14 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 // create toolrecord file for whitesource
 func createToolRecordWhitesource(utils whitesourceUtils, workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(utils, workspace, "whitesource", config.ServiceURL)
-	wsUiRoot := "https://saas.whitesourcesoftware.com"
+	// rest api url https://.../api/v1.x
+	apiUrl, err := url.Parse(config.ServiceURL)
+	if err != nil {
+		return "", err
+	}
+	wsUiRoot := "https://" + apiUrl.Hostname()
 	productURL := wsUiRoot + "/Wss/WSS.html#!product;token=" + config.ProductToken
-	err := record.AddKeyData("product",
+	err = record.AddKeyData("product",
 		config.ProductToken,
 		config.ProductName,
 		productURL)
@@ -1054,11 +1057,13 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 	for idx, project := range scan.ScannedProjects() {
 		max_idx = idx
 		name := project.Name
+		projectId := strconv.FormatInt(project.ID, 10)
 		token := project.Token
 		projectURL := ""
-		if token != "" {
-			projectURL = wsUiRoot + "/Wss/WSS.html#!project;token=" + token
-		} else {
+		if projectId != "" {
+			projectURL = wsUiRoot + "/Wss/WSS.html#!project;id=" + projectId
+		}
+		if token == "" {
 			// token is empty, provide a dummy to have an indication
 			token = "unknown"
 		}

@@ -240,6 +240,10 @@ func (sys *checkmarxOneSystemMock) UpdateProjectConfiguration(projectID string, 
 	return nil
 }
 
+func (sys *checkmarxOneSystemMock) GetVersion() (checkmarxOne.VersionInfo, error) {
+	return checkmarxOne.VersionInfo{}, nil
+}
+
 type checkmarxOneExecuteScanHelperMock struct {
 	ctx     context.Context
 	config  checkmarxOneExecuteScanOptions
@@ -293,7 +297,7 @@ func TestGetGroup(t *testing.T) {
 
 		cx1sh := checkmarxOneExecuteScanHelper{nil, options, sys, nil, nil, nil, nil, nil, nil}
 		_, err := cx1sh.GetGroup()
-		assert.Contains(t, fmt.Sprint(err), "No group ID or group name provided")
+		assert.Contains(t, fmt.Sprint(err), "No group name specified in configuration")
 	})
 
 	t.Run("group name not found", func(t *testing.T) {

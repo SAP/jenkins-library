@@ -11,8 +11,7 @@ import (
 	"testing"
 	"time"
 
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-
+	"github.com/google/go-github/v45/github"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -163,12 +162,18 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 		StartedAt: startedAt,
 	}
 
+	// setup env vars
+	defer resetEnv(os.Environ())
+	os.Clearenv()
+	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
+	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
+	_ = os.Setenv("GITHUB_RUN_ID", "11111")
+
 	// setup provider
 	g := &GitHubActionsConfigProvider{}
-	g.client.SetOptions(piperHttp.ClientOptions{
-		UseDefaultTransport: true, // need to use default transport for http mock
-		MaxRetries:          -1,
-	})
+	g.InitOrchestratorProvider(&OrchestratorSettings{})
+	g.client = github.NewClient(http.DefaultClient)
+
 	// setup http mock
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -177,12 +182,6 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 			return httpmock.NewJsonResponse(200, respJson)
 		},
 	)
-	// setup env vars
-	defer resetEnv(os.Environ())
-	os.Clearenv()
-	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
-	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
-	_ = os.Setenv("GITHUB_RUN_ID", "11111")
 
 	// run
 	g.fetchRunData()
@@ -219,12 +218,18 @@ func TestGitHubActionsConfigProvider_fetchJobs(t *testing.T) {
 		HtmlURL: "https://github.com/SAP/jenkins-library/actions/runs/11111/jobs/333",
 	}}
 
+	// setup env vars
+	defer resetEnv(os.Environ())
+	os.Clearenv()
+	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
+	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
+	_ = os.Setenv("GITHUB_RUN_ID", "11111")
+
 	// setup provider
 	g := &GitHubActionsConfigProvider{}
-	g.client.SetOptions(piperHttp.ClientOptions{
-		UseDefaultTransport: true, // need to use default transport for http mock
-		MaxRetries:          -1,
-	})
+	g.InitOrchestratorProvider(&OrchestratorSettings{})
+	g.client = github.NewClient(http.DefaultClient)
+
 	// setup http mock
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -235,12 +240,6 @@ func TestGitHubActionsConfigProvider_fetchJobs(t *testing.T) {
 			return httpmock.NewJsonResponse(200, respJson)
 		},
 	)
-	// setup env vars
-	defer resetEnv(os.Environ())
-	os.Clearenv()
-	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
-	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
-	_ = os.Setenv("GITHUB_RUN_ID", "11111")
 
 	// run
 	err := g.fetchJobs()
@@ -262,16 +261,20 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 		{ID: 111}, {ID: 222}, {ID: 333}, {ID: 444}, {ID: 555},
 	}
 
+	// setup env vars
+	defer resetEnv(os.Environ())
+	os.Clearenv()
+	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
+	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
+
 	// setup provider
 	g := &GitHubActionsConfigProvider{
-		client:      piperHttp.Client{},
 		jobs:        jobs,
 		jobsFetched: true,
 	}
-	g.client.SetOptions(piperHttp.ClientOptions{
-		UseDefaultTransport: true, // need to use default transport for http mock
-		MaxRetries:          -1,
-	})
+	g.InitOrchestratorProvider(&OrchestratorSettings{})
+	g.client = github.NewClient(http.DefaultClient)
+
 	// setup http mock
 	rand.Seed(time.Now().UnixNano())
 	latencyMin, latencyMax := 15, 500 // milliseconds
@@ -282,6 +285,18 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 		httpmock.RegisterResponder(
 			http.MethodGet,
 			fmt.Sprintf("https://api.github.com/repos/SAP/jenkins-library/actions/jobs/%d/logs", j.ID),
+			func(jobId int64) func(req *http.Request) (*http.Response, error) {
+				return func(req *http.Request) (*http.Response, error) {
+					resp := httpmock.NewStringResponse(http.StatusFound, respLogs[idx])
+					logsDownloadUrl := fmt.Sprintf("https://api.github.com/repos/SAP/jenkins-library/actions/jobs/%d/logs/download", jobId)
+					resp.Header.Set("Location", logsDownloadUrl)
+					return resp, nil
+				}
+			}(j.ID),
+		)
+		httpmock.RegisterResponder(
+			http.MethodGet,
+			fmt.Sprintf("https://api.github.com/repos/SAP/jenkins-library/actions/jobs/%d/logs/download", j.ID),
 			func(req *http.Request) (*http.Response, error) {
 				// simulate response delay
 				latency := rand.Intn(latencyMax-latencyMin) + latencyMin
@@ -290,12 +305,6 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 			},
 		)
 	}
-	// setup env vars
-	defer resetEnv(os.Environ())
-	os.Clearenv()
-	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
-	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
-
 	// run
 	logs, err := g.GetLog()
 	assert.NoError(t, err)

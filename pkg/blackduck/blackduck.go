@@ -143,6 +143,7 @@ type VulnerabilityWithRemediation struct {
 	ExploitabilitySubscore float32 `json:"exploitabilitySubscore,omitempty"`
 	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
 	RelatedVulnerability   string  `json:"relatedVulnerability,omitempty"`
+	RemidiatedBy           string  `json:"remediationCreatedBy,omitempty"`
 }
 
 // Title returns the issue title representation of the contents

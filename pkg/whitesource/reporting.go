@@ -40,7 +40,7 @@ func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts *[]A
 			{Description: "Filtered project names", Details: strings.Join(projectNames, ", ")},
 		},
 		Overview: []reporting.OverviewRow{
-			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len((*alerts)))},
+			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len(*alerts))},
 			{Description: "Total number of high/critical vulnerabilities with CVSS score >= 7.0", Details: fmt.Sprint(severe)},
 		},
 		SuccessfulScan: severe == 0,
@@ -295,9 +295,13 @@ func getAuditInformation(alert Alert) *format.SarifProperties {
 	}
 
 	return &format.SarifProperties{
-		Audited:           isAudited,
-		ToolAuditMessage:  auditMessage,
-		UnifiedAuditState: unifiedAuditState,
+		Audited:               isAudited,
+		ToolAuditMessage:      auditMessage,
+		UnifiedAuditState:     unifiedAuditState,
+		AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+		AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
+		UnifiedSeverity:       alert.Vulnerability.CVSS3Severity,
+		UnifiedCriticality:    float32(alert.Vulnerability.CVSS3Score),
 	}
 }
 

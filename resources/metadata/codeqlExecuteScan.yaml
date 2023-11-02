@@ -120,6 +120,20 @@ spec:
           - STAGES
           - STEPS
         default: 30
+      - name: targetGithubRepoURL
+        type: string
+        descriptoin: "Target github repo url. Only relevant, if project uses a combination of Piper and non-GitHub SCM."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: targetGithubBranchName
+        type: string
+        descriptoin: "Target github branch name. Only relevant, if project uses a combination of Piper and non-GitHub SCM."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: threads
         type: string
         description: "Use this many threads for the codeql operations."
