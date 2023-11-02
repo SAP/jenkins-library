@@ -323,7 +323,7 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 
 			if c.config.Incremental {
 				log.Entry().Warn("Pipeline yaml requests incremental scan, but switching from 'primary' to 'multi' language mode requires a full scan - switching from incremental to full")
-				c.config.Incremental = true
+				c.config.Incremental = false
 			}
 		}
 	} else { // primary language mode
