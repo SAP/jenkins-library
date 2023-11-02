@@ -345,6 +345,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        conditions:
+          - conditionRef: strings-equal
+            params:
+              - name: buildTool
+                value: maven
+              - name: buildTool
+                value: gradle
   outputs:
     resources:
       - name: commonPipelineEnvironment
