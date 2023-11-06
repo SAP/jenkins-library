@@ -207,7 +207,6 @@ func runMtaBuild(config mtaBuildOptions,
 	call = append(call, "--target", getAbsPath(getMtarFileRoot(config)))
 
 	if config.CreateBOM {
-		log.Entry().Debugf("This feature is not included in the current version of the mta builder")
 		call = append(call, "--sbom-file-path", filepath.FromSlash("sbom-gen/bom-mta.xml"))
 	}
 
