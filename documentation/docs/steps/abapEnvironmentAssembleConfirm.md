@@ -10,7 +10,7 @@
 * Communication Scenario [“SAP BTP, ABAP Environment - Software Assembly Integration (SAP_COM_0582)“](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html) is setup for this system.
   * E.g. a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) are configured.
   * This can be done manually through the respective applications on the SAP BTP, ABAP environment system,
-  * or through creating a service key for the system on Cloud Foundry with the parameters {“scenario_id”: “SAP_COM_0582", “type”: “basic”}.
+  * or through creating a service key for the system on Cloud Foundry with the parameters {"scenario_id": "SAP_COM_0582", "type": "basic"}.
   * In a pipeline, you can do this, for example, with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
 * You have following options to provide the ABAP endpoint configuration:
   * The host and credentials the SAP BTP, ABAP environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0582.
