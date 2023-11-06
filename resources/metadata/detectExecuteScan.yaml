@@ -313,7 +313,7 @@ spec:
         default: false
       - name: useDetect8
         description:
-          "This flag allows to use the currently supported version 8 of Detect Script"
+          "This flag allows to use version 8 of Detect Script"
         aliases:
           - name: detect/useDetect8
             deprecated: true
