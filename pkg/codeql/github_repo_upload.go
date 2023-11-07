@@ -118,7 +118,7 @@ func (uploader *GitUploaderInstance) UploadProjectToGithub() (string, error) {
 	}
 
 	zipPath := path.Join(uploader.dbDir, SrcZip)
-	err = unzip(zipPath, tmpDir, strings.Trim(srcLocationPrefix, fmt.Sprintf("%c", os.PathSeparator)))
+	err = unzip(zipPath, tmpDir, strings.Trim(srcLocationPrefix, fmt.Sprintf("%c", os.PathSeparator)), strings.Trim(uploader.dbDir, fmt.Sprintf("%c", os.PathSeparator)))
 	if err != nil {
 		return "", err
 	}
@@ -259,7 +259,7 @@ func push(r repository, token string) error {
 	})
 }
 
-func unzip(zipPath, targetDir, srcDir string) error {
+func unzip(zipPath, targetDir, srcDir, dbDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return err
@@ -277,7 +277,7 @@ func unzip(zipPath, targetDir, srcDir string) error {
 			fNameSplit[0] = strings.Replace(fNameSplit[0], "_", ":", 1)
 			fName = strings.Join(fNameSplit, fmt.Sprintf("%c", os.PathSeparator))
 		}
-		if !strings.Contains(fName, srcDir) {
+		if !strings.Contains(fName, srcDir) || strings.Contains(fName, dbDir) {
 			continue
 		}
 
