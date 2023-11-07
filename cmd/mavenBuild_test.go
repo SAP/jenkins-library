@@ -101,7 +101,7 @@ func TestMavenBuild(t *testing.T) {
 	t.Run("mavenBuild with deploy must skip build, install and test", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
-		config := mavenBuildOptions{Publish: true, Verify: false}
+		config := mavenBuildOptions{Publish: true, Verify: false, DeployFlags: ["-Dmaven.main.skip=true","-Dmaven.test.skip=true","-Dmaven.install.skip=true"] }
 
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
