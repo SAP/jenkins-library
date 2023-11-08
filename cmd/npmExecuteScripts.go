@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
@@ -19,6 +21,11 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 }
 
 func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) error {
+	// setting env. variable to omit installation of dev. dependencies
+	if config.Production {
+		os.Setenv("NODE_ENV", "production")
+	}
+
 	if config.Install {
 		if len(config.BuildDescriptorList) > 0 {
 			if err := npmExecutor.InstallAllDependencies(config.BuildDescriptorList); err != nil {
