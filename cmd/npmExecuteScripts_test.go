@@ -34,73 +34,97 @@ func TestNpmExecuteScripts(t *testing.T) {
 	cpe := npmExecuteScriptsCommonPipelineEnvironment{}
 
 	t.Run("Call with packagesList", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorList: []string{"package.json", "src/package.json"}}
+		cfg := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorList: []string{"package.json", "src/package.json"}}
 		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, PackagesList: config.BuildDescriptorList}}
-		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: cfg.Install, RunScripts: cfg.RunScripts, PackagesList: cfg.BuildDescriptorList}}
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("Call with excludeList", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorExcludeList: []string{"**/path/**"}}
+		cfg := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorExcludeList: []string{"**/path/**"}}
 		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, ExcludeList: config.BuildDescriptorExcludeList}}
-		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: cfg.Install, RunScripts: cfg.RunScripts, ExcludeList: cfg.BuildDescriptorExcludeList}}
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("Call with scriptOptions", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, ScriptOptions: []string{"--run"}}
+		cfg := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, ScriptOptions: []string{"--run"}}
 		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, ScriptOptions: config.ScriptOptions}}
-		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: cfg.Install, RunScripts: cfg.RunScripts, ScriptOptions: cfg.ScriptOptions}}
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("Call with install", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
+		cfg := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
 		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts}}
-		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: cfg.Install, RunScripts: cfg.RunScripts}}
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("Call without install", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
+		cfg := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
 		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts}}
-		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: cfg.Install, RunScripts: cfg.RunScripts}}
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("Call with virtualFrameBuffer", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, VirtualFrameBuffer: true}
+		cfg := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, VirtualFrameBuffer: true}
 		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, VirtualFrameBuffer: config.VirtualFrameBuffer}}
-		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: cfg.Install, RunScripts: cfg.RunScripts, VirtualFrameBuffer: cfg.VirtualFrameBuffer}}
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		assert.NoError(t, err)
 	})
