@@ -277,7 +277,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			}
 			p := map[string]interface{}{}
 			if key != "" {
-				root[key] = p
+				root[fmt.Sprintf("container[%s==%q]", conditionParam, key)] = p
 				//add default for condition parameter if available
 				for _, inputParam := range m.Spec.Inputs.Parameters {
 					if inputParam.Name == conditionParam {
@@ -302,14 +302,35 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
-		if len(m.Spec.Sidecars[0].Command) > 0 {
-			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
-		}
-		m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
-		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
+		for _, sidecar := range m.Spec.Sidecars {
+			key := ""
+			conditionParam := ""
+			if len(sidecar.Conditions) > 0 {
+				key = sidecar.Conditions[0].Params[0].Value
+				conditionParam = sidecar.Conditions[0].Params[0].Name
+			}
+			p := map[string]interface{}{}
+			if key != "" {
+				root[fmt.Sprintf("sidecar[%s==%q]", conditionParam, key)] = p
+				//add default for condition parameter if available
+				for _, inputParam := range m.Spec.Inputs.Parameters {
+					if inputParam.Name == conditionParam {
+						root[conditionParam] = inputParam.Default
+					}
+				}
+			} else {
+				p = root
+			}
 
-		// not filled for now since this is not relevant in Kubernetes case
-		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
+			if len(sidecar.Command) > 0 {
+				p["sidecarCommand"] = sidecar.Command[0]
+			}
+			sidecar.commonConfiguration("sidecar", &p)
+			putStringIfNotEmpty(p, "sidecarReadyCommand", sidecar.ReadyCommand)
+
+			// not filled for now since this is not relevant in Kubernetes case
+			//putStringIfNotEmpty(root, "containerPortMappings", sidecar.)
+		}
 	}
 
 	if len(m.Spec.Inputs.Resources) > 0 {

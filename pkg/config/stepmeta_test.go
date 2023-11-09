@@ -506,10 +506,10 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "testConditionMet", d.Defaults[0].Steps["testStep"]["testConditionParameter"])
 		assert.Nil(t, d.Defaults[0].Steps["testStep"]["dockerImage"])
 
-		metParameter := d.Defaults[0].Steps["testStep"]["testConditionMet"].(map[string]interface{})
+		metParameter := d.Defaults[0].Steps["testStep"][`container[testConditionParameter=="testConditionMet"]`].(map[string]interface{})
 		assert.Equal(t, "testImage2:tag", metParameter["dockerImage"])
 
-		notMetParameter := d.Defaults[0].Steps["testStep"]["testConditionNotMet"].(map[string]interface{})
+		notMetParameter := d.Defaults[0].Steps["testStep"][`container[testConditionParameter=="testConditionNotMet"]`].(map[string]interface{})
 		assert.Equal(t, "testImage1:tag", notMetParameter["dockerImage"])
 	})
 
