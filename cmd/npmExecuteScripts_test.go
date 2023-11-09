@@ -4,8 +4,10 @@
 package cmd
 
 import (
+	"os"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/stretchr/testify/assert"
@@ -104,9 +106,9 @@ func TestNpmExecuteScripts(t *testing.T) {
 	})
 
 	t.Run("Test integration with npm pkg", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build"}}
+		cfg := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build"}}
 
-		options := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
+		options := npm.ExecutorOptions{DefaultNpmRegistry: cfg.DefaultNpmRegistry}
 
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"\" } }"))
@@ -114,7 +116,11 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		npmExecutor := npm.Execute{Utils: &utils, Options: options}
 
-		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
@@ -126,17 +132,42 @@ func TestNpmExecuteScripts(t *testing.T) {
 	})
 
 	t.Run("Call with createBOM", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{CreateBOM: true, RunScripts: []string{"ci-build", "ci-test"}}
+		cfg := npmExecuteScriptsOptions{CreateBOM: true, RunScripts: []string{"ci-build", "ci-test"}}
 
-		options := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
+		options := npm.ExecutorOptions{DefaultNpmRegistry: cfg.DefaultNpmRegistry}
 
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
 		npmExecutor := npm.Execute{Utils: &utils, Options: options}
-		err := runNpmExecuteScripts(&npmExecutor, &config, &cpe)
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		assert.NoError(t, err)
+	})
+
+	t.Run("Call with production", func(t *testing.T) {
+		cfg := npmExecuteScriptsOptions{Production: true, RunScripts: []string{"ci-build", "ci-test"}}
+
+		options := npm.ExecutorOptions{DefaultNpmRegistry: cfg.DefaultNpmRegistry}
+
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		npmExecutor := npm.Execute{Utils: &utils, Options: options}
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
+		assert.NoError(t, err)
+
+		v := os.Getenv("NODE_ENV")
+		assert.Equal(t, "production", v)
 	})
 }
