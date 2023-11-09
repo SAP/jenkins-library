@@ -28,8 +28,13 @@ type uaa struct {
 }
 
 type serviceKey struct {
-	Uaa uaa    `json:"uaa"`
-	Uri string `json:"uri"`
+	Uaa           uaa           `json:"uaa"`
+	Uri           string        `json:"uri"`
+	CALMEndpoints cALMEndpoints `json:"endpoints"`
+}
+
+type cALMEndpoints *struct {
+	API string `json:"Api"`
 }
 
 type CommunicationInstance struct {
@@ -123,6 +128,7 @@ type tmsUtilsBundle struct {
 }
 
 const DEFAULT_TR_DESCRIPTION = "Created by Piper"
+const CALM_REROUTING_ENDPOINT_TO_CTMS = "/imp-cdm-transport-management-api/v1"
 
 func NewTmsUtils() TmsUtils {
 	utils := tmsUtilsBundle{
@@ -139,6 +145,14 @@ func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err erro
 	err = json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
 	if err != nil {
 		return
+	}
+	if len(serviceKey.Uri) == 0 {
+		if serviceKey.CALMEndpoints != nil && len(serviceKey.CALMEndpoints.API) > 0 {
+			serviceKey.Uri = serviceKey.CALMEndpoints.API + CALM_REROUTING_ENDPOINT_TO_CTMS
+		} else {
+			err = fmt.Errorf("neither uri nor enpoints.Api is set in service key json string")
+			return
+		}
 	}
 	return
 }
