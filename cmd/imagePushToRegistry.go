@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -77,13 +78,18 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 		return fmt.Errorf("failed to handle registry credentials for target registry: %w", err)
 	}
 
+	targetImage := config.TargetImage
+	if targetImage == "" {
+		targetImage = config.SourceImage
+	}
+
 	if len(config.LocalDockerImagePath) > 0 {
-		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, config.TargetRegistryURL)
+		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, config.TargetRegistryURL, targetImage)
 		if err != nil {
 			return fmt.Errorf("failed to push to local image to registry: %w", err)
 		}
 	} else {
-		err = copyImage(config.SourceRegistryURL, config.TargetRegistryURL)
+		err = copyImage(config.SourceRegistryURL, config.SourceImage, config.TargetRegistryURL, targetImage)
 		if err != nil {
 			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
 		}
@@ -149,7 +155,7 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 	return nil
 }
 
-func pushLocalImageToTargetRegistry(localDockerImagePath string, targetRegistryURL string) error {
+func pushLocalImageToTargetRegistry(localDockerImagePath string, targetRegistryURL string, targetImage string) error {
 	img, err := docker.LoadImage(localDockerImagePath)
 	if err != nil {
 		return err
@@ -157,8 +163,21 @@ func pushLocalImageToTargetRegistry(localDockerImagePath string, targetRegistryU
 	return docker.PushImage(img, targetRegistryURL)
 }
 
-func copyImage(sourceRegistry string, targetRegistry string) error {
-	return docker.CopyImage(sourceRegistry, targetRegistry)
+func copyImage(sourceRegistry string, sourceImage string, targetRegistry string, targetImage string) error {
+	// needed without URL scheme
+	if sourceRegistryURL, err := url.Parse(sourceRegistry); err == nil {
+		sourceRegistry = sourceRegistry[len(sourceRegistryURL.Scheme+"://"):]
+	}
+	srcRef := fmt.Sprintf("%s/%s", sourceRegistry, sourceImage)
+
+	// needed without URL scheme
+	if targetRegistryURL, err := url.Parse(targetRegistry); err == nil {
+		targetRegistry = targetRegistry[len(targetRegistryURL.Scheme+"://"):]
+
+	}
+	dstRef := fmt.Sprintf("%s/%s", targetRegistry, targetImage)
+
+	return docker.CopyImage(srcRef, dstRef)
 }
 
 func skopeoMoveImage(sourceImageFullName string, sourceRegistryUser string, sourceRegistryPassword string, targetImageFullName string, targetRegistryUser string, targetRegistryPassword string, utils imagePushToRegistryUtils) error {

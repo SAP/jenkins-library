@@ -28,7 +28,7 @@ spec:
     params:
       - name: targetImage
         type: string
-        description: Defines the name (incl. tag) of the target image
+        description: Defines the name (incl. tag) of the target image. If empty, sourceImage will be used.
         scope:
           - PARAMETERS
           - STAGES
@@ -41,6 +41,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
       - name: sourceRegistryUrl
         description: Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*"
         type: string

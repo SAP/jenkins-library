@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/logs"
 	"os"
 	"path"
 	"path/filepath"
@@ -29,6 +30,11 @@ import (
 // AuthEntry defines base64 encoded username:password required inside a Docker config.json
 type AuthEntry struct {
 	Auth string `json:"auth,omitempty"`
+}
+
+func init() {
+	logs.Warn.SetOutput(os.Stderr)
+	logs.Progress.SetOutput(os.Stderr)
 }
 
 // MergeDockerConfigJSON merges two docker config.json files.
@@ -125,7 +131,7 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
-	//always create the target path directories if any before writing
+	// always create the target path directories if any before writing
 	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
 	if err != nil {
 		return "", fmt.Errorf("failed to create directory path for the Docker config.json file %v:%w", targetPath, err)
@@ -289,7 +295,7 @@ func ImageListWithFilePath(imageName string, excludes []string, trimDir string, 
 	for _, dockerfilePath := range matches {
 		// make sure that the path we have is relative
 		// ToDo: needs rework
-		//dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
+		// dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
 
 		if piperutils.ContainsString(excludes, dockerfilePath) {
 			log.Entry().Infof("Discard %v since it is in the exclude list %v", dockerfilePath, excludes)
