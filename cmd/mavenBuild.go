@@ -134,7 +134,10 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
 			}
 
-			deployFlags := []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}
+			deployFlags := []string{}
+			if len(config.DeployFlags) > 0 {
+				deployFlags = append(deployFlags, config.DeployFlags...)
+			}
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryURL) > 0) {
 				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
 			}

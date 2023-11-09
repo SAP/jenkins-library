@@ -231,6 +231,17 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: deployFlags
+        type: "[]string"
+        description: maven deploy flags that will be used when publish is detected.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default:
+          - -Dmaven.main.skip=true
+          - -Dmaven.test.skip=true
+          - -Dmaven.install.skip=true
     resources:
       - type: stash
   outputs:
