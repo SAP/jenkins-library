@@ -36,6 +36,7 @@ type npmExecuteScriptsOptions struct {
 	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
 	BuildSettingsInfo          string   `json:"buildSettingsInfo,omitempty"`
 	PackBeforePublish          bool     `json:"packBeforePublish,omitempty"`
+	Production                 bool     `json:"production,omitempty"`
 }
 
 type npmExecuteScriptsCommonPipelineEnvironment struct {
@@ -161,7 +162,7 @@ and are exposed are environment variables that must be present in the environmen
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -239,6 +240,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the npm build . This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.PackBeforePublish, "packBeforePublish", false, "used for executing npm pack first, followed by npm publish. This two step maybe required in two cases. case 1) When building multiple npm packages (multiple package.json) please keep this parameter true and also see `buildDescriptorList` or  `buildDescriptorExcludeList` to choose which package(s) to publish. case 2)when you are building a single npm (single `package.json` in your repo) / multiple npm (multiple package.json) scoped package(s) and have npm dependencies from the same scope.")
+	cmd.Flags().BoolVar(&stepConfig.Production, "production", false, "used for omitting installation of dev. dependencies if true")
 
 }
 
@@ -410,6 +412,15 @@ func npmExecuteScriptsMetadata() config.StepData {
 					},
 					{
 						Name:        "packBeforePublish",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "production",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
