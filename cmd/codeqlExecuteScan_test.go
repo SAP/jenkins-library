@@ -180,7 +180,8 @@ func TestGetGitRepoInfo(t *testing.T) {
 func TestInitGitInfo(t *testing.T) {
 	t.Run("Valid URL1", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test/Testing/codeql.git", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
-		repoInfo := initGitInfo(&config)
+		repoInfo, err := initGitInfo(&config)
+		assert.NoError(t, err)
 		assert.Equal(t, "abcd1234", repoInfo.commitId)
 		assert.Equal(t, "Testing", repoInfo.owner)
 		assert.Equal(t, "codeql", repoInfo.repo)
@@ -190,7 +191,8 @@ func TestInitGitInfo(t *testing.T) {
 
 	t.Run("Valid URL2", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test/Testing/codeql", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
-		repoInfo := initGitInfo(&config)
+		repoInfo, err := initGitInfo(&config)
+		assert.NoError(t, err)
 		assert.Equal(t, "abcd1234", repoInfo.commitId)
 		assert.Equal(t, "Testing", repoInfo.owner)
 		assert.Equal(t, "codeql", repoInfo.repo)
@@ -200,7 +202,8 @@ func TestInitGitInfo(t *testing.T) {
 
 	t.Run("Valid url with dots URL1", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test/Testing/com.sap.codeql.git", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
-		repoInfo := initGitInfo(&config)
+		repoInfo, err := initGitInfo(&config)
+		assert.NoError(t, err)
 		assert.Equal(t, "abcd1234", repoInfo.commitId)
 		assert.Equal(t, "Testing", repoInfo.owner)
 		assert.Equal(t, "com.sap.codeql", repoInfo.repo)
@@ -210,7 +213,8 @@ func TestInitGitInfo(t *testing.T) {
 
 	t.Run("Valid url with dots URL2", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test/Testing/com.sap.codeql", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
-		repoInfo := initGitInfo(&config)
+		repoInfo, err := initGitInfo(&config)
+		assert.NoError(t, err)
 		assert.Equal(t, "abcd1234", repoInfo.commitId)
 		assert.Equal(t, "Testing", repoInfo.owner)
 		assert.Equal(t, "com.sap.codeql", repoInfo.repo)
@@ -220,7 +224,8 @@ func TestInitGitInfo(t *testing.T) {
 
 	t.Run("Valid url with username and token URL1", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://username:token@github.hello.test/Testing/codeql.git", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
-		repoInfo := initGitInfo(&config)
+		repoInfo, err := initGitInfo(&config)
+		assert.NoError(t, err)
 		assert.Equal(t, "abcd1234", repoInfo.commitId)
 		assert.Equal(t, "Testing", repoInfo.owner)
 		assert.Equal(t, "codeql", repoInfo.repo)
@@ -230,7 +235,8 @@ func TestInitGitInfo(t *testing.T) {
 
 	t.Run("Valid url with username and token URL2", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://username:token@github.hello.test/Testing/codeql", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
-		repoInfo := initGitInfo(&config)
+		repoInfo, err := initGitInfo(&config)
+		assert.NoError(t, err)
 		assert.Equal(t, "abcd1234", repoInfo.commitId)
 		assert.Equal(t, "Testing", repoInfo.owner)
 		assert.Equal(t, "codeql", repoInfo.repo)
@@ -240,8 +246,9 @@ func TestInitGitInfo(t *testing.T) {
 
 	t.Run("Invalid URL with no org/reponame", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
-		repoInfo := initGitInfo(&config)
-		_, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+		repoInfo, err := initGitInfo(&config)
+		assert.NoError(t, err)
+		_, err = orchestrator.NewOrchestratorSpecificConfigProvider()
 		assert.Equal(t, "abcd1234", repoInfo.commitId)
 		assert.Equal(t, "refs/head/branch", repoInfo.ref)
 		if err != nil {
