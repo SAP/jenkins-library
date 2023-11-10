@@ -274,8 +274,11 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			}
 		}
 
+		// Docker image tags don't allow plus signs in tags, thus replacing with dash
+		containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+
 		// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
-		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, config.ContainerImageTag)
+		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 		commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 

@@ -210,6 +210,7 @@ func TestUnzip(t *testing.T) {
 		srcFilenames := []string{
 			filepath.Join(sourceDir, "file1"),
 			filepath.Join(sourceDir, "file2"),
+			filepath.Join(sourceDir, "codeqlDB"),
 			filepath.Join(sourceDir, "subfolder1", "file1"),
 			filepath.Join(sourceDir, "subfolder1", "file2"),
 			filepath.Join(sourceDir, "subfolder2", "file1"),
@@ -218,7 +219,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, "codeqlDB"))
 		targetFilenames := []string{
 			filepath.Join(targetDir, "file1"),
 			filepath.Join(targetDir, "file2"),
@@ -247,7 +248,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, "codeqlDB"))
 		checkExistedFiles(t, targetDir, filenames)
 	})
 
@@ -264,7 +265,7 @@ func TestUnzip(t *testing.T) {
 		defer os.RemoveAll(sourceDir)
 		zipPath := filepath.Join(sourceDir, "src.zip")
 
-		assert.Error(t, unzip(zipPath, targetDir, sourceDir))
+		assert.Error(t, unzip(zipPath, targetDir, sourceDir, "codeqlDB"))
 	})
 
 	t.Run("extra files in zip", func(t *testing.T) {
@@ -294,7 +295,7 @@ func TestUnzip(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		assert.NoError(t, unzip(zipPath, targetDir, sourceDir))
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, "codeqlDB"))
 		targetFilenames := []string{
 			filepath.Join(targetDir, "file1"),
 			filepath.Join(targetDir, "file2"),

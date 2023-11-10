@@ -43,7 +43,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
@@ -53,7 +53,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 
 	container2 := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
@@ -93,7 +93,7 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -123,7 +123,7 @@ func TestCNBIntegrationBuildSummary(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -148,7 +148,7 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -177,7 +177,7 @@ func TestCNBIntegrationNonZipPath(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -197,7 +197,7 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -225,7 +225,7 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "paketobuildpacks/builder:buildpackless-full",
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -266,7 +266,7 @@ func TestCNBIntegrationBindings(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
@@ -294,7 +294,7 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -328,7 +328,7 @@ func TestCNBIntegrationPreserveFiles(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -348,7 +348,7 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -367,7 +367,7 @@ func TestCNBIntegrationPrePostBuildpacks(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
