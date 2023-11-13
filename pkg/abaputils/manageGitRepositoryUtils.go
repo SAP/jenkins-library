@@ -33,7 +33,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		}
 		status = pullEntity.Status
 		log.Entry().WithField("StatusCode", responseStatus).Info("Status: " + pullEntity.StatusDescription)
-		if pullEntity.Status != "R" {
+		if pullEntity.Status != "R" && pullEntity.Status != "Q" {
 
 			PrintLogs(repositoryName, connectionDetails, client)
 			break
