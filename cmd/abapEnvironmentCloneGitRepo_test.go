@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -17,6 +14,7 @@ import (
 )
 
 var executionLogStringClone string
+var apiManager abaputils.SoftwareComponentApiManagerInterface
 
 func init() {
 	executionLog := abaputils.LogProtocolResults{
@@ -32,6 +30,7 @@ func init() {
 	}
 	executionLogResponse, _ := json.Marshal(executionLog)
 	executionLogStringClone = string(executionLogResponse)
+	apiManager = &abaputils.SoftwareComponentApiManager{}
 }
 
 func TestCloneStep(t *testing.T) {
@@ -98,7 +97,7 @@ repositories:
 			Token: "myToken",
 		}
 
-		err = runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		err = runAbapEnvironmentCloneGitRepo(&config, &autils, client, apiManager)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -137,7 +136,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client, apiManager)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -171,7 +170,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -233,7 +232,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err = runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		err = runAbapEnvironmentCloneGitRepo(&config, &autils, client, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component '/DMO/REPO_A', branch 'branchA', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
 		}
@@ -269,7 +268,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -304,7 +303,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -338,7 +337,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Something failed during the clone: Could not find filename.yaml", err.Error(), "Expected different error message")
 		}
@@ -379,7 +378,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "The provided configuration is not allowed: It is not allowed to configure the parameters `repositories`and `repositoryName` at the same time", err.Error(), "Expected different error message")
 		}

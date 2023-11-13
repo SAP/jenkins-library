@@ -368,6 +368,13 @@ type CloneEntity struct {
 	ChangeTime        string       `json:"change_time"`
 }
 
+type RepositoryEntity struct {
+	Metadata            AbapMetadata `json:"__metadata"`
+	ScName              string       `json:"sc_name"`
+	ActiveBranch        string       `json:"active_branch"`
+	AvailableOnInstance bool         `json:"avail_on_inst"`
+}
+
 // AbapLogs struct for ABAP logs
 type AbapLogs struct {
 	Results []LogResults `json:"results"`
