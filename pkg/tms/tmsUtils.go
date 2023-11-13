@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
-	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -101,8 +100,8 @@ type CommunicationInterface interface {
 	UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
 	UploadMtaExtDescriptorToNode(nodeId int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
 	UploadFile(file, namedUser string) (FileInfo, error)
-	UploadFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
-	ExportFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
+	UploadFileToNode(fileInfo FileInfo, nodeName, description, namedUser string) (NodeUploadResponseEntity, error)
+	ExportFileToNode(fileInfo FileInfo, nodeName, description, namedUser string) (NodeUploadResponseEntity, error)
 }
 
 type Options struct {
@@ -339,20 +338,21 @@ func UploadDescriptors(config Options, communicationInstance CommunicationInterf
 	return nil
 }
 
-func UploadFile(config Options, communicationInstance CommunicationInterface, utils TmsUtils) (string, error) {
+func UploadFile(config Options, communicationInstance CommunicationInterface, utils TmsUtils) (FileInfo, error) {
+	var fileInfo FileInfo
+
 	mtaPath := config.MtaPath
 	exists, _ := utils.FileExists(mtaPath)
 	if !exists {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("mta file %s not found", mtaPath)
+		return fileInfo, fmt.Errorf("mta file %s not found", mtaPath)
 	}
 
 	fileInfo, errUploadFile := communicationInstance.UploadFile(mtaPath, config.NamedUser)
 	if errUploadFile != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return "", fmt.Errorf("failed to upload file: %w", errUploadFile)
+		return fileInfo, fmt.Errorf("failed to upload file: %w", errUploadFile)
 	}
 
-	fileId := strconv.FormatInt(fileInfo.Id, 10)
-	return fileId, nil
+	return fileInfo, nil
 }

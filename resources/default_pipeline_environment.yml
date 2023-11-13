@@ -481,6 +481,7 @@ steps:
       active: false
     jmeter:
       pattern: '**/*.jtl'
+      filterRegex: ''
       errorFailedThreshold: 20
       errorUnstableThreshold: 10
       errorUnstableResponseTimeThreshold: ''
