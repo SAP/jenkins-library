@@ -1,27 +1,18 @@
 package abaputils
 
 import (
-	"encoding/json"
-	"io"
-	"net/http/cookiejar"
-	"reflect"
-	"strings"
-	"time"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type SoftwareComponentApiManagerInterface interface {
-	GetAPI(con ConnectionDetailsHTTP, client piperhttp.Sender) (SoftwareComponentApiInterface, error)
+	GetAPI(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) (SoftwareComponentApiInterface, error)
 }
 
 type SoftwareComponentApiManager struct{}
 
-func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, client piperhttp.Sender) (SoftwareComponentApiInterface, error) {
+func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) (SoftwareComponentApiInterface, error) {
 	sap_com_0510 := SAP_COM_0510{}
-	sap_com_0510.init(con, client)
+	sap_com_0510.init(con, client, repo)
 
 	// Initialize all APIs, use the one that returns a response
 	// Currently SAP_COM_0510, later SAP_COM_0948
@@ -30,139 +21,133 @@ func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, cl
 }
 
 type SoftwareComponentApiInterface interface {
-	init(con ConnectionDetailsHTTP, client piperhttp.Sender)
+	init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository)
 	initialRequest() error
-	Clone(repo Repository) error
-	CheckIfAlreadyCloned(repo Repository) (bool, string, error)
+	Clone() error
+	GetRepository() (bool, string, error)
+	GetAction() (string, error)
+	GetLogOverview() (ActionEntity, error)
+	GetLogProtocol(LogResultsV2, int) (body LogProtocolResults, err error)
 }
 
-type SAP_COM_0510 struct {
-	con              ConnectionDetailsHTTP
-	client           piperhttp.Sender
-	path             string
-	cloneEntity      string
-	repositoryEntity string
-	UUID             string
+/****************************************
+ *	Structs for the A4C_A2G_GHA service *
+ ****************************************/
+
+// ActionEntity struct for the Pull/Import entity A4C_A2G_GHA_SC_IMP
+type ActionEntity struct {
+	Metadata          AbapMetadata `json:"__metadata"`
+	UUID              string       `json:"uuid"`
+	Namespace         string       `json:"namepsace"`
+	ScName            string       `json:"sc_name"`
+	ImportType        string       `json:"import_type"`
+	BranchName        string       `json:"branch_name"`
+	StartedByUser     string       `json:"user_name"`
+	Status            string       `json:"status"`
+	StatusDescription string       `json:"status_descr"`
+	CommitID          string       `json:"commit_id"`
+	StartTime         string       `json:"start_time"`
+	ChangeTime        string       `json:"change_time"`
+	ToExecutionLog    AbapLogs     `json:"to_Execution_log"`
+	ToTransportLog    AbapLogs     `json:"to_Transport_log"`
+	ToLogOverview     AbapLogsV2   `json:"to_Log_Overview"`
 }
 
-func (api *SAP_COM_0510) CheckIfAlreadyCloned(repo Repository) (bool, string, error) {
-	if repo.Name == "" {
-		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'")
-	}
-
-	swcConnectionDetails := api.con
-	swcConnectionDetails.URL = api.con.URL + api.path + api.repositoryEntity + "('" + strings.Replace(repo.Name, "/", "%2F", -1) + "')"
-	resp, err := GetHTTPResponse("GET", swcConnectionDetails, nil, api.client)
-	if err != nil {
-		return false, "", err
-	}
-	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Info("Triggered Clone of Repository / Software Component")
-
-	var body RepositoryEntity
-	var abapResp map[string]*json.RawMessage
-	bodyText, errRead := io.ReadAll(resp.Body)
-	if errRead != nil {
-		return false, "", err
-	}
-	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return false, "", err
-	}
-	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return false, "", err
-	}
-	if reflect.DeepEqual(RepositoryEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not Clone the Repository / Software Component")
-		err := errors.New("Request to ABAP System not successful")
-		return false, "", err
-	}
-
-	if body.AvailableOnInstance {
-		return true, body.ActiveBranch, nil
-	}
-	return false, "", err
-
+// BranchEntity struct for the Branch entity A4C_A2G_GHA_SC_BRANCH
+type BranchEntity struct {
+	Metadata      AbapMetadata `json:"__metadata"`
+	ScName        string       `json:"sc_name"`
+	Namespace     string       `json:"namepsace"`
+	BranchName    string       `json:"branch_name"`
+	ParentBranch  string       `json:"derived_from"`
+	CreatedBy     string       `json:"created_by"`
+	CreatedOn     string       `json:"created_on"`
+	IsActive      bool         `json:"is_active"`
+	CommitID      string       `json:"commit_id"`
+	CommitMessage string       `json:"commit_message"`
+	LastCommitBy  string       `json:"last_commit_by"`
+	LastCommitOn  string       `json:"last_commit_on"`
 }
 
-func (api *SAP_COM_0510) Clone(repo Repository) error {
-
-	// Trigger the Clone of a Repository
-	if repo.Name == "" {
-		return errors.New("An empty string was passed for the parameter 'repositoryName'")
-	}
-
-	cloneConnectionDetails := api.con
-	cloneConnectionDetails.URL = api.con.URL + api.path + api.cloneEntity
-
-	jsonBody := []byte(repo.GetCloneRequestBody())
-	resp, err := GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, api.client)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Info("Triggered Clone of Repository / Software Component")
-
-	// Parse Response
-	var body CloneEntity
-	var abapResp map[string]*json.RawMessage
-	bodyText, errRead := io.ReadAll(resp.Body)
-	if errRead != nil {
-		return err
-	}
-	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return err
-	}
-	if reflect.DeepEqual(CloneEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not Clone the Repository / Software Component")
-		err := errors.New("Request to ABAP System not successful")
-		return err
-	}
-
-	api.UUID = body.UUID
-	return nil
-
+// CloneEntity struct for the Clone entity A4C_A2G_GHA_SC_CLONE
+type CloneEntity struct {
+	Metadata          AbapMetadata `json:"__metadata"`
+	UUID              string       `json:"uuid"`
+	ScName            string       `json:"sc_name"`
+	BranchName        string       `json:"branch_name"`
+	ImportType        string       `json:"import_type"`
+	Namespace         string       `json:"namepsace"`
+	Status            string       `json:"status"`
+	StatusDescription string       `json:"status_descr"`
+	StartedByUser     string       `json:"user_name"`
+	StartTime         string       `json:"start_time"`
+	ChangeTime        string       `json:"change_time"`
 }
 
-// initialRequest implements SoftwareComponentApiInterface.
-func (api *SAP_COM_0510) initialRequest() error {
-	// Configuring the HTTP Client and CookieJar
-	cookieJar, errorCookieJar := cookiejar.New(nil)
-	if errorCookieJar != nil {
-		return errors.Wrap(errorCookieJar, "Could not create a Cookie Jar")
-	}
-
-	api.client.SetOptions(piperhttp.ClientOptions{
-		MaxRequestDuration: 180 * time.Second,
-		CookieJar:          cookieJar,
-		Username:           api.con.User,
-		Password:           api.con.Password,
-	})
-
-	headConnection := api.con
-	headConnection.XCsrfToken = "fetch"
-	headConnection.URL = api.con.URL + api.path
-
-	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := GetHTTPResponse("HEAD", headConnection, nil, api.client)
-	if err != nil {
-		err = HandleHTTPError(resp, err, "Authentication on the ABAP system failed", api.con)
-		return err
-	}
-	defer resp.Body.Close()
-
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", api.con).Debug("Authentication on the ABAP system successful")
-	api.con.XCsrfToken = resp.Header.Get("X-Csrf-Token")
-	return nil
+type RepositoryEntity struct {
+	Metadata            AbapMetadata `json:"__metadata"`
+	ScName              string       `json:"sc_name"`
+	ActiveBranch        string       `json:"active_branch"`
+	AvailableOnInstance bool         `json:"avail_on_inst"`
 }
 
-func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender) {
-	api.con = con
-	api.client = client
-	api.path = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY"
-	api.cloneEntity = "/Clones"
-	api.repositoryEntity = "/Repositories"
+// AbapLogs struct for ABAP logs
+type AbapLogs struct {
+	Results []LogResults `json:"results"`
+}
 
+type AbapLogsV2 struct {
+	Results []LogResultsV2 `json:"results"`
+}
+
+type LogResultsV2 struct {
+	Metadata      AbapMetadata        `json:"__metadata"`
+	Index         int                 `json:"log_index"`
+	Name          string              `json:"log_name"`
+	Status        string              `json:"type_of_found_issues"`
+	Timestamp     string              `json:"timestamp"`
+	ToLogProtocol LogProtocolDeferred `json:"to_Log_Protocol"`
+}
+
+type LogProtocolDeferred struct {
+	Deferred URI `json:"__deferred"`
+}
+
+type URI struct {
+	URI string `json:"uri"`
+}
+
+type LogProtocolResults struct {
+	Results []LogProtocol `json:"results"`
+	Count   string        `json:"__count"`
+}
+
+type LogProtocol struct {
+	Metadata      AbapMetadata `json:"__metadata"`
+	OverviewIndex int          `json:"log_index"`
+	ProtocolLine  int          `json:"index_no"`
+	Type          string       `json:"type"`
+	Description   string       `json:"descr"`
+	Timestamp     string       `json:"timestamp"`
+}
+
+// LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
+type LogResults struct {
+	Index       string `json:"index_no"`
+	Type        string `json:"type"`
+	Description string `json:"descr"`
+	Timestamp   string `json:"timestamp"`
+}
+
+// RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
+type RepositoriesConfig struct {
+	BranchName      string
+	CommitID        string
+	RepositoryName  string
+	RepositoryNames []string
+	Repositories    string
+}
+
+type EntitySetsForManageGitRepository struct {
+	EntitySets []string `json:"EntitySets"`
 }
