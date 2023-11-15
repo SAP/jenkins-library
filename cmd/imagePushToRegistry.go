@@ -118,6 +118,8 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registryURL string, username string, password string, fileUtils piperutils.FileUtils) error {
 	dockerConfig := []byte(`{"auths":{}}`)
 
+	fmt.Println("dockerConfigJsonPath", dockerConfigJsonPath, "registryURL", registryURL, "username", username, "password", password)
+
 	// respect user provided docker config json file
 	if len(dockerConfigJsonPath) > 0 {
 		var err error
