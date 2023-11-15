@@ -20,7 +20,7 @@ func Test_unmarshalServiceKey(t *testing.T) {
 		{
 			name:           "standard cALM service key uri has expected postfix",
 			serviceKeyJson: `{"endpoints": {"Api": "https://my.alm.endpoint.sap.com"}}`,
-			wantTmsUrl:     "https://my.alm.endpoint.sap.com" + CALM_REROUTING_ENDPOINT_TO_CTMS,
+			wantTmsUrl:     "https://my.alm.endpoint.sap.com/imp-cdm-transport-management-api/v1",
 		},
 		{
 			name:           "no uri or endpoints in service key leads to error",
