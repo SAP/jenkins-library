@@ -68,7 +68,7 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 		return errors.Wrap(err, "unable to create docker config dir")
 	}
 
-	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
+	err = handleCredentialsForPrivateRegistries("", config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
 	if err != nil {
 		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
 	}
