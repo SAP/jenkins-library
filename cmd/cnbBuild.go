@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -285,8 +286,14 @@ func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (buildpack
 
 func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	stepName := "cnbBuild"
-	telemetry := buildpacks.NewTelemetry(telemetryData)
 
+	err := isBuilder(utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "the provided dockerImage is not a valid builder")
+	}
+
+	telemetry := buildpacks.NewTelemetry(telemetryData)
 	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		log.Entry().Warnf("failed to retrieve dockerImage configuration: '%v'", err)
@@ -362,23 +369,28 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
 	}
 
-	tempdir, err := os.MkdirTemp("", "cnbBuild-")
+	tempdir, err := utils.TempDir("", "cnbBuild-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create tempdir")
 	}
-	defer os.RemoveAll(tempdir)
+	defer utils.RemoveAll(tempdir)
+
+	uid, gid, err := cnbutils.CnbUserInfo()
+	if err != nil {
+		return errors.Wrap(err, "failed to get user information")
+	}
+
+	err = utils.Chown(tempdir, uid, gid)
+	if err != nil {
+		return errors.Wrap(err, "failed to change tempdir ownership")
+	}
+
 	if config.BuildEnvVars == nil {
 		config.BuildEnvVars = map[string]interface{}{}
 	}
 	config.BuildEnvVars["TMPDIR"] = tempdir
 
 	telemetrySegment := createInitialTelemetrySegment(config, utils)
-
-	err = isBuilder(utils)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "the provided dockerImage is not a valid builder")
-	}
 
 	include := ignore.CompileIgnoreLines("**/*")
 	exclude := ignore.CompileIgnoreLines("piper", ".pipeline", ".git")
@@ -486,6 +498,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		}
 	}
 
+	if err := utils.Chown(target, uid, gid); err != nil {
+		return err
+	}
+
 	if ok, _ := utils.FileExists(filepath.Join(target, "pom.xml")); ok {
 		err = linkTargetFolder(utils, source, target)
 		if err != nil {
@@ -565,7 +581,15 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
-	err = utils.RunExecutable(creatorPath, creatorArgs...)
+	attr := &syscall.SysProcAttr{
+		Credential: &syscall.Credential{
+			Uid:         uint32(uid),
+			Gid:         uint32(gid),
+			NoSetGroups: true,
+		},
+	}
+
+	err = utils.RunExecutableWithAttrs(creatorPath, attr, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
