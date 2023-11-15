@@ -62,13 +62,13 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 }
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils, fileUtils piperutils.FileUtils) error {
-	dockerConfigDir, err := fileUtils.TempDir("", ".docker")
-	if err != nil {
-		return errors.Wrap(err, "unable to create docker config dir")
-	}
-	log.Entry().Infoln("dockerConfigDir:", dockerConfigDir)
+	// dockerConfigDir, err := fileUtils.TempDir("", ".docker")
+	// if err != nil {
+	// 	return errors.Wrap(err, "unable to create docker config dir")
+	// }
+	// log.Entry().Infoln("dockerConfigDir:", dockerConfigDir)
 
-	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
+	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
 	if err != nil {
 		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
 	}
@@ -133,7 +133,7 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 			return errors.Wrapf(err, "failed to read enhanced file '%v'", dockerConfigJsonPath)
 		}
 	} else if len(dockerConfigJsonPath) == 0 && len(registryURL) > 0 && len(password) > 0 && len(username) > 0 {
-		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", ".docker/config.json", fileUtils)
+		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", "/root/.docker/config.json", fileUtils)
 		if err != nil {
 			return errors.Wrap(err, "failed to create new docker config json at .docker/config.json")
 		}
@@ -144,7 +144,7 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 		}
 	}
 
-	if err := fileUtils.FileWrite(".docker/config.json", dockerConfig, 0644); err != nil {
+	if err := fileUtils.FileWrite("/root/.docker/config.json", dockerConfig, 0644); err != nil {
 		return errors.Wrap(err, "failed to write file "+dockerConfigFile)
 	}
 	return nil
