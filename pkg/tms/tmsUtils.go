@@ -150,7 +150,7 @@ func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err erro
 		if serviceKey.CALMEndpoints != nil && len(serviceKey.CALMEndpoints.API) > 0 {
 			serviceKey.Uri = serviceKey.CALMEndpoints.API + CALM_REROUTING_ENDPOINT_TO_CTMS
 		} else {
-			err = fmt.Errorf("neither uri nor enpoints.Api is set in service key json string")
+			err = fmt.Errorf("neither uri nor endpoints.Api is set in service key json string")
 			return
 		}
 	}
