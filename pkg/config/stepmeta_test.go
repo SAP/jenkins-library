@@ -255,7 +255,17 @@ func TestGetContextParameterFilters(t *testing.T) {
 	metadata3 := StepData{
 		Spec: StepSpec{
 			Sidecars: []Container{
-				{Name: "testsidecar"},
+				{Name: "testsidecar",
+					Conditions: []Condition{
+						{
+							Params: []Param{
+								{
+									Name:  "conditionParam",
+									Value: "conditionValue",
+								},
+							},
+						},
+					}},
 			},
 		},
 	}
@@ -305,7 +315,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Sidecars", func(t *testing.T) {
 		filters := metadata3.GetContextParameterFilters()
-		params := defaultParams("containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace")
+		params := defaultParams("containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace", "conditionValue", "conditionParam")
 		assert.Equal(t, params, filters.All, "incorrect filter All")
 		assert.Equal(t, params, filters.General, "incorrect filter General")
 		assert.Equal(t, params, filters.Steps, "incorrect filter Steps")

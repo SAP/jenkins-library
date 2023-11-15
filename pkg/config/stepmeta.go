@@ -236,8 +236,17 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	}
 	if len(m.Spec.Sidecars) > 0 {
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
-		contextFilters = append(contextFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
-		//ToDo: add condition param.Value and param.Name to filter as for Containers
+		parameterKeys := []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}
+		for _, container := range m.Spec.Sidecars {
+			for _, condition := range container.Conditions {
+				for _, dependentParam := range condition.Params {
+					parameterKeys = append(parameterKeys, dependentParam.Value)
+					parameterKeys = append(parameterKeys, dependentParam.Name)
+				}
+			}
+		}
+		// ToDo: append dependentParam.Value & dependentParam.Name only according to correct parameter scope and not generally
+		contextFilters = append(contextFilters, parameterKeys...)
 	}
 
 	contextFilters = addVaultContextParametersFilter(m, contextFilters)
