@@ -25,7 +25,7 @@ func Test_unmarshalServiceKey(t *testing.T) {
 		{
 			name:           "no uri or endpoints in service key leads to error",
 			serviceKeyJson: `{"missing key options": "leads to error"}`,
-			errMessage:     "neither uri nor enpoints.Api is set in service key json string",
+			errMessage:     "neither uri nor endpoints.Api is set in service key json string",
 		},
 		{
 			name:           "faulty json leads to error",
