@@ -105,7 +105,10 @@ func assetBuildEnv(t *testing.T, utils cnbutils.MockUtils, key, value string) bo
 }
 
 func TestRunCnbBuild(t *testing.T) {
-	configOptions.openFile = piperconf.OpenPiperFile
+	configOptions.OpenFile = piperconf.OpenPiperFile
+
+	t.Setenv("CNB_USER_ID", "1000")
+	t.Setenv("CNB_GROUP_ID", "1000")
 
 	t.Run("prefers direct configuration", func(t *testing.T) {
 		t.Parallel()

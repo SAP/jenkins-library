@@ -186,7 +186,7 @@ void call(Map parameters = [:], body) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
                     withEnv(dockerEnvVars) {
-                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container. Docker image: ${config.dockerImage}"
                         body()
                         sh "chown -R 1000:1000 ."
                     }
@@ -222,7 +222,7 @@ void call(Map parameters = [:], body) {
                 }
 
                 dockerExecuteOnKubernetes(dockerExecuteOnKubernetesParams) {
-                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
+                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod. Docker image: ${config.dockerImage}"
                     body()
                 }
             }
