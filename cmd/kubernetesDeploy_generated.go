@@ -16,44 +16,43 @@ import (
 )
 
 type kubernetesDeployOptions struct {
-	AdditionalParameters       []string               `json:"additionalParameters,omitempty"`
-	APIServer                  string                 `json:"apiServer,omitempty"`
-	AppTemplate                string                 `json:"appTemplate,omitempty"`
-	ChartPath                  string                 `json:"chartPath,omitempty"`
-	ContainerRegistryPassword  string                 `json:"containerRegistryPassword,omitempty"`
-	ContainerImageName         string                 `json:"containerImageName,omitempty"`
-	ContainerImageTag          string                 `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL       string                 `json:"containerRegistryUrl,omitempty"`
-	ContainerRegistryUser      string                 `json:"containerRegistryUser,omitempty"`
-	ContainerRegistrySecret    string                 `json:"containerRegistrySecret,omitempty"`
-	CreateDockerRegistrySecret bool                   `json:"createDockerRegistrySecret,omitempty"`
-	DeploymentName             string                 `json:"deploymentName,omitempty"`
-	DeployTool                 string                 `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
-	ForceUpdates               bool                   `json:"forceUpdates,omitempty"`
-	HelmDeployWaitSeconds      int                    `json:"helmDeployWaitSeconds,omitempty"`
-	HelmTestWaitSeconds        int                    `json:"helmTestWaitSeconds,omitempty"`
-	HelmValues                 []string               `json:"helmValues,omitempty"`
-	ValuesMapping              map[string]interface{} `json:"valuesMapping,omitempty"`
-	RenderSubchartNotes        bool                   `json:"renderSubchartNotes,omitempty"`
-	GithubToken                string                 `json:"githubToken,omitempty"`
-	Image                      string                 `json:"image,omitempty"`
-	ImageNames                 []string               `json:"imageNames,omitempty"`
-	ImageNameTags              []string               `json:"imageNameTags,omitempty"`
-	ImageDigests               []string               `json:"imageDigests,omitempty"`
-	IngressHosts               []string               `json:"ingressHosts,omitempty"`
-	KeepFailedDeployments      bool                   `json:"keepFailedDeployments,omitempty"`
-	RunHelmTests               bool                   `json:"runHelmTests,omitempty"`
-	ShowTestLogs               bool                   `json:"showTestLogs,omitempty"`
-	KubeConfig                 string                 `json:"kubeConfig,omitempty"`
-	KubeContext                string                 `json:"kubeContext,omitempty"`
-	KubeToken                  string                 `json:"kubeToken,omitempty"`
-	Namespace                  string                 `json:"namespace,omitempty"`
-	TillerNamespace            string                 `json:"tillerNamespace,omitempty"`
-	DockerConfigJSON           string                 `json:"dockerConfigJSON,omitempty"`
-	DeployCommand              string                 `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
-	SetupScript                string                 `json:"setupScript,omitempty"`
-	VerificationScript         string                 `json:"verificationScript,omitempty"`
-	TeardownScript             string                 `json:"teardownScript,omitempty"`
+	AdditionalParameters      []string               `json:"additionalParameters,omitempty"`
+	APIServer                 string                 `json:"apiServer,omitempty"`
+	AppTemplate               string                 `json:"appTemplate,omitempty"`
+	ChartPath                 string                 `json:"chartPath,omitempty"`
+	ContainerRegistryPassword string                 `json:"containerRegistryPassword,omitempty"`
+	ContainerImageName        string                 `json:"containerImageName,omitempty"`
+	ContainerImageTag         string                 `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL      string                 `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser     string                 `json:"containerRegistryUser,omitempty"`
+	ContainerRegistrySecret   string                 `json:"containerRegistrySecret,omitempty"`
+	DeploymentName            string                 `json:"deploymentName,omitempty"`
+	DeployTool                string                 `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
+	ForceUpdates              bool                   `json:"forceUpdates,omitempty"`
+	HelmDeployWaitSeconds     int                    `json:"helmDeployWaitSeconds,omitempty"`
+	HelmTestWaitSeconds       int                    `json:"helmTestWaitSeconds,omitempty"`
+	HelmValues                []string               `json:"helmValues,omitempty"`
+	ValuesMapping             map[string]interface{} `json:"valuesMapping,omitempty"`
+	RenderSubchartNotes       bool                   `json:"renderSubchartNotes,omitempty"`
+	GithubToken               string                 `json:"githubToken,omitempty"`
+	Image                     string                 `json:"image,omitempty"`
+	ImageNames                []string               `json:"imageNames,omitempty"`
+	ImageNameTags             []string               `json:"imageNameTags,omitempty"`
+	ImageDigests              []string               `json:"imageDigests,omitempty"`
+	IngressHosts              []string               `json:"ingressHosts,omitempty"`
+	KeepFailedDeployments     bool                   `json:"keepFailedDeployments,omitempty"`
+	RunHelmTests              bool                   `json:"runHelmTests,omitempty"`
+	ShowTestLogs              bool                   `json:"showTestLogs,omitempty"`
+	KubeConfig                string                 `json:"kubeConfig,omitempty"`
+	KubeContext               string                 `json:"kubeContext,omitempty"`
+	KubeToken                 string                 `json:"kubeToken,omitempty"`
+	Namespace                 string                 `json:"namespace,omitempty"`
+	TillerNamespace           string                 `json:"tillerNamespace,omitempty"`
+	DockerConfigJSON          string                 `json:"dockerConfigJSON,omitempty"`
+	DeployCommand             string                 `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
+	SetupScript               string                 `json:"setupScript,omitempty"`
+	VerificationScript        string                 `json:"verificationScript,omitempty"`
+	TeardownScript            string                 `json:"teardownScript,omitempty"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -188,7 +187,6 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image to deploy is located.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
-	cmd.Flags().BoolVar(&stepConfig.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation.")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
 	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command")
@@ -380,15 +378,6 @@ func kubernetesDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `regsecret`,
-					},
-					{
-						Name:        "createDockerRegistrySecret",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
 					},
 					{
 						Name:        "deploymentName",

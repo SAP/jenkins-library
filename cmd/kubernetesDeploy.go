@@ -112,6 +112,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
 		if len(config.ContainerRegistrySecret) > 0 {
 			helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
+			helmValues.add("global.imagePullSecrets[0].name", config.ContainerRegistrySecret)
 		}
 	} else {
 		var dockerRegistrySecret bytes.Buffer
@@ -145,6 +146,10 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		helmValues.add("secret.name", config.ContainerRegistrySecret)
 		helmValues.add("secret.dockerconfigjson", dockerRegistrySecretData.Data.DockerConfJSON)
 		helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
+
+		helmValues.add("global.secret.name", config.ContainerRegistrySecret)
+		helmValues.add("global.secret.dockerconfigjson", dockerRegistrySecretData.Data.DockerConfJSON)
+		helmValues.add("global.imagePullSecrets[0].name", config.ContainerRegistrySecret)
 	}
 
 	// Deprecated functionality
@@ -543,23 +548,33 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 
 			useDigests = true
 		}
-		for i, key := range config.ImageNames {
-			name, tag, err := splitFullImageName(config.ImageNameTags[i])
+
+		if len(config.ImageNames) == 1 {
+			dv.singleImage = true
+			name, tag, err := splitFullImageName(config.ImageNameTags[0])
 			if err != nil {
-				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.ImageNameTags[i])
+				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.ImageNameTags[0])
 			}
 
-			if useDigests {
-				tag = fmt.Sprintf("%s@%s", tag, config.ImageDigests[i])
-			}
+			dv.add(createKey(config.ImageNames[0], "image", "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createKey(config.ImageNames[0], "image", "tag"), tag)
+			dv.add(createKey("image", "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createKey("image", "tag"), tag)
+		} else {
+			for i, key := range config.ImageNames {
+				name, tag, err := splitFullImageName(config.ImageNameTags[i])
+				if err != nil {
+					log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.ImageNameTags[i])
+				}
 
-			dv.add(createKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
-			dv.add(createKey("image", key, "tag"), tag)
+				if useDigests {
+					tag = fmt.Sprintf("%s@%s", tag, config.ImageDigests[i])
+				}
 
-			if len(config.ImageNames) == 1 {
-				dv.singleImage = true
-				dv.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, name))
-				dv.add("image.tag", tag)
+				dv.add(createKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+				dv.add(createKey("image", key, "tag"), tag)
+				dv.add(createKey(key, "image", "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+				dv.add(createKey(key, "image", "tag"), tag)
 			}
 		}
 	} else {

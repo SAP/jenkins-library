@@ -231,14 +231,6 @@ spec:
           - STAGES
           - STEPS
         default: regsecret
-      - name: createDockerRegistrySecret
-        type: bool
-        description: "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: false
       - name: deploymentName
         aliases:
           - name: helmDeploymentName
