@@ -131,7 +131,7 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 	}
 
 	if len(dockerConfigJsonPath) > 0 && len(registryURL) > 0 && len(password) > 0 && len(registryURL) > 0 {
-		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", dockerConfigJsonPath, fileUtils)
+		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", "/root/.docker/config.json", fileUtils)
 		if err != nil {
 			return errors.Wrapf(err, "failed to update existing docker config json file '%v'", dockerConfigJsonPath)
 		}
