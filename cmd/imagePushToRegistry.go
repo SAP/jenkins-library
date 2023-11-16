@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -78,13 +79,20 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 		return fmt.Errorf("failed to handle registry credentials for target registry: %w", err)
 	}
 
+	re := regexp.MustCompile(`^https?://`)
+	sourceURL := re.ReplaceAllString(config.SourceRegistryURL, "")
+	fmt.Println(sourceURL)
+
+	targetURL := re.ReplaceAllString(config.TargetRegistryURL, "")
+	fmt.Println(targetURL)
+
 	if len(config.LocalDockerImagePath) > 0 {
 		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, config.TargetRegistryURL)
 		if err != nil {
 			return fmt.Errorf("failed to push to local image to registry: %w", err)
 		}
 	} else {
-		err = copyImage(config.SourceRegistryURL+"/"+config.SourceImageNameTag, config.TargetRegistryURL+"/qwerty/imagename:1.0.0")
+		err = copyImage(sourceURL+"/"+config.SourceImageNameTag, targetURL+"/qwerty/imagename:1.0.0")
 		if err != nil {
 			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
 		}
