@@ -94,6 +94,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - type: vaultSecret
+            name: registryCredentialsVaultSecretName
+            default: docker-registry
       - name: targetRegistryPassword
         type: string
         description: Password of the target registry where the image should be pushed to.
@@ -101,6 +105,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - type: vaultSecret
+            name: registryCredentialsVaultSecretName
+            default: docker-registry
       - name: tagLatest
         description: "Defines if the image should be tagged as `latest`"
         type: string
