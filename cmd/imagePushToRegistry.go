@@ -84,7 +84,7 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 			return fmt.Errorf("failed to push to local image to registry: %w", err)
 		}
 	} else {
-		err = copyImage(config.SourceRegistryURL+config.SourceImageNameTag, config.TargetRegistryURL+"/qwerty/imagename:1.0.0")
+		err = copyImage(config.SourceRegistryURL+"/"+config.SourceImageNameTag, config.TargetRegistryURL+"/qwerty/imagename:1.0.0")
 		if err != nil {
 			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
 		}
