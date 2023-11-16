@@ -144,9 +144,12 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 		}
 	}
 
-	if err := fileUtils.FileWrite("/root/.docker/config.json", dockerConfig, 0644); err != nil {
-		return errors.Wrap(err, "failed to write file "+dockerConfigFile)
-	}
+	fmt.Println("dockerConfig:", dockerConfig)
+
+	// if err := fileUtils.FileWrite("/root/.docker/config.json", dockerConfig, 0644); err != nil {
+	// 	return errors.Wrap(err, "failed to write file "+dockerConfigFile)
+	// }
+
 	return nil
 }
 
