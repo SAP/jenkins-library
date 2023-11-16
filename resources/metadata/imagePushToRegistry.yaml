@@ -41,6 +41,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: sourceImageNameTag
+        type: string
+        scope:
+          - PARAMETER
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
       - name: sourceRegistryUrl
         description: Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*"
         type: string

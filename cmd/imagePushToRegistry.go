@@ -84,7 +84,7 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 			return fmt.Errorf("failed to push to local image to registry: %w", err)
 		}
 	} else {
-		err = copyImage(config.SourceRegistryURL, config.TargetRegistryURL)
+		err = copyImage(config.SourceRegistryURL+config.SourceImageNameTag, config.TargetRegistryURL+"/qwerty/imagename:1.0.0")
 		if err != nil {
 			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
 		}
@@ -144,7 +144,7 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 		}
 	}
 
-	fmt.Println("dockerConfig:", dockerConfig)
+	fmt.Println("dockerConfig:", string(dockerConfig))
 
 	// if err := fileUtils.FileWrite("/root/.docker/config.json", dockerConfig, 0644); err != nil {
 	// 	return errors.Wrap(err, "failed to write file "+dockerConfigFile)
