@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -75,7 +75,7 @@ func abapLandscapePortalUpdateAddOnProduct(config abapLandscapePortalUpdateAddOn
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err := runAbapLandscapePortalUpdateAddOnProduct(&config, client)
 	if err != nil {
-		log.Fatal("step execution failed")
+		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
