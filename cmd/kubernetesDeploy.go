@@ -112,7 +112,6 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
 		if len(config.ContainerRegistrySecret) > 0 {
 			helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
-			helmValues.add("global.imagePullSecrets[0].name", config.ContainerRegistrySecret)
 		}
 	} else {
 		var dockerRegistrySecret bytes.Buffer
@@ -146,10 +145,6 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		helmValues.add("secret.name", config.ContainerRegistrySecret)
 		helmValues.add("secret.dockerconfigjson", dockerRegistrySecretData.Data.DockerConfJSON)
 		helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
-
-		helmValues.add("global.secret.name", config.ContainerRegistrySecret)
-		helmValues.add("global.secret.dockerconfigjson", dockerRegistrySecretData.Data.DockerConfJSON)
-		helmValues.add("global.imagePullSecrets[0].name", config.ContainerRegistrySecret)
 	}
 
 	// Deprecated functionality
