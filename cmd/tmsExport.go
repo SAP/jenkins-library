@@ -51,7 +51,7 @@ func convertExportOptions(exportConfig tmsExportOptions) tms.Options {
 	var config tms.Options
 	config.TmsServiceKey = exportConfig.TmsServiceKey
 	config.CustomDescription = exportConfig.CustomDescription
-	if config.CustomDescription == "" {
+	if exportConfig.CustomDescription == "" {
 		config.CustomDescription = tms.DEFAULT_TR_DESCRIPTION
 	}
 	config.NamedUser = exportConfig.NamedUser

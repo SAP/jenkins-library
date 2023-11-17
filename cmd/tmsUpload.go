@@ -44,7 +44,7 @@ func convertUploadOptions(uploadConfig tmsUploadOptions) tms.Options {
 	var config tms.Options
 	config.TmsServiceKey = uploadConfig.TmsServiceKey
 	config.CustomDescription = uploadConfig.CustomDescription
-	if config.CustomDescription == "" {
+	if uploadConfig.CustomDescription == "" {
 		config.CustomDescription = tms.DEFAULT_TR_DESCRIPTION
 	}
 	config.NamedUser = uploadConfig.NamedUser
