@@ -176,16 +176,24 @@ func (g *GitHubActionsConfigProvider) GetReference() string {
 
 // GetBuildURL returns the builds URL. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
+	// to be deleted
+	log.Entry().Infoln("Build URL:", g.GetRepoURL()+"/actions/runs/"+g.GetBuildID())
 	return g.GetRepoURL() + "/actions/runs/" + g.GetBuildID()
 }
 
 // GetJobURL returns the current job HTML URL (not API URL).
 // For example, https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321
-func (g *GitHubActionsConfigProvider) GetJobURL() string {
+func (g *GitHubActionsConfigProvider) GetJobURL1() string {
 	// We need to query the GitHub API here because the environment variable GITHUB_JOB returns
 	// the name of the job, not a numeric ID (which we need to form the URL)
 	g.guessCurrentJob()
 	return g.currentJob.HtmlURL
+}
+
+func (g *GitHubActionsConfigProvider) GetJobURL() string {
+	// to be deleted
+	log.Entry().Infoln("job URL:", g.GetRepoURL()+"/actions")
+	return g.GetRepoURL() + "/actions"
 }
 
 // GetJobName returns the current workflow name. For example, "Piper workflow"

@@ -4,9 +4,10 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"strconv"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 
 	"net/http"
 	"net/url"
@@ -89,11 +90,13 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 
 func (t *Telemetry) getPipelineURLHash() string {
 	jobURL := t.provider.GetJobURL()
+	log.Entry().Infoln("jobURL:", jobURL)
 	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
 	buildURL := t.provider.GetBuildURL()
+	log.Entry().Infoln("buildURL:", buildURL)
 	return t.toSha1OrNA(buildURL)
 }
 
