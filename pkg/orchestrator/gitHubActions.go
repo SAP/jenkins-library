@@ -26,7 +26,6 @@ type GitHubActionsConfigProvider struct {
 	runData     run
 	jobs        []job
 	jobsFetched bool
-	currentJob  job
 }
 
 type run struct {
@@ -174,22 +173,16 @@ func (g *GitHubActionsConfigProvider) GetReference() string {
 	return getEnv("GITHUB_REF", "n/a")
 }
 
-// GetBuildURL returns the builds URL. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
+// GetBuildURL returns the builds URL. The URL should point to the pipeline (not to the stage)
+// that is currently being executed. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
 	// to be deleted
 	log.Entry().Infoln("Build URL:", g.GetRepoURL()+"/actions/runs/"+g.GetBuildID())
 	return g.GetRepoURL() + "/actions/runs/" + g.GetBuildID()
 }
 
-// GetJobURL returns the current job HTML URL (not API URL).
-// For example, https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321
-func (g *GitHubActionsConfigProvider) GetJobURL1() string {
-	// We need to query the GitHub API here because the environment variable GITHUB_JOB returns
-	// the name of the job, not a numeric ID (which we need to form the URL)
-	g.guessCurrentJob()
-	return g.currentJob.HtmlURL
-}
-
+// GetJobURL returns the job URL. The URL should point to project’s pipelines.
+// For example, https://github.com/SAP/jenkins-library/actions
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
 	// to be deleted
 	log.Entry().Infoln("job URL:", g.GetRepoURL()+"/actions")
@@ -301,32 +294,6 @@ func convertJobs(jobs []*github.WorkflowJob) []job {
 		})
 	}
 	return result
-}
-
-func (g *GitHubActionsConfigProvider) guessCurrentJob() {
-	// check if the current job has already been guessed
-	if g.currentJob.ID != 0 {
-		return
-	}
-
-	// fetch jobs if they haven't been fetched yet
-	if err := g.fetchJobs(); err != nil {
-		log.Entry().Errorf("failed to fetch jobs: %s", err)
-		g.jobs = []job{}
-		return
-	}
-
-	targetJobName := getEnv("GITHUB_JOB", "unknown")
-	log.Entry().Debugf("looking for job '%s' in jobs list: %v", targetJobName, g.jobs)
-	for _, j := range g.jobs {
-		// j.Name may be something like "piper / Init / Init"
-		// but GITHUB_JOB env may contain only "Init"
-		if strings.HasSuffix(j.Name, targetJobName) {
-			log.Entry().Debugf("current job id: %d", j.ID)
-			g.currentJob = j
-			return
-		}
-	}
 }
 
 func (g *GitHubActionsConfigProvider) runIdInt64() (int64, error) {
