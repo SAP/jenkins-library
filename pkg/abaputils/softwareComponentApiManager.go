@@ -5,14 +5,16 @@ import (
 )
 
 type SoftwareComponentApiManagerInterface interface {
-	GetAPI(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) (SoftwareComponentApiInterface, error)
+	GetAPI(con ConnectionDetailsHTTP, repo Repository) (SoftwareComponentApiInterface, error)
 }
 
-type SoftwareComponentApiManager struct{}
+type SoftwareComponentApiManager struct {
+	Client piperhttp.Sender
+}
 
-func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) (SoftwareComponentApiInterface, error) {
+func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, repo Repository) (SoftwareComponentApiInterface, error) {
 	sap_com_0510 := SAP_COM_0510{}
-	sap_com_0510.init(con, client, repo)
+	sap_com_0510.init(con, manager.Client, repo)
 
 	// Initialize all APIs, use the one that returns a response
 	// Currently SAP_COM_0510, later SAP_COM_0948

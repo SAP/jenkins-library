@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package abaputils
 
 import (
@@ -10,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,24 +42,11 @@ func TestPollEntity(t *testing.T) {
 				logResultSuccess,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "Q" } }`,
+				`{}`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,
-		}
-
-		options := AbapEnvironmentOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-		}
-
-		config := AbapEnvironmentCheckoutBranchOptions{
-			AbapEnvOptions: options,
-			RepositoryName: "testRepo1",
 		}
 
 		con := ConnectionDetailsHTTP{
@@ -72,7 +55,12 @@ func TestPollEntity(t *testing.T) {
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := PollEntity(config.RepositoryName, con, client, 0)
+
+		swcManager := SoftwareComponentApiManager{Client: client}
+		repo := Repository{Name: "testRepo1"}
+		api, _ := swcManager.GetAPI(con, repo)
+
+		status, _ := PollEntity(api, 0)
 		assert.Equal(t, "S", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -86,24 +74,11 @@ func TestPollEntity(t *testing.T) {
 				logResultError,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "Q" } }`,
+				`{}`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,
-		}
-
-		options := AbapEnvironmentOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-		}
-
-		config := AbapEnvironmentCheckoutBranchOptions{
-			AbapEnvOptions: options,
-			RepositoryName: "testRepo1",
 		}
 
 		con := ConnectionDetailsHTTP{
@@ -112,7 +87,12 @@ func TestPollEntity(t *testing.T) {
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := PollEntity(config.RepositoryName, con, client, 0)
+
+		swcManager := SoftwareComponentApiManager{Client: client}
+		repo := Repository{Name: "testRepo1"}
+		api, _ := swcManager.GetAPI(con, repo)
+
+		status, _ := PollEntity(api, 0)
 		assert.Equal(t, "E", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -315,24 +295,5 @@ func TestCreateRequestBodies(t *testing.T) {
 		}
 		body := repo.GetPullRequestBody()
 		assert.Equal(t, `{"sc_name":"/DMO/REPO", "tag_name":"myTag"}`, body, "Expected different body")
-	})
-}
-
-func TestGetStatus(t *testing.T) {
-	t.Run("Graceful Exit", func(t *testing.T) {
-
-		client := &ClientMock{
-			NilResponse: true,
-			Error:       errors.New("Backend Error"),
-			StatusCode:  500,
-		}
-		connectionDetails := ConnectionDetailsHTTP{
-			URL: "example.com",
-		}
-
-		_, status, err := GetStatus("failure message", connectionDetails, client)
-
-		assert.Error(t, err, "Expected Error")
-		assert.Equal(t, "", status)
 	})
 }

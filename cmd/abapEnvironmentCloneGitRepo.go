@@ -23,16 +23,17 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 		Exec: &c,
 	}
 
-	client := piperhttp.Client{}
-	apiManager := abaputils.SoftwareComponentApiManager{}
+	apiManager := abaputils.SoftwareComponentApiManager{
+		Client: &piperhttp.Client{},
+	}
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &client, &apiManager)
+	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &apiManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, client piperhttp.Sender, apiManager abaputils.SoftwareComponentApiManagerInterface) error {
+func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) error {
 	// Mapping for options
 	subOptions := convertCloneConfig(config)
 
@@ -56,7 +57,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	for _, repo := range repositories {
 
 		// New API instance for each request
-		api, errGetAPI := apiManager.GetAPI(connectionDetails, client, repo)
+		api, errGetAPI := apiManager.GetAPI(connectionDetails, repo)
 		if errGetAPI != nil {
 			return errors.Wrap(errGetAPI, "Could not initialize API")
 		}
