@@ -110,7 +110,7 @@ type CommunicationInterface interface {
 }
 
 type Options struct {
-	TmsServiceKey            string                 `json:"tmsServiceKey,omitempty"`
+	ServiceKey               string                 `json:"tmsServiceKey,omitempty"`
 	CustomDescription        string                 `json:"customDescription,omitempty"`
 	NamedUser                string                 `json:"namedUser,omitempty"`
 	NodeName                 string                 `json:"nodeName,omitempty"`
@@ -251,7 +251,7 @@ func SetupCommunication(config Options) (communicationInstance CommunicationInte
 		}
 	}
 
-	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
+	serviceKey, err := unmarshalServiceKey(config.ServiceKey)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
