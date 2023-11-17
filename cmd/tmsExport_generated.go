@@ -19,6 +19,7 @@ import (
 
 type tmsExportOptions struct {
 	TmsServiceKey            string                 `json:"tmsServiceKey,omitempty"`
+	ServiceKey               string                 `json:"serviceKey,omitempty"`
 	CustomDescription        string                 `json:"customDescription,omitempty"`
 	NamedUser                string                 `json:"namedUser,omitempty"`
 	NodeName                 string                 `json:"nodeName,omitempty"`
@@ -101,6 +102,7 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 				return err
 			}
 			log.RegisterSecret(stepConfig.TmsServiceKey)
+			log.RegisterSecret(stepConfig.ServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -170,7 +172,8 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 }
 
 func addTmsExportFlags(cmd *cobra.Command, stepConfig *tmsExportOptions) {
-	cmd.Flags().StringVar(&stepConfig.TmsServiceKey, "tmsServiceKey", os.Getenv("PIPER_tmsServiceKey"), "Service key JSON string to access the SAP Cloud Transport Management service instance APIs. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.")
+	cmd.Flags().StringVar(&stepConfig.TmsServiceKey, "tmsServiceKey", os.Getenv("PIPER_tmsServiceKey"), "DEPRECATION WARNING: This parameter has been deprecated, please use the serviceKey parameter instead, which supports both the SAP Cloud Transport Management (CTMS) serviceKey, as well as the SAP Cloud Application Lifecycle Management (CALM) serviceKey.\nService key JSON string to access the SAP Cloud Transport Management service instance APIs.\n")
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service key JSON string to access the SAP Cloud Transport Management service instance APIs. This can be a SAP Cloud Transport Management (CTMS) serviceKey, or a SAP Cloud Application Lifecycle Management (CALM) serviceKey. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.\n")
 	cmd.Flags().StringVar(&stepConfig.CustomDescription, "customDescription", os.Getenv("PIPER_customDescription"), "Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit ID.")
 	cmd.Flags().StringVar(&stepConfig.NamedUser, "namedUser", `Piper-Pipeline`, "Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'. If pipeline is running on Jenkins, the name of the user, who started the job, is tried to be used at first.")
 	cmd.Flags().StringVar(&stepConfig.NodeName, "nodeName", os.Getenv("PIPER_nodeName"), "Defines the name of the export node - starting node in TMS landscape. The transport request is added to the queues of the follow-on nodes of export node.")
@@ -179,7 +182,7 @@ func addTmsExportFlags(cmd *cobra.Command, stepConfig *tmsExportOptions) {
 
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.")
 
-	cmd.MarkFlagRequired("tmsServiceKey")
+	cmd.MarkFlagRequired("serviceKey")
 	cmd.MarkFlagRequired("nodeName")
 }
 
@@ -194,18 +197,27 @@ func tmsExportMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management service.", Type: "jenkins"},
+					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management (CTMS) service or SAP Cloud Application Lifecycle Management (CALM) service.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildResult", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "tmsServiceKey",
+						Name:        "tmsServiceKey",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_tmsServiceKey"),
+					},
+					{
+						Name: "serviceKey",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "credentialsId",
-								Param: "tmsServiceKey",
+								Param: "serviceKey",
 								Type:  "secret",
 							},
 						},
@@ -213,7 +225,7 @@ func tmsExportMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_tmsServiceKey"),
+						Default:   os.Getenv("PIPER_serviceKey"),
 					},
 					{
 						Name: "customDescription",

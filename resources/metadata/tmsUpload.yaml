@@ -14,7 +14,7 @@ spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management service.
+        description: Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management (CTMS) service or SAP Cloud Application Lifecycle Management (CALM) service.
         type: jenkins
     resources:
       - name: buildResult
@@ -22,7 +22,25 @@ spec:
     params:
       - name: tmsServiceKey
         type: string
-        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.
+        description: >
+          DEPRECATION WARNING: This parameter has been deprecated, please use the serviceKey parameter instead,
+          which supports both the SAP Cloud Transport Management (CTMS) serviceKey,
+          as well as the SAP Cloud Application Lifecycle Management (CALM) serviceKey.
+
+          Service key JSON string to access the SAP Cloud Transport Management service instance APIs.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        mandatory: false
+        secret: true
+      - name: serviceKey
+        type: string
+        description: >
+          Service key JSON string to access the SAP Cloud Transport Management service instance APIs.
+          This can be a SAP Cloud Transport Management (CTMS) serviceKey,
+          or a SAP Cloud Application Lifecycle Management (CALM) serviceKey.
+          If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.
         scope:
           - PARAMETERS
           - STEPS
@@ -32,7 +50,7 @@ spec:
         resourceRef:
           - name: credentialsId
             type: secret
-            param: tmsServiceKey
+            param: serviceKey
       - name: customDescription
         type: string
         description: Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit ID.
