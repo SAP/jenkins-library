@@ -86,6 +86,7 @@ func TestPollEntity(t *testing.T) {
 				logResultError,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "Q" } }`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,

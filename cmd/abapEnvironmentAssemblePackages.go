@@ -155,6 +155,10 @@ func (br *buildWithRepository) start() error {
 				Value:   br.repo.Name + "." + br.repo.Version + "." + br.repo.SpLevel,
 			},
 			{
+				ValueID: "SEMANTIC_VERSION",
+				Value:   br.repo.VersionYAML,
+			},
+			{
 				ValueID: "PACKAGE_TYPE",
 				Value:   br.repo.PackageType,
 			},
@@ -180,11 +184,6 @@ func (br *buildWithRepository) start() error {
 				Value: br.repo.PredecessorCommitID})
 	}
 	if br.repo.CommitID != "" {
-		// old value to be used until 2302 [can be deleted earliest with 2311]
-		valuesInput.Values = append(valuesInput.Values,
-			abapbuild.Value{ValueID: "ACTUAL_DELIVERY_COMMIT",
-				Value: br.repo.CommitID})
-		// new value used as of 2302
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "CURRENT_DELIVERY_COMMIT",
 				Value: br.repo.CommitID})
