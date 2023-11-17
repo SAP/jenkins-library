@@ -253,7 +253,7 @@ func SetupCommunication(config Options) (communicationInstance CommunicationInte
 
 	serviceKey, err := unmarshalServiceKey(config.ServiceKey)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
+		log.Entry().WithError(err).Fatal("Failed to unmarshal service key")
 	}
 	log.RegisterSecret(serviceKey.Uaa.ClientSecret)
 
