@@ -43,7 +43,7 @@ func runTmsUpload(uploadConfig tmsUploadOptions, communicationInstance tms.Commu
 func convertUploadOptions(uploadConfig tmsUploadOptions) tms.Options {
 	var config tms.Options
 	config.ServiceKey = uploadConfig.ServiceKey
-	if len(uploadConfig.TmsServiceKey) > 0 {
+	if uploadConfig.ServiceKey == "" && uploadConfig.TmsServiceKey != "" {
 		config.ServiceKey = uploadConfig.TmsServiceKey
 		log.Entry().Warn("DEPRECATION WARNING: The tmsServiceKey parameter has been deprecated, please use the serviceKey parameter instead.")
 	}
