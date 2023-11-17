@@ -225,7 +225,7 @@ func getSystemBySystemNumber(config *abapLandscapePortalUpdateAddOnProductOption
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	getSystemRawURL := servKey.Url + "/api/v1.0/systems/:" + config.AbapSystemNumber
+	getSystemRawURL := servKey.Url + "/api/systems/" + config.AbapSystemNumber
 	getSystemURL, urlParseErr := url.Parse(getSystemRawURL)
 
 	if urlParseErr != nil {
@@ -281,7 +281,7 @@ func getStatusOfUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	getStatusRawURL := servKey.Url + "/api/v1.0/requests/:" + reqId
+	getStatusRawURL := servKey.Url + "/api/requests/" + reqId
 	getStatusURL, urlParseErr := url.Parse(getStatusRawURL)
 
 	if urlParseErr != nil {
@@ -359,7 +359,7 @@ func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client ht
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	updateAddOnRawURL := servKey.Url + "/api/v1.0/systems/:" + systemId + "/deployProduct"
+	updateAddOnRawURL := servKey.Url + "/api/systems/" + systemId + "/deployProduct"
 
 	// define the request body as a struct
 	reqBody := updateAddOnReq{
@@ -422,7 +422,7 @@ func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, cli
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	cancelUpdateAddOnRawURL := servKey.Url + "/api/v1.0/requests/:" + reqId
+	cancelUpdateAddOnRawURL := servKey.Url + "/api/requests/" + reqId
 	cancelUpdateAddOnURL, urlParseErr := url.Parse(cancelUpdateAddOnRawURL)
 
 	if urlParseErr != nil {
