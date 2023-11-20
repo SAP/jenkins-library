@@ -15,7 +15,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/pkg/errors"
 )
 
@@ -23,14 +22,6 @@ type codeqlExecuteScanUtils interface {
 	command.ExecRunner
 
 	piperutils.FileUtils
-}
-
-type RepoInfo struct {
-	serverUrl string
-	repo      string
-	commitId  string
-	ref       string
-	owner     string
 }
 
 type codeqlExecuteScanUtilsBundle struct {
@@ -97,7 +88,7 @@ func getLangFromBuildTool(buildTool string) string {
 	}
 }
 
-func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
+func getGitRepoInfo(repoUri string, repoInfo *codeql.RepoInfo) error {
 	if repoUri == "" {
 		return errors.New("repository param is not set or it cannot be auto populated")
 	}
@@ -106,43 +97,43 @@ func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 	matches := pat.FindAllStringSubmatch(repoUri, -1)
 	if len(matches) > 0 {
 		match := matches[0]
-		repoInfo.serverUrl = "https://" + match[3]
+		repoInfo.ServerUrl = "https://" + match[3]
 		repoData := strings.Split(strings.TrimSuffix(match[4], ".git"), "/")
 		if len(repoData) != 2 {
 			return fmt.Errorf("Invalid repository %s", repoUri)
 		}
 
-		repoInfo.owner = repoData[0]
-		repoInfo.repo = repoData[1]
+		repoInfo.Owner = repoData[0]
+		repoInfo.Repo = repoData[1]
 		return nil
 	}
 
 	return fmt.Errorf("Invalid repository %s", repoUri)
 }
 
-func initGitInfo(config *codeqlExecuteScanOptions) (RepoInfo, error) {
-	var repoInfo RepoInfo
+func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
+	var repoInfo codeql.RepoInfo
 	err := getGitRepoInfo(config.Repository, &repoInfo)
 	if err != nil {
 		log.Entry().Error(err)
 	}
 
-	repoInfo.ref = config.AnalyzedRef
-	repoInfo.commitId = config.CommitID
+	repoInfo.Ref = config.AnalyzedRef
+	repoInfo.CommitId = config.CommitID
 
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil {
 		log.Entry().Warn("No orchestrator found. We assume piper is running locally.")
 	} else {
-		if repoInfo.ref == "" {
-			repoInfo.ref = provider.GetReference()
+		if repoInfo.Ref == "" {
+			repoInfo.Ref = provider.GetReference()
 		}
 
-		if repoInfo.commitId == "" || repoInfo.commitId == "NA" {
-			repoInfo.commitId = provider.GetCommit()
+		if repoInfo.CommitId == "" || repoInfo.CommitId == "NA" {
+			repoInfo.CommitId = provider.GetCommit()
 		}
 
-		if repoInfo.serverUrl == "" {
+		if repoInfo.ServerUrl == "" {
 			err = getGitRepoInfo(provider.GetRepoURL(), &repoInfo)
 			if err != nil {
 				log.Entry().Error(err)
@@ -150,7 +141,7 @@ func initGitInfo(config *codeqlExecuteScanOptions) (RepoInfo, error) {
 		}
 	}
 	if len(config.TargetGithubRepoURL) > 0 {
-		if strings.Contains(repoInfo.serverUrl, "github") {
+		if strings.Contains(repoInfo.ServerUrl, "github") {
 			log.Entry().Errorf("TargetGithubRepoURL should not be set as the source repo is on github.")
 			return repoInfo, errors.New("TargetGithubRepoURL should not be set as the source repo is on github.")
 		}
@@ -160,9 +151,9 @@ func initGitInfo(config *codeqlExecuteScanOptions) (RepoInfo, error) {
 			return repoInfo, err
 		}
 		if len(config.TargetGithubBranchName) > 0 {
-			repoInfo.ref = config.TargetGithubBranchName
+			repoInfo.Ref = config.TargetGithubBranchName
 			if len(strings.Split(config.TargetGithubBranchName, "/")) < 3 {
-				repoInfo.ref = "refs/heads/" + config.TargetGithubBranchName
+				repoInfo.Ref = "refs/heads/" + config.TargetGithubBranchName
 			}
 		}
 	}
@@ -183,27 +174,27 @@ func getToken(config *codeqlExecuteScanOptions) (bool, string) {
 	return false, ""
 }
 
-func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
+func uploadResults(config *codeqlExecuteScanOptions, repoInfo codeql.RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
 	cmd := []string{"github", "upload-results", "--sarif=" + filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
 
 	if config.GithubToken != "" {
 		cmd = append(cmd, "-a="+token)
 	}
 
-	if repoInfo.commitId != "" {
-		cmd = append(cmd, "--commit="+repoInfo.commitId)
+	if repoInfo.CommitId != "" {
+		cmd = append(cmd, "--commit="+repoInfo.CommitId)
 	}
 
-	if repoInfo.serverUrl != "" {
-		cmd = append(cmd, "--github-url="+repoInfo.serverUrl)
+	if repoInfo.ServerUrl != "" {
+		cmd = append(cmd, "--github-url="+repoInfo.ServerUrl)
 	}
 
-	if repoInfo.repo != "" {
-		cmd = append(cmd, "--repository="+(repoInfo.owner+"/"+repoInfo.repo))
+	if repoInfo.Repo != "" {
+		cmd = append(cmd, "--repository="+(repoInfo.Owner+"/"+repoInfo.Repo))
 	}
 
-	if repoInfo.ref != "" {
-		cmd = append(cmd, "--ref="+repoInfo.ref)
+	if repoInfo.Ref != "" {
+		cmd = append(cmd, "--ref="+repoInfo.Ref)
 	}
 
 	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
@@ -333,9 +324,9 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	if err != nil {
 		return reports, err
 	}
-	repoUrl := fmt.Sprintf("%s/%s/%s", repoInfo.serverUrl, repoInfo.owner, repoInfo.repo)
-	repoReference, err := buildRepoReference(repoUrl, repoInfo.ref)
-	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref)
+	repoUrl := fmt.Sprintf("%s/%s/%s", repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo)
+	repoReference, err := codeql.BuildRepoReference(repoUrl, repoInfo.Ref)
+	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
 
 	if len(config.TargetGithubRepoURL) > 0 {
 		hasToken, token := getToken(config)
@@ -344,9 +335,9 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 		repoUploader, err := codeql.NewGitUploaderInstance(
 			token,
-			repoInfo.ref,
+			repoInfo.Ref,
 			config.Database,
-			repoInfo.commitId,
+			repoInfo.CommitId,
 			config.Repository,
 			config.TargetGithubRepoURL,
 		)
@@ -357,7 +348,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		if err != nil {
 			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
 		}
-		repoInfo.commitId = targetCommitId
+		repoInfo.CommitId = targetCommitId
 	}
 
 	if !config.UploadResults {
@@ -378,8 +369,8 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.Wrap(err, "failed to upload sarif")
 		}
 
-		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
-		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
+		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo, token, []string{})
+		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
@@ -395,14 +386,14 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			for _, scanResult := range scanResults {
 				unaudited := scanResult.Total - scanResult.Audited
 				if unaudited > config.VulnerabilityThresholdTotal {
-					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
+					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
 					return reports, errors.Errorf(msg)
 				}
 			}
 		}
 	}
 
-	toolRecordFileName, err := createAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
+	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, config.ModulePath)
 	if err != nil {
 		log.Entry().Warning("TR_CODEQL: Failed to create toolrecord file ...", err)
 	} else {
@@ -410,87 +401,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	return reports, nil
-}
-
-func createAndPersistToolRecord(utils codeqlExecuteScanUtils, repoInfo RepoInfo, repoReference string, repoUrl string, repoCodeqlScanUrl string) (string, error) {
-	toolRecord, err := createToolRecordCodeql(utils, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
-	if err != nil {
-		return "", err
-	}
-
-	toolRecordFileName, err := persistToolRecord(toolRecord)
-	if err != nil {
-		return "", err
-	}
-
-	return toolRecordFileName, nil
-}
-
-func createToolRecordCodeql(utils codeqlExecuteScanUtils, repoInfo RepoInfo, repoUrl string, repoReference string, repoCodeqlScanUrl string) (*toolrecord.Toolrecord, error) {
-	record := toolrecord.New(utils, "./", "codeql", repoInfo.serverUrl)
-
-	if repoInfo.serverUrl == "" {
-		return record, errors.New("Repository not set")
-	}
-
-	if repoInfo.commitId == "" || repoInfo.commitId == "NA" {
-		return record, errors.New("CommitId not set")
-	}
-
-	if repoInfo.ref == "" {
-		return record, errors.New("Analyzed Reference not set")
-	}
-
-	record.DisplayName = fmt.Sprintf("%s %s - %s %s", repoInfo.owner, repoInfo.repo, repoInfo.ref, repoInfo.commitId)
-	record.DisplayURL = fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref)
-
-	err := record.AddKeyData("repository",
-		fmt.Sprintf("%s/%s", repoInfo.owner, repoInfo.repo),
-		fmt.Sprintf("%s %s", repoInfo.owner, repoInfo.repo),
-		repoUrl)
-	if err != nil {
-		return record, err
-	}
-
-	err = record.AddKeyData("repositoryReference",
-		repoInfo.ref,
-		fmt.Sprintf("%s - %s", repoInfo.repo, repoInfo.ref),
-		repoReference)
-	if err != nil {
-		return record, err
-	}
-
-	err = record.AddKeyData("scanResult",
-		fmt.Sprintf("%s/%s", repoInfo.ref, repoInfo.commitId),
-		fmt.Sprintf("%s %s - %s %s", repoInfo.owner, repoInfo.repo, repoInfo.ref, repoInfo.commitId),
-		fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref))
-	if err != nil {
-		return record, err
-	}
-
-	return record, nil
-}
-
-func buildRepoReference(repository, analyzedRef string) (string, error) {
-	ref := strings.Split(analyzedRef, "/")
-	if len(ref) < 3 {
-		return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
-	}
-	if strings.Contains(analyzedRef, "pull") {
-		if len(ref) < 4 {
-			return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
-		}
-		return fmt.Sprintf("%s/pull/%s", repository, ref[2]), nil
-	}
-	return fmt.Sprintf("%s/tree/%s", repository, ref[2]), nil
-}
-
-func persistToolRecord(toolRecord *toolrecord.Toolrecord) (string, error) {
-	err := toolRecord.Persist()
-	if err != nil {
-		return "", err
-	}
-	return toolRecord.GetFileName(), nil
 }
 
 func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
