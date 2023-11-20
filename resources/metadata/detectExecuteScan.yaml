@@ -127,6 +127,7 @@ spec:
         description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
         aliases:
           - name: detect/serverUrl
+          - name: detectServerUrl
         type: string
         mandatory: true
         scope:
