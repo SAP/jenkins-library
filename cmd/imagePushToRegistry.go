@@ -69,16 +69,6 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	// }
 	// log.Entry().Infoln("dockerConfigDir:", dockerConfigDir)
 
-	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
-	if err != nil {
-		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
-	}
-
-	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, fileUtils)
-	if err != nil {
-		return fmt.Errorf("failed to handle registry credentials for target registry: %w", err)
-	}
-
 	re := regexp.MustCompile(`^https?://`)
 	sourceURL := re.ReplaceAllString(config.SourceRegistryURL, "")
 	fmt.Println(sourceURL)
@@ -86,13 +76,23 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	targetURL := re.ReplaceAllString(config.TargetRegistryURL, "")
 	fmt.Println(targetURL)
 
+	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, sourceURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
+	if err != nil {
+		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
+	}
+
+	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, targetURL, config.TargetRegistryUser, config.TargetRegistryPassword, fileUtils)
+	if err != nil {
+		return fmt.Errorf("failed to handle registry credentials for target registry: %w", err)
+	}
+
 	if len(config.LocalDockerImagePath) > 0 {
 		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, config.TargetRegistryURL)
 		if err != nil {
 			return fmt.Errorf("failed to push to local image to registry: %w", err)
 		}
 	} else {
-		err = copyImage(sourceURL+"/"+config.SourceImageNameTag, "vyacheslavstarostin/"+config.SourceImageNameTag)
+		err = copyImage(sourceURL+"/"+config.SourceImageNameTag, targetURL+"/"+config.SourceImageNameTag)
 		if err != nil {
 			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
 		}
