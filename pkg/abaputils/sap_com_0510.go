@@ -14,15 +14,57 @@ import (
 )
 
 type SAP_COM_0510 struct {
-	con               ConnectionDetailsHTTP
-	client            piperhttp.Sender
-	softwareComponent Repository
-	path              string
-	cloneEntity       string
-	repositoryEntity  string
-	pullEntity        string
-	UUID              string
-	failureMessage    string
+	con              ConnectionDetailsHTTP
+	client           piperhttp.Sender
+	repository       Repository
+	path             string
+	cloneEntity      string
+	repositoryEntity string
+	pullEntity       string
+	UUID             string
+	failureMessage   string
+}
+
+func (api *SAP_COM_0510) Pull() error {
+
+	// Trigger the Pull of a Repository
+	if api.repository.Name == "" {
+		return errors.New("An empty string was passed for the parameter 'repositoryName'")
+	}
+
+	pullConnectionDetails := api.con
+	pullConnectionDetails.URL = api.con.URL + api.path + api.pullEntity
+
+	jsonBody := []byte(api.repository.GetPullRequestBody())
+	resp, err := GetHTTPResponse("POST", pullConnectionDetails, jsonBody, api.client)
+	if err != nil {
+		err = HandleHTTPError(resp, err, "Could not pull the "+api.repository.GetPullLogString(), pullConnectionDetails)
+		return err
+	}
+	defer resp.Body.Close()
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Debug("Triggered Pull of repository / software component")
+
+	// Parse Response
+	var body ActionEntity
+	var abapResp map[string]*json.RawMessage
+	bodyText, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		return err
+	}
+	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
+		return err
+	}
+	if reflect.DeepEqual(ActionEntity{}, body) {
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Error("Could not pull the repository / software component")
+		err := errors.New("Request to ABAP System not successful")
+		return err
+	}
+
+	api.UUID = body.UUID
+	return nil
 }
 
 func (api *SAP_COM_0510) GetLogProtocol(logOverviewEntry LogResultsV2, page int) (body LogProtocolResults, err error) {
@@ -131,18 +173,18 @@ func (api *SAP_COM_0510) GetAction() (string, error) {
 
 func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 
-	if api.softwareComponent.Name == "" {
+	if api.repository.Name == "" {
 		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
 
 	swcConnectionDetails := api.con
-	swcConnectionDetails.URL = api.con.URL + api.path + api.repositoryEntity + "('" + strings.Replace(api.softwareComponent.Name, "/", "%2F", -1) + "')"
+	swcConnectionDetails.URL = api.con.URL + api.path + api.repositoryEntity + "('" + strings.Replace(api.repository.Name, "/", "%2F", -1) + "')"
 	resp, err := GetHTTPResponse("GET", swcConnectionDetails, nil, api.client)
 	if err != nil {
-		return false, "", err
+		errRepo := HandleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
+		return false, "", errRepo
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.softwareComponent.Name).WithField("branchName", api.softwareComponent.Branch).WithField("commitID", api.softwareComponent.CommitID).WithField("Tag", api.softwareComponent.Tag).Info("Triggered Clone of Repository / Software Component")
 
 	var body RepositoryEntity
 	var abapResp map[string]*json.RawMessage
@@ -157,7 +199,7 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 		return false, "", err
 	}
 	if reflect.DeepEqual(RepositoryEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.softwareComponent.Name).WithField("branchName", api.softwareComponent.Branch).WithField("commitID", api.softwareComponent.CommitID).WithField("Tag", api.softwareComponent.Tag).Error("Could not Clone the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Error("Could not Clone the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
 		return false, "", err
 	}
@@ -172,20 +214,21 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 func (api *SAP_COM_0510) Clone() error {
 
 	// Trigger the Clone of a Repository
-	if api.softwareComponent.Name == "" {
+	if api.repository.Name == "" {
 		return errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
 
 	cloneConnectionDetails := api.con
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.cloneEntity
 
-	jsonBody := []byte(api.softwareComponent.GetCloneRequestBody())
+	jsonBody := []byte(api.repository.GetCloneRequestBody())
 	resp, err := GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, api.client)
 	if err != nil {
-		return err
+		errClone := HandleHTTPError(resp, err, "Triggering the clone action failed", api.con)
+		return errClone
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.softwareComponent.Name).WithField("branchName", api.softwareComponent.Branch).WithField("commitID", api.softwareComponent.CommitID).WithField("Tag", api.softwareComponent.Tag).Info("Triggered Clone of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Info("Triggered Clone of Repository / Software Component")
 
 	// Parse Response
 	var body CloneEntity
@@ -201,7 +244,7 @@ func (api *SAP_COM_0510) Clone() error {
 		return err
 	}
 	if reflect.DeepEqual(CloneEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.softwareComponent.Name).WithField("branchName", api.softwareComponent.Branch).WithField("commitID", api.softwareComponent.CommitID).WithField("Tag", api.softwareComponent.Tag).Error("Could not Clone the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Error("Could not Clone the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
 		return err
 	}
@@ -246,11 +289,11 @@ func (api *SAP_COM_0510) initialRequest() error {
 func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
 	api.con = con
 	api.client = client
-	api.softwareComponent = repo
+	api.repository = repo
 	api.path = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY"
 	api.cloneEntity = "/Clones"
 	api.repositoryEntity = "/Repositories"
 	api.pullEntity = "/Pull"
-	api.failureMessage = "Could not pull the Repository / Software Component " + api.softwareComponent.Name
+	api.failureMessage = "Could not pull the Repository / Software Component " + api.repository.Name
 
 }

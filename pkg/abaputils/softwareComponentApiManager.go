@@ -1,15 +1,19 @@
 package abaputils
 
 import (
+	"time"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 type SoftwareComponentApiManagerInterface interface {
 	GetAPI(con ConnectionDetailsHTTP, repo Repository) (SoftwareComponentApiInterface, error)
+	GetPollIntervall() time.Duration
 }
 
 type SoftwareComponentApiManager struct {
-	Client piperhttp.Sender
+	Client        piperhttp.Sender
+	PollIntervall time.Duration
 }
 
 func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, repo Repository) (SoftwareComponentApiInterface, error) {
@@ -22,10 +26,18 @@ func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, re
 	return &sap_com_0510, err
 }
 
+func (manager *SoftwareComponentApiManager) GetPollIntervall() time.Duration {
+	if manager.PollIntervall == 0 {
+		manager.PollIntervall = 5 * time.Second
+	}
+	return manager.PollIntervall
+}
+
 type SoftwareComponentApiInterface interface {
 	init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository)
 	initialRequest() error
 	Clone() error
+	Pull() error
 	GetRepository() (bool, string, error)
 	GetAction() (string, error)
 	GetLogOverview() (ActionEntity, error)

@@ -24,7 +24,8 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 	}
 
 	apiManager := abaputils.SoftwareComponentApiManager{
-		Client: &piperhttp.Client{},
+		Client:        &piperhttp.Client{},
+		PollIntervall: 5 * time.Second,
 	}
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &apiManager)
@@ -59,7 +60,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		// New API instance for each request
 		api, errGetAPI := apiManager.GetAPI(connectionDetails, repo)
 		if errGetAPI != nil {
-			return errors.Wrap(errGetAPI, "Could not initialize API")
+			return errors.Wrap(errGetAPI, "Could not initialize the connection to the system")
 		}
 
 		logString := repo.GetCloneLogString()
@@ -70,7 +71,6 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		abaputils.AddDefaultDashedLine()
 
 		// Triggering the Clone of the repository into the ABAP Environment system
-		// uriConnectionDetails, errorTriggerClone, didCheckoutPullInstead := triggerClone(repo, api)
 		alreadyCloned, activeBranch, errCheckCloned := api.GetRepository()
 		if errCheckCloned != nil {
 			return errors.Wrapf(errCheckCloned, errorString)
@@ -84,8 +84,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		}
 		// Polling the status of the repository import on the ABAP Environment system
 		// If the repository had been cloned already, as checkout/pull has been done - polling the status is not necessary anymore
-		pollIntervall := 5 * time.Second
-		status, errorPollEntity := abaputils.PollEntity(api, pollIntervall)
+		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
 		if errorPollEntity != nil {
 			return errors.Wrapf(errorPollEntity, errorString)
 		}

@@ -140,6 +140,8 @@ func allLogsHaveBeenPrinted(entity LogProtocolResults, page int, err error) bool
 	numberOfProtocols, errConversion := strconv.Atoi(entity.Count)
 	if errConversion == nil {
 		allPagesHaveBeenRead = numberOfProtocols <= page*numberOfEntriesPerPage
+	} else {
+		return true
 	}
 	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(entity.Results, LogProtocolResults{}))
 }
