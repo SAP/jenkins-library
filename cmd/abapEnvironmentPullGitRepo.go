@@ -107,61 +107,6 @@ func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, 
 	return err
 }
 
-// func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
-
-// 	uriConnectionDetails := pullConnectionDetails
-// 	uriConnectionDetails.URL = ""
-// 	pullConnectionDetails.XCsrfToken = "fetch"
-
-// 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-// 	resp, err := abaputils.GetHTTPResponse("HEAD", pullConnectionDetails, nil, client)
-// 	if err != nil {
-// 		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
-// 		return uriConnectionDetails, err
-// 	}
-// 	defer resp.Body.Close()
-
-// 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Debug("Authentication on the ABAP system successful")
-// 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
-// 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
-
-// 	// Trigger the Pull of a Repository
-// 	if repo.Name == "" {
-// 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
-// 	}
-
-// 	jsonBody := []byte(repo.GetPullRequestBody())
-// 	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
-// 	if err != nil {
-// 		err = abaputils.HandleHTTPError(resp, err, "Could not pull the "+repo.GetPullLogString(), uriConnectionDetails)
-// 		return uriConnectionDetails, err
-// 	}
-// 	defer resp.Body.Close()
-// 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Debug("Triggered Pull of repository / software component")
-
-// 	// Parse Response
-// 	var body abaputils.PullEntity
-// 	var abapResp map[string]*json.RawMessage
-// 	bodyText, errRead := io.ReadAll(resp.Body)
-// 	if errRead != nil {
-// 		return uriConnectionDetails, err
-// 	}
-// 	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-// 		return uriConnectionDetails, err
-// 	}
-// 	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-// 		return uriConnectionDetails, err
-// 	}
-// 	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
-// 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not pull the repository / software component")
-// 		err := errors.New("Request to ABAP System not successful")
-// 		return uriConnectionDetails, err
-// 	}
-
-// 	uriConnectionDetails.URL = body.Metadata.URI
-// 	return uriConnectionDetails, nil
-// }
-
 func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions) error {
 
 	if (len(options.RepositoryNames) > 0 && options.Repositories != "") || (len(options.RepositoryNames) > 0 && options.RepositoryName != "") || (options.RepositoryName != "" && options.Repositories != "") {

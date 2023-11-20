@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -45,7 +44,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 
 	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories}, true)
 	if errGetRepos != nil {
-		return fmt.Errorf("Something failed during the clone: %w", errGetRepos)
+		return errors.Wrap(errGetRepos, "Could not read repositories")
 	}
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key

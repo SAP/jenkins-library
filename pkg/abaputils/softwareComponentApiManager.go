@@ -38,6 +38,7 @@ type SoftwareComponentApiInterface interface {
 	initialRequest() error
 	Clone() error
 	Pull() error
+	CheckoutBranch() error
 	GetRepository() (bool, string, error)
 	GetAction() (string, error)
 	GetLogOverview() (ActionEntity, error)

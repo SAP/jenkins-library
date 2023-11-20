@@ -2,6 +2,7 @@ package abaputils
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http/cookiejar"
 	"reflect"
@@ -20,9 +21,55 @@ type SAP_COM_0510 struct {
 	path             string
 	cloneEntity      string
 	repositoryEntity string
-	pullEntity       string
+	checkoutAction   string
+	ActionEntity     string
 	UUID             string
 	failureMessage   string
+}
+
+func (api *SAP_COM_0510) CheckoutBranch() error {
+
+	if api.repository.Name == "" || api.repository.Branch == "" {
+		return fmt.Errorf("Failed to trigger checkout: %w", errors.New("Repository and/or Branch Configuration is empty. Please make sure that you have specified the correct values"))
+	}
+
+	// the request looks like: POST/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/checkout_branch?branch_name='newBranch'&sc_name=/DMO/GIT_REPOSITORY'
+	checkoutConnectionDetails := api.con
+	checkoutConnectionDetails.URL = api.con.URL + api.path + api.checkoutAction + `?branch_name='` + api.repository.Branch + `'&sc_name='` + api.repository.Name + `'`
+
+	jsonBody := []byte(``)
+
+	// no JSON body needed
+	resp, err := GetHTTPResponse("POST", checkoutConnectionDetails, jsonBody, api.client)
+	if err != nil {
+		err = HandleHTTPError(resp, err, "Could not trigger checkout of branch "+api.repository.Branch, checkoutConnectionDetails)
+		return err
+	}
+	defer resp.Body.Close()
+	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).Debug("Triggered checkout of branch")
+
+	// Parse Response
+	var body ActionEntity
+	var abapResp map[string]*json.RawMessage
+	bodyText, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		return err
+	}
+	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
+		return err
+	}
+
+	if reflect.DeepEqual(ActionEntity{}, body) {
+		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", api.repository.Branch).Error("Could not switch to specified branch")
+		err := errors.New("Request to ABAP System failed")
+		return err
+	}
+
+	api.UUID = body.UUID
+	return nil
 }
 
 func (api *SAP_COM_0510) Pull() error {
@@ -33,7 +80,7 @@ func (api *SAP_COM_0510) Pull() error {
 	}
 
 	pullConnectionDetails := api.con
-	pullConnectionDetails.URL = api.con.URL + api.path + api.pullEntity
+	pullConnectionDetails.URL = api.con.URL + api.path + api.ActionEntity
 
 	jsonBody := []byte(api.repository.GetPullRequestBody())
 	resp, err := GetHTTPResponse("POST", pullConnectionDetails, jsonBody, api.client)
@@ -98,7 +145,7 @@ func (api *SAP_COM_0510) GetLogProtocol(logOverviewEntry LogResultsV2, page int)
 func (api *SAP_COM_0510) GetLogOverview() (body ActionEntity, err error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = api.con.URL + api.path + api.pullEntity + "(uuid=guid'" + api.UUID + "')" + "?$expand=to_Log_Overview"
+	connectionDetails.URL = api.con.URL + api.path + api.ActionEntity + "(uuid=guid'" + api.UUID + "')" + "?$expand=to_Log_Overview"
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -136,7 +183,7 @@ func (api *SAP_COM_0510) GetLogOverview() (body ActionEntity, err error) {
 func (api *SAP_COM_0510) GetAction() (string, error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = api.con.URL + api.path + api.pullEntity + "(uuid=guid'" + api.UUID + "')"
+	connectionDetails.URL = api.con.URL + api.path + api.ActionEntity + "(uuid=guid'" + api.UUID + "')"
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -293,7 +340,8 @@ func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.path = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY"
 	api.cloneEntity = "/Clones"
 	api.repositoryEntity = "/Repositories"
-	api.pullEntity = "/Pull"
+	api.ActionEntity = "/Pull"
+	api.checkoutAction = "/checkout_branch"
 	api.failureMessage = "Could not pull the Repository / Software Component " + api.repository.Name
 
 }
