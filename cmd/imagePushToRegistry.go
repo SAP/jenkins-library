@@ -69,6 +69,8 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	// }
 	// log.Entry().Infoln("dockerConfigDir:", dockerConfigDir)
 
+	fmt.Printf("DockerConfigJSON: %v\n", config.DockerConfigJSON)
+
 	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
 	if err != nil {
 		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
@@ -131,7 +133,7 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 	}
 
 	if len(dockerConfigJsonPath) > 0 && len(registryURL) > 0 && len(password) > 0 && len(registryURL) > 0 {
-		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", "/root/.docker/config.json", fileUtils)
+		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", dockerConfigJsonPath, fileUtils)
 		if err != nil {
 			return errors.Wrapf(err, "failed to update existing docker config json file '%v'", dockerConfigJsonPath)
 		}
@@ -154,9 +156,9 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 
 	fmt.Println("dockerConfig:", string(dockerConfig))
 
-	// if err := fileUtils.FileWrite("/root/.docker/config.json", dockerConfig, 0644); err != nil {
-	// 	return errors.Wrap(err, "failed to write file "+dockerConfigFile)
-	// }
+	if err := fileUtils.FileWrite("/root/.docker/config.json", dockerConfig, 0644); err != nil {
+		return errors.Wrap(err, "failed to write file "+dockerConfigFile)
+	}
 
 	return nil
 }
