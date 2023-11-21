@@ -43,6 +43,7 @@ type SoftwareComponentApiInterface interface {
 	GetAction() (string, error)
 	GetLogOverview() (ActionEntity, error)
 	GetLogProtocol(LogResultsV2, int) (body LogProtocolResults, err error)
+	CreateTag(tag Tag) error
 }
 
 /****************************************
@@ -165,4 +166,26 @@ type RepositoriesConfig struct {
 
 type EntitySetsForManageGitRepository struct {
 	EntitySets []string `json:"EntitySets"`
+}
+
+type CreateTagBacklog struct {
+	RepositoryName string
+	CommitID       string
+	Tags           []Tag
+}
+
+type Tag struct {
+	TagName        string
+	TagDescription string
+}
+
+type CreateTagBody struct {
+	RepositoryName string `json:"sc_name"`
+	CommitID       string `json:"commit_id"`
+	Tag            string `json:"tag_name"`
+	Description    string `json:"tag_description"`
+}
+
+type CreateTagResponse struct {
+	UUID string `json:"uuid"`
 }

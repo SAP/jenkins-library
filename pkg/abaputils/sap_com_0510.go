@@ -21,10 +21,46 @@ type SAP_COM_0510 struct {
 	path             string
 	cloneEntity      string
 	repositoryEntity string
+	tagsEntity       string
 	checkoutAction   string
 	ActionEntity     string
 	UUID             string
 	failureMessage   string
+}
+
+func (api *SAP_COM_0510) CreateTag(tag Tag) error {
+
+	con := api.con
+	con.URL = api.con.URL + api.path + api.tagsEntity
+
+	requestBodyStruct := CreateTagBody{RepositoryName: api.repository.Name, CommitID: api.repository.CommitID, Tag: tag.TagName, Description: tag.TagDescription}
+	requestBodyJson, err := json.Marshal(&requestBodyStruct)
+	if err != nil {
+		return err
+	}
+
+	log.Entry().Debugf("Request body: %s", requestBodyJson)
+	resp, err := GetHTTPResponse("POST", con, requestBodyJson, api.client)
+	if err != nil {
+		errorMessage := "Could not create tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID
+		err = HandleHTTPError(resp, err, errorMessage, con)
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	var createTagResponse CreateTagResponse
+	var abapResp map[string]*json.RawMessage
+	bodyText, _ := io.ReadAll(resp.Body)
+
+	if err = json.Unmarshal(bodyText, &abapResp); err != nil {
+		return err
+	}
+	if err = json.Unmarshal(*abapResp["d"], &createTagResponse); err != nil {
+		return err
+	}
+	api.UUID = createTagResponse.UUID
+	return nil
 }
 
 func (api *SAP_COM_0510) CheckoutBranch() error {
@@ -340,8 +376,9 @@ func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.path = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY"
 	api.cloneEntity = "/Clones"
 	api.repositoryEntity = "/Repositories"
+	api.tagsEntity = "/Tags"
 	api.ActionEntity = "/Pull"
 	api.checkoutAction = "/checkout_branch"
-	api.failureMessage = "Could not pull the Repository / Software Component " + api.repository.Name
+	api.failureMessage = "The action of the Repository / Software Component " + api.repository.Name + " failed"
 
 }

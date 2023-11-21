@@ -1,249 +1,171 @@
 package cmd
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
-func abapEnvironmentCreateTag(config abapEnvironmentCreateTagOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentCreateTag(config abapEnvironmentCreateTagOptions, _ *telemetry.CustomData) {
 
 	c := command.Command{}
 
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	// var autils = abaputils.AbapUtils{
-	// 	Exec: &c,
-	// }
+	var autils = abaputils.AbapUtils{
+		Exec: &c,
+	}
 
-	// client := piperhttp.Client{}
+	apiManager := abaputils.SoftwareComponentApiManager{
+		Client:        &piperhttp.Client{},
+		PollIntervall: 5 * time.Second,
+	}
 
-	// if err := runAbapEnvironmentCreateTag(&config, telemetryData, &autils, &client); err != nil {
-	// 	log.Entry().WithError(err).Fatal("step execution failed")
-	// }
+	if err := runAbapEnvironmentCreateTag(&config, &autils, &apiManager); err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
 }
 
-// func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
+func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) error {
 
-// 	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(convertTagConfig(config), "")
-// 	if errorGetInfo != nil {
-// 		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
-// 	}
+	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(convertTagConfig(config), "")
+	if errorGetInfo != nil {
+		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
+	}
 
-// 	// Configuring the HTTP Client and CookieJar
-// 	cookieJar, errorCookieJar := cookiejar.New(nil)
-// 	if errorCookieJar != nil {
-// 		return errors.Wrap(errorCookieJar, "Could not create a Cookie Jar")
-// 	}
+	backlog, errorPrepare := prepareBacklog(config)
+	if errorPrepare != nil {
+		return fmt.Errorf("Something failed during the tag creation: %w", errorPrepare)
+	}
 
-// 	client.SetOptions(piperhttp.ClientOptions{
-// 		MaxRequestDuration: 180 * time.Second,
-// 		CookieJar:          cookieJar,
-// 		Username:           connectionDetails.User,
-// 		Password:           connectionDetails.Password,
-// 	})
+	return createTags(backlog, connectionDetails, apiManager)
+}
 
-// 	backlog, errorPrepare := prepareBacklog(config)
-// 	if errorPrepare != nil {
-// 		return fmt.Errorf("Something failed during the tag creation: %w", errorPrepare)
-// 	}
+func createTags(backlog []abaputils.CreateTagBacklog, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
 
-// 	return createTags(backlog, telemetryData, connectionDetails, client, com)
-// }
+	errorOccurred := false
+	for _, item := range backlog {
+		err = createTagsForSingleItem(item, con, apiManager)
+		if err != nil {
+			errorOccurred = true
+		}
+	}
 
-// func createTags(backlog []CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
+	if errorOccurred {
+		message := "At least one tag has not been created"
+		log.Entry().Errorf(message)
+		return errors.New(message)
+	}
+	return nil
 
-// 	connection := con
-// 	connection.XCsrfToken = "fetch"
-// 	connection.URL = con.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Tags"
-// 	resp, err := abaputils.GetHTTPResponse("HEAD", connection, nil, client)
-// 	if err != nil {
-// 		return abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", con)
-// 	}
-// 	defer resp.Body.Close()
+}
 
-// 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", connection.URL).Debug("Authentication on the ABAP system successful")
-// 	connection.XCsrfToken = resp.Header.Get("X-Csrf-Token")
+func createTagsForSingleItem(item abaputils.CreateTagBacklog, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
 
-// 	errorOccurred := false
-// 	for _, item := range backlog {
-// 		err = createTagsForSingleItem(item, telemetryData, connection, client, com)
-// 		if err != nil {
-// 			errorOccurred = true
-// 		}
-// 	}
+	errorOccurred := false
+	for index := range item.Tags {
+		err = createSingleTag(item, index, con, apiManager)
+		if err != nil {
+			errorOccurred = true
+		}
+	}
+	if errorOccurred {
+		message := "At least one tag has not been created"
+		err = errors.New(message)
+	}
+	return err
+}
 
-// 	if errorOccurred {
-// 		message := "At least one tag has not been created"
-// 		log.Entry().Errorf(message)
-// 		return errors.New(message)
-// 	}
-// 	return nil
+func createSingleTag(item abaputils.CreateTagBacklog, index int, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
 
-// }
+	api, errGetAPI := apiManager.GetAPI(con, abaputils.Repository{Name: item.RepositoryName, CommitID: item.CommitID})
+	if errGetAPI != nil {
+		return errors.Wrap(errGetAPI, "Could not initialize the connection to the system")
+	}
 
-// func createTagsForSingleItem(item CreateTagBacklog, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
+	createTagError := api.CreateTag(item.Tags[index])
+	if createTagError != nil {
+		return errors.Wrapf(err, "Creation of Tag failed on the ABAP system")
+	}
 
-// 	errorOccurred := false
-// 	for index := range item.tags {
-// 		err = createSingleTag(item, index, telemetryData, con, client, com)
-// 		if err != nil {
-// 			errorOccurred = true
-// 		}
-// 	}
-// 	if errorOccurred {
-// 		message := "At least one tag has not been created"
-// 		err = errors.New(message)
-// 	}
-// 	return err
-// }
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
 
-// func createSingleTag(item CreateTagBacklog, index int, telemetryData *telemetry.CustomData, con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
+	if errorPollEntity == nil && status == "S" {
+		log.Entry().Info("Created tag " + item.Tags[index].TagName + " for repository " + item.RepositoryName + " with commitID " + item.CommitID)
+	} else {
+		log.Entry().Error("NOT created: Tag " + item.Tags[index].TagName + " for repository " + item.RepositoryName + " with commitID " + item.CommitID)
+		err = errors.New("Creation of Tag failed on the ABAP system")
+	}
 
-// 	requestBodyStruct := CreateTagBody{RepositoryName: item.repositoryName, CommitID: item.commitID, Tag: item.tags[index].tagName, Description: item.tags[index].tagDescription}
-// 	requestBodyJson, err := json.Marshal(&requestBodyStruct)
-// 	if err != nil {
-// 		return err
-// 	}
+	return err
+}
 
-// 	log.Entry().Debugf("Request body: %s", requestBodyJson)
-// 	resp, err := abaputils.GetHTTPResponse("POST", con, requestBodyJson, client)
-// 	if err != nil {
-// 		errorMessage := "Could not create tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID
-// 		err = abaputils.HandleHTTPError(resp, err, errorMessage, con)
-// 		return err
-// 	}
-// 	defer resp.Body.Close()
+func prepareBacklog(config *abapEnvironmentCreateTagOptions) (backlog []abaputils.CreateTagBacklog, err error) {
 
-// 	// Parse response
-// 	var createTagResponse CreateTagResponse
-// 	var abapResp map[string]*json.RawMessage
-// 	bodyText, _ := io.ReadAll(resp.Body)
+	if config.Repositories != "" && config.RepositoryName != "" {
+		return nil, errors.New("Configuring the parameter repositories and the parameter repositoryName at the same time is not allowed")
+	}
 
-// 	if err = json.Unmarshal(bodyText, &abapResp); err != nil {
-// 		return err
-// 	}
-// 	if err = json.Unmarshal(*abapResp["d"], &createTagResponse); err != nil {
-// 		return err
-// 	}
+	if config.RepositoryName != "" && config.CommitID != "" {
+		backlog = append(backlog, abaputils.CreateTagBacklog{RepositoryName: config.RepositoryName, CommitID: config.CommitID})
+	}
 
-// 	con.URL = con.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(guid'" + createTagResponse.UUID + "')"
-// 	err = checkStatus(con, client, com)
+	if config.Repositories != "" {
+		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories) //config.Repositories should contain a file name
+		if err != nil {
+			return nil, err
+		}
+		for _, repo := range descriptor.Repositories {
+			backlogInstance := abaputils.CreateTagBacklog{RepositoryName: repo.Name, CommitID: repo.CommitID}
+			if config.GenerateTagForAddonComponentVersion && repo.VersionYAML != "" {
+				tag := abaputils.Tag{TagName: "v" + repo.VersionYAML, TagDescription: "Generated by the ABAP Environment Pipeline"}
+				backlogInstance.Tags = append(backlogInstance.Tags, tag)
+			}
+			backlog = append(backlog, backlogInstance)
+		}
+		if config.GenerateTagForAddonProductVersion {
+			if descriptor.AddonProduct != "" && descriptor.AddonVersionYAML != "" {
+				addonProductDash := strings.Replace(descriptor.AddonProduct, "/", "-", 2)
+				backlog = addTagToList(backlog, addonProductDash+"-"+descriptor.AddonVersionYAML, "Generated by the ABAP Environment Pipeline")
+			} else {
+				log.Entry().WithField("generateTagForAddonProductVersion", config.GenerateTagForAddonProductVersion).WithField("AddonProduct", descriptor.AddonProduct).WithField("AddonVersion", descriptor.AddonVersionYAML).Infof("Not all required values are provided to create an addon product version tag")
+			}
+		}
+	}
+	if config.TagName != "" {
+		backlog = addTagToList(backlog, config.TagName, config.TagDescription)
+	}
+	return backlog, nil
+}
 
-// 	if err == nil {
-// 		log.Entry().Info("Created tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
-// 	} else {
-// 		log.Entry().Error("NOT created: Tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID)
-// 	}
+func addTagToList(backlog []abaputils.CreateTagBacklog, tag string, description string) []abaputils.CreateTagBacklog {
 
-// 	return err
-// }
+	for i, item := range backlog {
+		tag := abaputils.Tag{TagName: tag, TagDescription: description}
+		backlog[i].Tags = append(item.Tags, tag)
+	}
+	return backlog
+}
 
-// func checkStatus(con abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, com abaputils.Communication) (err error) {
-// 	var status string
-// 	pollIntervall := com.GetPollIntervall()
-// 	count := 0
-// 	for {
-// 		count += 1
-// 		entity, _, err := abaputils.GetStatus("Could not create Tag", con, client)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		status = entity.Status
-// 		if status != "R" {
-// 			if status == "E" {
-// 				err = errors.New("Could not create Tag")
-// 			}
-// 			return err
-// 		}
-// 		if count >= 200 {
-// 			return errors.New("Could not create Tag (Timeout)")
-// 		}
-// 		time.Sleep(pollIntervall)
-// 	}
-// }
+func convertTagConfig(config *abapEnvironmentCreateTagOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
 
-// func prepareBacklog(config *abapEnvironmentCreateTagOptions) (backlog []CreateTagBacklog, err error) {
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
 
-// 	if config.Repositories != "" && config.RepositoryName != "" {
-// 		return nil, errors.New("Configuring the parameter repositories and the parameter repositoryName at the same time is not allowed")
-// 	}
-
-// 	if config.RepositoryName != "" && config.CommitID != "" {
-// 		backlog = append(backlog, CreateTagBacklog{repositoryName: config.RepositoryName, commitID: config.CommitID})
-// 	}
-
-// 	if config.Repositories != "" {
-// 		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories) //config.Repositories should contain a file name
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		for _, repo := range descriptor.Repositories {
-// 			backlogInstance := CreateTagBacklog{repositoryName: repo.Name, commitID: repo.CommitID}
-// 			if config.GenerateTagForAddonComponentVersion && repo.VersionYAML != "" {
-// 				tag := Tag{tagName: "v" + repo.VersionYAML, tagDescription: "Generated by the ABAP Environment Pipeline"}
-// 				backlogInstance.tags = append(backlogInstance.tags, tag)
-// 			}
-// 			backlog = append(backlog, backlogInstance)
-// 		}
-// 		if config.GenerateTagForAddonProductVersion {
-// 			if descriptor.AddonProduct != "" && descriptor.AddonVersionYAML != "" {
-// 				addonProductDash := strings.Replace(descriptor.AddonProduct, "/", "-", 2)
-// 				backlog = addTagToList(backlog, addonProductDash+"-"+descriptor.AddonVersionYAML, "Generated by the ABAP Environment Pipeline")
-// 			} else {
-// 				log.Entry().WithField("generateTagForAddonProductVersion", config.GenerateTagForAddonProductVersion).WithField("AddonProduct", descriptor.AddonProduct).WithField("AddonVersion", descriptor.AddonVersionYAML).Infof("Not all required values are provided to create an addon product version tag")
-// 			}
-// 		}
-// 	}
-// 	if config.TagName != "" {
-// 		backlog = addTagToList(backlog, config.TagName, config.TagDescription)
-// 	}
-// 	return backlog, nil
-// }
-
-// func addTagToList(backlog []CreateTagBacklog, tag string, description string) []CreateTagBacklog {
-
-// 	for i, item := range backlog {
-// 		tag := Tag{tagName: tag, tagDescription: description}
-// 		backlog[i].tags = append(item.tags, tag)
-// 	}
-// 	return backlog
-// }
-
-// func convertTagConfig(config *abapEnvironmentCreateTagOptions) abaputils.AbapEnvironmentOptions {
-// 	subOptions := abaputils.AbapEnvironmentOptions{}
-
-// 	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
-// 	subOptions.CfServiceInstance = config.CfServiceInstance
-// 	subOptions.CfServiceKeyName = config.CfServiceKeyName
-// 	subOptions.CfOrg = config.CfOrg
-// 	subOptions.CfSpace = config.CfSpace
-// 	subOptions.Host = config.Host
-// 	subOptions.Password = config.Password
-// 	subOptions.Username = config.Username
-
-// 	return subOptions
-// }
-
-// type CreateTagBacklog struct {
-// 	repositoryName string
-// 	commitID       string
-// 	tags           []Tag
-// }
-
-// type Tag struct {
-// 	tagName        string
-// 	tagDescription string
-// }
-
-// type CreateTagBody struct {
-// 	RepositoryName string `json:"sc_name"`
-// 	CommitID       string `json:"commit_id"`
-// 	Tag            string `json:"tag_name"`
-// 	Description    string `json:"tag_description"`
-// }
-
-// type CreateTagResponse struct {
-// 	UUID string `json:"uuid"`
-// }
+	return subOptions
+}
