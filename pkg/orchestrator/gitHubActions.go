@@ -176,16 +176,12 @@ func (g *GitHubActionsConfigProvider) GetReference() string {
 // GetBuildURL returns the builds URL. The URL should point to the pipeline (not to the stage)
 // that is currently being executed. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
 func (g *GitHubActionsConfigProvider) GetBuildURL() string {
-	// to be deleted
-	log.Entry().Infoln("Build URL:", g.GetRepoURL()+"/actions/runs/"+g.GetBuildID())
 	return g.GetRepoURL() + "/actions/runs/" + g.GetBuildID()
 }
 
 // GetJobURL returns the job URL. The URL should point to project’s pipelines.
 // For example, https://github.com/SAP/jenkins-library/actions
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
-	// to be deleted
-	log.Entry().Infoln("job URL:", g.GetRepoURL()+"/actions")
 	return g.GetRepoURL() + "/actions"
 }
 

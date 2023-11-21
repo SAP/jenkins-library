@@ -4,16 +4,14 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
-
-	"net/http"
-	"net/url"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 )
 
 // eventType
@@ -90,13 +88,11 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 
 func (t *Telemetry) getPipelineURLHash() string {
 	jobURL := t.provider.GetJobURL()
-	log.Entry().Infoln("jobURL:", jobURL)
 	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
 	buildURL := t.provider.GetBuildURL()
-	log.Entry().Infoln("buildURL:", buildURL)
 	return t.toSha1OrNA(buildURL)
 }
 
