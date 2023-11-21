@@ -71,8 +71,8 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	re := regexp.MustCompile(`^https?://`)
 	sourceRegistry := re.ReplaceAllString(config.SourceRegistryURL, "")
 	targetRegistry := re.ReplaceAllString(config.TargetRegistryURL, "")
-	src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImageNameTag)
-	dst := fmt.Sprintf("%s/%s", targetRegistry, config.SourceImageNameTag)
+	src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImage)
+	dst := fmt.Sprintf("%s/%s", targetRegistry, config.SourceImage)
 
 	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
 	if err != nil {
