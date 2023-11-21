@@ -34,6 +34,10 @@ func (api *SAP_COM_0510) getUUID() string {
 
 func (api *SAP_COM_0510) CreateTag(tag Tag) error {
 
+	if reflect.DeepEqual(Tag{}, tag) {
+		return errors.New("No Tag provided")
+	}
+
 	con := api.con
 	con.URL = api.con.URL + api.path + api.tagsEntity
 
@@ -61,6 +65,11 @@ func (api *SAP_COM_0510) CreateTag(tag Tag) error {
 		return err
 	}
 	if err = json.Unmarshal(*abapResp["d"], &createTagResponse); err != nil {
+		return err
+	}
+	if createTagResponse.UUID == "" {
+		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", api.repository.Branch).Error("Could not switch to specified branch")
+		err := errors.New("Request to ABAP System not successful")
 		return err
 	}
 	api.uuid = createTagResponse.UUID
@@ -104,7 +113,7 @@ func (api *SAP_COM_0510) CheckoutBranch() error {
 
 	if reflect.DeepEqual(ActionEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", api.repository.Branch).Error("Could not switch to specified branch")
-		err := errors.New("Request to ABAP System failed")
+		err := errors.New("Request to ABAP System not successful")
 		return err
 	}
 
