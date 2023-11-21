@@ -59,7 +59,7 @@ func PrintLogs(api SoftwareComponentApiInterface) {
 	for _, logEntryForDetails := range entity.ToLogOverview.Results {
 		printLog(logEntryForDetails, api)
 	}
-	AddDefaultDashedLine()
+	AddDefaultDashedLine(1)
 
 	return
 }
@@ -101,20 +101,15 @@ func printDashedLine(i int) {
 func printLog(logOverviewEntry LogResultsV2, api SoftwareComponentApiInterface) {
 
 	page := 0
-
 	printHeader(logOverviewEntry)
-
 	for {
 		logProtocolEntry, err := api.GetLogProtocol(logOverviewEntry, page)
-
 		printLogProtocolEntries(logOverviewEntry, logProtocolEntry)
-
 		page += 1
 		if allLogsHaveBeenPrinted(logProtocolEntry, page, err) {
 			break
 		}
 	}
-
 }
 
 func printLogProtocolEntries(logEntry LogResultsV2, entity LogProtocolResults) {
@@ -122,12 +117,10 @@ func printLogProtocolEntries(logEntry LogResultsV2, entity LogProtocolResults) {
 	sort.SliceStable(entity.Results, func(i, j int) bool {
 		return entity.Results[i].ProtocolLine < entity.Results[j].ProtocolLine
 	})
-
 	if logEntry.Status != `Success` {
 		for _, entry := range entity.Results {
 			log.Entry().Info(entry.Description)
 		}
-
 	} else {
 		for _, entry := range entity.Results {
 			log.Entry().Debug(entry.Description)
@@ -149,9 +142,9 @@ func allLogsHaveBeenPrinted(entity LogProtocolResults, page int, err error) bool
 func printHeader(logEntry LogResultsV2) {
 	if logEntry.Status != `Success` {
 		log.Entry().Infof("\n")
-		AddDefaultDashedLine()
+		AddDefaultDashedLine(1)
 		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
-		AddDefaultDashedLine()
+		AddDefaultDashedLine(1)
 	} else {
 		log.Entry().Debugf("\n")
 		AddDebugDashedLine()

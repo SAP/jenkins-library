@@ -189,9 +189,9 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 
 		match, _ := regexp.MatchString(".*EOF$", err.Error())
 		if match {
-			AddDefaultDashedLine()
+			AddDefaultDashedLine(1)
 			log.Entry().Infof("%s", "A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)")
-			AddDefaultDashedLine()
+			AddDefaultDashedLine(1)
 		}
 
 		log.Entry().Infof("Error message: %s,", err.Error())
@@ -249,8 +249,10 @@ func ConvertTime(logTimeStamp string) time.Time {
 }
 
 // AddDefaultDashedLine adds 25 dashes
-func AddDefaultDashedLine() {
-	log.Entry().Infof(strings.Repeat("-", 25))
+func AddDefaultDashedLine(j int) {
+	for i := 1; i <= j; i++ {
+		log.Entry().Infof(strings.Repeat("-", 25))
+	}
 }
 
 // AddDefaultDebugLine adds 25 dashes in debug
