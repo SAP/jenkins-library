@@ -99,12 +99,14 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
 		wg.Go(func() error {
 			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, true)
-			if err != nil && err.Error() != "unexpected status code: 200 OK" {
+			if err != nil {
+				// GetWorkflowJobLogs returns "200 OK" as error when log download is successful.
+				// Therefore, ignore this error.
+				// GitHub API returns redirect URL instead of plain text logs. See:
 				// https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#download-job-logs-for-a-workflow-run
-				// GitHub API returns redirect URL instead of plain text logs.
-				// GetWorkflowJobLogs should handle successful log downloads (with 200 OK status), but
-				// it returns the error instead.
-				return errors.Wrap(err, "fetching job logs failed")
+				if err.Error() != "unexpected status code: 200 OK" {
+					return errors.Wrap(err, "fetching job logs failed")
+				}
 			}
 			defer resp.Body.Close()
 
