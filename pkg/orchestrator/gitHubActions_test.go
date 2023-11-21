@@ -104,50 +104,6 @@ func TestGitHubActionsConfigProvider_GetPullRequestConfig(t *testing.T) {
 	}
 }
 
-func TestGitHubActionsConfigProvider_guessCurrentJob(t *testing.T) {
-	tests := []struct {
-		name          string
-		jobs          []job
-		jobsFetched   bool
-		targetJobName string
-		wantJob       job
-	}{
-		{
-			name:          "job found",
-			jobs:          []job{{Name: "Job1"}, {Name: "Job2"}, {Name: "Job3"}},
-			jobsFetched:   true,
-			targetJobName: "Job2",
-			wantJob:       job{Name: "Job2"},
-		},
-		{
-			name:          "job found",
-			jobs:          []job{{Name: "Piper / Job1"}, {Name: "Piper / Job2"}, {Name: "Piper / Job3"}},
-			jobsFetched:   true,
-			targetJobName: "Job2",
-			wantJob:       job{Name: "Piper / Job2"},
-		},
-		{
-			name:          "job not found",
-			jobs:          []job{{Name: "Job1"}, {Name: "Job2"}, {Name: "Job3"}},
-			jobsFetched:   true,
-			targetJobName: "Job123",
-			wantJob:       job{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			g := &GitHubActionsConfigProvider{
-				jobs:        tt.jobs,
-				jobsFetched: tt.jobsFetched,
-			}
-			_ = os.Setenv("GITHUB_JOB", tt.targetJobName)
-			g.guessCurrentJob()
-
-			assert.Equal(t, tt.wantJob, g.currentJob)
-		})
-	}
-}
-
 func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 	// data
 	respJson := map[string]interface{}{
@@ -333,7 +289,6 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 		Status:    "",
 		StartedAt: startedAt,
 	}
-	p.currentJob = job{ID: 111, Name: "job1", HtmlURL: "https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321"}
 
 	assert.Equal(t, "n/a", p.OrchestratorVersion())
 	assert.Equal(t, "GitHubActions", p.OrchestratorType())
@@ -344,7 +299,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	assert.Equal(t, "main", p.GetBranch())
 	assert.Equal(t, "refs/pull/42/merge", p.GetReference())
 	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions/runs/11111", p.GetBuildURL())
-	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321", p.GetJobURL())
+	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions", p.GetJobURL())
 	assert.Equal(t, "Piper workflow", p.GetJobName())
 	assert.Equal(t, "ffac537e6cbbf934b08745a378932722df287a53", p.GetCommit())
 	assert.Equal(t, "https://api.github.com/repos/SAP/jenkins-library/actions", actionsURL())
