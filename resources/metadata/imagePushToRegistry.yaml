@@ -10,7 +10,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: kubeConfigFileCredentialsId
+      - name: kubeConfigFileCredentialsId # ???
         description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
         aliases:
           - name: kubeCredentialsId
@@ -19,7 +19,7 @@ spec:
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
         type: jenkins
-      - name: targetRepositoryCredentialsId
+      - name: targetRepositoryCredentialsId # needed? should we have sourceRepositoryCredentialsId as well?
         description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
         type: jenkins
     resources:
@@ -33,18 +33,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
       - name: sourceImage
         type: string
         description: Defines the name (incl. tag) of the source image to be pushed to a new image defined in `targetDockerImage`. This is helpful for moving images from one location to another.
         scope:
           - GENERAL
           - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: sourceImageNameTag
-        type: string
-        scope:
-          - PARAMETER
           - STAGES
           - STEPS
         resourceRef:

@@ -70,6 +70,8 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	re := regexp.MustCompile(`^https?://`)
 	sourceRegistry := re.ReplaceAllString(config.SourceRegistryURL, "")
 	targetRegistry := re.ReplaceAllString(config.TargetRegistryURL, "")
+	src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImageNameTag)
+	dst := fmt.Sprintf("%s/%s", targetRegistry, config.SourceImageNameTag)
 
 	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
 	if err != nil {
@@ -82,13 +84,11 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	}
 
 	if len(config.LocalDockerImagePath) > 0 {
-		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, config.TargetRegistryURL)
+		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst)
 		if err != nil {
 			return fmt.Errorf("failed to push to local image to registry: %w", err)
 		}
 	} else {
-		src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImageNameTag)
-		dst := fmt.Sprintf("%s/%s", targetRegistry, config.SourceImageNameTag)
 		err = copyImage(src, dst)
 		if err != nil {
 			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
@@ -125,7 +125,6 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 		if err != nil {
 			return errors.Wrap(err, "failed to create new docker config json at .docker/config.json")
 		}
-		log.Entry().Debug("Docker config has been created/updated")
 		return nil
 	}
 
@@ -138,7 +137,6 @@ func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registry
 	if err != nil {
 		return errors.Wrapf(err, "failed to merge docker config files '%v'", dockerConfigJsonPath)
 	}
-	log.Entry().Debug("Docker config has been created/updated")
 
 	return nil
 }
