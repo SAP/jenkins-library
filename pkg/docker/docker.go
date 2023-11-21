@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/go-containerregistry/pkg/logs"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
@@ -29,6 +31,11 @@ import (
 // AuthEntry defines base64 encoded username:password required inside a Docker config.json
 type AuthEntry struct {
 	Auth string `json:"auth,omitempty"`
+}
+
+func init() {
+	logs.Warn.SetOutput(os.Stderr)
+	logs.Progress.SetOutput(os.Stderr)
 }
 
 // MergeDockerConfigJSON merges two docker config.json files.
@@ -304,7 +311,7 @@ func ImageListWithFilePath(imageName string, excludes []string, trimDir string, 
 	for _, dockerfilePath := range matches {
 		// make sure that the path we have is relative
 		// ToDo: needs rework
-		//dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
+		// dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
 
 		if piperutils.ContainsString(excludes, dockerfilePath) {
 			log.Entry().Infof("Discard %v since it is in the exclude list %v", dockerfilePath, excludes)
