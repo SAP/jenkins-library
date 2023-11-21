@@ -75,84 +75,68 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 
 	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
 	if err != nil {
-		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
+		return errors.Wrap(err, "failed to handle credentials for source registry")
 	}
 
 	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, targetRegistry, config.TargetRegistryUser, config.TargetRegistryPassword, fileUtils)
 	if err != nil {
-		return fmt.Errorf("failed to handle registry credentials for target registry: %w", err)
+		return errors.Wrap(err, "failed to handle credentials for target registry")
 	}
 
 	if len(config.LocalDockerImagePath) > 0 {
 		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst)
 		if err != nil {
-			return fmt.Errorf("failed to push to local image to registry: %w", err)
+			return errors.Wrapf(err, "failed to push local image to %q", targetRegistry)
 		}
 	} else {
 		err = copyImage(src, dst)
 		if err != nil {
-			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
+			return errors.Wrapf(err, "failed to copy image from %q to %q", sourceRegistry, targetRegistry)
 		}
 	}
 
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
-
-	// Example of calling methods from external dependencies directly on utils:
-	// exists, err := utils.FileExists("file.txt")
-	// if err != nil {
-	// It is good practice to set an error category.
-	// Most likely you want to do this at the place where enough context is known.
-	// log.SetErrorCategory(log.ErrorConfiguration)
-	// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
-	// return fmt.Errorf("failed to check for important file: %w", err)
-	// }
-	// if !exists {
-	// log.SetErrorCategory(log.ErrorConfiguration)
-	// return fmt.Errorf("cannot run without important file")
-	// }
-
 	return nil
-
 }
 
-func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registryURL string, username string, password string, fileUtils piperutils.FileUtils) error {
-	if len(dockerConfigJsonPath) == 0 && (len(registryURL) == 0 || len(username) == 0 || len(password) == 0) {
+func handleCredentialsForPrivateRegistries(dockerConfigJsonPath, registry, username, password string, fileUtils piperutils.FileUtils) error {
+	if len(dockerConfigJsonPath) == 0 && (len(registry) == 0 || len(username) == 0 || len(password) == 0) {
 		return nil
 	}
 
 	if len(dockerConfigJsonPath) == 0 {
-		_, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", targetDockerConfigPath, fileUtils)
+		_, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, fileUtils)
 		if err != nil {
-			return errors.Wrap(err, "failed to create new docker config json at .docker/config.json")
+			return errors.Wrap(err, "failed to create new docker config")
 		}
 		return nil
 	}
 
-	_, err := docker.CreateDockerConfigJSON(registryURL, username, password, targetDockerConfigPath, dockerConfigJsonPath, fileUtils)
+	_, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, fileUtils)
 	if err != nil {
-		return errors.Wrapf(err, "failed to update existing docker config json file '%v'", dockerConfigJsonPath)
+		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
 	}
 
 	err = docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, fileUtils)
 	if err != nil {
-		return errors.Wrapf(err, "failed to merge docker config files '%v'", dockerConfigJsonPath)
+		return errors.Wrapf(err, "failed to merge docker config files")
 	}
 
 	return nil
 }
 
-func pushLocalImageToTargetRegistry(localDockerImagePath string, targetRegistryURL string) error {
+func pushLocalImageToTargetRegistry(localDockerImagePath, targetRegistry string) error {
 	img, err := docker.LoadImage(localDockerImagePath)
 	if err != nil {
 		return err
 	}
-	return docker.PushImage(img, targetRegistryURL)
+	return docker.PushImage(img, targetRegistry)
 }
 
-func copyImage(sourceRegistry string, targetRegistry string) error {
+func copyImage(sourceRegistry, targetRegistry string) error {
 	return docker.CopyImage(sourceRegistry, targetRegistry)
 }
 
+// ???
 func skopeoMoveImage(sourceImageFullName string, sourceRegistryUser string, sourceRegistryPassword string, targetImageFullName string, targetRegistryUser string, targetRegistryPassword string, utils imagePushToRegistryUtils) error {
 	skopeoRunParameters := []string{
 		"copy",
@@ -174,8 +158,3 @@ func skopeoMoveImage(sourceImageFullName string, sourceRegistryUser string, sour
 	}
 	return nil
 }
-
-// https://f61e79198081-20231024-082222420-132.staging.repositories.cloud.sap
-// password: ufrZ9a1Q4db0Lbv
-// username: K3BGjVT5b1MvsZh
-// sourceImage: azure-demo-k8s-go:0.1.0-20231024082209-cbe4e4e9e1f58f748fc8970671a59b4474b38ba8
