@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/http/cookiejar"
 	"reflect"
 	"strings"
@@ -98,27 +99,35 @@ func (api *SAP_COM_0510) CheckoutBranch() error {
 	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).Debug("Triggered checkout of branch")
 
 	// Parse Response
+	body, parseError := parseActionResponse(resp, err, api)
+	if parseError != nil {
+		return parseError
+	}
+
+	api.uuid = body.UUID
+	return nil
+}
+
+func parseActionResponse(resp *http.Response, err error, api *SAP_COM_0510) (ActionEntity, error) {
 	var body ActionEntity
 	var abapResp map[string]*json.RawMessage
 	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
-		return err
+		return ActionEntity{}, err
 	}
 	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return err
+		return ActionEntity{}, err
 	}
 	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return err
+		return ActionEntity{}, err
 	}
 
 	if reflect.DeepEqual(ActionEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", api.repository.Branch).Error("Could not switch to specified branch")
 		err := errors.New("Request to ABAP System not successful")
-		return err
+		return ActionEntity{}, err
 	}
-
-	api.uuid = body.UUID
-	return nil
+	return body, nil
 }
 
 func (api *SAP_COM_0510) Pull() error {
@@ -141,22 +150,9 @@ func (api *SAP_COM_0510) Pull() error {
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Debug("Triggered Pull of repository / software component")
 
 	// Parse Response
-	var body ActionEntity
-	var abapResp map[string]*json.RawMessage
-	bodyText, errRead := io.ReadAll(resp.Body)
-	if errRead != nil {
-		return err
-	}
-	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return err
-	}
-	if reflect.DeepEqual(ActionEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Error("Could not pull the repository / software component")
-		err := errors.New("Request to ABAP System not successful")
-		return err
+	body, parseError := parseActionResponse(resp, err, api)
+	if parseError != nil {
+		return parseError
 	}
 
 	api.uuid = body.UUID
@@ -241,26 +237,13 @@ func (api *SAP_COM_0510) GetAction() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	// Parse response
-	var abapResp map[string]*json.RawMessage
-	bodyText, _ := io.ReadAll(resp.Body)
-	var body ActionEntity
-
-	marshallError := json.Unmarshal(bodyText, &abapResp)
-	if marshallError != nil {
-		return "E", errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-	marshallError = json.Unmarshal(*abapResp["d"], &body)
-	if marshallError != nil {
-		return "E", errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	// Parse Response
+	body, parseError := parseActionResponse(resp, err, api)
+	if parseError != nil {
+		return "E", parseError
 	}
 
-	if reflect.DeepEqual(ActionEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).Error(api.failureMessage)
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		var err = errors.New("Request to ABAP System not successful")
-		return "E", err
-	}
+	api.uuid = body.UUID
 
 	abapStatusCode := body.Status
 	log.Entry().Info("Status: " + abapStatusCode + " - " + body.StatusDescription)
@@ -327,22 +310,9 @@ func (api *SAP_COM_0510) Clone() error {
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Info("Triggered Clone of Repository / Software Component")
 
 	// Parse Response
-	var body CloneEntity
-	var abapResp map[string]*json.RawMessage
-	bodyText, errRead := io.ReadAll(resp.Body)
-	if errRead != nil {
-		return err
-	}
-	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return err
-	}
-	if reflect.DeepEqual(CloneEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Error("Could not Clone the Repository / Software Component")
-		err := errors.New("Request to ABAP System not successful")
-		return err
+	body, parseError := parseActionResponse(resp, err, api)
+	if parseError != nil {
+		return parseError
 	}
 
 	api.uuid = body.UUID
