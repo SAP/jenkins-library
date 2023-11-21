@@ -93,9 +93,10 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		targetPath = configPath
 	}
 
+	dockerConfigContent := []byte{}
 	dockerConfig := map[string]interface{}{}
-	if exists, _ := utils.FileExists(configPath); exists {
-		dockerConfigContent, err := utils.FileRead(configPath)
+	if exists, err := utils.FileExists(configPath); exists {
+		dockerConfigContent, err = utils.FileRead(configPath)
 		if err != nil {
 			return "", fmt.Errorf("failed to read file '%v': %w", configPath, err)
 		}
@@ -104,6 +105,13 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		if err != nil {
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
 		}
+	}
+
+	if registryURL == "" || password == "" || username == "" {
+		if err := fileWrite(targetPath, dockerConfigContent, utils); err != nil {
+			return "", err
+		}
+		return targetPath, nil
 	}
 
 	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
@@ -125,17 +133,24 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
-	//always create the target path directories if any before writing
-	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
-	if err != nil {
-		return "", fmt.Errorf("failed to create directory path for the Docker config.json file %v:%w", targetPath, err)
-	}
-	err = utils.FileWrite(targetPath, jsonResult, 0666)
-	if err != nil {
-		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
+	if err := fileWrite(targetPath, jsonResult, utils); err != nil {
+		return "", err
 	}
 
 	return targetPath, nil
+}
+
+func fileWrite(target string, result []byte, utils piperutils.FileUtils) error {
+	err := utils.MkdirAll(filepath.Dir(target), 0777)
+	if err != nil {
+		return fmt.Errorf("failed to create directory path for the Docker config.json file %v:%w", target, err)
+	}
+	err = utils.FileWrite(target, result, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to write Docker config.json: %w", err)
+	}
+
+	return nil
 }
 
 // Client defines an docker client object
