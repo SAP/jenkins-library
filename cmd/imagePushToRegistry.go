@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/pkg/errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -84,15 +85,14 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	}
 
 	if len(config.LocalDockerImagePath) > 0 {
-		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst)
-		if err != nil {
+		if err := pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst); err != nil {
 			return errors.Wrapf(err, "failed to push local image to %q", targetRegistry)
 		}
-	} else {
-		err = copyImage(src, dst)
-		if err != nil {
-			return errors.Wrapf(err, "failed to copy image from %q to %q", sourceRegistry, targetRegistry)
-		}
+		return nil
+	}
+
+	if err := copyImage(src, dst); err != nil {
+		return errors.Wrapf(err, "failed to copy image from %q to %q", sourceRegistry, targetRegistry)
 	}
 
 	return nil
