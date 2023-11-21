@@ -93,7 +93,7 @@ func (g *githubActionsConfigProvider) BuildStatus() string {
 // FullLogs returns the whole logfile for the current pipeline run
 func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 	if g.client == nil {
-		log.Entry().Warning("ConfigProvider for GitHub Actions is not configured. Unable to fetch logs")
+		log.Entry().Debug("ConfigProvider for GitHub Actions is not configured. Unable to fetch logs")
 		return []byte{}, nil
 	}
 
@@ -244,7 +244,7 @@ func actionsURL() string {
 
 func (g *githubActionsConfigProvider) fetchRunData() {
 	if g.client == nil {
-		log.Entry().Warning("ConfigProvider for GitHub Actions is not configured. Unable to fetch run data")
+		log.Entry().Debug("ConfigProvider for GitHub Actions is not configured. Unable to fetch run data")
 		return
 	}
 
@@ -276,11 +276,6 @@ func convertRunData(runData *github.WorkflowRun) run {
 }
 
 func (g *githubActionsConfigProvider) fetchJobs() error {
-	if g.client == nil {
-		log.Entry().Warning("ConfigProvider for GitHub Actions is not configured. Unable to fetch jobs")
-		return nil
-	}
-
 	if g.jobsFetched {
 		return nil
 	}
@@ -317,6 +312,11 @@ func convertJobs(jobs []*github.WorkflowJob) []job {
 }
 
 func (g *githubActionsConfigProvider) guessCurrentJob() {
+	if g.client == nil {
+		log.Entry().Debug("ConfigProvider for GitHub Actions is not configured. Unable to fetch jobs")
+		return
+	}
+
 	// check if the current job has already been guessed
 	if g.currentJob.ID != 0 {
 		return
