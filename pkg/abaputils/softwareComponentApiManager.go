@@ -36,6 +36,7 @@ func (manager *SoftwareComponentApiManager) GetPollIntervall() time.Duration {
 type SoftwareComponentApiInterface interface {
 	init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository)
 	initialRequest() error
+	getUUID() string
 	Clone() error
 	Pull() error
 	CheckoutBranch() error

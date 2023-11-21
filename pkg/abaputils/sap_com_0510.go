@@ -23,9 +23,13 @@ type SAP_COM_0510 struct {
 	repositoryEntity string
 	tagsEntity       string
 	checkoutAction   string
-	ActionEntity     string
-	UUID             string
+	actionEntity     string
+	uuid             string
 	failureMessage   string
+}
+
+func (api *SAP_COM_0510) getUUID() string {
+	return api.uuid
 }
 
 func (api *SAP_COM_0510) CreateTag(tag Tag) error {
@@ -59,7 +63,7 @@ func (api *SAP_COM_0510) CreateTag(tag Tag) error {
 	if err = json.Unmarshal(*abapResp["d"], &createTagResponse); err != nil {
 		return err
 	}
-	api.UUID = createTagResponse.UUID
+	api.uuid = createTagResponse.UUID
 	return nil
 }
 
@@ -104,7 +108,7 @@ func (api *SAP_COM_0510) CheckoutBranch() error {
 		return err
 	}
 
-	api.UUID = body.UUID
+	api.uuid = body.UUID
 	return nil
 }
 
@@ -116,7 +120,7 @@ func (api *SAP_COM_0510) Pull() error {
 	}
 
 	pullConnectionDetails := api.con
-	pullConnectionDetails.URL = api.con.URL + api.path + api.ActionEntity
+	pullConnectionDetails.URL = api.con.URL + api.path + api.actionEntity
 
 	jsonBody := []byte(api.repository.GetPullRequestBody())
 	resp, err := GetHTTPResponse("POST", pullConnectionDetails, jsonBody, api.client)
@@ -146,7 +150,7 @@ func (api *SAP_COM_0510) Pull() error {
 		return err
 	}
 
-	api.UUID = body.UUID
+	api.uuid = body.UUID
 	return nil
 }
 
@@ -181,7 +185,7 @@ func (api *SAP_COM_0510) GetLogProtocol(logOverviewEntry LogResultsV2, page int)
 func (api *SAP_COM_0510) GetLogOverview() (body ActionEntity, err error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = api.con.URL + api.path + api.ActionEntity + "(uuid=guid'" + api.UUID + "')" + "?$expand=to_Log_Overview"
+	connectionDetails.URL = api.con.URL + api.path + api.actionEntity + "(uuid=guid'" + api.getUUID() + "')" + "?$expand=to_Log_Overview"
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -219,7 +223,7 @@ func (api *SAP_COM_0510) GetLogOverview() (body ActionEntity, err error) {
 func (api *SAP_COM_0510) GetAction() (string, error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = api.con.URL + api.path + api.ActionEntity + "(uuid=guid'" + api.UUID + "')"
+	connectionDetails.URL = api.con.URL + api.path + api.actionEntity + "(uuid=guid'" + api.getUUID() + "')"
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -332,7 +336,7 @@ func (api *SAP_COM_0510) Clone() error {
 		return err
 	}
 
-	api.UUID = body.UUID
+	api.uuid = body.UUID
 	return nil
 
 }
@@ -377,7 +381,7 @@ func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.cloneEntity = "/Clones"
 	api.repositoryEntity = "/Repositories"
 	api.tagsEntity = "/Tags"
-	api.ActionEntity = "/Pull"
+	api.actionEntity = "/Pull"
 	api.checkoutAction = "/checkout_branch"
 	api.failureMessage = "The action of the Repository / Software Component " + api.repository.Name + " failed"
 
