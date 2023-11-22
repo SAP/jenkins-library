@@ -83,7 +83,7 @@ func TestRetry(t *testing.T) {
 
 	})
 
-	t.Run("Test retry not allowed", func(t *testing.T) {
+	t.Run("Test retry maxSleepTime", func(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
@@ -117,15 +117,66 @@ func TestRetry(t *testing.T) {
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
 		api, err := apiManager.GetAPI(con, repo)
-		api.setSleepTimeConfig(time.Nanosecond, 10*time.Nanosecond)
+		api.setSleepTimeConfig(time.Nanosecond, 20*time.Nanosecond)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
 
+		api.(*SAP_COM_0510).maxRetries = 20
+
 		errAction := api.(*SAP_COM_0510).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
-		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/224 - Error Text")
+		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/228 - Error Text")
 		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
 
+		assert.Equal(t, 6, len(client.BodyList), "Expected maxSleepTime to limit requests")
 	})
+
+	t.Run("Test retry maxRetries", func(t *testing.T) {
+
+		client := &ClientMock{
+			BodyList: []string{
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{ }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+			ErrorList: []error{
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				nil,
+			},
+		}
+
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+
+		api, err := apiManager.GetAPI(con, repo)
+		api.setSleepTimeConfig(time.Nanosecond, 999*time.Nanosecond)
+		assert.NoError(t, err)
+		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
+
+		api.(*SAP_COM_0510).maxRetries = 3
+
+		errAction := api.(*SAP_COM_0510).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
+		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/228 - Error Text")
+		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+
+		assert.Equal(t, 5, len(client.BodyList), "Expected maxRetries to limit requests")
+	})
+
 }
 func TestClone(t *testing.T) {
 	t.Run("Test Clone Success", func(t *testing.T) {

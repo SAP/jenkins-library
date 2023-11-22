@@ -28,7 +28,7 @@ type SAP_COM_0510 struct {
 	actionEntity           string
 	uuid                   string
 	failureMessage         string
-	retries                int
+	maxRetries             int
 	retryBaseSleepUnit     time.Duration
 	retryMaxSleepTime      time.Duration
 	retryAllowedErrorCodes []string
@@ -45,7 +45,7 @@ func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.actionEntity = "/Pull"
 	api.checkoutAction = "/checkout_branch"
 	api.failureMessage = "The action of the Repository / Software Component " + api.repository.Name + " failed"
-	api.retries = 3
+	api.maxRetries = 3
 	api.setSleepTimeConfig(1*time.Second, 120*time.Second)
 	api.retryAllowedErrorCodes = append(api.retryAllowedErrorCodes, "A4C_A2G/228")
 }
@@ -273,13 +273,14 @@ func (api *SAP_COM_0510) triggerRequest(cloneConnectionDetails ConnectionDetails
 	var resp *http.Response
 	var errorCode string
 
-	for i := 0; i <= api.retries; i++ {
+	for i := 0; i <= api.maxRetries; i++ {
 		if i > 0 {
-			sleepTime, err := api.getSleepTime(i)
+			sleepTime, err := api.getSleepTime(i + 5)
 			if err != nil {
 				// reached max retry duration
 				break
 			}
+			log.Entry().Infof("Retrying in %s", sleepTime.String())
 			time.Sleep(sleepTime)
 		}
 		resp, err = GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, api.client)
