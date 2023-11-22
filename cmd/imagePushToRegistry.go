@@ -66,18 +66,22 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 }
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
+	if config.TargetImage == "" {
+		config.TargetImage = config.SourceImage
+	}
+
 	re := regexp.MustCompile(`^https?://`)
 	sourceRegistry := re.ReplaceAllString(config.SourceRegistryURL, "")
 	targetRegistry := re.ReplaceAllString(config.TargetRegistryURL, "")
 	src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImage)
-	dst := fmt.Sprintf("%s/%s", targetRegistry, config.SourceImage)
+	dst := fmt.Sprintf("%s/%s", targetRegistry, config.TargetImage)
 
-	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, utils)
+	err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to handle credentials for source registry")
 	}
 
-	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, targetRegistry, config.TargetRegistryUser, config.TargetRegistryPassword, utils)
+	err = handleCredentialsForPrivateRegistry(config.DockerConfigJSON, targetRegistry, config.TargetRegistryUser, config.TargetRegistryPassword, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to handle credentials for target registry")
 	}
@@ -96,7 +100,7 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	return nil
 }
 
-func handleCredentialsForPrivateRegistries(dockerConfigJsonPath, registry, username, password string, utils imagePushToRegistryUtils) error {
+func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, username, password string, utils imagePushToRegistryUtils) error {
 	if len(dockerConfigJsonPath) == 0 && (len(registry) == 0 || len(username) == 0 || len(password) == 0) {
 		return nil
 	}
