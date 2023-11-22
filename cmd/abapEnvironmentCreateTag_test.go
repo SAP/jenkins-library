@@ -102,10 +102,10 @@ repositories:
 		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 19, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `Created tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[10].Message, "Expected a different message")
-		assert.Equal(t, `Created tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[14].Message, "Expected a different message")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[18].Message, "Expected a different message")
+		assert.Equal(t, 22, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `Created tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[11].Message, "Expected a different message")
+		assert.Equal(t, `Created tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[16].Message, "Expected a different message")
+		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[21].Message, "Expected a different message")
 		hook.Reset()
 	})
 
@@ -177,11 +177,11 @@ repositories:
 		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.Error(t, err, "Did expect error")
-		assert.Equal(t, 34, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `NOT created: Tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[10].Message, "Expected a different message")
-		assert.Equal(t, `NOT created: Tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[21].Message, "Expected a different message")
-		assert.Equal(t, `NOT created: Tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[32].Message, "Expected a different message")
-		assert.Equal(t, `At least one tag has not been created`, hook.AllEntries()[33].Message, "Expected a different message")
+		assert.Equal(t, 37, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `NOT created: Tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[11].Message, "Expected a different message")
+		assert.Equal(t, `NOT created: Tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[23].Message, "Expected a different message")
+		assert.Equal(t, `NOT created: Tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[35].Message, "Expected a different message")
+		assert.Equal(t, `At least one tag has not been created`, hook.AllEntries()[36].Message, "Expected a different message")
 		hook.Reset()
 
 	})
@@ -360,8 +360,8 @@ repositories:
 		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 4, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[3].Message, "Expected a different message")
+		assert.Equal(t, 5, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[4].Message, "Expected a different message")
 		hook.Reset()
 
 	})
