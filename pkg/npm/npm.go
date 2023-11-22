@@ -359,7 +359,7 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
 	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
-	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--output-file"}
+	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
 
 	// Install cyclonedx/bom with --nosave and generate BOM.
 	cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
@@ -387,7 +387,6 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 
 	// Install package
 	err := execRunner.RunExecutable("npm", packageInstallParams...)
-
 	if err != nil {
 		return fmt.Errorf("failed to install CycloneDX BOM %w", err)
 	}
@@ -399,7 +398,7 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 			executable := "npx"
 			params := append(packageRunParams, filepath.Join(path, npmBomFilename))
 
-			//Below code needed as to adjust according to needs of cyclonedx-npm and fallback cyclonedx/bom@^3.10.6
+			// Below code needed as to adjust according to needs of cyclonedx-npm and fallback cyclonedx/bom@^3.10.6
 			if !fallback {
 				params = append(params, packageJSONFile)
 				executable = cycloneDxNpmInstallationFolder + "/node_modules/.bin/cyclonedx-npm"
