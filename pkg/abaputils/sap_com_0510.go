@@ -13,20 +13,41 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
+	"k8s.io/utils/strings/slices"
 )
 
 type SAP_COM_0510 struct {
-	con              ConnectionDetailsHTTP
-	client           piperhttp.Sender
-	repository       Repository
-	path             string
-	cloneEntity      string
-	repositoryEntity string
-	tagsEntity       string
-	checkoutAction   string
-	actionEntity     string
-	uuid             string
-	failureMessage   string
+	con                    ConnectionDetailsHTTP
+	client                 piperhttp.Sender
+	repository             Repository
+	path                   string
+	cloneEntity            string
+	repositoryEntity       string
+	tagsEntity             string
+	checkoutAction         string
+	actionEntity           string
+	uuid                   string
+	failureMessage         string
+	retries                int
+	retryBaseSleepUnit     time.Duration
+	retryMaxSleepTime      time.Duration
+	retryAllowedErrorCodes []string
+}
+
+func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
+	api.con = con
+	api.client = client
+	api.repository = repo
+	api.path = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY"
+	api.cloneEntity = "/Clones"
+	api.repositoryEntity = "/Repositories"
+	api.tagsEntity = "/Tags"
+	api.actionEntity = "/Pull"
+	api.checkoutAction = "/checkout_branch"
+	api.failureMessage = "The action of the Repository / Software Component " + api.repository.Name + " failed"
+	api.retries = 1
+	api.setSleepTimeConfig(1*time.Second, 120*time.Second)
+	api.retryAllowedErrorCodes = append(api.retryAllowedErrorCodes, "A4C_A2G/228")
 }
 
 func (api *SAP_COM_0510) getUUID() string {
@@ -52,7 +73,7 @@ func (api *SAP_COM_0510) CreateTag(tag Tag) error {
 	resp, err := GetHTTPResponse("POST", con, requestBodyJson, api.client)
 	if err != nil {
 		errorMessage := "Could not create tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID
-		err = HandleHTTPError(resp, err, errorMessage, con)
+		_, err = HandleHTTPError(resp, err, errorMessage, con)
 		return err
 	}
 	defer resp.Body.Close()
@@ -92,14 +113,14 @@ func (api *SAP_COM_0510) CheckoutBranch() error {
 	// no JSON body needed
 	resp, err := GetHTTPResponse("POST", checkoutConnectionDetails, jsonBody, api.client)
 	if err != nil {
-		err = HandleHTTPError(resp, err, "Could not trigger checkout of branch "+api.repository.Branch, checkoutConnectionDetails)
+		_, err = HandleHTTPError(resp, err, "Could not trigger checkout of branch "+api.repository.Branch, checkoutConnectionDetails)
 		return err
 	}
 	defer resp.Body.Close()
 	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).Debug("Triggered checkout of branch")
 
 	// Parse Response
-	body, parseError := parseActionResponse(resp, err, api)
+	body, parseError := api.parseActionResponse(resp, err)
 	if parseError != nil {
 		return parseError
 	}
@@ -108,7 +129,7 @@ func (api *SAP_COM_0510) CheckoutBranch() error {
 	return nil
 }
 
-func parseActionResponse(resp *http.Response, err error, api *SAP_COM_0510) (ActionEntity, error) {
+func (api *SAP_COM_0510) parseActionResponse(resp *http.Response, err error) (ActionEntity, error) {
 	var body ActionEntity
 	var abapResp map[string]*json.RawMessage
 	bodyText, errRead := io.ReadAll(resp.Body)
@@ -143,14 +164,14 @@ func (api *SAP_COM_0510) Pull() error {
 	jsonBody := []byte(api.repository.GetPullRequestBody())
 	resp, err := GetHTTPResponse("POST", pullConnectionDetails, jsonBody, api.client)
 	if err != nil {
-		err = HandleHTTPError(resp, err, "Could not pull the "+api.repository.GetPullLogString(), pullConnectionDetails)
+		_, err = HandleHTTPError(resp, err, "Could not pull the "+api.repository.GetPullLogString(), pullConnectionDetails)
 		return err
 	}
 	defer resp.Body.Close()
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Debug("Triggered Pull of repository / software component")
 
 	// Parse Response
-	body, parseError := parseActionResponse(resp, err, api)
+	body, parseError := api.parseActionResponse(resp, err)
 	if parseError != nil {
 		return parseError
 	}
@@ -166,7 +187,7 @@ func (api *SAP_COM_0510) GetLogProtocol(logOverviewEntry LogResultsV2, page int)
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
 		return body, err
 	}
 	defer resp.Body.Close()
@@ -194,7 +215,7 @@ func (api *SAP_COM_0510) GetLogOverview() (body ActionEntity, err error) {
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
 		return body, err
 	}
 	defer resp.Body.Close()
@@ -232,13 +253,13 @@ func (api *SAP_COM_0510) GetAction() (string, error) {
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
 		return "E", err
 	}
 	defer resp.Body.Close()
 
 	// Parse Response
-	body, parseError := parseActionResponse(resp, err, api)
+	body, parseError := api.parseActionResponse(resp, err)
 	if parseError != nil {
 		return "E", parseError
 	}
@@ -260,7 +281,7 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 	swcConnectionDetails.URL = api.con.URL + api.path + api.repositoryEntity + "('" + strings.Replace(api.repository.Name, "/", "%2F", -1) + "')"
 	resp, err := GetHTTPResponse("GET", swcConnectionDetails, nil, api.client)
 	if err != nil {
-		errRepo := HandleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
+		_, errRepo := HandleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
 		return false, "", errRepo
 	}
 	defer resp.Body.Close()
@@ -299,25 +320,46 @@ func (api *SAP_COM_0510) Clone() error {
 
 	cloneConnectionDetails := api.con
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.cloneEntity
-
 	jsonBody := []byte(api.repository.GetCloneRequestBody())
-	resp, err := GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, api.client)
-	if err != nil {
-		errClone := HandleHTTPError(resp, err, "Triggering the clone action failed", api.con)
-		return errClone
-	}
-	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Info("Triggered Clone of Repository / Software Component")
 
-	// Parse Response
-	body, parseError := parseActionResponse(resp, err, api)
-	if parseError != nil {
-		return parseError
-	}
+	err := api.triggerRequest(cloneConnectionDetails, jsonBody)
+	return err
 
+}
+
+func (api *SAP_COM_0510) triggerRequest(cloneConnectionDetails ConnectionDetailsHTTP, jsonBody []byte) error {
+	var err error
+	var body ActionEntity
+	var resp *http.Response
+	var errorCode string
+
+	for i := 0; i <= api.retries; i++ {
+		if i > 0 {
+			sleepTime, err := api.getSleepTime(i)
+			if err != nil {
+				// reached max retires
+				break
+			}
+			time.Sleep(sleepTime)
+		}
+		resp, err = GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, api.client)
+		if err != nil {
+			errorCode, err = HandleHTTPError(resp, err, "Triggering the clone action failed", api.con)
+			if slices.Contains(api.retryAllowedErrorCodes, errorCode) {
+				// Error Code allows for retry
+				continue
+			} else {
+				break
+			}
+		}
+		defer resp.Body.Close()
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Info("Triggered Clone of Repository / Software Component")
+
+		body, err = api.parseActionResponse(resp, err)
+		break
+	}
 	api.uuid = body.UUID
-	return nil
-
+	return err
 }
 
 // initialRequest implements SoftwareComponentApiInterface.
@@ -342,7 +384,7 @@ func (api *SAP_COM_0510) initialRequest() error {
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := GetHTTPResponse("HEAD", headConnection, nil, api.client)
 	if err != nil {
-		err = HandleHTTPError(resp, err, "Authentication on the ABAP system failed", api.con)
+		_, err = HandleHTTPError(resp, err, "Authentication on the ABAP system failed", api.con)
 		return err
 	}
 	defer resp.Body.Close()
@@ -352,16 +394,34 @@ func (api *SAP_COM_0510) initialRequest() error {
 	return nil
 }
 
-func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
-	api.con = con
-	api.client = client
-	api.repository = repo
-	api.path = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY"
-	api.cloneEntity = "/Clones"
-	api.repositoryEntity = "/Repositories"
-	api.tagsEntity = "/Tags"
-	api.actionEntity = "/Pull"
-	api.checkoutAction = "/checkout_branch"
-	api.failureMessage = "The action of the Repository / Software Component " + api.repository.Name + " failed"
+// getSleepTime Should return the Fibonacci numbers in the define time unit up to the defined maximum duration
+func (api *SAP_COM_0510) getSleepTime(n int) (time.Duration, error) {
 
+	if n == 0 {
+		return 0, nil
+	} else if n == 1 {
+		return 1 * api.retryBaseSleepUnit, nil
+	} else if n < 0 {
+		return 0, errors.New("Negative numbers are not allowed")
+	}
+	var result, i int
+	prev := 0
+	next := 1
+	for i = 2; i <= n; i++ {
+		result = prev + next
+		prev = next
+		next = result
+	}
+	sleepTime := time.Duration(result) * api.retryBaseSleepUnit
+
+	if sleepTime > api.retryMaxSleepTime {
+		return 0, errors.New("Exceeded max sleep time")
+	}
+	return sleepTime, nil
+}
+
+// setSleepTimeConfig sets the time unit (seconds, nanoseconds) and the maximum sleep duration
+func (api *SAP_COM_0510) setSleepTimeConfig(timeUnit time.Duration, maxSleepTime time.Duration) {
+	api.retryBaseSleepUnit = timeUnit
+	api.retryMaxSleepTime = maxSleepTime
 }

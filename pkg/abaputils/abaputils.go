@@ -182,7 +182,11 @@ func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP
 // Further error details may be present in the response body of the HTTP response.
 // If the response body is parseable, the included details are wrapped around the original error from the HTTP repsponse.
 // If this is not possible, the original error is returned.
-func HandleHTTPError(resp *http.Response, err error, message string, connectionDetails ConnectionDetailsHTTP) error {
+func HandleHTTPError(resp *http.Response, err error, message string, connectionDetails ConnectionDetailsHTTP) (string, error) {
+
+	var errorText string
+	var errorCode string
+	var parsingError error
 	if resp == nil {
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
@@ -201,15 +205,15 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 
 		log.Entry().WithField("StatusCode", resp.Status).WithField("User", connectionDetails.User).WithField("URL", connectionDetails.URL).Error(message)
 
-		errorText, errorCode, parsingError := GetErrorDetailsFromResponse(resp)
+		errorText, errorCode, parsingError = GetErrorDetailsFromResponse(resp)
 		if parsingError != nil {
-			return err
+			return "", err
 		}
 		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
 		err = errors.Wrap(abapError, err.Error())
 
 	}
-	return err
+	return errorCode, err
 }
 
 func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, errorCode string, err error) {
@@ -372,6 +376,7 @@ type ClientMock struct {
 	Error              error
 	NilResponse        bool
 	ErrorInsteadOfDump bool
+	ErrorList          []error
 }
 
 // SetOptions sets clientOptions for a client mock
@@ -385,6 +390,7 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 	}
 
 	var body []byte
+	var responseError error
 	if c.Body != "" {
 		body = []byte(c.Body)
 	} else {
@@ -394,6 +400,12 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 		bodyString := c.BodyList[len(c.BodyList)-1]
 		c.BodyList = c.BodyList[:len(c.BodyList)-1]
 		body = []byte(bodyString)
+		if len(c.ErrorList) == 0 {
+			responseError = c.Error
+		} else {
+			responseError = c.ErrorList[len(c.ErrorList)-1]
+			c.ErrorList = c.ErrorList[:len(c.ErrorList)-1]
+		}
 	}
 	header := http.Header{}
 	header.Set("X-Csrf-Token", c.Token)
@@ -401,7 +413,7 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 		StatusCode: c.StatusCode,
 		Header:     header,
 		Body:       io.NopCloser(bytes.NewReader(body)),
-	}, c.Error
+	}, responseError
 }
 
 // DownloadFile : Empty file download
