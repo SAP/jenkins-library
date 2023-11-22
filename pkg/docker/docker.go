@@ -11,21 +11,19 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/logs"
-
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
-
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/configfile"
-
 	cranecmd "github.com/google/go-containerregistry/cmd/crane/cmd"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/logs"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/pkg/errors"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // AuthEntry defines base64 encoded username:password required inside a Docker config.json

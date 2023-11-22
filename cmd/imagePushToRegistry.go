@@ -19,8 +19,7 @@ const (
 
 type imagePushToRegistryUtils interface {
 	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
+	piperutils.FileUtils
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The imagePushToRegistryUtils interface should be descriptive of your runtime dependencies,
@@ -53,7 +52,6 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newImagePushToRegistryUtils()
-	fileUtils := &piperutils.Files{}
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -61,25 +59,25 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runImagePushToRegistry(&config, telemetryData, utils, fileUtils)
+	err := runImagePushToRegistry(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils, fileUtils piperutils.FileUtils) error {
+func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
 	re := regexp.MustCompile(`^https?://`)
 	sourceRegistry := re.ReplaceAllString(config.SourceRegistryURL, "")
 	targetRegistry := re.ReplaceAllString(config.TargetRegistryURL, "")
 	src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImage)
 	dst := fmt.Sprintf("%s/%s", targetRegistry, config.SourceImage)
 
-	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
+	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to handle credentials for source registry")
 	}
 
-	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, targetRegistry, config.TargetRegistryUser, config.TargetRegistryPassword, fileUtils)
+	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, targetRegistry, config.TargetRegistryUser, config.TargetRegistryPassword, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to handle credentials for target registry")
 	}
@@ -98,25 +96,25 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	return nil
 }
 
-func handleCredentialsForPrivateRegistries(dockerConfigJsonPath, registry, username, password string, fileUtils piperutils.FileUtils) error {
+func handleCredentialsForPrivateRegistries(dockerConfigJsonPath, registry, username, password string, utils imagePushToRegistryUtils) error {
 	if len(dockerConfigJsonPath) == 0 && (len(registry) == 0 || len(username) == 0 || len(password) == 0) {
 		return nil
 	}
 
 	if len(dockerConfigJsonPath) == 0 {
-		_, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, fileUtils)
+		_, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils)
 		if err != nil {
 			return errors.Wrap(err, "failed to create new docker config")
 		}
 		return nil
 	}
 
-	_, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, fileUtils)
+	_, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
 	}
 
-	err = docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, fileUtils)
+	err = docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils)
 	if err != nil {
 		return errors.Wrapf(err, "failed to merge docker config files")
 	}

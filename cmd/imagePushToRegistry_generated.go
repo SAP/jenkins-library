@@ -134,7 +134,7 @@ imagePushToRegistry is not similar in functionality to containerPushToRegistry (
 }
 
 func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegistryOptions) {
-	cmd.Flags().StringVar(&stepConfig.TargetImage, "targetImage", os.Getenv("PIPER_targetImage"), "Defines the name (incl. tag) of the target image")
+	cmd.Flags().StringVar(&stepConfig.TargetImage, "targetImage", os.Getenv("PIPER_targetImage"), "Defines the name (incl. tag) of the target image. If empty, sourceImage will be used.")
 	cmd.Flags().StringVar(&stepConfig.SourceImage, "sourceImage", os.Getenv("PIPER_sourceImage"), "Defines the name (incl. tag) of the source image to be pushed to a new image defined in `targetDockerImage`. This is helpful for moving images from one location to another.")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryURL, "sourceRegistryUrl", os.Getenv("PIPER_sourceRegistryUrl"), "Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*\"")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryUser, "sourceRegistryUser", os.Getenv("PIPER_sourceRegistryUser"), "Username of the source registry where the image should be pushed pulled from.")
@@ -148,6 +148,11 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{}, "Specifies the targetArchitectures in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
 
+	cmd.MarkFlagRequired("sourceImage")
+	cmd.MarkFlagRequired("sourceRegistryUrl")
+	cmd.MarkFlagRequired("targetRegistryUrl")
+	cmd.MarkFlagRequired("targetRegistryUser")
+	cmd.MarkFlagRequired("targetRegistryPassword")
 }
 
 // retrieve step metadata
@@ -161,12 +166,11 @@ func imagePushToRegistryMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "kubeConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).", Type: "jenkins", Aliases: []config.Alias{{Name: "kubeCredentialsId", Deprecated: true}}},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
 					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
-					{Name: "deployDescriptor", Type: "stash"},
+					{Name: "source", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -191,9 +195,9 @@ func imagePushToRegistryMetadata() config.StepData {
 								Param: "container/imageNameTag",
 							},
 						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_sourceImage"),
 					},
@@ -207,7 +211,7 @@ func imagePushToRegistryMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_sourceRegistryUrl"),
 					},
@@ -244,7 +248,7 @@ func imagePushToRegistryMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_targetRegistryUrl"),
 					},
@@ -259,7 +263,7 @@ func imagePushToRegistryMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_targetRegistryUser"),
 					},
@@ -274,7 +278,7 @@ func imagePushToRegistryMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_targetRegistryPassword"),
 					},
