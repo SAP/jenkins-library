@@ -167,6 +167,9 @@ func ReadConfigFile(path string) (file []byte, err error) {
 // GetHTTPResponse wraps the SendRequest function of piperhttp
 func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
+	log.Entry().Debugf("Request body: %s", string(body))
+	log.Entry().Debugf("Request user: %s", connectionDetails.User)
+
 	header := make(map[string][]string)
 	header["Content-Type"] = []string{"application/json"}
 	header["Accept"] = []string{"application/json"}

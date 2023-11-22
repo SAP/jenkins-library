@@ -21,6 +21,112 @@ func init() {
 	repo.Branch = "main"
 
 }
+
+func TestRetry(t *testing.T) {
+	t.Run("Test retry success", func(t *testing.T) {
+
+		client := &ClientMock{
+			BodyList: []string{
+				`{"d" : { "status" : "R", "UUID" : "GUID" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Software component lifecycle activities in progress. Try again later..."} } }`,
+				`{ }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+			ErrorList: []error{
+				nil,
+				errors.New("HTTP 400"),
+				nil,
+			},
+		}
+
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+
+		api, err := apiManager.GetAPI(con, repo)
+		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
+		assert.NoError(t, err)
+		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
+
+		errAction := api.(*SAP_COM_0510).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
+		assert.NoError(t, errAction)
+		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
+
+	})
+
+	t.Run("Test retry not allowed", func(t *testing.T) {
+
+		client := &ClientMock{
+			BodyList: []string{
+				`{"d" : { "status" : "R", "UUID" : "GUID" } }`,
+				`{"error" : { "code" : "A4C_A2G/224", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{ }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+			ErrorList: []error{
+				nil,
+				errors.New("HTTP 400"),
+				nil,
+			},
+		}
+
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+
+		api, err := apiManager.GetAPI(con, repo)
+		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
+		assert.NoError(t, err)
+		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
+
+		errAction := api.(*SAP_COM_0510).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
+		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/224 - Error Text")
+		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+
+	})
+
+	t.Run("Test retry not allowed", func(t *testing.T) {
+
+		client := &ClientMock{
+			BodyList: []string{
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{ }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+			ErrorList: []error{
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				errors.New("HTTP 400"),
+				nil,
+			},
+		}
+
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+
+		api, err := apiManager.GetAPI(con, repo)
+		api.setSleepTimeConfig(time.Nanosecond, 10*time.Nanosecond)
+		assert.NoError(t, err)
+		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
+
+		errAction := api.(*SAP_COM_0510).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
+		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/224 - Error Text")
+		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+
+	})
+}
 func TestClone(t *testing.T) {
 	t.Run("Test Clone Success", func(t *testing.T) {
 

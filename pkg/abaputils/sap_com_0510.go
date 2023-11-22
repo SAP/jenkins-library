@@ -45,7 +45,7 @@ func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.actionEntity = "/Pull"
 	api.checkoutAction = "/checkout_branch"
 	api.failureMessage = "The action of the Repository / Software Component " + api.repository.Name + " failed"
-	api.retries = 1
+	api.retries = 3
 	api.setSleepTimeConfig(1*time.Second, 120*time.Second)
 	api.retryAllowedErrorCodes = append(api.retryAllowedErrorCodes, "A4C_A2G/228")
 }
@@ -64,38 +64,11 @@ func (api *SAP_COM_0510) CreateTag(tag Tag) error {
 	con.URL = api.con.URL + api.path + api.tagsEntity
 
 	requestBodyStruct := CreateTagBody{RepositoryName: api.repository.Name, CommitID: api.repository.CommitID, Tag: tag.TagName, Description: tag.TagDescription}
-	requestBodyJson, err := json.Marshal(&requestBodyStruct)
+	jsonBody, err := json.Marshal(&requestBodyStruct)
 	if err != nil {
 		return err
 	}
-
-	log.Entry().Debugf("Request body: %s", requestBodyJson)
-	resp, err := GetHTTPResponse("POST", con, requestBodyJson, api.client)
-	if err != nil {
-		errorMessage := "Could not create tag " + requestBodyStruct.Tag + " for repository " + requestBodyStruct.RepositoryName + " with commitID " + requestBodyStruct.CommitID
-		_, err = HandleHTTPError(resp, err, errorMessage, con)
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Parse response
-	var createTagResponse CreateTagResponse
-	var abapResp map[string]*json.RawMessage
-	bodyText, _ := io.ReadAll(resp.Body)
-
-	if err = json.Unmarshal(bodyText, &abapResp); err != nil {
-		return err
-	}
-	if err = json.Unmarshal(*abapResp["d"], &createTagResponse); err != nil {
-		return err
-	}
-	if createTagResponse.UUID == "" {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", api.repository.Branch).Error("Could not switch to specified branch")
-		err := errors.New("Request to ABAP System not successful")
-		return err
-	}
-	api.uuid = createTagResponse.UUID
-	return nil
+	return api.triggerRequest(con, jsonBody)
 }
 
 func (api *SAP_COM_0510) CheckoutBranch() error {
@@ -107,26 +80,9 @@ func (api *SAP_COM_0510) CheckoutBranch() error {
 	// the request looks like: POST/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/checkout_branch?branch_name='newBranch'&sc_name=/DMO/GIT_REPOSITORY'
 	checkoutConnectionDetails := api.con
 	checkoutConnectionDetails.URL = api.con.URL + api.path + api.checkoutAction + `?branch_name='` + api.repository.Branch + `'&sc_name='` + api.repository.Name + `'`
-
 	jsonBody := []byte(``)
 
-	// no JSON body needed
-	resp, err := GetHTTPResponse("POST", checkoutConnectionDetails, jsonBody, api.client)
-	if err != nil {
-		_, err = HandleHTTPError(resp, err, "Could not trigger checkout of branch "+api.repository.Branch, checkoutConnectionDetails)
-		return err
-	}
-	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).Debug("Triggered checkout of branch")
-
-	// Parse Response
-	body, parseError := api.parseActionResponse(resp, err)
-	if parseError != nil {
-		return parseError
-	}
-
-	api.uuid = body.UUID
-	return nil
+	return api.triggerRequest(checkoutConnectionDetails, jsonBody)
 }
 
 func (api *SAP_COM_0510) parseActionResponse(resp *http.Response, err error) (ActionEntity, error) {
@@ -162,22 +118,7 @@ func (api *SAP_COM_0510) Pull() error {
 	pullConnectionDetails.URL = api.con.URL + api.path + api.actionEntity
 
 	jsonBody := []byte(api.repository.GetPullRequestBody())
-	resp, err := GetHTTPResponse("POST", pullConnectionDetails, jsonBody, api.client)
-	if err != nil {
-		_, err = HandleHTTPError(resp, err, "Could not pull the "+api.repository.GetPullLogString(), pullConnectionDetails)
-		return err
-	}
-	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Debug("Triggered Pull of repository / software component")
-
-	// Parse Response
-	body, parseError := api.parseActionResponse(resp, err)
-	if parseError != nil {
-		return parseError
-	}
-
-	api.uuid = body.UUID
-	return nil
+	return api.triggerRequest(pullConnectionDetails, jsonBody)
 }
 
 func (api *SAP_COM_0510) GetLogProtocol(logOverviewEntry LogResultsV2, page int) (body LogProtocolResults, err error) {
@@ -320,10 +261,9 @@ func (api *SAP_COM_0510) Clone() error {
 
 	cloneConnectionDetails := api.con
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.cloneEntity
-	jsonBody := []byte(api.repository.GetCloneRequestBody())
+	body := []byte(api.repository.GetCloneRequestBody())
 
-	err := api.triggerRequest(cloneConnectionDetails, jsonBody)
-	return err
+	return api.triggerRequest(cloneConnectionDetails, body)
 
 }
 
@@ -337,14 +277,14 @@ func (api *SAP_COM_0510) triggerRequest(cloneConnectionDetails ConnectionDetails
 		if i > 0 {
 			sleepTime, err := api.getSleepTime(i)
 			if err != nil {
-				// reached max retires
+				// reached max retry duration
 				break
 			}
 			time.Sleep(sleepTime)
 		}
 		resp, err = GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, api.client)
 		if err != nil {
-			errorCode, err = HandleHTTPError(resp, err, "Triggering the clone action failed", api.con)
+			errorCode, err = HandleHTTPError(resp, err, "Triggering the action failed", api.con)
 			if slices.Contains(api.retryAllowedErrorCodes, errorCode) {
 				// Error Code allows for retry
 				continue
@@ -353,7 +293,7 @@ func (api *SAP_COM_0510) triggerRequest(cloneConnectionDetails ConnectionDetails
 			}
 		}
 		defer resp.Body.Close()
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Info("Triggered Clone of Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Info("Triggered action of Repository / Software Component")
 
 		body, err = api.parseActionResponse(resp, err)
 		break
