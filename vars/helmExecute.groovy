@@ -11,4 +11,4 @@ void call(Map parameters = [:]) {
         [type: 'usernamePassword', id: 'targetRepositoryCredentialsId', env: ['PIPER_targetRepositoryUser', 'PIPER_targetRepositoryPassword']],
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
-}
+} 

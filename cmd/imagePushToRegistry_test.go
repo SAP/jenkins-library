@@ -5,20 +5,45 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/stretchr/testify/assert"
 )
 
 type imagePushToRegistryMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	*dockerUtilsBundleMock
 }
 
-func newImagePushToRegistryTestsUtils() imagePushToRegistryMockUtils {
-	utils := imagePushToRegistryMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
+func newImagePushToRegistryTestsUtils() imagePushToRegistryUtils {
+	utils := &imagePushToRegistryMockUtils{
+		ExecMockRunner:        &mock.ExecMockRunner{},
+		FilesMock:             &mock.FilesMock{},
+		dockerUtilsBundleMock: &dockerUtilsBundleMock{},
 	}
 	return utils
+}
+
+type dockerUtilsBundleMock struct{}
+
+func (d *dockerUtilsBundleMock) CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
+	return "", nil
+}
+
+func (d *dockerUtilsBundleMock) MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error {
+	return nil
+}
+
+func (d *dockerUtilsBundleMock) LoadImage(src string) (v1.Image, error) {
+	return nil, nil
+}
+
+func (d *dockerUtilsBundleMock) PushImage(im v1.Image, dest string) error {
+	return nil
+}
+
+func (d *dockerUtilsBundleMock) CopyImage(src, dest string) error {
+	return nil
 }
 
 func TestRunImagePushToRegistry(t *testing.T) {
@@ -30,10 +55,10 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		config := imagePushToRegistryOptions{}
 
 		utils := newImagePushToRegistryTestsUtils()
-		utils.AddFile("file.txt", []byte("dummy content"))
+		// utils.AddFile("file.txt", []byte("dummy content"))
 
 		// test
-		err := runImagePushToRegistry(&config, nil, utils, &piperutils.Files{})
+		err := runImagePushToRegistry(&config, nil, utils)
 
 		// assert
 		assert.NoError(t, err)
@@ -47,7 +72,7 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		utils := newImagePushToRegistryTestsUtils()
 
 		// test
-		err := runImagePushToRegistry(&config, nil, utils, &piperutils.Files{})
+		err := runImagePushToRegistry(&config, nil, utils)
 
 		// assert
 		assert.EqualError(t, err, "cannot run without important file")
