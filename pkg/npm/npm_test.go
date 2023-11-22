@@ -364,6 +364,8 @@ func TestNpm(t *testing.T) {
 			"XML",
 			"--spec-version",
 			cycloneDxSchemaVersion,
+			"--omit",
+			"dev"
 			"--output-file",
 		}
 
