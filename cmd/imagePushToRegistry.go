@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -17,9 +18,40 @@ const (
 	targetDockerConfigPath = "/root/.docker/config.json"
 )
 
+type dockerUtils interface {
+	CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error)
+	MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error
+	LoadImage(src string) (v1.Image, error)
+	PushImage(im v1.Image, dest string) error
+	CopyImage(src, dest string) error
+}
+
+type dockerUtilsBundle struct{}
+
+func (d *dockerUtilsBundle) CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
+	return docker.CreateDockerConfigJSON(registry, username, password, targetPath, configPath, utils)
+}
+
+func (d *dockerUtilsBundle) MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error {
+	return docker.MergeDockerConfigJSON(sourcePath, targetPath, utils)
+}
+
+func (d *dockerUtilsBundle) LoadImage(src string) (v1.Image, error) {
+	return docker.LoadImage(src)
+}
+
+func (d *dockerUtilsBundle) PushImage(im v1.Image, dest string) error {
+	return docker.PushImage(im, dest)
+}
+
+func (d *imagePushToRegistryUtilsBundle) CopyImage(src, dest string) error {
+	return docker.CopyImage(src, dest)
+}
+
 type imagePushToRegistryUtils interface {
 	command.ExecRunner
 	piperutils.FileUtils
+	dockerUtils
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The imagePushToRegistryUtils interface should be descriptive of your runtime dependencies,
@@ -30,6 +62,7 @@ type imagePushToRegistryUtils interface {
 type imagePushToRegistryUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	*dockerUtilsBundle
 
 	// Embed more structs as necessary to implement methods or interfaces you add to imagePushToRegistryUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
@@ -39,8 +72,9 @@ type imagePushToRegistryUtilsBundle struct {
 
 func newImagePushToRegistryUtils() imagePushToRegistryUtils {
 	utils := imagePushToRegistryUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
+		Command:           &command.Command{},
+		Files:             &piperutils.Files{},
+		dockerUtilsBundle: &dockerUtilsBundle{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -66,11 +100,15 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 }
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
+	if config.TargetImage == "" {
+		config.TargetImage = config.SourceImage
+	}
+
 	re := regexp.MustCompile(`^https?://`)
 	sourceRegistry := re.ReplaceAllString(config.SourceRegistryURL, "")
 	targetRegistry := re.ReplaceAllString(config.TargetRegistryURL, "")
 	src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImage)
-	dst := fmt.Sprintf("%s/%s", targetRegistry, config.SourceImage)
+	dst := fmt.Sprintf("%s/%s", targetRegistry, config.TargetImage)
 
 	err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, utils)
 	if err != nil {
@@ -83,38 +121,38 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	}
 
 	if len(config.LocalDockerImagePath) > 0 {
-		if err := pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst); err != nil {
+		if err := pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst, utils); err != nil {
 			return errors.Wrapf(err, "failed to push local image to %q", targetRegistry)
 		}
 		return nil
 	}
 
-	if err := copyImage(src, dst); err != nil {
+	if err := copyImage(src, dst, utils); err != nil {
 		return errors.Wrapf(err, "failed to copy image from %q to %q", sourceRegistry, targetRegistry)
 	}
 
 	return nil
 }
 
-func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, username, password string, utils piperutils.FileUtils) error {
+func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, username, password string, utils imagePushToRegistryUtils) error {
 	if len(dockerConfigJsonPath) == 0 && (len(registry) == 0 || len(username) == 0 || len(password) == 0) {
 		return nil
 	}
 
 	if len(dockerConfigJsonPath) == 0 {
-		_, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils)
+		_, err := utils.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils)
 		if err != nil {
 			return errors.Wrap(err, "failed to create new docker config")
 		}
 		return nil
 	}
 
-	_, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils)
+	_, err := utils.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
 	}
 
-	err = docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils)
+	err = utils.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils)
 	if err != nil {
 		return errors.Wrapf(err, "failed to merge docker config files")
 	}
@@ -122,16 +160,16 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 	return nil
 }
 
-func pushLocalImageToTargetRegistry(localDockerImagePath, targetRegistry string) error {
-	img, err := docker.LoadImage(localDockerImagePath)
+func pushLocalImageToTargetRegistry(localDockerImagePath, targetRegistry string, utils imagePushToRegistryUtils) error {
+	img, err := utils.LoadImage(localDockerImagePath)
 	if err != nil {
 		return err
 	}
-	return docker.PushImage(img, targetRegistry)
+	return utils.PushImage(img, targetRegistry)
 }
 
-func copyImage(sourceRegistry, targetRegistry string) error {
-	return docker.CopyImage(sourceRegistry, targetRegistry)
+func copyImage(sourceRegistry, targetRegistry string, utils imagePushToRegistryUtils) error {
+	return utils.CopyImage(sourceRegistry, targetRegistry)
 }
 
 // ???
