@@ -16,35 +16,37 @@ type imagePushToRegistryMockUtils struct {
 	*dockerUtilsBundleMock
 }
 
-func newImagePushToRegistryTestsUtils() imagePushToRegistryUtils {
+func newImagePushToRegistryMockUtils(dockerUtilsBundleMock *dockerUtilsBundleMock) imagePushToRegistryUtils {
 	utils := &imagePushToRegistryMockUtils{
 		ExecMockRunner:        &mock.ExecMockRunner{},
 		FilesMock:             &mock.FilesMock{},
-		dockerUtilsBundleMock: &dockerUtilsBundleMock{},
+		dockerUtilsBundleMock: dockerUtilsBundleMock,
 	}
 	return utils
 }
 
-type dockerUtilsBundleMock struct{}
+type dockerUtilsBundleMock struct {
+	errCreateConfig, errMergeConfig, errLoadImage, errPushImage, errCopyImage error
+}
 
 func (d *dockerUtilsBundleMock) CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
-	return "", nil
+	return "", d.errCreateConfig
 }
 
 func (d *dockerUtilsBundleMock) MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error {
-	return nil
+	return d.errMergeConfig
 }
 
 func (d *dockerUtilsBundleMock) LoadImage(src string) (v1.Image, error) {
-	return nil, nil
+	return nil, d.errLoadImage
 }
 
 func (d *dockerUtilsBundleMock) PushImage(im v1.Image, dest string) error {
-	return nil
+	return d.errPushImage
 }
 
 func (d *dockerUtilsBundleMock) CopyImage(src, dest string) error {
-	return nil
+	return d.errCopyImage
 }
 
 func TestRunImagePushToRegistry(t *testing.T) {
@@ -54,8 +56,8 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		t.Parallel()
 		// init
 		config := imagePushToRegistryOptions{}
-
-		utils := newImagePushToRegistryTestsUtils()
+		dockerMockUtils := &dockerUtilsBundleMock{}
+		utils := newImagePushToRegistryMockUtils(dockerMockUtils)
 		// utils.AddFile("file.txt", []byte("dummy content"))
 
 		// test
@@ -69,8 +71,8 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		t.Parallel()
 		// init
 		config := imagePushToRegistryOptions{}
-
-		utils := newImagePushToRegistryTestsUtils()
+		dockerMockUtils := &dockerUtilsBundleMock{}
+		utils := newImagePushToRegistryMockUtils(dockerMockUtils)
 
 		// test
 		err := runImagePushToRegistry(&config, nil, utils)
