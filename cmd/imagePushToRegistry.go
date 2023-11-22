@@ -2,14 +2,19 @@ package cmd
 
 import (
 	"fmt"
-	"net/url"
+	"regexp"
+
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
+)
+
+const (
+	targetDockerConfigPath = "/root/.docker/config.json"
 )
 
 type imagePushToRegistryUtils interface {
@@ -63,125 +68,75 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 }
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils, fileUtils piperutils.FileUtils) error {
-	err := fileUtils.MkdirAll(".docker", 0750)
+	re := regexp.MustCompile(`^https?://`)
+	sourceRegistry := re.ReplaceAllString(config.SourceRegistryURL, "")
+	targetRegistry := re.ReplaceAllString(config.TargetRegistryURL, "")
+	src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImage)
+	dst := fmt.Sprintf("%s/%s", targetRegistry, config.SourceImage)
+
+	err := handleCredentialsForPrivateRegistries(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
 	if err != nil {
-		return errors.Wrap(err, "unable to create docker config dir")
+		return errors.Wrap(err, "failed to handle credentials for source registry")
 	}
 
-	err = handleCredentialsForPrivateRegistries("", config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, fileUtils)
+	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, targetRegistry, config.TargetRegistryUser, config.TargetRegistryPassword, fileUtils)
 	if err != nil {
-		return fmt.Errorf("failed to handle registry credentials for source registry: %w", err)
-	}
-
-	err = handleCredentialsForPrivateRegistries(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, fileUtils)
-	if err != nil {
-		return fmt.Errorf("failed to handle registry credentials for target registry: %w", err)
-	}
-
-	targetImage := config.TargetImage
-	if targetImage == "" {
-		targetImage = config.SourceImage
+		return errors.Wrap(err, "failed to handle credentials for target registry")
 	}
 
 	if len(config.LocalDockerImagePath) > 0 {
-		err = pushLocalImageToTargetRegistry(config.LocalDockerImagePath, config.TargetRegistryURL, targetImage)
-		if err != nil {
-			return fmt.Errorf("failed to push to local image to registry: %w", err)
+		if err := pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst); err != nil {
+			return errors.Wrapf(err, "failed to push local image to %q", targetRegistry)
 		}
-	} else {
-		err = copyImage(config.SourceRegistryURL, config.SourceImage, config.TargetRegistryURL, targetImage)
-		if err != nil {
-			return fmt.Errorf("failed to copy image from %v to %v with err: %w", config.SourceRegistryURL, config.TargetRegistryURL, err)
-		}
+		return nil
 	}
 
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
+	if err := copyImage(src, dst); err != nil {
+		return errors.Wrapf(err, "failed to copy image from %q to %q", sourceRegistry, targetRegistry)
+	}
 
-	// Example of calling methods from external dependencies directly on utils:
-	exists, err := utils.FileExists("file.txt")
+	return nil
+}
+
+func handleCredentialsForPrivateRegistries(dockerConfigJsonPath, registry, username, password string, fileUtils piperutils.FileUtils) error {
+	if len(dockerConfigJsonPath) == 0 && (len(registry) == 0 || len(username) == 0 || len(password) == 0) {
+		return nil
+	}
+
+	if len(dockerConfigJsonPath) == 0 {
+		_, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, fileUtils)
+		if err != nil {
+			return errors.Wrap(err, "failed to create new docker config")
+		}
+		return nil
+	}
+
+	_, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, fileUtils)
 	if err != nil {
-		// It is good practice to set an error category.
-		// Most likely you want to do this at the place where enough context is known.
-		log.SetErrorCategory(log.ErrorConfiguration)
-		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
-		return fmt.Errorf("failed to check for important file: %w", err)
+		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
 	}
-	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("cannot run without important file")
+
+	err = docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, fileUtils)
+	if err != nil {
+		return errors.Wrapf(err, "failed to merge docker config files")
 	}
 
 	return nil
-
 }
 
-func handleCredentialsForPrivateRegistries(dockerConfigJsonPath string, registryURL string, username string, password string, fileUtils piperutils.FileUtils) error {
-	dockerConfig := []byte(`{"auths":{}}`)
-
-	fmt.Println("dockerConfigJsonPath", dockerConfigJsonPath, "registryURL", registryURL, "username", username, "password", password)
-
-	// respect user provided docker config json file
-	if len(dockerConfigJsonPath) > 0 {
-		var err error
-		dockerConfig, err = fileUtils.FileRead(dockerConfigJsonPath)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read existing docker config json at '%v'", dockerConfigJsonPath)
-		}
-	}
-
-	if len(dockerConfigJsonPath) > 0 && len(registryURL) > 0 && len(password) > 0 && len(registryURL) > 0 {
-		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", dockerConfigJsonPath, fileUtils)
-		if err != nil {
-			return errors.Wrapf(err, "failed to update existing docker config json file '%v'", dockerConfigJsonPath)
-		}
-
-		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read enhanced file '%v'", dockerConfigJsonPath)
-		}
-	} else if len(dockerConfigJsonPath) == 0 && len(registryURL) > 0 && len(password) > 0 && len(username) > 0 {
-		targetConfigJson, err := docker.CreateDockerConfigJSON(registryURL, username, password, "", ".docker/config.json", fileUtils)
-		if err != nil {
-			return errors.Wrap(err, "failed to create new docker config json at .docker/config.json")
-		}
-
-		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read new docker config file at .docker/config.json")
-		}
-	}
-
-	if err := fileUtils.FileWrite(".docker/config.json", dockerConfig, 0644); err != nil {
-		return errors.Wrap(err, "failed to write file "+dockerConfigFile)
-	}
-	return nil
-}
-
-func pushLocalImageToTargetRegistry(localDockerImagePath string, targetRegistryURL string, targetImage string) error {
+func pushLocalImageToTargetRegistry(localDockerImagePath, targetRegistry string) error {
 	img, err := docker.LoadImage(localDockerImagePath)
 	if err != nil {
 		return err
 	}
-	return docker.PushImage(img, targetRegistryURL)
+	return docker.PushImage(img, targetRegistry)
 }
 
-func copyImage(sourceRegistry string, sourceImage string, targetRegistry string, targetImage string) error {
-	// needed without URL scheme
-	if sourceRegistryURL, err := url.Parse(sourceRegistry); err == nil {
-		sourceRegistry = sourceRegistry[len(sourceRegistryURL.Scheme+"://"):]
-	}
-	srcRef := fmt.Sprintf("%s/%s", sourceRegistry, sourceImage)
-
-	// needed without URL scheme
-	if targetRegistryURL, err := url.Parse(targetRegistry); err == nil {
-		targetRegistry = targetRegistry[len(targetRegistryURL.Scheme+"://"):]
-
-	}
-	dstRef := fmt.Sprintf("%s/%s", targetRegistry, targetImage)
-
-	return docker.CopyImage(srcRef, dstRef)
+func copyImage(sourceRegistry, targetRegistry string) error {
+	return docker.CopyImage(sourceRegistry, targetRegistry)
 }
 
+// ???
 func skopeoMoveImage(sourceImageFullName string, sourceRegistryUser string, sourceRegistryPassword string, targetImageFullName string, targetRegistryUser string, targetRegistryPassword string, utils imagePushToRegistryUtils) error {
 	skopeoRunParameters := []string{
 		"copy",
