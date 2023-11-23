@@ -511,9 +511,16 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: scanImages
+        description: If images found in the cpe, they will also be scanned
+        type: "bool"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: containerDistro
-        description:
-          "distro of the container that is scanned"
+        description: Distro of the container that is scanned
         type: "string"
         scope:
           - PARAMETERS
@@ -524,15 +531,6 @@ spec:
           - ubuntu
           - centos
           - alpine
-      - name: scanImages
-        description:
-          "if images found in the cpe, they will also be scanned"
-        type: "bool"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
   outputs:
     resources:
       - name: influx
@@ -586,32 +584,36 @@ spec:
           value: "0"
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: imageinspector-shared
   sidecars:
     - name: inspector-ubuntu
-      image: blackducksoftware/blackduck-imageinspector-ubuntu:5.0.15
+      image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: imageinspector-shared
       conditions:
         - conditionRef: strings-equal
           params:
             - name: containerDistro
               value: ubuntu
     - name: inspector-alpine
-      image: blackducksoftware/blackduck-imageinspector-alpine:5.0.15
+      image: blackducksoftware/blackduck-imageinspector-alpine:5.1.0
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: imageinspector-shared
       conditions:
         - conditionRef: strings-equal
           params:
             - name: containerDistro
               value: alpine
     - name: inspector-centos
-      image: blackducksoftware/blackduck-imageinspector-centos:5.0.15
+      image: blackducksoftware/blackduck-imageinspector-centos:5.1.0
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: imageinspector-shared
       conditions:
         - conditionRef: strings-equal
           params:
