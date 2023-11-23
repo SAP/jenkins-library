@@ -81,6 +81,9 @@ func getDefaults() ([]map[string]string, error) {
 			var yamlContent string
 
 			if !defaultsOptions.useV1 {
+				log.Entry().Warning("This step is using deprecated format of stage conditions which will be removed in Jan 2024. " +
+					"To avoid pipeline breakage, please call getDefaults command with --useV1 flag.",
+				)
 				var c config.Config
 				c.ReadConfig(fc)
 
