@@ -104,10 +104,10 @@ type CloneEntity struct {
 }
 
 type RepositoryEntity struct {
-	Metadata            AbapMetadata `json:"__metadata"`
-	ScName              string       `json:"sc_name"`
-	ActiveBranch        string       `json:"active_branch"`
-	AvailableOnInstance bool         `json:"avail_on_inst"`
+	Metadata     AbapMetadata `json:"__metadata"`
+	ScName       string       `json:"sc_name"`
+	ActiveBranch string       `json:"active_branch"`
+	AvailOnInst  bool         `json:"avail_on_inst"`
 }
 
 // AbapLogs struct for ABAP logs

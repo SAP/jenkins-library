@@ -233,6 +233,7 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 	if errRead != nil {
 		return false, "", err
 	}
+
 	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
 		return false, "", err
 	}
@@ -245,7 +246,7 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 		return false, "", err
 	}
 
-	if body.AvailableOnInstance {
+	if body.AvailOnInst {
 		return true, body.ActiveBranch, nil
 	}
 	return false, "", err

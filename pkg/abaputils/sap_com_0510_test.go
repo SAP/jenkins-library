@@ -347,6 +347,31 @@ func TestCheckout(t *testing.T) {
 	})
 }
 
+func TestGetRepo(t *testing.T) {
+	t.Run("Test GetRepo Success", func(t *testing.T) {
+
+		client := &ClientMock{
+			BodyList: []string{
+				`{"d" : { "sc_name" : "testRepo1", "avail_on_inst" : true, "active_branch": "testBranch1" } }`,
+				`{"d" : [] }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+
+		api, err := apiManager.GetAPI(con, repo)
+		assert.NoError(t, err)
+		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
+
+		cloned, activeBranch, errAction := api.GetRepository()
+		assert.True(t, cloned)
+		assert.Equal(t, "testBranch1", activeBranch)
+		assert.NoError(t, errAction)
+	})
+}
+
 func TestCreateTag(t *testing.T) {
 	t.Run("Test Tag Success", func(t *testing.T) {
 
