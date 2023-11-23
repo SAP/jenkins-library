@@ -32,7 +32,7 @@ import (
 const (
 	creatorPath        = "/cnb/lifecycle/creator"
 	platformPath       = "/tmp/platform"
-	platformAPIVersion = "0.11"
+	platformAPIVersion = "0.12"
 )
 
 type cnbBuildUtilsBundle struct {
