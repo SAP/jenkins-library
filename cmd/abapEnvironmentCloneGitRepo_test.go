@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -98,7 +97,7 @@ repositories:
 			Token: "myToken",
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
 		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
@@ -139,7 +138,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
@@ -176,10 +175,10 @@ repositories:
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful: Request to ABAP System not successful", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
 
 	})
@@ -238,7 +237,7 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
 		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component '/DMO/REPO_A', branch 'branchA', commit 'ABCD1234' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
@@ -274,7 +273,7 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
@@ -309,7 +308,7 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
@@ -343,7 +342,7 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Could not read repositories: Could not find filename.yaml", err.Error(), "Expected different error message")
@@ -384,7 +383,7 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
 		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "The provided configuration is not allowed: It is not allowed to configure the parameters `repositories`and `repositoryName` at the same time", err.Error(), "Expected different error message")
@@ -440,9 +439,54 @@ func TestALreadyCloned(t *testing.T) {
 			CommitID: "abcd1234",
 		}
 
-		err := errors.New("Custom Error")
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
-		err = cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
+		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils)
+		assert.NoError(t, err, "Did not expect error")
+	})
+
+	t.Run("Already cloned, branch is already checked out, pull instead", func(t *testing.T) {
+
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.Host = "example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		config := abapEnvironmentCloneGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+		}
+
+		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				`{"d" : ` + executionLogStringClone + `}`,
+				logResultSuccess,
+				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "sc_name" : "testRepo1", "avail_on_inst" : true, "active_branch": "testBranch1" } }`,
+				`{"d" : [] }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		repo := abaputils.Repository{
+			Name:     "testRepo1",
+			Branch:   "testBranch1",
+			CommitID: "abcd1234",
+		}
+
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond}
+		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils)
 		assert.NoError(t, err, "Did not expect error")
 	})
 
