@@ -88,7 +88,6 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 	if errCheckCloned != nil {
 		return errors.Wrapf(errCheckCloned, errorString)
 	}
-	log.Entry().Infof("%v %s", alreadyCloned, activeBranch)
 
 	if !alreadyCloned {
 		errClone := api.Clone()
@@ -125,22 +124,32 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 
 func getCheckoutOptions(config *abapEnvironmentCloneGitRepoOptions, repo abaputils.Repository) *abapEnvironmentCheckoutBranchOptions {
 	checkoutOptions := abapEnvironmentCheckoutBranchOptions{
-		Username:       config.Username,
-		Password:       config.Password,
-		Host:           config.Host,
-		RepositoryName: repo.Name,
-		BranchName:     repo.Branch,
+		Username:          config.Username,
+		Password:          config.Password,
+		Host:              config.Host,
+		RepositoryName:    repo.Name,
+		BranchName:        repo.Branch,
+		CfAPIEndpoint:     config.CfAPIEndpoint,
+		CfOrg:             config.CfOrg,
+		CfServiceInstance: config.CfServiceInstance,
+		CfServiceKeyName:  config.CfServiceKeyName,
+		CfSpace:           config.CfSpace,
 	}
 	return &checkoutOptions
 }
 
 func getPullOptions(config *abapEnvironmentCloneGitRepoOptions, repo abaputils.Repository) *abapEnvironmentPullGitRepoOptions {
 	pullOptions := abapEnvironmentPullGitRepoOptions{
-		Username:       config.Username,
-		Password:       config.Password,
-		Host:           config.Host,
-		RepositoryName: repo.Name,
-		CommitID:       repo.CommitID,
+		Username:          config.Username,
+		Password:          config.Password,
+		Host:              config.Host,
+		RepositoryName:    repo.Name,
+		CommitID:          repo.CommitID,
+		CfAPIEndpoint:     config.CfAPIEndpoint,
+		CfOrg:             config.CfOrg,
+		CfServiceInstance: config.CfServiceInstance,
+		CfServiceKeyName:  config.CfServiceKeyName,
+		CfSpace:           config.CfSpace,
 	}
 	return &pullOptions
 }
@@ -164,69 +173,6 @@ func triggerClone(repo abaputils.Repository, api abaputils.SoftwareComponentApiI
 	//uriConnectionDetails.URL = uriConnectionDetails.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(uuid=guid'" + body.UUID + "')"
 	return nil, false
 }
-
-// func handleCloneError(resp *http.Response, err error, cloneConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, repo abaputils.Repository) (returnedError error, alreadyCloned bool) {
-// 	alreadyCloned = false
-// 	returnedError = nil
-// 	if resp == nil {
-// 		log.Entry().WithError(err).WithField("ABAP Endpoint", cloneConnectionDetails.URL).Error("Request failed")
-// 		returnedError = errors.New("Response is nil")
-// 		return
-// 	}
-// 	defer resp.Body.Close()
-// 	errorText, errorCode, parsingError := abaputils.GetErrorDetailsFromResponse(resp)
-// 	if parsingError != nil {
-// 		returnedError = err
-// 		return
-// 	}
-// 	if errorCode == "A4C_A2G/257" {
-// 		// With the latest release, a repeated "clone" was prohibited
-// 		// As an intermediate workaround, we react to the error message A4C_A2G/257 that gets thrown, if the repository had already been cloned
-// 		// In this case, a checkout branch and a pull will be performed
-// 		alreadyCloned = true
-// 		abaputils.AddDefaultDashedLine()
-// 		abaputils.AddDefaultDashedLine()
-// 		log.Entry().Infof("%s", "The repository / software component has already been cloned on the ABAP Environment system ")
-// 		log.Entry().Infof("%s", "A `checkout branch` and a `pull` will be performed instead")
-// 		abaputils.AddDefaultDashedLine()
-// 		abaputils.AddDefaultDashedLine()
-// 		checkoutOptions := abapEnvironmentCheckoutBranchOptions{
-// 			Username:       cloneConnectionDetails.User,
-// 			Password:       cloneConnectionDetails.Password,
-// 			Host:           cloneConnectionDetails.Host,
-// 			RepositoryName: repo.Name,
-// 			BranchName:     repo.Branch,
-// 		}
-// 		c := command.Command{}
-// 		c.Stdout(log.Writer())
-// 		c.Stderr(log.Writer())
-// 		com := abaputils.AbapUtils{
-// 			Exec: &c,
-// 		}
-// 		returnedError = runAbapEnvironmentCheckoutBranch(&checkoutOptions, &com, client)
-// 		if returnedError != nil {
-// 			return
-// 		}
-// 		abaputils.AddDefaultDashedLine()
-// 		abaputils.AddDefaultDashedLine()
-// 		pullOptions := abapEnvironmentPullGitRepoOptions{
-// 			Username:       cloneConnectionDetails.User,
-// 			Password:       cloneConnectionDetails.Password,
-// 			Host:           cloneConnectionDetails.Host,
-// 			RepositoryName: repo.Name,
-// 			CommitID:       repo.CommitID,
-// 		}
-// 		returnedError = runAbapEnvironmentPullGitRepo(&pullOptions, &com, client)
-// 		if returnedError != nil {
-// 			return
-// 		}
-// 	} else {
-// 		log.Entry().WithField("StatusCode", resp.Status).Error("Could not clone the " + repo.GetCloneLogString())
-// 		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
-// 		returnedError = errors.Wrap(abapError, err.Error())
-// 	}
-// 	return
-// }
 
 func convertCloneConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.AbapEnvironmentOptions {
 	subOptions := abaputils.AbapEnvironmentOptions{}
