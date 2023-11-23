@@ -18,31 +18,15 @@ const (
 	targetDockerConfigPath = "/root/.docker/config.json"
 )
 
-type dockerConfigUtils interface {
-	CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error)
-	MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error
-}
-
 type dockerImageUtils interface {
 	LoadImage(src string) (v1.Image, error)
 	PushImage(im v1.Image, dest string) error
 	CopyImage(src, dest string) error
 }
 
-type dockerConfigUtilsBundle struct{}
-
-func (d *dockerConfigUtilsBundle) CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
-	return docker.CreateDockerConfigJSON(registry, username, password, targetPath, configPath, utils)
-}
-
-func (d *dockerConfigUtilsBundle) MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error {
-	return docker.MergeDockerConfigJSON(sourcePath, targetPath, utils)
-}
-
 type imagePushToRegistryUtils interface {
 	command.ExecRunner
 	piperutils.FileUtils
-	dockerConfigUtils
 	dockerImageUtils
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
@@ -54,7 +38,6 @@ type imagePushToRegistryUtils interface {
 type imagePushToRegistryUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
-	*dockerConfigUtilsBundle
 	dockerImageUtils
 
 	// Embed more structs as necessary to implement methods or interfaces you add to imagePushToRegistryUtils.
@@ -65,10 +48,9 @@ type imagePushToRegistryUtilsBundle struct {
 
 func newImagePushToRegistryUtils() imagePushToRegistryUtils {
 	utils := imagePushToRegistryUtilsBundle{
-		Command:                 &command.Command{},
-		Files:                   &piperutils.Files{},
-		dockerConfigUtilsBundle: &dockerConfigUtilsBundle{},
-		dockerImageUtils:        &docker.CraneUtilsBundle{},
+		Command:          &command.Command{},
+		Files:            &piperutils.Files{},
+		dockerImageUtils: &docker.CraneUtilsBundle{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -134,19 +116,19 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 	}
 
 	if len(dockerConfigJsonPath) == 0 {
-		_, err := utils.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils)
+		_, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils)
 		if err != nil {
 			return errors.Wrap(err, "failed to create new docker config")
 		}
 		return nil
 	}
 
-	_, err := utils.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils)
+	_, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
 	}
 
-	err = utils.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils)
+	err = docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils)
 	if err != nil {
 		return errors.Wrapf(err, "failed to merge docker config files")
 	}
@@ -159,6 +141,7 @@ func pushLocalImageToTargetRegistry(localDockerImagePath, targetRegistry string,
 	if err != nil {
 		return err
 	}
+
 	return utils.PushImage(img, targetRegistry)
 }
 

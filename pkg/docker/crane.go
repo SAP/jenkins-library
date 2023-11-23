@@ -7,7 +7,7 @@ import (
 
 type CraneUtilsBundle struct{}
 
-func (c *CraneUtilsBundle) CopyImage(src string, dest string) error {
+func (c *CraneUtilsBundle) CopyImage(src, dest string) error {
 	return crane.Copy(src, dest)
 }
 
