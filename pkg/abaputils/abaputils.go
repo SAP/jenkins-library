@@ -396,6 +396,7 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 	var responseError error
 	if c.Body != "" {
 		body = []byte(c.Body)
+		responseError = c.Error
 	} else {
 		if c.ErrorInsteadOfDump && len(c.BodyList) == 0 {
 			return nil, errors.New("No more bodies in the list")
