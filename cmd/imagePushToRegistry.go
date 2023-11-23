@@ -18,40 +18,32 @@ const (
 	targetDockerConfigPath = "/root/.docker/config.json"
 )
 
-type dockerUtils interface {
+type dockerConfigUtils interface {
 	CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error)
 	MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error
+}
+
+type dockerImageUtils interface {
 	LoadImage(src string) (v1.Image, error)
 	PushImage(im v1.Image, dest string) error
 	CopyImage(src, dest string) error
 }
 
-type dockerUtilsBundle struct{}
+type dockerConfigUtilsBundle struct{}
 
-func (d *dockerUtilsBundle) CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
+func (d *dockerConfigUtilsBundle) CreateDockerConfigJSON(registry, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
 	return docker.CreateDockerConfigJSON(registry, username, password, targetPath, configPath, utils)
 }
 
-func (d *dockerUtilsBundle) MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error {
+func (d *dockerConfigUtilsBundle) MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error {
 	return docker.MergeDockerConfigJSON(sourcePath, targetPath, utils)
-}
-
-func (d *dockerUtilsBundle) LoadImage(src string) (v1.Image, error) {
-	return docker.LoadImage(src)
-}
-
-func (d *dockerUtilsBundle) PushImage(im v1.Image, dest string) error {
-	return docker.PushImage(im, dest)
-}
-
-func (d *imagePushToRegistryUtilsBundle) CopyImage(src, dest string) error {
-	return docker.CopyImage(src, dest)
 }
 
 type imagePushToRegistryUtils interface {
 	command.ExecRunner
 	piperutils.FileUtils
-	dockerUtils
+	dockerConfigUtils
+	dockerImageUtils
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The imagePushToRegistryUtils interface should be descriptive of your runtime dependencies,
@@ -62,7 +54,8 @@ type imagePushToRegistryUtils interface {
 type imagePushToRegistryUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
-	*dockerUtilsBundle
+	*dockerConfigUtilsBundle
+	dockerImageUtils
 
 	// Embed more structs as necessary to implement methods or interfaces you add to imagePushToRegistryUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
@@ -72,9 +65,10 @@ type imagePushToRegistryUtilsBundle struct {
 
 func newImagePushToRegistryUtils() imagePushToRegistryUtils {
 	utils := imagePushToRegistryUtilsBundle{
-		Command:           &command.Command{},
-		Files:             &piperutils.Files{},
-		dockerUtilsBundle: &dockerUtilsBundle{},
+		Command:                 &command.Command{},
+		Files:                   &piperutils.Files{},
+		dockerConfigUtilsBundle: &dockerConfigUtilsBundle{},
+		dockerImageUtils:        &docker.CraneUtilsBundle{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -127,7 +121,7 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 		return nil
 	}
 
-	if err := copyImage(src, dst, utils); err != nil {
+	if err := utils.CopyImage(src, dst); err != nil {
 		return errors.Wrapf(err, "failed to copy image from %q to %q", sourceRegistry, targetRegistry)
 	}
 
@@ -166,10 +160,6 @@ func pushLocalImageToTargetRegistry(localDockerImagePath, targetRegistry string,
 		return err
 	}
 	return utils.PushImage(img, targetRegistry)
-}
-
-func copyImage(sourceRegistry, targetRegistry string, utils imagePushToRegistryUtils) error {
-	return utils.CopyImage(sourceRegistry, targetRegistry)
 }
 
 // ???

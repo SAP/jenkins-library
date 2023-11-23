@@ -348,15 +348,3 @@ func ImageListWithFilePath(imageName string, excludes []string, trimDir string, 
 
 	return imageList, nil
 }
-
-func CopyImage(src string, dest string) error {
-	return crane.Copy(src, dest)
-}
-
-func PushImage(im v1.Image, dest string) error {
-	return crane.Push(im, dest)
-}
-
-func LoadImage(src string) (v1.Image, error) {
-	return crane.Load(src)
-}
