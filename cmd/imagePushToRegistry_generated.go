@@ -48,7 +48,8 @@ func ImagePushToRegistryCommand() *cobra.Command {
 		Long: `In case you want to pull an existing image from a remote container registry, a source image and source registry needs to be specified.<br />
 This makes it possible to move an image from one registry to another.
 
-imagePushToRegistry is not similar in functionality to containerPushToRegistry (which is currently a groovy based step and only be used in jenkins). currently imagePushToRegistry only`,
+The imagePushToRegistry is not similar in functionality to containerPushToRegistry (which is currently a groovy based step and only be used in jenkins).
+Currently the imagePushToRegistry only supports copying a local image or image from source remote registry to destination registry.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -135,7 +136,7 @@ imagePushToRegistry is not similar in functionality to containerPushToRegistry (
 
 func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegistryOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetImage, "targetImage", os.Getenv("PIPER_targetImage"), "Defines the name (incl. tag) of the target image. If empty, sourceImage will be used.")
-	cmd.Flags().StringVar(&stepConfig.SourceImage, "sourceImage", os.Getenv("PIPER_sourceImage"), "Defines the name (incl. tag) of the source image to be pushed to a new image defined in `targetDockerImage`. This is helpful for moving images from one location to another.")
+	cmd.Flags().StringVar(&stepConfig.SourceImage, "sourceImage", os.Getenv("PIPER_sourceImage"), "Defines the name (incl. tag) of the source image to be pushed to a new image defined in `targetImage`. This is helpful for moving images from one location to another.")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryURL, "sourceRegistryUrl", os.Getenv("PIPER_sourceRegistryUrl"), "Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*\"")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryUser, "sourceRegistryUser", os.Getenv("PIPER_sourceRegistryUser"), "Username of the source registry where the image should be pushed pulled from.")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryPassword, "sourceRegistryPassword", os.Getenv("PIPER_sourceRegistryPassword"), "Password of the source registry where the image should be pushed pulled from.")
@@ -222,6 +223,12 @@ func imagePushToRegistryMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryUsername",
 							},
+
+							{
+								Name:    "registryCredentialsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "docker-registry",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -235,6 +242,12 @@ func imagePushToRegistryMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:    "registryCredentialsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "docker-registry",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

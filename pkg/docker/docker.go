@@ -16,7 +16,6 @@ import (
 	cranecmd "github.com/google/go-containerregistry/cmd/crane/cmd"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/logs"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -29,11 +28,6 @@ import (
 // AuthEntry defines base64 encoded username:password required inside a Docker config.json
 type AuthEntry struct {
 	Auth string `json:"auth,omitempty"`
-}
-
-func init() {
-	logs.Warn.SetOutput(os.Stderr)
-	logs.Progress.SetOutput(os.Stderr)
 }
 
 // MergeDockerConfigJSON merges two docker config.json files.
