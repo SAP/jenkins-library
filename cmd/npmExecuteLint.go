@@ -172,7 +172,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool,
 		err = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0")
 		if err != nil {
 			if failOnError {
-				return fmt.Errorf("Linter installation failed: %s", err")
+				return fmt.Errorf("linter installation failed: %s", err)
 			}
 		}
 
@@ -189,7 +189,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool,
 		err = execRunner.RunExecutable("npx", args...)
 		if err != nil {
 			if failOnError {
-				return fmt.Errorf("Lint execution failed. This might be the result of severe linting findings. The lint configuration used can be found here: %s", generalPurposeLintConfigURI)
+				return fmt.Errorf("lint execution failed. This might be the result of severe linting findings. The lint configuration used can be found here: %s", generalPurposeLintConfigURI)
 			}
 		}
 	}
