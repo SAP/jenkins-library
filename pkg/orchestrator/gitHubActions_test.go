@@ -281,6 +281,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
 	_ = os.Setenv("GITHUB_SERVER_URL", "https://github.com")
 	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
+	_ = os.Setenv("GITHUB_WORKFLOW_REF", "SAP/jenkins-library/.github/workflow/piper.yml@refs/heads/main")
 
 	p := GitHubActionsConfigProvider{}
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
@@ -299,10 +300,38 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	assert.Equal(t, "main", p.GetBranch())
 	assert.Equal(t, "refs/pull/42/merge", p.GetReference())
 	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions/runs/11111", p.GetBuildURL())
-	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions", p.GetJobURL())
+	assert.Equal(t, "https://github.com/SAP/jenkins-library/actions/workflows/piper.yml", p.GetJobURL())
 	assert.Equal(t, "Piper workflow", p.GetJobName())
 	assert.Equal(t, "ffac537e6cbbf934b08745a378932722df287a53", p.GetCommit())
 	assert.Equal(t, "https://api.github.com/repos/SAP/jenkins-library/actions", actionsURL())
 	assert.True(t, p.IsPullRequest())
 	assert.True(t, isGitHubActions())
+}
+
+func TestWorkflowFileName(t *testing.T) {
+	tests := []struct {
+		name, workflowRef, want string
+	}{
+		{
+			name:        "valid file name (yaml)",
+			workflowRef: "owner/repo/.github/workflows/test-workflow.yaml@refs/heads/main",
+			want:        "test-workflow.yaml",
+		},
+		{
+			name:        "valid file name (yml)",
+			workflowRef: "owner/repo/.github/workflows/test-workflow.yml@refs/heads/main",
+			want:        "test-workflow.yml",
+		},
+		{
+			name:        "invalid file name",
+			workflowRef: "owner/repo/.github/workflows/test-workflow@refs/heads/main",
+			want:        "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := workflowFileName(tt.workflowRef)
+			assert.Equal(t, tt.want, result)
+		})
+	}
 }

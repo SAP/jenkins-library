@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -180,9 +181,14 @@ func (g *GitHubActionsConfigProvider) GetBuildURL() string {
 }
 
 // GetJobURL returns the job URL. The URL should point to project’s pipelines.
-// For example, https://github.com/SAP/jenkins-library/actions
+// For example, https://github.com/SAP/jenkins-library/actions/workflows/workflow-file-name.yaml
 func (g *GitHubActionsConfigProvider) GetJobURL() string {
-	return g.GetRepoURL() + "/actions"
+	workflowRef := getEnv("GITHUB_WORKFLOW_REF", "")
+	fileName := workflowFileName(workflowRef)
+	// to be deleted
+	log.Entry().Info("URL:", g.GetRepoURL()+"/actions/workflows/"+fileName)
+
+	return g.GetRepoURL() + "/actions/workflows/" + fileName
 }
 
 // GetJobName returns the current workflow name. For example, "Piper workflow"
@@ -311,4 +317,14 @@ func getOwnerAndRepoNames() (string, string) {
 	}
 
 	return s[0], s[1]
+}
+
+func workflowFileName(input string) string {
+	re := regexp.MustCompile(`\.github/workflows/([a-zA-Z0-9_-]+\.(yml|yaml))`)
+	matches := re.FindStringSubmatch(input)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+
+	return ""
 }
