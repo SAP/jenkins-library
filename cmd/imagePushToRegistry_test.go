@@ -166,7 +166,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 
 		craneMockUtils := &dockermock.CraneMockUtils{}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
-		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", utils)
+		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", false, utils)
 		assert.NoError(t, err)
 	})
 
@@ -177,7 +177,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 			ErrLoadImage: dockermock.ErrLoadImage,
 		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
-		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", utils)
+		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", false, utils)
 		assert.EqualError(t, err, "load image err")
 	})
 
@@ -188,7 +188,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 			ErrPushImage: dockermock.ErrPushImage,
 		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
-		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", utils)
+		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", false, utils)
 		assert.EqualError(t, err, "push image err")
 	})
 }

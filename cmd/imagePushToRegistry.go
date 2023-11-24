@@ -97,13 +97,13 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	}
 
 	if len(config.LocalDockerImagePath) > 0 {
-		if err := pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst, utils); err != nil {
+		if err := pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst, config.TagLatest, utils); err != nil {
 			return errors.Wrapf(err, "failed to push local image to %q", targetRegistry)
 		}
 		return nil
 	}
 
-	if err := utils.CopyImage(src, dst); err != nil {
+	if err := copyImage(src, dst, config.TagLatest, utils); err != nil {
 		return errors.Wrapf(err, "failed to copy image from %q to %q", sourceRegistry, targetRegistry)
 	}
 
@@ -136,13 +136,44 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 	return nil
 }
 
-func pushLocalImageToTargetRegistry(localDockerImagePath, targetRegistry string, utils imagePushToRegistryUtils) error {
+func copyImage(src, dst string, tagLatest bool, utils imagePushToRegistryUtils) error {
+	if tagLatest {
+		// imageName is repository + image, e.g test.registry/testImage
+		imageName, _ := parseDockerImage(dst)
+		if err := utils.CopyImage(src, imageName); err != nil {
+			return err
+		}
+	}
+
+	return utils.CopyImage(src, dst)
+}
+
+func pushLocalImageToTargetRegistry(localDockerImagePath, dst string, tagLatest bool, utils imagePushToRegistryUtils) error {
 	img, err := utils.LoadImage(localDockerImagePath)
 	if err != nil {
 		return err
 	}
 
-	return utils.PushImage(img, targetRegistry)
+	if tagLatest {
+		// imageName is repository + image, e.g test.registry/testImage
+		imageName, _ := parseDockerImage(dst)
+		if err := utils.PushImage(img, imageName); err != nil {
+			return err
+		}
+	}
+
+	return utils.PushImage(img, dst)
+}
+
+func parseDockerImage(image string) (string, string) {
+	re := regexp.MustCompile(`^(.*?)(?::([^:/]+))?$`)
+
+	matches := re.FindStringSubmatch(image)
+	if len(matches) > 1 {
+		return matches[1], matches[2]
+	}
+
+	return image, ""
 }
 
 // ???
