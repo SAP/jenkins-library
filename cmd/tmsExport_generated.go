@@ -84,7 +84,7 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 
 !!! note "Prerequisites"
 * You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of your transport landscape.
-* A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of tmsServiceKey parameter.`,
+* A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of serviceKey parameter.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -172,8 +172,8 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 }
 
 func addTmsExportFlags(cmd *cobra.Command, stepConfig *tmsExportOptions) {
-	cmd.Flags().StringVar(&stepConfig.TmsServiceKey, "tmsServiceKey", os.Getenv("PIPER_tmsServiceKey"), "DEPRECATION WARNING: This parameter has been deprecated, please use the serviceKey parameter instead, which supports both the SAP Cloud Transport Management (CTMS) serviceKey, as well as the SAP Cloud Application Lifecycle Management (CALM) serviceKey.\nService key JSON string to access the SAP Cloud Transport Management service instance APIs.\n")
-	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service key JSON string to access the SAP Cloud Transport Management service instance APIs. This can be a SAP Cloud Transport Management (CTMS) serviceKey, or a SAP Cloud Application Lifecycle Management (CALM) serviceKey. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.\n")
+	cmd.Flags().StringVar(&stepConfig.TmsServiceKey, "tmsServiceKey", os.Getenv("PIPER_tmsServiceKey"), "DEPRECATION WARNING: This parameter has been deprecated, please use the serviceKey parameter instead, which supports both service key for TMS (SAP Cloud Transport Management service), as well as service key for CALM (SAP Cloud Application Lifecycle Management) service.\nService key JSON string to access the SAP Cloud Transport Management service instance APIs.\n")
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service key JSON string to access TMS (SAP Cloud Transport Management service) instance APIs. This can be a service key for TMS, or a service key for CALM (SAP Cloud Application Lifecycle Management) service. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.\n")
 	cmd.Flags().StringVar(&stepConfig.CustomDescription, "customDescription", os.Getenv("PIPER_customDescription"), "Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit ID.")
 	cmd.Flags().StringVar(&stepConfig.NamedUser, "namedUser", `Piper-Pipeline`, "Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'. If pipeline is running on Jenkins, the name of the user, who started the job, is tried to be used at first.")
 	cmd.Flags().StringVar(&stepConfig.NodeName, "nodeName", os.Getenv("PIPER_nodeName"), "Defines the name of the export node - starting node in TMS landscape. The transport request is added to the queues of the follow-on nodes of export node.")
@@ -197,7 +197,7 @@ func tmsExportMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management (CTMS) service or SAP Cloud Application Lifecycle Management (CALM) service.", Type: "jenkins"},
+					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for TMS (SAP Cloud Transport Management service) or CALM (SAP Cloud Application Lifecycle Management) service.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildResult", Type: "stash"},
