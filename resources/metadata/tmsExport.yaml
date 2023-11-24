@@ -14,7 +14,7 @@ spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management (CTMS) service or SAP Cloud Application Lifecycle Management (CALM) service.
+        description: Jenkins 'Secret text' credentials ID containing service key for TMS (SAP Cloud Transport Management service) or CALM (SAP Cloud Application Lifecycle Management) service.
         type: jenkins
     resources:
       - name: buildResult
@@ -24,8 +24,8 @@ spec:
         type: string
         description: >
           DEPRECATION WARNING: This parameter has been deprecated, please use the serviceKey parameter instead,
-          which supports both the SAP Cloud Transport Management (CTMS) serviceKey,
-          as well as the SAP Cloud Application Lifecycle Management (CALM) serviceKey.
+          which supports both service key for TMS (SAP Cloud Transport Management service),
+          as well as service key for CALM (SAP Cloud Application Lifecycle Management) service.
 
           Service key JSON string to access the SAP Cloud Transport Management service instance APIs.
         scope:
@@ -37,9 +37,9 @@ spec:
       - name: serviceKey
         type: string
         description: >
-          Service key JSON string to access the SAP Cloud Transport Management service instance APIs.
-          This can be a SAP Cloud Transport Management (CTMS) serviceKey,
-          or a SAP Cloud Application Lifecycle Management (CALM) serviceKey.
+          Service key JSON string to access TMS (SAP Cloud Transport Management service) instance APIs.
+          This can be a service key for TMS,
+          or a service key for CALM (SAP Cloud Application Lifecycle Management) service.
           If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.
         scope:
           - PARAMETERS
