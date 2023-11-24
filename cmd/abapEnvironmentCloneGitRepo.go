@@ -42,7 +42,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		return errors.Wrap(errConfig, "The provided configuration is not allowed")
 	}
 
-	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories}, true)
+	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories}, false)
 	if errGetRepos != nil {
 		return errors.Wrap(errGetRepos, "Could not read repositories")
 	}

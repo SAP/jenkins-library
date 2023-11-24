@@ -86,7 +86,7 @@ repositories:
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
-				`{"d" : { "sc_name" : "/DMO/REPO_B", "avail_on_instance" : true, "active_branch": "branchB" } }`,
+				`{"d" : { "sc_name" : "/DMO/REPO_B", "avail_on_instance" : false, "active_branch": "branchB" } }`,
 				`{"d" : [] }`,
 				`{"d" : ` + executionLogStringClone + `}`,
 				logResultSuccess,
@@ -123,7 +123,6 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			RepositoryName:    "testRepo1",
-			BranchName:        "testBranch1",
 		}
 
 		logResultSuccess := `{"d": { "sc_name": "testRepo1", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -134,7 +133,7 @@ repositories:
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "status" : "R" } }`,
-				`{"d" : { "sc_name" : "testRepo1", "avail_on_instance" : true, "active_branch": "testBranch1" } }`,
+				`{"d" : { "sc_name" : "testRepo1", "avail_on_instance" : false, "active_branch": "testBranch1" } }`,
 				`{"d" : [] }`,
 			},
 			Token:      "myToken",
