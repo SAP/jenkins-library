@@ -110,15 +110,15 @@ type CommunicationInterface interface {
 }
 
 type Options struct {
-	ServiceKey               string                 `json:"tmsServiceKey,omitempty"`
-	CustomDescription        string                 `json:"customDescription,omitempty"`
-	NamedUser                string                 `json:"namedUser,omitempty"`
-	NodeName                 string                 `json:"nodeName,omitempty"`
-	MtaPath                  string                 `json:"mtaPath,omitempty"`
-	MtaVersion               string                 `json:"mtaVersion,omitempty"`
-	NodeExtDescriptorMapping map[string]interface{} `json:"nodeExtDescriptorMapping,omitempty"`
-	Proxy                    string                 `json:"proxy,omitempty"`
-	StashContent             []string               `json:"stashContent,omitempty"`
+	ServiceKey               string
+	CustomDescription        string
+	NamedUser                string
+	NodeName                 string
+	MtaPath                  string
+	MtaVersion               string
+	NodeExtDescriptorMapping map[string]interface{}
+	Proxy                    string
+	StashContent             []string
 	Verbose                  bool
 }
 
