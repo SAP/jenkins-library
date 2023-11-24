@@ -107,6 +107,9 @@ func assetBuildEnv(t *testing.T, utils cnbutils.MockUtils, key, value string) bo
 func TestRunCnbBuild(t *testing.T) {
 	configOptions.OpenFile = piperconf.OpenPiperFile
 
+	t.Setenv("CNB_USER_ID", "1000")
+	t.Setenv("CNB_GROUP_ID", "1000")
+
 	t.Run("prefers direct configuration", func(t *testing.T) {
 		t.Parallel()
 		commonPipelineEnvironment := cnbBuildCommonPipelineEnvironment{}
@@ -141,7 +144,7 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Contains(t, runner.Calls[1].Params, "my-process")
 		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, "my-image:0.0.1", commonPipelineEnvironment.container.imageNameTag)
-		assert.Equal(t, `{"cnbBuild":[{"dockerImage":"paketobuildpacks/builder:base"}]}`, commonPipelineEnvironment.custom.buildSettingsInfo)
+		assert.Equal(t, `{"cnbBuild":[{"dockerImage":"paketobuildpacks/builder-jammy-base:latest"}]}`, commonPipelineEnvironment.custom.buildSettingsInfo)
 	})
 
 	t.Run("prefers project descriptor", func(t *testing.T) {
@@ -617,7 +620,7 @@ uri = "some-buildpack"`))
 		assert.Equal(t, "folder", string(customData.Data[0].Path))
 		assert.Contains(t, customData.Data[0].AdditionalTags, "latest")
 		assert.Contains(t, customData.Data[0].BindingKeys, "SECRET")
-		assert.Equal(t, "paketobuildpacks/builder:base", customData.Data[0].Builder)
+		assert.Equal(t, "paketobuildpacks/builder-jammy-base:latest", customData.Data[0].Builder)
 
 		assert.Contains(t, customData.Data[0].Buildpacks.FromConfig, "paketobuildpacks/java")
 		assert.NotContains(t, customData.Data[0].Buildpacks.FromProjectDescriptor, "paketobuildpacks/java")

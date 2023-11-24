@@ -41,7 +41,7 @@ type Finding struct {
 }
 
 type LowPerQuery struct {
-	QueryName string `json:"query"`
+	QueryName string `json:"name"`
 	Audited   int    `json:"audited"`
 	Total     int    `json:"total"`
 }
