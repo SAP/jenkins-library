@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -59,7 +60,7 @@ func (p *terraformExecuteCommonPipelineEnvironment) persist(path, resourceName s
 func TerraformExecuteCommand() *cobra.Command {
 	const STEP_NAME = "terraformExecute"
 
-	metadata := terraformExecuteMetadata()
+	metadata := metadata.TerraformExecuteMetadata()
 	var stepConfig terraformExecuteOptions
 	var startTime time.Time
 	var commonPipelineEnvironment terraformExecuteCommonPipelineEnvironment
@@ -165,119 +166,4 @@ func addTerraformExecuteFlags(cmd *cobra.Command, stepConfig *terraformExecuteOp
 	cmd.Flags().StringVar(&stepConfig.CliConfigFile, "cliConfigFile", os.Getenv("PIPER_cliConfigFile"), "Path to the terraform CLI configuration file (https://www.terraform.io/docs/cli/config/config-file.html#credentials).")
 	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "")
 
-}
-
-// retrieve step metadata
-func terraformExecuteMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "terraformExecute",
-			Aliases:     []config.Alias{},
-			Description: "Executes Terraform",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "cliConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing terraform CLI configuration. You can find more details about it in the [Terraform documentation](https://www.terraform.io/docs/cli/config/config-file.html#credentials).", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "command",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `plan`,
-					},
-					{
-						Name: "terraformSecrets",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:    "terraformFileVaultSecretName",
-								Type:    "vaultSecretFile",
-								Default: "terraform",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_terraformSecrets"),
-					},
-					{
-						Name:        "globalOptions",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "additionalArgs",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "init",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name: "cliConfigFile",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "cliConfigFileCredentialsId",
-								Type: "secret",
-							},
-
-							{
-								Name:    "cliConfigFileVaultSecretName",
-								Type:    "vaultSecretFile",
-								Default: "terraform",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_cliConfigFile"),
-					},
-					{
-						Name:        "workspace",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_workspace"),
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "terraform", Image: "hashicorp/terraform:1.0.10", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/terraformOutputs", "type": "map[string]interface{}"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

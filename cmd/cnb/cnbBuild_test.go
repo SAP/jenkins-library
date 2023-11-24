@@ -1,7 +1,7 @@
 //go:build unit
 // +build unit
 
-package cmd
+package cnb
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/SAP/jenkins-library/cmd"
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	piperconf "github.com/SAP/jenkins-library/pkg/config"
@@ -105,7 +106,9 @@ func assetBuildEnv(t *testing.T, utils cnbutils.MockUtils, key, value string) bo
 }
 
 func TestRunCnbBuild(t *testing.T) {
-	configOptions.OpenFile = piperconf.OpenPiperFile
+	cmd.SetConfigOptions(cmd.ConfigCommandOptions{
+		OpenFile: piperconf.OpenPiperFile,
+	})
 
 	t.Setenv("CNB_USER_ID", "1000")
 	t.Setenv("CNB_GROUP_ID", "1000")

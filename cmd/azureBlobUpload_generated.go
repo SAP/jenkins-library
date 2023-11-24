@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -24,7 +25,7 @@ type azureBlobUploadOptions struct {
 func AzureBlobUploadCommand() *cobra.Command {
 	const STEP_NAME = "azureBlobUpload"
 
-	metadata := azureBlobUploadMetadata()
+	metadata := metadata.AzureBlobUploadMetadata()
 	var stepConfig azureBlobUploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -126,53 +127,4 @@ func addAzureBlobUploadFlags(cmd *cobra.Command, stepConfig *azureBlobUploadOpti
 
 	cmd.MarkFlagRequired("jsonCredentialsAzure")
 	cmd.MarkFlagRequired("filePath")
-}
-
-// retrieve step metadata
-func azureBlobUploadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "azureBlobUpload",
-			Aliases:     []config.Alias{},
-			Description: "Uploads a specified file or directory into a given Azure Blob Storage.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "azureCredentialsId", Description: "Jenkins 'Secret Text' credentials ID containing the JSON file to authenticate to the Azure Blob Storage", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "jsonCredentialsAzure",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "azureCredentialsId",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_jsonCredentialsAzure"),
-					},
-					{
-						Name: "filePath",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "mtarFilePath",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_filePath"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -29,7 +30,7 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitPublishTargetVector"
 
-	metadata := abapAddonAssemblyKitPublishTargetVectorMetadata()
+	metadata := metadata.AbapAddonAssemblyKitPublishTargetVectorMetadata()
 	var stepConfig abapAddonAssemblyKitPublishTargetVectorOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -141,93 +142,4 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("addonDescriptor")
-}
-
-// retrieve step metadata
-func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "abapAddonAssemblyKitPublishTargetVector",
-			Aliases:     []config.Alias{},
-			Description: "This step triggers the publication of the Target Vector according to the specified scope.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "abapAddonAssemblyKitEndpoint",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     `https://apps.support.sap.com`,
-					},
-					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_username"),
-					},
-					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_password"),
-					},
-					{
-						Name:        "targetVectorScope",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `T`,
-					},
-					{
-						Name:        "maxRuntimeInMinutes",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     16,
-					},
-					{
-						Name:        "pollingIntervalInSeconds",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     60,
-					},
-					{
-						Name: "addonDescriptor",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "abap/addonDescriptor",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_addonDescriptor"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

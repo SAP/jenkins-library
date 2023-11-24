@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -29,7 +30,7 @@ type hadolintExecuteOptions struct {
 func HadolintExecuteCommand() *cobra.Command {
 	const STEP_NAME = "hadolintExecute"
 
-	metadata := hadolintExecuteMetadata()
+	metadata := metadata.HadolintExecuteMetadata()
 	var stepConfig hadolintExecuteOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -135,115 +136,4 @@ func addHadolintExecuteFlags(cmd *cobra.Command, stepConfig *hadolintExecuteOpti
 	cmd.Flags().StringVar(&stepConfig.ReportFile, "reportFile", `hadolint.xml`, "Name of the result file used locally within the step.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections between Piper and the system where the configuration file is to be downloaded from.")
 
-}
-
-// retrieve step metadata
-func hadolintExecuteMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "hadolintExecute",
-			Aliases:     []config.Alias{},
-			Description: "Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "configurationCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for access to your remote configuration file.", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "configurationUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_configurationUrl"),
-					},
-					{
-						Name: "configurationUsername",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "configurationCredentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-
-							{
-								Name:    "hadolintConfigSecretName",
-								Type:    "vaultSecret",
-								Default: "hadolintConfig",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "username"}},
-						Default:   os.Getenv("PIPER_configurationUsername"),
-					},
-					{
-						Name: "configurationPassword",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "configurationCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-
-							{
-								Name:    "hadolintConfigSecretName",
-								Type:    "vaultSecret",
-								Default: "hadolintConfig",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "password"}},
-						Default:   os.Getenv("PIPER_configurationPassword"),
-					},
-					{
-						Name:        "dockerFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerfile"}},
-						Default:     `./Dockerfile`,
-					},
-					{
-						Name:        "configurationFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `.hadolint.yaml`,
-					},
-					{
-						Name:        "reportFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `hadolint.xml`,
-					},
-					{
-						Name:        "customTlsCertificateLinks",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "hadolint", Image: "hadolint/hadolint:latest-alpine"},
-			},
-		},
-	}
-	return theMetaData
 }

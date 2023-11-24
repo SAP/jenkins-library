@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -31,7 +32,7 @@ type gctsRollbackOptions struct {
 func GctsRollbackCommand() *cobra.Command {
 	const STEP_NAME = "gctsRollback"
 
-	metadata := gctsRollbackMetadata()
+	metadata := metadata.GctsRollbackMetadata()
 	var stepConfig gctsRollbackOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -146,123 +147,4 @@ func addGctsRollbackFlags(cmd *cobra.Command, stepConfig *gctsRollbackOptions) {
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("client")
-}
-
-// retrieve step metadata
-func gctsRollbackMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "gctsRollback",
-			Aliases:     []config.Alias{},
-			Description: "Perfoms a rollback of one (default) or several commits",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "ID taken from the Jenkins credentials store containing user name and password of the user that authenticates to the ABAP system on which you want to execute the rollback.", Type: "jenkins"},
-					{Name: "githubPersonalAccessTokenId", Description: "GitHub personal access token with at least read permissions for the remote repository", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "username",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "abapCredentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "abapCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
-					},
-					{
-						Name:        "repository",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_repository"),
-					},
-					{
-						Name:        "host",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_host"),
-					},
-					{
-						Name:        "client",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_client"),
-					},
-					{
-						Name:        "commit",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_commit"),
-					},
-					{
-						Name: "githubPersonalAccessToken",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "githubPersonalAccessTokenId",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_githubPersonalAccessToken"),
-					},
-					{
-						Name:        "queryParameters",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "skipSSLVerification",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -31,7 +32,7 @@ type mavenExecuteOptions struct {
 func MavenExecuteCommand() *cobra.Command {
 	const STEP_NAME = "mavenExecute"
 
-	metadata := mavenExecuteMetadata()
+	metadata := metadata.MavenExecuteMetadata()
 	var stepConfig mavenExecuteOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -137,106 +138,4 @@ func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
 	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 
 	cmd.MarkFlagRequired("goals")
-}
-
-// retrieve step metadata
-func mavenExecuteMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "mavenExecute",
-			Aliases:     []config.Alias{},
-			Description: "This step allows to run maven commands",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name:        "pomPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_pomPath"),
-					},
-					{
-						Name:        "goals",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "[]string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "defines",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "flags",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "returnStdout",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "projectSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
-						Default:     os.Getenv("PIPER_projectSettingsFile"),
-					},
-					{
-						Name:        "globalSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
-						Default:     os.Getenv("PIPER_globalSettingsFile"),
-					},
-					{
-						Name:        "m2Path",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
-						Default:     os.Getenv("PIPER_m2Path"),
-					},
-					{
-						Name:        "logSuccessfulMavenTransfers",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
-						Default:     false,
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "mvn", Image: "maven:3.6-jdk-8"},
-			},
-		},
-	}
-	return theMetaData
 }

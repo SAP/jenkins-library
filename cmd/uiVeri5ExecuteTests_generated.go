@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -69,7 +70,7 @@ func (p *uiVeri5ExecuteTestsReports) persist(stepConfig uiVeri5ExecuteTestsOptio
 func UiVeri5ExecuteTestsCommand() *cobra.Command {
 	const STEP_NAME = "uiVeri5ExecuteTests"
 
-	metadata := uiVeri5ExecuteTestsMetadata()
+	metadata := metadata.UiVeri5ExecuteTestsMetadata()
 	var stepConfig uiVeri5ExecuteTestsOptions
 	var startTime time.Time
 	var reports uiVeri5ExecuteTestsReports
@@ -175,90 +176,4 @@ func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteT
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("runCommand")
 	cmd.MarkFlagRequired("runOptions")
-}
-
-// retrieve step metadata
-func uiVeri5ExecuteTestsMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "uiVeri5ExecuteTests",
-			Aliases:     []config.Alias{},
-			Description: "Executes UI5 e2e tests using uiVeri5",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Resources: []config.StepResources{
-					{Name: "buildDescriptor", Type: "stash"},
-					{Name: "tests", Type: "stash"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "installCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     `npm install @ui5/uiveri5 --global --quiet`,
-					},
-					{
-						Name:        "runCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     `/home/node/.npm-global/bin/uiveri5`,
-					},
-					{
-						Name:        "runOptions",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     []string{`--seleniumAddress=http://localhost:4444/wd/hub`},
-					},
-					{
-						Name:        "testOptions",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_testOptions"),
-					},
-					{
-						Name:        "testServerUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_testServerUrl"),
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "uiVeri5", Image: "node:lts-buster", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
-			},
-			Sidecars: []config.Container{
-				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "reports",
-						Type: "reports",
-						Parameters: []map[string]interface{}{
-							{"filePattern": "**/TEST-*.xml", "type": "acceptance-test"},
-							{"filePattern": "**/requirement.mapping", "type": "requirement-mapping"},
-							{"filePattern": "**/delivery.mapping", "type": "delivery-mapping"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

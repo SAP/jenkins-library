@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -62,7 +63,7 @@ func (i *batsExecuteTestsInflux) persist(path, resourceName string) {
 func BatsExecuteTestsCommand() *cobra.Command {
 	const STEP_NAME = "batsExecuteTests"
 
-	metadata := batsExecuteTestsMetadata()
+	metadata := metadata.BatsExecuteTestsMetadata()
 	var stepConfig batsExecuteTestsOptions
 	var startTime time.Time
 	var influx batsExecuteTestsInflux
@@ -165,84 +166,4 @@ func addBatsExecuteTestsFlags(cmd *cobra.Command, stepConfig *batsExecuteTestsOp
 	cmd.Flags().StringVar(&stepConfig.TestPath, "testPath", `src/test`, "Defines either the directory which contains the test files (*.bats) or a single file. You can find further details in the Bats-core documentation.")
 	cmd.Flags().StringSliceVar(&stepConfig.EnvVars, "envVars", []string{}, "Injects environment variables to step execution. Format of value must be ['<KEY1>=<VALUE1>','<KEY2>=<VALUE2>']. Example: ['CONTAINER_NAME=piper-jenskins','IMAGE_NAME=my-image']")
 
-}
-
-// retrieve step metadata
-func batsExecuteTestsMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "batsExecuteTests",
-			Aliases:     []config.Alias{},
-			Description: "This step executes tests using the [Bash Automated Testing System - bats-core](https://github.com/bats-core/bats-core).",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Resources: []config.StepResources{
-					{Name: "tests", Type: "stash"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "outputFormat",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `junit`,
-					},
-					{
-						Name:        "repository",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `https://github.com/bats-core/bats-core.git`,
-					},
-					{
-						Name:        "testPackage",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `piper-bats`,
-					},
-					{
-						Name:        "testPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `src/test`,
-					},
-					{
-						Name:        "envVars",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "bats", Image: "node:lts-buster", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "outputFormat", Value: "junit"}}}}},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "influx",
-						Type: "influx",
-						Parameters: []map[string]interface{}{
-							{"name": "step_data", "fields": []map[string]string{{"name": "bats"}}},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

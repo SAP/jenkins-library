@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -54,7 +55,7 @@ func (p *integrationArtifactGetServiceEndpointCommonPipelineEnvironment) persist
 func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactGetServiceEndpoint"
 
-	metadata := integrationArtifactGetServiceEndpointMetadata()
+	metadata := metadata.IntegrationArtifactGetServiceEndpointMetadata()
 	var stepConfig integrationArtifactGetServiceEndpointOptions
 	var startTime time.Time
 	var commonPipelineEnvironment integrationArtifactGetServiceEndpointCommonPipelineEnvironment
@@ -157,60 +158,4 @@ func addIntegrationArtifactGetServiceEndpointFlags(cmd *cobra.Command, stepConfi
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
-}
-
-// retrieve step metadata
-func integrationArtifactGetServiceEndpointMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "integrationArtifactGetServiceEndpoint",
-			Aliases:     []config.Alias{},
-			Description: "Get an deployed CPI intgeration flow service endpoint",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "apiServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "cpiApiServiceKeyCredentialsId",
-								Param: "apiServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_apiServiceKey"),
-					},
-					{
-						Name:        "integrationFlowId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_integrationFlowId"),
-					},
-				},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/integrationFlowServiceEndpoint"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

@@ -1,4 +1,4 @@
-package cmd
+package cnb
 
 import (
 	"archive/zip"
@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/SAP/jenkins-library/cmd"
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -294,7 +295,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	}
 
 	telemetry := buildpacks.NewTelemetry(telemetryData)
-	dockerImage, err := GetDockerImageValue(stepName)
+	dockerImage, err := cmd.GetDockerImageValue(stepName)
 	if err != nil {
 		log.Entry().Warnf("failed to retrieve dockerImage configuration: '%v'", err)
 	}
@@ -436,7 +437,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		projectID = descriptor.ProjectID
 	}
 
-	targetImage, err := cnbutils.GetTargetImage(config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag, projectID, GeneralConfig.EnvRootPath)
+	targetImage, err := cnbutils.GetTargetImage(config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag, projectID, cmd.GeneralConfig.EnvRootPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
@@ -510,7 +511,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		}
 	}
 
-	metadata.WriteProjectMetadata(GeneralConfig.EnvRootPath, utils)
+	metadata.WriteProjectMetadata(cmd.GeneralConfig.EnvRootPath, utils)
 
 	var buildpacksPath = "/cnb/buildpacks"
 	var orderPath = cnbutils.DefaultOrderPath
@@ -560,7 +561,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		"-skip-restore",
 	}
 
-	if GeneralConfig.Verbose {
+	if cmd.GeneralConfig.Verbose {
 		creatorArgs = append(creatorArgs, "-log-level", "debug")
 	}
 
@@ -621,8 +622,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 
 func createInitialTelemetrySegment(config *cnbBuildOptions, utils cnbutils.BuildUtils) *buildpacks.Segment {
 	telemetrySegment := buildpacks.NewSegment()
-	projectPath, _, _ := config.resolvePath(utils)          // ignore error here, telemetry problems should not fail the build
-	buildTool, _ := getBuildToolFromStageConfig("cnbBuild") // ignore error here, telemetry problems should not fail the build
+	projectPath, _, _ := config.resolvePath(utils)              // ignore error here, telemetry problems should not fail the build
+	buildTool, _ := cmd.GetBuildToolFromStageConfig("cnbBuild") // ignore error here, telemetry problems should not fail the build
 
 	return telemetrySegment.WithBindings(config.Bindings).
 		WithTags(config.ContainerImageTag, config.AdditionalTags).

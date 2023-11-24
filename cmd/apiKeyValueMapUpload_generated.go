@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -26,7 +27,7 @@ type apiKeyValueMapUploadOptions struct {
 func ApiKeyValueMapUploadCommand() *cobra.Command {
 	const STEP_NAME = "apiKeyValueMapUpload"
 
-	metadata := apiKeyValueMapUploadMetadata()
+	metadata := metadata.ApiKeyValueMapUploadMetadata()
 	var stepConfig apiKeyValueMapUploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -132,67 +133,4 @@ func addApiKeyValueMapUploadFlags(cmd *cobra.Command, stepConfig *apiKeyValueMap
 	cmd.MarkFlagRequired("key")
 	cmd.MarkFlagRequired("value")
 	cmd.MarkFlagRequired("keyValueMapName")
-}
-
-// retrieve step metadata
-func apiKeyValueMapUploadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "apiKeyValueMapUpload",
-			Aliases:     []config.Alias{},
-			Description: "this steps creates an API key value map artifact in the API Portal",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "apiServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "apimApiServiceKeyCredentialsId",
-								Param: "apiServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_apiServiceKey"),
-					},
-					{
-						Name:        "key",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_key"),
-					},
-					{
-						Name:        "value",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_value"),
-					},
-					{
-						Name:        "keyValueMapName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_keyValueMapName"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

@@ -1,5 +1,6 @@
 metadata:
   name: cnbBuild
+  package: cnb
   description: Executes Cloud Native Buildpacks.
   longDescription: |-
     Executes a Cloud Native Buildpacks build for creating Docker image(s).

@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -25,7 +26,7 @@ type apiProviderDownloadOptions struct {
 func ApiProviderDownloadCommand() *cobra.Command {
 	const STEP_NAME = "apiProviderDownload"
 
-	metadata := apiProviderDownloadMetadata()
+	metadata := metadata.ApiProviderDownloadMetadata()
 	var stepConfig apiProviderDownloadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -128,58 +129,4 @@ func addApiProviderDownloadFlags(cmd *cobra.Command, stepConfig *apiProviderDown
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("apiProviderName")
 	cmd.MarkFlagRequired("downloadPath")
-}
-
-// retrieve step metadata
-func apiProviderDownloadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "apiProviderDownload",
-			Aliases:     []config.Alias{},
-			Description: "Download a specific API Provider from the API Portal",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "apiServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "apimApiServiceKeyCredentialsId",
-								Param: "apiServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_apiServiceKey"),
-					},
-					{
-						Name:        "apiProviderName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_apiProviderName"),
-					},
-					{
-						Name:        "downloadPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_downloadPath"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

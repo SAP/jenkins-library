@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -28,7 +29,7 @@ type npmExecuteLintOptions struct {
 func NpmExecuteLintCommand() *cobra.Command {
 	const STEP_NAME = "npmExecuteLint"
 
-	metadata := npmExecuteLintMetadata()
+	metadata := metadata.NpmExecuteLintMetadata()
 	var stepConfig npmExecuteLintOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -131,79 +132,4 @@ func addNpmExecuteLintFlags(cmd *cobra.Command, stepConfig *npmExecuteLintOption
 	cmd.Flags().StringVar(&stepConfig.OutputFormat, "outputFormat", `checkstyle`, "eslint output format, e.g. stylish, checkstyle")
 	cmd.Flags().StringVar(&stepConfig.OutputFileName, "outputFileName", `defaultlint.xml`, "name of the output file. There might be a 'N_' prefix where 'N' is a number. When the empty string is provided, we will print to console")
 
-}
-
-// retrieve step metadata
-func npmExecuteLintMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "npmExecuteLint",
-			Aliases:     []config.Alias{{Name: "executeNpm", Deprecated: false}},
-			Description: "Execute ci-lint script on all npm packages in a project or execute default linting",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name:        "install",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "runScript",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `ci-lint`,
-					},
-					{
-						Name:        "failOnError",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "defaultNpmRegistry",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
-						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
-					},
-					{
-						Name:        "outputFormat",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "npm/outputFormat"}},
-						Default:     `checkstyle`,
-					},
-					{
-						Name:        "outputFileName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "npm/outputFormat"}},
-						Default:     `defaultlint.xml`,
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-buster"},
-			},
-		},
-	}
-	return theMetaData
 }

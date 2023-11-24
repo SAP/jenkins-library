@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -58,7 +59,7 @@ func (p *isChangeInDevelopmentCommonPipelineEnvironment) persist(path, resourceN
 func IsChangeInDevelopmentCommand() *cobra.Command {
 	const STEP_NAME = "isChangeInDevelopment"
 
-	metadata := isChangeInDevelopmentMetadata()
+	metadata := metadata.IsChangeInDevelopmentMetadata()
 	var stepConfig isChangeInDevelopmentOptions
 	var startTime time.Time
 	var commonPipelineEnvironment isChangeInDevelopmentCommonPipelineEnvironment
@@ -168,110 +169,4 @@ func addIsChangeInDevelopmentFlags(cmd *cobra.Command, stepConfig *isChangeInDev
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("changeDocumentId")
-}
-
-// retrieve step metadata
-func isChangeInDevelopmentMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "isChangeInDevelopment",
-			Aliases:     []config.Alias{},
-			Description: "This step checks if a certain change is in status 'in development'",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "credentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "endpoint",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
-						Default:     os.Getenv("PIPER_endpoint"),
-					},
-					{
-						Name: "username",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "credentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "credentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
-					},
-					{
-						Name: "changeDocumentId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/changeDocumentId",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_changeDocumentId"),
-					},
-					{
-						Name:        "failIfStatusIsNotInDevelopment",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
-					},
-					{
-						Name:        "cmClientOpts",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
-						Default:     []string{},
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "cmclient", Image: "ppiper/cm-client:3.0.0.0"},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/isChangeInDevelopment", "type": "bool"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

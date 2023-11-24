@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -66,7 +67,7 @@ func (i *tmsUploadInflux) persist(path, resourceName string) {
 func TmsUploadCommand() *cobra.Command {
 	const STEP_NAME = "tmsUpload"
 
-	metadata := tmsUploadMetadata()
+	metadata := metadata.TmsUploadMetadata()
 	var stepConfig tmsUploadOptions
 	var startTime time.Time
 	var influx tmsUploadInflux
@@ -183,135 +184,4 @@ func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
 
 	cmd.MarkFlagRequired("tmsServiceKey")
 	cmd.MarkFlagRequired("nodeName")
-}
-
-// retrieve step metadata
-func tmsUploadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "tmsUpload",
-			Aliases:     []config.Alias{},
-			Description: "This step allows you to upload an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management service.", Type: "jenkins"},
-				},
-				Resources: []config.StepResources{
-					{Name: "buildResult", Type: "stash"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "tmsServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "credentialsId",
-								Param: "tmsServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_tmsServiceKey"),
-					},
-					{
-						Name: "customDescription",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "git/commitId",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_customDescription"),
-					},
-					{
-						Name:        "namedUser",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `Piper-Pipeline`,
-					},
-					{
-						Name:        "nodeName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_nodeName"),
-					},
-					{
-						Name: "mtaPath",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "mtarFilePath",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_mtaPath"),
-					},
-					{
-						Name:        "mtaVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `*`,
-					},
-					{
-						Name:        "nodeExtDescriptorMapping",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "map[string]interface{}",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "proxy",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_proxy"),
-					},
-					{
-						Name:        "stashContent",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{`buildResult`},
-					},
-				},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "influx",
-						Type: "influx",
-						Parameters: []map[string]interface{}{
-							{"name": "step_data", "fields": []map[string]string{{"name": "tms"}}},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

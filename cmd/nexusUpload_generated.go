@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -33,7 +34,7 @@ type nexusUploadOptions struct {
 func NexusUploadCommand() *cobra.Command {
 	const STEP_NAME = "nexusUpload"
 
-	metadata := nexusUploadMetadata()
+	metadata := metadata.NexusUploadMetadata()
 	var stepConfig nexusUploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -162,163 +163,4 @@ func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for accessing the Nexus endpoint.")
 
 	cmd.MarkFlagRequired("url")
-}
-
-// retrieve step metadata
-func nexusUploadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "nexusUpload",
-			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
-			Description: "Upload artifacts to Nexus Repository Manager",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "nexusCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing the technical username/password credential for accessing the nexus endpoint.", Type: "jenkins", Aliases: []config.Alias{{Name: "nexus/credentialsId", Deprecated: false}}},
-				},
-				Resources: []config.StepResources{
-					{Name: "buildDescriptor", Type: "stash"},
-					{Name: "buildResult", Type: "stash"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "version",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "nexus/version"}},
-						Default:     `nexus3`,
-					},
-					{
-						Name: "format",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryFormat",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   `maven`,
-					},
-					{
-						Name: "url",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryUrl",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "nexus/url"}},
-						Default:   os.Getenv("PIPER_url"),
-					},
-					{
-						Name:        "mavenRepository",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}, {Name: "nexus/repository", Deprecated: true}},
-						Default:     os.Getenv("PIPER_mavenRepository"),
-					},
-					{
-						Name:        "npmRepository",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "nexus/npmRepository"}},
-						Default:     os.Getenv("PIPER_npmRepository"),
-					},
-					{
-						Name:        "groupId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "nexus/groupId"}},
-						Default:     os.Getenv("PIPER_groupId"),
-					},
-					{
-						Name:        "artifactId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_artifactId"),
-					},
-					{
-						Name:        "globalSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
-						Default:     os.Getenv("PIPER_globalSettingsFile"),
-					},
-					{
-						Name:        "m2Path",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
-						Default:     os.Getenv("PIPER_m2Path"),
-					},
-					{
-						Name: "username",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "nexusCredentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryUsername",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "nexusCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryPassword",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "mvn-npm", Image: "devxci/mbtci-java11-node14"},
-			},
-		},
-	}
-	return theMetaData
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -25,7 +26,7 @@ type apiProxyDownloadOptions struct {
 func ApiProxyDownloadCommand() *cobra.Command {
 	const STEP_NAME = "apiProxyDownload"
 
-	metadata := apiProxyDownloadMetadata()
+	metadata := metadata.ApiProxyDownloadMetadata()
 	var stepConfig apiProxyDownloadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -128,58 +129,4 @@ func addApiProxyDownloadFlags(cmd *cobra.Command, stepConfig *apiProxyDownloadOp
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("apiProxyName")
 	cmd.MarkFlagRequired("downloadPath")
-}
-
-// retrieve step metadata
-func apiProxyDownloadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "apiProxyDownload",
-			Aliases:     []config.Alias{},
-			Description: "Download a specific API Proxy from the API Portal",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "apiServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "apimApiServiceKeyCredentialsId",
-								Param: "apiServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_apiServiceKey"),
-					},
-					{
-						Name:        "apiProxyName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_apiProxyName"),
-					},
-					{
-						Name:        "downloadPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_downloadPath"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

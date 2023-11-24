@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -24,7 +25,7 @@ type awsS3UploadOptions struct {
 func AwsS3UploadCommand() *cobra.Command {
 	const STEP_NAME = "awsS3Upload"
 
-	metadata := awsS3UploadMetadata()
+	metadata := metadata.AwsS3UploadMetadata()
 	var stepConfig awsS3UploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -126,53 +127,4 @@ func addAwsS3UploadFlags(cmd *cobra.Command, stepConfig *awsS3UploadOptions) {
 
 	cmd.MarkFlagRequired("jsonCredentialsAWS")
 	cmd.MarkFlagRequired("filePath")
-}
-
-// retrieve step metadata
-func awsS3UploadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "awsS3Upload",
-			Aliases:     []config.Alias{},
-			Description: "Uploads a specified file or directory into a given AWS S3 Bucket",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "awsCredentialsId", Description: "Jenkins 'Secret Text' credentials ID containing the JSON file to authenticate to the AWS S3 Bucket", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "jsonCredentialsAWS",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "awsCredentialsId",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_jsonCredentialsAWS"),
-					},
-					{
-						Name: "filePath",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "mtarFilePath",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_filePath"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

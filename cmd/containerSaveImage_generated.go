@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -29,7 +30,7 @@ type containerSaveImageOptions struct {
 func ContainerSaveImageCommand() *cobra.Command {
 	const STEP_NAME = "containerSaveImage"
 
-	metadata := containerSaveImageMetadata()
+	metadata := metadata.ContainerSaveImageMetadata()
 	var stepConfig containerSaveImageOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -139,134 +140,4 @@ func addContainerSaveImageFlags(cmd *cobra.Command, stepConfig *containerSaveIma
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("containerImage")
-}
-
-// retrieve step metadata
-func containerSaveImageMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "containerSaveImage",
-			Aliases:     []config.Alias{},
-			Description: "Saves a container image as a tar file",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "containerRegistryUrl",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "container/registryUrl",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
-						Default:   os.Getenv("PIPER_containerRegistryUrl"),
-					},
-					{
-						Name: "containerImage",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "container/imageNameTag",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "dockerImage"}, {Name: "scanImage"}},
-						Default:   os.Getenv("PIPER_containerImage"),
-					},
-					{
-						Name: "containerRegistryPassword",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "container/repositoryPassword",
-							},
-
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryPassword",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_containerRegistryPassword"),
-					},
-					{
-						Name: "containerRegistryUser",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "container/repositoryUsername",
-							},
-
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryUsername",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_containerRegistryUser"),
-					},
-					{
-						Name:        "filePath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_filePath"),
-					},
-					{
-						Name: "dockerConfigJSON",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/dockerConfigJSON",
-							},
-
-							{
-								Name: "dockerConfigJsonCredentialsId",
-								Type: "secret",
-							},
-
-							{
-								Name:    "dockerConfigFileVaultSecretName",
-								Type:    "vaultSecretFile",
-								Default: "docker-config",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_dockerConfigJSON"),
-					},
-					{
-						Name:        "imageFormat",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `legacy`,
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -58,7 +59,7 @@ func (p *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) persi
 func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitReserveNextPackages"
 
-	metadata := abapAddonAssemblyKitReserveNextPackagesMetadata()
+	metadata := metadata.AbapAddonAssemblyKitReserveNextPackagesMetadata()
 	var stepConfig abapAddonAssemblyKitReserveNextPackagesOptions
 	var startTime time.Time
 	var commonPipelineEnvironment abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment
@@ -175,95 +176,4 @@ func addAbapAddonAssemblyKitReserveNextPackagesFlags(cmd *cobra.Command, stepCon
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("addonDescriptor")
-}
-
-// retrieve step metadata
-func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "abapAddonAssemblyKitReserveNextPackages",
-			Aliases:     []config.Alias{},
-			Description: "This step determines the ABAP delivery packages (name and type), which are needed to deliver Software Component Versions.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "abapAddonAssemblyKitEndpoint",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     `https://apps.support.sap.com`,
-					},
-					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_username"),
-					},
-					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_password"),
-					},
-					{
-						Name: "addonDescriptor",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "abap/addonDescriptor",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_addonDescriptor"),
-					},
-					{
-						Name:        "maxRuntimeInMinutes",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     5,
-					},
-					{
-						Name:        "pollingIntervalInSeconds",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     30,
-					},
-				},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "abap/addonDescriptor"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

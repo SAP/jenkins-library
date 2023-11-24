@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -71,7 +72,7 @@ func (p *karmaExecuteTestsReports) persist(stepConfig karmaExecuteTestsOptions, 
 func KarmaExecuteTestsCommand() *cobra.Command {
 	const STEP_NAME = "karmaExecuteTests"
 
-	metadata := karmaExecuteTestsMetadata()
+	metadata := metadata.KarmaExecuteTestsMetadata()
 	var stepConfig karmaExecuteTestsOptions
 	var startTime time.Time
 	var reports karmaExecuteTestsReports
@@ -185,79 +186,4 @@ func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTests
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("modules")
 	cmd.MarkFlagRequired("runCommand")
-}
-
-// retrieve step metadata
-func karmaExecuteTestsMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "karmaExecuteTests",
-			Aliases:     []config.Alias{},
-			Description: "Executes the Karma test runner",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "seleniumHubCredentialsId", Description: "Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.", Type: "jenkins"},
-				},
-				Resources: []config.StepResources{
-					{Name: "buildDescriptor", Type: "stash"},
-					{Name: "tests", Type: "stash"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "installCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     `npm install --quiet`,
-					},
-					{
-						Name:        "modules",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     []string{`.`},
-					},
-					{
-						Name:        "runCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     `npm run karma`,
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "karma", Image: "node:lts-buster", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "PIPER_SELENIUM_HOSTNAME", Value: "karma"}, {Name: "PIPER_SELENIUM_WEBDRIVER_HOSTNAME", Value: "selenium"}, {Name: "PIPER_SELENIUM_WEBDRIVER_PORT", Value: "4444"}}, WorkingDir: "/home/node"},
-			},
-			Sidecars: []config.Container{
-				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,karma,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "reports",
-						Type: "reports",
-						Parameters: []map[string]interface{}{
-							{"filePattern": "**/TEST-*.xml", "type": "karma"},
-							{"filePattern": "**/cobertura-coverage.xml", "type": "karma"},
-							{"filePattern": "**/TEST-*.xml", "type": "junit"},
-							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
-							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
-							{"filePattern": "**/xmake_stage.json", "type": "xmake"},
-							{"filePattern": "**/requirement.mapping", "type": "requirement-mapping"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

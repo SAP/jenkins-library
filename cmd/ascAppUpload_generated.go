@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -31,7 +32,7 @@ type ascAppUploadOptions struct {
 func AscAppUploadCommand() *cobra.Command {
 	const STEP_NAME = "ascAppUpload"
 
-	metadata := ascAppUploadMetadata()
+	metadata := metadata.AscAppUploadMetadata()
 	var stepConfig ascAppUploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -143,117 +144,4 @@ func addAscAppUploadFlags(cmd *cobra.Command, stepConfig *ascAppUploadOptions) {
 	cmd.MarkFlagRequired("appId")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("jamfTargetSystem")
-}
-
-// retrieve step metadata
-func ascAppUploadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "ascAppUpload",
-			Aliases:     []config.Alias{},
-			Description: "Upload an app to ASC",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "ascAppTokenCredentialsId", Description: "Jenkins secret text credential ID containing the authentication token for the ASC app", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "serverUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "ascServerUrl"}},
-						Default:     os.Getenv("PIPER_serverUrl"),
-					},
-					{
-						Name: "appToken",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:    "ascVaultSecretName",
-								Type:    "vaultSecret",
-								Default: "asc",
-							},
-
-							{
-								Name: "ascAppTokenCredentialsId",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "ascAppToken"}},
-						Default:   os.Getenv("PIPER_appToken"),
-					},
-					{
-						Name:        "appId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_appId"),
-					},
-					{
-						Name:        "filePath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_filePath"),
-					},
-					{
-						Name:        "jamfTargetSystem",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_jamfTargetSystem"),
-					},
-					{
-						Name:        "releaseAppVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `Pending Release`,
-					},
-					{
-						Name:        "releaseDescription",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `<p>TBD</p>`,
-					},
-					{
-						Name:        "releaseDate",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_releaseDate"),
-					},
-					{
-						Name:        "releaseVisible",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

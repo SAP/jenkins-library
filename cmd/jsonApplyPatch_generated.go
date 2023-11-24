@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -25,7 +26,7 @@ type jsonApplyPatchOptions struct {
 func JsonApplyPatchCommand() *cobra.Command {
 	const STEP_NAME = "jsonApplyPatch"
 
-	metadata := jsonApplyPatchMetadata()
+	metadata := metadata.JsonApplyPatchMetadata()
 	var stepConfig jsonApplyPatchOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -128,49 +129,4 @@ func addJsonApplyPatchFlags(cmd *cobra.Command, stepConfig *jsonApplyPatchOption
 	cmd.MarkFlagRequired("input")
 	cmd.MarkFlagRequired("patch")
 	cmd.MarkFlagRequired("output")
-}
-
-// retrieve step metadata
-func jsonApplyPatchMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "jsonApplyPatch",
-			Aliases:     []config.Alias{},
-			Description: "Patches a json with a patch file",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name:        "input",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_input"),
-					},
-					{
-						Name:        "patch",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_patch"),
-					},
-					{
-						Name:        "output",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_output"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

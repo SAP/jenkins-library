@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -107,7 +108,7 @@ func (p *newmanExecuteReports) persist(stepConfig newmanExecuteOptions, gcpJsonK
 func NewmanExecuteCommand() *cobra.Command {
 	const STEP_NAME = "newmanExecute"
 
-	metadata := newmanExecuteMetadata()
+	metadata := metadata.NewmanExecuteMetadata()
 	var stepConfig newmanExecuteOptions
 	var startTime time.Time
 	var influx newmanExecuteInflux
@@ -215,120 +216,4 @@ func addNewmanExecuteFlags(cmd *cobra.Command, stepConfig *newmanExecuteOptions)
 	cmd.Flags().BoolVar(&stepConfig.FailOnError, "failOnError", true, "Defines the behavior, in case tests fail.")
 	cmd.Flags().StringSliceVar(&stepConfig.CfAppsWithSecrets, "cfAppsWithSecrets", []string{}, "List of CloudFoundry apps with secrets")
 
-}
-
-// retrieve step metadata
-func newmanExecuteMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "newmanExecute",
-			Aliases:     []config.Alias{},
-			Description: "Installs newman and executes specified newman collections.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Resources: []config.StepResources{
-					{Name: "tests", Type: "stash"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "newmanCollection",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `**/*.postman_collection.json`,
-					},
-					{
-						Name:        "newmanRunCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_newmanRunCommand"),
-					},
-					{
-						Name:        "runOptions",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{`run`, `{{.NewmanCollection}}`, `--reporters`, `cli,junit,html`, `--reporter-junit-export`, `target/newman/TEST-{{.CollectionDisplayName}}.xml`, `--reporter-html-export`, `target/newman/TEST-{{.CollectionDisplayName}}.html`},
-					},
-					{
-						Name:        "newmanInstallCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `npm install newman newman-reporter-html --global --quiet`,
-					},
-					{
-						Name:        "newmanEnvironment",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_newmanEnvironment"),
-					},
-					{
-						Name:        "newmanGlobals",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_newmanGlobals"),
-					},
-					{
-						Name:        "failOnError",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
-					},
-					{
-						Name:        "cfAppsWithSecrets",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "newman", Image: "node:lts-buster", WorkingDir: "/home/node"},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "influx",
-						Type: "influx",
-						Parameters: []map[string]interface{}{
-							{"name": "step_data", "fields": []map[string]string{{"name": "newman"}}},
-						},
-					},
-					{
-						Name: "reports",
-						Type: "reports",
-						Parameters: []map[string]interface{}{
-							{"filePattern": "**/TEST-*.xml", "type": "acceptance-test"},
-							{"filePattern": "**/requirement.mapping", "type": "requirement-mapping"},
-							{"filePattern": "**/delivery.mapping", "type": "delivery-mapping"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

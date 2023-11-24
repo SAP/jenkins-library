@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -63,7 +64,7 @@ func (p *xsDeployCommonPipelineEnvironment) persist(path, resourceName string) {
 func XsDeployCommand() *cobra.Command {
 	const STEP_NAME = "xsDeploy"
 
-	metadata := xsDeployMetadata()
+	metadata := metadata.XsDeployMetadata()
 	var stepConfig xsDeployOptions
 	var startTime time.Time
 	var commonPipelineEnvironment xsDeployCommonPipelineEnvironment
@@ -184,178 +185,4 @@ func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
 	cmd.MarkFlagRequired("org")
 	cmd.MarkFlagRequired("space")
 	cmd.MarkFlagRequired("loginOpts")
-}
-
-// retrieve step metadata
-func xsDeployMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "xsDeploy",
-			Aliases:     []config.Alias{},
-			Description: "Performs xs deployment",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "credentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for accessing xs endpoint.", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "deployOpts",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_deployOpts"),
-					},
-					{
-						Name:        "operationIdLogPattern",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
-						Default:     `^.*xs bg-deploy -i (.*) -a.*$`,
-					},
-					{
-						Name: "mtaPath",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "mtaPath",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_mtaPath"),
-					},
-					{
-						Name:        "action",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `NONE`,
-					},
-					{
-						Name:        "mode",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     `DEPLOY`,
-					},
-					{
-						Name: "operationId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "operationId",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_operationId"),
-					},
-					{
-						Name:        "apiUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_apiUrl"),
-					},
-					{
-						Name: "username",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "credentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "user", Deprecated: true}},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "credentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
-					},
-					{
-						Name:        "org",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_org"),
-					},
-					{
-						Name:        "space",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_space"),
-					},
-					{
-						Name:        "loginOpts",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_loginOpts"),
-					},
-					{
-						Name:        "xsSessionFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_xsSessionFile"),
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "xs", Image: "ppiper/xs-cli"},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "operationId"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

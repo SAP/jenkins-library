@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -25,7 +26,7 @@ type pipelineCreateScanSummaryOptions struct {
 func PipelineCreateScanSummaryCommand() *cobra.Command {
 	const STEP_NAME = "pipelineCreateScanSummary"
 
-	metadata := pipelineCreateScanSummaryMetadata()
+	metadata := metadata.PipelineCreateScanSummaryMetadata()
 	var stepConfig pipelineCreateScanSummaryOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -126,49 +127,4 @@ func addPipelineCreateScanSummaryFlags(cmd *cobra.Command, stepConfig *pipelineC
 	cmd.Flags().StringVar(&stepConfig.OutputFilePath, "outputFilePath", `scanSummary.md`, "Defines the filepath to the target file which will be created by the step.")
 	cmd.Flags().StringVar(&stepConfig.PipelineLink, "pipelineLink", os.Getenv("PIPER_pipelineLink"), "Link to the pipeline (e.g. Jenkins job url) for reference in the scan summary.")
 
-}
-
-// retrieve step metadata
-func pipelineCreateScanSummaryMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "pipelineCreateScanSummary",
-			Aliases:     []config.Alias{},
-			Description: "Collect scan result information anc create a summary report",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name:        "failedOnly",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "outputFilePath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `scanSummary.md`,
-					},
-					{
-						Name:        "pipelineLink",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_pipelineLink"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -59,7 +60,7 @@ func (p *integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment) per
 func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactTriggerIntegrationTest"
 
-	metadata := integrationArtifactTriggerIntegrationTestMetadata()
+	metadata := metadata.IntegrationArtifactTriggerIntegrationTestMetadata()
 	var stepConfig integrationArtifactTriggerIntegrationTestOptions
 	var startTime time.Time
 	var commonPipelineEnvironment integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment
@@ -166,93 +167,4 @@ func addIntegrationArtifactTriggerIntegrationTestFlags(cmd *cobra.Command, stepC
 	cmd.MarkFlagRequired("integrationFlowServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
 	cmd.MarkFlagRequired("integrationFlowServiceEndpointUrl")
-}
-
-// retrieve step metadata
-func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "integrationArtifactTriggerIntegrationTest",
-			Aliases:     []config.Alias{},
-			Description: "Test the service endpoint of your iFlow",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "integrationFlowServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'integration-flow'", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "integrationFlowServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "integrationFlowServiceKeyCredentialsId",
-								Param: "integrationFlowServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_integrationFlowServiceKey"),
-					},
-					{
-						Name:        "integrationFlowId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_integrationFlowId"),
-					},
-					{
-						Name: "integrationFlowServiceEndpointUrl",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/integrationFlowServiceEndpoint",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_integrationFlowServiceEndpointUrl"),
-					},
-					{
-						Name:        "contentType",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_contentType"),
-					},
-					{
-						Name:        "messageBodyPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_messageBodyPath"),
-					},
-				},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/integrationFlowTriggerIntegrationTestResponseBody"},
-							{"name": "custom/integrationFlowTriggerIntegrationTestResponseHeaders"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

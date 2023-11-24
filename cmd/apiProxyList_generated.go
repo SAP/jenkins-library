@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -61,7 +62,7 @@ func (p *apiProxyListCommonPipelineEnvironment) persist(path, resourceName strin
 func ApiProxyListCommand() *cobra.Command {
 	const STEP_NAME = "apiProxyList"
 
-	metadata := apiProxyListMetadata()
+	metadata := metadata.ApiProxyListMetadata()
 	var stepConfig apiProxyListOptions
 	var startTime time.Time
 	var commonPipelineEnvironment apiProxyListCommonPipelineEnvironment
@@ -170,123 +171,4 @@ func addApiProxyListFlags(cmd *cobra.Command, stepConfig *apiProxyListOptions) {
 	cmd.Flags().StringVar(&stepConfig.Expand, "expand", os.Getenv("PIPER_expand"), "Expand related entities.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
-}
-
-// retrieve step metadata
-func apiProxyListMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "apiProxyList",
-			Aliases:     []config.Alias{},
-			Description: "Get the List of an API Proxy from the API Portal",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "apiServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "apimApiServiceKeyCredentialsId",
-								Param: "apiServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_apiServiceKey"),
-					},
-					{
-						Name:        "top",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     0,
-					},
-					{
-						Name:        "skip",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     0,
-					},
-					{
-						Name:        "filter",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_filter"),
-					},
-					{
-						Name:        "count",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "search",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_search"),
-					},
-					{
-						Name:        "orderby",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_orderby"),
-					},
-					{
-						Name:        "select",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_select"),
-					},
-					{
-						Name:        "expand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_expand"),
-					},
-				},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/apiProxyList"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

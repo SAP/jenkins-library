@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -27,7 +28,7 @@ type cloudFoundryDeleteSpaceOptions struct {
 func CloudFoundryDeleteSpaceCommand() *cobra.Command {
 	const STEP_NAME = "cloudFoundryDeleteSpace"
 
-	metadata := cloudFoundryDeleteSpaceMetadata()
+	metadata := metadata.CloudFoundryDeleteSpaceMetadata()
 	var stepConfig cloudFoundryDeleteSpaceOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -137,88 +138,4 @@ func addCloudFoundryDeleteSpaceFlags(cmd *cobra.Command, stepConfig *cloudFoundr
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("cfOrg")
 	cmd.MarkFlagRequired("cfSpace")
-}
-
-// retrieve step metadata
-func cloudFoundryDeleteSpaceMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "cloudFoundryDeleteSpace",
-			Aliases:     []config.Alias{},
-			Description: "Deletes a space in Cloud Foundry",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "cfCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cloudFoundry/credentialsId", Deprecated: false}}},
-				},
-				Resources: []config.StepResources{
-					{Name: "deployDescriptor", Type: "stash"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "cfApiEndpoint",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
-						Default:     `https://api.cf.eu10.hana.ondemand.com`,
-					},
-					{
-						Name: "username",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "cfCredentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "cfCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
-					},
-					{
-						Name:        "cfOrg",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
-						Default:     os.Getenv("PIPER_cfOrg"),
-					},
-					{
-						Name:        "cfSpace",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
-						Default:     os.Getenv("PIPER_cfSpace"),
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli:latest"},
-			},
-		},
-	}
-	return theMetaData
 }

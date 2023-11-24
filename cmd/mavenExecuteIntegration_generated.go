@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -73,7 +74,7 @@ func (p *mavenExecuteIntegrationReports) persist(stepConfig mavenExecuteIntegrat
 func MavenExecuteIntegrationCommand() *cobra.Command {
 	const STEP_NAME = "mavenExecuteIntegration"
 
-	metadata := mavenExecuteIntegrationMetadata()
+	metadata := metadata.MavenExecuteIntegrationMetadata()
 	var stepConfig mavenExecuteIntegrationOptions
 	var startTime time.Time
 	var reports mavenExecuteIntegrationReports
@@ -180,114 +181,4 @@ func addMavenExecuteIntegrationFlags(cmd *cobra.Command, stepConfig *mavenExecut
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 
-}
-
-// retrieve step metadata
-func mavenExecuteIntegrationMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "mavenExecuteIntegration",
-			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
-			Description: "This step will execute backend integration tests via the Jacoco Maven-plugin.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name:        "retry",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     1,
-					},
-					{
-						Name:        "forkCount",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `1C`,
-					},
-					{
-						Name:        "goal",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `test`,
-					},
-					{
-						Name:        "installArtifacts",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
-					},
-					{
-						Name:        "projectSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
-						Default:     os.Getenv("PIPER_projectSettingsFile"),
-					},
-					{
-						Name:        "globalSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
-						Default:     os.Getenv("PIPER_globalSettingsFile"),
-					},
-					{
-						Name:        "m2Path",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
-						Default:     os.Getenv("PIPER_m2Path"),
-					},
-					{
-						Name:        "logSuccessfulMavenTransfers",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
-						Default:     false,
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "mvn", Image: "maven:3.6-jdk-8"},
-			},
-			Sidecars: []config.Container{
-				{},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "reports",
-						Type: "reports",
-						Parameters: []map[string]interface{}{
-							{"filePattern": "**/requirement.mapping", "type": "requirement-mapping"},
-							{"filePattern": "**/TEST-*.xml", "type": "junit"},
-							{"filePattern": "**/integration-test/*.xml", "type": "integration-test"},
-							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

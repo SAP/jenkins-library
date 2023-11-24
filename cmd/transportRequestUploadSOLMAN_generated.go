@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -62,7 +63,7 @@ func (p *transportRequestUploadSOLMANCommonPipelineEnvironment) persist(path, re
 func TransportRequestUploadSOLMANCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestUploadSOLMAN"
 
-	metadata := transportRequestUploadSOLMANMetadata()
+	metadata := metadata.TransportRequestUploadSOLMANMetadata()
 	var stepConfig transportRequestUploadSOLMANOptions
 	var startTime time.Time
 	var commonPipelineEnvironment transportRequestUploadSOLMANCommonPipelineEnvironment
@@ -180,139 +181,4 @@ func addTransportRequestUploadSOLMANFlags(cmd *cobra.Command, stepConfig *transp
 	cmd.MarkFlagRequired("transportRequestId")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("cmClientOpts")
-}
-
-// retrieve step metadata
-func transportRequestUploadSOLMANMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "transportRequestUploadSOLMAN",
-			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
-			Description: "Uploads a specified file into a given transport via Solution Manager",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "endpoint",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
-						Default:     os.Getenv("PIPER_endpoint"),
-					},
-					{
-						Name: "username",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "uploadCredentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "uploadCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
-					},
-					{
-						Name:        "applicationId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_applicationId"),
-					},
-					{
-						Name: "changeDocumentId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/changeDocumentId",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_changeDocumentId"),
-					},
-					{
-						Name: "transportRequestId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/transportRequestId",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_transportRequestId"),
-					},
-					{
-						Name: "filePath",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "mtarFilePath",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_filePath"),
-					},
-					{
-						Name:        "cmClientOpts",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "[]string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
-						Default:     []string{},
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "cmclient", Image: "ppiper/cm-client:3.0.0.0"},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/changeDocumentId"},
-							{"name": "custom/transportRequestId"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

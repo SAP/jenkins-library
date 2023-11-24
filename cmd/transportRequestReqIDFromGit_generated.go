@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -55,7 +56,7 @@ func (p *transportRequestReqIDFromGitCommonPipelineEnvironment) persist(path, re
 func TransportRequestReqIDFromGitCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestReqIDFromGit"
 
-	metadata := transportRequestReqIDFromGitMetadata()
+	metadata := metadata.TransportRequestReqIDFromGitMetadata()
 	var stepConfig transportRequestReqIDFromGitOptions
 	var startTime time.Time
 	var commonPipelineEnvironment transportRequestReqIDFromGitCommonPipelineEnvironment
@@ -157,60 +158,4 @@ func addTransportRequestReqIDFromGitFlags(cmd *cobra.Command, stepConfig *transp
 	cmd.Flags().StringVar(&stepConfig.GitTo, "gitTo", `HEAD`, "GIT ending point for retrieving the transport request ID")
 	cmd.Flags().StringVar(&stepConfig.TransportRequestLabel, "transportRequestLabel", `TransportRequest`, "Pattern used for identifying lines holding the transport request ID. The GIT commit log messages are scanned for this label")
 
-}
-
-// retrieve step metadata
-func transportRequestReqIDFromGitMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "transportRequestReqIDFromGit",
-			Aliases:     []config.Alias{},
-			Description: "Retrieves the transport request ID from Git repository",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name:        "gitFrom",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/git/from"}},
-						Default:     `origin/master`,
-					},
-					{
-						Name:        "gitTo",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/git/to"}},
-						Default:     `HEAD`,
-					},
-					{
-						Name:        "transportRequestLabel",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/transportRequestLabel"}},
-						Default:     `TransportRequest`,
-					},
-				},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/transportRequestId"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

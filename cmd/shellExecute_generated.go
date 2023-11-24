@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -25,7 +26,7 @@ type shellExecuteOptions struct {
 func ShellExecuteCommand() *cobra.Command {
 	const STEP_NAME = "shellExecute"
 
-	metadata := shellExecuteMetadata()
+	metadata := metadata.ShellExecuteMetadata()
 	var stepConfig shellExecuteOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -125,66 +126,4 @@ func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().StringSliceVar(&stepConfig.ScriptArguments, "scriptArguments", []string{}, "scriptArguments that are needed to be passed to scripts. the scriptArguments list is a flat list and has a positional relationship to the `sources` param. For e.g. The scriptArguments string at position 1 will be considered as the argument(s) for script at position 1 in `sources` list. For multiple arguments for a script please add them as a comma seperated string.")
 
-}
-
-// retrieve step metadata
-func shellExecuteMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "shellExecute",
-			Aliases:     []config.Alias{},
-			Description: "Step executes defined script",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "githubTokenCredentialsId", Description: "Jenkins credentials ID containing the github token.", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "sources",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name: "githubToken",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "githubTokenCredentialsId",
-								Type: "secret",
-							},
-
-							{
-								Name:    "githubVaultSecretName",
-								Type:    "vaultSecret",
-								Default: "github",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "access_token"}},
-						Default:   os.Getenv("PIPER_githubToken"),
-					},
-					{
-						Name:        "scriptArguments",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "shell", Image: "node:lts-buster", WorkingDir: "/home/node"},
-			},
-		},
-	}
-	return theMetaData
 }

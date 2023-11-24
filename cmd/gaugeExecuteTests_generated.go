@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -103,7 +104,7 @@ func (p *gaugeExecuteTestsReports) persist(stepConfig gaugeExecuteTestsOptions, 
 func GaugeExecuteTestsCommand() *cobra.Command {
 	const STEP_NAME = "gaugeExecuteTests"
 
-	metadata := gaugeExecuteTestsMetadata()
+	metadata := metadata.GaugeExecuteTestsMetadata()
 	var stepConfig gaugeExecuteTestsOptions
 	var startTime time.Time
 	var influx gaugeExecuteTestsInflux
@@ -218,91 +219,4 @@ func addGaugeExecuteTestsFlags(cmd *cobra.Command, stepConfig *gaugeExecuteTests
 	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Allows to set specific options for the Gauge execution. Details can be found for example [in the Gauge Maven plugin documentation](https://github.com/getgauge-contrib/gauge-maven-plugin#executing-specs)")
 
 	cmd.MarkFlagRequired("runCommand")
-}
-
-// retrieve step metadata
-func gaugeExecuteTestsMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "gaugeExecuteTests",
-			Aliases:     []config.Alias{},
-			Description: "Installs gauge and executes specified gauge tests.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "seleniumHubCredentialsId", Description: "Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.", Type: "jenkins"},
-				},
-				Resources: []config.StepResources{
-					{Name: "buildDescriptor", Type: "stash"},
-					{Name: "tests", Type: "stash"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "installCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_installCommand"),
-					},
-					{
-						Name:        "languageRunner",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_languageRunner"),
-					},
-					{
-						Name:        "runCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_runCommand"),
-					},
-					{
-						Name:        "testOptions",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_testOptions"),
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "gauge", Image: "node:lts-buster", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
-			},
-			Sidecars: []config.Container{
-				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "influx",
-						Type: "influx",
-						Parameters: []map[string]interface{}{
-							{"name": "step_data", "fields": []map[string]string{{"name": "gauge"}}},
-						},
-					},
-					{
-						Name: "reports",
-						Type: "reports",
-						Parameters: []map[string]interface{}{
-							{"filePattern": "**/TEST-*.xml", "type": "acceptance-test"},
-							{"filePattern": "**/requirement.mapping", "type": "requirement-mapping"},
-							{"filePattern": "**/delivery.mapping", "type": "delivery-mapping"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

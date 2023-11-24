@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -60,7 +61,7 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 func PythonBuildCommand() *cobra.Command {
 	const STEP_NAME = "pythonBuild"
 
-	metadata := pythonBuildMetadata()
+	metadata := metadata.PythonBuildMetadata()
 	var stepConfig pythonBuildOptions
 	var startTime time.Time
 	var commonPipelineEnvironment pythonBuildCommonPipelineEnvironment
@@ -168,128 +169,4 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.VirutalEnvironmentName, "virutalEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 
-}
-
-// retrieve step metadata
-func pythonBuildMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "pythonBuild",
-			Aliases:     []config.Alias{},
-			Description: "Step build a python project",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{
-						Name:        "buildFlags",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "createBOM",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "publish",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name: "targetRepositoryPassword",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryPassword",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_targetRepositoryPassword"),
-					},
-					{
-						Name: "targetRepositoryUser",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryUsername",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_targetRepositoryUser"),
-					},
-					{
-						Name: "targetRepositoryURL",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryUrl",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_targetRepositoryURL"),
-					},
-					{
-						Name: "buildSettingsInfo",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/buildSettingsInfo",
-							},
-						},
-						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_buildSettingsInfo"),
-					},
-					{
-						Name:        "virutalEnvironmentName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `piperBuild-env`,
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "python", Image: "python:3.9"},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/buildSettingsInfo"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

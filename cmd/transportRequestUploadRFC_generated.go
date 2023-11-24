@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -65,7 +66,7 @@ func (p *transportRequestUploadRFCCommonPipelineEnvironment) persist(path, resou
 func TransportRequestUploadRFCCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestUploadRFC"
 
-	metadata := transportRequestUploadRFCMetadata()
+	metadata := metadata.TransportRequestUploadRFCMetadata()
 	var stepConfig transportRequestUploadRFCOptions
 	var startTime time.Time
 	var commonPipelineEnvironment transportRequestUploadRFCCommonPipelineEnvironment
@@ -185,173 +186,4 @@ func addTransportRequestUploadRFCFlags(cmd *cobra.Command, stepConfig *transport
 	cmd.MarkFlagRequired("abapPackage")
 	cmd.MarkFlagRequired("applicationUrl")
 	cmd.MarkFlagRequired("transportRequestId")
-}
-
-// retrieve step metadata
-func transportRequestUploadRFCMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "transportRequestUploadRFC",
-			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
-			Description: "This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP system", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "endpoint",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
-						Default:     os.Getenv("PIPER_endpoint"),
-					},
-					{
-						Name:        "instance",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/instance"}, {Name: "changeManagement/rfc/developmentInstance"}},
-						Default:     os.Getenv("PIPER_instance"),
-					},
-					{
-						Name: "username",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "uploadCredentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "uploadCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
-					},
-					{
-						Name:        "client",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/client"}, {Name: "changeManagement/rfc/developmentClient"}},
-						Default:     os.Getenv("PIPER_client"),
-					},
-					{
-						Name:        "applicationName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_applicationName"),
-					},
-					{
-						Name:        "applicationDescription",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_applicationDescription"),
-					},
-					{
-						Name:        "abapPackage",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_abapPackage"),
-					},
-					{
-						Name:        "applicationUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_applicationUrl"),
-					},
-					{
-						Name:        "codePage",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `UTF-8`,
-					},
-					{
-						Name:        "acceptUnixStyleLineEndings",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
-					},
-					{
-						Name:        "failUploadOnWarning",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "failOnWarning"}},
-						Default:     true,
-					},
-					{
-						Name: "transportRequestId",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/transportRequestId",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_transportRequestId"),
-					},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "rfcclient", Image: "rfc-client"},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/transportRequestId"},
-						},
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

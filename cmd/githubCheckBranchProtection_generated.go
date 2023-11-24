@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -30,7 +31,7 @@ type githubCheckBranchProtectionOptions struct {
 func GithubCheckBranchProtectionCommand() *cobra.Command {
 	const STEP_NAME = "githubCheckBranchProtection"
 
-	metadata := githubCheckBranchProtectionMetadata()
+	metadata := metadata.GithubCheckBranchProtectionMetadata()
 	var stepConfig githubCheckBranchProtectionOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -142,118 +143,4 @@ func addGithubCheckBranchProtectionFlags(cmd *cobra.Command, stepConfig *githubC
 	cmd.MarkFlagRequired("owner")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("token")
-}
-
-// retrieve step metadata
-func githubCheckBranchProtectionMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "githubCheckBranchProtection",
-			Aliases:     []config.Alias{},
-			Description: "Check branch protection of a GitHub branch",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "apiUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
-						Default:     `https://api.github.com`,
-					},
-					{
-						Name:        "branch",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     `master`,
-					},
-					{
-						Name: "owner",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "github/owner",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubOrg"}},
-						Default:   os.Getenv("PIPER_owner"),
-					},
-					{
-						Name: "repository",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "github/repository",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubRepo"}},
-						Default:   os.Getenv("PIPER_repository"),
-					},
-					{
-						Name:        "requiredChecks",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name:        "requireEnforceAdmins",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "requiredApprovingReviewCount",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     0,
-					},
-					{
-						Name: "token",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "githubTokenCredentialsId",
-								Type: "secret",
-							},
-
-							{
-								Name:    "githubVaultSecretName",
-								Type:    "vaultSecret",
-								Default: "github",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
-						Default:   os.Getenv("PIPER_token"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

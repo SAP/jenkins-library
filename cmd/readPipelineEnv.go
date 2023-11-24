@@ -8,20 +8,22 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path"
+
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
-	"io"
-	"os"
-	"path"
 )
 
 // ReadPipelineEnv reads the commonPipelineEnvironment from disk and outputs it as JSON
 func ReadPipelineEnv() *cobra.Command {
 	var stepConfig artifactPrepareVersionOptions
 	var encryptedCPE bool
-	metadata := artifactPrepareVersionMetadata()
+	metadata := metadata.ArtifactPrepareVersionMetadata()
 
 	readPipelineEnvCmd := &cobra.Command{
 		Use:   "readPipelineEnv",

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -105,7 +106,7 @@ func GetDockerImageValue(stepName string) (string, error) {
 	return dockerImageValue, nil
 }
 
-func getBuildToolFromStageConfig(stepName string) (string, error) {
+func GetBuildToolFromStageConfig(stepName string) (string, error) {
 	configOptions.ContextConfig = true
 	configOptions.StepName = stepName
 	stageConfig, err := GetStageConfig()
@@ -164,7 +165,7 @@ func getConfig() (config.StepConfig, error) {
 	} else {
 		log.Entry().Infof("Printing stepName %s", configOptions.StepName)
 		if GeneralConfig.MetaDataResolver == nil {
-			GeneralConfig.MetaDataResolver = GetAllStepMetadata
+			GeneralConfig.MetaDataResolver = metadata.GetAllStepMetadata
 		}
 		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GeneralConfig.MetaDataResolver, configOptions.StepMetadata, configOptions.StepName)
 		if err != nil {

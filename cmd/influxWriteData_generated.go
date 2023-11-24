@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -28,7 +29,7 @@ type influxWriteDataOptions struct {
 func InfluxWriteDataCommand() *cobra.Command {
 	const STEP_NAME = "influxWriteData"
 
-	metadata := influxWriteDataMetadata()
+	metadata := metadata.InfluxWriteDataMetadata()
 	var stepConfig influxWriteDataOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -134,90 +135,4 @@ func addInfluxWriteDataFlags(cmd *cobra.Command, stepConfig *influxWriteDataOpti
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("authToken")
 	cmd.MarkFlagRequired("dataMap")
-}
-
-// retrieve step metadata
-func influxWriteDataMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "influxWriteData",
-			Aliases:     []config.Alias{},
-			Description: "Writes metrics to influxdb",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "influxAuthTokenId", Description: "Influxdb token for authentication to the InfluxDB. In 1.8 version use 'username:password' instead.", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name:        "serverUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_serverUrl"),
-					},
-					{
-						Name: "authToken",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "influxAuthTokenId",
-								Type: "secret",
-							},
-
-							{
-								Name:    "influxVaultSecretName",
-								Type:    "vaultSecret",
-								Default: "influxdb",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_authToken"),
-					},
-					{
-						Name:        "bucket",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `piper`,
-					},
-					{
-						Name:        "organization",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_organization"),
-					},
-					{
-						Name:        "dataMap",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_dataMap"),
-					},
-					{
-						Name:        "dataMapTags",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_dataMapTags"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

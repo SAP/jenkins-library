@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -37,7 +38,7 @@ type gctsExecuteABAPQualityChecksOptions struct {
 func GctsExecuteABAPQualityChecksCommand() *cobra.Command {
 	const STEP_NAME = "gctsExecuteABAPQualityChecks"
 
-	metadata := gctsExecuteABAPQualityChecksMetadata()
+	metadata := metadata.GctsExecuteABAPQualityChecksMetadata()
 	var stepConfig gctsExecuteABAPQualityChecksOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -163,171 +164,4 @@ func addGctsExecuteABAPQualityChecksFlags(cmd *cobra.Command, stepConfig *gctsEx
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("client")
 	cmd.MarkFlagRequired("workspace")
-}
-
-// retrieve step metadata
-func gctsExecuteABAPQualityChecksMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "gctsExecuteABAPQualityChecks",
-			Aliases:     []config.Alias{},
-			Description: "Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "ID taken from the Jenkins credentials store containing user name and password of the user that authenticates to the ABAP system on which you want to execute the checks.", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "username",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "abapCredentialsId",
-								Param: "username",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "abapCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
-					},
-					{
-						Name:        "host",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_host"),
-					},
-					{
-						Name:        "repository",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_repository"),
-					},
-					{
-						Name:        "client",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_client"),
-					},
-					{
-						Name:        "aUnitTest",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
-					},
-					{
-						Name:        "atcCheck",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
-					},
-					{
-						Name:        "atcVariant",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `DEFAULT`,
-					},
-					{
-						Name:        "scope",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `repository`,
-					},
-					{
-						Name:        "commit",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_commit"),
-					},
-					{
-						Name:        "workspace",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_workspace"),
-					},
-					{
-						Name:        "atcResultsFileName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `ATCResults.xml`,
-					},
-					{
-						Name:        "aUnitResultsFileName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `AUnitResults.xml`,
-					},
-					{
-						Name:        "queryParameters",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "skipSSLVerification",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

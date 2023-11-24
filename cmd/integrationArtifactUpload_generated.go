@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -27,7 +28,7 @@ type integrationArtifactUploadOptions struct {
 func IntegrationArtifactUploadCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactUpload"
 
-	metadata := integrationArtifactUploadMetadata()
+	metadata := metadata.IntegrationArtifactUploadMetadata()
 	var stepConfig integrationArtifactUploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -133,76 +134,4 @@ func addIntegrationArtifactUploadFlags(cmd *cobra.Command, stepConfig *integrati
 	cmd.MarkFlagRequired("integrationFlowId")
 	cmd.MarkFlagRequired("integrationFlowName")
 	cmd.MarkFlagRequired("filePath")
-}
-
-// retrieve step metadata
-func integrationArtifactUploadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "integrationArtifactUpload",
-			Aliases:     []config.Alias{},
-			Description: "Upload or Update an integration flow designtime artifact",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "apiServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "cpiApiServiceKeyCredentialsId",
-								Param: "apiServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_apiServiceKey"),
-					},
-					{
-						Name:        "integrationFlowId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_integrationFlowId"),
-					},
-					{
-						Name:        "integrationFlowName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_integrationFlowName"),
-					},
-					{
-						Name:        "packageId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_packageId"),
-					},
-					{
-						Name:        "filePath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_filePath"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

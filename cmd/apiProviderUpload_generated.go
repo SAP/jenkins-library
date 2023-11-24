@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -24,7 +25,7 @@ type apiProviderUploadOptions struct {
 func ApiProviderUploadCommand() *cobra.Command {
 	const STEP_NAME = "apiProviderUpload"
 
-	metadata := apiProviderUploadMetadata()
+	metadata := metadata.ApiProviderUploadMetadata()
 	var stepConfig apiProviderUploadOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -126,49 +127,4 @@ func addApiProviderUploadFlags(cmd *cobra.Command, stepConfig *apiProviderUpload
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("filePath")
-}
-
-// retrieve step metadata
-func apiProviderUploadMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "apiProviderUpload",
-			Aliases:     []config.Alias{},
-			Description: "this steps creates an API provider artifact in the API Portal.",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "apimApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "apiServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "apimApiServiceKeyCredentialsId",
-								Param: "apiServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_apiServiceKey"),
-					},
-					{
-						Name:        "filePath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_filePath"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }

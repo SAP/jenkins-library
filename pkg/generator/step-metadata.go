@@ -24,9 +24,8 @@ func main() {
 	metadataFiles, err := helper.MetadataFiles(metadataPath)
 	checkError(err)
 	err = helper.ProcessMetaFiles(metadataFiles, targetDir, helper.StepHelperData{
-		OpenFile:     openMetaFile,
-		WriteFile:    fileWriter,
-		ExportPrefix: "",
+		OpenFile:  openMetaFile,
+		WriteFile: fileWriter,
 	})
 	checkError(err)
 

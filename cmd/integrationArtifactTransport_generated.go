@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/metadata"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -27,7 +28,7 @@ type integrationArtifactTransportOptions struct {
 func IntegrationArtifactTransportCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactTransport"
 
-	metadata := integrationArtifactTransportMetadata()
+	metadata := metadata.IntegrationArtifactTransportMetadata()
 	var stepConfig integrationArtifactTransportOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
@@ -134,76 +135,4 @@ func addIntegrationArtifactTransportFlags(cmd *cobra.Command, stepConfig *integr
 	cmd.MarkFlagRequired("resourceID")
 	cmd.MarkFlagRequired("name")
 	cmd.MarkFlagRequired("version")
-}
-
-// retrieve step metadata
-func integrationArtifactTransportMetadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:        "integrationArtifactTransport",
-			Aliases:     []config.Alias{},
-			Description: "Integration Package transport using the SAP Content Agent Service",
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "casApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the CAS service instance", Type: "jenkins"},
-				},
-				Parameters: []config.StepParameters{
-					{
-						Name: "casServiceKey",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "casApiServiceKeyCredentialsId",
-								Param: "casServiceKey",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_casServiceKey"),
-					},
-					{
-						Name:        "integrationPackageId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_integrationPackageId"),
-					},
-					{
-						Name:        "resourceID",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_resourceID"),
-					},
-					{
-						Name:        "name",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_name"),
-					},
-					{
-						Name:        "version",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_version"),
-					},
-				},
-			},
-		},
-	}
-	return theMetaData
 }
