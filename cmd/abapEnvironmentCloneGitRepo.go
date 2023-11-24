@@ -109,7 +109,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		log.Entry().Infof("%s", "If required, a `checkout branch`, and a `pull` will be performed instead")
 		abaputils.AddDefaultDashedLine(2)
 		var returnedError error
-		if activeBranch != "" && !(activeBranch == repo.Branch) {
+		if repo.Branch != "" && !(activeBranch == repo.Branch) {
 			returnedError = runAbapEnvironmentCheckoutBranch(getCheckoutOptions(config, repo), com, apiManager)
 			abaputils.AddDefaultDashedLine(2)
 			if returnedError != nil {
