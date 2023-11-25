@@ -281,7 +281,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	_ = os.Setenv("GITHUB_API_URL", "https://api.github.com")
 	_ = os.Setenv("GITHUB_SERVER_URL", "https://github.com")
 	_ = os.Setenv("GITHUB_REPOSITORY", "SAP/jenkins-library")
-	_ = os.Setenv("GITHUB_WORKFLOW_REF", "SAP/jenkins-library/.github/workflow/piper.yml@refs/heads/main")
+	_ = os.Setenv("GITHUB_WORKFLOW_REF", "SAP/jenkins-library/.github/workflows/piper.yml@refs/heads/main")
 
 	p := GitHubActionsConfigProvider{}
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
