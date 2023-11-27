@@ -14,26 +14,28 @@ spec:
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
         type: jenkins
-      - name: targetRepositoryCredentialsId # needed? should we have sourceRepositoryCredentialsId as well?
+      - name: targetRepositoryCredentialsId
         description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
         type: jenkins
     resources:
       - name: source
         type: stash
     params:
-      - name: targetImage
-        type: string
-        description: Defines the name (incl. tag) of the target image. If empty, sourceImage will be used.
+      - name: targetImages
+        type: "[]string"
+        description: |
+          Defines the names (incl. tag) of the images that will be pushed to the target registry. If empty, sourceImages will be used. 
+          Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/imageNameTag
-      - name: sourceImage
-        type: string
-        description: Defines the name (incl. tag) of the source image to be pushed to a new image defined in `targetImage`. This is helpful for moving images from one location to another.
+            param: container/imageNameTags
+      - name: sourceImages
+        type: "[]string"
+        description: Defines the names (incl. tag) of the images that will be pulled from source registry. This is helpful for moving images from one location to another. 
         mandatory: true
         scope:
           - PARAMETERS
@@ -41,7 +43,7 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/imageNameTag
+            param: container/imageNameTags
       - name: sourceRegistryUrl
         description: Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*"
         type: string

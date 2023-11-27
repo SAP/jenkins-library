@@ -16,8 +16,8 @@ import (
 )
 
 type imagePushToRegistryOptions struct {
-	TargetImage            string   `json:"targetImage,omitempty"`
-	SourceImage            string   `json:"sourceImage,omitempty"`
+	TargetImages           []string `json:"targetImages,omitempty"`
+	SourceImages           []string `json:"sourceImages,omitempty"`
 	SourceRegistryURL      string   `json:"sourceRegistryUrl,omitempty"`
 	SourceRegistryUser     string   `json:"sourceRegistryUser,omitempty"`
 	SourceRegistryPassword string   `json:"sourceRegistryPassword,omitempty"`
@@ -135,8 +135,8 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 }
 
 func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegistryOptions) {
-	cmd.Flags().StringVar(&stepConfig.TargetImage, "targetImage", os.Getenv("PIPER_targetImage"), "Defines the name (incl. tag) of the target image. If empty, sourceImage will be used.")
-	cmd.Flags().StringVar(&stepConfig.SourceImage, "sourceImage", os.Getenv("PIPER_sourceImage"), "Defines the name (incl. tag) of the source image to be pushed to a new image defined in `targetImage`. This is helpful for moving images from one location to another.")
+	cmd.Flags().StringSliceVar(&stepConfig.TargetImages, "targetImages", []string{}, "Defines the names (incl. tag) of the images that will be pushed to the target registry. If empty, sourceImages will be used. \nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.\n")
+	cmd.Flags().StringSliceVar(&stepConfig.SourceImages, "sourceImages", []string{}, "Defines the names (incl. tag) of the images that will be pulled from source registry. This is helpful for moving images from one location to another.")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryURL, "sourceRegistryUrl", os.Getenv("PIPER_sourceRegistryUrl"), "Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*\"")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryUser, "sourceRegistryUser", os.Getenv("PIPER_sourceRegistryUser"), "Username of the source registry where the image should be pushed pulled from.")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryPassword, "sourceRegistryPassword", os.Getenv("PIPER_sourceRegistryPassword"), "Password of the source registry where the image should be pushed pulled from.")
@@ -149,7 +149,7 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{}, "Specifies the targetArchitectures in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
 
-	cmd.MarkFlagRequired("sourceImage")
+	cmd.MarkFlagRequired("sourceImages")
 	cmd.MarkFlagRequired("sourceRegistryUrl")
 	cmd.MarkFlagRequired("targetRegistryUrl")
 	cmd.MarkFlagRequired("targetRegistryUser")
@@ -175,32 +175,32 @@ func imagePushToRegistryMetadata() config.StepData {
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "targetImage",
+						Name: "targetImages",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "container/imageNameTag",
+								Param: "container/imageNameTags",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Type:      "[]string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_targetImage"),
+						Default:   []string{},
 					},
 					{
-						Name: "sourceImage",
+						Name: "sourceImages",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "container/imageNameTag",
+								Param: "container/imageNameTags",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Type:      "[]string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_sourceImage"),
+						Default:   []string{},
 					},
 					{
 						Name: "sourceRegistryUrl",
