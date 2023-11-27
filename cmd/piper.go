@@ -62,13 +62,10 @@ type SentryConfiguration struct {
 
 // SplunkConfiguration defines the configuration options for the Splunk logging system
 type SplunkConfiguration struct {
-	Dsn               string `json:"dsn,omitempty"`
-	Token             string `json:"token,omitempty"`
-	Index             string `json:"index,omitempty"`
-	SendLogs          bool   `json:"sendLogs"`
-	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
-	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
-	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
+	CriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
+	CriblToken    string `json:"prodCriblToken,omitempty"`
+	CriblIndex    string `json:"prodCriblIndex,omitempty"`
+	SendLogs      bool   `json:"sendLogs"`
 }
 
 var rootCmd = &cobra.Command{
