@@ -50,11 +50,11 @@ func TestRunImagePushToRegistry(t *testing.T) {
 
 		config := imagePushToRegistryOptions{
 			SourceRegistryURL:      "https://source.registry",
-			SourceImage:            "source-image:latest",
+			SourceImages:           []string{"source-image:latest"},
 			SourceRegistryUser:     "sourceuser",
 			SourceRegistryPassword: "sourcepassword",
 			TargetRegistryURL:      "https://target.registry",
-			TargetImage:            "target-image:latest",
+			TargetImages:           []string{"target-image:latest"},
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
 		}
@@ -72,7 +72,7 @@ func TestRunImagePushToRegistry(t *testing.T) {
 
 		config := imagePushToRegistryOptions{
 			SourceRegistryURL:      "https://source.registry",
-			SourceImage:            "source-image:latest",
+			SourceImages:           []string{"source-image:latest"},
 			TargetRegistryURL:      "https://target.registry",
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
@@ -89,7 +89,7 @@ func TestRunImagePushToRegistry(t *testing.T) {
 
 		config := imagePushToRegistryOptions{
 			SourceRegistryURL:      "https://source.registry",
-			SourceImage:            "source-image:latest",
+			SourceImages:           []string{"source-image:latest"},
 			TargetRegistryURL:      "https://target.registry",
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
@@ -99,14 +99,14 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
 		err := runImagePushToRegistry(&config, nil, utils)
-		assert.EqualError(t, err, "failed to copy image from \"source.registry\" to \"target.registry\": copy image err")
+		assert.EqualError(t, err, "failed to copy images: copy image err")
 	})
 
 	t.Run("failed to push local image", func(t *testing.T) {
 		t.Parallel()
 
 		config := imagePushToRegistryOptions{
-			SourceImage:            "source-image:latest",
+			SourceImages:           []string{"source-image:latest"},
 			TargetRegistryURL:      "https://target.registry",
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
@@ -165,8 +165,13 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 		t.Parallel()
 
 		craneMockUtils := &dockermock.CraneMockUtils{}
+		config := &imagePushToRegistryOptions{
+			LocalDockerImagePath: "/image/path",
+			TargetRegistryURL:    "https://target.registry",
+			TagLatest:            false,
+		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
-		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", false, utils)
+		err := pushLocalImageToTargetRegistry(config, utils)
 		assert.NoError(t, err)
 	})
 
@@ -176,8 +181,13 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 		craneMockUtils := &dockermock.CraneMockUtils{
 			ErrLoadImage: dockermock.ErrLoadImage,
 		}
+		config := &imagePushToRegistryOptions{
+			LocalDockerImagePath: "/image/path",
+			TargetRegistryURL:    "https://target.registry",
+			TagLatest:            false,
+		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
-		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", false, utils)
+		err := pushLocalImageToTargetRegistry(config, utils)
 		assert.EqualError(t, err, "load image err")
 	})
 
@@ -187,8 +197,14 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 		craneMockUtils := &dockermock.CraneMockUtils{
 			ErrPushImage: dockermock.ErrPushImage,
 		}
+		config := &imagePushToRegistryOptions{
+			LocalDockerImagePath: "/image/path",
+			TargetRegistryURL:    "https://target.registry",
+			TargetImages:         []string{"my-image:1.0.0"},
+			TagLatest:            false,
+		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
-		err := pushLocalImageToTargetRegistry("/image/path", "target.registry", false, utils)
+		err := pushLocalImageToTargetRegistry(config, utils)
 		assert.EqualError(t, err, "push image err")
 	})
 }
