@@ -193,8 +193,6 @@ func (g *GitHubActionsConfigProvider) GetJobURL() string {
 	if fileName == "" {
 		return ""
 	}
-	// to be deleted
-	log.Entry().Info("URL:", g.GetRepoURL()+"/actions/workflows/"+fileName)
 
 	return g.GetRepoURL() + "/actions/workflows/" + fileName
 }
