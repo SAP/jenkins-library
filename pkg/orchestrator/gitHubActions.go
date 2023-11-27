@@ -100,7 +100,13 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 		wg.Go(func() error {
 			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, true)
 			if err != nil {
-				return errors.Wrap(err, "fetching job logs failed")
+				// GetWorkflowJobLogs returns "200 OK" as error when log download is successful.
+				// Therefore, ignore this error.
+				// GitHub API returns redirect URL instead of plain text logs. See:
+				// https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#download-job-logs-for-a-workflow-run
+				if err.Error() != "unexpected status code: 200 OK" {
+					return errors.Wrap(err, "fetching job logs failed")
+				}
 			}
 			defer resp.Body.Close()
 
