@@ -62,9 +62,9 @@ type SentryConfiguration struct {
 
 // SplunkConfiguration defines the configuration options for the Splunk logging system
 type SplunkConfiguration struct {
-	CriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
-	CriblToken    string `json:"prodCriblToken,omitempty"`
-	CriblIndex    string `json:"prodCriblIndex,omitempty"`
+	CriblEndpoint string `json:"criblEndpoint,omitempty"`
+	CriblToken    string `json:"criblToken,omitempty"`
+	CriblIndex    string `json:"criblIndex,omitempty"`
 	SendLogs      bool   `json:"sendLogs"`
 }
 
