@@ -309,6 +309,9 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 }
 
 func TestWorkflowFileName(t *testing.T) {
+	defer resetEnv(os.Environ())
+	os.Clearenv()
+
 	tests := []struct {
 		name, workflowRef, want string
 	}{
@@ -330,7 +333,8 @@ func TestWorkflowFileName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := workflowFileName(tt.workflowRef)
+			_ = os.Setenv("GITHUB_WORKFLOW_REF", tt.workflowRef)
+			result := workflowFileName()
 			assert.Equal(t, tt.want, result)
 		})
 	}
