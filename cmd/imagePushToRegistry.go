@@ -76,35 +76,38 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 }
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
-	if config.TargetImage == "" {
-		config.TargetImage = config.SourceImage
+	if len(config.TargetImages) == 0 {
+		config.TargetImages = config.SourceImages
+	}
+
+	if len(config.TargetImages) != len(config.SourceImages) {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.New("err")
 	}
 
 	re := regexp.MustCompile(`^https?://`)
-	sourceRegistry := re.ReplaceAllString(config.SourceRegistryURL, "")
-	targetRegistry := re.ReplaceAllString(config.TargetRegistryURL, "")
-	src := fmt.Sprintf("%s/%s", sourceRegistry, config.SourceImage)
-	dst := fmt.Sprintf("%s/%s", targetRegistry, config.TargetImage)
+	config.SourceRegistryURL = re.ReplaceAllString(config.SourceRegistryURL, "")
+	config.TargetRegistryURL = re.ReplaceAllString(config.TargetRegistryURL, "")
 
-	err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, sourceRegistry, config.SourceRegistryUser, config.SourceRegistryPassword, utils)
+	err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to handle credentials for source registry")
 	}
 
-	err = handleCredentialsForPrivateRegistry(config.DockerConfigJSON, targetRegistry, config.TargetRegistryUser, config.TargetRegistryPassword, utils)
+	err = handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to handle credentials for target registry")
 	}
 
 	if len(config.LocalDockerImagePath) > 0 {
-		if err := pushLocalImageToTargetRegistry(config.LocalDockerImagePath, dst, config.TagLatest, utils); err != nil {
-			return errors.Wrapf(err, "failed to push local image to %q", targetRegistry)
+		if err := pushLocalImageToTargetRegistry(config, utils); err != nil {
+			return errors.Wrapf(err, "failed to push local image to %q", config.TargetRegistryURL)
 		}
 		return nil
 	}
 
-	if err := copyImage(src, dst, config.TagLatest, utils); err != nil {
-		return errors.Wrapf(err, "failed to copy image from %q to %q", sourceRegistry, targetRegistry)
+	if err := copyImages(config, utils); err != nil {
+		return errors.Wrap(err, "failed to copy images")
 	}
 
 	return nil
@@ -128,9 +131,21 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
 	}
 
-	err = docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils)
-	if err != nil {
+	if err := docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils); err != nil {
 		return errors.Wrapf(err, "failed to merge docker config files")
+	}
+
+	return nil
+}
+
+func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
+	for i := 0; i < len(config.SourceImages); i++ {
+		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, config.SourceImages[i])
+		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
+
+		if err := copyImage(src, dst, config.TagLatest, utils); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -148,21 +163,28 @@ func copyImage(src, dst string, tagLatest bool, utils imagePushToRegistryUtils) 
 	return utils.CopyImage(src, dst)
 }
 
-func pushLocalImageToTargetRegistry(localDockerImagePath, dst string, tagLatest bool, utils imagePushToRegistryUtils) error {
-	img, err := utils.LoadImage(localDockerImagePath)
+func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
+	img, err := utils.LoadImage(config.LocalDockerImagePath)
 	if err != nil {
 		return err
 	}
 
-	if tagLatest {
-		// imageName is repository + image, e.g test.registry/testImage
-		imageName, _ := parseDockerImage(dst)
-		if err := utils.PushImage(img, imageName); err != nil {
+	for i := 0; i < len(config.TargetImages); i++ {
+		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
+		if err := utils.PushImage(img, dst); err != nil {
 			return err
+		}
+
+		if config.TagLatest {
+			// imageName is repository + image, e.g test.registry/testImage
+			imageName, _ := parseDockerImage(dst)
+			if err := utils.PushImage(img, imageName); err != nil {
+				return err
+			}
 		}
 	}
 
-	return utils.PushImage(img, dst)
+	return nil
 }
 
 func parseDockerImage(image string) (string, string) {
