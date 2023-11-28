@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"context"
 	"errors"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -16,14 +17,14 @@ type CraneMockUtils struct {
 	ErrCopyImage, ErrPushImage, ErrLoadImage error
 }
 
-func (c *CraneMockUtils) CopyImage(src string, dest string) error {
+func (c *CraneMockUtils) CopyImage(_ context.Context, src string, dest string) error {
 	return c.ErrCopyImage
 }
 
-func (c *CraneMockUtils) PushImage(im v1.Image, dest string) error {
+func (c *CraneMockUtils) PushImage(_ context.Context, im v1.Image, dest string) error {
 	return c.ErrPushImage
 }
 
-func (c *CraneMockUtils) LoadImage(src string) (v1.Image, error) {
+func (c *CraneMockUtils) LoadImage(_ context.Context, src string) (v1.Image, error) {
 	return nil, c.ErrLoadImage
 }

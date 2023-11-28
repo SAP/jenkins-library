@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -19,9 +21,9 @@ const (
 )
 
 type dockerImageUtils interface {
-	LoadImage(src string) (v1.Image, error)
-	PushImage(im v1.Image, dest string) error
-	CopyImage(src, dest string) error
+	LoadImage(ctx context.Context, src string) (v1.Image, error)
+	PushImage(ctx context.Context, im v1.Image, dest string) error
+	CopyImage(ctx context.Context, src, dest string) error
 }
 
 type imagePushToRegistryUtils interface {
@@ -48,7 +50,9 @@ type imagePushToRegistryUtilsBundle struct {
 
 func newImagePushToRegistryUtils() imagePushToRegistryUtils {
 	utils := imagePushToRegistryUtilsBundle{
-		Command:          &command.Command{},
+		Command: &command.Command{
+			StepName: "imagePushToRegistry",
+		},
 		Files:            &piperutils.Files{},
 		dockerImageUtils: &docker.CraneUtilsBundle{},
 	}
@@ -139,63 +143,96 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 }
 
 func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
+	g, ctx := errgroup.WithContext(context.Background())
+
 	for i := 0; i < len(config.SourceImages); i++ {
 		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, config.SourceImages[i])
 		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
 
-		if err := copyImage(src, dst, config.TagLatest, utils); err != nil {
-			return err
+		g.Go(func() error {
+			log.Entry().Infof("Copying %s to %s...", src, dst)
+			if err := utils.CopyImage(ctx, src, dst); err != nil {
+				return err
+			}
+			log.Entry().Infof("Copying %s to %s... Done", src, dst)
+			return nil
+		})
+
+		if config.TagLatest {
+			g.Go(func() error {
+				// imageName is repository + image, e.g test.registry/testImage
+				imageName := parseDockerImageName(dst)
+				log.Entry().Infof("Copying %s to %s...", src, imageName)
+				if err := utils.CopyImage(ctx, src, imageName); err != nil {
+					return err
+				}
+				log.Entry().Infof("Copying %s to %s... Done", src, imageName)
+				return nil
+			})
 		}
 	}
 
-	return nil
-}
-
-func copyImage(src, dst string, tagLatest bool, utils imagePushToRegistryUtils) error {
-	if tagLatest {
-		// imageName is repository + image, e.g test.registry/testImage
-		imageName, _ := parseDockerImage(dst)
-		if err := utils.CopyImage(src, imageName); err != nil {
-			return err
-		}
-	}
-
-	return utils.CopyImage(src, dst)
-}
-
-func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
-	img, err := utils.LoadImage(config.LocalDockerImagePath)
-	if err != nil {
+	if err := g.Wait(); err != nil {
 		return err
 	}
 
-	for i := 0; i < len(config.TargetImages); i++ {
-		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
-		if err := utils.PushImage(img, dst); err != nil {
-			return err
-		}
+	return nil
+}
 
-		if config.TagLatest {
-			// imageName is repository + image, e.g test.registry/testImage
-			imageName, _ := parseDockerImage(dst)
-			if err := utils.PushImage(img, imageName); err != nil {
+func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
+	g, ctx := errgroup.WithContext(context.Background())
+
+	log.Entry().Infof("Loading local image...")
+	img, err := utils.LoadImage(ctx, config.LocalDockerImagePath)
+	if err != nil {
+		return err
+	}
+	log.Entry().Infof("Loading local image... Done")
+
+	for i := 0; i < len(config.TargetImages); i++ {
+		i := i // https://golang.org/doc/faq#closures_and_goroutines
+		g.Go(func() error {
+			dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
+			log.Entry().Infof("Pushing %s...", dst)
+			if err := utils.PushImage(ctx, img, dst); err != nil {
 				return err
 			}
+			log.Entry().Infof("Pushing %s... Done", dst)
+			return nil
+		})
+
+		if config.TagLatest {
+			g.Go(func() error {
+				dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
+				log.Entry().Infof("Pushing %s...", dst)
+				// imageName is repository + image, e.g test.registry/testImage
+				imageName := parseDockerImageName(dst)
+				if err := utils.PushImage(ctx, img, imageName); err != nil {
+					return err
+				}
+				log.Entry().Infof("Pushing %s... Done", dst)
+				return nil
+			})
 		}
+
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func parseDockerImage(image string) (string, string) {
+func parseDockerImageName(image string) string {
 	re := regexp.MustCompile(`^(.*?)(?::([^:/]+))?$`)
-
 	matches := re.FindStringSubmatch(image)
 	if len(matches) > 1 {
-		return matches[1], matches[2]
+		fmt.Println(matches[0], matches[1], matches[2])
+		return matches[1]
 	}
 
-	return image, ""
+	return image
 }
 
 // ???
