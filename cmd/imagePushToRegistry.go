@@ -117,7 +117,7 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 
 func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, username, password string, utils imagePushToRegistryUtils) error {
 	if len(dockerConfigJsonPath) == 0 && (len(registry) == 0 || len(username) == 0 || len(password) == 0) {
-		return nil
+		return errors.New("docker credentials not provided")
 	}
 
 	if len(dockerConfigJsonPath) == 0 {
