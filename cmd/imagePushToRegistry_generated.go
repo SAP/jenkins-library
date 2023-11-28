@@ -66,6 +66,10 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.SourceRegistryUser)
+			log.RegisterSecret(stepConfig.SourceRegistryPassword)
+			log.RegisterSecret(stepConfig.TargetRegistryUser)
+			log.RegisterSecret(stepConfig.TargetRegistryPassword)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -166,10 +170,6 @@ func imagePushToRegistryMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
-					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication", Type: "jenkins"},
-				},
 				Resources: []config.StepResources{
 					{Name: "source", Type: "stash"},
 				},
@@ -311,11 +311,6 @@ func imagePushToRegistryMetadata() config.StepData {
 					{
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
-							{
-								Name: "dockerConfigJsonCredentialsId",
-								Type: "secret",
-							},
-
 							{
 								Name:    "dockerConfigFileVaultSecretName",
 								Type:    "vaultSecretFile",

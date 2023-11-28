@@ -10,13 +10,6 @@ metadata:
 
 spec:
   inputs:
-    secrets:
-      - name: dockerConfigJsonCredentialsId
-        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
-        type: jenkins
-      - name: targetRepositoryCredentialsId
-        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
-        type: jenkins
     resources:
       - name: source
         type: stash
@@ -56,6 +49,7 @@ spec:
             param: container/registryUrl
       - name: sourceRegistryUser
         type: string
+        secret: true
         description: Username of the source registry where the image should be pushed pulled from.
         scope:
           - PARAMETERS
@@ -69,6 +63,7 @@ spec:
             default: docker-registry
       - name: sourceRegistryPassword
         type: string
+        secret: true
         description: Password of the source registry where the image should be pushed pulled from.
         scope:
           - PARAMETERS
@@ -90,6 +85,7 @@ spec:
           - STEPS
       - name: targetRegistryUser
         type: string
+        secret: true
         mandatory: true
         description: Username of the target registry where the image should be pushed to.
         scope:
@@ -102,6 +98,7 @@ spec:
             default: docker-registry
       - name: targetRegistryPassword
         type: string
+        secret: true
         description: Password of the target registry where the image should be pushed to.
         mandatory: true
         scope:
@@ -128,15 +125,13 @@ spec:
           - STEPS
       - name: dockerConfigJSON
         type: string
+        secret: true
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        secret: true
         resourceRef:
-          - name: dockerConfigJsonCredentialsId
-            type: secret
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
