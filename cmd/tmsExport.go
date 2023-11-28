@@ -49,7 +49,11 @@ func runTmsExport(exportConfig tmsExportOptions, communicationInstance tms.Commu
 
 func convertExportOptions(exportConfig tmsExportOptions) tms.Options {
 	var config tms.Options
-	config.TmsServiceKey = exportConfig.TmsServiceKey
+	config.ServiceKey = exportConfig.ServiceKey
+	if exportConfig.ServiceKey == "" && exportConfig.TmsServiceKey != "" {
+		config.ServiceKey = exportConfig.TmsServiceKey
+		log.Entry().Warn("DEPRECATION WARNING: The tmsServiceKey parameter has been deprecated, please use the serviceKey parameter instead.")
+	}
 	config.CustomDescription = exportConfig.CustomDescription
 	if config.CustomDescription == "" {
 		config.CustomDescription = tms.DEFAULT_TR_DESCRIPTION
