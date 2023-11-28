@@ -30,9 +30,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: container/imageNameTags
       - name: sourceImages
         type: "[]string"
         description: |
