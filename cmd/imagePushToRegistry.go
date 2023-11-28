@@ -93,13 +93,11 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	config.SourceRegistryURL = re.ReplaceAllString(config.SourceRegistryURL, "")
 	config.TargetRegistryURL = re.ReplaceAllString(config.TargetRegistryURL, "")
 
-	err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, utils)
-	if err != nil {
+	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, utils); err != nil {
 		return errors.Wrap(err, "failed to handle credentials for source registry")
 	}
 
-	err = handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, utils)
-	if err != nil {
+	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, utils); err != nil {
 		return errors.Wrap(err, "failed to handle credentials for target registry")
 	}
 
@@ -123,15 +121,13 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 	}
 
 	if len(dockerConfigJsonPath) == 0 {
-		_, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils)
-		if err != nil {
+		if _, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils); err != nil {
 			return errors.Wrap(err, "failed to create new docker config")
 		}
 		return nil
 	}
 
-	_, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils)
-	if err != nil {
+	if _, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils); err != nil {
 		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
 	}
 
@@ -214,7 +210,6 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 				return nil
 			})
 		}
-
 	}
 
 	if err := g.Wait(); err != nil {
