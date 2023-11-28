@@ -24,7 +24,7 @@ spec:
       - name: targetImages
         type: "[]string"
         description: |
-          Defines the names (incl. tag) of the images that will be pushed to the target registry. If empty, sourceImages will be used. 
+          Defines the names (incl. tag) of the images that will be pushed to the target registry. If empty, sourceImages will be used.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
         scope:
           - PARAMETERS
@@ -35,7 +35,9 @@ spec:
             param: container/imageNameTags
       - name: sourceImages
         type: "[]string"
-        description: Defines the names (incl. tag) of the images that will be pulled from source registry. This is helpful for moving images from one location to another. 
+        description: |
+          Defines the names (incl. tag) of the images that will be pulled from source registry. This is helpful for moving images from one location to another.
+          Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
         mandatory: true
         scope:
           - PARAMETERS
