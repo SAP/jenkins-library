@@ -13,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const SupportedVolumeName = "volume"
+
 // StepData defines the metadata for a step, like step descriptions, parameters, ...
 type StepData struct {
 	Metadata StepMetadata `json:"metadata"`
@@ -521,6 +523,10 @@ func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map
 func volumeMountsAsStringSlice(volumeMounts []VolumeMount) []string {
 	e := []string{}
 	for _, v := range volumeMounts {
+		if v.Name != SupportedVolumeName {
+			log.Entry().Warningf("Unsupported volume name: %q, only %q is supported", v.Name, SupportedVolumeName)
+			continue
+		}
 		e = append(e, fmt.Sprintf("%v:%v", v.Name, v.MountPath))
 	}
 	return e

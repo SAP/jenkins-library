@@ -382,8 +382,7 @@ def securityContextFromOptions(dockerOptions) {
 }
 
 /*
- * Picks the first volumeBind option
- * and translates it into containerMountPath
+ * Picks the first volumeBind option and translates it into containerMountPath, currently only one fix volume is supported
  */
 @NonCPS
 def containerMountPathFromVolumeBind(dockerVolumeBind) {
