@@ -17,11 +17,11 @@ type CraneMockUtils struct {
 	ErrCopyImage, ErrPushImage, ErrLoadImage error
 }
 
-func (c *CraneMockUtils) CopyImage(_ context.Context, src string, dest string) error {
+func (c *CraneMockUtils) CopyImage(_ context.Context, src, dest, platform string) error {
 	return c.ErrCopyImage
 }
 
-func (c *CraneMockUtils) PushImage(_ context.Context, im v1.Image, dest string) error {
+func (c *CraneMockUtils) PushImage(_ context.Context, im v1.Image, dest, platform string) error {
 	return c.ErrPushImage
 }
 

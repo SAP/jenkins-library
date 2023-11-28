@@ -9,12 +9,20 @@ import (
 
 type CraneUtilsBundle struct{}
 
-func (c *CraneUtilsBundle) CopyImage(ctx context.Context, src, dest string) error {
-	return crane.Copy(src, dest, crane.WithContext(ctx))
+func (c *CraneUtilsBundle) CopyImage(ctx context.Context, src, dest, platform string) error {
+	p, err := v1.ParsePlatform(platform)
+	if err != nil {
+		return err
+	}
+	return crane.Copy(src, dest, crane.WithContext(ctx), crane.WithPlatform(p))
 }
 
-func (c *CraneUtilsBundle) PushImage(ctx context.Context, im v1.Image, dest string) error {
-	return crane.Push(im, dest, crane.WithContext(ctx))
+func (c *CraneUtilsBundle) PushImage(ctx context.Context, im v1.Image, dest, platform string) error {
+	p, err := v1.ParsePlatform(platform)
+	if err != nil {
+		return err
+	}
+	return crane.Push(im, dest, crane.WithContext(ctx), crane.WithPlatform(p))
 }
 
 func (c *CraneUtilsBundle) LoadImage(ctx context.Context, src string) (v1.Image, error) {

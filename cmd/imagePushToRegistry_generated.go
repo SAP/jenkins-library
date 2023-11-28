@@ -28,7 +28,7 @@ type imagePushToRegistryOptions struct {
 	TagArtifactVersion     bool     `json:"tagArtifactVersion,omitempty"`
 	DockerConfigJSON       string   `json:"dockerConfigJSON,omitempty"`
 	LocalDockerImagePath   string   `json:"localDockerImagePath,omitempty"`
-	TargetArchitectures    []string `json:"targetArchitectures,omitempty"`
+	TargetArchitecture     string   `json:"targetArchitecture,omitempty"`
 }
 
 // ImagePushToRegistryCommand Allows you to copy a Docker image from a source container registry  to a destination container registry.
@@ -147,7 +147,7 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().BoolVar(&stepConfig.TagArtifactVersion, "tagArtifactVersion", false, "Defines if the image should be tagged with the artifact version")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
-	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{}, "Specifies the targetArchitectures in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
+	cmd.Flags().StringVar(&stepConfig.TargetArchitecture, "targetArchitecture", os.Getenv("PIPER_targetArchitecture"), "Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
 
 	cmd.MarkFlagRequired("sourceImages")
 	cmd.MarkFlagRequired("sourceRegistryUrl")
@@ -338,13 +338,13 @@ func imagePushToRegistryMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_localDockerImagePath"),
 					},
 					{
-						Name:        "targetArchitectures",
+						Name:        "targetArchitecture",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "PARAMETERS"},
-						Type:        "[]string",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     os.Getenv("PIPER_targetArchitecture"),
 					},
 				},
 			},

@@ -147,9 +147,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: targetArchitectures
-        type: "[]string"
-        description: Specifies the targetArchitectures in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter
+      - name: targetArchitecture
+        type: string
+        description: Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter
         scope:
           - STEPS
           - PARAMETERS

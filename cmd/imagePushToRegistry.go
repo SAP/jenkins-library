@@ -22,8 +22,8 @@ const (
 
 type dockerImageUtils interface {
 	LoadImage(ctx context.Context, src string) (v1.Image, error)
-	PushImage(ctx context.Context, im v1.Image, dest string) error
-	CopyImage(ctx context.Context, src, dest string) error
+	PushImage(ctx context.Context, im v1.Image, dest, platform string) error
+	CopyImage(ctx context.Context, src, dest, platform string) error
 }
 
 type imagePushToRegistryUtils interface {
@@ -142,6 +142,7 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 
 func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
 	g, ctx := errgroup.WithContext(context.Background())
+	platform := config.TargetArchitecture
 
 	for i := 0; i < len(config.SourceImages); i++ {
 		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, config.SourceImages[i])
@@ -149,7 +150,7 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 
 		g.Go(func() error {
 			log.Entry().Infof("Copying %s to %s...", src, dst)
-			if err := utils.CopyImage(ctx, src, dst); err != nil {
+			if err := utils.CopyImage(ctx, src, dst, platform); err != nil {
 				return err
 			}
 			log.Entry().Infof("Copying %s to %s... Done", src, dst)
@@ -161,7 +162,7 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 				// imageName is repository + image, e.g test.registry/testImage
 				imageName := parseDockerImageName(dst)
 				log.Entry().Infof("Copying %s to %s...", src, imageName)
-				if err := utils.CopyImage(ctx, src, imageName); err != nil {
+				if err := utils.CopyImage(ctx, src, imageName, platform); err != nil {
 					return err
 				}
 				log.Entry().Infof("Copying %s to %s... Done", src, imageName)
@@ -179,6 +180,7 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 
 func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
 	g, ctx := errgroup.WithContext(context.Background())
+	platform := config.TargetArchitecture
 
 	log.Entry().Infof("Loading local image...")
 	img, err := utils.LoadImage(ctx, config.LocalDockerImagePath)
@@ -189,10 +191,11 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 
 	for i := 0; i < len(config.TargetImages); i++ {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
+		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
+
 		g.Go(func() error {
-			dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
 			log.Entry().Infof("Pushing %s...", dst)
-			if err := utils.PushImage(ctx, img, dst); err != nil {
+			if err := utils.PushImage(ctx, img, dst, platform); err != nil {
 				return err
 			}
 			log.Entry().Infof("Pushing %s... Done", dst)
@@ -201,14 +204,13 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 
 		if config.TagLatest {
 			g.Go(func() error {
-				dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
-				log.Entry().Infof("Pushing %s...", dst)
 				// imageName is repository + image, e.g test.registry/testImage
 				imageName := parseDockerImageName(dst)
-				if err := utils.PushImage(ctx, img, imageName); err != nil {
+				log.Entry().Infof("Pushing %s...", imageName)
+				if err := utils.PushImage(ctx, img, imageName, platform); err != nil {
 					return err
 				}
-				log.Entry().Infof("Pushing %s... Done", dst)
+				log.Entry().Infof("Pushing %s... Done", imageName)
 				return nil
 			})
 		}
