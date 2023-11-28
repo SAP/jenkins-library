@@ -4,6 +4,6 @@ import groovy.transform.Field
 @Field String METADATA_FILE = 'metadata/imagePushToRegistry.yaml'
 
 void call(Map parameters = [:]) {
-    List credentials = [[type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']]]
+    List credentials = []
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
