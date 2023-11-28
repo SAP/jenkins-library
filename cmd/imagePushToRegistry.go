@@ -86,7 +86,7 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 
 	if len(config.TargetImages) != len(config.SourceImages) {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("err")
+		return errors.New("configuration error: please configure targetImage and sourceImage properly")
 	}
 
 	re := regexp.MustCompile(`^https?://`)
