@@ -93,10 +93,12 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	config.SourceRegistryURL = re.ReplaceAllString(config.SourceRegistryURL, "")
 	config.TargetRegistryURL = re.ReplaceAllString(config.TargetRegistryURL, "")
 
+	log.Entry().Debug("Handling source registry credentials")
 	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, utils); err != nil {
 		return errors.Wrap(err, "failed to handle credentials for source registry")
 	}
 
+	log.Entry().Debug("Handling destination registry credentials")
 	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, utils); err != nil {
 		return errors.Wrap(err, "failed to handle credentials for target registry")
 	}
