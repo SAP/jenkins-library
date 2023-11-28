@@ -45,7 +45,7 @@ func newImagePushToRegistryMockUtils(craneUtils *dockermock.CraneMockUtils) *ima
 func TestRunImagePushToRegistry(t *testing.T) {
 	t.Parallel()
 
-	t.Run("good case 1", func(t *testing.T) {
+	t.Run("good case", func(t *testing.T) {
 		t.Parallel()
 
 		config := imagePushToRegistryOptions{
@@ -67,28 +67,13 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		assert.Equal(t, customDockerConfig, string(createdConfig))
 	})
 
-	t.Run("good case 2", func(t *testing.T) {
-		t.Parallel()
-
-		config := imagePushToRegistryOptions{
-			SourceRegistryURL:      "https://source.registry",
-			SourceImages:           []string{"source-image:latest"},
-			TargetRegistryURL:      "https://target.registry",
-			TargetRegistryUser:     "targetuser",
-			TargetRegistryPassword: "targetpassword",
-			LocalDockerImagePath:   "/local/path",
-		}
-		craneMockUtils := &dockermock.CraneMockUtils{}
-		utils := newImagePushToRegistryMockUtils(craneMockUtils)
-		err := runImagePushToRegistry(&config, nil, utils)
-		assert.NoError(t, err)
-	})
-
 	t.Run("failed to copy image", func(t *testing.T) {
 		t.Parallel()
 
 		config := imagePushToRegistryOptions{
 			SourceRegistryURL:      "https://source.registry",
+			SourceRegistryUser:     "sourceuser",
+			SourceRegistryPassword: "sourcepassword",
 			SourceImages:           []string{"source-image:latest"},
 			TargetRegistryURL:      "https://target.registry",
 			TargetRegistryUser:     "targetuser",
@@ -106,6 +91,9 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		t.Parallel()
 
 		config := imagePushToRegistryOptions{
+			SourceRegistryURL:      "https://source.registry",
+			SourceRegistryUser:     "sourceuser",
+			SourceRegistryPassword: "sourcepassword",
 			SourceImages:           []string{"source-image:latest"},
 			TargetRegistryURL:      "https://target.registry",
 			TargetRegistryUser:     "targetuser",
