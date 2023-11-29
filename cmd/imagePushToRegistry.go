@@ -104,11 +104,11 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 		}
 		return nil
 	}
-	
+
 	log.Entry().Debug("Handling source registry credentials")
 	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, utils); err != nil {
 		return errors.Wrap(err, "failed to handle credentials for source registry")
-	}	
+	}
 
 	if err := copyImages(config, utils); err != nil {
 		return errors.Wrap(err, "failed to copy images")
@@ -119,10 +119,10 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 
 func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, username, password string, utils imagePushToRegistryUtils) error {
 	if len(dockerConfigJsonPath) == 0 {
-		if ( len(registry) == 0 || len(username) == 0 || len(password) == 0 ) {
-		         return errors.New("docker credentials not provided")
-	         }
-	
+		if len(registry) == 0 || len(username) == 0 || len(password) == 0 {
+			return errors.New("docker credentials not provided")
+		}
+
 		if _, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils); err != nil {
 			return errors.Wrap(err, "failed to create new docker config")
 		}
@@ -227,7 +227,6 @@ func parseDockerImageName(image string) string {
 	re := regexp.MustCompile(`^(.*?)(?::([^:/]+))?$`)
 	matches := re.FindStringSubmatch(image)
 	if len(matches) > 1 {
-		fmt.Println(matches[0], matches[1], matches[2])
 		return matches[1]
 	}
 
