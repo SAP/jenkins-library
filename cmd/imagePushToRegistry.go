@@ -233,26 +233,3 @@ func parseDockerImageName(image string) string {
 
 	return image
 }
-
-// ???
-func skopeoMoveImage(sourceImageFullName string, sourceRegistryUser string, sourceRegistryPassword string, targetImageFullName string, targetRegistryUser string, targetRegistryPassword string, utils imagePushToRegistryUtils) error {
-	skopeoRunParameters := []string{
-		"copy",
-		"--multi-arch=all",
-		"--src-tls-verify=false",
-	}
-	if len(sourceRegistryUser) > 0 && len(sourceRegistryPassword) > 0 {
-		skopeoRunParameters = append(skopeoRunParameters, fmt.Sprintf("--src-creds=%s:%s", sourceRegistryUser, sourceRegistryPassword))
-	}
-	skopeoRunParameters = append(skopeoRunParameters, "--src-tls-verify=false")
-	if len(targetRegistryUser) > 0 && len(targetRegistryPassword) > 0 {
-		skopeoRunParameters = append(skopeoRunParameters, fmt.Sprintf("--dest-creds=%s:%s", targetRegistryUser, targetRegistryPassword))
-
-	}
-	skopeoRunParameters = append(skopeoRunParameters, fmt.Sprintf("docker://%s docker://%s", sourceImageFullName, targetImageFullName))
-	err := utils.RunExecutable("skopeo", skopeoRunParameters...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
