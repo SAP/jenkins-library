@@ -118,11 +118,11 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 }
 
 func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, username, password string, utils imagePushToRegistryUtils) error {
-	if len(dockerConfigJsonPath) == 0 && (len(registry) == 0 || len(username) == 0 || len(password) == 0) {
-		return errors.New("docker credentials not provided")
-	}
-
 	if len(dockerConfigJsonPath) == 0 {
+		if ( len(registry) == 0 || len(username) == 0 || len(password) == 0 ) {
+		         return errors.New("docker credentials not provided")
+	         }
+	
 		if _, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils); err != nil {
 			return errors.Wrap(err, "failed to create new docker config")
 		}
