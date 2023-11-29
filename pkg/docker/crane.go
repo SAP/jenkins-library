@@ -10,7 +10,7 @@ import (
 type CraneUtilsBundle struct{}
 
 func (c *CraneUtilsBundle) CopyImage(ctx context.Context, src, dest, platform string) error {
-	p, err := v1.ParsePlatform(platform)
+	p, err := parsePlatform(platform)
 	if err != nil {
 		return err
 	}
@@ -18,7 +18,7 @@ func (c *CraneUtilsBundle) CopyImage(ctx context.Context, src, dest, platform st
 }
 
 func (c *CraneUtilsBundle) PushImage(ctx context.Context, im v1.Image, dest, platform string) error {
-	p, err := v1.ParsePlatform(platform)
+	p, err := parsePlatform(platform)
 	if err != nil {
 		return err
 	}
