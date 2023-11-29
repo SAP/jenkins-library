@@ -142,12 +142,13 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 
 func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
 	g, ctx := errgroup.WithContext(context.Background())
+	g.SetLimit(10)
 	platform := config.TargetArchitecture
 
 	for i := 0; i < len(config.SourceImages); i++ {
 		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, config.SourceImages[i])
 		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
-		g.SetLimit(10)
+
 		g.Go(func() error {
 			log.Entry().Infof("Copying %s to %s...", src, dst)
 			if err := utils.CopyImage(ctx, src, dst, platform); err != nil {
@@ -180,6 +181,7 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 
 func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
 	g, ctx := errgroup.WithContext(context.Background())
+	g.SetLimit(10)
 	platform := config.TargetArchitecture
 
 	log.Entry().Infof("Loading local image...")
@@ -191,7 +193,7 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 
 	for i := 0; i < len(config.TargetImages); i++ {
 		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
-		g.SetLimit(10)
+
 		g.Go(func() error {
 			log.Entry().Infof("Pushing %s...", dst)
 			if err := utils.PushImage(ctx, img, dst, platform); err != nil {
