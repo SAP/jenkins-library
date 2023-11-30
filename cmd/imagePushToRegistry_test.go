@@ -50,11 +50,11 @@ func TestRunImagePushToRegistry(t *testing.T) {
 
 		config := imagePushToRegistryOptions{
 			SourceRegistryURL:      "https://source.registry",
-			SourceImages:           []string{"source-image:latest"},
+			SourceImages:           []string{"source-image"},
 			SourceRegistryUser:     "sourceuser",
 			SourceRegistryPassword: "sourcepassword",
 			TargetRegistryURL:      "https://target.registry",
-			TargetImages:           []string{"target-image:latest"},
+			TargetImages:           map[string]any{"source-image": "target-image"},
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
 		}
@@ -188,7 +188,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 		config := &imagePushToRegistryOptions{
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
-			TargetImages:         []string{"my-image:1.0.0"},
+			TargetImages:         map[string]any{"image1": "my-image:1.0.0"},
 			TagLatest:            false,
 		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)

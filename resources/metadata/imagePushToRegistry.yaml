@@ -39,7 +39,9 @@ spec:
       - name: sourceRegistryUrl
         description: Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*"
         type: string
-        mandatory: true
+        mandatoryIf:
+          - name: localDockerImagePath
+            value: ""
         scope:
           - PARAMETERS
           - STAGES
