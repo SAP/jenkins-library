@@ -15,7 +15,7 @@ spec:
         type: stash
     params:
       - name: targetImages
-        type: "[]map[string]interface{}"
+        type: "map[string]interface{}"
         description: |
           Defines the names (incl. tag) of the images that will be pushed to the target registry. If empty, sourceImages will be used.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
@@ -119,6 +119,7 @@ spec:
       - name: tagArtifactVersion
         description: "The parameter is not supported yet. Defines if the image should be tagged with the artifact version"
         type: bool
+        default: true
         scope:
           - PARAMETERS
           - STAGES
@@ -153,6 +154,9 @@ spec:
           - name: artifactVersion
           - name: containerImageTag
         type: string
+        mandatoryIf:
+          - name: tagArtifactVersion
+            value: true
         description: Tag of the image which will be built
         scope:
           - GENERAL

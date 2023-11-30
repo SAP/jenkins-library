@@ -80,8 +80,8 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 }
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
-	if len(config.TargetImages) == 0 {
-		config.TargetImages = config.SourceImages
+	if config.TargetImages == nil {
+		config.TargetImages = mapImages(config.SourceImages)
 	}
 
 	if len(config.TargetImages) != len(config.SourceImages) {
@@ -145,18 +145,21 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 	g.SetLimit(10)
 	platform := config.TargetArchitecture
 
-	for i := 0; i < len(config.SourceImages); i++ {
-		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, config.SourceImages[i])
-		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
+	for _, sourceImage := range config.SourceImages {
+		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, sourceImage)
+		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[sourceImage])
 
-		g.Go(func() error {
-			log.Entry().Infof("Copying %s to %s...", src, dst)
-			if err := utils.CopyImage(ctx, src, dst, platform); err != nil {
-				return err
-			}
-			log.Entry().Infof("Copying %s to %s... Done", src, dst)
-			return nil
-		})
+		if config.TagArtifactVersion {
+			g.Go(func() error {
+				dst := fmt.Sprintf("%s:%s", dst, config.ImageTag)
+				log.Entry().Infof("Copying %s to %s...", src, dst)
+				if err := utils.CopyImage(ctx, src, dst, platform); err != nil {
+					return err
+				}
+				log.Entry().Infof("Copying %s to %s... Done", src, dst)
+				return nil
+			})
+		}
 
 		if config.TagLatest {
 			g.Go(func() error {
@@ -191,17 +194,20 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 	}
 	log.Entry().Infof("Loading local image... Done")
 
-	for i := 0; i < len(config.TargetImages); i++ {
-		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[i])
+	for _, targetImage := range config.TargetImages {
+		dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, targetImage)
 
-		g.Go(func() error {
-			log.Entry().Infof("Pushing %s...", dst)
-			if err := utils.PushImage(ctx, img, dst, platform); err != nil {
-				return err
-			}
-			log.Entry().Infof("Pushing %s... Done", dst)
-			return nil
-		})
+		if config.TagArtifactVersion {
+			dst := fmt.Sprintf("%s:%s", dst, config.ImageTag)
+			g.Go(func() error {
+				log.Entry().Infof("Pushing %s...", dst)
+				if err := utils.PushImage(ctx, img, dst, platform); err != nil {
+					return err
+				}
+				log.Entry().Infof("Pushing %s... Done", dst)
+				return nil
+			})
+		}
 
 		if config.TagLatest {
 			g.Go(func() error {
@@ -232,4 +238,13 @@ func parseDockerImageName(image string) string {
 	}
 
 	return image
+}
+
+func mapImages(sourceImages []string) map[string]any {
+	targetImages := make(map[string]any, len(sourceImages))
+	for _, sourceImage := range sourceImages {
+		targetImages[sourceImage] = sourceImage
+	}
+
+	return targetImages
 }

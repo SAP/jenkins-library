@@ -16,20 +16,20 @@ import (
 )
 
 type imagePushToRegistryOptions struct {
-	TargetImages           []map[string]interface{} `json:"targetImages,omitempty"`
-	SourceImages           []string                 `json:"sourceImages,omitempty"`
-	SourceRegistryURL      string                   `json:"sourceRegistryUrl,omitempty"`
-	SourceRegistryUser     string                   `json:"sourceRegistryUser,omitempty"`
-	SourceRegistryPassword string                   `json:"sourceRegistryPassword,omitempty"`
-	TargetRegistryURL      string                   `json:"targetRegistryUrl,omitempty"`
-	TargetRegistryUser     string                   `json:"targetRegistryUser,omitempty"`
-	TargetRegistryPassword string                   `json:"targetRegistryPassword,omitempty"`
-	TagLatest              bool                     `json:"tagLatest,omitempty"`
-	TagArtifactVersion     bool                     `json:"tagArtifactVersion,omitempty"`
-	DockerConfigJSON       string                   `json:"dockerConfigJSON,omitempty"`
-	LocalDockerImagePath   string                   `json:"localDockerImagePath,omitempty"`
-	TargetArchitecture     string                   `json:"targetArchitecture,omitempty"`
-	ImageTag               string                   `json:"imageTag,omitempty"`
+	TargetImages           map[string]interface{} `json:"targetImages,omitempty"`
+	SourceImages           []string               `json:"sourceImages,omitempty"`
+	SourceRegistryURL      string                 `json:"sourceRegistryUrl,omitempty"`
+	SourceRegistryUser     string                 `json:"sourceRegistryUser,omitempty"`
+	SourceRegistryPassword string                 `json:"sourceRegistryPassword,omitempty"`
+	TargetRegistryURL      string                 `json:"targetRegistryUrl,omitempty"`
+	TargetRegistryUser     string                 `json:"targetRegistryUser,omitempty"`
+	TargetRegistryPassword string                 `json:"targetRegistryPassword,omitempty"`
+	TagLatest              bool                   `json:"tagLatest,omitempty"`
+	TagArtifactVersion     bool                   `json:"tagArtifactVersion,omitempty"`
+	DockerConfigJSON       string                 `json:"dockerConfigJSON,omitempty"`
+	LocalDockerImagePath   string                 `json:"localDockerImagePath,omitempty"`
+	TargetArchitecture     string                 `json:"targetArchitecture,omitempty"`
+	ImageTag               string                 `json:"imageTag,omitempty" validate:"required_if=TagArtifactVersion true"`
 }
 
 // ImagePushToRegistryCommand Allows you to copy a Docker image from a source container registry  to a destination container registry.
@@ -149,7 +149,7 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().StringVar(&stepConfig.TargetRegistryUser, "targetRegistryUser", os.Getenv("PIPER_targetRegistryUser"), "Username of the target registry where the image should be pushed to.")
 	cmd.Flags().StringVar(&stepConfig.TargetRegistryPassword, "targetRegistryPassword", os.Getenv("PIPER_targetRegistryPassword"), "Password of the target registry where the image should be pushed to.")
 	cmd.Flags().BoolVar(&stepConfig.TagLatest, "tagLatest", false, "Defines if the image should be tagged as `latest`")
-	cmd.Flags().BoolVar(&stepConfig.TagArtifactVersion, "tagArtifactVersion", false, "The parameter is not supported yet. Defines if the image should be tagged with the artifact version")
+	cmd.Flags().BoolVar(&stepConfig.TagArtifactVersion, "tagArtifactVersion", true, "The parameter is not supported yet. Defines if the image should be tagged with the artifact version")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 	cmd.Flags().StringVar(&stepConfig.TargetArchitecture, "targetArchitecture", os.Getenv("PIPER_targetArchitecture"), "Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
@@ -180,7 +180,7 @@ func imagePushToRegistryMetadata() config.StepData {
 						Name:        "targetImages",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]map[string]interface{}",
+						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -307,7 +307,7 @@ func imagePushToRegistryMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     false,
+						Default:     true,
 					},
 					{
 						Name: "dockerConfigJSON",
