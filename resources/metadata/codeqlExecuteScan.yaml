@@ -188,6 +188,26 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: projectSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as project settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/projectSettingsFile
+      - name: globalSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as global settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/globalSettingsFile
   containers:
     - image: ""
   outputs:

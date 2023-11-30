@@ -282,7 +282,14 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	//codeql has an autobuilder which tries to build the project based on specified programming language
 	if len(config.BuildCommand) > 0 {
-		cmd = append(cmd, "--command="+config.BuildCommand)
+		buildCmd := config.BuildCommand
+		if len(config.ProjectSettingsFile) > 0 {
+			buildCmd = fmt.Sprintf("%s --settings=%s", buildCmd, config.ProjectSettingsFile)
+		}
+		if len(config.GlobalSettingsFile) > 0 {
+			buildCmd = fmt.Sprintf("%s --global-settings=%s", buildCmd, config.GlobalSettingsFile)
+		}
+		cmd = append(cmd, "--command="+buildCmd)
 	}
 
 	err = execute(utils, cmd, GeneralConfig.Verbose)
