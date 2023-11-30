@@ -72,13 +72,17 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 				continue
 			}
 
-			if *alert.State == auditStateDismissed {
-				audited += 1
-				totalAlerts += 1
-			}
+			for _, tag := range alert.Rule.Tags {
+				if tag == "security" {
+					if *alert.State == auditStateDismissed {
+						audited += 1
+						totalAlerts += 1
+					}
 
-			if *alert.State == auditStateOpen {
-				totalAlerts += 1
+					if *alert.State == auditStateOpen {
+						totalAlerts += 1
+					}
+				}
 			}
 		}
 	}
