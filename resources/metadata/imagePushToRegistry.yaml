@@ -16,32 +16,61 @@ spec:
     params:
       - name: targetImages
         type: "map[string]interface{}"
+        mandatory: true
         description: |
-          Defines the names (incl. tag) of the images that will be pushed to the target registry. If empty, sourceImages will be used.
+          Defines the names of the images that will be pushed to the target registry. If empty, names of sourceImages will be used.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
+
+          ```yaml
+          sourceImages:
+            - image-1
+            - image-2
+          targetImages:
+            image-1: target-image-1
+            image-2: target-image-2
+          ```
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: sourceImages
         type: "[]string"
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
         description: |
           Defines the names (incl. tag) of the images that will be pulled from source registry. This is helpful for moving images from one location to another.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
-        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/imageNameTags
+            param: container/imageNames
+      - name: sourceImageTag
+        aliases:
+          - name: artifactVersion
+          - name: containerImageTag
+        description: Tag of the sourceImages
+        type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: sourceRegistryUrl
         description: Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*"
         type: string
         mandatoryIf:
-          - name: localDockerImagePath
-            value: ""
+          - name: pushLocalDockerImage
+            value: false
         scope:
           - PARAMETERS
           - STAGES
@@ -51,6 +80,9 @@ spec:
             param: container/registryUrl
       - name: sourceRegistryUser
         type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
         secret: true
         description: Username of the source registry where the image should be pushed pulled from.
         scope:
@@ -65,6 +97,9 @@ spec:
             default: docker-registry
       - name: sourceRegistryPassword
         type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
         secret: true
         description: Password of the source registry where the image should be pushed pulled from.
         scope:
@@ -111,17 +146,26 @@ spec:
           - type: vaultSecret
             name: registryCredentialsVaultSecretName
             default: docker-registry
-      - name: tagLatest
-        description: "Defines if the image should be tagged as `latest`"
-        type: bool
+      - name: targetImageTag
+        aliases:
+          - name: artifactVersion
+          - name: containerImageTag
+        type: string
+        mandatoryIf:
+          - name: tagLatest
+            value: false
+        description: Tag of the targetImages
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: tagArtifactVersion
-        description: "The parameter is not supported yet. Defines if the image should be tagged with the artifact version"
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: tagLatest
+        description: "Defines if the image should be tagged as `latest`"
         type: bool
-        default: true
         scope:
           - PARAMETERS
           - STAGES
@@ -138,9 +182,19 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+      - name: pushLocalDockerImage
+        description: ""
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: localDockerImagePath
         description: "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball."
         type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: true
         scope:
           - PARAMETERS
           - STAGES
@@ -151,23 +205,6 @@ spec:
         scope:
           - STEPS
           - PARAMETERS
-      - name: imageTag
-        aliases:
-          - name: artifactVersion
-          - name: containerImageTag
-        type: string
-        mandatoryIf:
-          - name: tagArtifactVersion
-            value: true
-        description: Tag of the image which will be built
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
   containers:
     - image: gcr.io/go-containerregistry/crane:debug
       command:
