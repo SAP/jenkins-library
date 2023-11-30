@@ -116,8 +116,8 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: tagArtifactVersion # not supported yet
-        description: "Defines if the image should be tagged with the artifact version"
+      - name: tagArtifactVersion
+        description: "The parameter is not supported yet. Defines if the image should be tagged with the artifact version"
         type: bool
         scope:
           - PARAMETERS
