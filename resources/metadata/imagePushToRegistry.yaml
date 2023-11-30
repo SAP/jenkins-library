@@ -15,7 +15,7 @@ spec:
         type: stash
     params:
       - name: targetImages
-        type: "[]string"
+        type: "[]map[string]interface{}"
         description: |
           Defines the names (incl. tag) of the images that will be pushed to the target registry. If empty, sourceImages will be used.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
@@ -148,6 +148,20 @@ spec:
         scope:
           - STEPS
           - PARAMETERS
+      - name: imageTag
+        aliases:
+          - name: artifactVersion
+          - name: containerImageTag
+        type: string
+        description: Tag of the image which will be built
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
   containers:
     - image: gcr.io/go-containerregistry/crane:debug
       command:

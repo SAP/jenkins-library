@@ -16,19 +16,20 @@ import (
 )
 
 type imagePushToRegistryOptions struct {
-	TargetImages           []string `json:"targetImages,omitempty"`
-	SourceImages           []string `json:"sourceImages,omitempty"`
-	SourceRegistryURL      string   `json:"sourceRegistryUrl,omitempty"`
-	SourceRegistryUser     string   `json:"sourceRegistryUser,omitempty"`
-	SourceRegistryPassword string   `json:"sourceRegistryPassword,omitempty"`
-	TargetRegistryURL      string   `json:"targetRegistryUrl,omitempty"`
-	TargetRegistryUser     string   `json:"targetRegistryUser,omitempty"`
-	TargetRegistryPassword string   `json:"targetRegistryPassword,omitempty"`
-	TagLatest              bool     `json:"tagLatest,omitempty"`
-	TagArtifactVersion     bool     `json:"tagArtifactVersion,omitempty"`
-	DockerConfigJSON       string   `json:"dockerConfigJSON,omitempty"`
-	LocalDockerImagePath   string   `json:"localDockerImagePath,omitempty"`
-	TargetArchitecture     string   `json:"targetArchitecture,omitempty"`
+	TargetImages           []map[string]interface{} `json:"targetImages,omitempty"`
+	SourceImages           []string                 `json:"sourceImages,omitempty"`
+	SourceRegistryURL      string                   `json:"sourceRegistryUrl,omitempty"`
+	SourceRegistryUser     string                   `json:"sourceRegistryUser,omitempty"`
+	SourceRegistryPassword string                   `json:"sourceRegistryPassword,omitempty"`
+	TargetRegistryURL      string                   `json:"targetRegistryUrl,omitempty"`
+	TargetRegistryUser     string                   `json:"targetRegistryUser,omitempty"`
+	TargetRegistryPassword string                   `json:"targetRegistryPassword,omitempty"`
+	TagLatest              bool                     `json:"tagLatest,omitempty"`
+	TagArtifactVersion     bool                     `json:"tagArtifactVersion,omitempty"`
+	DockerConfigJSON       string                   `json:"dockerConfigJSON,omitempty"`
+	LocalDockerImagePath   string                   `json:"localDockerImagePath,omitempty"`
+	TargetArchitecture     string                   `json:"targetArchitecture,omitempty"`
+	ImageTag               string                   `json:"imageTag,omitempty"`
 }
 
 // ImagePushToRegistryCommand Allows you to copy a Docker image from a source container registry  to a destination container registry.
@@ -139,7 +140,7 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 }
 
 func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegistryOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.TargetImages, "targetImages", []string{}, "Defines the names (incl. tag) of the images that will be pushed to the target registry. If empty, sourceImages will be used.\nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.\n")
+
 	cmd.Flags().StringSliceVar(&stepConfig.SourceImages, "sourceImages", []string{}, "Defines the names (incl. tag) of the images that will be pulled from source registry. This is helpful for moving images from one location to another.\nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.\n")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryURL, "sourceRegistryUrl", os.Getenv("PIPER_sourceRegistryUrl"), "Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*\"")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryUser, "sourceRegistryUser", os.Getenv("PIPER_sourceRegistryUser"), "Username of the source registry where the image should be pushed pulled from.")
@@ -152,6 +153,7 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 	cmd.Flags().StringVar(&stepConfig.TargetArchitecture, "targetArchitecture", os.Getenv("PIPER_targetArchitecture"), "Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
+	cmd.Flags().StringVar(&stepConfig.ImageTag, "imageTag", os.Getenv("PIPER_imageTag"), "Tag of the image which will be built")
 
 	cmd.MarkFlagRequired("sourceImages")
 	cmd.MarkFlagRequired("sourceRegistryUrl")
@@ -178,10 +180,9 @@ func imagePushToRegistryMetadata() config.StepData {
 						Name:        "targetImages",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "[]map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
 					},
 					{
 						Name: "sourceImages",
@@ -340,6 +341,20 @@ func imagePushToRegistryMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_targetArchitecture"),
+					},
+					{
+						Name: "imageTag",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "artifactVersion"}, {Name: "containerImageTag"}},
+						Default:   os.Getenv("PIPER_imageTag"),
 					},
 				},
 			},
