@@ -33,6 +33,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNames
       - name: sourceImages
         type: "[]string"
         mandatoryIf:

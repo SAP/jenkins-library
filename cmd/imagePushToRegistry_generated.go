@@ -178,12 +178,17 @@ func imagePushToRegistryMetadata() config.StepData {
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:        "targetImages",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "targetImages",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNames",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "map[string]interface{}",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "sourceImages",
