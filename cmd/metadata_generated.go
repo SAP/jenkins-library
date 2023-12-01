@@ -72,6 +72,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"gradleExecuteBuild":                        gradleExecuteBuildMetadata(),
 		"hadolintExecute":                           hadolintExecuteMetadata(),
 		"helmExecute":                               helmExecuteMetadata(),
+		"imagePushToRegistry":                       imagePushToRegistryMetadata(),
 		"influxWriteData":                           influxWriteDataMetadata(),
 		"integrationArtifactDeploy":                 integrationArtifactDeployMetadata(),
 		"integrationArtifactDownload":               integrationArtifactDownloadMetadata(),
