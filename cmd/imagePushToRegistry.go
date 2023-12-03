@@ -145,7 +145,7 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 
 	for _, sourceImage := range config.SourceImages {
 		sourceImage := sourceImage
-		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, sourceImage)
+		src := fmt.Sprintf("%s/%s:%s", config.SourceRegistryURL, sourceImage, config.SourceImageTag)
 
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
