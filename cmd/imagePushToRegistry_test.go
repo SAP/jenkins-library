@@ -154,6 +154,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 
 		craneMockUtils := &dockermock.CraneMockUtils{}
 		config := &imagePushToRegistryOptions{
+			PushLocalDockerImage: true,
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
 			TagLatest:            false,
@@ -170,6 +171,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 			ErrLoadImage: dockermock.ErrLoadImage,
 		}
 		config := &imagePushToRegistryOptions{
+			PushLocalDockerImage: true,
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
 			TagLatest:            false,
@@ -186,6 +188,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 			ErrPushImage: dockermock.ErrPushImage,
 		}
 		config := &imagePushToRegistryOptions{
+			PushLocalDockerImage: true,
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
 			TargetImages:         map[string]any{"image1": "my-image:1.0.0"},

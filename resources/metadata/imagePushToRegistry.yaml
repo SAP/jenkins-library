@@ -40,7 +40,7 @@ spec:
         description: |
           Defines the names of the images that will be pulled from source registry. This is helpful for moving images from one location to another.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages should be mapped to the first image in the targetImages parameter.
-          
+
           ```yaml
             sourceImages:
               - image-1
