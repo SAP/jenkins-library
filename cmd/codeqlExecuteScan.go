@@ -29,8 +29,10 @@ type codeqlExecuteScanUtilsBundle struct {
 	*piperutils.Files
 }
 
-const sarifUploadComplete = "complete"
-const sarifUploadFailed = "failed"
+const (
+	sarifUploadComplete = "complete"
+	sarifUploadFailed   = "failed"
+)
 
 func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	utils := codeqlExecuteScanUtilsBundle{
@@ -281,8 +283,9 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 
 	if len(config.BuildCommand) > 0 {
-		cmd = append(cmd, "--command="+config.BuildCommand)
-		cmd = append(cmd, getMavenSettings(config)...)
+		buildCmd := config.BuildCommand
+		buildCmd = buildCmd + getMavenSettings(config)
+		cmd = append(cmd, "--command="+buildCmd)
 	}
 
 	err = execute(utils, cmd, GeneralConfig.Verbose)
@@ -414,21 +417,21 @@ func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
 	return params
 }
 
-func getMavenSettings(config *codeqlExecuteScanOptions) []string {
-	params := []string{}
+func getMavenSettings(config *codeqlExecuteScanOptions) string {
+	params := ""
 	if len(config.BuildCommand) > 0 && config.BuildTool == "maven" && !strings.Contains(config.BuildCommand, "--global-settings") && !strings.Contains(config.BuildCommand, "--settings") {
 		if len(config.ProjectSettingsFile) > 0 {
 			if strings.Contains(config.ProjectSettingsFile, "http") {
 				log.Entry().Warn("codeqlExecuteScan's projectSettingsFile param still does not support http(s) urls. Please use a local file path")
 			} else {
-				params = append(params, "--settings="+config.ProjectSettingsFile)
+				params = " --settings=" + config.ProjectSettingsFile
 			}
 		}
 		if len(config.GlobalSettingsFile) > 0 {
 			if strings.Contains(config.ProjectSettingsFile, "http") {
 				log.Entry().Warn("codeqlExecuteScan's globalSettingsFile param still does not support http(s) urls. Please use a local file path")
 			} else {
-				params = append(params, "--global-settings="+config.GlobalSettingsFile)
+				params = params + " --global-settings=" + config.GlobalSettingsFile
 			}
 		}
 	}
