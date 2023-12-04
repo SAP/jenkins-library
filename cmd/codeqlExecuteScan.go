@@ -280,7 +280,10 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 
-	cmd = append(cmd, getMavenSettings(config)...)
+	if len(config.BuildCommand) > 0 {
+		cmd = append(cmd, "--command="+config.BuildCommand)
+		cmd = append(cmd, getMavenSettings(config)...)
+	}
 
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
