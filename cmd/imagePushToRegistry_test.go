@@ -191,8 +191,8 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 			PushLocalDockerImage: true,
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
-			TargetImages:         map[string]any{"image1": "my-image:1.0.0"},
-			TagLatest:            false,
+			TargetImages:         map[string]any{"image1": "my-image"},
+			TagLatest:            true,
 		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
 		err := pushLocalImageToTargetRegistry(config, utils)
