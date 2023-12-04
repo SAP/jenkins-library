@@ -300,6 +300,57 @@ func TestWaitSarifUploaded(t *testing.T) {
 	})
 }
 
+func TestGetMavenSettings(t *testing.T) {
+	t.Parallel()
+	t.Run("No maven", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "npm"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, "", params)
+	})
+
+	t.Run("No build command", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, "", params)
+	})
+
+	t.Run("Project Settings file", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "test.xml"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, " --settings=test.xml", params)
+	})
+
+	t.Run("Skip Project Settings file incase already used", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install --settings=project.xml", ProjectSettingsFile: "test.xml"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, "", params)
+	})
+
+	t.Run("Global Settings file", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "gloabl.xml"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, " --global-settings=gloabl.xml", params)
+	})
+
+	t.Run("Project and Global Settings file", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "test.xml", GlobalSettingsFile: "global.xml"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, " --settings=test.xml --global-settings=global.xml", params)
+	})
+
+	t.Run("Skip incase of https url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "https://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, "", params)
+	})
+
+	t.Run("Skip incase of http url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, "", params)
+	})
+}
+
 type CodeqlSarifUploaderMock struct {
 	counter int
 }
