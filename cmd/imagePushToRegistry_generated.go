@@ -142,18 +142,18 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 
 func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegistryOptions) {
 
-	cmd.Flags().StringSliceVar(&stepConfig.SourceImages, "sourceImages", []string{}, "Defines the names of the images that will be pulled from source registry. This is helpful for moving images from one location to another.\nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.\n\n```yaml\n  sourceImages:\n    - image-1\n    - image-2\n  targetImages:\n    image-1: target-image-1\n    image-2: target-image-2\n```\n")
+	cmd.Flags().StringSliceVar(&stepConfig.SourceImages, "sourceImages", []string{}, "Defines the names of the images that will be pulled from source registry. This is helpful for moving images from one location to another.\nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages should be mapped to the first image in the targetImages parameter.\n\n```yaml\n  sourceImages:\n    - image-1\n    - image-2\n  targetImages:\n    image-1: target-image-1\n    image-2: target-image-2\n```\n")
 	cmd.Flags().StringVar(&stepConfig.SourceImageTag, "sourceImageTag", os.Getenv("PIPER_sourceImageTag"), "Tag of the sourceImages")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryURL, "sourceRegistryUrl", os.Getenv("PIPER_sourceRegistryUrl"), "Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*\"")
-	cmd.Flags().StringVar(&stepConfig.SourceRegistryUser, "sourceRegistryUser", os.Getenv("PIPER_sourceRegistryUser"), "Username of the source registry where the image should be pushed pulled from.")
-	cmd.Flags().StringVar(&stepConfig.SourceRegistryPassword, "sourceRegistryPassword", os.Getenv("PIPER_sourceRegistryPassword"), "Password of the source registry where the image should be pushed pulled from.")
+	cmd.Flags().StringVar(&stepConfig.SourceRegistryUser, "sourceRegistryUser", os.Getenv("PIPER_sourceRegistryUser"), "Username of the source registry where the image should be pulled from.")
+	cmd.Flags().StringVar(&stepConfig.SourceRegistryPassword, "sourceRegistryPassword", os.Getenv("PIPER_sourceRegistryPassword"), "Password of the source registry where the image should be pulled from.")
 	cmd.Flags().StringVar(&stepConfig.TargetRegistryURL, "targetRegistryUrl", os.Getenv("PIPER_targetRegistryUrl"), "Defines a registry url from where the image should optionally be pushed to, incl. the protocol like `https://my.registry.com`*\"")
 	cmd.Flags().StringVar(&stepConfig.TargetRegistryUser, "targetRegistryUser", os.Getenv("PIPER_targetRegistryUser"), "Username of the target registry where the image should be pushed to.")
 	cmd.Flags().StringVar(&stepConfig.TargetRegistryPassword, "targetRegistryPassword", os.Getenv("PIPER_targetRegistryPassword"), "Password of the target registry where the image should be pushed to.")
 	cmd.Flags().StringVar(&stepConfig.TargetImageTag, "targetImageTag", os.Getenv("PIPER_targetImageTag"), "Tag of the targetImages")
-	cmd.Flags().BoolVar(&stepConfig.TagLatest, "tagLatest", false, "Defines if the image should be tagged as `latest`")
+	cmd.Flags().BoolVar(&stepConfig.TagLatest, "tagLatest", false, "Defines if the image should be tagged as `latest`. The parameter is true if targetImageTag is not specified.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
-	cmd.Flags().BoolVar(&stepConfig.PushLocalDockerImage, "pushLocalDockerImage", false, "")
+	cmd.Flags().BoolVar(&stepConfig.PushLocalDockerImage, "pushLocalDockerImage", false, "Defines if the local image should be pushed to registry")
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 	cmd.Flags().StringVar(&stepConfig.TargetArchitecture, "targetArchitecture", os.Getenv("PIPER_targetArchitecture"), "Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
 
