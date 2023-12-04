@@ -16,7 +16,7 @@ spec:
     params:
       - name: targetImages
         type: "map[string]interface{}"
-        mandatory: true
+        # mandatory: true
         description: |
           Defines the names of the images that will be pushed to the target registry. If empty, names of sourceImages will be used.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
@@ -33,17 +33,23 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: container/imageNames
       - name: sourceImages
         type: "[]string"
         mandatoryIf:
           - name: pushLocalDockerImage
             value: false
         description: |
-          Defines the names (incl. tag) of the images that will be pulled from source registry. This is helpful for moving images from one location to another.
+          Defines the names of the images that will be pulled from source registry. This is helpful for moving images from one location to another.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
+          
+          ```yaml
+            sourceImages:
+              - image-1
+              - image-2
+            targetImages:
+              image-1: target-image-1
+              image-2: target-image-2
+          ```
         scope:
           - PARAMETERS
           - STAGES
