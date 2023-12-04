@@ -196,3 +196,12 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 		assert.EqualError(t, err, "push image err")
 	})
 }
+
+func TestMapSourceTargetImages(t *testing.T) {
+	expected := map[string]any{
+		"img1": "img1", "img2": "img2",
+	}
+	sourceImages := []string{"img1", "img2"}
+	got := mapSourceTargetImages(sourceImages)
+	assert.Equal(t, got, expected)
+}

@@ -81,6 +81,9 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
 	if !config.PushLocalDockerImage {
+		if len(config.TargetImages) == 0 {
+			config.TargetImages = mapSourceTargetImages(config.SourceImages)
+		}
 		if len(config.TargetImages) != len(config.SourceImages) {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.New("configuration error: please configure targetImage and sourceImage properly")
@@ -147,9 +150,14 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 		sourceImage := sourceImage
 		src := fmt.Sprintf("%s/%s:%s", config.SourceRegistryURL, sourceImage, config.SourceImageTag)
 
+		targetImage, ok := config.TargetImages[sourceImage].(string)
+		if !ok {
+			return fmt.Errorf("incorrect name of target image: %v", config.TargetImages[sourceImage])
+		}
+
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
-				dst := fmt.Sprintf("%s/%s:%s", config.TargetRegistryURL, config.TargetImages[sourceImage], config.TargetImageTag)
+				dst := fmt.Sprintf("%s/%s:%s", config.TargetRegistryURL, targetImage, config.TargetImageTag)
 				log.Entry().Infof("Copying %s to %s...", src, dst)
 				if err := utils.CopyImage(ctx, src, dst, platform); err != nil {
 					return err
@@ -191,8 +199,12 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 	}
 	log.Entry().Infof("Loading local image... Done")
 
-	for _, targetImage := range config.TargetImages {
-		targetImage := targetImage
+	for _, trgImage := range config.TargetImages {
+		trgImage := trgImage
+		targetImage, ok := trgImage.(string)
+		if !ok {
+			return fmt.Errorf("incorrect name of target image: %v", trgImage)
+		}
 
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
