@@ -226,17 +226,6 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 	return nil
 }
 
-// to be deleted
-func parseDockerImageName(image string) string {
-	re := regexp.MustCompile(`^(.*?)(?::([^:/]+))?$`)
-	matches := re.FindStringSubmatch(image)
-	if len(matches) > 1 {
-		return matches[1]
-	}
-
-	return image
-}
-
 func mapSourceTargetImages(sourceImages []string) map[string]any {
 	targetImages := make(map[string]any, len(sourceImages))
 	for _, sourceImage := range sourceImages {

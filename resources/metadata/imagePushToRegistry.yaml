@@ -16,7 +16,6 @@ spec:
     params:
       - name: targetImages
         type: "map[string]interface{}"
-        # mandatory: true
         description: |
           Defines the names of the images that will be pushed to the target registry. If empty, names of sourceImages will be used.
           Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages will be mapped to the first image in the targetImages parameter.
