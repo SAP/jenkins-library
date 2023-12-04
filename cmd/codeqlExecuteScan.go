@@ -280,17 +280,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 
-	//codeql has an autobuilder which tries to build the project based on specified programming language
-	if len(config.BuildCommand) > 0 {
-		buildCmd := config.BuildCommand
-		if len(config.ProjectSettingsFile) > 0 && config.BuildTool == "maven" {
-			buildCmd = fmt.Sprintf("%s --settings=%s", buildCmd, config.ProjectSettingsFile)
-		}
-		if len(config.GlobalSettingsFile) > 0 && config.BuildTool == "maven" {
-			buildCmd = fmt.Sprintf("%s --global-settings=%s", buildCmd, config.GlobalSettingsFile)
-		}
-		cmd = append(cmd, "--command="+buildCmd)
-	}
+	cmd = append(cmd, getMavenSettings(config)...)
 
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
@@ -417,6 +407,27 @@ func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
 	}
 	if len(config.Ram) > 0 {
 		params = append(params, "--ram="+config.Ram)
+	}
+	return params
+}
+
+func getMavenSettings(config *codeqlExecuteScanOptions) []string {
+	params := []string{}
+	if len(config.BuildCommand) > 0 && config.BuildTool == "maven" && !strings.Contains(config.BuildCommand, "--global-settings") && !strings.Contains(config.BuildCommand, "--settings") {
+		if len(config.ProjectSettingsFile) > 0 {
+			if strings.Contains(config.ProjectSettingsFile, "http") {
+				log.Entry().Warn("codeqlExecuteScan's projectSettingsFile param still does not support http(s) urls. Please use a local file path")
+			} else {
+				params = append(params, "--settings="+config.ProjectSettingsFile)
+			}
+		}
+		if len(config.GlobalSettingsFile) > 0 {
+			if strings.Contains(config.ProjectSettingsFile, "http") {
+				log.Entry().Warn("codeqlExecuteScan's globalSettingsFile param still does not support http(s) urls. Please use a local file path")
+			} else {
+				params = append(params, "--global-settings="+config.GlobalSettingsFile)
+			}
+		}
 	}
 	return params
 }
