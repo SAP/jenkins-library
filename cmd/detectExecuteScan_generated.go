@@ -40,6 +40,7 @@ type detectExecuteScanOptions struct {
 	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
 	M2Path                      string   `json:"m2Path,omitempty"`
 	InstallArtifacts            bool     `json:"installArtifacts,omitempty"`
+	BuildMaven                  bool     `json:"buildMaven,omitempty"`
 	IncludedPackageManagers     []string `json:"includedPackageManagers,omitempty"`
 	ExcludedPackageManagers     []string `json:"excludedPackageManagers,omitempty"`
 	MavenExcludedScopes         []string `json:"mavenExcludedScopes,omitempty"`
@@ -286,6 +287,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running detect. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
+	cmd.Flags().BoolVar(&stepConfig.BuildMaven, "buildMaven", false, "Experiment parameter for maven multi modules project building")
 	cmd.Flags().StringSliceVar(&stepConfig.IncludedPackageManagers, "includedPackageManagers", []string{}, "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-included-advanced)")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludedPackageManagers, "excludedPackageManagers", []string{}, "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-excluded-advanced)")
 	cmd.Flags().StringSliceVar(&stepConfig.MavenExcludedScopes, "mavenExcludedScopes", []string{}, "The maven scopes that need to be excluded from the scan. For example, setting the value 'test' will exclude all components which are defined with a test scope in maven")
@@ -509,6 +511,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Name:        "installArtifacts",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "buildMaven",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

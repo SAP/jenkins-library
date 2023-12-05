@@ -185,6 +185,16 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		}
 	}
 
+	if config.BuildMaven {
+		mavenConfig := setMavenConfig(config)
+		mavenUtils := maven.NewUtilsBundle()
+
+		err := runMavenBuild(&mavenConfig, nil, mavenUtils, nil)
+		if err != nil {
+			return err
+		}
+	}
+
 	blackduckSystem := newBlackduckSystem(config)
 
 	args := []string{"./detect.sh"}
@@ -911,4 +921,24 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+// Temporary function setMavenDefaults sets the default values for maven build
+func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
+
+	mavenConfig := mavenBuildOptions{
+		//PomPath:                         "pom.xml",
+		//Profiles:                        []string{},
+		Flatten:                     true,
+		Verify:                      false,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		M2Path:                      config.M2Path,
+		LogSuccessfulMavenTransfers: false,
+		CreateBOM:                   false,
+		CustomTLSCertificateLinks:   config.CustomTLSCertificateLinks,
+		Publish:                     false,
+	}
+
+	return mavenConfig
 }
