@@ -240,6 +240,10 @@ func (repo *Repository) GetPullRequestBody() (body string) {
 	return body
 }
 
+func (repo *Repository) GetPullActionRequestBody() (body string) {
+	return `{` + `"commit_id":"` + repo.CommitID + `", ` + `"tag_name":"` + repo.Tag + `"` + `}`
+}
+
 func (repo *Repository) GetPullLogString() (logString string) {
 	commitOrTag := repo.GetLogStringForCommitOrTag()
 	logString = "repository / software component '" + repo.Name + "'" + commitOrTag

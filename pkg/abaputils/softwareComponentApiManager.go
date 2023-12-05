@@ -1,9 +1,11 @@
 package abaputils
 
 import (
+	"errors"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type SoftwareComponentApiManagerInterface interface {
@@ -17,13 +19,28 @@ type SoftwareComponentApiManager struct {
 }
 
 func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, repo Repository) (SoftwareComponentApiInterface, error) {
-	sap_com_0510 := SAP_COM_0510{}
-	sap_com_0510.init(con, manager.Client, repo)
 
 	// Initialize all APIs, use the one that returns a response
 	// Currently SAP_COM_0510, later SAP_COM_0948
-	err := sap_com_0510.initialRequest()
-	return &sap_com_0510, err
+	sap_com_0948 := SAP_COM_0948{}
+	sap_com_0948.init(con, manager.Client, repo)
+	err0948 := sap_com_0948.initialRequest()
+	if err0948 == nil {
+		return &sap_com_0948, nil
+	}
+
+	sap_com_0510 := SAP_COM_0510{}
+	sap_com_0510.init(con, manager.Client, repo)
+	err0510 := sap_com_0510.initialRequest()
+	if err0510 == nil {
+		log.Entry().Infof("SAP_COM_0510 will be deprecated soon. Please switch to SAP_COM_0948.")
+		return &sap_com_0510, nil
+	}
+
+	log.Entry().Errorf("Could not connect via SAP_COM_0948: %s", err0948)
+	log.Entry().Errorf("Could not connect via SAP_COM_0510: %s", err0510)
+
+	return nil, errors.New("Could not initialize API")
 }
 
 func (manager *SoftwareComponentApiManager) GetPollIntervall() time.Duration {
@@ -57,7 +74,7 @@ type SoftwareComponentApiInterface interface {
 type ActionEntity struct {
 	Metadata          AbapMetadata `json:"__metadata"`
 	UUID              string       `json:"uuid"`
-	Namespace         string       `json:"namepsace"`
+	Namespace         string       `json:"namespace"`
 	ScName            string       `json:"sc_name"`
 	ImportType        string       `json:"import_type"`
 	BranchName        string       `json:"branch_name"`
