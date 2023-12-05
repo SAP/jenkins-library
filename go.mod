@@ -57,7 +57,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.10.0
 	github.com/xuri/excelize/v2 v2.4.1
 	golang.org/x/mod v0.14.0
-	golang.org/x/oauth2 v0.12.0
+	golang.org/x/oauth2 v0.15.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.126.0
 	gopkg.in/ini.v1 v1.66.6
@@ -336,11 +336,11 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.15.0
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/crypto v0.16.0
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0
-	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/term v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
