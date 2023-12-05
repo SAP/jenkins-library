@@ -927,8 +927,7 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 
 	mavenConfig := mavenBuildOptions{
-		//PomPath:                         "pom.xml",
-		//Profiles:                        []string{},
+		PomPath:                     "pom.xml",
 		Flatten:                     true,
 		Verify:                      false,
 		ProjectSettingsFile:         config.ProjectSettingsFile,
