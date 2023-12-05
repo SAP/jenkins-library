@@ -427,8 +427,9 @@ func getMavenSettings(config *codeqlExecuteScanOptions) string {
 				params = " --settings=" + config.ProjectSettingsFile
 			}
 		}
+
 		if len(config.GlobalSettingsFile) > 0 {
-			if strings.Contains(config.ProjectSettingsFile, "http") {
+			if strings.Contains(config.GlobalSettingsFile, "http") {
 				log.Entry().Warn("codeqlExecuteScan's globalSettingsFile param still does not support http(s) urls. Please use a local file path")
 			} else {
 				params = params + " --global-settings=" + config.GlobalSettingsFile

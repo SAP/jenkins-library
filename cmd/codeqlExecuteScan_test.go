@@ -338,14 +338,26 @@ func TestGetMavenSettings(t *testing.T) {
 		assert.Equal(t, " --settings=test.xml --global-settings=global.xml", params)
 	})
 
-	t.Run("Skip incase of https url", func(t *testing.T) {
+	t.Run("Skip incase of ProjectSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "https://jenkins-sap-test.com/test.xml"}
 		params := getMavenSettings(&config)
 		assert.Equal(t, "", params)
 	})
 
-	t.Run("Skip incase of http url", func(t *testing.T) {
+	t.Run("Skip incase of ProjectSettingsFile http url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, "", params)
+	})
+
+	t.Run("Skip incase of GlobalSettingsFile https url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config)
+		assert.Equal(t, "", params)
+	})
+
+	t.Run("Skip incase of GlobalSettingsFile http url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml"}
 		params := getMavenSettings(&config)
 		assert.Equal(t, "", params)
 	})
