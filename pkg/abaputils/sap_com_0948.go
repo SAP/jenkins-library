@@ -123,43 +123,39 @@ func (api *SAP_COM_0948) Pull() error {
 	return api.triggerRequest(pullConnectionDetails, jsonBody)
 }
 
-func (api *SAP_COM_0948) GetLogProtocol(logOverviewEntry LogResultsV2, page int) (body LogProtocolResults, err error) {
+func (api *SAP_COM_0948) GetLogProtocol(logOverviewEntry LogResultsV2, page int) (result []LogProtocol, count int, err error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = logOverviewEntry.ToLogProtocol.Deferred.URI + getLogProtocolQuery(page)
+	connectionDetails.URL = api.con.URL + api.path + api.actionsEntity + "/" + api.getUUID() + "/_Log_Overview" + "/" + fmt.Sprint(logOverviewEntry.Index) + "/_Log_Protocol" + api.getLogProtocolQuery(page)
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
-		return body, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 
 	// Parse response
-	var abapResp map[string]*json.RawMessage
+	var body LogProtocolResultsV4
 	bodyText, _ := io.ReadAll(resp.Body)
 
-	marshallError := json.Unmarshal(bodyText, &abapResp)
+	marshallError := json.Unmarshal(bodyText, &body)
 	if marshallError != nil {
-		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-	marshallError = json.Unmarshal(*abapResp["d"], &body)
-	if marshallError != nil {
-		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, 0, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
 	}
 
-	return body, nil
+	return body.Results, body.Count, nil
 }
 
-func (api *SAP_COM_0948) GetLogOverview() (body ActionEntity, err error) {
+func (api *SAP_COM_0948) GetLogOverview() (result []LogResultsV2, err error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = api.con.URL + api.path + api.actionsEntity + "/" + api.getUUID() + "/" + "_Log_Overview"
+	connectionDetails.URL = api.con.URL + api.path + api.actionsEntity + "/" + api.getUUID() + "/_Log_Overview"
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
-		return body, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -169,23 +165,20 @@ func (api *SAP_COM_0948) GetLogOverview() (body ActionEntity, err error) {
 
 	marshallError := json.Unmarshal(bodyText, &abapResp)
 	if marshallError != nil {
-		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
 	}
-	marshallError = json.Unmarshal(*abapResp["value"], &body)
+	marshallError = json.Unmarshal(*abapResp["value"], &result)
 	if marshallError != nil {
-		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
 	}
 
-	if reflect.DeepEqual(ActionEntity{}, body) {
+	if reflect.DeepEqual(LogResultsV2{}, result) {
 		log.Entry().WithField("StatusCode", resp.Status).Error(api.failureMessage)
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		var err = errors.New("Request to ABAP System not successful")
-		return body, err
+		return nil, err
 	}
-
-	abapStatusCode := body.Status
-	log.Entry().Info("Status: " + abapStatusCode + " - " + body.StatusDescription)
-	return body, nil
+	return result, nil
 
 }
 
@@ -372,4 +365,11 @@ func (api *SAP_COM_0948) getRepoNameForPath() string {
 
 func (api *SAP_COM_0948) getBranchNameForPath() string {
 	return "/" + api.repository.Branch
+}
+
+func (api *SAP_COM_0948) getLogProtocolQuery(page int) string {
+	skip := page * numberOfEntriesPerPage
+	top := numberOfEntriesPerPage
+
+	return fmt.Sprintf("?$skip=%s&$top=%s&$count=true", fmt.Sprint(skip), fmt.Sprint(top))
 }

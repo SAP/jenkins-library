@@ -61,8 +61,8 @@ type SoftwareComponentApiInterface interface {
 	CheckoutBranch() error
 	GetRepository() (bool, string, error)
 	GetAction() (string, error)
-	GetLogOverview() (ActionEntity, error)
-	GetLogProtocol(LogResultsV2, int) (body LogProtocolResults, err error)
+	GetLogOverview() ([]LogResultsV2, error)
+	GetLogProtocol(LogResultsV2, int) (result []LogProtocol, count int, err error)
 	CreateTag(tag Tag) error
 }
 
@@ -158,13 +158,18 @@ type LogProtocolResults struct {
 	Count   string        `json:"__count"`
 }
 
+type LogProtocolResultsV4 struct {
+	Results []LogProtocol `json:"value"`
+	Count   int           `json:"@odata.count"`
+}
+
 type LogProtocol struct {
-	Metadata      AbapMetadata `json:"__metadata"`
-	OverviewIndex int          `json:"log_index"`
-	ProtocolLine  int          `json:"index_no"`
-	Type          string       `json:"type"`
-	Description   string       `json:"descr"`
-	Timestamp     string       `json:"timestamp"`
+	// Metadata      AbapMetadata `json:"__metadata"`
+	OverviewIndex int    `json:"log_index"`
+	ProtocolLine  int    `json:"index_no"`
+	Type          string `json:"type"`
+	Description   string `json:"descr"`
+	Timestamp     string `json:"timestamp"`
 }
 
 // LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
