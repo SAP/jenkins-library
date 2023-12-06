@@ -37,10 +37,11 @@ func (g *githubCodeqlScanningMock) ListAlertsForRepo(ctx context.Context, owner,
 		if opts.Page == 1 {
 			for i := 0; i < 50; i++ {
 				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
-				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 			}
 			for i := 0; i < 50; i++ {
 				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 			}
 			response.NextPage = 2
 		}
@@ -48,10 +49,11 @@ func (g *githubCodeqlScanningMock) ListAlertsForRepo(ctx context.Context, owner,
 		if opts.Page == 2 {
 			for i := 0; i < 10; i++ {
 				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
-				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 			}
 			for i := 0; i < 30; i++ {
 				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 			}
 			response.NextPage = 0
 		}
