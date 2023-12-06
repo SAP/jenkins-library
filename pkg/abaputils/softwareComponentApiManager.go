@@ -16,17 +16,20 @@ type SoftwareComponentApiManagerInterface interface {
 type SoftwareComponentApiManager struct {
 	Client        piperhttp.Sender
 	PollIntervall time.Duration
+	Force0510     bool
 }
 
 func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, repo Repository) (SoftwareComponentApiInterface, error) {
 
-	// Initialize all APIs, use the one that returns a response
-	// Currently SAP_COM_0510, later SAP_COM_0948
-	sap_com_0948 := SAP_COM_0948{}
-	sap_com_0948.init(con, manager.Client, repo)
-	err0948 := sap_com_0948.initialRequest()
-	if err0948 == nil {
-		return &sap_com_0948, nil
+	var err0948 error
+	if !manager.Force0510 {
+		// Initialize SAP_COM_0948, if it does not work, use SAP_COM_0510
+		sap_com_0948 := SAP_COM_0948{}
+		sap_com_0948.init(con, manager.Client, repo)
+		err0948 = sap_com_0948.initialRequest()
+		if err0948 == nil {
+			return &sap_com_0948, nil
+		}
 	}
 
 	sap_com_0510 := SAP_COM_0510{}

@@ -101,7 +101,7 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.NoError(t, err, "Did not expect error")
@@ -176,7 +176,7 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.Error(t, err, "Did expect error")
@@ -228,7 +228,7 @@ func TestRunAbapEnvironmentCreateTagConfigurations(t *testing.T) {
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err := runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.NoError(t, err, "Did not expect error")
@@ -296,7 +296,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.Error(t, err, "Did expect error")
@@ -359,7 +359,7 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.NoError(t, err, "Did not expect error")
