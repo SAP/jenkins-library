@@ -382,48 +382,26 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
 
-	// Since detect8 adds quotes by default, to avoid double quotation they should be removed for several arguments
-	if config.UseDetect7 {
-		args = append(args, fmt.Sprintf("\"--detect.project.name='%v'\"", config.ProjectName))
-		args = append(args, fmt.Sprintf("\"--detect.project.version.name='%v'\"", detectVersionName))
+	args = append(args, fmt.Sprintf("\"--detect.project.name=%v\"", config.ProjectName))
+	args = append(args, fmt.Sprintf("\"--detect.project.version.name=%v\"", detectVersionName))
 
-		// Groups parameter is added only when there is atleast one non-empty groupname provided
-		if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
-			args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
-		}
-
-		// Atleast 1, non-empty category to fail on must be provided
-		if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
-			args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
-		}
-
-		args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
-
-		if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
-			args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
-		}
-	} else {
-		args = append(args, fmt.Sprintf("\"--detect.project.name=%v\"", config.ProjectName))
-		args = append(args, fmt.Sprintf("\"--detect.project.version.name=%v\"", detectVersionName))
-
-		// Groups parameter is added only when there is atleast one non-empty groupname provided
-		if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
-			args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
-		}
-
-		// Atleast 1, non-empty category to fail on must be provided
-		if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
-			args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
-		}
-
-		args = append(args, fmt.Sprintf("\"--detect.code.location.name=%v\"", codelocation))
-
-		if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
-			args = append(args, fmt.Sprintf("\"--detect.maven.build.command=%v\"", strings.Join(mavenArgs, " ")))
-		}
-
-		args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=true\""))
+	// Groups parameter is added only when there is atleast one non-empty groupname provided
+	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
+		args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
 	}
+
+	// Atleast 1, non-empty category to fail on must be provided
+	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
+		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
+	}
+
+	args = append(args, fmt.Sprintf("\"--detect.code.location.name=%v\"", codelocation))
+
+	if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
+		args = append(args, fmt.Sprintf("\"--detect.maven.build.command=%v\"", strings.Join(mavenArgs, " ")))
+	}
+
+	args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=true\""))
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
