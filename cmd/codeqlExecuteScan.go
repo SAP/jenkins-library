@@ -45,16 +45,19 @@ func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	return &utils
 }
 
-func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData) {
+func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, influx *codeqlExecuteScanInflux) {
 
 	utils := newCodeqlExecuteScanUtils()
 
-	reports, err := runCodeqlExecuteScan(&config, telemetryData, utils)
+	influx.step_data.fields.codeql = false
+
+	reports, err := runCodeqlExecuteScan(&config, telemetryData, utils, influx)
 	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Codeql scan failed")
 	}
+	influx.step_data.fields.codeql = true
 }
 
 func codeqlQuery(cmd []string, codeqlQuery string) []string {
@@ -254,7 +257,7 @@ func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader cod
 	}
 }
 
-func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
+func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils, influx *codeqlExecuteScanInflux) ([]piperutils.Path, error) {
 	codeqlVersion, err := os.ReadFile("/etc/image-version")
 	if err != nil {
 		log.Entry().Infof("CodeQL image version: unknown")
@@ -366,6 +369,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		if err != nil {
 			return reports, err
 		}
+		log.Entry().Debugf("SARIF URL: %s", sarifUrl)
 		codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
 		err = waitSarifUploaded(config, &codeqlSarifUploader)
 		if err != nil {

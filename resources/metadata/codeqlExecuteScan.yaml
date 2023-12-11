@@ -212,6 +212,43 @@ spec:
     - image: ""
   outputs:
     resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: codeql
+                type: bool
+          - name: codeql_data
+            fields:
+              - name: projectID
+                type: int64
+              - name: projectName
+              - name: projectVersion
+              - name: projectVersionId
+                type: int64
+              - name: violations
+                type: int
+              - name: corporateTotal
+                type: int
+              - name: corporateAudited
+                type: int
+              - name: auditAllTotal
+                type: int
+              - name: auditAllAudited
+                type: int
+              - name: spotChecksTotal
+                type: int
+              - name: spotChecksAudited
+                type: int
+              - name: spotChecksGap
+                type: int
+              - name: suspicious
+                type: int
+              - name: exploitable
+                type: int
+              - name: suppressed
+                type: int
       - name: reports
         type: reports
         params:
