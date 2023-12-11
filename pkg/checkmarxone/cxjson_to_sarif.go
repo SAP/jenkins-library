@@ -8,7 +8,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 // ConvertCxJSONToSarif is the entrypoint for the Parse function
@@ -24,14 +23,14 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
 
-	queries, err := sys.GetQueries()
+	/*queries, err := sys.GetQueries()
 	if err != nil {
 		return sarif, errors.Wrap(err, "Failed to retrieve list of queries")
-	}
+	}*/
 
 	baseURL := "https://" + serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID
 
-	cweIdsForTaxonomies := make(map[int64]int) //use a map to avoid duplicates
+	cweIdsForTaxonomies := make(map[int]int) //use a map to avoid duplicates
 	cweCounter := 0
 	//maxretries := 5
 
@@ -41,15 +40,15 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	log.Entry().Debug("[SARIF] Now handling results.")
 
 	for _, r := range *scanResults {
-		query := getQuery(queries, r.Data.QueryID)
+		/*query := getQuery(queries, r.Data.QueryID)
 		if query == nil {
 			return sarif, errors.New(fmt.Sprintf("Unknown queryid in results: %d", r.Data.QueryID))
-		}
+		}*/
 
-		_, haskey := cweIdsForTaxonomies[query.CweID]
+		_, haskey := cweIdsForTaxonomies[r.VulnerabilityDetails.CweId]
 
 		if !haskey {
-			cweIdsForTaxonomies[query.CweID] = cweCounter
+			cweIdsForTaxonomies[r.VulnerabilityDetails.CweId] = cweCounter
 			cweCounter++
 		}
 
@@ -59,14 +58,14 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		result := *new(format.Results)
 
 		//General
-		result.RuleID = fmt.Sprintf("checkmarxOne-%v/%d", query.Language, query.QueryID)
-		result.RuleIndex = cweIdsForTaxonomies[query.CweID]
+		result.RuleID = fmt.Sprintf("checkmarxOne-%v/%d", r.Data.LanguageName, r.Data.QueryID)
+		result.RuleIndex = cweIdsForTaxonomies[r.VulnerabilityDetails.CweId]
 		result.Level = "none"
 		msg := new(format.Message)
 		if apiDescription != "" {
 			msg.Text = apiDescription
 		} else {
-			msg.Text = query.Name
+			msg.Text = r.Data.QueryName
 		}
 		result.Message = msg
 
@@ -199,18 +198,18 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		//handle the rules array
 		rule := *new(format.SarifRule)
 
-		rule.ID = fmt.Sprintf("checkmarxOne-%v/%d", query.Language, query.QueryID)
-		words := strings.Split(query.Name, "_")
+		rule.ID = fmt.Sprintf("checkmarxOne-%v/%d", r.Data.LanguageName, r.Data.QueryID)
+		words := strings.Split(r.Data.QueryName, "_")
 		for w := 0; w < len(words); w++ {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))
 		}
 		rule.Name = strings.Join(words, "")
 
-		rule.HelpURI = fmt.Sprintf("%v/sast/description/%v/%v", baseURL, query.QueryDescriptionID, query.QueryID)
+		rule.HelpURI = fmt.Sprintf("%v/sast/description/%v/%v", baseURL, r.VulnerabilityDetails.CweId, r.Data.QueryID)
 		rule.Help = new(format.Help)
 		rule.Help.Text = rule.HelpURI
 		rule.ShortDescription = new(format.Message)
-		rule.ShortDescription.Text = query.Name
+		rule.ShortDescription.Text = r.Data.QueryName
 		rule.Properties = new(format.SarifRuleProperties)
 
 		if len(r.VulnerabilityDetails.Compliances) > 0 {
@@ -221,7 +220,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 				rule.Properties.Tags = append(rule.Properties.Tags, r.VulnerabilityDetails.Compliances[cat])
 			}
 		}
-		switch query.Severity {
+		switch r.Severity {
 		case "INFORMATION":
 			rule.Properties.SecuritySeverity = "0.0"
 		case "LOW":
@@ -234,8 +233,8 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			rule.Properties.SecuritySeverity = "10.0"
 		}
 
-		if query.CweID != 0 {
-			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", query.CweID))
+		if r.VulnerabilityDetails.CweId != 0 {
+			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", r.VulnerabilityDetails.CweId))
 		}
 		rulesArray = append(rulesArray, rule)
 	}
