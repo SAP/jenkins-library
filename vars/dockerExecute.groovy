@@ -183,6 +183,7 @@ void call(Map parameters = [:], body) {
             }
 
             def securityContext = securityContextFromOptions(config.dockerOptions)
+            def containerMountPath = containerMountPathFromVolumeBind(config.dockerVolumeBind)
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
                     withEnv(dockerEnvVars) {
@@ -208,6 +209,7 @@ void call(Map parameters = [:], body) {
                     stashContent: config.stashContent,
                     stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                     securityContext: securityContext,
+                    containerMountPath: containerMountPath,
                 ]
 
                 if (config.sidecarImage) {
@@ -377,6 +379,17 @@ def securityContextFromOptions(dockerOptions) {
     }
 
     return securityContext
+}
+
+/*
+ * Picks the first volumeBind option and translates it into containerMountPath, currently only one fix volume is supported
+ */
+@NonCPS
+def containerMountPathFromVolumeBind(dockerVolumeBind) {
+    if (dockerVolumeBind) {
+        return dockerVolumeBind[0].split(":")[1]
+    }
+    return ""
 }
 
 boolean isContainerDefined(config) {
