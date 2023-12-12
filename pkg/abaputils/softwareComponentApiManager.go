@@ -36,7 +36,7 @@ func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, re
 	sap_com_0510.init(con, manager.Client, repo)
 	err0510 := sap_com_0510.initialRequest()
 	if err0510 == nil {
-		log.Entry().Infof("SAP_COM_0510 will be deprecated soon. Please switch to SAP_COM_0948.")
+		log.Entry().Infof("SAP_COM_0510 will be replaced by SAP_COM_0948 starting from the SAP BTP, ABAP environment release 2402.")
 		return &sap_com_0510, nil
 	}
 
