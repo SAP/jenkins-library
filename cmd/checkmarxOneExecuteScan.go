@@ -754,7 +754,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	} else {
 		resultMap["ToolVersion"] = fmt.Sprintf("CxOne: %v, SAST: %v, KICS: %v", version.CxOne, version.SAST, version.KICS)
 	}
-  
+
 	if scanmeta.IsIncremental {
 		resultMap["ScanType"] = "Incremental"
 	} else {

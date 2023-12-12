@@ -90,7 +90,6 @@ func TestCreateJSONReport(t *testing.T) {
 		}
 	}
 
-
 	lowPerQuery = map[string]map[string]int{}
 	submap = map[string]int{}
 	submap["Issues"] = 100
