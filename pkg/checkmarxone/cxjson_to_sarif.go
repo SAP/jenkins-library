@@ -23,11 +23,6 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
 
-	/*queries, err := sys.GetQueries()
-	if err != nil {
-		return sarif, errors.Wrap(err, "Failed to retrieve list of queries")
-	}*/
-
 	baseURL := serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID
 
 	cweIdsForTaxonomies := make(map[int]int) //use a map to avoid duplicates
@@ -40,11 +35,6 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	log.Entry().Debug("[SARIF] Now handling results.")
 
 	for _, r := range *scanResults {
-		/*query := getQuery(queries, r.Data.QueryID)
-		if query == nil {
-			return sarif, errors.New(fmt.Sprintf("Unknown queryid in results: %d", r.Data.QueryID))
-		}*/
-
 		_, haskey := cweIdsForTaxonomies[r.VulnerabilityDetails.CweId]
 
 		if !haskey {
