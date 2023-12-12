@@ -28,7 +28,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		return sarif, errors.Wrap(err, "Failed to retrieve list of queries")
 	}*/
 
-	baseURL := "https://" + serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID
+	baseURL := serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID
 
 	cweIdsForTaxonomies := make(map[int]int) //use a map to avoid duplicates
 	cweCounter := 0
