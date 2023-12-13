@@ -55,21 +55,14 @@ type codeqlExecuteScanInflux struct {
 	}
 	codeql_data struct {
 		fields struct {
-			projectID         int64
-			projectName       string
-			projectVersion    string
-			projectVersionID  int64
-			violations        int
-			corporateTotal    int
-			corporateAudited  int
-			auditAllTotal     int
-			auditAllAudited   int
-			spotChecksTotal   int
-			spotChecksAudited int
-			spotChecksGap     int
-			suspicious        int
-			exploitable       int
-			suppressed        int
+			repositoryURL          string
+			repositoryReferenceURL string
+			codeScanningLink       string
+			querySuite             string
+			optionalTotal          int
+			optionalAudited        int
+			auditAllTotal          int
+			auditAllAudited        int
 		}
 		tags struct {
 		}
@@ -84,21 +77,14 @@ func (i *codeqlExecuteScanInflux) persist(path, resourceName string) {
 		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "codeql", value: i.step_data.fields.codeql},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "projectID", value: i.codeql_data.fields.projectID},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "projectName", value: i.codeql_data.fields.projectName},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "projectVersion", value: i.codeql_data.fields.projectVersion},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "projectVersionId", value: i.codeql_data.fields.projectVersionID},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "violations", value: i.codeql_data.fields.violations},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "corporateTotal", value: i.codeql_data.fields.corporateTotal},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "corporateAudited", value: i.codeql_data.fields.corporateAudited},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "repositoryUrl", value: i.codeql_data.fields.repositoryURL},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "repositoryReferenceUrl", value: i.codeql_data.fields.repositoryReferenceURL},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "codeScanningLink", value: i.codeql_data.fields.codeScanningLink},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "querySuite", value: i.codeql_data.fields.querySuite},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "optionalTotal", value: i.codeql_data.fields.optionalTotal},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "optionalAudited", value: i.codeql_data.fields.optionalAudited},
 		{valType: config.InfluxField, measurement: "codeql_data", name: "auditAllTotal", value: i.codeql_data.fields.auditAllTotal},
 		{valType: config.InfluxField, measurement: "codeql_data", name: "auditAllAudited", value: i.codeql_data.fields.auditAllAudited},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "spotChecksTotal", value: i.codeql_data.fields.spotChecksTotal},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "spotChecksAudited", value: i.codeql_data.fields.spotChecksAudited},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "spotChecksGap", value: i.codeql_data.fields.spotChecksGap},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "suspicious", value: i.codeql_data.fields.suspicious},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "exploitable", value: i.codeql_data.fields.exploitable},
-		{valType: config.InfluxField, measurement: "codeql_data", name: "suppressed", value: i.codeql_data.fields.suppressed},
 	}
 
 	errCount := 0
@@ -531,7 +517,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"name": "step_data", "fields": []map[string]string{{"name": "codeql"}}},
-							{"name": "codeql_data", "fields": []map[string]string{{"name": "projectID"}, {"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+							{"name": "codeql_data", "fields": []map[string]string{{"name": "repositoryUrl"}, {"name": "repositoryReferenceUrl"}, {"name": "codeScanningLink"}, {"name": "querySuite"}, {"name": "optionalTotal"}, {"name": "optionalAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}}},
 						},
 					},
 					{

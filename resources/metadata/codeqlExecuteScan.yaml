@@ -221,33 +221,17 @@ spec:
                 type: bool
           - name: codeql_data
             fields:
-              - name: projectID
-                type: int64
-              - name: projectName
-              - name: projectVersion
-              - name: projectVersionId
-                type: int64
-              - name: violations
+              - name: repositoryUrl
+              - name: repositoryReferenceUrl
+              - name: codeScanningLink
+              - name: querySuite
+              - name: optionalTotal
                 type: int
-              - name: corporateTotal
-                type: int
-              - name: corporateAudited
+              - name: optionalAudited
                 type: int
               - name: auditAllTotal
                 type: int
               - name: auditAllAudited
-                type: int
-              - name: spotChecksTotal
-                type: int
-              - name: spotChecksAudited
-                type: int
-              - name: spotChecksGap
-                type: int
-              - name: suspicious
-                type: int
-              - name: exploitable
-                type: int
-              - name: suppressed
                 type: int
       - name: reports
         type: reports

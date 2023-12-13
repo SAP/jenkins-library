@@ -334,6 +334,11 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	repoReference, err := codeql.BuildRepoReference(repoUrl, repoInfo.Ref)
 	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
 
+	influx.codeql_data.fields.repositoryURL = repoUrl
+	influx.codeql_data.fields.repositoryReferenceURL = repoReference
+	influx.codeql_data.fields.codeScanningLink = repoCodeqlScanUrl
+	influx.codeql_data.fields.querySuite = config.QuerySuite
+
 	if len(config.TargetGithubRepoURL) > 0 {
 		hasToken, token := getToken(config)
 		if !hasToken {
@@ -369,7 +374,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		if err != nil {
 			return reports, err
 		}
-		log.Entry().Debugf("SARIF URL: %s", sarifUrl)
 		codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
 		err = waitSarifUploaded(config, &codeqlSarifUploader)
 		if err != nil {
@@ -381,6 +385,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
+		influx.codeql_data.fields.auditAllTotal = scanResults[]
 
 		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, QuerySuite: config.QuerySuite, ScanResults: scanResults}
 		paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
