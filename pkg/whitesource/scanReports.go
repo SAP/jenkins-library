@@ -32,6 +32,10 @@ func (s *Scan) DownloadReports(options ReportOptions, utils scanUtils, sys white
 
 	var paths []piperutils.Path
 	for _, project := range s.scannedProjects {
+		if len(project.Token) == 0 {
+			log.Entry().Warnf("Skipping report download for project '%s' as no token was provided", project.Name)
+			continue
+		}
 		vulnPath, err := downloadVulnerabilityReport(options, project, utils, sys)
 		if err != nil {
 			return nil, err
