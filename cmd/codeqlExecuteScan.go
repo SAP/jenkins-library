@@ -392,7 +392,16 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
-		influx.codeql_data.fields.auditAllTotal = scanResults[]
+		for _, sr := range scanResults {
+			if sr.ClassificationName == codeql.AuditAll {
+				influx.codeql_data.fields.auditAllAudited = sr.Audited
+				influx.codeql_data.fields.auditAllTotal = sr.Total
+			}
+			if sr.ClassificationName == codeql.Optional {
+				influx.codeql_data.fields.optionalAudited = sr.Audited
+				influx.codeql_data.fields.optionalTotal = sr.Total
+			}
+		}
 
 		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, QuerySuite: config.QuerySuite, ScanResults: scanResults}
 		paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
