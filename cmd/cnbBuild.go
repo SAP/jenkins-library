@@ -32,7 +32,7 @@ import (
 const (
 	creatorPath        = "/cnb/lifecycle/creator"
 	platformPath       = "/tmp/platform"
-	platformAPIVersion = "0.11"
+	platformAPIVersion = "0.12"
 )
 
 type cnbBuildUtilsBundle struct {
@@ -583,8 +583,9 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
 	attr := &syscall.SysProcAttr{
 		Credential: &syscall.Credential{
-			Uid: uint32(uid),
-			Gid: uint32(gid),
+			Uid:         uint32(uid),
+			Gid:         uint32(gid),
+			NoSetGroups: true,
 		},
 	}
 

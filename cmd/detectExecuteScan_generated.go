@@ -425,7 +425,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "detect/serverUrl"}},
+						Aliases:     []config.Alias{{Name: "detect/serverUrl"}, {Name: "detectServerUrl"}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
