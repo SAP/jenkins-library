@@ -92,6 +92,10 @@ func (s *Scan) ScannedProjects() []Project {
 func (s *Scan) ScannedProjectNames() []string {
 	projectNames := []string{}
 	for _, project := range s.ScannedProjects() {
+		if len(project.Token) == 0 {
+			log.Entry().Warnf("Skipping adding project to the list '%s' as no token was provided", project.Name)
+			continue
+		}
 		projectNames = append(projectNames, project.Name)
 	}
 	// Sorting helps the list become stable across pipeline runs (and in the unit tests),

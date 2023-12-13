@@ -519,6 +519,10 @@ func checkPolicyViolations(ctx context.Context, config *ScanOptions, scan *ws.Sc
 	policyViolationCount := 0
 	allAlerts := []ws.Alert{}
 	for _, project := range scan.ScannedProjects() {
+		if len(project.Token) == 0 {
+			log.Entry().Warnf("Skipping policy check for project '%s' as no token was provided", project.Name)
+			continue
+		}
 		alerts, err := sys.GetProjectAlertsByType(project.Token, "REJECTED_BY_POLICY_RESOURCE")
 		if err != nil {
 			return piperutils.Path{}, fmt.Errorf("failed to retrieve project policy alerts from WhiteSource: %w", err)
@@ -646,6 +650,11 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 	} else {
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
+
+			if len(project.Token) == 0 {
+				log.Entry().Warnf("Skipping project aggragation for project '%s' as no token was provided", project.Name)
+				continue
+			}
 			vulCount, alerts, assessedAlerts, libraries, occurredErrors := collectVulnsAndLibsForProject(
 				config,
 				cvssSeverityLimit,
