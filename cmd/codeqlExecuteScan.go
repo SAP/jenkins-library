@@ -341,11 +341,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	repoReference, err := codeql.BuildRepoReference(repoUrl, repoInfo.Ref)
 	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
 
-	influx.codeql_data.fields.repositoryURL = repoUrl
-	influx.codeql_data.fields.repositoryReferenceURL = repoReference
-	influx.codeql_data.fields.codeScanningLink = repoCodeqlScanUrl
-	influx.codeql_data.fields.querySuite = config.QuerySuite
-
 	if len(config.TargetGithubRepoURL) > 0 {
 		hasToken, token := getToken(config)
 		if !hasToken {
@@ -369,6 +364,8 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		repoInfo.CommitId = targetCommitId
 	}
 
+	var scanResults []codeql.CodeqlFindings
+
 	if !config.UploadResults {
 		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
 	} else {
@@ -388,19 +385,9 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 
 		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo, token, []string{})
-		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
+		scanResults, err = codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
-		}
-		for _, sr := range scanResults {
-			if sr.ClassificationName == codeql.AuditAll {
-				influx.codeql_data.fields.auditAllAudited = sr.Audited
-				influx.codeql_data.fields.auditAllTotal = sr.Total
-			}
-			if sr.ClassificationName == codeql.Optional {
-				influx.codeql_data.fields.optionalAudited = sr.Audited
-				influx.codeql_data.fields.optionalTotal = sr.Total
-			}
 		}
 
 		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, QuerySuite: config.QuerySuite, ScanResults: scanResults}
@@ -421,6 +408,8 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 	}
 
+	addDataToInfluxDB(repoUrl, repoReference, repoCodeqlScanUrl, config.QuerySuite, scanResults, influx)
+
 	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, config.ModulePath)
 	if err != nil {
 		log.Entry().Warning("TR_CODEQL: Failed to create toolrecord file ...", err)
@@ -429,6 +418,24 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	return reports, nil
+}
+
+func addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) {
+	influx.codeql_data.fields.repositoryURL = repoUrl
+	influx.codeql_data.fields.repositoryReferenceURL = repoRef
+	influx.codeql_data.fields.codeScanningLink = repoScanUrl
+	influx.codeql_data.fields.querySuite = querySuite
+
+	for _, sr := range scanResults {
+		if sr.ClassificationName == codeql.AuditAll {
+			influx.codeql_data.fields.auditAllAudited = sr.Audited
+			influx.codeql_data.fields.auditAllTotal = sr.Total
+		}
+		if sr.ClassificationName == codeql.Optional {
+			influx.codeql_data.fields.optionalAudited = sr.Audited
+			influx.codeql_data.fields.optionalTotal = sr.Total
+		}
+	}
 }
 
 func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
