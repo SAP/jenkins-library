@@ -305,7 +305,6 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	log.Entry().Infof("Downloading Detect Script")
 
-	// ALBATROSS-199 - detect.sh might not be available on the first try
 	err := utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
 	if err != nil {
 		time.Sleep(time.Second * 5)
@@ -315,7 +314,7 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 		}
 	}
 
-	return err
+	return nil
 }
 
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem) ([]string, error) {
