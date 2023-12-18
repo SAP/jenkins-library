@@ -4,15 +4,14 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
-	"net/http"
-	"net/url"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 )
 
 // eventType
@@ -81,8 +80,8 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 		EventType:       eventType,
 		StepName:        stepName,
 		SiteID:          t.SiteID,
-		PipelineURLHash: t.getPipelineURLHash(), // http://server:port/jenkins/job/foo/
-		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
+		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
+		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
 	t.baseMetaData = baseMetaData
 }

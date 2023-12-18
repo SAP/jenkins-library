@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,7 +27,6 @@ type githubActionsConfigProvider struct {
 	runData     run
 	jobs        []job
 	jobsFetched bool
-	currentJob  job
 }
 
 type run struct {
@@ -111,7 +111,13 @@ func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 		wg.Go(func() error {
 			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, true)
 			if err != nil {
-				return errors.Wrap(err, "fetching job logs failed")
+				// GetWorkflowJobLogs returns "200 OK" as error when log download is successful.
+				// Therefore, ignore this error.
+				// GitHub API returns redirect URL instead of plain text logs. See:
+				// https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#download-job-logs-for-a-workflow-run
+				if err.Error() != "unexpected status code: 200 OK" {
+					return errors.Wrap(err, "fetching job logs failed")
+				}
 			}
 			defer resp.Body.Close()
 
@@ -185,18 +191,21 @@ func (g *githubActionsConfigProvider) GitReference() string {
 	return getEnv("GITHUB_REF", "n/a")
 }
 
-// BuildURL returns the builds URL. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
+// BuildURL returns the builds URL. The URL should point to the pipeline (not to the stage)
+// that is currently being executed. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
 func (g *githubActionsConfigProvider) BuildURL() string {
 	return g.RepoURL() + "/actions/runs/" + g.BuildID()
 }
 
-// JobURL returns the current job HTML URL (not API URL).
-// For example, https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321
+// JobURL returns the job URL. The URL should point to project’s pipelines.
+// For example, https://github.com/SAP/jenkins-library/actions/workflows/workflow-file-name.yaml
 func (g *githubActionsConfigProvider) JobURL() string {
-	// We need to query the GitHub API here because the environment variable GITHUB_JOB returns
-	// the name of the job, not a numeric ID (which we need to form the URL)
-	g.guessCurrentJob()
-	return g.currentJob.HtmlURL
+	fileName := workflowFileName()
+	if fileName == "" {
+		return ""
+	}
+
+	return g.RepoURL() + "/actions/workflows/" + fileName
 }
 
 // JobName returns the current workflow name. For example, "Piper workflow"
@@ -311,37 +320,6 @@ func convertJobs(jobs []*github.WorkflowJob) []job {
 	return result
 }
 
-func (g *githubActionsConfigProvider) guessCurrentJob() {
-	if g.client == nil {
-		log.Entry().Debug("ConfigProvider for GitHub Actions is not configured. Unable to fetch jobs")
-		return
-	}
-
-	// check if the current job has already been guessed
-	if g.currentJob.ID != 0 {
-		return
-	}
-
-	// fetch jobs if they haven't been fetched yet
-	if err := g.fetchJobs(); err != nil {
-		log.Entry().Errorf("failed to fetch jobs: %s", err)
-		g.jobs = []job{}
-		return
-	}
-
-	targetJobName := getEnv("GITHUB_JOB", "unknown")
-	log.Entry().Debugf("looking for job '%s' in jobs list: %v", targetJobName, g.jobs)
-	for _, j := range g.jobs {
-		// j.Name may be something like "piper / Init / Init"
-		// but GITHUB_JOB env may contain only "Init"
-		if strings.HasSuffix(j.Name, targetJobName) {
-			log.Entry().Debugf("current job id: %d", j.ID)
-			g.currentJob = j
-			return
-		}
-	}
-}
-
 func (g *githubActionsConfigProvider) runIdInt64() (int64, error) {
 	strRunId := g.BuildID()
 	runId, err := strconv.ParseInt(strRunId, 10, 64)
@@ -361,4 +339,16 @@ func getOwnerAndRepoNames() (string, string) {
 	}
 
 	return s[0], s[1]
+}
+
+func workflowFileName() string {
+	workflowRef := getEnv("GITHUB_WORKFLOW_REF", "")
+	re := regexp.MustCompile(`\.github/workflows/([a-zA-Z0-9_-]+\.(yml|yaml))`)
+	matches := re.FindStringSubmatch(workflowRef)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+
+	log.Entry().Debugf("unable to determine workflow file name from GITHUB_WORKFLOW_REF: %s", workflowRef)
+	return ""
 }
