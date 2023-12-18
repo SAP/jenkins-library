@@ -122,11 +122,12 @@ func TestApplyContextConditions(t *testing.T) {
 				},
 			}}},
 			conf: config.StepConfig{Config: map[string]interface{}{
-				"param1":                    "val1",
-				`container[param1=="val2"]`: map[string]interface{}{"dockerImage": "myTestImage:latest"},
+				"param1": "val1",
+				"val1":   map[string]interface{}{"dockerImage": "myTestImage:latest"},
 			}},
 			expected: map[string]interface{}{
 				"param1": "val1",
+				"val1":   map[string]interface{}{"dockerImage": "myTestImage:latest"},
 			},
 		},
 		{
@@ -145,8 +146,8 @@ func TestApplyContextConditions(t *testing.T) {
 				},
 			}}},
 			conf: config.StepConfig{Config: map[string]interface{}{
-				"param1":                    "val1",
-				`container[param1=="val1"]`: map[string]interface{}{"dockerImage": "myTestImage:latest"},
+				"param1": "val1",
+				"val1":   map[string]interface{}{"dockerImage": "myTestImage:latest"},
 			}},
 			expected: map[string]interface{}{
 				"param1":      "val1",
@@ -193,9 +194,9 @@ func TestApplyContextConditions(t *testing.T) {
 				},
 			}}},
 			conf: config.StepConfig{Config: map[string]interface{}{
-				"param1":                    "val1",
-				`container[param1=="val1"]`: map[string]interface{}{"dockerImage": "mySubTestImage:latest"},
-				"dockerImage":               "myTestImage:latest",
+				"param1":      "val1",
+				"val1":        map[string]interface{}{"dockerImage": "mySubTestImage:latest"},
+				"dockerImage": "myTestImage:latest",
 			}},
 			expected: map[string]interface{}{
 				"param1":      "val1",
@@ -226,6 +227,7 @@ func TestApplyContextConditions(t *testing.T) {
 				"dockerImage": "",
 			},
 		},
+		//ToDo: Sidecar behavior not properly working, expects sidecarImage, ... parameters and not dockerImage
 		{
 			name: "sidecar context condition met",
 			metadata: config.StepData{Spec: config.StepSpec{Sidecars: []config.Container{
@@ -242,8 +244,8 @@ func TestApplyContextConditions(t *testing.T) {
 				},
 			}}},
 			conf: config.StepConfig{Config: map[string]interface{}{
-				"param1":                  "val1",
-				`sidecar[param1=="val1"]`: map[string]interface{}{"dockerImage": "myTestImage:latest"},
+				"param1": "val1",
+				"val1":   map[string]interface{}{"dockerImage": "myTestImage:latest"},
 			}},
 			expected: map[string]interface{}{
 				"param1":      "val1",
