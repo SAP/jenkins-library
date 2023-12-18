@@ -52,6 +52,7 @@ func (api *SAP_COM_0948) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.maxRetries = 3
 	api.setSleepTimeConfig(1*time.Second, 120*time.Second)
 	api.retryAllowedErrorCodes = append(api.retryAllowedErrorCodes, "A4C_A2G/228")
+	api.retryAllowedErrorCodes = append(api.retryAllowedErrorCodes, "A4C_A2G/501")
 }
 
 func (api *SAP_COM_0948) getUUID() string {
