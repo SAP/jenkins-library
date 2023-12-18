@@ -295,10 +295,10 @@ func applyContextConditions(metadata config.StepData, stepConfig *config.StepCon
 	// consider conditions for context configuration
 
 	// containers
-	config.ApplyContainerConditions("container", metadata.Spec.Containers, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Containers, stepConfig)
 
 	// sidecars
-	config.ApplyContainerConditions("sidecar", metadata.Spec.Sidecars, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Sidecars, stepConfig)
 
 	// ToDo: remove all unnecessary sub maps?
 	// e.g. extract delete() from applyContainerConditions - loop over all stepConfig.Config[param.Value] and remove ...
