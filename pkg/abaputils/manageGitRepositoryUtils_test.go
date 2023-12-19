@@ -59,7 +59,7 @@ func TestPollEntity(t *testing.T) {
 			XCsrfToken: "MY_TOKEN",
 		}
 
-		swcManager := SoftwareComponentApiManager{Client: client}
+		swcManager := SoftwareComponentApiManager{Client: client, Force0510: true}
 		repo := Repository{Name: "testRepo1"}
 		api, _ := swcManager.GetAPI(con, repo)
 
@@ -91,7 +91,7 @@ func TestPollEntity(t *testing.T) {
 			XCsrfToken: "MY_TOKEN",
 		}
 
-		swcManager := SoftwareComponentApiManager{Client: client}
+		swcManager := SoftwareComponentApiManager{Client: client, Force0510: true}
 		repo := Repository{Name: "testRepo1"}
 		api, _ := swcManager.GetAPI(con, repo)
 
