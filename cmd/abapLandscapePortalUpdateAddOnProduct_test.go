@@ -510,7 +510,7 @@ func TestCancelUpdateAddOn(t *testing.T) {
 
 		servKey_temp.Url = mockedServer.URL
 
-		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when canceling addon update request with id %v", reqId)
+		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when canceling addon update request with id %v.", reqId)
 		err := cancelUpdateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId)
 
 		assert.Equal(t, expectedErr, err)
@@ -545,9 +545,10 @@ func TestRespondToUpdateAddOnFinalStatus(t *testing.T) {
 
 		servKey_temp.Url = mockedServer.URL
 
+		expectedErr := fmt.Errorf("AddOn update failed.")
 		err := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, status)
 
-		assert.Equal(t, nil, err)
+		assert.Equal(t, expectedErr, err)
 	})
 }
 
@@ -555,7 +556,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 	// declare variables
 	var systemId, reqId, reqStatus string
 	var getStatusReq http.Request
-	var err error
+	// var err error
 
 	// mock server for getLPAPIAccessToken to get LP API access token
 	json.Unmarshal([]byte(lPAPIServiceKey), &servKey)
@@ -672,7 +673,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, nil, err4)
 		assert.Equal(t, nil, err5)
 		assert.Equal(t, nil, err6)
-		assert.Equal(t, nil, err)
+		// assert.Equal(t, nil, err)
 	})
 
 	t.Run("Update AddOn request is aborted", func(t *testing.T) {
@@ -684,6 +685,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		err5 := keepPullingUntilFinalStatusReached(&reqStatus, finalStatus, mockedServer, mockedClientReq_temp)
 
 		// mock respond to abort update AddOn
+		expectedErr6 := fmt.Errorf("AddOn update is aborted.")
 		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
@@ -699,8 +701,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, nil, err3)
 		assert.Equal(t, nil, err4)
 		assert.Equal(t, nil, err5)
-		assert.Equal(t, nil, err6)
-		assert.Equal(t, nil, err)
+		assert.Equal(t, expectedErr6, err6)
 	})
 
 	t.Run("Failed to update AddOn", func(t *testing.T) {
@@ -726,6 +727,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 
 		servKey_temp.Url = mockedServer_cancelUpdateAddOn.URL
 
+		expectedErr6 := fmt.Errorf("AddOn update failed.")
 		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
@@ -741,8 +743,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, nil, err3)
 		assert.Equal(t, nil, err4)
 		assert.Equal(t, nil, err5)
-		assert.Equal(t, nil, err6)
-		assert.Equal(t, nil, err)
+		assert.Equal(t, expectedErr6, err6)
 	})
 
 	t.Run("Non-200 status code was returned", func(t *testing.T) {
@@ -783,7 +784,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, nil, err3)
 		assert.Equal(t, nil, err4)
 		assert.Equal(t, nil, err5)
-		assert.Equal(t, err6.Error(), "Failed to cancel addon update. Error: Unexpected response status 400 Bad Request received when canceling addon update request with id some-req-id")
+		assert.Equal(t, err6.Error(), "Failed to cancel addon update. Error: Unexpected response status 400 Bad Request received when canceling addon update request with id some-req-id.")
 	})
 
 	t.Run("Other error returned", func(t *testing.T) {

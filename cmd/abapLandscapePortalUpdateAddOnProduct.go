@@ -131,7 +131,7 @@ func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateA
 	respondToUpdateAddOnFinalStatusErr := respondToUpdateAddOnFinalStatus(config, client, clientAT, servKey, reqId, reqStatus)
 
 	if respondToUpdateAddOnFinalStatusErr != nil {
-		err = fmt.Errorf("Failed to respond to the final status %v of addon update. Error: %v", reqStatus, respondToUpdateAddOnFinalStatusErr)
+		err = fmt.Errorf("The final status of addon update is %v. Error: %v", reqStatus, respondToUpdateAddOnFinalStatusErr)
 		return err
 	}
 
@@ -451,7 +451,7 @@ func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, cli
 
 	// error case of response status code being non 204
 	if resp.StatusCode != http.StatusNoContent {
-		err := fmt.Errorf("Unexpected response status %v received when canceling addon update request with id %v", resp.Status, reqId)
+		err := fmt.Errorf("Unexpected response status %v received when canceling addon update request with id %v.", resp.Status, reqId)
 		return err
 	}
 
@@ -471,8 +471,14 @@ func respondToUpdateAddOnFinalStatus(config *abapLandscapePortalUpdateAddOnProdu
 			err := fmt.Errorf("Failed to cancel addon update. Error: %v", cancelUpdateAddOnErr)
 			return err
 		}
+
+		err := fmt.Errorf("AddOn update failed.")
+		return err
+
 	case StatusAborted:
 		fmt.Println("AddOn update is aborted.")
+		err := fmt.Errorf("AddOn update is aborted.")
+		return err
 	}
 
 	return nil
