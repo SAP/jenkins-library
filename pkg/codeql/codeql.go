@@ -49,6 +49,8 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 	page := 1
 	audited := 0
 	totalAlerts := 0
+	optionalAudited := 0
+	totalOptionalAlerts := 0
 
 	for page != 0 {
 		alertOptions := github.AlertListOptions{
@@ -72,13 +74,31 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 				continue
 			}
 
-			if *alert.State == auditStateDismissed {
-				audited += 1
-				totalAlerts += 1
+			isSecurityIssue := false
+			for _, tag := range alert.Rule.Tags {
+				if tag == "security" {
+					isSecurityIssue = true
+				}
 			}
 
-			if *alert.State == auditStateOpen {
-				totalAlerts += 1
+			if isSecurityIssue {
+				if *alert.State == auditStateDismissed {
+					audited += 1
+					totalAlerts += 1
+				}
+
+				if *alert.State == auditStateOpen {
+					totalAlerts += 1
+				}
+			} else {
+				if *alert.State == auditStateDismissed {
+					optionalAudited += 1
+					totalOptionalAlerts += 1
+				}
+
+				if *alert.State == auditStateOpen {
+					totalOptionalAlerts += 1
+				}
 			}
 		}
 	}
@@ -88,7 +108,12 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 		Total:              totalAlerts,
 		Audited:            audited,
 	}
-	codeqlScanning := []CodeqlFindings{auditAll}
+	optionalIssues := CodeqlFindings{
+		ClassificationName: "Optional",
+		Total:              totalOptionalAlerts,
+		Audited:            optionalAudited,
+	}
+	codeqlScanning := []CodeqlFindings{auditAll, optionalIssues}
 
 	return codeqlScanning, nil
 }

@@ -202,6 +202,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
 	rootCmd.AddCommand(AscAppUploadCommand())
 	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
+	rootCmd.AddCommand(ImagePushToRegistryCommand())
 
 	addRootFlags(rootCmd)
 

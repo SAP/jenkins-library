@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,7 +12,9 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -22,20 +25,26 @@ type codeqlExecuteScanUtils interface {
 	command.ExecRunner
 
 	piperutils.FileUtils
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type codeqlExecuteScanUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	*piperhttp.Client
 }
 
-const sarifUploadComplete = "complete"
-const sarifUploadFailed = "failed"
+const (
+	sarifUploadComplete = "complete"
+	sarifUploadFailed   = "failed"
+)
 
 func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	utils := codeqlExecuteScanUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
 	}
 
 	utils.Stdout(log.Writer())
@@ -280,9 +289,10 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 
-	//codeql has an autobuilder which tries to build the project based on specified programming language
 	if len(config.BuildCommand) > 0 {
-		cmd = append(cmd, "--command="+config.BuildCommand)
+		buildCmd := config.BuildCommand
+		buildCmd = buildCmd + getMavenSettings(config, utils)
+		cmd = append(cmd, "--command="+buildCmd)
 	}
 
 	err = execute(utils, cmd, GeneralConfig.Verbose)
@@ -410,6 +420,21 @@ func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
 	}
 	if len(config.Ram) > 0 {
 		params = append(params, "--ram="+config.Ram)
+	}
+	return params
+}
+
+func getMavenSettings(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
+	params := ""
+	if len(config.BuildCommand) > 0 && config.BuildTool == "maven" && !strings.Contains(config.BuildCommand, "--global-settings") && !strings.Contains(config.BuildCommand, "--settings") {
+		mvnParams, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
+		if err != nil {
+			log.Entry().Error("failed to download and get maven parameters: ", err)
+			return params
+		}
+		for i := 1; i < len(mvnParams); i += 2 {
+			params = fmt.Sprintf("%s %s=%s", params, mvnParams[i-1], mvnParams[i])
+		}
 	}
 	return params
 }
