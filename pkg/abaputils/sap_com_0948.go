@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -17,34 +16,38 @@ import (
 	"k8s.io/utils/strings/slices"
 )
 
-type SAP_COM_0510 struct {
-	con                    ConnectionDetailsHTTP
-	client                 piperhttp.Sender
-	repository             Repository
-	path                   string
-	cloneEntity            string
-	repositoryEntity       string
-	tagsEntity             string
-	checkoutAction         string
-	actionEntity           string
-	uuid                   string
-	failureMessage         string
-	maxRetries             int
-	retryBaseSleepUnit     time.Duration
-	retryMaxSleepTime      time.Duration
-	retryAllowedErrorCodes []string
+type SAP_COM_0948 struct {
+	con                     ConnectionDetailsHTTP
+	client                  piperhttp.Sender
+	repository              Repository
+	path                    string
+	cloneAction             string
+	pullAction              string
+	softwareComponentEntity string
+	branchEntity            string
+	tagsEntity              string
+	checkoutAction          string
+	actionsEntity           string
+	uuid                    string
+	failureMessage          string
+	maxRetries              int
+	retryBaseSleepUnit      time.Duration
+	retryMaxSleepTime       time.Duration
+	retryAllowedErrorCodes  []string
 }
 
-func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
+func (api *SAP_COM_0948) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
 	api.con = con
 	api.client = client
 	api.repository = repo
-	api.path = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY"
-	api.cloneEntity = "/Clones"
-	api.repositoryEntity = "/Repositories"
+	api.path = "/sap/opu/odata4/sap/a4c_mswc_api/srvd_a2x/sap/manage_software_components/0001"
+	api.checkoutAction = "/SAP__self.checkout_branch"
+	api.softwareComponentEntity = "/SoftwareComponents"
+	api.actionsEntity = "/Actions"
+	api.branchEntity = "/Branches"
+	api.cloneAction = "/SAP__self.clone"
+	api.pullAction = "/SAP__self.pull"
 	api.tagsEntity = "/Tags"
-	api.actionEntity = "/Pull"
-	api.checkoutAction = "/checkout_branch"
 	api.failureMessage = "The action of the Repository / Software Component " + api.repository.Name + " failed"
 	api.maxRetries = 3
 	api.setSleepTimeConfig(1*time.Second, 120*time.Second)
@@ -52,11 +55,11 @@ func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.retryAllowedErrorCodes = append(api.retryAllowedErrorCodes, "A4C_A2G/501")
 }
 
-func (api *SAP_COM_0510) getUUID() string {
+func (api *SAP_COM_0948) getUUID() string {
 	return api.uuid
 }
 
-func (api *SAP_COM_0510) CreateTag(tag Tag) error {
+func (api *SAP_COM_0948) CreateTag(tag Tag) error {
 
 	if reflect.DeepEqual(Tag{}, tag) {
 		return errors.New("No Tag provided")
@@ -73,34 +76,32 @@ func (api *SAP_COM_0510) CreateTag(tag Tag) error {
 	return api.triggerRequest(con, jsonBody)
 }
 
-func (api *SAP_COM_0510) CheckoutBranch() error {
+func (api *SAP_COM_0948) CheckoutBranch() error {
 
 	if api.repository.Name == "" || api.repository.Branch == "" {
 		return fmt.Errorf("Failed to trigger checkout: %w", errors.New("Repository and/or Branch Configuration is empty. Please make sure that you have specified the correct values"))
 	}
 
-	// the request looks like: POST/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/checkout_branch?branch_name='newBranch'&sc_name=/DMO/GIT_REPOSITORY'
 	checkoutConnectionDetails := api.con
-	checkoutConnectionDetails.URL = api.con.URL + api.path + api.checkoutAction + `?branch_name='` + api.repository.Branch + `'&sc_name='` + api.repository.Name + `'`
-	jsonBody := []byte(``)
+	checkoutConnectionDetails.URL = api.con.URL + api.path + api.branchEntity + api.getRepoNameForPath() + api.getBranchNameForPath() + api.checkoutAction
+	jsonBody := []byte(`{
+		"import_mode" : "",
+		"execution_mode": ""
+		}`)
 
 	return api.triggerRequest(checkoutConnectionDetails, jsonBody)
 }
 
-func (api *SAP_COM_0510) parseActionResponse(resp *http.Response, err error) (ActionEntity, error) {
+func (api *SAP_COM_0948) parseActionResponse(resp *http.Response, err error) (ActionEntity, error) {
+
 	var body ActionEntity
-	var abapResp map[string]*json.RawMessage
 	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
 		return ActionEntity{}, err
 	}
-	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
+	if err := json.Unmarshal(bodyText, &body); err != nil {
 		return ActionEntity{}, err
 	}
-	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return ActionEntity{}, err
-	}
-
 	if reflect.DeepEqual(ActionEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", api.repository.Branch).Error("Could not switch to specified branch")
 		err := errors.New("Request to ABAP System not successful")
@@ -109,7 +110,7 @@ func (api *SAP_COM_0510) parseActionResponse(resp *http.Response, err error) (Ac
 	return body, nil
 }
 
-func (api *SAP_COM_0510) Pull() error {
+func (api *SAP_COM_0948) Pull() error {
 
 	// Trigger the Pull of a Repository
 	if api.repository.Name == "" {
@@ -117,16 +118,16 @@ func (api *SAP_COM_0510) Pull() error {
 	}
 
 	pullConnectionDetails := api.con
-	pullConnectionDetails.URL = api.con.URL + api.path + api.actionEntity
+	pullConnectionDetails.URL = api.con.URL + api.path + api.softwareComponentEntity + api.getRepoNameForPath() + api.pullAction
 
-	jsonBody := []byte(api.repository.GetPullRequestBody())
+	jsonBody := []byte(api.repository.GetPullActionRequestBody())
 	return api.triggerRequest(pullConnectionDetails, jsonBody)
 }
 
-func (api *SAP_COM_0510) GetLogProtocol(logOverviewEntry LogResultsV2, page int) (result []LogProtocol, count int, err error) {
+func (api *SAP_COM_0948) GetLogProtocol(logOverviewEntry LogResultsV2, page int) (result []LogProtocol, count int, err error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = logOverviewEntry.ToLogProtocol.Deferred.URI + api.getLogProtocolQuery(page)
+	connectionDetails.URL = api.con.URL + api.path + api.actionsEntity + "/" + api.getUUID() + "/_Log_Overview" + "/" + fmt.Sprint(logOverviewEntry.Index) + "/_Log_Protocol" + api.getLogProtocolQuery(page)
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -136,31 +137,21 @@ func (api *SAP_COM_0510) GetLogProtocol(logOverviewEntry LogResultsV2, page int)
 	defer resp.Body.Close()
 
 	// Parse response
-	var body LogProtocolResults
-	var abapResp map[string]*json.RawMessage
+	var body LogProtocolResultsV4
 	bodyText, _ := io.ReadAll(resp.Body)
 
-	marshallError := json.Unmarshal(bodyText, &abapResp)
-	if marshallError != nil {
-		return nil, 0, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-	marshallError = json.Unmarshal(*abapResp["d"], &body)
+	marshallError := json.Unmarshal(bodyText, &body)
 	if marshallError != nil {
 		return nil, 0, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
 	}
 
-	count, errConv := strconv.Atoi(body.Count)
-	if errConv != nil {
-		return nil, 0, errors.Wrap(errConv, "Could not parse response from the ABAP Environment system")
-	}
-
-	return body.Results, count, nil
+	return body.Results, body.Count, nil
 }
 
-func (api *SAP_COM_0510) GetLogOverview() (result []LogResultsV2, err error) {
+func (api *SAP_COM_0948) GetLogOverview() (result []LogResultsV2, err error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = api.con.URL + api.path + api.actionEntity + "(uuid=guid'" + api.getUUID() + "')" + "?$expand=to_Log_Overview"
+	connectionDetails.URL = api.con.URL + api.path + api.actionsEntity + "/" + api.getUUID() + "/_Log_Overview"
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -170,7 +161,6 @@ func (api *SAP_COM_0510) GetLogOverview() (result []LogResultsV2, err error) {
 	defer resp.Body.Close()
 
 	// Parse response
-	var body ActionEntity
 	var abapResp map[string]*json.RawMessage
 	bodyText, _ := io.ReadAll(resp.Body)
 
@@ -178,28 +168,25 @@ func (api *SAP_COM_0510) GetLogOverview() (result []LogResultsV2, err error) {
 	if marshallError != nil {
 		return nil, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
 	}
-	marshallError = json.Unmarshal(*abapResp["d"], &body)
+	marshallError = json.Unmarshal(*abapResp["value"], &result)
 	if marshallError != nil {
 		return nil, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
 	}
 
-	if reflect.DeepEqual(ActionEntity{}, body) {
+	if reflect.DeepEqual(LogResultsV2{}, result) {
 		log.Entry().WithField("StatusCode", resp.Status).Error(api.failureMessage)
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		var err = errors.New("Request to ABAP System not successful")
 		return nil, err
 	}
-
-	abapStatusCode := body.Status
-	log.Entry().Info("Status: " + abapStatusCode + " - " + body.StatusDescription)
-	return body.ToLogOverview.Results, nil
+	return result, nil
 
 }
 
-func (api *SAP_COM_0510) GetAction() (string, error) {
+func (api *SAP_COM_0948) GetAction() (string, error) {
 
 	connectionDetails := api.con
-	connectionDetails.URL = api.con.URL + api.path + api.actionEntity + "(uuid=guid'" + api.getUUID() + "')"
+	connectionDetails.URL = api.con.URL + api.path + api.actionsEntity + "/" + api.getUUID()
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -221,14 +208,14 @@ func (api *SAP_COM_0510) GetAction() (string, error) {
 	return abapStatusCode, nil
 }
 
-func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
+func (api *SAP_COM_0948) GetRepository() (bool, string, error) {
 
 	if api.repository.Name == "" {
 		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
 
 	swcConnectionDetails := api.con
-	swcConnectionDetails.URL = api.con.URL + api.path + api.repositoryEntity + "('" + strings.Replace(api.repository.Name, "/", "%2F", -1) + "')"
+	swcConnectionDetails.URL = api.con.URL + api.path + api.softwareComponentEntity + api.getRepoNameForPath()
 	resp, err := GetHTTPResponse("GET", swcConnectionDetails, nil, api.client)
 	if err != nil {
 		_, errRepo := HandleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
@@ -237,16 +224,12 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 	defer resp.Body.Close()
 
 	var body RepositoryEntity
-	var abapResp map[string]*json.RawMessage
 	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
 		return false, "", err
 	}
 
-	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return false, "", err
-	}
-	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
+	if err := json.Unmarshal(bodyText, &body); err != nil {
 		return false, "", err
 	}
 	if reflect.DeepEqual(RepositoryEntity{}, body) {
@@ -262,7 +245,7 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 
 }
 
-func (api *SAP_COM_0510) Clone() error {
+func (api *SAP_COM_0948) Clone() error {
 
 	// Trigger the Clone of a Repository
 	if api.repository.Name == "" {
@@ -270,14 +253,14 @@ func (api *SAP_COM_0510) Clone() error {
 	}
 
 	cloneConnectionDetails := api.con
-	cloneConnectionDetails.URL = api.con.URL + api.path + api.cloneEntity
+	cloneConnectionDetails.URL = api.con.URL + api.path + api.softwareComponentEntity + api.getRepoNameForPath() + api.cloneAction
 	body := []byte(api.repository.GetCloneRequestBody())
 
 	return api.triggerRequest(cloneConnectionDetails, body)
 
 }
 
-func (api *SAP_COM_0510) triggerRequest(cloneConnectionDetails ConnectionDetailsHTTP, jsonBody []byte) error {
+func (api *SAP_COM_0948) triggerRequest(cloneConnectionDetails ConnectionDetailsHTTP, jsonBody []byte) error {
 	var err error
 	var body ActionEntity
 	var resp *http.Response
@@ -314,7 +297,7 @@ func (api *SAP_COM_0510) triggerRequest(cloneConnectionDetails ConnectionDetails
 }
 
 // initialRequest implements SoftwareComponentApiInterface.
-func (api *SAP_COM_0510) initialRequest() error {
+func (api *SAP_COM_0948) initialRequest() error {
 	// Configuring the HTTP Client and CookieJar
 	cookieJar, errorCookieJar := cookiejar.New(nil)
 	if errorCookieJar != nil {
@@ -346,7 +329,7 @@ func (api *SAP_COM_0510) initialRequest() error {
 }
 
 // getSleepTime Should return the Fibonacci numbers in the define time unit up to the defined maximum duration
-func (api *SAP_COM_0510) getSleepTime(n int) (time.Duration, error) {
+func (api *SAP_COM_0948) getSleepTime(n int) (time.Duration, error) {
 
 	if n == 0 {
 		return 0, nil
@@ -372,14 +355,22 @@ func (api *SAP_COM_0510) getSleepTime(n int) (time.Duration, error) {
 }
 
 // setSleepTimeConfig sets the time unit (seconds, nanoseconds) and the maximum sleep duration
-func (api *SAP_COM_0510) setSleepTimeConfig(timeUnit time.Duration, maxSleepTime time.Duration) {
+func (api *SAP_COM_0948) setSleepTimeConfig(timeUnit time.Duration, maxSleepTime time.Duration) {
 	api.retryBaseSleepUnit = timeUnit
 	api.retryMaxSleepTime = maxSleepTime
 }
 
-func (api *SAP_COM_0510) getLogProtocolQuery(page int) string {
+func (api *SAP_COM_0948) getRepoNameForPath() string {
+	return "/" + strings.ReplaceAll(api.repository.Name, "/", "%2F")
+}
+
+func (api *SAP_COM_0948) getBranchNameForPath() string {
+	return "/" + api.repository.Branch
+}
+
+func (api *SAP_COM_0948) getLogProtocolQuery(page int) string {
 	skip := page * numberOfEntriesPerPage
 	top := numberOfEntriesPerPage
 
-	return fmt.Sprintf("?$skip=%s&$top=%s&$inlinecount=allpages", fmt.Sprint(skip), fmt.Sprint(top))
+	return fmt.Sprintf("?$skip=%s&$top=%s&$count=true", fmt.Sprint(skip), fmt.Sprint(top))
 }

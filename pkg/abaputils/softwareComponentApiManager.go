@@ -1,9 +1,11 @@
 package abaputils
 
 import (
+	"errors"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type SoftwareComponentApiManagerInterface interface {
@@ -14,16 +16,34 @@ type SoftwareComponentApiManagerInterface interface {
 type SoftwareComponentApiManager struct {
 	Client        piperhttp.Sender
 	PollIntervall time.Duration
+	Force0510     bool
 }
 
 func (manager *SoftwareComponentApiManager) GetAPI(con ConnectionDetailsHTTP, repo Repository) (SoftwareComponentApiInterface, error) {
+
+	var err0948 error
+	if !manager.Force0510 {
+		// Initialize SAP_COM_0948, if it does not work, use SAP_COM_0510
+		sap_com_0948 := SAP_COM_0948{}
+		sap_com_0948.init(con, manager.Client, repo)
+		err0948 = sap_com_0948.initialRequest()
+		if err0948 == nil {
+			return &sap_com_0948, nil
+		}
+	}
+
 	sap_com_0510 := SAP_COM_0510{}
 	sap_com_0510.init(con, manager.Client, repo)
+	err0510 := sap_com_0510.initialRequest()
+	if err0510 == nil {
+		log.Entry().Infof("SAP_COM_0510 will be replaced by SAP_COM_0948 starting from the SAP BTP, ABAP environment release 2402.")
+		return &sap_com_0510, nil
+	}
 
-	// Initialize all APIs, use the one that returns a response
-	// Currently SAP_COM_0510, later SAP_COM_0948
-	err := sap_com_0510.initialRequest()
-	return &sap_com_0510, err
+	log.Entry().Errorf("Could not connect via SAP_COM_0948: %s", err0948)
+	log.Entry().Errorf("Could not connect via SAP_COM_0510: %s", err0510)
+
+	return nil, errors.New("Could not initialize API")
 }
 
 func (manager *SoftwareComponentApiManager) GetPollIntervall() time.Duration {
@@ -44,8 +64,8 @@ type SoftwareComponentApiInterface interface {
 	CheckoutBranch() error
 	GetRepository() (bool, string, error)
 	GetAction() (string, error)
-	GetLogOverview() (ActionEntity, error)
-	GetLogProtocol(LogResultsV2, int) (body LogProtocolResults, err error)
+	GetLogOverview() ([]LogResultsV2, error)
+	GetLogProtocol(LogResultsV2, int) (result []LogProtocol, count int, err error)
 	CreateTag(tag Tag) error
 }
 
@@ -57,7 +77,7 @@ type SoftwareComponentApiInterface interface {
 type ActionEntity struct {
 	Metadata          AbapMetadata `json:"__metadata"`
 	UUID              string       `json:"uuid"`
-	Namespace         string       `json:"namepsace"`
+	Namespace         string       `json:"namespace"`
 	ScName            string       `json:"sc_name"`
 	ImportType        string       `json:"import_type"`
 	BranchName        string       `json:"branch_name"`
@@ -141,13 +161,18 @@ type LogProtocolResults struct {
 	Count   string        `json:"__count"`
 }
 
+type LogProtocolResultsV4 struct {
+	Results []LogProtocol `json:"value"`
+	Count   int           `json:"@odata.count"`
+}
+
 type LogProtocol struct {
-	Metadata      AbapMetadata `json:"__metadata"`
-	OverviewIndex int          `json:"log_index"`
-	ProtocolLine  int          `json:"index_no"`
-	Type          string       `json:"type"`
-	Description   string       `json:"descr"`
-	Timestamp     string       `json:"timestamp"`
+	// Metadata      AbapMetadata `json:"__metadata"`
+	OverviewIndex int    `json:"log_index"`
+	ProtocolLine  int    `json:"index_no"`
+	Type          string `json:"type"`
+	Description   string `json:"descr"`
+	Timestamp     string `json:"timestamp"`
 }
 
 // LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
