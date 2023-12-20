@@ -204,7 +204,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -425,7 +425,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "detect/serverUrl"}},
+						Aliases:     []config.Alias{{Name: "detect/serverUrl"}, {Name: "detectServerUrl"}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
