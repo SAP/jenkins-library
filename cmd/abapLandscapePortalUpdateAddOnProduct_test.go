@@ -75,7 +75,7 @@ func parseRawURL(rawURL string) *url.URL {
 	return parsedURL
 }
 
-// // this function is used to encode request body from struct to io.ReadCloser
+// this function is used to encode request body from struct to io.ReadCloser
 func encodeReqBody[T any](reqBody T, url string) *http.Request {
 	var reqBuff bytes.Buffer
 
@@ -556,7 +556,6 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 	// declare variables
 	var systemId, reqId, reqStatus string
 	var getStatusReq http.Request
-	// var err error
 
 	// mock server for getLPAPIAccessToken to get LP API access token
 	json.Unmarshal([]byte(lPAPIServiceKey), &servKey)
@@ -673,7 +672,6 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, nil, err4)
 		assert.Equal(t, nil, err5)
 		assert.Equal(t, nil, err6)
-		// assert.Equal(t, nil, err)
 	})
 
 	t.Run("Update AddOn request is aborted", func(t *testing.T) {
