@@ -131,7 +131,7 @@ func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateA
 	respondToUpdateAddOnFinalStatusErr := respondToUpdateAddOnFinalStatus(config, client, clientAT, servKey, reqId, reqStatus)
 
 	if respondToUpdateAddOnFinalStatusErr != nil {
-		err = fmt.Errorf("Failed to respond to the final status %v of addOn update request %v. Error: %v\n", reqStatus, reqId, respondToUpdateAddOnFinalStatusErr)
+		err = fmt.Errorf("The final status of addon update is %v. Error: %v", reqStatus, respondToUpdateAddOnFinalStatusErr)
 		return err
 	}
 
@@ -475,8 +475,14 @@ func respondToUpdateAddOnFinalStatus(config *abapLandscapePortalUpdateAddOnProdu
 			err := fmt.Errorf("Failed to cancel addOn update request %v. Error: %v\n", reqId, cancelUpdateAddOnErr)
 			return err
 		}
+
+		err := fmt.Errorf("AddOn update failed.")
+		return err
+
 	case StatusAborted:
-		fmt.Printf("AddOn update request %v is aborted.\n", reqId)
+		fmt.Println("AddOn update is aborted.")
+		err := fmt.Errorf("AddOn update is aborted.")
+		return err
 	}
 
 	return nil
