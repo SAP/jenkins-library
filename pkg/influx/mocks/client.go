@@ -298,3 +298,19 @@ func (_m *Client) WriteAPIBlocking(org string, bucket string) api.WriteAPIBlocki
 
 	return r0
 }
+
+// APIClient provides a mock function with given fields:
+func (_m *Client) APIClient() *domain.Client {
+	ret := _m.Called()
+
+	var r0 *domain.Client
+	if rf, ok := ret.Get(0).(func() *domain.Client); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Client)
+		}
+	}
+
+	return r0
+}
