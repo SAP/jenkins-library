@@ -175,44 +175,58 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 
 func resolveVaultTestCredentialsWrapper(config *StepConfig, client vaultClient) {
 	log.Entry().Infof("Resolving test credentials wrapper")
-	resolveVaultTestCredentialsWrapperBase(config, client, vaultTestCredentialPath, vaultTestCredentialKeys, resolveVaultTestCredentials)
+	resolveVaultTestCredentialsWrapperBase(config, client, vaultTestCredentialPath, vaultTestCredentialKeys, vaultTestCredentialEnvPrefix, resolveVaultTestCredentials)
 }
 
 func resolveVaultCredentialsWrapper(config *StepConfig, client vaultClient) {
 	log.Entry().Infof("Resolving credentials wrapper")
-	resolveVaultTestCredentialsWrapperBase(config, client, vaultCredentialPath, vaultCredentialKeys, resolveVaultCredentials)
+	resolveVaultTestCredentialsWrapperBase(config, client, vaultCredentialPath, vaultCredentialKeys, vaultCredentialEnvPrefix, resolveVaultCredentials)
 }
 
 func resolveVaultTestCredentialsWrapperBase(
 	config *StepConfig, client vaultClient,
-	vaultCredPath, vaultCredKeys string,
+	vaultCredPath, vaultCredKeys, vaultCredEnvPrefix string,
 	resolveVaultCredentials func(config *StepConfig, client vaultClient),
 ) {
 	switch config.Config[vaultCredPath].(type) {
 	case string:
 		resolveVaultCredentials(config, client)
 	case []interface{}:
-		vaultCredentialPathCopy := config.Config[vaultCredPath]
+		vaultCredentialPathCopy := config.Config[vaultCredPath].([]interface{})
 		vaultCredentialKeysCopy := config.Config[vaultCredKeys]
+		vaultCredentialEnvPrefixCopy := config.Config[vaultCredEnvPrefix]
 
 		if _, ok := vaultCredentialKeysCopy.([]interface{}); !ok {
 			log.Entry().Debugf("  failed, unknown type of keys")
 			return
 		}
 
-		if len(vaultCredentialKeysCopy.([]interface{})) != len(vaultCredentialPathCopy.([]interface{})) {
+		if len(vaultCredentialKeysCopy.([]interface{})) != len(vaultCredentialPathCopy) {
 			log.Entry().Debugf("  failed, not same count of values and keys")
 			return
 		}
 
-		for i := 0; i < len(vaultCredentialPathCopy.([]interface{})); i++ {
-			config.Config[vaultCredPath] = vaultCredentialPathCopy.([]interface{})[i]
+		setEnvPrefix := false
+		if envPrefixes, ok := vaultCredentialEnvPrefixCopy.([]interface{}); ok {
+			if len(envPrefixes) != len(vaultCredentialPathCopy) {
+				log.Entry().Debugf("  failed, not same count of values and environment prefixes")
+				return
+			}
+			setEnvPrefix = true
+		}
+
+		for i := 0; i < len(vaultCredentialPathCopy); i++ {
+			if setEnvPrefix {
+				config.Config[vaultCredEnvPrefix] = vaultCredentialEnvPrefixCopy.([]interface{})[i]
+			}
+			config.Config[vaultCredPath] = vaultCredentialPathCopy[i]
 			config.Config[vaultCredKeys] = vaultCredentialKeysCopy.([]interface{})[i]
 			resolveVaultCredentials(config, client)
 		}
 
 		config.Config[vaultCredPath] = vaultCredentialPathCopy
 		config.Config[vaultCredKeys] = vaultCredentialKeysCopy
+		config.Config[vaultCredEnvPrefix] = vaultCredentialEnvPrefixCopy
 	default:
 		log.Entry().Debugf("  failed, unknown type of path")
 		return
