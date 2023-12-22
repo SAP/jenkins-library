@@ -226,7 +226,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					"--context-sub-path", entry.ContextSubPath,
 					"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag),
 				)
-				if err = runKaniko(config.DockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+
+				dockerfilePath := config.DockerfilePath
+				if entry.DockerfilePath != "" {
+					dockerfilePath = entry.DockerfilePath
+				}
+
+				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", entry.ContainerImageName, config.DockerfilePath, err)
 				}
 
@@ -251,7 +257,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					"--context-sub-path", entry.ContextSubPath,
 					"--destination", entry.ContainerImage,
 				)
-				if err = runKaniko(config.DockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+
+				dockerfilePath := config.DockerfilePath
+				if entry.DockerfilePath != "" {
+					dockerfilePath = entry.DockerfilePath
+				}
+
+				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", containerImageName, config.DockerfilePath, err)
 				}
 
@@ -262,8 +274,11 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			}
 		}
 
+		// Docker image tags don't allow plus signs in tags, thus replacing with dash
+		containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+
 		// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
-		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, config.ContainerImageTag)
+		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 		commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 
@@ -405,6 +420,7 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 
 type multipleImageConf struct {
 	ContextSubPath     string `json:"contextSubPath,omitempty"`
+	DockerfilePath     string `json:"dockerfilePath,omitempty"`
 	ContainerImageName string `json:"containerImageName,omitempty"`
 	ContainerImageTag  string `json:"containerImageTag,omitempty"`
 	ContainerImage     string `json:"containerImage,omitempty"`

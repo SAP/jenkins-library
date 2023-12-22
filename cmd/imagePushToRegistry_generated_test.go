@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAbapEnvironmentUpdateAddOnProductCommand(t *testing.T) {
+func TestImagePushToRegistryCommand(t *testing.T) {
 	t.Parallel()
 
-	testCmd := AbapEnvironmentUpdateAddOnProductCommand()
+	testCmd := ImagePushToRegistryCommand()
 
 	// only high level testing performed - details are tested in step generation procedure
-	assert.Equal(t, "abapEnvironmentUpdateAddOnProduct", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "imagePushToRegistry", testCmd.Use, "command name incorrect")
 
 }

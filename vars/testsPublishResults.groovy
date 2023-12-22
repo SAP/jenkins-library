@@ -163,7 +163,8 @@ def publishJMeterReport(Map settings = [:]){
             nthBuildNumber: settings.get('nthBuildNumber'),
             configType: settings.get('configType'),
             failBuildIfNoResultFile: settings.get('failBuildIfNoResultFile'),
-            compareBuildPrevious: settings.get('compareBuildPrevious')
+            compareBuildPrevious: settings.get('compareBuildPrevious'),
+            filterRegex: settings.get('filterRegex')
         )
         archiveResults(settings.get('archive'), pattern, settings.get('allowEmptyResults'))
     }

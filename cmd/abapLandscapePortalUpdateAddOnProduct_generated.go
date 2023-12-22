@@ -15,28 +15,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type abapEnvironmentUpdateAddOnProductOptions struct {
+type abapLandscapePortalUpdateAddOnProductOptions struct {
 	LandscapePortalAPIServiceKey string `json:"landscapePortalAPIServiceKey,omitempty"`
 	AbapSystemNumber             string `json:"abapSystemNumber,omitempty"`
 	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty"`
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
-// AbapEnvironmentUpdateAddOnProductCommand Update the AddOn product in SAP BTP ABAP Environment system
-func AbapEnvironmentUpdateAddOnProductCommand() *cobra.Command {
-	const STEP_NAME = "abapEnvironmentUpdateAddOnProduct"
+// AbapLandscapePortalUpdateAddOnProductCommand Update the AddOn product in SAP BTP ABAP Environment system of Landscape Portal
+func AbapLandscapePortalUpdateAddOnProductCommand() *cobra.Command {
+	const STEP_NAME = "abapLandscapePortalUpdateAddOnProduct"
 
-	metadata := abapEnvironmentUpdateAddOnProductMetadata()
-	var stepConfig abapEnvironmentUpdateAddOnProductOptions
+	metadata := abapLandscapePortalUpdateAddOnProductMetadata()
+	var stepConfig abapLandscapePortalUpdateAddOnProductOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createAbapEnvironmentUpdateAddOnProductCmd = &cobra.Command{
+	var createAbapLandscapePortalUpdateAddOnProductCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Update the AddOn product in SAP BTP ABAP Environment system",
-		Long:  `This step describes the AddOn product update in SAP BTP ABAP Environment system`,
+		Short: "Update the AddOn product in SAP BTP ABAP Environment system of Landscape Portal",
+		Long:  `This step describes the AddOn product update in SAP BTP ABAP Environment system of Landscape Portal`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -111,18 +111,18 @@ func AbapEnvironmentUpdateAddOnProductCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			abapEnvironmentUpdateAddOnProduct(stepConfig, &stepTelemetryData)
+			abapLandscapePortalUpdateAddOnProduct(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAbapEnvironmentUpdateAddOnProductFlags(createAbapEnvironmentUpdateAddOnProductCmd, &stepConfig)
-	return createAbapEnvironmentUpdateAddOnProductCmd
+	addAbapLandscapePortalUpdateAddOnProductFlags(createAbapLandscapePortalUpdateAddOnProductCmd, &stepConfig)
+	return createAbapLandscapePortalUpdateAddOnProductCmd
 }
 
-func addAbapEnvironmentUpdateAddOnProductFlags(cmd *cobra.Command, stepConfig *abapEnvironmentUpdateAddOnProductOptions) {
-	cmd.Flags().StringVar(&stepConfig.LandscapePortalAPIServiceKey, "landscapePortalAPIServiceKey", os.Getenv("PIPER_landscapePortalAPIServiceKey"), "Service key JSON string to access the Landscape Portal API")
+func addAbapLandscapePortalUpdateAddOnProductFlags(cmd *cobra.Command, stepConfig *abapLandscapePortalUpdateAddOnProductOptions) {
+	cmd.Flags().StringVar(&stepConfig.LandscapePortalAPIServiceKey, "landscapePortalAPIServiceKey", os.Getenv("PIPER_landscapePortalAPIServiceKey"), "Service key JSON string to access the Landscape Portal Access API")
 	cmd.Flags().StringVar(&stepConfig.AbapSystemNumber, "abapSystemNumber", os.Getenv("PIPER_abapSystemNumber"), "System Number of the abap integration test system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `addon.yml`, "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
@@ -130,20 +130,21 @@ func addAbapEnvironmentUpdateAddOnProductFlags(cmd *cobra.Command, stepConfig *a
 	cmd.MarkFlagRequired("landscapePortalAPIServiceKey")
 	cmd.MarkFlagRequired("abapSystemNumber")
 	cmd.MarkFlagRequired("addonDescriptorFileName")
+	cmd.MarkFlagRequired("addonDescriptor")
 }
 
 // retrieve step metadata
-func abapEnvironmentUpdateAddOnProductMetadata() config.StepData {
+func abapLandscapePortalUpdateAddOnProductMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "abapEnvironmentUpdateAddOnProduct",
+			Name:        "abapLandscapePortalUpdateAddOnProduct",
 			Aliases:     []config.Alias{},
-			Description: "Update the AddOn product in SAP BTP ABAP Environment system",
+			Description: "Update the AddOn product in SAP BTP ABAP Environment system of Landscape Portal",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "landscapePortalAPICredentialsId", Description: "Jenkins secret text credential ID containing the service key to access the Landscape Portal API", Type: "jenkins"},
+					{Name: "landscapePortalAPICredentialsId", Description: "Jenkins secret text credential ID containing the service key to access the Landscape Portal Access API", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -189,7 +190,7 @@ func abapEnvironmentUpdateAddOnProductMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},

@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,11 +12,12 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/pkg/errors"
 )
 
@@ -23,28 +25,26 @@ type codeqlExecuteScanUtils interface {
 	command.ExecRunner
 
 	piperutils.FileUtils
-}
 
-type RepoInfo struct {
-	serverUrl string
-	repo      string
-	commitId  string
-	ref       string
-	owner     string
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type codeqlExecuteScanUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	*piperhttp.Client
 }
 
-const sarifUploadComplete = "complete"
-const sarifUploadFailed = "failed"
+const (
+	sarifUploadComplete = "complete"
+	sarifUploadFailed   = "failed"
+)
 
 func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	utils := codeqlExecuteScanUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
 	}
 
 	utils.Stdout(log.Writer())
@@ -97,7 +97,7 @@ func getLangFromBuildTool(buildTool string) string {
 	}
 }
 
-func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
+func getGitRepoInfo(repoUri string, repoInfo *codeql.RepoInfo) error {
 	if repoUri == "" {
 		return errors.New("repository param is not set or it cannot be auto populated")
 	}
@@ -106,50 +106,68 @@ func getGitRepoInfo(repoUri string, repoInfo *RepoInfo) error {
 	matches := pat.FindAllStringSubmatch(repoUri, -1)
 	if len(matches) > 0 {
 		match := matches[0]
-		repoInfo.serverUrl = "https://" + match[3]
+		repoInfo.ServerUrl = "https://" + match[3]
 		repoData := strings.Split(strings.TrimSuffix(match[4], ".git"), "/")
 		if len(repoData) != 2 {
 			return fmt.Errorf("Invalid repository %s", repoUri)
 		}
 
-		repoInfo.owner = repoData[0]
-		repoInfo.repo = repoData[1]
+		repoInfo.Owner = repoData[0]
+		repoInfo.Repo = repoData[1]
 		return nil
 	}
 
 	return fmt.Errorf("Invalid repository %s", repoUri)
 }
 
-func initGitInfo(config *codeqlExecuteScanOptions) RepoInfo {
-	var repoInfo RepoInfo
+func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
+	var repoInfo codeql.RepoInfo
 	err := getGitRepoInfo(config.Repository, &repoInfo)
 	if err != nil {
 		log.Entry().Error(err)
 	}
-	repoInfo.ref = config.AnalyzedRef
-	repoInfo.commitId = config.CommitID
+
+	repoInfo.Ref = config.AnalyzedRef
+	repoInfo.CommitId = config.CommitID
 
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil {
 		log.Entry().Warn("No orchestrator found. We assume piper is running locally.")
 	} else {
-		if repoInfo.ref == "" {
-			repoInfo.ref = provider.GetReference()
+		if repoInfo.Ref == "" {
+			repoInfo.Ref = provider.GetReference()
 		}
 
-		if repoInfo.commitId == "" || repoInfo.commitId == "NA" {
-			repoInfo.commitId = provider.GetCommit()
+		if repoInfo.CommitId == "" || repoInfo.CommitId == "NA" {
+			repoInfo.CommitId = provider.GetCommit()
 		}
 
-		if repoInfo.serverUrl == "" {
+		if repoInfo.ServerUrl == "" {
 			err = getGitRepoInfo(provider.GetRepoURL(), &repoInfo)
 			if err != nil {
 				log.Entry().Error(err)
 			}
 		}
 	}
+	if len(config.TargetGithubRepoURL) > 0 {
+		if strings.Contains(repoInfo.ServerUrl, "github") {
+			log.Entry().Errorf("TargetGithubRepoURL should not be set as the source repo is on github.")
+			return repoInfo, errors.New("TargetGithubRepoURL should not be set as the source repo is on github.")
+		}
+		err := getGitRepoInfo(config.TargetGithubRepoURL, &repoInfo)
+		if err != nil {
+			log.Entry().Error(err)
+			return repoInfo, err
+		}
+		if len(config.TargetGithubBranchName) > 0 {
+			repoInfo.Ref = config.TargetGithubBranchName
+			if len(strings.Split(config.TargetGithubBranchName, "/")) < 3 {
+				repoInfo.Ref = "refs/heads/" + config.TargetGithubBranchName
+			}
+		}
+	}
 
-	return repoInfo
+	return repoInfo, nil
 }
 
 func getToken(config *codeqlExecuteScanOptions) (bool, string) {
@@ -165,42 +183,50 @@ func getToken(config *codeqlExecuteScanOptions) (bool, string) {
 	return false, ""
 }
 
-func uploadResults(config *codeqlExecuteScanOptions, repoInfo RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
+func uploadResults(config *codeqlExecuteScanOptions, repoInfo codeql.RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
 	cmd := []string{"github", "upload-results", "--sarif=" + filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
 
 	if config.GithubToken != "" {
 		cmd = append(cmd, "-a="+token)
 	}
 
-	if repoInfo.commitId != "" {
-		cmd = append(cmd, "--commit="+repoInfo.commitId)
+	if repoInfo.CommitId != "" {
+		cmd = append(cmd, "--commit="+repoInfo.CommitId)
 	}
 
-	if repoInfo.serverUrl != "" {
-		cmd = append(cmd, "--github-url="+repoInfo.serverUrl)
+	if repoInfo.ServerUrl != "" {
+		cmd = append(cmd, "--github-url="+repoInfo.ServerUrl)
 	}
 
-	if repoInfo.repo != "" {
-		cmd = append(cmd, "--repository="+(repoInfo.owner+"/"+repoInfo.repo))
+	if repoInfo.Repo != "" {
+		cmd = append(cmd, "--repository="+(repoInfo.Owner+"/"+repoInfo.Repo))
 	}
 
-	if repoInfo.ref != "" {
-		cmd = append(cmd, "--ref="+repoInfo.ref)
+	if repoInfo.Ref != "" {
+		cmd = append(cmd, "--ref="+repoInfo.Ref)
 	}
 
-	//if no git pramas are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
+	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
 	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
 
-	var buffer bytes.Buffer
-	utils.Stdout(&buffer)
+	var bufferOut, bufferErr bytes.Buffer
+	utils.Stdout(&bufferOut)
+	defer utils.Stdout(log.Writer())
+	utils.Stderr(&bufferErr)
+	defer utils.Stderr(log.Writer())
+
 	err := execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
+		e := bufferErr.String()
+		log.Entry().Error(e)
+		if strings.Contains(e, "Unauthorized") {
+			log.Entry().Error("Either your Github Token is invalid or you use both Vault and Jenkins credentials where your Vault credentials are invalid, to use your Jenkins credentials try setting 'skipVault:true'")
+		}
 		log.Entry().Error("failed to upload sarif results")
 		return "", err
 	}
-	utils.Stdout(log.Writer())
 
-	url := buffer.String()
+	url := bufferOut.String()
 	return strings.TrimSpace(url), nil
 }
 
@@ -263,9 +289,10 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 
-	//codeql has an autobuilder which tries to build the project based on specified programming language
 	if len(config.BuildCommand) > 0 {
-		cmd = append(cmd, "--command="+config.BuildCommand)
+		buildCmd := config.BuildCommand
+		buildCmd = buildCmd + getMavenSettings(config, utils)
+		cmd = append(cmd, "--command="+buildCmd)
 	}
 
 	err = execute(utils, cmd, GeneralConfig.Verbose)
@@ -303,10 +330,36 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	reports = append(reports, piperutils.Path{Target: filepath.Join(config.ModulePath, "target", "codeqlReport.csv")})
 
-	repoInfo := initGitInfo(config)
-	repoUrl := fmt.Sprintf("%s/%s/%s", repoInfo.serverUrl, repoInfo.owner, repoInfo.repo)
-	repoReference, err := buildRepoReference(repoUrl, repoInfo.ref)
-	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref)
+	repoInfo, err := initGitInfo(config)
+	if err != nil {
+		return reports, err
+	}
+	repoUrl := fmt.Sprintf("%s/%s/%s", repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo)
+	repoReference, err := codeql.BuildRepoReference(repoUrl, repoInfo.Ref)
+	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
+
+	if len(config.TargetGithubRepoURL) > 0 {
+		hasToken, token := getToken(config)
+		if !hasToken {
+			return reports, errors.New("failed running upload db sources to GitHub as githubToken was not specified")
+		}
+		repoUploader, err := codeql.NewGitUploaderInstance(
+			token,
+			repoInfo.Ref,
+			config.Database,
+			repoInfo.CommitId,
+			config.Repository,
+			config.TargetGithubRepoURL,
+		)
+		if err != nil {
+			return reports, err
+		}
+		targetCommitId, err := repoUploader.UploadProjectToGithub()
+		if err != nil {
+			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
+		}
+		repoInfo.CommitId = targetCommitId
+	}
 
 	if !config.UploadResults {
 		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
@@ -326,8 +379,8 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.Wrap(err, "failed to upload sarif")
 		}
 
-		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.serverUrl, repoInfo.owner, repoInfo.repo, token, []string{})
-		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.ref)
+		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo, token, []string{})
+		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
@@ -343,14 +396,14 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			for _, scanResult := range scanResults {
 				unaudited := scanResult.Total - scanResult.Audited
 				if unaudited > config.VulnerabilityThresholdTotal {
-					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.ref, unaudited, config.VulnerabilityThresholdTotal)
+					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
 					return reports, errors.Errorf(msg)
 				}
 			}
 		}
 	}
 
-	toolRecordFileName, err := createAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
+	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, config.ModulePath)
 	if err != nil {
 		log.Entry().Warning("TR_CODEQL: Failed to create toolrecord file ...", err)
 	} else {
@@ -360,87 +413,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	return reports, nil
 }
 
-func createAndPersistToolRecord(utils codeqlExecuteScanUtils, repoInfo RepoInfo, repoReference string, repoUrl string, repoCodeqlScanUrl string) (string, error) {
-	toolRecord, err := createToolRecordCodeql(utils, repoInfo, repoReference, repoUrl, repoCodeqlScanUrl)
-	if err != nil {
-		return "", err
-	}
-
-	toolRecordFileName, err := persistToolRecord(toolRecord)
-	if err != nil {
-		return "", err
-	}
-
-	return toolRecordFileName, nil
-}
-
-func createToolRecordCodeql(utils codeqlExecuteScanUtils, repoInfo RepoInfo, repoUrl string, repoReference string, repoCodeqlScanUrl string) (*toolrecord.Toolrecord, error) {
-	record := toolrecord.New(utils, "./", "codeql", repoInfo.serverUrl)
-
-	if repoInfo.serverUrl == "" {
-		return record, errors.New("Repository not set")
-	}
-
-	if repoInfo.commitId == "" || repoInfo.commitId == "NA" {
-		return record, errors.New("CommitId not set")
-	}
-
-	if repoInfo.ref == "" {
-		return record, errors.New("Analyzed Reference not set")
-	}
-
-	record.DisplayName = fmt.Sprintf("%s %s - %s %s", repoInfo.owner, repoInfo.repo, repoInfo.ref, repoInfo.commitId)
-	record.DisplayURL = fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref)
-
-	err := record.AddKeyData("repository",
-		fmt.Sprintf("%s/%s", repoInfo.owner, repoInfo.repo),
-		fmt.Sprintf("%s %s", repoInfo.owner, repoInfo.repo),
-		repoUrl)
-	if err != nil {
-		return record, err
-	}
-
-	err = record.AddKeyData("repositoryReference",
-		repoInfo.ref,
-		fmt.Sprintf("%s - %s", repoInfo.repo, repoInfo.ref),
-		repoReference)
-	if err != nil {
-		return record, err
-	}
-
-	err = record.AddKeyData("scanResult",
-		fmt.Sprintf("%s/%s", repoInfo.ref, repoInfo.commitId),
-		fmt.Sprintf("%s %s - %s %s", repoInfo.owner, repoInfo.repo, repoInfo.ref, repoInfo.commitId),
-		fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.ref))
-	if err != nil {
-		return record, err
-	}
-
-	return record, nil
-}
-
-func buildRepoReference(repository, analyzedRef string) (string, error) {
-	ref := strings.Split(analyzedRef, "/")
-	if len(ref) < 3 {
-		return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
-	}
-	if strings.Contains(analyzedRef, "pull") {
-		if len(ref) < 4 {
-			return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
-		}
-		return fmt.Sprintf("%s/pull/%s", repository, ref[2]), nil
-	}
-	return fmt.Sprintf("%s/tree/%s", repository, ref[2]), nil
-}
-
-func persistToolRecord(toolRecord *toolrecord.Toolrecord) (string, error) {
-	err := toolRecord.Persist()
-	if err != nil {
-		return "", err
-	}
-	return toolRecord.GetFileName(), nil
-}
-
 func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
 	params := make([]string, 0, 2)
 	if len(config.Threads) > 0 {
@@ -448,6 +420,21 @@ func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
 	}
 	if len(config.Ram) > 0 {
 		params = append(params, "--ram="+config.Ram)
+	}
+	return params
+}
+
+func getMavenSettings(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
+	params := ""
+	if len(config.BuildCommand) > 0 && config.BuildTool == "maven" && !strings.Contains(config.BuildCommand, "--global-settings") && !strings.Contains(config.BuildCommand, "--settings") {
+		mvnParams, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
+		if err != nil {
+			log.Entry().Error("failed to download and get maven parameters: ", err)
+			return params
+		}
+		for i := 1; i < len(mvnParams); i += 2 {
+			params = fmt.Sprintf("%s %s=%s", params, mvnParams[i-1], mvnParams[i])
+		}
 	}
 	return params
 }

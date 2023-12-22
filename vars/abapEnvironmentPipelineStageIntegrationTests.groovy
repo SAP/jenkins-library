@@ -41,7 +41,9 @@ void call(Map parameters = [:]) {
     } else {
         piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
             try {
-                abapEnvironmentUpdateAddOnProduct(script: parameters.script)
+                echo "Executing Landscape Portal Deploy Stage"
+                abapLandscapePortalUpdateAddOnProduct(script: parameters.script)
+                // abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
             } catch (Exception e) {
                 echo "Deployment test of add-on product failed."
                 throw e
@@ -49,11 +51,7 @@ void call(Map parameters = [:]) {
                 if (config.confirmDeletion) {
                     input message: "Deployment test has been executed. Once you proceed, the test system will be deleted."
                 }
-                if (!config.debug) {
-                    cloudFoundryDeleteService script: parameters.script
-                }
             }
         }
     }
-
 }

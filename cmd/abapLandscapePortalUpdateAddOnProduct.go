@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -68,18 +68,18 @@ type updateAddOnResp struct {
 	SystemId  string `json:"systemId"`
 }
 
-func abapEnvironmentUpdateAddOnProduct(config abapEnvironmentUpdateAddOnProductOptions, telemetryData *telemetry.CustomData) {
+func abapLandscapePortalUpdateAddOnProduct(config abapLandscapePortalUpdateAddOnProductOptions, telemetryData *telemetry.CustomData) {
 	// define a http client
 	client := http.Client{}
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runAbapEnvironmentUpdateAddOnProduct(&config, client)
+	err := runAbapLandscapePortalUpdateAddOnProduct(&config, client)
 	if err != nil {
-		log.Fatal("step execution failed")
+		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentUpdateAddOnProduct(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client) error {
+func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client) error {
 	// declare variables
 	var systemId, reqId, reqStatus string
 	var clientAT http.Client
@@ -90,48 +90,48 @@ func runAbapEnvironmentUpdateAddOnProduct(config *abapEnvironmentUpdateAddOnProd
 	// prepare to get access token
 	prepareErr := prepareToGetLPAPIAccessToken(config, &clientAT, &servKey)
 	if prepareErr != nil {
-		err = fmt.Errorf("Failed to prepare credentials to get access token of LP API. Error: %v", prepareErr)
+		err = fmt.Errorf("Failed to prepare credentials to get access token of LP API. Error: %v\n", prepareErr)
 		return err
 	}
 
 	// get system
 	getSystemErr := getSystemBySystemNumber(config, client, clientAT, servKey, &systemId)
 	if getSystemErr != nil {
-		err = fmt.Errorf("Failed to get system with systemNumber %v. Error: %v", config.AbapSystemNumber, getSystemErr)
+		err = fmt.Errorf("Failed to get system with systemNumber %v. Error: %v\n", config.AbapSystemNumber, getSystemErr)
 		return err
 	}
 
-	// update addon in the system
+	// update addOn in the system
 	updateAddOnErr := updateAddOn(config, client, clientAT, servKey, systemId, &reqId)
 	if updateAddOnErr != nil {
-		err = fmt.Errorf("Failed to update addon in the system with systemNumber %v. Error: %v", config.AbapSystemNumber, updateAddOnErr)
+		err = fmt.Errorf("Failed to update addOn in the system with systemId %v. Error: %v\n", systemId, updateAddOnErr)
 		return err
 	}
 
 	// query status of request
 	getStatusOfUpdateAddOnErr := getStatusOfUpdateAddOn(config, client, clientAT, servKey, reqId, &reqStatus, &getStatusReq)
 	if getStatusOfUpdateAddOnErr != nil {
-		err = fmt.Errorf("Failed to get status of update addon request with id %v. Error: %v", reqId, getStatusOfUpdateAddOnErr)
+		err = fmt.Errorf("Failed to get status of addOn update request %v. Error: %v\n", reqId, getStatusOfUpdateAddOnErr)
 		return err
 	}
 
-	// keep pulling status of addon update request until it reaches a final status (C/E/X)
+	// keep pulling status of addOn update request until it reaches a final status (C/E/X)
 	for reqStatus == StatusInProgress || reqStatus == StatusScheduled {
 		// pull status every 30s
 		time.Sleep(30 * time.Second)
 		pullStatusOfUpdateAddOnErr := pullStatusOfUpdateAddOn(client, &getStatusReq, reqId, &reqStatus)
 
 		if pullStatusOfUpdateAddOnErr != nil {
-			err = fmt.Errorf("Error happened when waiting for the update addon with request id %v to reach a final status. Error: %v", reqId, pullStatusOfUpdateAddOnErr)
+			err = fmt.Errorf("Error happened when waiting for the addOn update request %v to reach a final status. Error: %v\n", reqId, pullStatusOfUpdateAddOnErr)
 			return err
 		}
 	}
 
-	// respond to the final status of addon update
+	// respond to the final status of addOn update
 	respondToUpdateAddOnFinalStatusErr := respondToUpdateAddOnFinalStatus(config, client, clientAT, servKey, reqId, reqStatus)
 
 	if respondToUpdateAddOnFinalStatusErr != nil {
-		err = fmt.Errorf("Failed to respond to the final status %v of addon update. Error: %v", reqStatus, respondToUpdateAddOnFinalStatusErr)
+		err = fmt.Errorf("The final status of addon update is %v. Error: %v", reqStatus, respondToUpdateAddOnFinalStatusErr)
 		return err
 	}
 
@@ -139,7 +139,7 @@ func runAbapEnvironmentUpdateAddOnProduct(config *abapEnvironmentUpdateAddOnProd
 }
 
 // this function is used to parse service key JSON
-func prepareToGetLPAPIAccessToken(config *abapEnvironmentUpdateAddOnProductOptions, clientAT *http.Client, servKey *serviceKey) error {
+func prepareToGetLPAPIAccessToken(config *abapLandscapePortalUpdateAddOnProductOptions, clientAT *http.Client, servKey *serviceKey) error {
 	// parse the service key from JSON string to struct
 	servKeyJSON := config.LandscapePortalAPIServiceKey
 	parseServiceKeyErr := json.Unmarshal([]byte(servKeyJSON), servKey)
@@ -173,7 +173,7 @@ func prepareToGetLPAPIAccessToken(config *abapEnvironmentUpdateAddOnProductOptio
 }
 
 // this function is used to get access token of Landscape Portal API
-func getLPAPIAccessToken(config *abapEnvironmentUpdateAddOnProductOptions, clientAT http.Client, servKey serviceKey) (string, error) {
+func getLPAPIAccessToken(clientAT http.Client, servKey serviceKey) (string, error) {
 	// define the raw url of the request
 	authRawURL := servKey.Uaa.CertUrl + "/oauth/token"
 
@@ -204,7 +204,7 @@ func getLPAPIAccessToken(config *abapEnvironmentUpdateAddOnProductOptions, clien
 
 	// error case of response status code being non 200
 	if resp.StatusCode != http.StatusOK {
-		err := fmt.Errorf("Unexpected response status %v received when getting access token of LP API.", resp.Status)
+		err := fmt.Errorf("Unexpected response status %v received when getting access token of LP API.\n", resp.Status)
 		return "", err
 	}
 
@@ -216,16 +216,16 @@ func getLPAPIAccessToken(config *abapEnvironmentUpdateAddOnProductOptions, clien
 }
 
 // this function is used to check the existence of integration test system
-func getSystemBySystemNumber(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId *string) error {
+func getSystemBySystemNumber(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId *string) error {
 	// get access token
-	accessToken, getAccessTokenErr := getLPAPIAccessToken(config, clientAT, servKey)
+	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	getSystemRawURL := servKey.Url + "/api/v1.0/systems/:" + config.AbapSystemNumber
+	getSystemRawURL := servKey.Url + "/api/systems/" + config.AbapSystemNumber
 	getSystemURL, urlParseErr := url.Parse(getSystemRawURL)
 
 	if urlParseErr != nil {
@@ -237,7 +237,7 @@ func getSystemBySystemNumber(config *abapEnvironmentUpdateAddOnProductOptions, c
 		Method: http.MethodGet,
 		URL:    getSystemURL,
 		Header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -254,7 +254,7 @@ func getSystemBySystemNumber(config *abapEnvironmentUpdateAddOnProductOptions, c
 
 	// error case of response status code being non 200
 	if resp.StatusCode != http.StatusOK {
-		err := fmt.Errorf("Unexpected response status %v received when getting system with systemNumber %v.", resp.Status, config.AbapSystemNumber)
+		err := fmt.Errorf("Unexpected response status %v received when getting system with systemNumber %v.\n", resp.Status, config.AbapSystemNumber)
 		return err
 	}
 
@@ -268,20 +268,21 @@ func getSystemBySystemNumber(config *abapEnvironmentUpdateAddOnProductOptions, c
 
 	*systemId = respBody.SystemId
 
+	fmt.Printf("Successfully got ABAP system with systemNumber %v and systemId %v.\n", respBody.SystemNumber, respBody.SystemId)
 	return nil
 }
 
-// this function is used to define and maintain the request body of querying status of addon update request, and send request to pull the status of request
-func getStatusOfUpdateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string, status *string, getStatusReq *http.Request) error {
+// this function is used to define and maintain the request body of querying status of addOn update request, and send request to pull the status of request
+func getStatusOfUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string, status *string, getStatusReq *http.Request) error {
 	// get access token
-	accessToken, getAccessTokenErr := getLPAPIAccessToken(config, clientAT, servKey)
+	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	getStatusRawURL := servKey.Url + "/api/v1.0/requests/:" + reqId
+	getStatusRawURL := servKey.Url + "/api/requests/" + reqId
 	getStatusURL, urlParseErr := url.Parse(getStatusRawURL)
 
 	if urlParseErr != nil {
@@ -293,7 +294,7 @@ func getStatusOfUpdateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, cl
 		Method: http.MethodGet,
 		URL:    getStatusURL,
 		Header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -312,7 +313,7 @@ func getStatusOfUpdateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, cl
 	return nil
 }
 
-// this function is used to pull status of addon update request and maintain the status
+// this function is used to pull status of addOn update request and maintain the status
 func pullStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string, status *string) error {
 	// send request and get response
 	resp, getStatusErr := client.Do(req)
@@ -325,7 +326,7 @@ func pullStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string
 
 	// error case of response status code being non 200
 	if resp.StatusCode != http.StatusOK {
-		err := fmt.Errorf("Unexpected response status %v received when getting status of request with id %v.", resp.Status, reqId)
+		err := fmt.Errorf("Unexpected response status %v received when pulling status of request %v.\n", resp.Status, reqId)
 		return err
 	}
 
@@ -339,13 +340,14 @@ func pullStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string
 
 	*status = respBody.Status
 
+	fmt.Printf("Successfully pulled status %v of request %v.\n", respBody.Status, respBody.RequestId)
 	return nil
 }
 
-// this function is used to update addon
-func updateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId string, reqId *string) error {
+// this function is used to update addOn
+func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId string, reqId *string) error {
 	// get access token
-	accessToken, getAccessTokenErr := getLPAPIAccessToken(config, clientAT, servKey)
+	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
@@ -359,7 +361,7 @@ func updateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.C
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	updateAddOnRawURL := servKey.Url + "/api/v1.0/systems/:" + systemId + "/deployProduct"
+	updateAddOnRawURL := servKey.Url + "/api/systems/" + systemId + "/deployProduct"
 
 	// define the request body as a struct
 	reqBody := updateAddOnReq{
@@ -380,7 +382,7 @@ func updateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.C
 	}
 
 	req.Header = map[string][]string{
-		"Authorization": {"Bearer" + accessToken},
+		"Authorization": {"Bearer " + accessToken},
 		"Content-Type":  {"application/json"},
 		"Accept":        {"application/json"},
 	}
@@ -396,7 +398,7 @@ func updateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.C
 
 	// error case of response status code being non 200
 	if resp.StatusCode != http.StatusOK {
-		err := fmt.Errorf("Unexpected response status %v received when updating AddOn in system with systemNumber %v.", resp.Status, config.AbapSystemNumber)
+		err := fmt.Errorf("Unexpected response status %v received when updating addOn in system with systemId %v.\n", resp.Status, systemId)
 		return err
 	}
 
@@ -409,20 +411,21 @@ func updateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.C
 
 	*reqId = respBody.RequestId
 
+	fmt.Printf("Successfully triggered addOn update in system with systemId %v, the returned request id is %v.\n", systemId, respBody.RequestId)
 	return nil
 }
 
-// this function is used to cancel addon update
-func cancelUpdateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string) error {
+// this function is used to cancel addOn update
+func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string) error {
 	// get access token
-	accessToken, getAccessTokenErr := getLPAPIAccessToken(config, clientAT, servKey)
+	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
 	}
 
 	// define the raw url of the request and parse it into required form used in http.Request
-	cancelUpdateAddOnRawURL := servKey.Url + "/api/v1.0/requests/" + reqId
+	cancelUpdateAddOnRawURL := servKey.Url + "/api/requests/" + reqId
 	cancelUpdateAddOnURL, urlParseErr := url.Parse(cancelUpdateAddOnRawURL)
 
 	if urlParseErr != nil {
@@ -434,7 +437,7 @@ func cancelUpdateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client 
 		Method: http.MethodDelete,
 		URL:    cancelUpdateAddOnURL,
 		Header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -451,28 +454,35 @@ func cancelUpdateAddOn(config *abapEnvironmentUpdateAddOnProductOptions, client 
 
 	// error case of response status code being non 204
 	if resp.StatusCode != http.StatusNoContent {
-		err := fmt.Errorf("Unexpected response status %v received when canceling addon update request with id %v", resp.Status, reqId)
+		err := fmt.Errorf("Unexpected response status %v received when canceling addOn update request %v.\n", resp.Status, reqId)
 		return err
 	}
 
+	fmt.Printf("Successfully canceled addOn update request %v.\n", reqId)
 	return nil
 }
 
-// this function is used to respond to a final status of addon update
-func respondToUpdateAddOnFinalStatus(config *abapEnvironmentUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string, status string) error {
+// this function is used to respond to a final status of addOn update
+func respondToUpdateAddOnFinalStatus(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string, status string) error {
 	switch status {
 	case StatusComplete:
-		fmt.Println("AddOn update succeeded.")
+		fmt.Printf("AddOn update request %v succeeded.\n", reqId)
 	case StatusError:
-		fmt.Println("AddOn update failed and will be canceled.")
+		fmt.Printf("AddOn update failed and request %v will be canceled.\n", reqId)
 
 		cancelUpdateAddOnErr := cancelUpdateAddOn(config, client, clientAT, servKey, reqId)
 		if cancelUpdateAddOnErr != nil {
-			err := fmt.Errorf("Failed to cancel addon update. Error: %v", cancelUpdateAddOnErr)
+			err := fmt.Errorf("Failed to cancel addOn update request %v. Error: %v\n", reqId, cancelUpdateAddOnErr)
 			return err
 		}
+
+		err := fmt.Errorf("AddOn update failed.")
+		return err
+
 	case StatusAborted:
 		fmt.Println("AddOn update is aborted.")
+		err := fmt.Errorf("AddOn update is aborted.")
+		return err
 	}
 
 	return nil
