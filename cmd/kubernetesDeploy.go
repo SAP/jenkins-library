@@ -66,6 +66,14 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		return fmt.Errorf("deployment name has not been set, please configure deploymentName parameter")
 	}
 
+	// set environment variables before setup script
+	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
+	if config.DeployTool == "helm" && len(config.TillerNamespace) > 0 {
+		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
+	}
+	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
+	utils.SetEnv(helmEnv)
+
 	// download and execute setup script
 	if len(config.SetupScript) > 0 {
 		log.Entry().Debugf("start running setup script %v", config.SetupScript)
@@ -93,12 +101,6 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	helmLogFields["Kubeconfig"] = config.KubeConfig
 	log.Entry().WithFields(helmLogFields).Debug("Calling Helm")
 
-	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-	if config.DeployTool == "helm" && len(config.TillerNamespace) > 0 {
-		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
-	}
-	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
-	utils.SetEnv(helmEnv)
 	utils.Stdout(stdout)
 
 	if config.DeployTool == "helm" {

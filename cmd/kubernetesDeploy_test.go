@@ -6,6 +6,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -1055,6 +1056,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			DeployTool:              "helm3",
 			IngressHosts:            []string{},
 			Image:                   "path/to/Image:latest",
+			KubeConfig:              "testConfig",
 			KubeContext:             "testCluster",
 			Namespace:               "deploymentNamespace",
 			GithubToken:             "testGHToken",
@@ -1064,6 +1066,10 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.HttpClientMock = &mock.HttpClientMock{HTTPFileUtils: mockUtils.FilesMock}
+		mockUtils.ExecMockRunner.Stub = func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+			assert.Equal(t, []string{"KUBECONFIG=testConfig"}, mockUtils.ExecMockRunner.Env, "Environment should be set properly before executing %v", call)
+			return nil
+		}
 
 		var stdout bytes.Buffer
 
