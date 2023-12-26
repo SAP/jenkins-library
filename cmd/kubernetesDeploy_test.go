@@ -1060,7 +1060,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			GithubToken:             "testGHToken",
 			SetupScript:             "https://github.com/my/test/setup_script.sh",
 			VerificationScript:      "https://github.com/my/test/verification_script.sh",
-			TeardownScript:          "https://github.com/my/test/teardown_script.sh",
+			TeardownScript:          ".test/teardown_script.sh",
 		}
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.HttpClientMock = &mock.HttpClientMock{HTTPFileUtils: mockUtils.FilesMock}
@@ -1072,7 +1072,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		assert.Equal(t, 4, len(mockUtils.Calls))
 		assert.Equal(t, ".pipeline/setup_script.sh", mockUtils.Calls[0].Exec)
 		assert.Equal(t, ".pipeline/verification_script.sh", mockUtils.Calls[2].Exec)
-		assert.Equal(t, ".pipeline/teardown_script.sh", mockUtils.Calls[3].Exec)
+		assert.Equal(t, ".test/teardown_script.sh", mockUtils.Calls[3].Exec)
 	})
 
 	t.Run("test helm v3 - fails without chart path", func(t *testing.T) {

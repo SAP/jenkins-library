@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -42,7 +43,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetr
 		// download and execute teardown script
 		if len(config.TeardownScript) > 0 {
 			log.Entry().Debugf("start running teardownScript script %v", config.TeardownScript)
-			if scriptErr := downloadAndExecuteExtensionScript(config.TeardownScript, config.GithubToken, utils); scriptErr != nil {
+			if scriptErr := runExtensionScript(config.TeardownScript, config.GithubToken, utils); scriptErr != nil {
 				if err != nil {
 					err = fmt.Errorf("failed to download/run teardownScript script: %v: %w", fmt.Sprint(scriptErr), err)
 				} else {
@@ -69,7 +70,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	// download and execute setup script
 	if len(config.SetupScript) > 0 {
 		log.Entry().Debugf("start running setup script %v", config.SetupScript)
-		if err := downloadAndExecuteExtensionScript(config.SetupScript, config.GithubToken, utils); err != nil {
+		if err := runExtensionScript(config.SetupScript, config.GithubToken, utils); err != nil {
 			return fmt.Errorf("failed to download/run setup setup script: %w", err)
 		}
 		log.Entry().Debugf("finished running setup script %v", config.SetupScript)
@@ -217,7 +218,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	// download and execute verification script
 	if len(config.VerificationScript) > 0 {
 		log.Entry().Debugf("start running verification script %v", config.VerificationScript)
-		if err := downloadAndExecuteExtensionScript(config.VerificationScript, config.GithubToken, utils); err != nil {
+		if err := runExtensionScript(config.VerificationScript, config.GithubToken, utils); err != nil {
 			return fmt.Errorf("failed to download/run verification script: %w", err)
 		}
 		log.Entry().Debugf("finished running verification script %v", config.VerificationScript)
@@ -589,12 +590,14 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 	return dv, nil
 }
 
-func downloadAndExecuteExtensionScript(script, githubToken string, utils kubernetes.DeployUtils) error {
-	setupScript, err := piperhttp.DownloadExecutable(githubToken, utils, utils, script)
-	if err != nil {
-		return fmt.Errorf("failed to download script %v: %w", script, err)
+func runExtensionScript(script, githubToken string, utils kubernetes.DeployUtils) error {
+	setupScript := script
+	if u, err := url.Parse(script); err != nil && u.Scheme != "" {
+		if setupScript, err = piperhttp.DownloadExecutable(githubToken, utils, utils, script); err != nil {
+			return fmt.Errorf("failed to download script %v: %w", script, err)
+		}
 	}
-	err = utils.RunExecutable(setupScript)
+	err := utils.RunExecutable(setupScript)
 	if err != nil {
 		return fmt.Errorf("failed to execute script %v: %w", script, err)
 	}
