@@ -54,6 +54,8 @@ type whitesourceExecuteScanOptions struct {
 	ProjectToken                         string   `json:"projectToken,omitempty"`
 	Reporting                            bool     `json:"reporting,omitempty"`
 	ScanImage                            string   `json:"scanImage,omitempty"`
+	ScanImages                           []string `json:"scanImages,omitempty"`
+	SkipParentProjectResolution          bool     `json:"skipParentProjectResolution,omitempty"`
 	ScanImageRegistryURL                 string   `json:"scanImageRegistryUrl,omitempty"`
 	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty"`
 	ServiceURL                           string   `json:"serviceUrl,omitempty"`
@@ -349,6 +351,8 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ProjectToken, "projectToken", os.Getenv("PIPER_projectToken"), "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`. Used for project aggregation when scanning with the Unified Agent and can be provided as an alternative to `projectName`.")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "For `buildTool: docker`: Defines the docker image which should be scanned.")
+	cmd.Flags().StringSliceVar(&stepConfig.ScanImages, "scanImages", []string{}, "For `buildTool: docker`: Allowing to scan multiple docker images.")
+	cmd.Flags().BoolVar(&stepConfig.SkipParentProjectResolution, "skipParentProjectResolution", false, "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies.")
 	cmd.Flags().StringVar(&stepConfig.ScanImageRegistryURL, "scanImageRegistryUrl", os.Getenv("PIPER_scanImageRegistryUrl"), "For `buildTool: docker`: Defines the registry where the scanImage is located.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource API endpoint.")
@@ -750,6 +754,29 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_scanImage"),
+					},
+					{
+						Name: "scanImages",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTag",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name:        "skipParentProjectResolution",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "scanImageRegistryUrl",

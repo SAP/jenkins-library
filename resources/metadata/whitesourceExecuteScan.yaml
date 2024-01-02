@@ -377,6 +377,25 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: scanImages
+        type: "[]string"
+        description: "For `buildTool: docker`: Allowing to scan multiple docker images."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: skipParentProjectResolution
+        type: bool
+        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose
+        Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
