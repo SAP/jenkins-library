@@ -760,7 +760,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "container/imageNameTag",
+								Param: "container/imageNameTags",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

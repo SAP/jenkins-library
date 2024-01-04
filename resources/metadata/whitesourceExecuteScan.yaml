@@ -382,7 +382,7 @@ spec:
         description: "For `buildTool: docker`: Allowing to scan multiple docker images. In case parent project will not contain any dependecies, use skipParentProjectResolution parameter"
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/imageNameTag
+            param: container/imageNameTags
         scope:
           - PARAMETERS
           - STAGES
