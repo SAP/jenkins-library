@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
@@ -90,6 +91,9 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 		}
 	}
 
+	// Docker image tags don't allow plus signs in tags, thus replacing with dash
+	config.SourceImageTag = strings.ReplaceAll(config.SourceImageTag, "+", "-")
+	config.TargetImageTag = strings.ReplaceAll(config.TargetImageTag, "+", "-")
 	re := regexp.MustCompile(`^https?://`)
 	config.SourceRegistryURL = re.ReplaceAllString(config.SourceRegistryURL, "")
 	config.TargetRegistryURL = re.ReplaceAllString(config.TargetRegistryURL, "")
