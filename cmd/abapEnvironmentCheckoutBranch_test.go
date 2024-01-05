@@ -67,7 +67,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
 		assert.NoError(t, err, "Did not expect error")
 	})
@@ -96,7 +96,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
@@ -135,7 +135,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
@@ -184,7 +184,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
 		assert.NoError(t, err)
 	})
@@ -228,7 +228,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
@@ -277,7 +277,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})

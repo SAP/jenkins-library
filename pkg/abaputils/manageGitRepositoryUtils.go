@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -42,21 +41,21 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 
 func PrintLogs(api SoftwareComponentApiInterface) {
 	// connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
-	entity, err := api.GetLogOverview()
-	if err != nil || len(entity.ToLogOverview.Results) == 0 {
+	results, err := api.GetLogOverview()
+	if err != nil || len(results) == 0 {
 		// return if no logs are available
 		return
 	}
 
 	// Sort logs
-	sort.SliceStable(entity.ToLogOverview.Results, func(i, j int) bool {
-		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
+	sort.SliceStable(results, func(i, j int) bool {
+		return results[i].Index < results[j].Index
 	})
 
-	printOverview(entity)
+	printOverview(results)
 
 	// Print Details
-	for _, logEntryForDetails := range entity.ToLogOverview.Results {
+	for _, logEntryForDetails := range results {
 		printLog(logEntryForDetails, api)
 	}
 	AddDefaultDashedLine(1)
@@ -64,9 +63,9 @@ func PrintLogs(api SoftwareComponentApiInterface) {
 	return
 }
 
-func printOverview(entity ActionEntity) {
+func printOverview(results []LogResultsV2) {
 
-	logOutputPhaseLength, logOutputLineLength := calculateLenghts(entity)
+	logOutputPhaseLength, logOutputLineLength := calculateLenghts(results)
 
 	log.Entry().Infof("\n")
 
@@ -76,15 +75,15 @@ func printOverview(entity ActionEntity) {
 
 	printDashedLine(logOutputLineLength)
 
-	for _, logEntry := range entity.ToLogOverview.Results {
+	for _, logEntry := range results {
 		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
 	}
 	printDashedLine(logOutputLineLength)
 }
 
-func calculateLenghts(entity ActionEntity) (int, int) {
+func calculateLenghts(results []LogResultsV2) (int, int) {
 	phaseLength := 22
-	for _, logEntry := range entity.ToLogOverview.Results {
+	for _, logEntry := range results {
 		if l := len(logEntry.Name); l > phaseLength {
 			phaseLength = l
 		}
@@ -103,40 +102,34 @@ func printLog(logOverviewEntry LogResultsV2, api SoftwareComponentApiInterface) 
 	page := 0
 	printHeader(logOverviewEntry)
 	for {
-		logProtocolEntry, err := api.GetLogProtocol(logOverviewEntry, page)
-		printLogProtocolEntries(logOverviewEntry, logProtocolEntry)
+		logProtocols, count, err := api.GetLogProtocol(logOverviewEntry, page)
+		printLogProtocolEntries(logOverviewEntry, logProtocols)
 		page += 1
-		if allLogsHaveBeenPrinted(logProtocolEntry, page, err) {
+		if allLogsHaveBeenPrinted(logProtocols, page, count, err) {
 			break
 		}
 	}
 }
 
-func printLogProtocolEntries(logEntry LogResultsV2, entity LogProtocolResults) {
+func printLogProtocolEntries(logEntry LogResultsV2, logProtocols []LogProtocol) {
 
-	sort.SliceStable(entity.Results, func(i, j int) bool {
-		return entity.Results[i].ProtocolLine < entity.Results[j].ProtocolLine
+	sort.SliceStable(logProtocols, func(i, j int) bool {
+		return logProtocols[i].ProtocolLine < logProtocols[j].ProtocolLine
 	})
 	if logEntry.Status != `Success` {
-		for _, entry := range entity.Results {
+		for _, entry := range logProtocols {
 			log.Entry().Info(entry.Description)
 		}
 	} else {
-		for _, entry := range entity.Results {
+		for _, entry := range logProtocols {
 			log.Entry().Debug(entry.Description)
 		}
 	}
 }
 
-func allLogsHaveBeenPrinted(entity LogProtocolResults, page int, err error) bool {
-	allPagesHaveBeenRead := false
-	numberOfProtocols, errConversion := strconv.Atoi(entity.Count)
-	if errConversion == nil {
-		allPagesHaveBeenRead = numberOfProtocols <= page*numberOfEntriesPerPage
-	} else {
-		return true
-	}
-	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(entity.Results, LogProtocolResults{}))
+func allLogsHaveBeenPrinted(protocols []LogProtocol, page int, count int, err error) bool {
+	allPagesHaveBeenRead := count <= page*numberOfEntriesPerPage
+	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(protocols, []LogProtocol{}))
 }
 
 func printHeader(logEntry LogResultsV2) {
@@ -151,13 +144,6 @@ func printHeader(logEntry LogResultsV2) {
 		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
 		AddDebugDashedLine()
 	}
-}
-
-func getLogProtocolQuery(page int) string {
-	skip := page * numberOfEntriesPerPage
-	top := numberOfEntriesPerPage
-
-	return fmt.Sprintf("?$skip=%s&$top=%s&$inlinecount=allpages", fmt.Sprint(skip), fmt.Sprint(top))
 }
 
 // GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
@@ -238,6 +224,10 @@ func (repo *Repository) GetPullRequestBody() (body string) {
 	requestBodyString := repo.GetRequestBodyForCommitOrTag()
 	body = `{"sc_name":"` + repo.Name + `"` + requestBodyString + `}`
 	return body
+}
+
+func (repo *Repository) GetPullActionRequestBody() (body string) {
+	return `{` + `"commit_id":"` + repo.CommitID + `", ` + `"tag_name":"` + repo.Tag + `"` + `}`
 }
 
 func (repo *Repository) GetPullLogString() (logString string) {
