@@ -213,9 +213,9 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", `.pipeline/docker/config.json`, "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `apply`, "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`.")
-	cmd.Flags().StringVar(&stepConfig.SetupScript, "setupScript", os.Getenv("PIPER_setupScript"), "HTTP location of setup script")
-	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "HTTP location of verification script")
-	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "HTTP location of teardown script")
+	cmd.Flags().StringVar(&stepConfig.SetupScript, "setupScript", os.Getenv("PIPER_setupScript"), "File or HTTP location of setup script")
+	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "File or HTTP location of verification script")
+	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "File or HTTP location of teardown script")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
