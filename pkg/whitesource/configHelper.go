@@ -46,7 +46,14 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 	newConfig := properties.LoadMap(newConfigMap)
 
 	now := time.Now().Format("20060102150405")
-	newConfigFilePath := fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
+
+	var newConfigFilePath string
+
+	if s.ScanPath != "." {
+		newConfigFilePath = fmt.Sprintf("%v/%v.%v", s.ScanPath, s.ConfigFilePath, now)
+	} else {
+		newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
+	}
 
 	var configContent bytes.Buffer
 	_, err = newConfig.Write(&configContent, properties.UTF8)
