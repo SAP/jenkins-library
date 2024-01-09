@@ -132,7 +132,11 @@ The `vaultCredentialKeys`parameter is a list of credential IDs. The secret value
 !!! hint "Using a custom prefix for credentials"
     By default the prefix for credentials is `PIPER_VAULTCREDENTIAL_`.
 
-    It is possible to use a custom prefix by setting for example `vaultCredentialEnvPrefix: ['MY_CUSTOM_PREFIX_1', 'MY_CUSTOM_PREFIX_2']` in your configuration.
+    It is possible to use a custom prefix by setting for example `vaultCredentialEnvPrefix: MY_CUSTOM_PREFIX` in your configuration.
+    With this above credential ID named `myAppId` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_MYAPPID`.
+
+    In case you want to use specific prefix for secrets retrieved from different vault folders, pass multiple prefixes as
+    `vaultCredentialEnvPrefix: ['MY_CUSTOM_PREFIX_1', 'MY_CUSTOM_PREFIX_2']`.
     With this above credential ID named `myAppId1` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_1_MYAPPID1` and `myAppId2` will be populated into an environment variable with name `MY_CUSTOM_PREFIX_2_MYAPPID2`
 
 Extended logging for Vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
