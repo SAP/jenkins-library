@@ -128,9 +128,19 @@ private static boolean checkExtensionExists(Script script, Map config, String st
  used by Jenkins but unused by other orchestrators.
  */
 private static void handleRenamedStages(Script script) {
-    script.commonPipelineEnvironment.configuration.runStage["Central Build"] = script.commonPipelineEnvironment.configuration.runStage["Build"]
-    script.commonPipelineEnvironment.configuration.runStep["Central Build"] = script.commonPipelineEnvironment.configuration.runStep["Build"]
+    if(script.commonPipelineEnvironment.configuration.runStage.containsKey("Build")) {
+        script.commonPipelineEnvironment.configuration.runStage["Central Build"] = script.commonPipelineEnvironment.configuration.runStage["Build"]
+    }
 
-    script.commonPipelineEnvironment.configuration.runStage["Post Actions"] = script.commonPipelineEnvironment.configuration.runStage["Post"]
-    script.commonPipelineEnvironment.configuration.runStep["Post Actions"] = script.commonPipelineEnvironment.configuration.runStep["Post"]
+    if(script.commonPipelineEnvironment.configuration.runStep.containsKey("Build")) {
+        script.commonPipelineEnvironment.configuration.runStep["Central Build"] = script.commonPipelineEnvironment.configuration.runStep["Build"]
+    }
+
+    if(script.commonPipelineEnvironment.configuration.runStage.containsKey("Post")) {
+        script.commonPipelineEnvironment.configuration.runStage["Post Actions"] = script.commonPipelineEnvironment.configuration.runStage["Post"]
+    }
+
+    if(script.commonPipelineEnvironment.configuration.runStep.containsKey("Post")) {
+        script.commonPipelineEnvironment.configuration.runStep["Post Actions"] = script.commonPipelineEnvironment.configuration.runStep["Post"]
+    }
 }
