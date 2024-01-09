@@ -200,7 +200,7 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
-		if len(config.ScanImages) != 0 && config.ScanImage == "" {
+		if len(config.ScanImages) != 0 && config.ScanImage == "" && config.ActivateMultipleImagesScan {
 			for _, image := range config.ScanImages {
 				config.ScanImage = image
 				err := downloadDockerImageAsTarNew(config, utils)
@@ -373,15 +373,10 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 		return errors.Wrap(err, "error resolving product token")
 	}
 
-	// Temporary commented
-	// if !config.SkipParentProjectResolution {
-	// 	if err := resolveAggregateProjectToken(config, sys); err != nil {
-	// 		return errors.Wrap(err, "error resolving aggregate project token")
-	// 	}
-	// }
-
-	if err := resolveAggregateProjectToken(config, sys); err != nil {
-		return errors.Wrap(err, "error resolving aggregate project token")
+	if !config.SkipParentProjectResolution {
+		if err := resolveAggregateProjectToken(config, sys); err != nil {
+			return errors.Wrap(err, "error resolving aggregate project token")
+		}
 	}
 
 	scan.ProductToken = config.ProductToken

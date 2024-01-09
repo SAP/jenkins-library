@@ -100,14 +100,10 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	// ToDo: check if this is required
 
 	// Temporary commented
-	// if !config.SkipParentProjectResolution {
-	// 	if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
-		return err
+	if !config.SkipParentProjectResolution {
+		if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
+			return err
+		}
 	}
 
 	configPath, err := config.RewriteUAConfigurationFile(utils, s.AggregateProjectName)
