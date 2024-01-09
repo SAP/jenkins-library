@@ -200,7 +200,7 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
-		if len(config.ScanImages) != 0 && config.ScanImage == "" && config.ActivateMultipleImagesScan {
+		if len(config.ScanImages) != 0 && config.ActivateMultipleImagesScan {
 			for _, image := range config.ScanImages {
 				config.ScanImage = image
 				err := downloadDockerImageAsTarNew(config, utils)
