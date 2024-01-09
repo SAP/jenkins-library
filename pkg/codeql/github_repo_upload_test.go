@@ -72,6 +72,10 @@ func (g *gitMock) switchOrphan(branch string, repo *git.Repository) error {
 	return nil
 }
 
+func (g *gitMock) initRepo(dir string) (*git.Repository, error) {
+	return &git.Repository{}, nil
+}
+
 type referenceMock struct {
 	name string
 }
@@ -122,19 +126,19 @@ func TestDoesRefExist(t *testing.T) {
 	t.Parallel()
 	t.Run("Invalid repository", func(t *testing.T) {
 		ghUploader := newGitMock(refsHeads+notExists, notExists)
-		_, err := doesRefExist(ghUploader, refsHeads+notExists)
+		_, _, err := doesRefExist(ghUploader, refsHeads+notExists)
 		assert.Error(t, err)
 
 	})
 	t.Run("Ref exists", func(t *testing.T) {
 		ghUploader := newGitMock(refsHeads+exists, exists)
-		ok, err := doesRefExist(ghUploader, refsHeads+exists)
+		ok, _, err := doesRefExist(ghUploader, refsHeads+exists)
 		assert.NoError(t, err)
 		assert.True(t, ok)
 	})
 	t.Run("Ref doesn't exist", func(t *testing.T) {
 		ghUploader := newGitMock(refsHeads+notExists, exists)
-		ok, err := doesRefExist(ghUploader, refsHeads+notExists)
+		ok, _, err := doesRefExist(ghUploader, refsHeads+notExists)
 		assert.NoError(t, err)
 		assert.False(t, ok)
 	})
@@ -144,13 +148,19 @@ func TestClone(t *testing.T) {
 	t.Parallel()
 	t.Run("Created new branch", func(t *testing.T) {
 		ghUploader := newGitMock(refsHeads+notExists, exists)
-		repo, err := clone(ghUploader, ghUploader.url, "", ghUploader.ref, "", false)
+		repo, err := clone(ghUploader, ghUploader.url, "", ghUploader.ref, "", false, false)
 		assert.NoError(t, err)
 		assert.NotNil(t, repo)
 	})
 	t.Run("Target branch exists", func(t *testing.T) {
 		ghUploader := newGitMock(refsHeads+exists, exists)
-		repo, err := clone(ghUploader, ghUploader.url, "", ghUploader.ref, "", true)
+		repo, err := clone(ghUploader, ghUploader.url, "", ghUploader.ref, "", false, true)
+		assert.NoError(t, err)
+		assert.NotNil(t, repo)
+	})
+	t.Run("Repo was empty", func(t *testing.T) {
+		ghUploader := newGitMock(refsHeads+exists, exists)
+		repo, err := clone(ghUploader, ghUploader.url, "", ghUploader.ref, "", true, false)
 		assert.NoError(t, err)
 		assert.NotNil(t, repo)
 	})
