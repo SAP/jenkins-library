@@ -398,8 +398,7 @@ spec:
         default: false
       - name: activateMultipleImagesScan
         type: bool
-        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose
-        Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
+        description: "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters"
         scope:
           - PARAMETERS
           - STAGES
