@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,7 +12,9 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -22,11 +25,14 @@ type codeqlExecuteScanUtils interface {
 	command.ExecRunner
 
 	piperutils.FileUtils
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type codeqlExecuteScanUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	*piperhttp.Client
 }
 
 const (
@@ -38,6 +44,7 @@ func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	utils := codeqlExecuteScanUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
 	}
 
 	utils.Stdout(log.Writer())
@@ -284,7 +291,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	if len(config.BuildCommand) > 0 {
 		buildCmd := config.BuildCommand
-		buildCmd = buildCmd + getMavenSettings(config)
+		buildCmd = buildCmd + getMavenSettings(config, utils)
 		cmd = append(cmd, "--command="+buildCmd)
 	}
 
@@ -417,23 +424,16 @@ func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
 	return params
 }
 
-func getMavenSettings(config *codeqlExecuteScanOptions) string {
+func getMavenSettings(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
 	params := ""
 	if len(config.BuildCommand) > 0 && config.BuildTool == "maven" && !strings.Contains(config.BuildCommand, "--global-settings") && !strings.Contains(config.BuildCommand, "--settings") {
-		if len(config.ProjectSettingsFile) > 0 {
-			if strings.Contains(config.ProjectSettingsFile, "http") {
-				log.Entry().Warn("codeqlExecuteScan's projectSettingsFile param still does not support http(s) urls. Please use a local file path")
-			} else {
-				params = " --settings=" + config.ProjectSettingsFile
-			}
+		mvnParams, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
+		if err != nil {
+			log.Entry().Error("failed to download and get maven parameters: ", err)
+			return params
 		}
-
-		if len(config.GlobalSettingsFile) > 0 {
-			if strings.Contains(config.GlobalSettingsFile, "http") {
-				log.Entry().Warn("codeqlExecuteScan's globalSettingsFile param still does not support http(s) urls. Please use a local file path")
-			} else {
-				params = params + " --global-settings=" + config.GlobalSettingsFile
-			}
+		for i := 1; i < len(mvnParams); i += 2 {
+			params = fmt.Sprintf("%s %s=%s", params, mvnParams[i-1], mvnParams[i])
 		}
 	}
 	return params

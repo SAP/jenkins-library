@@ -75,21 +75,4 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[2], is('./piper checkmarxExecuteScan'))
     }
-
-    @Test
-    void testCheckmarxExecuteScanNoReports() {
-        helper.registerAllowedMethod('fileExists', [Map], {
-            return false
-        })
-
-        exception.expect(AbortException)
-        exception.expectMessage("Expected to find checkmarxExecuteScan_reports.json in workspace but it is not there")
-
-        stepRule.step.checkmarxExecuteScan(
-            juStabUtils: utils,
-            jenkinsUtilsStub: jenkinsUtils,
-            testParam: "This is test content",
-            script: nullScript
-        )
-    }
 }

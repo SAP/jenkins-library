@@ -69,7 +69,7 @@ func TestPullStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
@@ -96,7 +96,7 @@ func TestPullStep(t *testing.T) {
 
 		config := abapEnvironmentPullGitRepoOptions{}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
@@ -147,7 +147,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.NoError(t, err)
 	})
@@ -203,7 +203,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP system", err.Error(), "Expected different error message")
@@ -262,7 +262,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', tag 'v-1.0.1-build-0001' failed on the ABAP system", err.Error(), "Expected different error message")
@@ -302,7 +302,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/SWC', commit '123456' failed on the ABAP system", err.Error(), "Expected different error message")
@@ -341,7 +341,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/SWC' failed on the ABAP system", err.Error(), "Expected different error message")
@@ -388,7 +388,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
@@ -438,7 +438,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
 		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
