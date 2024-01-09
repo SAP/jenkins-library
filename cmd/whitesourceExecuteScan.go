@@ -1090,14 +1090,16 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 
 func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error {
 
+	imageNameToSave := strings.Replace(config.ScanImage, "/", "-", -1)
+
 	saveImageOptions := containerSaveImageOptions{
 		ContainerImage:            config.ScanImage,
 		ContainerRegistryURL:      config.ScanImageRegistryURL,
 		ContainerRegistryUser:     config.ContainerRegistryUser,
 		ContainerRegistryPassword: config.ContainerRegistryPassword,
 		DockerConfigJSON:          config.DockerConfigJSON,
-		FilePath:                  config.ScanPath + "/" + config.ScanImage, // previously was config.ProjectName
-		ImageFormat:               "legacy",                                 // keep the image format legacy or whitesource is not able to read layers
+		FilePath:                  config.ScanPath + "/" + imageNameToSave, // previously was config.ProjectName
+		ImageFormat:               "legacy",                                // keep the image format legacy or whitesource is not able to read layers
 	}
 	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
 	dClient := &piperDocker.Client{}
