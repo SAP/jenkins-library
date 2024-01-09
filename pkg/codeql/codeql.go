@@ -19,7 +19,7 @@ const auditStateOpen string = "open"
 const auditStateDismissed string = "dismissed"
 const codeqlToolName string = "CodeQL"
 const perPageCount int = 100
-const AuditAll string = "AuditAll"
+const AuditAll string = "Audit All"
 const Optional string = "Optional"
 
 func NewCodeqlScanAuditInstance(serverUrl, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
