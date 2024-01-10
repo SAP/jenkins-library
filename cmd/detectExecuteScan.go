@@ -46,7 +46,7 @@ type detectUtils interface {
 
 	GetIssueService() *github.IssuesService
 	GetSearchService() *github.SearchService
-	GetProvider() orchestrator.OrchestratorSpecificConfigProviding
+	GetProvider() orchestrator.ConfigProvider
 }
 
 type detectUtilsBundle struct {
@@ -55,7 +55,7 @@ type detectUtilsBundle struct {
 	*piperhttp.Client
 	issues   *github.IssuesService
 	search   *github.SearchService
-	provider orchestrator.OrchestratorSpecificConfigProviding
+	provider orchestrator.ConfigProvider
 }
 
 func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
@@ -66,7 +66,7 @@ func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 	return d.search
 }
 
-func (d *detectUtilsBundle) GetProvider() orchestrator.OrchestratorSpecificConfigProviding {
+func (d *detectUtilsBundle) GetProvider() orchestrator.ConfigProvider {
 	return d.provider
 }
 
@@ -112,7 +112,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning(err)
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
@@ -568,9 +568,9 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 }
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
-
-	if utils.GetProvider().IsPullRequest() {
-		issueNumber, err := strconv.Atoi(utils.GetProvider().GetPullRequestConfig().Key)
+	provider := utils.GetProvider()
+	if provider.IsPullRequest() {
+		issueNumber, err := strconv.Atoi(provider.PullRequestConfig().Key)
 		if err != nil {
 			log.Entry().Warning("Can not get issue number ", err)
 			return nil
