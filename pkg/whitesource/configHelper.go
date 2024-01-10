@@ -49,14 +49,11 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 
 	var newConfigFilePath string
 
-	// Temporary commented
-	// if s.ScanPath != "." {
-	// 	newConfigFilePath = fmt.Sprintf("%v/%v.%v", s.ScanPath, s.ConfigFilePath, now)
-	// } else {
-	// 	newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
-	// }
-
-	newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
+	if s.ScanPath != "." {
+		newConfigFilePath = fmt.Sprintf("%v/%v.%v", s.ScanPath, "wss-unified-agent.config", now)
+	} else {
+		newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
+	}
 
 	var configContent bytes.Buffer
 	_, err = newConfig.Write(&configContent, properties.UTF8)
