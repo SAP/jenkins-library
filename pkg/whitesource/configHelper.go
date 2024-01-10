@@ -22,6 +22,8 @@ type ConfigOption struct {
 	Append        bool
 }
 
+const configFileName = "wss-unified-agent.config"
+
 // ConfigOptions contains a list of config options (ConfigOption)
 type ConfigOptions []ConfigOption
 
@@ -48,9 +50,18 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 	now := time.Now().Format("20060102150405")
 
 	var newConfigFilePath string
+	var scanPath string
+
+	// remove "/" from scanPath
+
+	if strings.HasSuffix(s.ScanPath, "/") {
+		scanPath = strings.TrimSuffix(s.ScanPath, "/")
+	} else {
+		scanPath = s.ScanPath
+	}
 
 	if s.ScanPath != "." {
-		newConfigFilePath = fmt.Sprintf("%v/%v.%v", s.ScanPath, "wss-unified-agent.config", now)
+		newConfigFilePath = fmt.Sprintf("%v/%v.%v", scanPath, configFileName, now)
 	} else {
 		newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
 	}
