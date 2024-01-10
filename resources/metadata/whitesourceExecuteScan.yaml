@@ -396,6 +396,14 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: activateMultipleImagesScan
+        type: bool
+        description: "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."

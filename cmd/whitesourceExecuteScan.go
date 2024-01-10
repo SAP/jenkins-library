@@ -200,10 +200,10 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
-		if len(config.ScanImages) != 0 {
+		if len(config.ScanImages) != 0 && config.ActivateMultipleImagesScan {
 			for _, image := range config.ScanImages {
 				config.ScanImage = image
-				err := downloadDockerImageAsTar(config, utils)
+				err := downloadDockerImageAsTarNew(config, utils)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download docker image")
 				}
@@ -1088,7 +1088,7 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 	return record.GetFileName(), nil
 }
 
-func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error {
+func downloadDockerImageAsTarNew(config *ScanOptions, utils whitesourceUtils) error {
 
 	imageNameToSave := strings.Replace(config.ScanImage, "/", "-", -1)
 
@@ -1100,6 +1100,30 @@ func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error
 		DockerConfigJSON:          config.DockerConfigJSON,
 		FilePath:                  config.ScanPath + "/" + imageNameToSave, // previously was config.ProjectName
 		ImageFormat:               "legacy",                                // keep the image format legacy or whitesource is not able to read layers
+	}
+	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
+	dClient := &piperDocker.Client{}
+	dClient.SetOptions(dClientOptions)
+	if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
+		if strings.Contains(fmt.Sprint(err), "no image found") {
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
+		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+	}
+
+	return nil
+}
+
+func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error {
+
+	saveImageOptions := containerSaveImageOptions{
+		ContainerImage:            config.ScanImage,
+		ContainerRegistryURL:      config.ScanImageRegistryURL,
+		ContainerRegistryUser:     config.ContainerRegistryUser,
+		ContainerRegistryPassword: config.ContainerRegistryPassword,
+		DockerConfigJSON:          config.DockerConfigJSON,
+		FilePath:                  config.ProjectName, // previously was config.ProjectName
+		ImageFormat:               "legacy",           // keep the image format legacy or whitesource is not able to read layers
 	}
 	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
 	dClient := &piperDocker.Client{}
