@@ -49,11 +49,14 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 
 	var newConfigFilePath string
 
-	if s.ScanPath != "." {
-		newConfigFilePath = fmt.Sprintf("%v/%v.%v", s.ScanPath, s.ConfigFilePath, now)
-	} else {
-		newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
-	}
+	// Temporary commented
+	// if s.ScanPath != "." {
+	// 	newConfigFilePath = fmt.Sprintf("%v/%v.%v", s.ScanPath, s.ConfigFilePath, now)
+	// } else {
+	// 	newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
+	// }
+
+	newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
 
 	var configContent bytes.Buffer
 	_, err = newConfig.Write(&configContent, properties.UTF8)
