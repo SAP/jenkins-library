@@ -76,6 +76,6 @@ func (r ReportingParams) getReportingFilter() []string {
 func (s *StepConfig) mixinReportingConfig(configs ...map[string]interface{}) {
 	reportingFilter := ReportingParameters.getReportingFilter()
 	for _, config := range configs {
-		s.mixIn(config, reportingFilter)
+		s.mixIn(config, reportingFilter, StepData{})
 	}
 }
