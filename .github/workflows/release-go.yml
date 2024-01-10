@@ -1,6 +1,7 @@
 name: Create new Release
 
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: perform-release
   schedule:
