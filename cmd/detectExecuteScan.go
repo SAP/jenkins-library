@@ -174,7 +174,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		return err
 	}
 
-	if config.InstallArtifacts && config.BuildTool == "maven" {
+	if config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -186,6 +186,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	}
 
 	if config.BuildMaven {
+		log.Entry().Infof("running Maven Build")
 		mavenConfig := setMavenConfig(config)
 		mavenUtils := maven.NewUtilsBundle()
 
@@ -925,7 +926,6 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 
 // Temporary function setMavenDefaults sets the default values for maven build
 func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
-
 	mavenConfig := mavenBuildOptions{
 		PomPath:                     "pom.xml",
 		Flatten:                     true,
