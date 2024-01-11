@@ -174,7 +174,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		return err
 	}
 
-	if config.InstallArtifacts {
+	if config.InstallArtifacts && config.BuildTool == "maven" {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
