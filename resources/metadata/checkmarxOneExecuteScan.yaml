@@ -1,0 +1,489 @@
+metadata:
+  name: checkmarxOneExecuteScan
+  description: checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
+  longDescription: |-
+    checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java or TypeScript, Swift, Golang, Ruby code,
+    and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
+
+    This step by default enforces a specific audit baseline for findings and therefore ensures that:
+
+    * No 'To Verify' High and Medium issues exist in your project
+    * Total number of High and Medium 'Confirmed' or 'Urgent' issues is zero
+    * 10% of all Low issues are 'Confirmed' or 'Not Exploitable'
+
+    You can adapt above thresholds specifically using the provided configuration parameters and i.e. check for `absolute`
+    thresholds instead of `percentage` whereas we strongly recommend you to stay with the defaults provided.
+spec:
+  inputs:
+    secrets:
+      - name: checkmarxOneCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing ClientID and ClientSecret to communicate with the checkmarxOne backend.
+        type: jenkins
+      - name: checkmarxOneAPIKey
+        description: Jenkins 'Secret Text' containing the APIKey to communicate with the checkmarxOne backend.
+        type: jenkins
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        type: jenkins
+    resources:
+      - name: checkmarxOne
+        type: stash
+    params:
+      - name: assignees
+        description: Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names. [Not yet supported]
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default: []
+      - name: avoidDuplicateProjectScans
+        type: bool
+        description: Whether duplicate scans of the same project state shall be avoided or not  [Not yet supported]
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: filterPattern
+        type: string
+        description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default:
+          "!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go,
+          **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts"
+      - name: fullScanCycle
+        type: string
+        description: Indicates how often a full scan should happen between the incremental scans when activated
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 5
+      - name: fullScansScheduled
+        type: bool
+        description: Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: generatePdfReport
+        type: bool
+        description: Whether to generate a PDF report of the analysis results or not
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: githubApiUrl
+        description: "Set the GitHub API URL."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: "https://api.github.com"
+      - name: githubToken
+        description: "GitHub personal access token as per
+          https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: access_token
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
+      - name: incremental
+        type: bool
+        description: Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: owner
+        aliases:
+          - name: githubOrg
+        description: "Set the GitHub organization."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: clientSecret
+        type: string
+        description: The clientSecret to authenticate using a service account
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: checkmarxOneCredentialsId
+            type: secret
+            param: clientSecret
+          - type: vaultSecret
+            name: checkmarxOneVaultSecretName
+            default: checkmarxOne
+      - name: APIKey
+        type: string
+        description: The APIKey to authenticate
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: checkmarxOneAPIKey
+            type: secret
+            param: APIKey
+          - type: vaultSecret
+            name: checkmarxOneVaultSecretName
+            default: checkmarxOne
+      - name: preset
+        type: string
+        description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: languageMode
+        type: string
+        description: Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "multi"
+      - name: projectCriticality
+        type: string
+        description: The criticality of the checkmarxOne project, used during project creation
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "3"
+      - name: projectName
+        type: string
+        description: The name of the checkmarxOne project to scan into
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: branch
+        type: string
+        description: Used to supply the branch scanned in the repository, or a friendly-name set by the user
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: pullRequestName
+        type: string
+        description: Used to supply the name for the newly created PR project branch when being used in pull request scenarios. This is supplied by the orchestrator.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: repository
+        aliases:
+          - name: githubRepo
+        description: "Set the GitHub repository."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: serverUrl
+        type: string
+        description: The URL pointing to the root of the checkmarxOne server to be used
+        mandatory: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: iamUrl
+        type: string
+        description: The URL pointing to the access control root of the checkmarxOne IAM server to be used
+        mandatory: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: tenant
+        type: string
+        description: The name of the checkmarxOne tenant to be used
+        mandatory: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceEncoding
+        type: string
+        description: The source encoding to be used, if not set explicitly the project's default will be used  [Not yet supported]
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "1"
+      - name: groupName
+        type: string
+        description: The full name of the group to which the newly created projects will be assigned
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: applicationName
+        type: string
+        description: The full name of the Checkmarx One application to which the newly created projects will be assigned
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: clientId
+        type: string
+        description: The username to authenticate
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: checkmarxOneCredentialsId
+            type: secret
+            param: clientId
+          - type: vaultSecret
+            name: checkmarxOneVaultSecretName
+            default: checkmarxOne
+      - name: verifyOnly
+        type: bool
+        description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: vulnerabilityThresholdEnabled
+        type: bool
+        description: Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: vulnerabilityThresholdHigh
+        type: int
+        description: The specific threshold for high severity findings
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 100
+      - name: vulnerabilityThresholdMedium
+        type: int
+        description: The specific threshold for medium severity findings
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 100
+      - name: vulnerabilityThresholdLow
+        type: int
+        description: The specific threshold for low severity findings
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
+      - name: vulnerabilityThresholdLowPerQuery
+        type: bool
+        description: Flag to activate/deactivate the threshold of low severity findings per query
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: vulnerabilityThresholdLowPerQueryMax
+        type: int
+        description: Upper threshold of low severity findings per query (in absolute number)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
+      - name: vulnerabilityThresholdResult
+        type: string
+        description: The result of the build in case thresholds are enabled and exceeded
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: FAILURE
+        possibleValues:
+          - FAILURE
+      - name: vulnerabilityThresholdUnit
+        type: string
+        description: The unit for the threshold to apply.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: percentage
+      - name: isOptimizedAndScheduled
+        type: bool
+        description: Whether the pipeline runs in optimized mode and the current execution is a scheduled one
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/isOptimizedAndScheduled
+        scope:
+          - PARAMETERS
+      - name: createResultIssue
+        type: bool
+        description: Activate creation of a result issue in GitHub.
+        longDescription: |
+          Whether the step creates a GitHub issue containing the scan results in the originating repo.
+          Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/isOptimizedAndScheduled
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: convertToSarif
+        type: bool
+        description: "Convert the checkmarxOne XML scan results to the open SARIF standard."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: checkmarxOne
+                type: bool
+          - name: checkmarxOne_data
+            fields:
+              - name: high_issues
+                type: int
+              - name: high_not_false_postive
+                type: int
+              - name: high_not_exploitable
+                type: int
+              - name: high_confirmed
+                type: int
+              - name: high_urgent
+                type: int
+              - name: high_proposed_not_exploitable
+                type: int
+              - name: high_to_verify
+                type: int
+              - name: medium_issues
+                type: int
+              - name: medium_not_false_postive
+                type: int
+              - name: medium_not_exploitable
+                type: int
+              - name: medium_confirmed
+                type: int
+              - name: medium_urgent
+                type: int
+              - name: medium_proposed_not_exploitable
+                type: int
+              - name: medium_to_verify
+                type: int
+              - name: low_issues
+                type: int
+              - name: low_not_false_postive
+                type: int
+              - name: low_not_exploitable
+                type: int
+              - name: low_confirmed
+                type: int
+              - name: low_urgent
+                type: int
+              - name: low_proposed_not_exploitable
+                type: int
+              - name: low_to_verify
+                type: int
+              - name: information_issues
+                type: int
+              - name: information_not_false_postive
+                type: int
+              - name: information_not_exploitable
+                type: int
+              - name: information_confirmed
+                type: int
+              - name: information_urgent
+                type: int
+              - name: information_proposed_not_exploitable
+                type: int
+              - name: information_to_verify
+                type: int
+              - name: lines_of_code_scanned
+                type: int
+              - name: files_scanned
+                type: int
+              - name: initiator_name
+              - name: owner
+              - name: scan_id
+              - name: project_id
+              - name: projectName
+              - name: group
+              - name: group_full_path_on_report_date
+              - name: scan_start
+              - name: scan_time
+              - name: tool_version
+              - name: scan_type
+              - name: preset
+              - name: deep_link
+              - name: report_creation_time
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/piper_checkmarxone_report.html"
+            type: checkmarxone
+          - filePattern: "**/Cx1_SASTResults_*.xml"
+            type: checkmarxone
+          - filePattern: "**/ScanReport.*"
+            type: checkmarxone
+          - filePattern: "**/toolrun_checkmarxone_*.json"
+            type: checkmarxone
+          - filePattern: "**/piper_checkmarxone_report.json"
+            type: checkmarxone

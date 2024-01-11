@@ -1,10 +1,12 @@
+//go:build unit
+// +build unit
+
 package blackduck
 
 import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
@@ -24,7 +26,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 	c.header[url] = header
 	response := http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 	}
 
 	if c.errorMessageForURL[url] != "" {
@@ -33,7 +35,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 	}
 
 	if c.responseBodyForURL[url] != "" {
-		response.Body = ioutil.NopCloser(bytes.NewReader([]byte(c.responseBodyForURL[url])))
+		response.Body = io.NopCloser(bytes.NewReader([]byte(c.responseBodyForURL[url])))
 		return &response, nil
 	}
 
@@ -672,6 +674,21 @@ func TestTransformComponentOriginToPurlParts(t *testing.T) {
 				Origins: []ComponentOrigin{},
 			},
 			expected: []string{"generic", "", "spring-expression", "4.1.6.RELEASE"},
+		},
+		{
+			// pkg:debian/libpython3.9-stdlib@3.9.2-1
+			description: "Component with specified architecture",
+			component: &Component{
+				Name:    "Python programming language",
+				Version: "3.9.2",
+				Origins: []ComponentOrigin{
+					{
+						ExternalNamespace: "debian",
+						ExternalID:        "libpython3.9-stdlib/3.9.2-1/amd64",
+					},
+				},
+			},
+			expected: []string{"debian", "libpython3.9-stdlib", "3.9.2-1"},
 		},
 	}
 

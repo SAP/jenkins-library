@@ -16,15 +16,17 @@ import (
 )
 
 type gctsCreateRepositoryOptions struct {
-	Username            string `json:"username,omitempty"`
-	Password            string `json:"password,omitempty"`
-	Repository          string `json:"repository,omitempty"`
-	Host                string `json:"host,omitempty"`
-	Client              string `json:"client,omitempty"`
-	RemoteRepositoryURL string `json:"remoteRepositoryURL,omitempty"`
-	Role                string `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
-	VSID                string `json:"vSID,omitempty"`
-	Type                string `json:"type,omitempty" validate:"possible-values=GIT"`
+	Username            string                 `json:"username,omitempty"`
+	Password            string                 `json:"password,omitempty"`
+	Repository          string                 `json:"repository,omitempty"`
+	Host                string                 `json:"host,omitempty"`
+	Client              string                 `json:"client,omitempty"`
+	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
+	Role                string                 `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
+	VSID                string                 `json:"vSID,omitempty"`
+	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT"`
+	QueryParameters     map[string]interface{} `json:"queryParameters,omitempty"`
+	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
 }
 
 // GctsCreateRepositoryCommand Creates a Git repository on an ABAP system
@@ -66,7 +68,7 @@ func GctsCreateRepositoryCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -98,19 +100,25 @@ func GctsCreateRepositoryCommand() *cobra.Command {
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			gctsCreateRepository(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -131,6 +139,8 @@ func addGctsCreateRepositoryFlags(cmd *cobra.Command, stepConfig *gctsCreateRepo
 	cmd.Flags().StringVar(&stepConfig.Role, "role", `SOURCE`, "Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes")
 	cmd.Flags().StringVar(&stepConfig.VSID, "vSID", os.Getenv("PIPER_vSID"), "Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository")
 	cmd.Flags().StringVar(&stepConfig.Type, "type", `GIT`, "Type of the used source code management tool")
+
+	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -245,6 +255,23 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `GIT`,
+					},
+					{
+						Name:        "queryParameters",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "skipSSLVerification",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

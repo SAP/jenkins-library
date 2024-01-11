@@ -1,14 +1,41 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
+
+var executionLogStringCreateTag string
+var logResultSuccess string
+
+func init() {
+	logResultSuccess = `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
+	executionLog := abaputils.LogProtocolResults{
+		Results: []abaputils.LogProtocol{
+			{
+				ProtocolLine:  1,
+				OverviewIndex: 1,
+				Type:          "LogEntry",
+				Description:   "S",
+				Timestamp:     "/Date(1644332299000+0000)/",
+			},
+		},
+		Count: "1",
+	}
+	executionLogResponse, _ := json.Marshal(executionLog)
+	executionLogStringCreateTag = string(executionLogResponse)
+
+}
 
 func TestRunAbapEnvironmentCreateTag(t *testing.T) {
 
@@ -53,10 +80,16 @@ repositories:
 		}
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : ` + executionLogStringCreateTag + `}`,
+				logResultSuccess,
 				`{"d" : { "Status" : "S" } }`,
 				`{"d" : { "uuid" : "abc" } }`,
+				`{"d" : ` + executionLogStringCreateTag + `}`,
+				logResultSuccess,
 				`{"d" : { "Status" : "S" } }`,
 				`{"d" : { "uuid" : "abc" } }`,
+				`{"d" : ` + executionLogStringCreateTag + `}`,
+				logResultSuccess,
 				`{"d" : { "Status" : "S" } }`,
 				`{"d" : { "uuid" : "abc" } }`,
 				`{"d" : { "empty" : "body" } }`,
@@ -68,13 +101,14 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err = runAbapEnvironmentCreateTag(config, nil, autils, client)
+		apiManager := &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 3, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `Created tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
-		assert.Equal(t, `Created tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message, "Expected a different message")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[2].Message, "Expected a different message")
+		assert.Equal(t, 25, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `Created tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[12].Message, "Expected a different message")
+		assert.Equal(t, `Created tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[18].Message, "Expected a different message")
+		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[24].Message, "Expected a different message")
 		hook.Reset()
 	})
 
@@ -119,10 +153,18 @@ repositories:
 		}
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : ` + executionLogStringCreateTag + `}`,
+				logResultSuccess,
 				`{"d" : { "Status" : "E" } }`,
 				`{"d" : { "uuid" : "abc" } }`,
+				`{"d" : { "empty" : "body" } }`,
+				`{"d" : ` + executionLogStringCreateTag + `}`,
+				logResultSuccess,
 				`{"d" : { "Status" : "E" } }`,
 				`{"d" : { "uuid" : "abc" } }`,
+				`{"d" : { "empty" : "body" } }`,
+				`{"d" : ` + executionLogStringCreateTag + `}`,
+				logResultSuccess,
 				`{"d" : { "Status" : "E" } }`,
 				`{"d" : { "uuid" : "abc" } }`,
 				`{"d" : { "empty" : "body" } }`,
@@ -134,14 +176,15 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err = runAbapEnvironmentCreateTag(config, nil, autils, client)
+		apiManager := &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.Error(t, err, "Did expect error")
-		assert.Equal(t, 4, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `NOT created: Tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
-		assert.Equal(t, `NOT created: Tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[1].Message, "Expected a different message")
-		assert.Equal(t, `NOT created: Tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[2].Message, "Expected a different message")
-		assert.Equal(t, `At least one tag has not been created`, hook.AllEntries()[3].Message, "Expected a different message")
+		assert.Equal(t, 40, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `NOT created: Tag v4.5.6 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[12].Message, "Expected a different message")
+		assert.Equal(t, `NOT created: Tag -DMO-PRODUCT-1.2.3 for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[25].Message, "Expected a different message")
+		assert.Equal(t, `NOT created: Tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[38].Message, "Expected a different message")
+		assert.Equal(t, `At least one tag has not been created`, hook.AllEntries()[39].Message, "Expected a different message")
 		hook.Reset()
 
 	})
@@ -172,6 +215,8 @@ func TestRunAbapEnvironmentCreateTagConfigurations(t *testing.T) {
 		}
 		client := &abaputils.ClientMock{
 			BodyList: []string{
+				`{"d" : ` + executionLogStringCreateTag + `}`,
+				logResultSuccess,
 				`{"d" : { "Status" : "S" } }`,
 				`{"d" : { "uuid" : "abc" } }`,
 				`{"d" : { "empty" : "body" } }`,
@@ -183,11 +228,12 @@ func TestRunAbapEnvironmentCreateTagConfigurations(t *testing.T) {
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err := runAbapEnvironmentCreateTag(config, nil, autils, client)
+		apiManager := &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err := runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 1, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
+		assert.Equal(t, 13, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[12].Message, "Expected a different message")
 		hook.Reset()
 	})
 
@@ -250,7 +296,8 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err = runAbapEnvironmentCreateTag(config, nil, autils, client)
+		apiManager := &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.Error(t, err, "Did expect error")
 		assert.Equal(t, "Something failed during the tag creation: Configuring the parameter repositories and the parameter repositoryName at the same time is not allowed", err.Error(), "Expected different error message")
@@ -312,11 +359,12 @@ repositories:
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err = runAbapEnvironmentCreateTag(config, nil, autils, client)
+		apiManager := &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentCreateTag(config, autils, apiManager)
 
 		assert.NoError(t, err, "Did not expect error")
-		assert.Equal(t, 1, len(hook.Entries), "Expected a different number of entries")
-		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[0].Message, "Expected a different message")
+		assert.Equal(t, 6, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `Created tag tag for repository /DMO/SWC with commitID 1234abcd`, hook.AllEntries()[5].Message, "Expected a different message")
 		hook.Reset()
 
 	})

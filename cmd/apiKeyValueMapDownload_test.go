@@ -1,7 +1,9 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -12,7 +14,7 @@ func TestRunApiKeyValueMapDownload(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfull Download of API Key Value Map", func(t *testing.T) {
-		file, err := ioutil.TempFile("", "CustKVM.json")
+		file, err := os.CreateTemp("", "CustKVM.json")
 		if err != nil {
 			t.FailNow()
 		}

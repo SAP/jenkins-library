@@ -1,8 +1,10 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -93,7 +95,7 @@ func mockGlob(matchesForPatterns map[string][]string) func(pattern string) ([]st
 
 func createTaskReportFile(t *testing.T, workingDir string) {
 	require.NoError(t, os.MkdirAll(filepath.Join(workingDir, ".scannerwork"), 0o755))
-	require.NoError(t, ioutil.WriteFile(filepath.Join(workingDir, ".scannerwork", "report-task.txt"), []byte(taskReportContent), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(workingDir, ".scannerwork", "report-task.txt"), []byte(taskReportContent), 0o755))
 	require.FileExists(t, filepath.Join(workingDir, ".scannerwork", "report-task.txt"))
 }
 

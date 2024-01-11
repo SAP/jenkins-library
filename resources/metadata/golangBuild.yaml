@@ -164,7 +164,7 @@ spec:
           - PARAMETERS
       - name: runTests
         type: bool
-        description: Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum).
+        description: Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum). Tag Go unit tests with 'unit' build tag to exclude them using `--runTests=false`
         default: true
         scope:
           - STEPS
@@ -209,6 +209,7 @@ spec:
         type: "string"
         description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
         scope:
+          - GENERAL
           - STEPS
           - STAGES
           - PARAMETERS
@@ -247,7 +248,7 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        default: "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-linux-amd64.tar.gz"
+        default: "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz"
   outputs:
     resources:
       - name: commonPipelineEnvironment

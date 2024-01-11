@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cloudfoundry
 
 import (
@@ -5,7 +8,6 @@ import (
 
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"os"
 )
 
@@ -252,6 +254,6 @@ func TestWriteManifest(t *testing.T) {
 }
 
 func cleanup() {
-	_readFile = ioutil.ReadFile
-	_writeFile = ioutil.WriteFile
+	_readFile = os.ReadFile
+	_writeFile = os.WriteFile
 }

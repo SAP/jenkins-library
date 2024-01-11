@@ -31,8 +31,10 @@ type kubernetesDeployOptions struct {
 	DeployTool                 string                 `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
 	ForceUpdates               bool                   `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds      int                    `json:"helmDeployWaitSeconds,omitempty"`
+	HelmTestWaitSeconds        int                    `json:"helmTestWaitSeconds,omitempty"`
 	HelmValues                 []string               `json:"helmValues,omitempty"`
 	ValuesMapping              map[string]interface{} `json:"valuesMapping,omitempty"`
+	RenderSubchartNotes        bool                   `json:"renderSubchartNotes,omitempty"`
 	GithubToken                string                 `json:"githubToken,omitempty"`
 	Image                      string                 `json:"image,omitempty"`
 	ImageNames                 []string               `json:"imageNames,omitempty"`
@@ -114,7 +116,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -146,19 +148,25 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			kubernetesDeploy(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -185,8 +193,10 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
 	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
+	cmd.Flags().IntVar(&stepConfig.HelmTestWaitSeconds, "helmTestWaitSeconds", 300, "Number of seconds to wait for any individual Kubernetes operation (like Jobs for hooks). See https://helm.sh/docs/helm/helm_test/#options for further details")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 
+	cmd.Flags().BoolVar(&stepConfig.RenderSubchartNotes, "renderSubchartNotes", true, "If set, render subchart notes along with the parent.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.ImageNames, "imageNames", []string{}, "List of names of the images to be deployed.")
@@ -269,7 +279,7 @@ func kubernetesDeployMetadata() config.StepData {
 								Param: "custom/localHelmChartPath",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "helmChartPath"}},
@@ -417,6 +427,15 @@ func kubernetesDeployMetadata() config.StepData {
 						Default:     300,
 					},
 					{
+						Name:        "helmTestWaitSeconds",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     300,
+					},
+					{
 						Name:        "helmValues",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -432,6 +451,15 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "renderSubchartNotes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name: "githubToken",
@@ -666,7 +694,7 @@ func kubernetesDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3.9.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
+				{Image: "dtzar/helm-kubectl:3", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
 				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm"}}}}},
 				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "kubectl"}}}}},
 			},

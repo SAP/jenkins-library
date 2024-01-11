@@ -1,9 +1,11 @@
+//go:build unit
+// +build unit
+
 package config
 
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"reflect"
 	"strings"
 	"testing"
@@ -57,10 +59,10 @@ func TestInitRunConfigV1(t *testing.T) {
 	filesMock := mock.FilesMock{}
 
 	for _, test := range tt {
-		stageConfig := ioutil.NopCloser(strings.NewReader(test.stageConfig))
+		stageConfig := io.NopCloser(strings.NewReader(test.stageConfig))
 		runConfig := RunConfig{StageConfigFile: stageConfig}
 		runConfigV1 := RunConfigV1{RunConfig: runConfig}
-		err := runConfigV1.InitRunConfigV1(&test.config, nil, nil, nil, nil, &filesMock, ".pipeline")
+		err := runConfigV1.InitRunConfigV1(&test.config, &filesMock, ".pipeline")
 		if len(test.errorContains) > 0 {
 			assert.Contains(t, fmt.Sprint(err), test.errorContains)
 		} else {
@@ -80,7 +82,7 @@ func TestInitRunConfig(t *testing.T) {
 	}{
 		{
 			name: "init run config with config condition - success",
-			customConfig: ioutil.NopCloser(strings.NewReader(`
+			customConfig: io.NopCloser(strings.NewReader(`
 general: 
   testGeneral: 'myVal1'
 stages: 
@@ -90,7 +92,7 @@ steps:
   thirdStep: 
     testStep: 'myVal3'
             `)),
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
+			stageConfig: io.NopCloser(strings.NewReader(`
 stages:
   testStage1:
     stepConditions:
@@ -120,7 +122,7 @@ stages:
 		},
 		{
 			name: "init run config with filePattern condition - success",
-			customConfig: ioutil.NopCloser(strings.NewReader(`
+			customConfig: io.NopCloser(strings.NewReader(`
 general: 
   testGeneral: 'myVal1'
 stages: 
@@ -130,7 +132,7 @@ steps:
   thirdStep: 
     testStep: 'myVal3'
             `)),
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
+			stageConfig: io.NopCloser(strings.NewReader(`
 stages:
   testStage1:
     stepConditions:
@@ -160,12 +162,12 @@ stages:
 		},
 		{
 			name: "init run config - unknown condition in stage config",
-			customConfig: ioutil.NopCloser(strings.NewReader(`
+			customConfig: io.NopCloser(strings.NewReader(`
 steps: 
   testStep: 
     testConfig: 'testVal'
             `)),
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
+			stageConfig: io.NopCloser(strings.NewReader(`
 stages:
   testStage:
     stepConditions:
@@ -177,7 +179,7 @@ stages:
 		},
 		{
 			name:             "init run config - load conditions with invalid format",
-			stageConfig:      ioutil.NopCloser(strings.NewReader("wrong stage config format")),
+			stageConfig:      io.NopCloser(strings.NewReader("wrong stage config format")),
 			runStepsExpected: map[string]map[string]bool{},
 			wantErr:          true,
 		},
@@ -209,13 +211,13 @@ func TestRunConfigLoadConditions(t *testing.T) {
         filePattern: '**/my.file'
 `
 	t.Run("load conditions - file of invalid format", func(t *testing.T) {
-		runConfig := &RunConfig{StageConfigFile: ioutil.NopCloser(strings.NewReader("-- {{ \\ wrong } file format }"))}
+		runConfig := &RunConfig{StageConfigFile: io.NopCloser(strings.NewReader("-- {{ \\ wrong } file format }"))}
 		err := runConfig.loadConditions()
 		assert.Error(t, err, "format of configuration is invalid")
 	})
 
 	t.Run("load conditions - success", func(t *testing.T) {
-		runConfig := &RunConfig{StageConfigFile: ioutil.NopCloser(strings.NewReader(stageConfigContent))}
+		runConfig := &RunConfig{StageConfigFile: io.NopCloser(strings.NewReader(stageConfigContent))}
 
 		err := runConfig.loadConditions()
 		assert.NoError(t, err)

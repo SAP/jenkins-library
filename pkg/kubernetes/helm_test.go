@@ -1,8 +1,12 @@
+//go:build unit
+// +build unit
+
 package kubernetes
 
 import (
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -112,6 +116,9 @@ func TestRunHelmAdd(t *testing.T) {
 }
 
 func TestRunHelmUpgrade(t *testing.T) {
+	os.Setenv("IMAGE", "image")
+	os.Setenv("PIPER_VAULTCREDENTIAL_IMAGE", "image")
+
 	testTable := []struct {
 		config            HelmExecuteOptions
 		generalVerbose    bool
@@ -124,15 +131,16 @@ func TestRunHelmUpgrade(t *testing.T) {
 				Namespace:             "test_namespace",
 				ForceUpdates:          true,
 				HelmDeployWaitSeconds: 3456,
-				AdditionalParameters:  []string{"additional parameter"},
+				AdditionalParameters:  []string{"additional", "parameters"},
 				Image:                 "dtzar/helm-kubectl:3.4.1",
 				TargetRepositoryName:  "test",
 				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+				RenderSubchartNotes:   true,
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
 				{Exec: "helm", Params: []string{"repo", "add", "test", "https://charts.helm.sh/stable", "--debug"}},
-				{Exec: "helm", Params: []string{"upgrade", "test_deployment", "test", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"}},
+				{Exec: "helm", Params: []string{"upgrade", "test_deployment", "test", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "--render-subchart-notes", "additional", "parameters"}},
 			},
 		},
 		{
@@ -142,14 +150,48 @@ func TestRunHelmUpgrade(t *testing.T) {
 				Namespace:             "test_namespace",
 				ForceUpdates:          true,
 				HelmDeployWaitSeconds: 3456,
-				AdditionalParameters:  []string{"additional parameter"},
+				AdditionalParameters:  []string{"additional", "parameters"},
 				Image:                 "dtzar/helm-kubectl:3.4.1",
 				TargetRepositoryName:  "test",
 				TargetRepositoryURL:   "https://charts.helm.sh/stable",
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"upgrade", "test_deployment", ".", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional parameter"}},
+				{Exec: "helm", Params: []string{"upgrade", "test_deployment", ".", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "additional", "parameters"}},
+			},
+		},
+		{
+			config: HelmExecuteOptions{
+				DeploymentName:        "test_deployment",
+				ChartPath:             ".",
+				Namespace:             "test_namespace",
+				ForceUpdates:          true,
+				HelmDeployWaitSeconds: 3456,
+				AdditionalParameters:  []string{"--set", "image.repository=$IMAGE"},
+				Image:                 "dtzar/helm-kubectl:3.4.1",
+				TargetRepositoryName:  "test",
+				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+			},
+			generalVerbose: true,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"upgrade", "test_deployment", ".", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "--set", "image.repository=$IMAGE"}},
+			},
+		},
+		{
+			config: HelmExecuteOptions{
+				DeploymentName:        "test_deployment",
+				ChartPath:             ".",
+				Namespace:             "test_namespace",
+				ForceUpdates:          true,
+				HelmDeployWaitSeconds: 3456,
+				AdditionalParameters:  []string{"--set", "image.repository=$PIPER_VAULTCREDENTIAL_IMAGE"},
+				Image:                 "dtzar/helm-kubectl:3.4.1",
+				TargetRepositoryName:  "test",
+				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+			},
+			generalVerbose: true,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"upgrade", "test_deployment", ".", "--debug", "--install", "--namespace", "test_namespace", "--force", "--wait", "--timeout", "3456s", "--atomic", "--set", "image.repository=image"}},
 			},
 		},
 	}
@@ -215,6 +257,8 @@ func TestRunHelmLint(t *testing.T) {
 }
 
 func TestRunHelmInstall(t *testing.T) {
+	os.Setenv("PIPER_VAULTCREDENTIAL_MY_SCRIPT", "dothings.sh")
+
 	testTable := []struct {
 		config            HelmExecuteOptions
 		generalVerbose    bool
@@ -228,11 +272,12 @@ func TestRunHelmInstall(t *testing.T) {
 				HelmDeployWaitSeconds: 525,
 				TargetRepositoryURL:   "https://charts.helm.sh/stable",
 				TargetRepositoryName:  "test",
+				RenderSubchartNotes:   true,
 			},
 			generalVerbose: false,
 			expectedExecCalls: []mock.ExecCall{
 				{Exec: "helm", Params: []string{"repo", "add", "test", "https://charts.helm.sh/stable"}},
-				{Exec: "helm", Params: []string{"install", "testPackage", "test", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", "test", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--render-subchart-notes"}},
 			},
 		},
 		{
@@ -256,14 +301,48 @@ func TestRunHelmInstall(t *testing.T) {
 				Namespace:             "test-namespace",
 				HelmDeployWaitSeconds: 525,
 				KeepFailedDeployments: false,
-				AdditionalParameters:  []string{"--set-file my_script=dothings.sh"},
+				AdditionalParameters:  []string{"--set-file", "my_script=dothings.sh"},
 				TargetRepositoryURL:   "https://charts.helm.sh/stable",
 				TargetRepositoryName:  "test",
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file my_script=dothings.sh", "--debug", "--dry-run"}},
-				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file my_script=dothings.sh", "--debug"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug"}},
+			},
+		},
+		{
+			config: HelmExecuteOptions{
+				ChartPath:             ".",
+				DeploymentName:        "testPackage",
+				Namespace:             "test-namespace",
+				HelmDeployWaitSeconds: 525,
+				KeepFailedDeployments: false,
+				AdditionalParameters:  []string{"--set-file", "my_script=$PIPER_VAULTCREDENTIAL_MY_SCRIPT"},
+				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+				TargetRepositoryName:  "test",
+			},
+			generalVerbose: true,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug"}},
+			},
+		},
+		{
+			config: HelmExecuteOptions{
+				ChartPath:             ".",
+				DeploymentName:        "testPackage",
+				Namespace:             "test-namespace",
+				HelmDeployWaitSeconds: 525,
+				KeepFailedDeployments: false,
+				AdditionalParameters:  []string{"--set", "auth=Basic user:password"},
+				TargetRepositoryURL:   "https://charts.helm.sh/stable",
+				TargetRepositoryName:  "test",
+			},
+			generalVerbose: true,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set", "auth=Basic user:password", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set", "auth=Basic user:password", "--debug"}},
 			},
 		},
 	}

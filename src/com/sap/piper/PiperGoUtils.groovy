@@ -20,12 +20,17 @@ class PiperGoUtils implements Serializable {
     }
 
     void unstashPiperBin() {
+        // Check if the piper binary is already present
+        if (steps.sh(script: "[ -x ./${piperExecutable} ]", returnStatus: true) == 0) {
+            steps.echo "Found ${piperExecutable} binary in the workspace - skipping unstash"
+            return
+        }
 
         if (utils.unstash('piper-bin').size() > 0) return
 
         if (steps.env.REPOSITORY_UNDER_TEST && steps.env.LIBRARY_VERSION_UNDER_TEST) {
             steps.echo("Running in a consumer test, building unit-under-test binary for verification.")
-            steps.dockerExecute(script: steps, dockerImage: 'golang:1.18', dockerOptions: '-u 0', dockerEnvVars: [
+            steps.dockerExecute(script: steps, dockerImage: 'golang:1.19', dockerOptions: '-u 0', dockerEnvVars: [
                 REPOSITORY_UNDER_TEST: steps.env.REPOSITORY_UNDER_TEST,
                 LIBRARY_VERSION_UNDER_TEST: steps.env.LIBRARY_VERSION_UNDER_TEST
             ]) {
@@ -79,7 +84,7 @@ class PiperGoUtils implements Serializable {
     private boolean downloadGoBinary(url) {
 
         try {
-            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
+            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --retry 5 --retry-max-time 240 --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
 
             if (httpStatus == '200') {
                 steps.sh(script: "chmod +x ${piperExecutable}")

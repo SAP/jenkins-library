@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -24,6 +24,12 @@ const (
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
+
+	// enables url-log.json creation
+	cmd := reflect.ValueOf(utils).Elem().FieldByName("Command")
+	if cmd.IsValid() {
+		reflect.Indirect(cmd).FieldByName("StepName").SetString("mavenBuild")
+	}
 
 	err := runMavenBuild(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
@@ -53,9 +59,9 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	if config.CreateBOM {
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.1:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
 		createBOMConfig := []string{
-			"-DschemaVersion=1.2",
+			"-DschemaVersion=1.4",
 			"-DincludeBomSerialNumber=true",
 			"-DincludeCompileScope=true",
 			"-DincludeProvidedScope=true",
@@ -128,7 +134,10 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
 			}
 
-			deployFlags := []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}
+			deployFlags := []string{}
+			if len(config.DeployFlags) > 0 {
+				deployFlags = append(deployFlags, config.DeployFlags...)
+			}
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryURL) > 0) {
 				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
 			}
@@ -251,7 +260,7 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 }
 
 func getTempDirForCertFile() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}

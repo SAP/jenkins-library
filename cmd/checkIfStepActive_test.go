@@ -1,8 +1,10 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -36,7 +38,7 @@ steps:
 	default:
 		fileContent = ""
 	}
-	return ioutil.NopCloser(strings.NewReader(fileContent)), nil
+	return io.NopCloser(strings.NewReader(fileContent)), nil
 }
 
 func checkStepActiveFileExistsMock(filename string) (bool, error) {

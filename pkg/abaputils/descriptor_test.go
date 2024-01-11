@@ -1,8 +1,10 @@
+//go:build unit
+// +build unit
+
 package abaputils
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -134,7 +136,7 @@ func TestReadAddonDescriptor(t *testing.T) {
       - repo: 'testRepo'
       - repo: 'testRepo2'`
 
-		err := ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
 		assert.NoError(t, err)
 
 		addonDescriptor, err := ReadAddonDescriptor("repositories.yml")

@@ -54,6 +54,9 @@ type whitesourceExecuteScanOptions struct {
 	ProjectToken                         string   `json:"projectToken,omitempty"`
 	Reporting                            bool     `json:"reporting,omitempty"`
 	ScanImage                            string   `json:"scanImage,omitempty"`
+	ScanImages                           []string `json:"scanImages,omitempty"`
+	SkipParentProjectResolution          bool     `json:"skipParentProjectResolution,omitempty"`
+	ActivateMultipleImagesScan           bool     `json:"activateMultipleImagesScan,omitempty"`
 	ScanImageRegistryURL                 string   `json:"scanImageRegistryUrl,omitempty"`
 	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty"`
 	ServiceURL                           string   `json:"serviceUrl,omitempty"`
@@ -74,6 +77,8 @@ type whitesourceExecuteScanOptions struct {
 	Repository                           string   `json:"repository,omitempty"`
 	Assignees                            []string `json:"assignees,omitempty"`
 	CustomTLSCertificateLinks            []string `json:"customTlsCertificateLinks,omitempty"`
+	PrivateModules                       string   `json:"privateModules,omitempty"`
+	PrivateModulesGitToken               string   `json:"privateModulesGitToken,omitempty"`
 }
 
 type whitesourceExecuteScanCommonPipelineEnvironment struct {
@@ -162,10 +167,10 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/whitesource-ip.json", ParamRef: "", StepResultType: "whitesource-ip"},
-		{FilePattern: "**/whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-ip"},
+		{FilePattern: "**/*risk-report.pdf", ParamRef: "", StepResultType: "whitesource-ip"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-ip"},
 		{FilePattern: "**/piper_whitesource_vulnerability_report.html", ParamRef: "", StepResultType: "whitesource-security"},
-		{FilePattern: "**/whitesource-riskReport.pdf", ParamRef: "", StepResultType: "whitesource-security"},
+		{FilePattern: "**/*risk-report.pdf", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "**/toolrun_whitesource_*.json", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "**/piper_whitesource_vulnerability.sarif", ParamRef: "", StepResultType: "whitesource-security"},
 		{FilePattern: "**/piper_whitesource_sbom.xml", ParamRef: "", StepResultType: "whitesource-security"},
@@ -243,13 +248,14 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 			log.RegisterSecret(stepConfig.OrgToken)
 			log.RegisterSecret(stepConfig.UserToken)
 			log.RegisterSecret(stepConfig.GithubToken)
+			log.RegisterSecret(stepConfig.PrivateModulesGitToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -284,19 +290,25 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			whitesourceExecuteScan(stepConfig, &stepTelemetryData, &commonPipelineEnvironment, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -329,7 +341,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringSliceVar(&stepConfig.Excludes, "excludes", []string{}, "List of file path patterns to exclude in the scan.")
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the step on severe vulnerabilties or not")
 	cmd.Flags().StringSliceVar(&stepConfig.Includes, "includes", []string{}, "List of file path patterns to include in the scan.")
-	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios.")
+	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "Install command that can be used to populate the default docker image for some scenarios.")
 	cmd.Flags().StringVar(&stepConfig.JreDownloadURL, "jreDownloadUrl", `https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz`, "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.")
 	cmd.Flags().BoolVar(&stepConfig.LicensingVulnerabilities, "licensingVulnerabilities", true, "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.OrgToken, "orgToken", os.Getenv("PIPER_orgToken"), "WhiteSource token identifying your organization.")
@@ -340,6 +352,9 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ProjectToken, "projectToken", os.Getenv("PIPER_projectToken"), "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`. Used for project aggregation when scanning with the Unified Agent and can be provided as an alternative to `projectName`.")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "For `buildTool: docker`: Defines the docker image which should be scanned.")
+	cmd.Flags().StringSliceVar(&stepConfig.ScanImages, "scanImages", []string{}, "For `buildTool: docker`: Allowing to scan multiple docker images. In case parent project will not contain any dependecies, use skipParentProjectResolution parameter")
+	cmd.Flags().BoolVar(&stepConfig.SkipParentProjectResolution, "skipParentProjectResolution", false, "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies.")
+	cmd.Flags().BoolVar(&stepConfig.ActivateMultipleImagesScan, "activateMultipleImagesScan", false, "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters")
 	cmd.Flags().StringVar(&stepConfig.ScanImageRegistryURL, "scanImageRegistryUrl", os.Getenv("PIPER_scanImageRegistryUrl"), "For `buildTool: docker`: Defines the registry where the scanImage is located.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource API endpoint.")
@@ -360,6 +375,8 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
+	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
+	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
 	cmd.MarkFlagRequired("buildTool")
 	cmd.MarkFlagRequired("orgToken")
@@ -381,11 +398,13 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					{Name: "orgAdminUserTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing Whitesource org admin token.", Type: "jenkins", Aliases: []config.Alias{{Name: "whitesourceOrgAdminUserTokenCredentialsId", Deprecated: false}, {Name: "whitesource/orgAdminUserTokenCredentialsId", Deprecated: true}}},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
 					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+					{Name: "golangPrivateModulesGitTokenCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
 					{Name: "opensourceConfiguration", Type: "stash"},
 					{Name: "checkmarx", Type: "stash"},
+					{Name: "checkmarxOne", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -739,6 +758,38 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_scanImage"),
 					},
 					{
+						Name: "scanImages",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name:        "skipParentProjectResolution",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "activateMultipleImagesScan",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
 						Name: "scanImageRegistryUrl",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -960,6 +1011,36 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name:        "privateModules",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_privateModules"),
+					},
+					{
+						Name: "privateModulesGitToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "golangPrivateModulesGitTokenCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+
+							{
+								Name:    "golangPrivateModulesGitTokenVaultSecret",
+								Type:    "vaultSecret",
+								Default: "golang",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_privateModulesGitToken"),
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -995,10 +1076,10 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Type: "reports",
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/whitesource-ip.json", "type": "whitesource-ip"},
-							{"filePattern": "**/whitesource-riskReport.pdf", "type": "whitesource-ip"},
+							{"filePattern": "**/*risk-report.pdf", "type": "whitesource-ip"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-ip"},
 							{"filePattern": "**/piper_whitesource_vulnerability_report.html", "type": "whitesource-security"},
-							{"filePattern": "**/whitesource-riskReport.pdf", "type": "whitesource-security"},
+							{"filePattern": "**/*risk-report.pdf", "type": "whitesource-security"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-security"},
 							{"filePattern": "**/piper_whitesource_vulnerability.sarif", "type": "whitesource-security"},
 							{"filePattern": "**/piper_whitesource_sbom.xml", "type": "whitesource-security"},

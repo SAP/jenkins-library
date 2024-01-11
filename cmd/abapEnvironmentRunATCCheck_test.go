@@ -1,8 +1,10 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
 	"encoding/xml"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -652,7 +654,7 @@ atcobjects:
     - name: /DMO/SWC
 `
 
-		err := ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -688,7 +690,7 @@ objectset:
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:package name=\"Z_TEST_TREE\" includeSubpackages=\"true\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></atc:runparameters>"
 
-		err := ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -715,7 +717,7 @@ objectset:
   - name: /DMO/SWC
 `
 
-		err := ioutil.WriteFile(config.Repositories, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.Repositories, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)

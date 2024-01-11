@@ -4,61 +4,18 @@ boolean insideWorkTree() {
     return sh(returnStatus: true, script: 'git rev-parse --is-inside-work-tree 1>/dev/null 2>&1') == 0
 }
 
-boolean isMergeCommit(){
-    def cmd = 'git rev-parse --verify HEAD^2'
-    return sh(returnStatus: true, script: cmd) == 0
+boolean isMergeCommit() throws MissingPropertyException{
+    for (def extension : scm.getExtensions()) {
+        if(extension instanceof jenkins.plugins.git.MergeWithGitSCMExtension){
+            return true;
+        }
+    }
+
+    return false;
 }
 
-String getGitMergeCommitId(String gitChangeId){
-    if(!scm){
-        throw new Exception('scm content not found')
-    }
-
-    def remoteConfig = scm.getUserRemoteConfigs()
-    if(!remoteConfig || remoteConfig.size() == 0 || !remoteConfig[0].getCredentialsId()){
-        throw new Exception('scm remote configuration not found')
-    }
-
-
-    def scmCredId = remoteConfig[0].getCredentialsId()
-    try{
-        withCredentials([gitUsernamePassword(credentialsId: scmCredId, gitToolName: 'git-tool')]) {
-            sh 'git fetch origin "+refs/pull/'+gitChangeId+'/*:refs/remotes/origin/pull/'+gitChangeId+'/*"'
-        }
-    } catch (Exception e) {
-        echo 'Error in running git fetch'
-        throw e
-    }
-
-    String commitId
-    def cmd = "git rev-parse refs/remotes/origin/pull/"+gitChangeId+"/merge"
-    try {
-        commitId = sh(returnStdout: true, script: cmd).trim()
-    } catch (Exception e) {
-        echo 'Exception occurred getting the git merge commitId'
-        throw e
-    }
-
-    return commitId
-}
-
-boolean compareParentsOfMergeAndHead(String mergeCommitId){
-    try {
-        String mergeCommitParents = sh(returnStdout: true, script: "git rev-parse ${mergeCommitId}^@ | tac").trim()
-        String headCommitParents = sh(returnStdout: true, script: "git rev-parse HEAD^@").trim()
-        if(mergeCommitParents.equals(headCommitParents)){
-            return true
-        }
-    } catch (Exception e) {
-        echo 'Error comparing merge commit parents and local merge commit parents'
-        throw e
-    }
-
-
-    echo "GH merge parents: ${mergeCommitParents}"
-    echo "Local merge parents: ${headCommitParents}"
-    echo 'Github merge parents and local merge parents do not match; PR was updated since Jenkins job started. Try re-running the job.'
-    return false
+String getMergeCommitSha() throws MissingPropertyException{
+    return pullRequest.mergeCommitSha
 }
 
 boolean isWorkTreeDirty() {
@@ -133,7 +90,7 @@ static String handleTestRepository(Script steps, Map config){
     // checkout test repository
     steps.git options
     // stash test content
-    steps.stash stashName
+    steps.stash stashName //TODO: should use new Utils().stash
     // return stash name
     return stashName
 }

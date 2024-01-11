@@ -36,6 +36,7 @@ type gradleExecuteBuildOptions struct {
 	ApplyPublishingForAllProjects bool     `json:"applyPublishingForAllProjects,omitempty"`
 	ExcludeCreateBOMForProjects   []string `json:"excludeCreateBOMForProjects,omitempty"`
 	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
+	BuildFlags                    []string `json:"buildFlags,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -118,7 +119,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 	var createGradleExecuteBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step runs a gradle build command with parameters provided to the step.",
-		Long:  `This step runs a gradle build command with parameters provided to the step.`,
+		Long:  `This step runs a gradle build command with parameters provided to the step.Supports execution of gradle tasks with or without wrapper.Gradle tasks and flags can be specified via 'task' or 'buildFlags' parameter. If both are not specified 'build' task will run by default.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -143,7 +144,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -177,19 +178,25 @@ func GradleExecuteBuildCommand() *cobra.Command {
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			gradleExecuteBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -202,7 +209,7 @@ func GradleExecuteBuildCommand() *cobra.Command {
 
 func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Path to the folder with build.gradle (or build.gradle.kts) file which should be executed.")
-	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "Gradle task that should be executed.")
+	cmd.Flags().StringVar(&stepConfig.Task, "task", `build`, "A single gradle task that should be executed. If you prefer more than one, use 'buildFlags' parameter. If 'buildFlags' parameter is specified, this parameter will be ignored.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures gradle to publish the artifact to a repository.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
@@ -215,6 +222,7 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().BoolVar(&stepConfig.ApplyPublishingForAllProjects, "applyPublishingForAllProjects", false, "If set to false publishing logic will be applied in 'rootProject' directive, otherwise 'allprojects' will be directive used")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludeCreateBOMForProjects, "excludeCreateBOMForProjects", []string{}, "Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter")
 
 }
 
@@ -378,6 +386,15 @@ func gradleExecuteBuildMetadata() config.StepData {
 					},
 					{
 						Name:        "excludePublishingForProjects",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "buildFlags",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",

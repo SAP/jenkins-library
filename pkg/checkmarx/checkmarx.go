@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -49,6 +48,26 @@ type Scan struct {
 type ProjectCreateResult struct {
 	ID   int  `json:"id"`
 	Link Link `json:"link"`
+}
+
+// ProjectBranchingResponse - ProjectBranchingResponse Structure
+type ProjectBranchingResponse struct {
+	ID   int  `json:"id"`
+	Link Link `json:"link"`
+}
+
+type BranchingStatus struct {
+	ID    int    `json:"id"`
+	Value string `json:"value"`
+}
+
+// ProjectBranchingStatusResponse - ProjectBranchingStatusResponse Structure
+type ProjectBranchingStatusResponse struct {
+	ID                int             `json:"id"`
+	OriginalProjectId int             `json:"originalProjectId"`
+	BranchedProjectId int             `json:"branchedProjectId"`
+	Status            BranchingStatus `json:"status"`
+	ErrorMessage      string          `json:"errorMessage"`
 }
 
 // Report - Report Structure
@@ -275,8 +294,8 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	var requestBody io.Reader
 	var requestBodyCopy io.Reader
 	if body != nil {
-		closer := ioutil.NopCloser(body)
-		bodyBytes, _ := ioutil.ReadAll(closer)
+		closer := io.NopCloser(body)
+		bodyBytes, _ := io.ReadAll(closer)
 		requestBody = bytes.NewBuffer(bodyBytes)
 		requestBodyCopy = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
@@ -288,7 +307,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 		return nil, err
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	sys.logger.Debugf("Valid response body: %v", string(data))
 	defer response.Body.Close()
 	return data, nil
@@ -296,11 +315,11 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 
 func (sys *SystemInstance) recordRequestDetailsInErrorCase(requestBody io.Reader, response *http.Response) {
 	if requestBody != nil {
-		data, _ := ioutil.ReadAll(ioutil.NopCloser(requestBody))
+		data, _ := io.ReadAll(io.NopCloser(requestBody))
 		sys.logger.Errorf("Request body: %s", data)
 	}
 	if response != nil && response.Body != nil {
-		data, _ := ioutil.ReadAll(response.Body)
+		data, _ := io.ReadAll(response.Body)
 		sys.logger.Errorf("Response body: %s", data)
 		response.Body.Close()
 	}
@@ -432,10 +451,39 @@ func (sys *SystemInstance) CreateBranch(projectID int, branchName string) int {
 		return 0
 	}
 
-	var scan Scan
+	var branchingResponse ProjectBranchingResponse
+	json.Unmarshal(data, &branchingResponse)
+	branchedProjectId := branchingResponse.ID
 
-	json.Unmarshal(data, &scan)
-	return scan.ID
+	branchingStatusId := 0 // 0 Started, 1 InProgress, 2 Completed, 3 Failed
+	i := 0
+	for branchingStatusId != 2 {
+		dataBranchingStatus, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/branch/%v", branchedProjectId), nil, header)
+		if err != nil {
+			sys.logger.Warnf("Failed to poll status of branching process: %s", err)
+		} else {
+			var branchingStatusResponse ProjectBranchingStatusResponse
+			json.Unmarshal(dataBranchingStatus, &branchingStatusResponse)
+			branchingStatusId = branchingStatusResponse.Status.ID
+			branchingStatusValue := branchingStatusResponse.Status.Value
+			sys.logger.Debugf("Branching process status: %s", branchingStatusValue)
+			if branchingStatusId == 2 {
+				sys.logger.Debug("Branching process completed successfuly")
+				break
+			} else if branchingStatusId == 3 {
+				sys.logger.Errorf("Branching process failed. Error is: %s", branchingStatusResponse.ErrorMessage)
+				return 0
+			}
+		}
+		if i >= 30 {
+			// time out after 5 minutes
+			sys.logger.Errorf("Branching process timed out.")
+			return 0
+		}
+		i++
+		time.Sleep(10 * time.Second)
+	}
+	return branchedProjectId
 }
 
 // UploadProjectSourceCode zips and uploads the project sources for scanning
@@ -450,7 +498,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 		return errors.Wrap(err, "failed to uploaded zipped sources")
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
 		return errors.Wrap(err, "error reading the response data")

@@ -9,11 +9,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -44,6 +44,7 @@ type Client struct {
 	useDefaultTransport       bool
 	trustedCerts              []string
 	fileUtils                 piperutils.FileUtils
+	httpClient                *http.Client
 }
 
 // ClientOptions defines the options to be set on the client
@@ -224,7 +225,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 
 // Send sends a http request
 func (c *Client) Send(request *http.Request) (*http.Response, error) {
-	httpClient := c.initialize()
+	httpClient := c.initializeHttpClient()
 	response, err := httpClient.Do(request)
 	if err != nil {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
@@ -269,12 +270,15 @@ func (c *Client) SetFileUtils(fileUtils piperutils.FileUtils) {
 
 // StandardClient returns a stdlib *http.Client which respects the custom settings.
 func (c *Client) StandardClient() *http.Client {
-	return c.initialize()
+	return c.initializeHttpClient()
 }
 
-func (c *Client) initialize() *http.Client {
+func (c *Client) initializeHttpClient() *http.Client {
+	if c.httpClient != nil {
+		return c.httpClient
+	}
+
 	c.applyDefaults()
-	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
 	var transport = &TransportWrapper{
 		Transport: &http.Transport{
@@ -306,7 +310,6 @@ func (c *Client) initialize() *http.Client {
 		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
 	}
 
-	var httpClient *http.Client
 	if c.maxRetries > 0 {
 		retryClient := retryablehttp.NewClient()
 		localLogger := log.Entry()
@@ -333,13 +336,14 @@ func (c *Client) initialize() *http.Client {
 			}
 			return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 		}
-		httpClient = retryClient.StandardClient()
+		c.httpClient = retryClient.StandardClient()
 	} else {
-		httpClient = &http.Client{}
-		httpClient.Timeout = c.maxRequestDuration
-		httpClient.Jar = c.cookieJar
+		c.httpClient = &http.Client{
+			Timeout: c.maxRequestDuration,
+			Jar:     c.cookieJar,
+		}
 		if !c.useDefaultTransport {
-			httpClient.Transport = transport
+			c.httpClient.Transport = transport
 		}
 	}
 
@@ -349,7 +353,7 @@ func (c *Client) initialize() *http.Client {
 
 	c.logger.Debugf("Transport timeout: %v, max request duration: %v", c.transportTimeout, c.maxRequestDuration)
 
-	return httpClient
+	return c.httpClient
 }
 
 type contextKey struct {
@@ -397,7 +401,7 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 		var buf bytes.Buffer
 		tee := io.TeeReader(req.Body, &buf)
 		log.Entry().Debugf("body: %v", transformBody(tee))
-		req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
@@ -415,7 +419,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 			var buf bytes.Buffer
 			tee := io.TeeReader(resp.Body, &buf)
 			log.Entry().Debugf("body: %v", transformBody(tee))
-			resp.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+			resp.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
 	} else {
 		log.Entry().Debug("response <nil>")
@@ -597,7 +601,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				}
 				log.Entry().Debugf("wrote %v bytes from response body to file", numWritten)
 
-				certs, err := ioutil.ReadFile(target)
+				certs, err := os.ReadFile(target)
 				if err != nil {
 					return errors.Wrapf(err, "failed to read cert file %v", certificate)
 				}
@@ -612,7 +616,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			}
 		} else {
 			log.Entry().Debugf("existing certificate file %v found, appending it to rootCA", target)
-			certs, err := ioutil.ReadFile(target)
+			certs, err := os.ReadFile(target)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read cert file %v", certificate)
 			}
@@ -648,7 +652,7 @@ func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 		return errors.Errorf("cannot parse HTTP response with value <nil>")
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return errors.Wrap(readErr, "HTTP response body could not be read")
 	}
@@ -667,7 +671,7 @@ func ParseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error 
 		return errors.Errorf("cannot parse HTTP response with value <nil>")
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read")
 	}

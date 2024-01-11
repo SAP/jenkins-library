@@ -12,8 +12,10 @@ import (
 )
 
 const (
-	PyBomFilename = "bom-pip.xml"
-	stepName      = "pythonBuild"
+	PyBomFilename           = "bom-pip.xml"
+	stepName                = "pythonBuild"
+	cycloneDxPackageVersion = "cyclonedx-bom==3.11.0"
+	cycloneDxSchemaVersion  = "1.4"
 )
 
 type pythonBuildUtils interface {
@@ -144,13 +146,13 @@ func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 }
 
 func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
-	pipInstallFlags = append(pipInstallFlags, "cyclonedx-bom")
+	pipInstallFlags = append(pipInstallFlags, cycloneDxPackageVersion)
 	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
 		return err
 	}
-	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-bom")
+	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-py")
 
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename); err != nil {
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename, "--format", "xml", "--schema-version", cycloneDxSchemaVersion); err != nil {
 		return err
 	}
 	return nil

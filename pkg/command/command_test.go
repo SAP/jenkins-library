@@ -1,9 +1,12 @@
+//go:build unit
+// +build unit
+
 package command
 
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -257,7 +260,7 @@ func TestHelperProcess(*testing.T) {
 	cmd, args := args[0], args[1:]
 	switch cmd {
 	case "/bin/bash":
-		o, _ := ioutil.ReadAll(os.Stdin)
+		o, _ := io.ReadAll(os.Stdin)
 		fmt.Fprintf(os.Stdout, "Stdout: command %v - Stdin: %v\n", cmd, string(o))
 		fmt.Fprintf(os.Stderr, "Stderr: command %v\n", cmd)
 	case "echo":

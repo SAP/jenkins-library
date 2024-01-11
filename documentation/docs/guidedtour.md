@@ -175,7 +175,6 @@ Browse the steadily increasing list of features you can implement through the pr
 
 The **Configuration** pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
 
-[guidedtour-my-own-jenkins]:         myownjenkins.md
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
 [guidedtour-sample.jenkins]:         samples/cloud-cf-helloworld-nodejs/Jenkinsfile
 [guidedtour-sample.mta]:             samples/cloud-cf-helloworld-nodejs/mta.yaml
@@ -186,8 +185,6 @@ The **Configuration** pattern supports simple pipelines that can be reused by mu
 
 [sap]:                               https://www.sap.com
 [sap-cp-trial]:                      https://account.hanatrial.ondemand.com
-
-[devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md
 
 [cloud-cf-helloworld-nodejs]:        https://github.com/SAP/cloud-cf-helloworld-nodejs
 [github]:                            https://github.com

@@ -24,6 +24,7 @@ type cloudFoundryCreateServiceKeyOptions struct {
 	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
 	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty"`
 	CfServiceKeyConfig string `json:"cfServiceKeyConfig,omitempty"`
+	CfAsync            bool   `json:"cfAsync,omitempty"`
 }
 
 // CloudFoundryCreateServiceKeyCommand cloudFoundryCreateServiceKey
@@ -65,7 +66,7 @@ func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -97,19 +98,25 @@ func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			cloudFoundryCreateServiceKey(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -129,6 +136,7 @@ func addCloudFoundryCreateServiceKeyFlags(cmd *cobra.Command, stepConfig *cloudF
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter for CloudFoundry Service Instance Name")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter for Service Key name for CloudFoundry Service Key to be created")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyConfig, "cfServiceKeyConfig", os.Getenv("PIPER_cfServiceKeyConfig"), "Path to JSON config file path or JSON in-line string for Cloud Foundry Service Key creation")
+	cmd.Flags().BoolVar(&stepConfig.CfAsync, "cfAsync", true, "Decides if the service key creation runs asynchronously")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -248,6 +256,15 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyConfig"}},
 						Default:     os.Getenv("PIPER_cfServiceKeyConfig"),
+					},
+					{
+						Name:        "cfAsync",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 				},
 			},

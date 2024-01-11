@@ -3,6 +3,9 @@ general:
   collectTelemetryData: false
 steps:
   cnbBuild:
+    buildEnvVars:
+      BP_DATADOG_ENABLED: true
+      BP_EAR_KEY: 74657374
     bindings:
       maven-settings:
         type: maven
@@ -10,5 +13,11 @@ steps:
         content: "invalid xml"
       dummy-binding:
         type: dummy
-        key: dummy.yml
-        file: TestCnbIntegration/config.yml
+        data:
+        - key: dummy.yml
+          file: config.yml
+      dynatrace:
+        type: Dynatrace
+        data:
+        - key: api-key
+          vaultCredentialKey: dynatrace-api-key

@@ -30,6 +30,7 @@ type cloudFoundryCreateServiceOptions struct {
 	ServiceManifest        string   `json:"serviceManifest,omitempty"`
 	ManifestVariables      []string `json:"manifestVariables,omitempty"`
 	ManifestVariablesFiles []string `json:"manifestVariablesFiles,omitempty"`
+	CfAsync                bool     `json:"cfAsync,omitempty"`
 }
 
 // CloudFoundryCreateServiceCommand Creates one or multiple Services in Cloud Foundry
@@ -77,7 +78,7 @@ Please provide either of the following options:
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -109,19 +110,25 @@ Please provide either of the following options:
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			cloudFoundryCreateService(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -147,6 +154,7 @@ func addCloudFoundryCreateServiceFlags(cmd *cobra.Command, stepConfig *cloudFoun
 	cmd.Flags().StringVar(&stepConfig.ServiceManifest, "serviceManifest", `service-manifest.yml`, "Path to Cloud Foundry Service Manifest in YAML format for multiple service creations that are being passed to a Create-Service-Push Cloud Foundry cli plugin")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariables, "manifestVariables", []string{}, "Defines a List of variables as key-value Map objects used for variable substitution within the file given by the Manifest. Defaults to an empty list, if not specified otherwise. This can be used to set variables like it is provided by `cf push --var key=value`. The order of the maps of variables given in the list is relevant in case there are conflicting variable names and values between maps contained within the list. In case of conflicts, the last specified map in the list will win. Though each map entry in the list can contain more than one key-value pair for variable substitution, it is recommended to stick to one entry per map, and rather declare more maps within the list. The reason is that if a map in the list contains more than one key-value entry, and the entries are conflicting, the conflict resolution behavior is undefined (since map entries have no sequence). Variables defined via `manifestVariables` always win over conflicting variables defined via any file given by `manifestVariablesFiles` - no matter what is declared before. This is the same behavior as can be observed when using `cf push --var` in combination with `cf push --vars-file`")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariablesFiles, "manifestVariablesFiles", []string{}, "Defines the manifest variables Yaml files to be used to replace variable references in manifest. This parameter is optional and will default to `manifest-variables.yml`. This can be used to set variable files like it is provided by `cf push --vars-file <file>`. If the manifest is present and so are all variable files, a variable substitution will be triggered that uses the `cfManifestSubstituteVariables` step before deployment. The format of variable references follows the Cloud Foundry standard in `https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution`")
+	cmd.Flags().BoolVar(&stepConfig.CfAsync, "cfAsync", true, "Decides if the service creation runs asynchronously")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -321,6 +329,15 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariablesFiles"}, {Name: "cfManifestVariablesFiles"}},
 						Default:     []string{},
+					},
+					{
+						Name:        "cfAsync",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 				},
 			},

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -49,10 +49,11 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar:  cookieJar,
-		Username:   config.Username,
-		Password:   config.Password,
-		MaxRetries: maxRetries,
+		CookieJar:                 cookieJar,
+		Username:                  config.Username,
+		Password:                  config.Password,
+		MaxRetries:                maxRetries,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 	httpClient.SetOptions(clientOptions)
 	log.Entry().Infof("Start of gCTS Deploy Step with Configuration Values: %v", config)
@@ -73,6 +74,8 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		Role:                config.Role,
 		VSID:                config.VSID,
 		Type:                config.Type,
+		QueryParameters:     config.QueryParameters,
+		SkipSSLVerification: config.SkipSSLVerification,
 	}
 	log.Entry().Infof("gCTS Deploy : Checking if repository %v already exists", config.Repository)
 	repoMetadataInitState, getRepositoryErr := getRepository(config, httpClient)
@@ -97,11 +100,13 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		}
 
 		cloneRepoOptions := gctsCloneRepositoryOptions{
-			Username:   config.Username,
-			Password:   config.Password,
-			Repository: config.Repository,
-			Host:       config.Host,
-			Client:     config.Client,
+			Username:            config.Username,
+			Password:            config.Password,
+			Repository:          config.Repository,
+			Host:                config.Host,
+			Client:              config.Client,
+			QueryParameters:     config.QueryParameters,
+			SkipSSLVerification: config.SkipSSLVerification,
 		}
 		// No Import has to be set when there is a commit or branch parameter set
 		// This is required so that during the clone of the repo it is not imported into the system
@@ -236,11 +241,12 @@ func pullByCommitWithRollback(config *gctsDeployOptions, telemetryData *telemetr
 		if config.Rollback {
 			//Rollback to last commit.
 			rollbackOptions := gctsRollbackOptions{
-				Username:   config.Username,
-				Password:   config.Password,
-				Repository: config.Repository,
-				Host:       config.Host,
-				Client:     config.Client,
+				Username:            config.Username,
+				Password:            config.Password,
+				Repository:          config.Repository,
+				Host:                config.Host,
+				Client:              config.Client,
+				SkipSSLVerification: config.SkipSSLVerification,
 			}
 			rollbackErr := rollback(&rollbackOptions, telemetryData, command, httpClient)
 			if rollbackErr != nil {
@@ -308,6 +314,14 @@ func switchBranch(config *gctsDeployOptions, httpClient piperhttp.Sender, curren
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository + "/branches/" + currentBranch +
 		"/switch?branch=" + targetBranch + "&sap-client=" + config.Client
+
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
+
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
 		if resp != nil && resp.Body != nil {
@@ -340,6 +354,14 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/deploy?sap-client=" + config.Client
+
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
+
 	reqBody := deployRequestBody
 	jsonBody, marshalErr := json.Marshal(reqBody)
 	if marshalErr != nil {
@@ -377,6 +399,13 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"?sap-client=" + config.Client
 
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
+
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
 		if resp != nil && resp.Body != nil {
@@ -407,6 +436,14 @@ func deleteConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sende
 	requestURL := deployConfig.Host +
 		"/sap/bc/cts_abapvcs/repository/" + deployConfig.Repository +
 		"/config/" + configToDelete + "?sap-client=" + deployConfig.Client
+
+	requestURL, urlErr := addQueryToURL(requestURL, deployConfig.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
+
 	header := make(http.Header)
 	header.Set("Content-Type", "application/json")
 	header.Add("Accept", "application/json")
@@ -434,6 +471,13 @@ func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, 
 	requestURL := deployConfig.Host +
 		"/sap/bc/cts_abapvcs/repository/" + deployConfig.Repository +
 		"/config?sap-client=" + deployConfig.Client
+
+	requestURL, urlErr := addQueryToURL(requestURL, deployConfig.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 
 	reqBody := configToSet
 	jsonBody, marshalErr := json.Marshal(reqBody)
@@ -470,16 +514,24 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar:  cookieJar,
-		Username:   config.Username,
-		Password:   config.Password,
-		MaxRetries: -1,
+		CookieJar:                 cookieJar,
+		Username:                  config.Username,
+		Password:                  config.Password,
+		MaxRetries:                -1,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 	httpClient.SetOptions(clientOptions)
 
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/pullByCommit?sap-client=" + config.Client + "&request=" + config.Commit
+
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
 
 	if config.Commit != "" {
 		log.Entry().Infof("preparing to deploy specified commit %v", config.Commit)
@@ -506,7 +558,7 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 		return errors.New("did not retrieve a HTTP response")
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read")
@@ -531,10 +583,11 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 		return errors.Wrapf(cookieErr, "creating repository on the ABAP system %v failed", config.Host)
 	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar:  cookieJar,
-		Username:   config.Username,
-		Password:   config.Password,
-		MaxRetries: -1,
+		CookieJar:                 cookieJar,
+		Username:                  config.Username,
+		Password:                  config.Password,
+		MaxRetries:                -1,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -577,6 +630,13 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 
 	url := config.Host + "/sap/bc/cts_abapvcs/repository?sap-client=" + config.Client
 
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return urlErr
+	}
+
 	resp, httpErr := httpClient.SendRequest("POST", url, bytes.NewBuffer(jsonBody), header, nil)
 
 	defer func() {
@@ -617,6 +677,13 @@ func getConfigurationMetadata(config *gctsDeployOptions, httpClient piperhttp.Se
 	log.Entry().Infof("Starting to retrieve configuration metadata from the system")
 	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/config?sap-client=" + config.Client
+
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
@@ -703,6 +770,39 @@ func parseErrorDumpFromResponseBody(responseBody *http.Response) (*errorLogBody,
 		}
 	}
 	return &errorDump, nil
+}
+
+func addQueryToURL(requestURL string, keyValue map[string]interface{}) (string, error) {
+
+	var formattedURL string
+	formattedURL = requestURL
+	if keyValue != nil {
+		if strings.Contains(requestURL, "?") {
+			for key, value := range keyValue {
+				configValue := fmt.Sprint(value)
+				formattedURL = formattedURL + "&" + key + "=" + configValue
+			}
+		} else {
+			i := 0
+			for key, value := range keyValue {
+				configValue := fmt.Sprint(value)
+				if i == 0 {
+					formattedURL = requestURL + "?" + key + "=" + configValue
+				} else {
+					formattedURL = formattedURL + "&" + key + "=" + configValue
+				}
+				i++
+			}
+		}
+	}
+	if strings.Count(formattedURL, "") > 2001 {
+
+		log.Entry().Error("Url endpoint is longer than 2000 characters!")
+		return formattedURL, errors.New("Url endpoint is longer than 2000 characters!")
+
+	}
+
+	return formattedURL, nil
 }
 
 type repositoryConfiguration struct {

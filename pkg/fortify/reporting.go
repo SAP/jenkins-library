@@ -2,6 +2,7 @@ package fortify
 
 import (
 	"bytes"
+	"compress/gzip"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -144,11 +145,11 @@ func WriteJSONReport(jsonReport FortifyReportData) ([]piperutils.Path, error) {
 	return reportPaths, nil
 }
 
-func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
+func WriteSarif(sarif format.SARIF, fileName string) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 
-	sarifReportPath := filepath.Join(ReportsDirectory, "result.sarif")
+	sarifReportPath := filepath.Join(ReportsDirectory, fileName)
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to create report directory")
@@ -173,6 +174,43 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 		return reportPaths, errors.Wrapf(err, "failed to write fortify SARIF report")
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify SARIF Report", Target: sarifReportPath})
+
+	return reportPaths, nil
+}
+
+func WriteGzipSarif(sarif format.SARIF, fileName string) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	sarifReportPath := filepath.Join(ReportsDirectory, fileName)
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
+
+	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
+	// https://stackoverflow.com/questions/28595664/how-to-stop-json-marshal-from-escaping-and
+	buffer := new(bytes.Buffer)
+	// create JSON encoder for buffer
+	bufEncoder := json.NewEncoder(buffer)
+	// set options
+	bufEncoder.SetEscapeHTML(false)
+	bufEncoder.SetIndent("", "  ")
+	//encode to buffer
+	bufEncoder.Encode(sarif)
+
+	// Initialize gzip
+	gzBuffer := &bytes.Buffer{}
+	gzWriter := gzip.NewWriter(gzBuffer)
+	gzWriter.Write([]byte(buffer.Bytes()))
+	gzWriter.Close()
+
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
+	if err := utils.FileWrite(sarifReportPath, gzBuffer.Bytes(), 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write Fortify SARIF gzip report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify SARIF gzip Report", Target: sarifReportPath})
 
 	return reportPaths, nil
 }

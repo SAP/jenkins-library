@@ -23,6 +23,7 @@ import (
 
 type sonarExecuteScanOptions struct {
 	Instance                  string   `json:"instance,omitempty"`
+	Proxy                     string   `json:"proxy,omitempty"`
 	ServerURL                 string   `json:"serverUrl,omitempty"`
 	Token                     string   `json:"token,omitempty"`
 	Organization              string   `json:"organization,omitempty"`
@@ -36,6 +37,7 @@ type sonarExecuteScanOptions struct {
 	InferJavaBinaries         bool     `json:"inferJavaBinaries,omitempty"`
 	InferJavaLibraries        bool     `json:"inferJavaLibraries,omitempty"`
 	Options                   []string `json:"options,omitempty"`
+	WaitForQualityGate        bool     `json:"waitForQualityGate,omitempty"`
 	BranchName                string   `json:"branchName,omitempty"`
 	InferBranchName           bool     `json:"inferBranchName,omitempty"`
 	ChangeID                  string   `json:"changeId,omitempty"`
@@ -178,7 +180,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -212,19 +214,25 @@ func SonarExecuteScanCommand() *cobra.Command {
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			sonarExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -237,11 +245,12 @@ func SonarExecuteScanCommand() *cobra.Command {
 
 func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use serverUrl parameter instead")
+	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL to be used for communication with the SonarQube instance.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Sonar backend.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token used to authenticate with the Sonar Server.")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "SonarCloud.io only: Organization that the project will be assigned to in SonarCloud.io.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
-	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip`, "URL to the sonar-scanner-cli archive.")
+	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip`, "URL to the sonar-scanner-cli archive.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for the version when reporting the results for the project.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The project version that is reported to SonarQube.")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
@@ -250,6 +259,7 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().BoolVar(&stepConfig.InferJavaBinaries, "inferJavaBinaries", false, "Find the location of generated Java class files in all modules and pass the option `sonar.java.binaries to the sonar tool.")
 	cmd.Flags().BoolVar(&stepConfig.InferJavaLibraries, "inferJavaLibraries", false, "If the parameter `m2Path` is configured for the step `mavenExecute` in the general section of the configuration, pass it as option `sonar.java.libraries` to the sonar tool.")
 	cmd.Flags().StringSliceVar(&stepConfig.Options, "options", []string{}, "A list of options which are passed to the sonar-scanner.")
+	cmd.Flags().BoolVar(&stepConfig.WaitForQualityGate, "waitForQualityGate", false, "Whether the scan should wait for and consider the result of the quality gate.")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to. Automatically inferred from environment variables on supported orchestrators if `inferBranchName` is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.InferBranchName, "inferBranchName", false, "Whether to infer the `branchName` parameter automatically based on the orchestrator-specific environment variable in runs of the pipeline.")
 	cmd.Flags().StringVar(&stepConfig.ChangeID, "changeId", os.Getenv("PIPER_changeId"), "Pull-Request only: The id of the pull-request. Automatically inferred from environment variables on supported orchestrators.")
@@ -289,6 +299,15 @@ func sonarExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_instance"),
+					},
+					{
+						Name:        "proxy",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_proxy"),
 					},
 					{
 						Name:        "serverUrl",
@@ -344,7 +363,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip`,
+						Default:     `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip`,
 					},
 					{
 						Name:        "versioningModel",
@@ -422,6 +441,15 @@ func sonarExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "sonarProperties", Deprecated: true}},
 						Default:     []string{},
+					},
+					{
+						Name:        "waitForQualityGate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "branchName",
@@ -564,7 +592,7 @@ func sonarExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.7", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.8", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

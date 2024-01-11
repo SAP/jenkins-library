@@ -38,6 +38,9 @@ spec:
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
+      - name: golangPrivateModulesGitTokenCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.
+        type: jenkins
     params:
       - name: agentDownloadUrl
         type: string
@@ -234,7 +237,7 @@ spec:
           - STEPS
       - name: installCommand
         type: string
-        description: "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios."
+        description: "Install command that can be used to populate the default docker image for some scenarios."
         scope:
           - PARAMETERS
           - STAGES
@@ -374,6 +377,33 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: scanImages
+        type: "[]string"
+        description: "For `buildTool: docker`: Allowing to scan multiple docker images. In case parent project will not contain any dependecies, use skipParentProjectResolution parameter"
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: skipParentProjectResolution
+        type: bool
+        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose
+        Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: activateMultipleImagesScan
+        type: bool
+        description: "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
@@ -597,12 +627,40 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: privateModules
+        type: "string"
+        description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        alias:
+          - goprivate
+      - name: privateModulesGitToken
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: golangPrivateModulesGitTokenCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: golangPrivateModulesGitTokenVaultSecret
+            default: golang
     resources:
       - name: buildDescriptor
         type: stash
       - name: opensourceConfiguration
         type: stash
       - name: checkmarx
+        type: stash
+      - name: checkmarxOne
         type: stash
   outputs:
     resources:
@@ -633,13 +691,13 @@ spec:
         params:
           - filePattern: "**/whitesource-ip.json"
             type: whitesource-ip
-          - filePattern: "**/whitesource-riskReport.pdf"
+          - filePattern: "**/*risk-report.pdf"
             type: whitesource-ip
           - filePattern: "**/toolrun_whitesource_*.json"
             type: whitesource-ip
           - filePattern: "**/piper_whitesource_vulnerability_report.html"
             type: whitesource-security
-          - filePattern: "**/whitesource-riskReport.pdf"
+          - filePattern: "**/*risk-report.pdf"
             type: whitesource-security
           - filePattern: "**/toolrun_whitesource_*.json"
             type: whitesource-security

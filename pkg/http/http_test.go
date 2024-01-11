@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package http
 
 import (
@@ -9,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -96,7 +98,7 @@ func TestDefaultTransport(t *testing.T) {
 		assert.NoError(t, err)
 		// assert.NotEmpty(t, count)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
-		content, err := ioutil.ReadAll(response.Body)
+		content, err := io.ReadAll(response.Body)
 		defer response.Body.Close()
 		require.NoError(t, err, "unexpected error while reading response body")
 		assert.Equal(t, "OK", string(content), "unexpected response content")
@@ -167,7 +169,7 @@ func TestSendRequest(t *testing.T) {
 
 			response, err := test.client.SendRequest("GET", server.URL, test.body, test.header, test.cookies)
 			assert.NoError(t, err, "Error occurred but none expected")
-			content, err := ioutil.ReadAll(response.Body)
+			content, err := io.ReadAll(response.Body)
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
 
@@ -262,7 +264,7 @@ func TestUploadRequest(t *testing.T) {
 			t.FailNow()
 		}
 		defer req.Body.Close()
-		passedFileContents, err = ioutil.ReadAll(multipartFile)
+		passedFileContents, err = io.ReadAll(multipartFile)
 		if err != nil {
 			t.FailNow()
 		}
@@ -272,13 +274,13 @@ func TestUploadRequest(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	testFile, err := ioutil.TempFile("", "testFileUpload")
+	testFile, err := os.CreateTemp("", "testFileUpload")
 	if err != nil {
 		t.FailNow()
 	}
 	defer os.RemoveAll(testFile.Name()) // clean up
 
-	fileContents, err := ioutil.ReadFile(testFile.Name())
+	fileContents, err := os.ReadFile(testFile.Name())
 	if err != nil {
 		t.FailNow()
 	}
@@ -305,7 +307,7 @@ func TestUploadRequest(t *testing.T) {
 			client.SetOptions(test.clientOptions)
 			response, err := client.UploadFile(server.URL, testFile.Name(), "Field1", test.header, test.cookies, "form")
 			assert.NoError(t, err, "Error occurred but none expected")
-			content, err := ioutil.ReadAll(response.Body)
+			content, err := io.ReadAll(response.Body)
 			assert.NoError(t, err, "Error occurred but none expected")
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
@@ -334,7 +336,7 @@ func TestUploadRequest(t *testing.T) {
 			client.SetOptions(test.clientOptions)
 			response, err := client.UploadRequest(test.method, server.URL, testFile.Name(), "Field1", test.header, test.cookies, "form")
 			assert.NoError(t, err, "Error occurred but none expected")
-			content, err := ioutil.ReadAll(response.Body)
+			content, err := io.ReadAll(response.Body)
 			assert.NoError(t, err, "Error occurred but none expected")
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
@@ -504,7 +506,7 @@ func TestParseHTTPResponseBodyJSON(t *testing.T) {
 
 		json := `{"name":"Test Name","full_name":"test full name","owner":{"login": "octocat"}}`
 		// create a new reader with that JSON
-		r := ioutil.NopCloser(bytes.NewReader([]byte(json)))
+		r := io.NopCloser(bytes.NewReader([]byte(json)))
 		httpResponse := http.Response{
 			StatusCode: 200,
 			Body:       r,
@@ -538,7 +540,7 @@ func TestParseHTTPResponseBodyJSON(t *testing.T) {
 	t.Run("wrong JSON formatting", func(t *testing.T) {
 
 		json := `{"name":"Test Name","full_name":"test full name";"owner":{"login": "octocat"}}`
-		r := ioutil.NopCloser(bytes.NewReader([]byte(json)))
+		r := io.NopCloser(bytes.NewReader([]byte(json)))
 		httpResponse := http.Response{
 			StatusCode: 200,
 			Body:       r,
@@ -594,7 +596,7 @@ func TestParseHTTPResponseBodyXML(t *testing.T) {
 		<app:service xmlns:app="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
 		`
 		// create a new reader with that xml
-		r := ioutil.NopCloser(bytes.NewReader([]byte(myXML)))
+		r := io.NopCloser(bytes.NewReader([]byte(myXML)))
 		httpResponse := http.Response{
 			StatusCode: 200,
 			Body:       r,
@@ -630,7 +632,7 @@ func TestParseHTTPResponseBodyXML(t *testing.T) {
 		<?xml version="1.0" encoding="utf-8"?>
 		<app:service xmlns:app=http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
 		`
-		r := ioutil.NopCloser(bytes.NewReader([]byte(myXML)))
+		r := io.NopCloser(bytes.NewReader([]byte(myXML)))
 		httpResponse := http.Response{
 			StatusCode: 200,
 			Body:       r,

@@ -52,7 +52,7 @@ general:
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   globalExtensionsDirectory: '.pipeline/tmp/global_extensions/'
   jenkinsKubernetes:
-    jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
+    jnlpAgent: 'jenkins/inbound-agent:jdk11'
     securityContext:
     # Setting security context globally is currently not working with jaas
     #  runAsUser: 1000
@@ -375,12 +375,14 @@ steps:
   pipelineStashFilesAfterBuild:
     stashIncludes:
       buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/**'
-      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
+      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
+      checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
     stashExcludes:
       buildResult: ''
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
+      checkmarxOne: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
       sonar: ''
     noDefaultExludes: []
@@ -392,7 +394,9 @@ steps:
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties, **/*.cds'
+      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, **/*.d, **/*.di, **/*.ts'
+      checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, **/*.d, **/*.di, **/*.ts'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
@@ -401,6 +405,8 @@ steps:
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       tests: ''
+      checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
+      checkmarxOne: '**/*.mockserver.js, node_modules/**/*.js'
     noDefaultExludes:
       - 'git'
   piperPublishWarnings:
@@ -475,6 +481,7 @@ steps:
       active: false
     jmeter:
       pattern: '**/*.jtl'
+      filterRegex: ''
       errorFailedThreshold: 20
       errorUnstableThreshold: 10
       errorUnstableResponseTimeThreshold: ''

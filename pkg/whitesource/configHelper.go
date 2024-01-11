@@ -46,7 +46,14 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 	newConfig := properties.LoadMap(newConfigMap)
 
 	now := time.Now().Format("20060102150405")
-	newConfigFilePath := fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
+
+	var newConfigFilePath string
+
+	if s.ScanPath != "." {
+		newConfigFilePath = fmt.Sprintf("%v/%v.%v", s.ScanPath, s.ConfigFilePath, now)
+	} else {
+		newConfigFilePath = fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
+	}
 
 	var configContent bytes.Buffer
 	_, err = newConfig.Write(&configContent, properties.UTF8)
@@ -134,7 +141,7 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils, pro
 		{Name: "userKey", Value: config.UserToken, Force: true},
 		{Name: "forceUpdate", Value: true, Force: true},
 		{Name: "offline", Value: false, Force: true},
-		{Name: "resolveAllDependencies", Value: false, Force: true},
+		{Name: "resolveAllDependencies", Value: false, Force: false},
 		{Name: "failErrorLevel", Value: "ALL", Force: true},
 		{Name: "case.sensitive.glob", Value: false},
 		{Name: "followSymbolicLinks", Value: true},
@@ -154,7 +161,6 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "fileSystemScan", Value: true},
 			{Name: "ignoreSourceFiles", Value: false},
 			{Name: "python.resolveGlobalPackages", Value: true, Force: false},
-			{Name: "resolveAllDependencies", Value: true, Force: false},
 			{Name: "updateType", Value: "OVERRIDE", Force: true},
 			{Name: "docker.excludeBaseImage", Value: "true", Force: false},
 		},

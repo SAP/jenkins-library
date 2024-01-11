@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -68,8 +71,8 @@ func TestMavenBuild(t *testing.T) {
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
 		assert.Nil(t, err)
-		assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.1:makeAggregateBom")
-		assert.Contains(t, mockedUtils.Calls[0].Params, "-DschemaVersion=1.2")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DschemaVersion=1.4")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeBomSerialNumber=true")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeCompileScope=true")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeProvidedScope=true")
@@ -98,7 +101,7 @@ func TestMavenBuild(t *testing.T) {
 	t.Run("mavenBuild with deploy must skip build, install and test", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
-		config := mavenBuildOptions{Publish: true, Verify: false}
+		config := mavenBuildOptions{Publish: true, Verify: false, DeployFlags: []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}}
 
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 

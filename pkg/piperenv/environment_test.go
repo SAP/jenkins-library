@@ -1,7 +1,10 @@
+//go:build unit
+// +build unit
+
 package piperenv
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -46,7 +49,7 @@ func TestSetResourceParameter(t *testing.T) {
 				targetFile += ".json"
 			}
 			assert.FileExists(t, targetFile)
-			v, err = ioutil.ReadFile(targetFile)
+			v, err = os.ReadFile(targetFile)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.want, string(v))
 		})

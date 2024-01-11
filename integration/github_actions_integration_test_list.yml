@@ -9,6 +9,7 @@ run:
   - '"TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"'
   - '"TestCNBIntegrationNPMCustomBuildpacksFullProject"'
   - '"TestCNBIntegrationProjectDescriptor"'
+  - '"TestCNBIntegrationPrePostBuildpacks"'
 
   - '"TestGolangIntegration"'
   - '"TestGradleIntegration"'
@@ -18,7 +19,9 @@ run:
 
   - '"TestMavenIntegration"'
   - '"TestMTAIntegration"'
-  - '"TestNexusIntegration"'
+  # - '"TestNexusIntegration"'
+  - '"TestTmsUploadIntegration"'
+  - '"TestTmsExportIntegration"'
 
   # these are light-weighted tests, so we can use only one pod to reduce resource consumption
   - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'

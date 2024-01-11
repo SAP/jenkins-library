@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package orchestrator
 
 import (
@@ -27,16 +30,16 @@ func TestAzure(t *testing.T) {
 		os.Setenv("BUILD_REPOSITORY_URI", "github.com/foo/bar")
 		os.Setenv("SYSTEM_DEFINITIONNAME", "bar")
 		os.Setenv("SYSTEM_DEFINITIONID", "1234")
-		p, _ := NewOrchestratorSpecificConfigProvider()
+		p, _ := GetOrchestratorConfigProvider(nil)
 
 		assert.False(t, p.IsPullRequest())
-		assert.Equal(t, "feat/test-azure", p.GetBranch())
-		assert.Equal(t, "refs/heads/feat/test-azure", p.GetReference())
-		assert.Equal(t, "https://pogo.sap/foo/bar/_build/results?buildId=42", p.GetBuildURL())
-		assert.Equal(t, "abcdef42713", p.GetCommit())
-		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())
+		assert.Equal(t, "feat/test-azure", p.Branch())
+		assert.Equal(t, "refs/heads/feat/test-azure", p.GitReference())
+		assert.Equal(t, "https://pogo.sap/foo/bar/_build/results?buildId=42", p.BuildURL())
+		assert.Equal(t, "abcdef42713", p.CommitSHA())
+		assert.Equal(t, "github.com/foo/bar", p.RepoURL())
 		assert.Equal(t, "Azure", p.OrchestratorType())
-		assert.Equal(t, "https://pogo.sap/foo/bar/_build?definitionId=1234", p.GetJobURL())
+		assert.Equal(t, "https://pogo.sap/foo/bar/_build?definitionId=1234", p.JobURL())
 	})
 
 	t.Run("PR", func(t *testing.T) {
@@ -47,8 +50,8 @@ func TestAzure(t *testing.T) {
 		os.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
 		os.Setenv("BUILD_REASON", "PullRequest")
 
-		p := AzureDevOpsConfigProvider{}
-		c := p.GetPullRequestConfig()
+		p := azureDevopsConfigProvider{}
+		c := p.PullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
 		assert.Equal(t, "feat/test-azure", c.Branch)
@@ -65,8 +68,8 @@ func TestAzure(t *testing.T) {
 		os.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTNUMBER", "42")
 		os.Setenv("BUILD_REASON", "PullRequest")
 
-		p := AzureDevOpsConfigProvider{}
-		c := p.GetPullRequestConfig()
+		p := azureDevopsConfigProvider{}
+		c := p.PullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
 		assert.Equal(t, "feat/test-azure", c.Branch)
@@ -95,14 +98,14 @@ func TestAzure(t *testing.T) {
 		os.Setenv("BUILD_BUILDNUMBER", "20220318.16")
 		os.Setenv("BUILD_REPOSITORY_NAME", "repo-org/repo-name")
 
-		p := AzureDevOpsConfigProvider{}
+		p := azureDevopsConfigProvider{}
 
 		assert.Equal(t, "https://dev.azure.com/fabrikamfiber/", p.getSystemCollectionURI())
 		assert.Equal(t, "123a4567-ab1c-12a1-1234-123456ab7890", p.getTeamProjectID())
-		assert.Equal(t, "42", p.getAzureBuildID())     // Don't confuse getAzureBuildID and GetBuildID!
-		assert.Equal(t, "20220318.16", p.GetBuildID()) // buildNumber is used in the UI
+		assert.Equal(t, "42", p.getAzureBuildID())  // Don't confuse getAzureBuildID and provider.BuildID!
+		assert.Equal(t, "20220318.16", p.BuildID()) // buildNumber is used in the UI
 		assert.Equal(t, "2.193.0", p.OrchestratorVersion())
-		assert.Equal(t, "repo-org/repo-name", p.GetJobName())
+		assert.Equal(t, "repo-org/repo-name", p.JobName())
 
 	})
 }
@@ -137,10 +140,10 @@ func TestAzureDevOpsConfigProvider_GetPipelineStartTime(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &AzureDevOpsConfigProvider{}
+			a := &azureDevopsConfigProvider{}
 			a.apiInformation = tt.apiInformation
-			pipelineStartTime := a.GetPipelineStartTime()
-			assert.Equalf(t, tt.want, pipelineStartTime, "GetPipelineStartTime()")
+			pipelineStartTime := a.PipelineStartTime()
+			assert.Equalf(t, tt.want, pipelineStartTime, "PipelineStartTime()")
 		})
 	}
 }
@@ -178,9 +181,9 @@ func TestAzureDevOpsConfigProvider_GetBuildStatus(t *testing.T) {
 			defer resetEnv(os.Environ())
 			os.Clearenv()
 			os.Setenv("AGENT_JOBSTATUS", tt.envVar)
-			a := &AzureDevOpsConfigProvider{}
+			a := &azureDevopsConfigProvider{}
 
-			assert.Equalf(t, tt.want, a.GetBuildStatus(), "GetBuildStatus()")
+			assert.Equalf(t, tt.want, a.BuildStatus(), "BuildStatus()")
 		})
 	}
 }
@@ -226,7 +229,7 @@ func TestAzureDevOpsConfigProvider_getAPIInformation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &AzureDevOpsConfigProvider{
+			a := &azureDevopsConfigProvider{
 				apiInformation: tt.apiInformation,
 			}
 
@@ -308,7 +311,7 @@ func TestAzureDevOpsConfigProvider_GetLog(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &AzureDevOpsConfigProvider{}
+			a := &azureDevopsConfigProvider{}
 			a.client.SetOptions(piperhttp.ClientOptions{
 				MaxRequestDuration:        5 * time.Second,
 				Token:                     "TOKEN",
@@ -352,11 +355,11 @@ func TestAzureDevOpsConfigProvider_GetLog(t *testing.T) {
 					})
 				},
 			)
-			got, err := a.GetLog()
-			if !tt.wantErr(t, err, fmt.Sprintf("GetLog()")) {
+			got, err := a.FullLogs()
+			if !tt.wantErr(t, err, fmt.Sprintf("FullLogs()")) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "GetLog()")
+			assert.Equalf(t, tt.want, got, "FullLogs()")
 		})
 	}
 }

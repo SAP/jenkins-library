@@ -31,7 +31,9 @@ type githubIssueClient interface {
 
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, config.UploadURL, []string{})
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.Token, config.APIURL).
+		WithUploadURL(config.UploadURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
 	}
@@ -115,9 +117,19 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, conf
 	if len(config.Labels) > 0 {
 		options.Labels = config.Labels
 	}
-	ghIssues, _, err := ghIssueClient.ListByRepo(ctx, config.Owner, config.Repository, &options)
-	if err != nil {
-		log.Entry().WithError(err).Error("Failed to get GitHub issues.")
+
+	var ghIssues []*github.Issue
+	for {
+		issues, resp, err := ghIssueClient.ListByRepo(ctx, config.Owner, config.Repository, &options)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to get GitHub issues")
+		}
+
+		ghIssues = append(ghIssues, issues...)
+		if resp.NextPage == 0 {
+			break
+		}
+		options.Page = resp.NextPage
 	}
 
 	prTexts := []string{"**List of closed pull-requests since last release**"}
@@ -145,17 +157,18 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, conf
 
 func getReleaseDeltaText(config *githubPublishReleaseOptions, lastRelease *github.RepositoryRelease) string {
 	releaseDeltaText := ""
+	tagName := config.TagPrefix + config.Version
 
 	// add delta link to previous release
 	releaseDeltaText += "\n**Changes**\n"
 	releaseDeltaText += fmt.Sprintf(
 		"[%v...%v](%v/%v/%v/compare/%v...%v)\n",
 		lastRelease.GetTagName(),
-		config.Version,
+		tagName,
 		config.ServerURL,
 		config.Owner,
 		config.Repository,
-		lastRelease.GetTagName(), config.Version,
+		lastRelease.GetTagName(), tagName,
 	)
 
 	return releaseDeltaText

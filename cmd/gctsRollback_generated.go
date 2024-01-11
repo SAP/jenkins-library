@@ -16,13 +16,15 @@ import (
 )
 
 type gctsRollbackOptions struct {
-	Username                  string `json:"username,omitempty"`
-	Password                  string `json:"password,omitempty"`
-	Repository                string `json:"repository,omitempty"`
-	Host                      string `json:"host,omitempty"`
-	Client                    string `json:"client,omitempty"`
-	Commit                    string `json:"commit,omitempty"`
-	GithubPersonalAccessToken string `json:"githubPersonalAccessToken,omitempty"`
+	Username                  string                 `json:"username,omitempty"`
+	Password                  string                 `json:"password,omitempty"`
+	Repository                string                 `json:"repository,omitempty"`
+	Host                      string                 `json:"host,omitempty"`
+	Client                    string                 `json:"client,omitempty"`
+	Commit                    string                 `json:"commit,omitempty"`
+	GithubPersonalAccessToken string                 `json:"githubPersonalAccessToken,omitempty"`
+	QueryParameters           map[string]interface{} `json:"queryParameters,omitempty"`
+	SkipSSLVerification       bool                   `json:"skipSSLVerification,omitempty"`
 }
 
 // GctsRollbackCommand Perfoms a rollback of one (default) or several commits
@@ -67,7 +69,7 @@ If no ` + "`" + `commit` + "`" + ` parameter is specified and the remote reposit
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -99,19 +101,25 @@ If no ` + "`" + `commit` + "`" + ` parameter is specified and the remote reposit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			gctsRollback(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -130,6 +138,8 @@ func addGctsRollbackFlags(cmd *cobra.Command, stepConfig *gctsRollbackOptions) {
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be addressed")
 	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "Specifies the target commit for the rollback")
 	cmd.Flags().StringVar(&stepConfig.GithubPersonalAccessToken, "githubPersonalAccessToken", os.Getenv("PIPER_githubPersonalAccessToken"), "GitHub personal access token with at least read permissions for the remote repository")
+
+	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "You can skip the SSL (Secure Socket Layer) verification for the http client")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -232,6 +242,23 @@ func gctsRollbackMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_githubPersonalAccessToken"),
+					},
+					{
+						Name:        "queryParameters",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "skipSSLVerification",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

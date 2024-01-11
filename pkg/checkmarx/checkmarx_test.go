@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package checkmarx
 
 import (
@@ -6,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -46,19 +48,19 @@ func (sm *senderMock) SendRequest(method, url string, body io.Reader, header htt
 	if sm.httpStatusCode > 399 {
 		httpError = fmt.Errorf("http error %v", sm.httpStatusCode)
 	}
-	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(sm.responseBody))}, httpError
+	return &http.Response{StatusCode: sm.httpStatusCode, Body: io.NopCloser(strings.NewReader(sm.responseBody))}, httpError
 }
 func (sm *senderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
 	sm.urlCalled = url
 	sm.header = header
-	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
+	return &http.Response{StatusCode: sm.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
 }
 func (sm *senderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
 	sm.urlCalled = url
 	sm.header = header
-	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
+	return &http.Response{StatusCode: sm.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
 }
 func (sm *senderMock) Upload(_ piperHttp.UploadRequestData) (*http.Response, error) {
 	return &http.Response{}, fmt.Errorf("not implemented")
@@ -554,22 +556,6 @@ func TestDownloadReport(t *testing.T) {
 		assert.Equal(t, "https://cx.server.com/cxrestapi/reports/sastScan/6", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, []byte("abc"), result, "Result incorrect")
-	})
-}
-
-func TestCreateBranch(t *testing.T) {
-	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
-	opts := piperHttp.ClientOptions{}
-	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `{"id": 13, "link": {}}`, httpStatusCode: 201}
-		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
-		myTestClient.SetOptions(opts)
-
-		result := sys.CreateBranch(6, "PR-17")
-		assert.Equal(t, "https://cx.server.com/cxrestapi/projects/6/branch", myTestClient.urlCalled, "Called url incorrect")
-		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
-		assert.Equal(t, `{"name":"PR-17"}`, myTestClient.requestBody, "Request body incorrect")
-		assert.Equal(t, 13, result, "result incorrect")
 	})
 }
 

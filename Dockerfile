@@ -1,9 +1,9 @@
-FROM golang:1.18 AS build-env
+FROM golang:1.19 AS build-env
 COPY . /build
 WORKDIR /build
 
 # execute tests
-RUN go test ./... -cover
+RUN go test ./... -tags=unit -cover
 
 ## ONLY tests so far, building to be added later
 # execute build

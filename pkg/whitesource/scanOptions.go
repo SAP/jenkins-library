@@ -44,5 +44,9 @@ type ScanOptions struct {
 
 	ScanPath string
 
+	InstallCommand string
+
+	SkipParentProjectResolution bool
+
 	Verbose bool
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -137,12 +136,14 @@ type VulnerabilityWithRemediation struct {
 	BaseScore              float32 `json:"baseScore,omitempty"`
 	Severity               string  `json:"severity,omitempty"`
 	RemediationStatus      string  `json:"remediationStatus,omitempty"`
+	RemediationComment     string  `json:"remediationComment,omitempty"`
 	Description            string  `json:"description,omitempty"`
 	OverallScore           float32 `json:"overallScore,omitempty"`
 	CweID                  string  `json:"cweId,omitempty"`
 	ExploitabilitySubscore float32 `json:"exploitabilitySubscore,omitempty"`
 	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
 	RelatedVulnerability   string  `json:"relatedVulnerability,omitempty"`
+	RemidiatedBy           string  `json:"remediationCreatedBy,omitempty"`
 }
 
 // Title returns the issue title representation of the contents
@@ -517,7 +518,7 @@ func (b *Client) sendRequest(method, apiEndpoint string, params map[string]strin
 		return responseBody, errors.Wrap(err, "request to BlackDuck API failed")
 	}
 
-	responseBody, err = ioutil.ReadAll(response.Body)
+	responseBody, err = io.ReadAll(response.Body)
 	if err != nil {
 		return responseBody, errors.Wrap(err, "reading BlackDuck response failed")
 	}
@@ -550,8 +551,7 @@ func transformComponentOriginToPurlParts(component *Component) []string {
 	gav := []string{"", component.Name, component.Version}
 	origins := component.Origins
 	if origins != nil && len(origins) > 0 {
-		// parts of npm origin are separated by "/"
-		if origins[0].ExternalNamespace == "npmjs" {
+		if strings.Contains(origins[0].ExternalID, "/") {
 			gav = strings.Split(origins[0].ExternalID, "/")
 		} else {
 			gav = strings.Split(origins[0].ExternalID, ":")
@@ -567,9 +567,18 @@ func transformComponentOriginToPurlParts(component *Component) []string {
 			purlType = packageurl.TypeGolang
 		case "docker":
 			purlType = packageurl.TypeDocker
+		case "":
+			purlType = packageurl.TypeGeneric
+		default:
+			purlType = strings.ToLower(origins[0].ExternalNamespace)
 		}
 	}
 	result = append(result, purlType)
 	result = append(result, gav...)
+
+	if len(result) > 0 && !strings.Contains(result[len(result)-1], ".") {
+		result = result[:len(result)-1]
+	}
+
 	return result
 }

@@ -1,11 +1,16 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -138,7 +143,7 @@ func TestRunNewmanExecute(t *testing.T) {
 		err := runNewmanExecute(&config, &utils)
 
 		// assert
-		assert.EqualError(t, err, "could not parse newman command template: template: template:1: unexpected \"}\" in operand")
+		assert.EqualError(t, err, "could not parse newman command template: template: template:1: bad character U+007D '}'")
 	})
 
 	t.Run("error on file search", func(t *testing.T) {
@@ -230,6 +235,19 @@ func TestResolveTemplate(t *testing.T) {
 		assert.Equal(t, []string{"this", "is", "my", "fancy", "command", "theDisplayName"}, cmd)
 	})
 
+	t.Run("get environment variable", func(t *testing.T) {
+		t.Parallel()
+
+		temporaryEnvVarName := uuid.New().String()
+		os.Setenv(temporaryEnvVarName, "myEnvVar")
+		defer os.Unsetenv(temporaryEnvVarName)
+		config := newmanExecuteOptions{RunOptions: []string{"this", "is", "my", "fancy", "command", "with", "--env-var", "{{getenv \"" + temporaryEnvVarName + "\"}}"}}
+
+		cmd, err := resolveTemplate(&config, "collectionsDisplayName")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"this", "is", "my", "fancy", "command", "with", "--env-var", "myEnvVar"}, cmd)
+	})
+
 	t.Run("error when parameter cannot be resolved", func(t *testing.T) {
 		t.Parallel()
 
@@ -245,7 +263,7 @@ func TestResolveTemplate(t *testing.T) {
 		config := newmanExecuteOptions{RunOptions: []string{"this", "is", "my", "fancy", "command", "{{.collectionDisplayName}"}}
 
 		_, err := resolveTemplate(&config, "theDisplayName")
-		assert.EqualError(t, err, "could not parse newman command template: template: template:1: unexpected \"}\" in operand")
+		assert.EqualError(t, err, "could not parse newman command template: template: template:1: bad character U+007D '}'")
 	})
 }
 

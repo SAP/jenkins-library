@@ -54,7 +54,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             config += ["ansHookServiceKeyCredentialsId": ansHookServiceKeyCredentialsId]
 
             // prepare stashes
-            // first eliminate empty stashes
+            // first eliminate non existing stashes
             config.stashContent = utils.unstashAll(config.stashContent)
             // then make sure that commonPipelineEnvironment, config, ... is also available when step stashing is active
             if (config.stashContent?.size() > 0) {
@@ -87,7 +87,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         }
                     } finally {
                         InfluxData.readFromDisk(script)
-                        stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
+                        utils.stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
                     }
                 }
             }
@@ -293,7 +293,7 @@ void handleErrorDetails(String stepName, Closure body) {
 // if both presented - priority is option 2
 static boolean checkIfStepActive(Map parameters = [:], Script script, String piperGoPath, String stageConfig = "", String stepOutputFile = "", String stageOutputFile = "", String stage = "", String step = "") {
     def utils = parameters.juStabUtils ?: new Utils()
-    def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
+    def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     def flags = "--stageConfig ${stageConfig} --useV1"
     if (stageOutputFile) {
         flags += " --stageOutputFile ${stageOutputFile}"

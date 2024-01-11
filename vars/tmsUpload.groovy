@@ -9,6 +9,7 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/tmsUpload.yaml'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
@@ -49,7 +50,12 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Proxy which should be used for the communication with the Transport Management Service Backend.
      */
-    'proxy'
+    'proxy',
+    /**
+     * The new Golang implementation of the step is used now by default. Utilizing this toggle with value true is therefore redundant and can be omitted. If used with value false, the toggle deactivates the new Golang implementation and instructs the step to use the old Groovy one. Note that possibility to switch to the old Groovy implementation will be completely removed and this toggle will be deprecated after February 29th, 2024.
+     * @possibleValues true, false
+     */
+    'useGoStep'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + GENERAL_CONFIG_KEYS
 
@@ -86,6 +92,25 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('credentialsId')
             .use()
 
+        def namedUser = jenkinsUtils.getJobStartedByUserId()
+
+        if (config.useGoStep != false) {
+            List credentials = [
+                [type: 'token', id: 'credentialsId', env: ['PIPER_serviceKey']]
+            ]
+
+            if (namedUser) {
+                parameters.namedUser = namedUser
+            }
+
+            utils.unstashAll(config.stashContent)
+            piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+            return
+        }
+
+        echo "[TransportManagementService] Using deprecated Groovy implementation of '${STEP_NAME}' step instead of the default Golang one, since 'useGoStep' toggle parameter is explicitly set to 'false'."
+        echo "[TransportManagementService] WARNING: Note that the deprecated Groovy implementation will be completely removed after February 29th, 2024. Consider using the Golang implementation by not setting the 'useGoStep' toggle parameter to 'false'."
+
         // telemetry reporting
         new Utils().pushToSWA([
             step         : STEP_NAME,
@@ -103,7 +128,9 @@ void call(Map parameters = [:]) {
         def customDescription = config.customDescription ? "${config.customDescription}" : "Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
         def description = customDescription
 
-        def namedUser = jenkinsUtils.getJobStartedByUserId() ?: config.namedUser
+        if (!namedUser) {
+            namedUser = config.namedUser
+        }
 
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath

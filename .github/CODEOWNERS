@@ -42,7 +42,7 @@
 # Default           #
 #####################
 
-*                                               @SAP/jenkins-library-core
+*                                               @SAP/jenkins-library-team
 
 
 #####################
@@ -60,6 +60,11 @@ AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 abapEnvironment*                                @SAP/jenkins-library-abap
 AbapEnvironment*                                @SAP/jenkins-library-abap
 
+ascAppUpload*                                   @Mau04 @inf2381
+AscAppUpload*                                   @Mau04 @inf2381
+
+credentialdiggerScan*                           @SAP/credential-digger-members @SAP/credential-digger-admins 
+CredentialdiggerScan*                           @SAP/credential-digger-admins @SAP/credential-digger-members 
 
 #####################
 # Integration tests #

@@ -1,254 +1,149 @@
 package abaputils
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
-const failureMessageClonePull = "Could not pull the Repository / Software Component "
+const numberOfEntriesPerPage = 100000
+const logOutputStatusLength = 10
+const logOutputTimestampLength = 29
 
-// PollEntity periodically polls the pull/import entity to get the status. Check if the import is still running
-func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
+// PollEntity periodically polls the action entity to get the status. Check if the import is still running
+func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
-	var status string = "R"
+	var statusCode string = "R"
+	var err error
 
 	for {
-		pullEntity, responseStatus, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
+		// pullEntity, responseStatus, err := api.GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
+		statusCode, err = api.GetAction()
 		if err != nil {
-			return status, err
+			return statusCode, err
 		}
-		status = pullEntity.Status
-		log.Entry().WithField("StatusCode", responseStatus).Info("Status: " + pullEntity.StatusDescription)
-		if pullEntity.Status != "R" {
-			printTransportLogs := true
-			if serviceContainsNewLogEntities(connectionDetails, client) {
-				PrintLogs(repositoryName, connectionDetails, client)
-				printTransportLogs = false
-			}
-			if pullEntity.Status == "E" {
-				log.SetErrorCategory(log.ErrorUndefined)
-				PrintLegacyLogs(repositoryName, connectionDetails, client, true, printTransportLogs)
-			} else {
-				PrintLegacyLogs(repositoryName, connectionDetails, client, false, printTransportLogs)
-			}
+
+		if statusCode != "R" && statusCode != "Q" {
+
+			PrintLogs(api)
 			break
 		}
 		time.Sleep(pollIntervall)
 	}
-	return status, nil
+	return statusCode, nil
 }
 
-func serviceContainsNewLogEntities(connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (newLogEntitiesAvailable bool) {
-
-	newLogEntitiesAvailable = false
-	details := connectionDetails
-	details.URL = details.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/"
-	resp, err := GetHTTPResponse("GET", details, nil, client)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	var entitySet EntitySetsForManageGitRepository
-
-	// Parse response
-	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
-
-	json.Unmarshal(bodyText, &abapResp)
-	json.Unmarshal(*abapResp["d"], &entitySet)
-
-	for _, entitySet := range entitySet.EntitySets {
-		if entitySet == "LogOverviews" || entitySet == "LogProtocols" {
-			return true
-		}
-	}
-	return
-
-}
-
-func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview,to_Log_Overview/to_Log_Protocol"
-	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
-	if err != nil {
-		return
-	}
-
-	if len(entity.ToLogOverview.Results) == 0 {
+func PrintLogs(api SoftwareComponentApiInterface) {
+	// connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
+	results, err := api.GetLogOverview()
+	if err != nil || len(results) == 0 {
 		// return if no logs are available
 		return
 	}
 
 	// Sort logs
-	sort.SliceStable(entity.ToLogOverview.Results, func(i, j int) bool {
-		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
+	sort.SliceStable(results, func(i, j int) bool {
+		return results[i].Index < results[j].Index
 	})
 
-	// Get Lengths
-	phaseLength := 22 // minimum default length
-	for _, logEntry := range entity.ToLogOverview.Results {
-		if l := len(logEntry.Name); l > phaseLength {
-			phaseLength = l
-		}
-	}
-	statusLength := 10
-	timestampLength := 29
-
-	// Dashed Line Length
-	lineLength := 10 + phaseLength + statusLength + timestampLength
-
-	// Print Overview
-	log.Entry().Infof("\n")
-	dashedLine(lineLength)
-	log.Entry().Infof("| %-"+fmt.Sprint(phaseLength)+"s | %"+fmt.Sprint(statusLength)+"s | %-"+fmt.Sprint(timestampLength)+"s |", "Phase", "Status", "Timestamp")
-	dashedLine(lineLength)
-	for _, logEntry := range entity.ToLogOverview.Results {
-		log.Entry().Infof("| %-"+fmt.Sprint(phaseLength)+"s | %"+fmt.Sprint(statusLength)+"s | %-"+fmt.Sprint(timestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
-	}
-	dashedLine(lineLength)
+	printOverview(results)
 
 	// Print Details
-	for _, logEntryForDetails := range entity.ToLogOverview.Results {
-		printLog(logEntryForDetails)
+	for _, logEntryForDetails := range results {
+		printLog(logEntryForDetails, api)
 	}
-	log.Entry().Infof("-------------------------")
+	AddDefaultDashedLine(1)
 
 	return
 }
 
-func dashedLine(i int) {
+func printOverview(results []LogResultsV2) {
+
+	logOutputPhaseLength, logOutputLineLength := calculateLenghts(results)
+
+	log.Entry().Infof("\n")
+
+	printDashedLine(logOutputLineLength)
+
+	log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", "Phase", "Status", "Timestamp")
+
+	printDashedLine(logOutputLineLength)
+
+	for _, logEntry := range results {
+		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+	}
+	printDashedLine(logOutputLineLength)
+}
+
+func calculateLenghts(results []LogResultsV2) (int, int) {
+	phaseLength := 22
+	for _, logEntry := range results {
+		if l := len(logEntry.Name); l > phaseLength {
+			phaseLength = l
+		}
+	}
+
+	lineLength := 10 + phaseLength + logOutputStatusLength + logOutputTimestampLength
+	return phaseLength, lineLength
+}
+
+func printDashedLine(i int) {
 	log.Entry().Infof(strings.Repeat("-", i))
 }
 
-func printLog(logEntry LogResultsV2) {
+func printLog(logOverviewEntry LogResultsV2, api SoftwareComponentApiInterface) {
 
-	sort.SliceStable(logEntry.ToLogProtocol.Results, func(i, j int) bool {
-		return logEntry.ToLogProtocol.Results[i].ProtocolLine < logEntry.ToLogProtocol.Results[j].ProtocolLine
+	page := 0
+	printHeader(logOverviewEntry)
+	for {
+		logProtocols, count, err := api.GetLogProtocol(logOverviewEntry, page)
+		printLogProtocolEntries(logOverviewEntry, logProtocols)
+		page += 1
+		if allLogsHaveBeenPrinted(logProtocols, page, count, err) {
+			break
+		}
+	}
+}
+
+func printLogProtocolEntries(logEntry LogResultsV2, logProtocols []LogProtocol) {
+
+	sort.SliceStable(logProtocols, func(i, j int) bool {
+		return logProtocols[i].ProtocolLine < logProtocols[j].ProtocolLine
 	})
-
 	if logEntry.Status != `Success` {
-		log.Entry().Infof("\n")
-		log.Entry().Infof("-------------------------")
-		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
-		log.Entry().Infof("-------------------------")
-
-		for _, entry := range logEntry.ToLogProtocol.Results {
+		for _, entry := range logProtocols {
 			log.Entry().Info(entry.Description)
 		}
-
 	} else {
-		log.Entry().Debugf("\n")
-		log.Entry().Debugf("-------------------------")
-		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
-		log.Entry().Debugf("-------------------------")
-
-		for _, entry := range logEntry.ToLogProtocol.Results {
+		for _, entry := range logProtocols {
 			log.Entry().Debug(entry.Description)
 		}
 	}
-
 }
 
-// PrintLegacyLogs sorts and formats the received transport and execution log of an import; Deprecated with SAP BTP, ABAP Environment release 2205
-func PrintLegacyLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, errorOnSystem bool, includeTransportLog bool) {
+func allLogsHaveBeenPrinted(protocols []LogProtocol, page int, count int, err error) bool {
+	allPagesHaveBeenRead := count <= page*numberOfEntriesPerPage
+	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(protocols, []LogProtocol{}))
+}
 
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Transport_log,to_Execution_log"
-	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
-	if err != nil {
-		return
-	}
-	// Sort logs
-	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
-		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
-	})
-
-	sort.SliceStable(entity.ToTransportLog.Results, func(i, j int) bool {
-		return entity.ToTransportLog.Results[i].Index < entity.ToTransportLog.Results[j].Index
-	})
-
-	// Show transport and execution log if either the action was erroenous on the system or the log level is set to "debug" (verbose = true)
-	if errorOnSystem {
-		if includeTransportLog {
-			log.Entry().Info("-------------------------")
-			log.Entry().Info("Transport Log")
-			log.Entry().Info("-------------------------")
-			for _, logEntry := range entity.ToTransportLog.Results {
-
-				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
-			}
-		}
-
-		log.Entry().Info("-------------------------")
-		log.Entry().Info("Execution Log")
-		log.Entry().Info("-------------------------")
-		for _, logEntry := range entity.ToExecutionLog.Results {
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
-		}
-		log.Entry().Info("-------------------------")
+func printHeader(logEntry LogResultsV2) {
+	if logEntry.Status != `Success` {
+		log.Entry().Infof("\n")
+		AddDefaultDashedLine(1)
+		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		AddDefaultDashedLine(1)
 	} else {
-		if includeTransportLog {
-			log.Entry().Debug("-------------------------")
-			log.Entry().Debug("Transport Log")
-			log.Entry().Debug("-------------------------")
-			for _, logEntry := range entity.ToTransportLog.Results {
-
-				log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
-			}
-		}
-
-		log.Entry().Debug("-------------------------")
-		log.Entry().Debug("Execution Log")
-		log.Entry().Debug("-------------------------")
-		for _, logEntry := range entity.ToExecutionLog.Results {
-			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
-		}
-		log.Entry().Debug("-------------------------")
+		log.Entry().Debugf("\n")
+		AddDebugDashedLine()
+		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		AddDebugDashedLine()
 	}
-
-}
-
-func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
-	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, failureMessage, connectionDetails)
-		if resp != nil {
-			status = resp.Status
-		}
-		return body, status, err
-	}
-	defer resp.Body.Close()
-
-	// Parse response
-	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
-
-	marshallError := json.Unmarshal(bodyText, &abapResp)
-	if marshallError != nil {
-		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-	marshallError = json.Unmarshal(*abapResp["d"], &body)
-	if marshallError != nil {
-		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-
-	if reflect.DeepEqual(PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).Error(failureMessage)
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		var err = errors.New("Request to ABAP System not successful")
-		return body, resp.Status, err
-	}
-	return body, resp.Status, nil
 }
 
 // GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
@@ -331,113 +226,12 @@ func (repo *Repository) GetPullRequestBody() (body string) {
 	return body
 }
 
+func (repo *Repository) GetPullActionRequestBody() (body string) {
+	return `{` + `"commit_id":"` + repo.CommitID + `", ` + `"tag_name":"` + repo.Tag + `"` + `}`
+}
+
 func (repo *Repository) GetPullLogString() (logString string) {
 	commitOrTag := repo.GetLogStringForCommitOrTag()
 	logString = "repository / software component '" + repo.Name + "'" + commitOrTag
 	return logString
-}
-
-/****************************************
- *	Structs for the A4C_A2G_GHA service *
- ****************************************/
-
-// PullEntity struct for the Pull/Import entity A4C_A2G_GHA_SC_IMP
-type PullEntity struct {
-	Metadata          AbapMetadata `json:"__metadata"`
-	UUID              string       `json:"uuid"`
-	Namespace         string       `json:"namepsace"`
-	ScName            string       `json:"sc_name"`
-	ImportType        string       `json:"import_type"`
-	BranchName        string       `json:"branch_name"`
-	StartedByUser     string       `json:"user_name"`
-	Status            string       `json:"status"`
-	StatusDescription string       `json:"status_descr"`
-	CommitID          string       `json:"commit_id"`
-	StartTime         string       `json:"start_time"`
-	ChangeTime        string       `json:"change_time"`
-	ToExecutionLog    AbapLogs     `json:"to_Execution_log"`
-	ToTransportLog    AbapLogs     `json:"to_Transport_log"`
-	ToLogOverview     AbapLogsV2   `json:"to_Log_Overview"`
-}
-
-// BranchEntity struct for the Branch entity A4C_A2G_GHA_SC_BRANCH
-type BranchEntity struct {
-	Metadata      AbapMetadata `json:"__metadata"`
-	ScName        string       `json:"sc_name"`
-	Namespace     string       `json:"namepsace"`
-	BranchName    string       `json:"branch_name"`
-	ParentBranch  string       `json:"derived_from"`
-	CreatedBy     string       `json:"created_by"`
-	CreatedOn     string       `json:"created_on"`
-	IsActive      bool         `json:"is_active"`
-	CommitID      string       `json:"commit_id"`
-	CommitMessage string       `json:"commit_message"`
-	LastCommitBy  string       `json:"last_commit_by"`
-	LastCommitOn  string       `json:"last_commit_on"`
-}
-
-// CloneEntity struct for the Clone entity A4C_A2G_GHA_SC_CLONE
-type CloneEntity struct {
-	Metadata          AbapMetadata `json:"__metadata"`
-	UUID              string       `json:"uuid"`
-	ScName            string       `json:"sc_name"`
-	BranchName        string       `json:"branch_name"`
-	ImportType        string       `json:"import_type"`
-	Namespace         string       `json:"namepsace"`
-	Status            string       `json:"status"`
-	StatusDescription string       `json:"status_descr"`
-	StartedByUser     string       `json:"user_name"`
-	StartTime         string       `json:"start_time"`
-	ChangeTime        string       `json:"change_time"`
-}
-
-// AbapLogs struct for ABAP logs
-type AbapLogs struct {
-	Results []LogResults `json:"results"`
-}
-
-type AbapLogsV2 struct {
-	Results []LogResultsV2 `json:"results"`
-}
-
-type LogResultsV2 struct {
-	Metadata      AbapMetadata       `json:"__metadata"`
-	Index         int                `json:"log_index"`
-	Name          string             `json:"log_name"`
-	Status        string             `json:"type_of_found_issues"`
-	Timestamp     string             `json:"timestamp"`
-	ToLogProtocol LogProtocolResults `json:"to_Log_Protocol"`
-}
-
-type LogProtocolResults struct {
-	Results []LogProtocol `json:"results"`
-}
-
-type LogProtocol struct {
-	Metadata      AbapMetadata `json:"__metadata"`
-	OverviewIndex int          `json:"log_index"`
-	ProtocolLine  int          `json:"index_no"`
-	Type          string       `json:"type"`
-	Description   string       `json:"descr"`
-}
-
-// LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
-type LogResults struct {
-	Index       string `json:"index_no"`
-	Type        string `json:"type"`
-	Description string `json:"descr"`
-	Timestamp   string `json:"timestamp"`
-}
-
-// RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
-type RepositoriesConfig struct {
-	BranchName      string
-	CommitID        string
-	RepositoryName  string
-	RepositoryNames []string
-	Repositories    string
-}
-
-type EntitySetsForManageGitRepository struct {
-	EntitySets []string `json:"EntitySets"`
 }

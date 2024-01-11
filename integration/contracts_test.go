@@ -1,8 +1,10 @@
+//go:build integration
+// +build integration
+
 package main
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -58,7 +60,7 @@ func TestGenerator(t *testing.T) {
               - name: test_cpe
 `
 
-	ioutil.WriteFile(filepath.Join(dir, "test.yaml"), []byte(metadata), 0755)
+	os.WriteFile(filepath.Join(dir, "test.yaml"), []byte(metadata), 0755)
 
 	openMetaFile := func(name string) (io.ReadCloser, error) { return os.Open(name) }
 	fileWriter := func(filename string, data []byte, perm os.FileMode) error { return nil }

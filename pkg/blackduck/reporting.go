@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -13,6 +14,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/pkg/errors"
 )
+
+var severityIndex = map[string]int{"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 
 // CreateSarifResultFile creates a SARIF result from the Vulnerabilities that were brought up by the scan
 func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, projectLink string) *format.SARIF {
@@ -23,8 +26,37 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 	collectedRules := []string{}
 	cweIdsForTaxonomies := []string{}
 	results := []format.Results{}
+
 	if vulns != nil && vulns.Items != nil {
 		for _, v := range vulns.Items {
+
+			isAudited := true
+			if v.RemediationStatus == "NEW" || v.RemediationStatus == "REMEDIATION_REQUIRED" ||
+				v.RemediationStatus == "NEEDS_REVIEW" {
+				isAudited = false
+			}
+
+			unifiedStatusValue := "new"
+
+			switch v.RemediationStatus {
+			case "NEW":
+				unifiedStatusValue = "new"
+			case "NEEDS_REVIEW":
+				unifiedStatusValue = "inProcess"
+			case "REMEDIATION_COMPLETE":
+				unifiedStatusValue = "notRelevant"
+			case "PATCHED":
+				unifiedStatusValue = "notRelevant"
+			case "MITIGATED":
+				unifiedStatusValue = "notRelevant"
+			case "DUPLICATE":
+				unifiedStatusValue = "notRelevant"
+			case "IGNORED":
+				unifiedStatusValue = "notRelevant"
+			case "REMEDIATION_REQUIRED":
+				unifiedStatusValue = "relevant"
+			}
+
 			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", v.VulnerabilityWithRemediation.VulnerabilityName, v.Component.Name, v.Component.Version)
 			result := format.Results{
 				RuleID:  v.VulnerabilityWithRemediation.VulnerabilityName,
@@ -38,7 +70,21 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 				PartialFingerprints: format.PartialFingerprints{
 					PackageURLPlusCVEHash: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID))),
 				},
+				Properties: &format.SarifProperties{
+					Audited:               isAudited,
+					ToolSeverity:          v.Severity,
+					ToolSeverityIndex:     severityIndex[v.Severity],
+					ToolState:             v.RemediationStatus,
+					ToolAuditMessage:      v.VulnerabilityWithRemediation.RemediationComment,
+					UnifiedAuditState:     unifiedStatusValue,
+					UnifiedSeverity:       strings.ToLower(v.Severity),
+					UnifiedCriticality:    v.BaseScore,
+					UnifiedAuditUser:      v.VulnerabilityWithRemediation.RemidiatedBy,
+					AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+					AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
+				},
 			}
+
 			// append the result
 			results = append(results, result)
 
@@ -57,12 +103,20 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 				v.projectVersion = projectVersion
 
 				markdown, _ := v.ToMarkdown()
+
 				tags := []string{
 					"SECURITY_VULNERABILITY",
 					v.Component.ToPackageUrl().ToString(),
-					v.VulnerabilityWithRemediation.CweID,
-					v.Component.MatchedType(),
 				}
+
+				if CweID := v.VulnerabilityWithRemediation.CweID; CweID != "" {
+					tags = append(tags, CweID)
+				}
+
+				if matchedType := v.Component.MatchedType(); matchedType != "" {
+					tags = append(tags, matchedType)
+				}
+
 				ruleProp := format.SarifRuleProperties{
 					Tags:             tags,
 					Precision:        "very-high",
@@ -82,8 +136,10 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 				// append the rule
 				rules = append(rules, sarifRule)
 			}
+
 		}
 	}
+
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
 	taxas := []format.Taxa{}
@@ -131,6 +187,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 			},
 		},
 	}
+
 	return &sarif
 }
 
@@ -186,6 +243,7 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to create report directory")
 	}
+
 	sarifReportPath := filepath.Join(ReportsDirectory, "piper_detect_vulnerability.sarif")
 	if err := utils.FileWrite(sarifReportPath, sarifReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)

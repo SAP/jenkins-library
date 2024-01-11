@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http/cookiejar"
 	"net/url"
 
@@ -34,14 +34,19 @@ func gctsRollback(config gctsRollbackOptions, telemetryData *telemetry.CustomDat
 
 func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
 
+	maxRetries := -1
+
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
 		return cookieErr
 	}
+
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		CookieJar:                 cookieJar,
+		Username:                  config.Username,
+		Password:                  config.Password,
+		MaxRetries:                maxRetries,
+		TransportSkipVerification: config.SkipSSLVerification,
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -64,12 +69,13 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		log.Entry().Infof("rolling back to specified commit %v", config.Commit)
 
 		deployOptions = gctsDeployOptions{
-			Username:   config.Username,
-			Password:   config.Password,
-			Host:       config.Host,
-			Repository: config.Repository,
-			Client:     config.Client,
-			Commit:     config.Commit,
+			Username:            config.Username,
+			Password:            config.Password,
+			Host:                config.Host,
+			Repository:          config.Repository,
+			Client:              config.Client,
+			Commit:              config.Commit,
+			SkipSSLVerification: config.SkipSSLVerification,
 		}
 
 	} else {
@@ -81,12 +87,13 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 
 			log.Entry().WithField("repository", config.Repository).Infof("rolling back to last active commit %v", repoHistory.Result[0].FromCommit)
 			deployOptions = gctsDeployOptions{
-				Username:   config.Username,
-				Password:   config.Password,
-				Host:       config.Host,
-				Repository: config.Repository,
-				Client:     config.Client,
-				Commit:     repoHistory.Result[0].FromCommit,
+				Username:            config.Username,
+				Password:            config.Password,
+				Host:                config.Host,
+				Repository:          config.Repository,
+				Client:              config.Client,
+				Commit:              repoHistory.Result[0].FromCommit,
+				SkipSSLVerification: config.SkipSSLVerification,
 			}
 
 		} else {
@@ -128,6 +135,13 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 
 		url := githubURL.Scheme + "://api." + githubURL.Host + "/repos" + githubURL.Path + "/commits/" + commit + "/status"
 
+		url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+		if urlErr != nil {
+
+			return "", urlErr
+		}
+
 		resp, httpErr := httpClient.SendRequest("GET", url, nil, nil, nil)
 
 		defer func() {
@@ -142,7 +156,7 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 			return "", errors.New("did not retrieve a HTTP response")
 		}
 
-		bodyText, readErr := ioutil.ReadAll(resp.Body)
+		bodyText, readErr := io.ReadAll(resp.Body)
 
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read")
@@ -170,6 +184,13 @@ func getCommits(config *gctsRollbackOptions, telemetryData *telemetry.CustomData
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/getCommit?sap-client=" + config.Client
+
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	type commitsResponseBody struct {
 		Commits []struct {
@@ -217,6 +238,13 @@ func getRepoInfo(config *gctsRollbackOptions, telemetryData *telemetry.CustomDat
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"?sap-client=" + config.Client
+
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	resp, httpErr := httpClient.SendRequest("GET", url, nil, nil, nil)
 
@@ -268,6 +296,13 @@ func getRepoHistory(config *gctsRollbackOptions, telemetryData *telemetry.Custom
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/getHistory?sap-client=" + config.Client
+
+	url, urlErr := addQueryToURL(url, config.QueryParameters)
+
+	if urlErr != nil {
+
+		return nil, urlErr
+	}
 
 	resp, httpErr := httpClient.SendRequest("GET", url, nil, nil, nil)
 

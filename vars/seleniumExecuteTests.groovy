@@ -69,6 +69,8 @@ import groovy.text.GStringTemplateEngine
 /**
  * Enables UI test execution with Selenium in a sidecar container.
  *
+ * This step is Jenkins-only.
+ *
  * The step executes a closure (see example below) connecting to a sidecar container with a Selenium Server.
  *
  * When executing in a

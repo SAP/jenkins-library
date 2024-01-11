@@ -3,16 +3,16 @@ package versioning
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
+	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
 )
 
 // JSONfile defines an artifact using a json file for versioning
 type JSONfile struct {
 	path         string
-	content      map[string]interface{}
+	content      *orderedmap.OrderedMap
 	versionField string
 	readFile     func(string) ([]byte, error)
 	writeFile    func(string, []byte, os.FileMode) error
@@ -23,11 +23,11 @@ func (j *JSONfile) init() {
 		j.versionField = "version"
 	}
 	if j.readFile == nil {
-		j.readFile = ioutil.ReadFile
+		j.readFile = os.ReadFile
 	}
 
 	if j.writeFile == nil {
-		j.writeFile = ioutil.WriteFile
+		j.writeFile = os.WriteFile
 	}
 }
 
@@ -50,7 +50,9 @@ func (j *JSONfile) GetVersion() (string, error) {
 		return "", errors.Wrapf(err, "failed to read json content of file '%v'", j.content)
 	}
 
-	return fmt.Sprint(j.content[j.versionField]), nil
+	version, _ := j.content.Get(j.versionField)
+
+	return fmt.Sprint(version), nil
 }
 
 // SetVersion updates the version of the artifact with a JSON-based build descriptor
@@ -63,7 +65,7 @@ func (j *JSONfile) SetVersion(version string) error {
 			return err
 		}
 	}
-	j.content[j.versionField] = version
+	j.content.Set(j.versionField, version)
 
 	content, err := json.MarshalIndent(j.content, "", "  ")
 	if err != nil {
@@ -84,9 +86,9 @@ func (j *JSONfile) GetCoordinates() (Coordinates, error) {
 	if err != nil {
 		return result, err
 	}
-	projectName := j.content["name"].(string)
+	projectName, _ := j.content.Get("name")
 
-	result.ArtifactID = projectName
+	result.ArtifactID = fmt.Sprint(projectName)
 	result.Version = projectVersion
 
 	return result, nil

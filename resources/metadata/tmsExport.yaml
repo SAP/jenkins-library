@@ -1,0 +1,120 @@
+metadata:
+  name: tmsExport
+  description: This step allows you to export an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
+  longDescription: |-
+    This step allows you to export an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Transport Management service) landscape for further TMS-controlled distribution through a TMS-configured landscape. The MTA file is attached to a new transport request which is added to the import queues of the follow-on transport nodes of the specified export node.
+
+    TMS lets you manage transports between SAP Business Technology Platform accounts in Neo and Cloud Foundry, such as from DEV to TEST and PROD accounts.
+    For more information, see [official documentation of SAP Cloud Transport Management service](https://help.sap.com/viewer/p/TRANSPORT_MANAGEMENT_SERVICE)
+
+    !!! note "Prerequisites"
+    * You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of your transport landscape.
+    * A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of serviceKey parameter.
+spec:
+  inputs:
+    secrets:
+      - name: credentialsId
+        description: Jenkins 'Secret text' credentials ID containing service key for TMS (SAP Cloud Transport Management service) or CALM (SAP Cloud Application Lifecycle Management) service.
+        type: jenkins
+    resources:
+      - name: buildResult
+        type: stash
+    params:
+      - name: tmsServiceKey
+        type: string
+        description: >
+          DEPRECATION WARNING: This parameter has been deprecated, please use the serviceKey parameter instead,
+          which supports both service key for TMS (SAP Cloud Transport Management service),
+          as well as service key for CALM (SAP Cloud Application Lifecycle Management) service.
+
+          Service key JSON string to access the SAP Cloud Transport Management service instance APIs.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        mandatory: false
+        secret: true
+      - name: serviceKey
+        type: string
+        description: >
+          Service key JSON string to access TMS (SAP Cloud Transport Management service) instance APIs.
+          This can be a service key for TMS,
+          or a service key for CALM (SAP Cloud Application Lifecycle Management) service.
+          If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: credentialsId
+            type: secret
+            param: serviceKey
+      - name: customDescription
+        type: string
+        description: Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit ID.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/commitId
+      - name: namedUser
+        type: string
+        description: Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'. If pipeline is running on Jenkins, the name of the user, who started the job, is tried to be used at first.
+        default: Piper-Pipeline
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+      - name: nodeName
+        type: string
+        description: Defines the name of the export node - starting node in TMS landscape. The transport request is added to the queues of the follow-on nodes of export node.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        mandatory: true
+      - name: mtaPath
+        type: string
+        description: Defines the relative path to *.mtar file for the export to the SAP Cloud Transport Management service. If not specified, it will use the *.mtar file created in mtaBuild.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
+      - name: mtaVersion
+        type: string
+        description: Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.
+        default: "*"
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+      - name: nodeExtDescriptorMapping
+        type: map[string]interface{}
+        description: 'Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: {"nodeName": "example.mtaext", "nodeName2": "example2.mtaext"}.'
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+      - name: proxy
+        type: string
+        description: Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: tms
+                type: bool

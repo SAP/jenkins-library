@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -27,7 +26,7 @@ func (d *PipelineDefaults) ReadPipelineDefaults(defaultSources []io.ReadCloser) 
 		var c Config
 		var err error
 
-		content, err := ioutil.ReadAll(def)
+		content, err := io.ReadAll(def)
 		if err != nil {
 			return errors.Wrapf(err, "error reading %v", def)
 		}

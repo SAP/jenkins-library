@@ -1,8 +1,10 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -46,7 +48,7 @@ func defaultsOpenFileMock(name string, tokens map[string]string) (io.ReadCloser,
 	default:
 		r = ""
 	}
-	return ioutil.NopCloser(strings.NewReader(r)), nil
+	return io.NopCloser(strings.NewReader(r)), nil
 }
 
 func TestDefaultsCommand(t *testing.T) {

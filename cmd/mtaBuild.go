@@ -36,11 +36,11 @@ parameters:
 
 modules:
   - name: {{.ApplicationName}}
-    type: html5
+    type: com.sap.hcp.html5
     path: .
     parameters:
-       version: {{.Version}}-${timestamp}
-       name: {{.ApplicationName}}
+      version: {{.Version}}-${timestamp}
+      name: {{.ApplicationName}}
     build-parameters:
       builder: grunt
       build-result: dist`
@@ -205,6 +205,10 @@ func runMtaBuild(config mtaBuildOptions,
 
 	call = append(call, "--source", getSourcePath(config))
 	call = append(call, "--target", getAbsPath(getMtarFileRoot(config)))
+
+	if config.CreateBOM {
+		call = append(call, "--sbom-file-path", filepath.FromSlash("sbom-gen/bom-mta.xml"))
+	}
 
 	if config.Jobs > 0 {
 		call = append(call, "--mode=verbose")
@@ -415,7 +419,7 @@ func getTimestamp() string {
 
 func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils) error {
 
-	log.Entry().Debugf("mta yaml file not found in project sources.")
+	log.Entry().Infof("\"%s\" file not found in project sources", mtaYamlFile)
 
 	if len(applicationName) == 0 {
 		return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)

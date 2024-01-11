@@ -142,7 +142,7 @@ func NewmanExecuteCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -176,19 +176,25 @@ func NewmanExecuteCommand() *cobra.Command {
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
 			newmanExecute(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -202,7 +208,7 @@ func NewmanExecuteCommand() *cobra.Command {
 func addNewmanExecuteFlags(cmd *cobra.Command, stepConfig *newmanExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.NewmanCollection, "newmanCollection", `**/*.postman_collection.json`, "The test collection that should be executed. This could also be a file pattern.")
 	cmd.Flags().StringVar(&stepConfig.NewmanRunCommand, "newmanRunCommand", os.Getenv("PIPER_newmanRunCommand"), "+++ Deprecated +++ Please use list parameter `runOptions` instead.")
-	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`run`, `{{.NewmanCollection}}`, `--reporters`, `cli,junit,html`, `--reporter-junit-export`, `target/newman/TEST-{{.CollectionDisplayName}}.xml`, `--reporter-html-export`, `target/newman/TEST-{{.CollectionDisplayName}}.html`}, "The newman command that will be executed inside the docker container.")
+	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`run`, `{{.NewmanCollection}}`, `--reporters`, `cli,junit,html`, `--reporter-junit-export`, `target/newman/TEST-{{.CollectionDisplayName}}.xml`, `--reporter-html-export`, `target/newman/TEST-{{.CollectionDisplayName}}.html`}, "The newman command that will be executed inside the docker container. Env vars can be passed via template as in \"{{getenv MY_ENV_VAR}}\".")
 	cmd.Flags().StringVar(&stepConfig.NewmanInstallCommand, "newmanInstallCommand", `npm install newman newman-reporter-html --global --quiet`, "The shell command that will be executed inside the docker container to install Newman.")
 	cmd.Flags().StringVar(&stepConfig.NewmanEnvironment, "newmanEnvironment", os.Getenv("PIPER_newmanEnvironment"), "Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.")
 	cmd.Flags().StringVar(&stepConfig.NewmanGlobals, "newmanGlobals", os.Getenv("PIPER_newmanGlobals"), "Specify the file path or URL for global variables. Global variables are similar to environment variables but have a lower precedence and can be overridden by environment variables having the same name.")

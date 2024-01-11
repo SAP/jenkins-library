@@ -1,7 +1,9 @@
+//go:build unit
+// +build unit
+
 package piperutils
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,7 +22,7 @@ func TestFileExists(t *testing.T) {
 		assert.False(t, result)
 	})
 	runInTempDir(t, "testing file returns true", func(t *testing.T) {
-		file, err := ioutil.TempFile("", "testFile")
+		file, err := os.CreateTemp("", "testFile")
 		assert.NoError(t, err)
 		result, err := FileExists(file.Name())
 		assert.NoError(t, err)
@@ -53,7 +55,7 @@ func TestDirExists(t *testing.T) {
 func TestCopy(t *testing.T) {
 	runInTempDir(t, "copying file succeeds", func(t *testing.T) {
 		file := "testFile"
-		err := ioutil.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)
+		err := os.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)
 		if err != nil {
 			t.Fatal("Failed to create temporary workspace directory")
 		}

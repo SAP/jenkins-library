@@ -54,6 +54,7 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
             return closure()
         })
         credentialsRule.withCredentials('idOfCxCredential', "PIPER_username", "PIPER_password")
+        shellCallRule.setReturnValue('[ -x ./piper ]', 1)
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/checkmarxExecuteScan.yaml\'', '{"checkmarxCredentialsId": "idOfCxCredential", "verbose": false}')
 
         helper.registerAllowedMethod('findFiles', [Map.class], {return null})
@@ -72,23 +73,6 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/checkmarxExecuteScan.yaml'], containsString('name: checkmarxExecuteScan'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper checkmarxExecuteScan'))
-    }
-
-    @Test
-    void testCheckmarxExecuteScanNoReports() {
-        helper.registerAllowedMethod('fileExists', [Map], {
-            return false
-        })
-
-        exception.expect(AbortException)
-        exception.expectMessage("Expected to find checkmarxExecuteScan_reports.json in workspace but it is not there")
-
-        stepRule.step.checkmarxExecuteScan(
-            juStabUtils: utils,
-            jenkinsUtilsStub: jenkinsUtils,
-            testParam: "This is test content",
-            script: nullScript
-        )
+        assertThat(shellCallRule.shell[2], is('./piper checkmarxExecuteScan'))
     }
 }

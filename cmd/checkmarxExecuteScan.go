@@ -105,7 +105,7 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.Custo
 	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
 	client.SetOptions(options)
 	// TODO provide parameter for trusted certs
-	ctx, ghClient, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	ctx, ghClient, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
@@ -316,11 +316,27 @@ func uploadAndScan(ctx context.Context, config checkmarxExecuteScanOptions, sys 
 			incremental = false
 		} else if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
 			incremental = false
+		} else if incremental && isLastScanFailedIncremental(previousScans) { // if the last incremental scan failed, trigger a full scan instead
+			incremental = false
+			log.Entry().Infof("Last incremental scan for project %v failed, triggering full scan instead", project.Name)
 		}
 
 		return triggerScan(ctx, config, sys, project, incremental, influx, utils)
 	}
 	return nil
+}
+
+func isLastScanFailedIncremental(scans []checkmarx.ScanStatus) bool {
+	if len(scans) == 0 {
+		return false
+	}
+
+	scan := scans[0]
+	if scan.IsIncremental && scan.Status.Name == "Failed" {
+		return true
+	} else {
+		return false
+	}
 }
 
 func triggerScan(ctx context.Context, config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {

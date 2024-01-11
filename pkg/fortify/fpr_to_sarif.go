@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -498,30 +497,31 @@ type Attribute struct {
 }
 
 // ConvertFprToSarif converts the FPR file contents into SARIF format
-func ConvertFprToSarif(sys System, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, error) {
+func ConvertFprToSarif(sys System, projectVersion *models.ProjectVersion, resultFilePath string, filterSet *models.FilterSet) (format.SARIF, format.SARIF, error) {
 	log.Entry().Debug("Extracting FPR.")
 	var sarif format.SARIF
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	var sarifSimplified format.SARIF
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	defer os.RemoveAll(tmpFolder)
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
-		return sarif, err
+		return sarif, sarifSimplified, err
 	}
 
 	_, err = piperutils.Unzip(resultFilePath, tmpFolder)
 	if err != nil {
-		return sarif, err
+		return sarif, sarifSimplified, err
 	}
 
 	log.Entry().Debug("Reading audit file.")
-	data, err := ioutil.ReadFile(filepath.Join(tmpFolder, "audit.fvdl"))
+	data, err := os.ReadFile(filepath.Join(tmpFolder, "audit.fvdl"))
 	if err != nil {
-		return sarif, err
+		return sarif, sarifSimplified, err
 	}
 	if len(data) == 0 {
 		log.Entry().Error("Error reading audit file at " + filepath.Join(tmpFolder, "audit.fvdl") + ". This might be that the file is missing, corrupted, or too large. Aborting procedure.")
 		err := errors.New("cannot read audit file")
-		return sarif, err
+		return sarif, sarifSimplified, err
 	}
 
 	log.Entry().Debug("Calling Parse.")
@@ -529,7 +529,7 @@ func ConvertFprToSarif(sys System, projectVersion *models.ProjectVersion, result
 }
 
 // Parse parses the FPR file
-func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filterSet *models.FilterSet) (format.SARIF, error) {
+func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filterSet *models.FilterSet) (format.SARIF, format.SARIF, error) {
 	//To read XML data, Unmarshal or Decode can be used, here we use Decode to work on the stream
 	reader := bytes.NewReader(data)
 	decoder := xml.NewDecoder(reader)
@@ -539,7 +539,7 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 	var fvdl FVDL
 	err := decoder.Decode(&fvdl)
 	if err != nil {
-		return format.SARIF{}, err
+		return format.SARIF{}, format.SARIF{}, err
 	}
 
 	//Create an object containing all audit data
@@ -571,6 +571,12 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 	fortifyRun.ColumnKind = "utf16CodeUnits"
 	cweIdsForTaxonomies := make(map[string]string) //Defining this here and filling it in the course of the program helps filling the Taxonomies object easily. Map because easy to check for keys
 	sarif.Runs = append(sarif.Runs, fortifyRun)
+
+	// Initialize the simplified version
+	var sarifSimplified format.SARIF
+	sarifSimplified.Schema = sarif.Schema
+	sarifSimplified.Version = sarif.Version
+	sarifSimplified.Runs = append(sarifSimplified.Runs, fortifyRun)
 
 	// Handle results/vulnerabilities
 	log.Entry().Debug("[SARIF] Now handling results.")
@@ -655,9 +661,6 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 							tfloc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 							tfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 							tfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-							snippetSarif := new(format.SnippetSarif)
-							snippetSarif.Text = fvdl.Snippets[j].Text
-							tfloc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 							break
 						}
 					}
@@ -670,33 +673,6 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 						if !(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData == "") {
 							tfloc.Message = new(format.Message)
 							tfloc.Message.Text = fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData
-
-							// Handle snippet
-							snippetTarget := handleSnippet(fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.Type, fvdl.Vulnerabilities.Vulnerability[i].AnalysisInfo.Trace[k].Primary.Entry[l].Node.Action.ActionData)
-
-							if tfloc.PhysicalLocation.ContextRegion != nil && tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
-								physLocationSnippetLines := strings.Split(tfloc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-								snippetText := ""
-								for j := 0; j < len(physLocationSnippetLines); j++ {
-									if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-										snippetText = physLocationSnippetLines[j]
-										break
-									}
-								}
-								snippetSarif := new(format.SnippetSarif)
-								if snippetText != "" {
-									snippetSarif.Text = snippetText
-								} else {
-									snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
-								}
-								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
-							}
-						} else {
-							if tfloc.PhysicalLocation.ContextRegion != nil && tfloc.PhysicalLocation.ContextRegion.Snippet != nil {
-								snippetSarif := new(format.SnippetSarif)
-								snippetSarif.Text = tfloc.PhysicalLocation.ContextRegion.Snippet.Text
-								tfloc.PhysicalLocation.Region.Snippet = snippetSarif
-							}
 						}
 					}
 					location = *tfloc
@@ -739,9 +715,6 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 									nintfloc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 									nintfloc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 									nintfloc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-									snippetSarif := new(format.SnippetSarif)
-									snippetSarif.Text = fvdl.Snippets[j].Text
-									nintfloc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 									break
 								}
 							}
@@ -806,6 +779,15 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 		result.Properties = prop
 
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
+
+		// Handle simplified version of a result
+		resultSimplified := *new(format.Results)
+		resultSimplified.RuleID = result.RuleID
+		resultSimplified.Kind = result.Kind
+		resultSimplified.Level = result.Level
+		resultSimplified.Message = result.Message
+		resultSimplified.Properties = result.Properties
+		sarifSimplified.Runs[0].Results = append(sarifSimplified.Runs[0].Results, resultSimplified)
 	}
 
 	//handle the tool object
@@ -815,6 +797,10 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 	tool.Driver.Name = "MicroFocus Fortify SCA"
 	tool.Driver.Version = fvdl.EngineData.EngineVersion
 	tool.Driver.InformationUri = "https://www.microfocus.com/documentation/fortify-static-code-analyzer-and-tools/2020/SCA_Guide_20.2.0.pdf"
+
+	//handle the simplified tool object
+	toolSimplified := *new(format.Tool)
+	toolSimplified.Driver = tool.Driver
 
 	//handles rules
 	for i := 0; i < len(fvdl.EngineData.RuleInfo); i++ { //i iterates on rules
@@ -971,6 +957,15 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 				//Finalize: append the rule
 				tool.Driver.Rules = append(tool.Driver.Rules, sarifRule)
 
+				// Handle simplified version of tool
+				sarifRuleSimplified := *new(format.SarifRule)
+				sarifRuleSimplified.ID = sarifRule.ID
+				sarifRuleSimplified.GUID = sarifRule.GUID
+				sarifRuleSimplified.Name = sarifRule.Name
+				sarifRuleSimplified.DefaultConfiguration = sarifRule.DefaultConfiguration
+				sarifRuleSimplified.Properties = sarifRule.Properties
+				toolSimplified.Driver.Rules = append(toolSimplified.Driver.Rules, sarifRuleSimplified)
+
 				// A rule vuln has been found for this rule, no need to keep iterating
 				break
 			}
@@ -994,6 +989,7 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 
 	//Finalize: tool
 	sarif.Runs[0].Tool = tool
+	sarifSimplified.Runs[0].Tool = toolSimplified
 
 	//handle invocations object
 	log.Entry().Debug("[SARIF] Now handling invocation.")
@@ -1090,35 +1086,12 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 				loc.PhysicalLocation.ContextRegion = new(format.ContextRegion)
 				loc.PhysicalLocation.ContextRegion.StartLine = fvdl.Snippets[j].StartLine
 				loc.PhysicalLocation.ContextRegion.EndLine = fvdl.Snippets[j].EndLine
-				snippetSarif := new(format.SnippetSarif)
-				snippetSarif.Text = fvdl.Snippets[j].Text
-				loc.PhysicalLocation.ContextRegion.Snippet = snippetSarif
 				break
 			}
 		}
 		loc.Message = new(format.Message)
 		loc.Message.Text = fvdl.UnifiedNodePool.Node[i].Action.ActionData
 
-		// Handle snippet
-		snippetTarget := handleSnippet(fvdl.UnifiedNodePool.Node[i].Action.Type, fvdl.UnifiedNodePool.Node[i].Action.ActionData)
-
-		if loc.PhysicalLocation.ContextRegion != nil && loc.PhysicalLocation.ContextRegion.Snippet != nil {
-			physLocationSnippetLines := strings.Split(loc.PhysicalLocation.ContextRegion.Snippet.Text, "\n")
-			snippetText := ""
-			for j := 0; j < len(physLocationSnippetLines); j++ {
-				if strings.Contains(physLocationSnippetLines[j], snippetTarget) {
-					snippetText = physLocationSnippetLines[j]
-					break
-				}
-			}
-			snippetSarif := new(format.SnippetSarif)
-			if snippetText != "" {
-				snippetSarif.Text = snippetText
-			} else {
-				snippetSarif.Text = loc.PhysicalLocation.ContextRegion.Snippet.Text
-			}
-			loc.PhysicalLocation.Region.Snippet = snippetSarif
-		}
 		log.Entry().Debug("Compute eventual sub-nodes")
 		threadFlowIndexMap[i+1] = computeLocationPath(fvdl, i+1) // Recursively traverse array
 		locs := format.Locations{Location: loc}
@@ -1180,7 +1153,7 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 	}
 	sarif.Runs[0].Taxonomies = append(sarif.Runs[0].Taxonomies, taxonomy)
 
-	return sarif, nil
+	return sarif, sarifSimplified, nil
 }
 
 func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string, sys System, projectVersion *models.ProjectVersion, auditData []*models.ProjectVersionIssue, filterSet *models.FilterSet, oneRequestPerIssue bool, maxretries int) error {
@@ -1301,6 +1274,8 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 }
 
 // Factorizes some code used to obtain the relevant value for a snippet based on the type given by Fortify
+// Note: snippet text is no longer part of .sarif due to size issue.
+// This function however is helpful to explain how to get snippet out of FPR
 func handleSnippet(snippetType string, snippet string) string {
 	snippetTarget := ""
 	switch snippetType {

@@ -1,10 +1,12 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
 	"bytes"
 	"encoding/xml"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -1832,7 +1834,7 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 	}
 
 	if r != nil {
-		_, err := ioutil.ReadAll(r)
+		_, err := io.ReadAll(r)
 
 		if err != nil {
 			return nil, err
@@ -1842,7 +1844,7 @@ func (c *httpMockGctsT) SendRequest(method string, url string, r io.Reader, head
 	res := http.Response{
 		StatusCode: c.StatusCode,
 		Header:     c.Header,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(c.ResponseBody))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(c.ResponseBody))),
 	}
 
 	if c.StatusCode >= 400 {

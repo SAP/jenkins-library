@@ -1,8 +1,12 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"testing"
 
@@ -39,13 +43,13 @@ const WRONG_MTA_VERSION = "3.2.1"
 const LAST_CHANGED_AT = "2021-11-16T13:06:05.711Z"
 const INVALID_INPUT_MSG = "Invalid input parameter(s) when getting MTA extension descriptor"
 
-type tmsUploadMockUtils struct {
+type tmsMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
 }
 
-func newTmsUploadTestsUtils() tmsUploadMockUtils {
-	utils := tmsUploadMockUtils{
+func newTmsTestsUtils() tmsMockUtils {
+	utils := tmsMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
@@ -59,12 +63,14 @@ type communicationInstanceMock struct {
 	uploadMtaExtDescriptorToNodeResponse  tms.MtaExtDescriptor
 	uploadFileResponse                    tms.FileInfo
 	uploadFileToNodeResponse              tms.NodeUploadResponseEntity
+	exportFileToNodeResponse              tms.NodeUploadResponseEntity
 	isErrorOnGetNodes                     bool
 	isErrorOnGetMtaExtDescriptor          bool
 	isErrorOnUpdateMtaExtDescriptor       bool
 	isErrorOnUploadMtaExtDescriptorToNode bool
 	isErrorOnUploadFile                   bool
 	isErrorOnUploadFileToNode             bool
+	isErrorOnExportFileToNode             bool
 }
 
 func (cim *communicationInstanceMock) GetNodes() ([]tms.Node, error) {
@@ -128,7 +134,8 @@ func (cim *communicationInstanceMock) UploadFile(file, namedUser string) (tms.Fi
 	}
 }
 
-func (cim *communicationInstanceMock) UploadFileToNode(nodeName, fileId, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
+func (cim *communicationInstanceMock) UploadFileToNode(fileInfo tms.FileInfo, nodeName, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
+	fileId := strconv.FormatInt(fileInfo.Id, 10)
 	var nodeUploadResponseEntity tms.NodeUploadResponseEntity
 	if description != CUSTOM_DESCRIPTION || nodeName != NODE_NAME || fileId != strconv.FormatInt(FILE_ID, 10) || namedUser != NAMED_USER {
 		return nodeUploadResponseEntity, errors.New(INVALID_INPUT_MSG)
@@ -139,6 +146,14 @@ func (cim *communicationInstanceMock) UploadFileToNode(nodeName, fileId, descrip
 	} else {
 		return cim.uploadFileToNodeResponse, nil
 	}
+}
+
+func mapToJson(m map[string]interface{}) (string, error) {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 func TestRunTmsUpload(t *testing.T) {
@@ -152,13 +167,13 @@ func TestRunTmsUpload(t *testing.T) {
 		fileInfo := tms.FileInfo{Id: FILE_ID, Name: MTA_NAME}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, uploadFileResponse: fileInfo}
 
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -171,14 +186,14 @@ func TestRunTmsUpload(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("happy path: no mapping between node nmaes and MTA extension descriptors is provided -> only upload file and upload file to node calls will be executed", func(t *testing.T) {
+	t.Run("happy path: no mapping between node names and MTA extension descriptors is provided -> only upload file and upload file to node calls will be executed", func(t *testing.T) {
 		t.Parallel()
 
 		// init
 		fileInfo := tms.FileInfo{Id: FILE_ID, Name: MTA_NAME}
 		communicationInstance := communicationInstanceMock{uploadFileResponse: fileInfo}
 
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION}
@@ -199,13 +214,13 @@ func TestRunTmsUpload(t *testing.T) {
 		fileInfo := tms.FileInfo{Id: FILE_ID, Name: MTA_NAME}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, getMtaExtDescriptorResponse: mtaExtDescriptor, uploadFileResponse: fileInfo}
 
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -223,7 +238,7 @@ func TestRunTmsUpload(t *testing.T) {
 
 		// init
 		communicationInstance := communicationInstanceMock{}
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
 		config := tmsUploadOptions{MtaPath: MTA_PATH_LOCAL, CustomDescription: CUSTOM_DESCRIPTION, NamedUser: NAMED_USER, NodeName: NODE_NAME, MtaVersion: MTA_VERSION, NodeExtDescriptorMapping: nodeNameExtDescriptorMapping}
@@ -240,7 +255,7 @@ func TestRunTmsUpload(t *testing.T) {
 
 		// init
 		communicationInstance := communicationInstanceMock{isErrorOnGetNodes: true}
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -259,7 +274,7 @@ func TestRunTmsUpload(t *testing.T) {
 		// init
 		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes}
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -278,10 +293,10 @@ func TestRunTmsUpload(t *testing.T) {
 		// init
 		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes}
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(INVALID_MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(INVALID_MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -300,10 +315,10 @@ func TestRunTmsUpload(t *testing.T) {
 		// init
 		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes}
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(INVALID_MTA_YAML_PATH_2)
+		mtaYamlBytes, _ := os.ReadFile(INVALID_MTA_YAML_PATH_2)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -326,22 +341,22 @@ func TestRunTmsUpload(t *testing.T) {
 		// init
 		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes}
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
-		invalidMtaExtDescriptorBytes, _ := ioutil.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH)
+		invalidMtaExtDescriptorBytes, _ := os.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL, invalidMtaExtDescriptorBytes)
 
-		invalidMtaExtDescriptorBytes2, _ := ioutil.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_2)
+		invalidMtaExtDescriptorBytes2, _ := os.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_2)
 		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2, invalidMtaExtDescriptorBytes2)
 
-		invalidMtaExtDescriptorBytes3, _ := ioutil.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_3)
+		invalidMtaExtDescriptorBytes3, _ := os.ReadFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_3)
 		utils.AddFile(INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3, invalidMtaExtDescriptorBytes3)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL, "UNEXISTING_NODE": "unexisting.mtaext", "ONE_MORE_UNEXISTING_NODE": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL, "ONE_MORE_UNEXISTING_NODE_2": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_2, "ONE_MORE_UNEXISTING_NODE_3": INVALID_MTA_EXT_DESCRIPTOR_PATH_LOCAL_3}
@@ -366,13 +381,13 @@ func TestRunTmsUpload(t *testing.T) {
 		// init
 		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, isErrorOnGetMtaExtDescriptor: true}
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -393,13 +408,13 @@ func TestRunTmsUpload(t *testing.T) {
 		mtaExtDescriptor := tms.MtaExtDescriptor{Id: ID_OF_MTA_EXT_DESCRIPTOR, Description: "Some existing description", MtaId: MTA_ID, MtaExtId: MTA_EXT_ID, MtaVersion: MTA_VERSION, LastChangedAt: LAST_CHANGED_AT}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, getMtaExtDescriptorResponse: mtaExtDescriptor, isErrorOnUpdateMtaExtDescriptor: true}
 
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -419,13 +434,13 @@ func TestRunTmsUpload(t *testing.T) {
 		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, isErrorOnUploadMtaExtDescriptorToNode: true}
 
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -445,13 +460,13 @@ func TestRunTmsUpload(t *testing.T) {
 		nodes := []tms.Node{{Id: NODE_ID, Name: NODE_NAME}}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, isErrorOnUploadFile: true}
 
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -472,13 +487,13 @@ func TestRunTmsUpload(t *testing.T) {
 		fileInfo := tms.FileInfo{Id: FILE_ID, Name: MTA_NAME}
 		communicationInstance := communicationInstanceMock{getNodesResponse: nodes, uploadFileResponse: fileInfo, isErrorOnUploadFileToNode: true}
 
-		utils := newTmsUploadTestsUtils()
+		utils := newTmsTestsUtils()
 		utils.AddFile(MTA_PATH_LOCAL, []byte("dummy content"))
 
-		mtaYamlBytes, _ := ioutil.ReadFile(MTA_YAML_PATH)
+		mtaYamlBytes, _ := os.ReadFile(MTA_YAML_PATH)
 		utils.AddFile(MTA_YAML_PATH_LOCAL, mtaYamlBytes)
 
-		mtaExtDescriptorBytes, _ := ioutil.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
+		mtaExtDescriptorBytes, _ := os.ReadFile(MTA_EXT_DESCRIPTOR_PATH)
 		utils.AddFile(MTA_EXT_DESCRIPTOR_PATH_LOCAL, mtaExtDescriptorBytes)
 
 		nodeNameExtDescriptorMapping := map[string]interface{}{NODE_NAME: MTA_EXT_DESCRIPTOR_PATH_LOCAL}
@@ -489,5 +504,52 @@ func TestRunTmsUpload(t *testing.T) {
 
 		// assert
 		assert.EqualError(t, err, "failed to upload file to node: Something went wrong on uploading file to node")
+	})
+}
+
+func Test_convertUploadOptions(t *testing.T) {
+	t.Parallel()
+	mockServiceKey := `no real serviceKey json necessary for these tests`
+
+	t.Run("Use of new serviceKey parameter works", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsUploadOptions{ServiceKey: mockServiceKey}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertUploadOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
+	})
+
+	t.Run("Use of old tmsServiceKey parameter works as well", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsUploadOptions{TmsServiceKey: mockServiceKey}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertUploadOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
+	})
+
+	t.Run("Use of both tmsServiceKey and serviceKey parameter favors the new serviceKey parameter", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsUploadOptions{ServiceKey: mockServiceKey, TmsServiceKey: "some other string"}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertUploadOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
 	})
 }

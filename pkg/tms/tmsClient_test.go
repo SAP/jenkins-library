@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package tms
 
 import (
@@ -5,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -48,21 +51,21 @@ func (um *uploaderMock) SendRequest(method, url string, body io.Reader, header h
 	if um.httpStatusCode >= 300 {
 		httpError = fmt.Errorf("http error %v", um.httpStatusCode)
 	}
-	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(um.responseBody))}, httpError
+	return &http.Response{StatusCode: um.httpStatusCode, Body: io.NopCloser(strings.NewReader(um.responseBody))}, httpError
 }
 
 func (um *uploaderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	um.httpMethod = http.MethodPost
 	um.urlCalled = url
 	um.header = header
-	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
+	return &http.Response{StatusCode: um.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
 }
 
 func (um *uploaderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	um.httpMethod = http.MethodPost
 	um.urlCalled = url
 	um.header = header
-	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
+	return &http.Response{StatusCode: um.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(um.responseBody)))}, nil
 }
 
 func (um *uploaderMock) Upload(uploadRequestData piperHttp.UploadRequestData) (*http.Response, error) {
@@ -84,7 +87,7 @@ func (um *uploaderMock) Upload(uploadRequestData piperHttp.UploadRequestData) (*
 	if um.httpStatusCode >= 300 {
 		httpError = fmt.Errorf("http error %v", um.httpStatusCode)
 	}
-	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(um.responseBody))}, httpError
+	return &http.Response{StatusCode: um.httpStatusCode, Body: io.NopCloser(strings.NewReader(um.responseBody))}, httpError
 }
 
 func (um *uploaderMock) SetOptions(options piperHttp.ClientOptions) {
@@ -467,16 +470,16 @@ func TestUploadFileToNode(t *testing.T) {
 
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
-		fileId := "111"
+		fileInfo := FileInfo{Id: 111, Name: "test.mtar"}
 		namedUser := "testUser"
-		nodeUploadResponseEntity, err := communicationInstance.UploadFileToNode(nodeName, fileId, transportRequestDescription, namedUser)
+		nodeUploadResponseEntity, err := communicationInstance.UploadFileToNode(fileInfo, nodeName, transportRequestDescription, namedUser)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes/upload", uploaderMock.urlCalled, "Called url incorrect")
 		assert.Equal(t, http.MethodPost, uploaderMock.httpMethod, "Http method incorrect")
 		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
 
-		entryString := fmt.Sprintf(`{"uri":"%v"}`, fileId)
+		entryString := fmt.Sprintf(`{"uri":"%v"}`, strconv.FormatInt(fileInfo.Id, 10))
 		assert.Equal(t, fmt.Sprintf(`{"contentType":"MTA","storageType":"FILE","nodeName":"%v","description":"%v","namedUser":"%v","entries":[%v]}`, nodeName, transportRequestDescription, namedUser, entryString), uploaderMock.requestBody, "Request body incorrect")
 
 		assert.Equal(t, transportRequestId, nodeUploadResponseEntity.TransportRequestId, "TransportRequestId field of node upload response incorrect")
@@ -491,11 +494,11 @@ func TestUploadFileToNode(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
+		fileInfo := FileInfo{Id: 111, Name: "test.mtar"}
 		nodeName := "TEST_NODE"
-		fileId := "111"
 		transportRequestDescription := "This is a test description"
 		namedUser := "testUser"
-		_, err := communicationInstance.UploadFileToNode(nodeName, fileId, transportRequestDescription, namedUser)
+		_, err := communicationInstance.UploadFileToNode(fileInfo, nodeName, transportRequestDescription, namedUser)
 
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes/upload", uploaderMock.urlCalled, "Called url incorrect")
@@ -599,7 +602,7 @@ func TestSendRequest(t *testing.T) {
 func TestNewCommunicationInstance(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: http.StatusOK}
-		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false)
+		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false, piperHttp.ClientOptions{})
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://dummy.sap.com", communicationInstance.uaaUrl, "uaaUrl field of communication instance incorrect")
@@ -611,7 +614,7 @@ func TestNewCommunicationInstance(t *testing.T) {
 
 	t.Run("test error", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
-		_, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false)
+		_, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false, piperHttp.ClientOptions{})
 
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "Error fetching OAuth token: http error 400", err.Error(), "Error text incorrect")

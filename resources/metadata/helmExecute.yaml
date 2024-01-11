@@ -36,8 +36,11 @@ spec:
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
         type: jenkins
+      - name: sourceRepositoryCredentialsId
+        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (source repo)
+        type: jenkins
       - name: targetRepositoryCredentialsId
-        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
+        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (target repo)
         type: jenkins
     resources:
       - name: deployDescriptor
@@ -58,6 +61,7 @@ spec:
         type: string
         description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -336,8 +340,38 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: renderSubchartNotes
+        type: bool
+        description: If set, render subchart notes along with the parent.
+        default: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: templateStartDelimiter
+        type: string
+        description: When templating value files, use this start delimiter.
+        default: "{{"
+        scope:
+          - STEPS
+          - PARAMETERS
+      - name: templateEndDelimiter
+        type: string
+        description: When templating value files, use this end delimiter.
+        default: "}}"
+        scope:
+          - STEPS
+          - PARAMETERS
+      - name: renderValuesTemplate
+        type: bool
+        description: A flag to turn templating value files on or off.
+        default: true
+        scope:
+          - STEPS
+          - PARAMETERS
   containers:
-    - image: dtzar/helm-kubectl:3.8.0
+    - image: dtzar/helm-kubectl:3
       workingDir: /config
       options:
         - name: -u

@@ -83,6 +83,7 @@ nav:
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
         - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
+        - checkmarxOneExecuteScan: steps/checkmarxOneExecuteScan.md
         - checksPublishResults: steps/checksPublishResults.md
         - cfManifestSubstituteVariables: steps/cfManifestSubstituteVariables.md
         - cloudFoundryCreateService: steps/cloudFoundryCreateService.md
@@ -94,6 +95,7 @@ nav:
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
+        - credentialdiggerScan: steps/credentialdiggerScan.md
         - debugReportArchive: steps/debugReportArchive.md
         - detectExecuteScan: steps/detectExecuteScan.md
         - dockerExecute: steps/dockerExecute.md
@@ -120,6 +122,7 @@ nav:
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - helmExecute: steps/helmExecute.md
+        - imagePushToRegistry: steps/imagePushToRegistry.md
         - influxWriteData: steps/influxWriteData.md
         - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
         - integrationArtifactDownload: steps/integrationArtifactDownload.md
@@ -168,6 +171,7 @@ nav:
         - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
+        - tmsExport: steps/tmsExport.md
         - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadCTS: steps/transportRequestUploadCTS.md
