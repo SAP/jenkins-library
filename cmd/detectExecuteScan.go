@@ -147,6 +147,9 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 		}
 	}
 
+	params, _ := json.Marshal(config)
+	log.Entry().Infof("parameters detected for Detect Scan: %v", string(params))
+
 	utils := newDetectUtils(client)
 	if err := runDetect(ctx, config, utils, influx); err != nil {
 		log.Entry().
