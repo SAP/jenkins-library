@@ -800,7 +800,7 @@ func TestMerge(t *testing.T) {
 	for _, row := range testTable {
 		t.Run(fmt.Sprintf("Merging %v into %v", row.MergeData, row.Source), func(t *testing.T) {
 			stepConfig := StepConfig{Config: row.Source}
-			stepConfig.mixIn(row.MergeData, row.Filter)
+			stepConfig.mixIn(row.MergeData, row.Filter, StepData{})
 			assert.Equal(t, row.ExpectedOutput, stepConfig.Config, "Mixin was incorrect")
 		})
 	}
@@ -897,7 +897,7 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				Config:     tt.fields.Config,
 				HookConfig: tt.fields.HookConfig,
 			}
-			s.mixInHookConfig(tt.args.mergeData)
+			s.mixInHookConfig(tt.args.mergeData, StepData{})
 			if !reflect.DeepEqual(s.HookConfig, tt.want) {
 				t.Errorf("mixInHookConfig() = %v, want %v", s.HookConfig, tt.want)
 			}

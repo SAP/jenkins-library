@@ -56,6 +56,7 @@ type whitesourceExecuteScanOptions struct {
 	ScanImage                            string   `json:"scanImage,omitempty"`
 	ScanImages                           []string `json:"scanImages,omitempty"`
 	SkipParentProjectResolution          bool     `json:"skipParentProjectResolution,omitempty"`
+	ActivateMultipleImagesScan           bool     `json:"activateMultipleImagesScan,omitempty"`
 	ScanImageRegistryURL                 string   `json:"scanImageRegistryUrl,omitempty"`
 	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty"`
 	ServiceURL                           string   `json:"serviceUrl,omitempty"`
@@ -353,6 +354,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "For `buildTool: docker`: Defines the docker image which should be scanned.")
 	cmd.Flags().StringSliceVar(&stepConfig.ScanImages, "scanImages", []string{}, "For `buildTool: docker`: Allowing to scan multiple docker images. In case parent project will not contain any dependecies, use skipParentProjectResolution parameter")
 	cmd.Flags().BoolVar(&stepConfig.SkipParentProjectResolution, "skipParentProjectResolution", false, "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies.")
+	cmd.Flags().BoolVar(&stepConfig.ActivateMultipleImagesScan, "activateMultipleImagesScan", false, "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters")
 	cmd.Flags().StringVar(&stepConfig.ScanImageRegistryURL, "scanImageRegistryUrl", os.Getenv("PIPER_scanImageRegistryUrl"), "For `buildTool: docker`: Defines the registry where the scanImage is located.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource API endpoint.")
@@ -771,6 +773,15 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "skipParentProjectResolution",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "activateMultipleImagesScan",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
