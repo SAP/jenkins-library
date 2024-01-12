@@ -285,7 +285,28 @@ go 1.17`
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", "1.4"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-output", "bom-golang.xml", "-output-version", "1.4"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
+	})
+
+	t.Run("success - create BOM - app only", func(t *testing.T) {
+		config := golangBuildOptions{
+			CreateBOM:           true,
+			CreateBOMMainPath: "."
+			TargetArchitectures: []string{"linux,amd64"},
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"app", "-main=.", "-licenses", "-verbose=false", "-output", "bom-golang.xml", "-output-version", "1.4"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})

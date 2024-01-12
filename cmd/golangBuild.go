@@ -195,7 +195,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		if err := runBOMCreation(utils, sbomFilename); err != nil {
+		if err := runBOMCreation(config, utils, sbomFilename); err != nil {
 			return err
 		}
 	}
@@ -213,14 +213,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	var binaries []string
 	platforms, err := multiarch.ParsePlatformStrings(config.TargetArchitectures)
-
 	if err != nil {
 		return err
 	}
 
 	for _, platform := range platforms {
 		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
-
 		if err != nil {
 			return err
 		}
@@ -262,7 +260,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			}
 
 			artifact, err := versioning.GetArtifact("golang", "", &artifactOpts, utils)
-
 			if err != nil {
 				return err
 			}
@@ -304,7 +301,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			log.Entry().Infof("publishing artifact: %s", targetURL)
 
 			response, err := utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
-
 			if err != nil {
 				return fmt.Errorf("couldn't upload artifact: %w", err)
 			}
@@ -407,7 +403,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 		}
 		utils.Stdout(log.Writer())
 
-		err = utils.FileWrite("cobertura-coverage.xml", coverageOutput.Bytes(), 0666)
+		err = utils.FileWrite("cobertura-coverage.xml", coverageOutput.Bytes(), 0o666)
 		if err != nil {
 			return fmt.Errorf("failed to create cobertura coverage file: %w", err)
 		}
@@ -448,7 +444,7 @@ func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSetting
 
 	log.Entry().Infof("lint report: \n" + outputBuffer.String())
 	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
-	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0644)
+	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0o644)
 	if err != nil {
 		return fmt.Errorf("writing golangci-lint report failed: %w", err)
 	}
@@ -522,8 +518,18 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	return binaryNames, nil
 }
 
-func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
+func runBOMCreation(config *golangBuildOptions, utils golangBuildUtils, outputFilename string) error {
+	params := []string{}
+	// differentiate creation of SBOM for app only "app" vs. all packages "mod"
+	// see https://github.com/CycloneDX/cyclonedx-gomod?tab=readme-ov-file#subcommands
+	if len(config.CreateBOMMainPath) > 0 {
+		params = append(params, "app", fmt.Sprintf("-main=%v", config.CreateBOMMainPath))
+	} else {
+		params = append(params, "mod")
+	}
+	params = append(params, "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-output", outputFilename, "-output-version", "1.4")
+
+	if err := utils.RunExecutable("cyclonedx-gomod", params...); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil

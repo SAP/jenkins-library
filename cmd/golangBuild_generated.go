@@ -27,6 +27,7 @@ type golangBuildOptions struct {
 	CgoEnabled                   bool     `json:"cgoEnabled,omitempty"`
 	CoverageFormat               string   `json:"coverageFormat,omitempty" validate:"possible-values=cobertura html"`
 	CreateBOM                    bool     `json:"createBOM,omitempty"`
+	CreateBOMMainPath            string   `json:"createBOMMainPath,omitempty"`
 	CustomTLSCertificateLinks    []string `json:"customTlsCertificateLinks,omitempty"`
 	ExcludeGeneratedFromCoverage bool     `json:"excludeGeneratedFromCoverage,omitempty"`
 	LdflagsTemplate              string   `json:"ldflagsTemplate,omitempty"`
@@ -232,7 +233,8 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CgoEnabled, "cgoEnabled", false, "If active: enables the creation of Go packages that call C code.")
 	cmd.Flags().StringVar(&stepConfig.CoverageFormat, "coverageFormat", `html`, "Defines the format of the coverage repository.")
-	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin. By default it will create the SBOM for all packages contained in the repository unless [createBOMMainPath](#createbommainpath) is specified. It requires Go 1.17 or newer.")
+	cmd.Flags().StringVar(&stepConfig.CreateBOMMainPath, "createBOMMainPath", os.Getenv("PIPER_createBOMMainPath"), "In case this parameter is defined, the SBOM will only be created for the application and not for all packages contained. The parameter specifies the path to the application's main package, relative to MODULE_PATH.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.ExcludeGeneratedFromCoverage, "excludeGeneratedFromCoverage", true, "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode).")
 	cmd.Flags().StringVar(&stepConfig.LdflagsTemplate, "ldflagsTemplate", os.Getenv("PIPER_ldflagsTemplate"), "Defines the content of -ldflags option in a golang template format.")
@@ -320,6 +322,15 @@ func golangBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "createBOMMainPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_createBOMMainPath"),
 					},
 					{
 						Name:        "customTlsCertificateLinks",

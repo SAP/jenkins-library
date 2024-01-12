@@ -52,7 +52,15 @@ spec:
         default: html
       - name: createBOM
         type: bool
-        description: Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.
+        description: Creates the bill of materials (BOM) using CycloneDX plugin. By default it will create the SBOM for all packages contained in the repository unless [createBOMMainPath](#createbommainpath) is specified. It requires Go 1.17 or newer.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: createBOMMainPath
+        type: string
+        description: In case this parameter is defined, the SBOM will only be created for the application and not for all packages contained. The parameter specifies the path to the application's main package, relative to MODULE_PATH.
         scope:
           - GENERAL
           - STEPS
