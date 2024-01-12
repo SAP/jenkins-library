@@ -185,7 +185,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		}
 	}
 
-	if true {
+	if config.BuildMaven {
 		log.Entry().Infof("running Maven Build")
 		mavenConfig := setMavenConfig(config)
 		mavenUtils := maven.NewUtilsBundle()
