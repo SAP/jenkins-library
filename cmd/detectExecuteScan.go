@@ -147,9 +147,6 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 		}
 	}
 
-	params, _ := json.Marshal(config)
-	log.Entry().Infof("parameters detected for Detect Scan: %v", string(params))
-
 	utils := newDetectUtils(client)
 	if err := runDetect(ctx, config, utils, influx); err != nil {
 		log.Entry().
@@ -927,10 +924,9 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 	return record.GetFileName(), nil
 }
 
-// Temporary function setMavenDefaults sets the default values for maven build
 func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 	mavenConfig := mavenBuildOptions{
-		PomPath:                     "pom.xml",
+		PomPath:                     config.PomPath,
 		Flatten:                     true,
 		Verify:                      false,
 		ProjectSettingsFile:         config.ProjectSettingsFile,
