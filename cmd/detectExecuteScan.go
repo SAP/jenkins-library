@@ -193,7 +193,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		mavenConfig := setMavenConfig(config)
 		mavenUtils := maven.NewUtilsBundle()
 
-		err := runMavenBuild(&mavenConfig, nil, mavenUtils, nil)
+		err := runMavenBuild(&mavenConfig, nil, mavenUtils, &mavenBuildCommonPipelineEnvironment{})
 		if err != nil {
 			return err
 		}
