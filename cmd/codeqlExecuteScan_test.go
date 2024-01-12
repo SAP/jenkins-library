@@ -17,12 +17,14 @@ import (
 type codeqlExecuteScanMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	*mock.HttpClientMock
 }
 
 func newCodeqlExecuteScanTestsUtils() codeqlExecuteScanMockUtils {
 	utils := codeqlExecuteScanMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
+		HttpClientMock: &mock.HttpClientMock{},
 	}
 	return utils
 }
@@ -247,7 +249,7 @@ func TestInitGitInfo(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
 		repoInfo, err := initGitInfo(&config)
 		assert.NoError(t, err)
-		_, err = orchestrator.NewOrchestratorSpecificConfigProvider()
+		_, err = orchestrator.GetOrchestratorConfigProvider(nil)
 		assert.Equal(t, "abcd1234", repoInfo.CommitId)
 		assert.Equal(t, "refs/head/branch", repoInfo.Ref)
 		if err != nil {
@@ -304,62 +306,98 @@ func TestGetMavenSettings(t *testing.T) {
 	t.Parallel()
 	t.Run("No maven", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "npm"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "", params)
 	})
 
 	t.Run("No build command", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "", params)
 	})
 
 	t.Run("Project Settings file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "test.xml"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, " --settings=test.xml", params)
 	})
 
 	t.Run("Skip Project Settings file incase already used", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install --settings=project.xml", ProjectSettingsFile: "test.xml"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "", params)
 	})
 
 	t.Run("Global Settings file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "gloabl.xml"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, " --global-settings=gloabl.xml", params)
 	})
 
 	t.Run("Project and Global Settings file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "test.xml", GlobalSettingsFile: "global.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, " --settings=test.xml --global-settings=global.xml", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=global.xml --settings=test.xml", params)
 	})
 
-	t.Run("Skip incase of ProjectSettingsFile https url", func(t *testing.T) {
+	t.Run("ProjectSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "https://jenkins-sap-test.com/test.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, "", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --settings=.pipeline/mavenProjectSettings.xml", params)
 	})
 
-	t.Run("Skip incase of ProjectSettingsFile http url", func(t *testing.T) {
+	t.Run("ProjectSettingsFile http url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, "", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --settings=.pipeline/mavenProjectSettings.xml", params)
 	})
 
-	t.Run("Skip incase of GlobalSettingsFile https url", func(t *testing.T) {
+	t.Run("GlobalSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, "", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml", params)
 	})
 
-	t.Run("Skip incase of GlobalSettingsFile http url", func(t *testing.T) {
+	t.Run("GlobalSettingsFile http url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, "", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile and GlobalSettingsFile https url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile and GlobalSettingsFile http url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile file and GlobalSettingsFile https url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=test.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile file and GlobalSettingsFile https url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=test.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile https url and GlobalSettingsFile file", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "global.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=global.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile http url and GlobalSettingsFile file", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "global.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=global.xml --settings=.pipeline/mavenProjectSettings.xml", params)
 	})
 }
 
