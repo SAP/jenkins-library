@@ -293,7 +293,7 @@ go 1.17`
 	t.Run("success - create BOM - app only", func(t *testing.T) {
 		config := golangBuildOptions{
 			CreateBOM:           true,
-			CreateBOMMainPath: "."
+			CreateBOMMainPath:   ".",
 			TargetArchitectures: []string{"linux,amd64"},
 		}
 		utils := newGolangBuildTestsUtils()
@@ -501,7 +501,7 @@ go 1.17`
 		}
 		GeneralConfig.Verbose = false
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version 1.4": fmt.Errorf("BOM creation failure")}
+		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -output bom-golang.xml -output-version 1.4": fmt.Errorf("BOM creation failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -728,10 +728,10 @@ func TestPrepareLdflags(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 
-	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
+	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0o777)
 	assert.NoError(t, err, "Error when creating folder structure")
 
-	err = os.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
+	err = os.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0o666)
 	assert.NoError(t, err, "Error when creating cpe file")
 
 	t.Run("success - default", func(t *testing.T) {
@@ -890,7 +890,6 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
-
 }
 
 func TestPrepareGolangEnvironment(t *testing.T) {
