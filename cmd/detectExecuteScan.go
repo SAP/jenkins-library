@@ -140,6 +140,9 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 
+	// Log config for debug purpose
+	logConfigInVerboseMode(config)
+
 	if config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
 		//configuring go private packages
 		if err := golang.PrepareGolangPrivatePackages("detectExecuteStep", config.PrivateModules, config.PrivateModulesGitToken); err != nil {
@@ -180,6 +183,17 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
 		}, utils)
+		if err != nil {
+			return err
+		}
+	}
+
+	if config.BuildMaven {
+		log.Entry().Infof("running Maven Build")
+		mavenConfig := setMavenConfig(config)
+		mavenUtils := maven.NewUtilsBundle()
+
+		err := runMavenBuild(&mavenConfig, nil, mavenUtils, &mavenBuildCommonPipelineEnvironment{})
 		if err != nil {
 			return err
 		}
@@ -894,4 +908,29 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
+	mavenConfig := mavenBuildOptions{
+		PomPath:                     config.PomPath,
+		Flatten:                     true,
+		Verify:                      false,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		M2Path:                      config.M2Path,
+		LogSuccessfulMavenTransfers: false,
+		CreateBOM:                   false,
+		CustomTLSCertificateLinks:   config.CustomTLSCertificateLinks,
+		Publish:                     false,
+	}
+
+	return mavenConfig
+}
+
+func logConfigInVerboseMode(config detectExecuteScanOptions) {
+	config.Token = "********"
+	config.GithubToken = "********"
+	config.PrivateModulesGitToken = "********"
+	debugLog, _ := json.Marshal(config)
+	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
 }
