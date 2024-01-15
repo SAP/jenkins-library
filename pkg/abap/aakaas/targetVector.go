@@ -172,7 +172,7 @@ func (tv *TargetVector) PollForStatus(conn *abapbuild.Connector, targetStatus Ta
 				if TargetVectorStatus(tv.Status) == targetStatus {
 					return nil
 				} else {
-					return errors.New("Publishing of Targetvector " + tv.ID + " resulted in state " + string(tv.Status) + "instead of expected state " + string(targetStatus))
+					return errors.New("Publishing of Targetvector " + tv.ID + " resulted in state " + string(tv.Status) + " instead of expected state " + string(targetStatus))
 				}
 			case TargetVectorPublishStatusError:
 				return errors.New("Publishing of Targetvector " + tv.ID + " failed in AAKaaS")

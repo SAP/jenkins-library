@@ -50,11 +50,13 @@ func TestRunImagePushToRegistry(t *testing.T) {
 
 		config := imagePushToRegistryOptions{
 			SourceRegistryURL:      "https://source.registry",
-			SourceImages:           []string{"source-image:latest"},
+			SourceImages:           []string{"source-image"},
+			SourceImageTag:         "1.0.0-123+456",
 			SourceRegistryUser:     "sourceuser",
 			SourceRegistryPassword: "sourcepassword",
 			TargetRegistryURL:      "https://target.registry",
-			TargetImages:           []string{"target-image:latest"},
+			TargetImages:           map[string]any{"source-image": "target-image"},
+			TargetImageTag:         "1.0.0-123+456",
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
 		}
@@ -65,6 +67,8 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		createdConfig, err := utils.FileRead(targetDockerConfigPath)
 		assert.NoError(t, err)
 		assert.Equal(t, customDockerConfig, string(createdConfig))
+		assert.Equal(t, "1.0.0-123-456", config.SourceImageTag)
+		assert.Equal(t, "1.0.0-123-456", config.TargetImageTag)
 	})
 
 	t.Run("failed to copy image", func(t *testing.T) {
@@ -74,10 +78,11 @@ func TestRunImagePushToRegistry(t *testing.T) {
 			SourceRegistryURL:      "https://source.registry",
 			SourceRegistryUser:     "sourceuser",
 			SourceRegistryPassword: "sourcepassword",
-			SourceImages:           []string{"source-image:latest"},
+			SourceImages:           []string{"source-image"},
 			TargetRegistryURL:      "https://target.registry",
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
+			TargetImageTag:         "0.0.1",
 		}
 		craneMockUtils := &dockermock.CraneMockUtils{
 			ErrCopyImage: dockermock.ErrCopyImage,
@@ -91,14 +96,13 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		t.Parallel()
 
 		config := imagePushToRegistryOptions{
-			SourceRegistryURL:      "https://source.registry",
-			SourceRegistryUser:     "sourceuser",
-			SourceRegistryPassword: "sourcepassword",
-			SourceImages:           []string{"source-image:latest"},
+			TargetImages:           map[string]any{"img": "source-image"},
+			TargetImageTag:         "0.0.1",
 			TargetRegistryURL:      "https://target.registry",
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
 			LocalDockerImagePath:   "/local/path",
+			PushLocalDockerImage:   true,
 		}
 		craneMockUtils := &dockermock.CraneMockUtils{
 			ErrLoadImage: dockermock.ErrLoadImage,
@@ -154,6 +158,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 
 		craneMockUtils := &dockermock.CraneMockUtils{}
 		config := &imagePushToRegistryOptions{
+			PushLocalDockerImage: true,
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
 			TagLatest:            false,
@@ -170,6 +175,7 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 			ErrLoadImage: dockermock.ErrLoadImage,
 		}
 		config := &imagePushToRegistryOptions{
+			PushLocalDockerImage: true,
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
 			TagLatest:            false,
@@ -186,10 +192,11 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 			ErrPushImage: dockermock.ErrPushImage,
 		}
 		config := &imagePushToRegistryOptions{
+			PushLocalDockerImage: true,
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
-			TargetImages:         []string{"my-image:1.0.0"},
-			TagLatest:            false,
+			TargetImages:         map[string]any{"image1": "my-image"},
+			TagLatest:            true,
 		}
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
 		err := pushLocalImageToTargetRegistry(config, utils)
@@ -197,44 +204,11 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 	})
 }
 
-func TestParseDockerImageName(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name, image, expected string
-	}{
-		{
-			name:     "registry + imagename + tag",
-			image:    "test.io/repo/test-image:1.0.0-12345",
-			expected: "test.io/repo/test-image",
-		},
-		{
-			name:     "registry + imagename + tag (registry with port)",
-			image:    "test.io:50000/repo/test-image:1.0.0-12345",
-			expected: "test.io:50000/repo/test-image",
-		},
-		{
-			name:     "registry + imagename",
-			image:    "test-test.io/repo/testimage",
-			expected: "test-test.io/repo/testimage",
-		},
-		{
-			name:     "imagename + tag",
-			image:    "testImage:1.0.0",
-			expected: "testImage",
-		},
-		{
-			name:     "imagename",
-			image:    "test-image",
-			expected: "test-image",
-		},
+func TestMapSourceTargetImages(t *testing.T) {
+	expected := map[string]any{
+		"img1": "img1", "img2": "img2",
 	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			actual := parseDockerImageName(test.image)
-			assert.Equal(t, test.expected, actual)
-		})
-	}
+	sourceImages := []string{"img1", "img2"}
+	got := mapSourceTargetImages(sourceImages)
+	assert.Equal(t, got, expected)
 }
