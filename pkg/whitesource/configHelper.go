@@ -49,8 +49,8 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 
 	now := time.Now().Format("20060102150405")
 
-	// Check this solution
-	// remove "/" from scanPath
+	// TODO Check this solution with ScanPath permissions
+
 	// if strings.HasSuffix(s.ScanPath, "/") {
 	// 	scanPath = strings.TrimSuffix(s.ScanPath, "/")
 	// } else {
