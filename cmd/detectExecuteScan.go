@@ -140,6 +140,9 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 
+	// Log config for debug purpose
+	logConfigInVerboseMode(config)
+
 	if config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
 		//configuring go private packages
 		if err := golang.PrepareGolangPrivatePackages("detectExecuteStep", config.PrivateModules, config.PrivateModulesGitToken); err != nil {
@@ -939,4 +942,12 @@ func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 	}
 
 	return mavenConfig
+}
+
+func logConfigInVerboseMode(config detectExecuteScanOptions) {
+	config.Token = "********"
+	config.GithubToken = "********"
+	config.PrivateModulesGitToken = "********"
+	debugLog, _ := json.Marshal(config)
+	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
 }
