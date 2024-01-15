@@ -255,12 +255,6 @@ void call(Map parameters = [:], body) {
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
             .use()
 
-        utils.pushToSWA([
-            step         : STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1   : parameters?.script == null
-        ], config)
-
         if (!config.containerMap && config.dockerImage) {
             config.containerName = 'container-exec'
             config.containerMap = [(config.get('dockerImage')): config.containerName]
