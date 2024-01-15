@@ -161,11 +161,11 @@ func convertMockedReqToHttpReq(mockedReq mockedClientReq) http.Request {
 	return httpReq
 }
 
-// this function is used to mock the last part of runAbapLandcapePortalUpdateAddOnProduct "keep pulling status of update AddOn request until it reaches a final status (C/E/X)"
+// this function is used to mock the last part of runAbapLandcapePortalUpdateAddOnProduct "keep pulling status of update addon  request until it reaches a final status (C/E/X)"
 func keepPullingUntilFinalStatusReached(fromStatus *string, toStatus string, mockedServer *httptest.Server, req mockedClientReq) error {
 	httpReq := convertMockedReqToHttpReq(req)
 
-	// mock the process of pulling status of update AddOn request
+	// mock the process of pulling status of update addon  request
 	for i := 0; i < 3; i++ {
 		time.Sleep(1 * time.Second)
 		err := pullStatusOfUpdateAddOn(httpClient, &httpReq, "some-request-guid", fromStatus)
@@ -175,7 +175,7 @@ func keepPullingUntilFinalStatusReached(fromStatus *string, toStatus string, moc
 		}
 	}
 
-	// mock the server which returns the update AddOn request with a final status, and update the url of http request
+	// mock the server which returns the update addon  request with a final status, and update the url of http request
 	wantedRequest := reqEntity{
 		RequestId: "some-req-id",
 		ZoneId:    "some-zone-id",
@@ -184,10 +184,10 @@ func keepPullingUntilFinalStatusReached(fromStatus *string, toStatus string, moc
 	}
 
 	mockedServer = mockServer(&req, resp_200, wantedRequest)
-	req.url = parseRawURL(mockedServer.URL + "/api/v1.0/requests/some-req-id")
+	req.url = parseRawURL(mockedServer.URL + "/api/requests/some-req-id")
 	httpReq = convertMockedReqToHttpReq(req)
 
-	// pull the status of update AddOn request from the newly modified server
+	// pull the status of update addon  request from the newly modified server
 	err := pullStatusOfUpdateAddOn(httpClient, &httpReq, "some-req-id", fromStatus)
 
 	if err != nil {
@@ -262,7 +262,7 @@ func TestGetLPAPIAccessToken(t *testing.T) {
 
 		accessToken, err := getLPAPIAccessToken(httpClientAT, servKey_temp)
 
-		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when getting access token of LP API.")
+		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when getting access token of LP API.\n")
 		accessToken, err = getLPAPIAccessToken(httpClientAT, servKey_temp)
 
 		assert.Equal(t, "", accessToken)
@@ -282,13 +282,13 @@ func TestGetLPAPIAccessToken(t *testing.T) {
 func TestGetSystemBySystemNumber(t *testing.T) {
 	json.Unmarshal([]byte(lPAPIServiceKey), &servKey)
 	accessToken, servKey_temp := mockGetLPAPIAccessToken(httpClientAT, servKey)
-	rawURL := servKey.Url + "/api/v1.0/systems/" + updateAddOnConfig.AbapSystemNumber
+	rawURL := servKey.Url + "/api/systems/" + updateAddOnConfig.AbapSystemNumber
 
 	req := mockedClientReq{
 		url:    parseRawURL(rawURL),
 		method: http.MethodGet,
 		header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -323,7 +323,7 @@ func TestGetSystemBySystemNumber(t *testing.T) {
 
 		err := getSystemBySystemNumber(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, &systemId)
 
-		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when getting system with systemNumber %v.", updateAddOnConfig.AbapSystemNumber)
+		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when getting system with systemNumber %v.\n", updateAddOnConfig.AbapSystemNumber)
 
 		assert.Equal(t, "", systemId)
 		assert.Equal(t, expectedErr, err)
@@ -343,13 +343,13 @@ func TestGetStatusOfUpdateAddOn(t *testing.T) {
 	json.Unmarshal([]byte(lPAPIServiceKey), &servKey)
 	reqId := "some-req-id"
 	accessToken, servKey_temp := mockGetLPAPIAccessToken(httpClientAT, servKey)
-	rawURL := servKey.Url + "/api/v1.0/requests/" + reqId
+	rawURL := servKey.Url + "/api/requests/" + reqId
 
 	req := mockedClientReq{
 		url:    parseRawURL(rawURL),
 		method: http.MethodGet,
 		header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -375,7 +375,7 @@ func TestGetStatusOfUpdateAddOn(t *testing.T) {
 		assert.Equal(t, wantedRequest.Status, status)
 		assert.Equal(t, nil, err)
 		assert.Contains(t, mockedServer.URL, getStatusReq.URL.Host)
-		assert.Equal(t, "/api/v1.0/requests/some-req-id", getStatusReq.URL.Path)
+		assert.Equal(t, "/api/requests/some-req-id", getStatusReq.URL.Path)
 		assert.Equal(t, req.method, getStatusReq.Method)
 		assert.Equal(t, req.header, getStatusReq.Header)
 	})
@@ -388,13 +388,13 @@ func TestGetStatusOfUpdateAddOn(t *testing.T) {
 
 		servKey_temp.Url = mockedServer.URL
 
-		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when getting status of request with id %v.", reqId)
+		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when pulling status of request %v.\n", reqId)
 		err := getStatusOfUpdateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, &status, &getStatusReq)
 
 		assert.Equal(t, "", status)
 		assert.Equal(t, expectedErr, err)
 		assert.Contains(t, mockedServer.URL, getStatusReq.URL.Host)
-		assert.Equal(t, "/api/v1.0/requests/some-req-id", getStatusReq.URL.Path)
+		assert.Equal(t, "/api/requests/some-req-id", getStatusReq.URL.Path)
 		assert.Equal(t, req.method, getStatusReq.Method)
 		assert.Equal(t, req.header, getStatusReq.Header)
 	})
@@ -415,7 +415,7 @@ func TestUpdateAddOn(t *testing.T) {
 	json.Unmarshal([]byte(lPAPIServiceKey), &servKey)
 	systemId := "some-system-id"
 	accessToken, servKey_temp := mockGetLPAPIAccessToken(httpClientAT, servKey)
-	rawURL := servKey.Url + "/api/v1.0/systems/" + systemId + "/deployProduct"
+	rawURL := servKey.Url + "/api/systems/" + systemId + "/deployProduct"
 	updateAddOnReqBody := updateAddOnReq{
 		ProductName:    "some-product-name",
 		ProductVersion: "some-product-version",
@@ -426,7 +426,7 @@ func TestUpdateAddOn(t *testing.T) {
 		url:    parseRawURL(rawURL),
 		method: http.MethodPost,
 		header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -441,7 +441,7 @@ func TestUpdateAddOn(t *testing.T) {
 	}
 
 	t.Parallel()
-	t.Run("Successfully update AddOn in the system", func(t *testing.T) {
+	t.Run("Successfully update addon  in the system", func(t *testing.T) {
 		var reqId string
 
 		mockedServer := mockServer(&req, resp_200, wantedRequest)
@@ -454,21 +454,21 @@ func TestUpdateAddOn(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 
-	t.Run("Non-200 status code returned when updating AddOn in a system", func(t *testing.T) {
+	t.Run("Non-200 status code returned when updating addon  in a system", func(t *testing.T) {
 		var reqId string
 
 		mockedServer := mockServer(&req, resp_400, nil)
 
 		servKey_temp.Url = mockedServer.URL
 
-		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when updating AddOn in system with systemId %v.", systemId)
+		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when updating addon in system with systemId %v.\n", systemId)
 		err := updateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, systemId, &reqId)
 
 		assert.Equal(t, "", reqId)
 		assert.Equal(t, expectedErr, err)
 	})
 
-	t.Run("Error returned when returned when updating AddOn in a system", func(t *testing.T) {
+	t.Run("Error returned when returned when updating addon  in a system", func(t *testing.T) {
 		var reqId string
 
 		err := updateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey, systemId, &reqId)
@@ -482,20 +482,20 @@ func TestCancelUpdateAddOn(t *testing.T) {
 	json.Unmarshal([]byte(lPAPIServiceKey), &servKey)
 	reqId := "some-req-id"
 	accessToken, servKey_temp := mockGetLPAPIAccessToken(httpClientAT, servKey)
-	rawURL := servKey.Url + "/api/v1.0/requests/" + reqId
+	rawURL := servKey.Url + "/api/requests/" + reqId
 
 	req := mockedClientReq{
 		url:    parseRawURL(rawURL),
 		method: http.MethodPost,
 		header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
 	}
 
 	t.Parallel()
-	t.Run("Successfully cancel update AddOn request", func(t *testing.T) {
+	t.Run("Successfully cancel update addon  request", func(t *testing.T) {
 		mockedServer := mockServer(&req, resp_204, nil)
 
 		servKey_temp.Url = mockedServer.URL
@@ -505,18 +505,18 @@ func TestCancelUpdateAddOn(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 
-	t.Run("Non-204 status code returned when canceling update AddOn request", func(t *testing.T) {
+	t.Run("Non-204 status code returned when canceling update addon  request", func(t *testing.T) {
 		mockedServer := mockServer(&req, resp_400, nil)
 
 		servKey_temp.Url = mockedServer.URL
 
-		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when canceling addon update request with id %v.", reqId)
+		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when canceling addon update request %v.\n", reqId)
 		err := cancelUpdateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId)
 
 		assert.Equal(t, expectedErr, err)
 	})
 
-	t.Run("Error returned when returned when canceling update AddOn request", func(t *testing.T) {
+	t.Run("Error returned when returned when canceling update addon  request", func(t *testing.T) {
 		err := cancelUpdateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey, reqId)
 
 		assert.ErrorContains(t, err, "no such host")
@@ -524,18 +524,18 @@ func TestCancelUpdateAddOn(t *testing.T) {
 }
 
 func TestRespondToUpdateAddOnFinalStatus(t *testing.T) {
-	t.Run("Cancel update AddOn request if it failed", func(t *testing.T) {
+	t.Run("Cancel update addon  request if it failed", func(t *testing.T) {
 		json.Unmarshal([]byte(lPAPIServiceKey), &servKey)
 		reqId := "some-req-id"
 		accessToken, servKey_temp := mockGetLPAPIAccessToken(httpClientAT, servKey)
-		rawURL := servKey.Url + "/api/v1.0/requests/" + reqId
+		rawURL := servKey.Url + "/api/requests/" + reqId
 		status := "E"
 
 		req := mockedClientReq{
 			url:    parseRawURL(rawURL),
 			method: http.MethodPost,
 			header: map[string][]string{
-				"Authorization": {"Bearer" + accessToken},
+				"Authorization": {"Bearer " + accessToken},
 				"Content-Type":  {"application/json"},
 				"Accept":        {"application/json"},
 			},
@@ -545,7 +545,7 @@ func TestRespondToUpdateAddOnFinalStatus(t *testing.T) {
 
 		servKey_temp.Url = mockedServer.URL
 
-		expectedErr := fmt.Errorf("AddOn update failed.")
+		expectedErr := fmt.Errorf("Addon update failed.\n")
 		err := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, status)
 
 		assert.Equal(t, expectedErr, err)
@@ -556,6 +556,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 	// declare variables
 	var systemId, reqId, reqStatus string
 	var getStatusReq http.Request
+	// var err error
 
 	// mock server for getLPAPIAccessToken to get LP API access token
 	json.Unmarshal([]byte(lPAPIServiceKey), &servKey)
@@ -576,10 +577,10 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 	}
 
 	req2 := mockedClientReq{
-		url:    parseRawURL(servKey.Url + "/api/v1.0/systems/" + updateAddOnConfig.AbapSystemNumber),
+		url:    parseRawURL(servKey.Url + "/api/systems/" + updateAddOnConfig.AbapSystemNumber),
 		method: http.MethodGet,
 		header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -596,13 +597,13 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		ProductName:    "some-product-name",
 		ProductVersion: "some-product-version",
 	}
-	httpReq := encodeReqBody[updateAddOnReq](updateAddOnReqBody, servKey.Url+"/api/v1.0/systems/"+systemId+"/deployProduct")
+	httpReq := encodeReqBody[updateAddOnReq](updateAddOnReqBody, servKey.Url+"/api/systems/"+systemId+"/deployProduct")
 
 	req3 := mockedClientReq{
-		url:    parseRawURL(servKey.Url + "/api/v1.0/systems/" + systemId + "/deployProduct"),
+		url:    parseRawURL(servKey.Url + "/api/systems/" + systemId + "/deployProduct"),
 		method: http.MethodPost,
 		header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -624,10 +625,10 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 
 	// mock server for getStatusOfUpdateAddOn and execute it
 	req4 := mockedClientReq{
-		url:    parseRawURL(servKey.Url + "/api/v1.0/requests/" + reqId),
+		url:    parseRawURL(servKey.Url + "/api/requests/" + reqId),
 		method: http.MethodGet,
 		header: map[string][]string{
-			"Authorization": {"Bearer" + accessToken},
+			"Authorization": {"Bearer " + accessToken},
 			"Content-Type":  {"application/json"},
 			"Accept":        {"application/json"},
 		},
@@ -647,15 +648,15 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 	err4 := getStatusOfUpdateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, &reqStatus, &getStatusReq)
 
 	t.Parallel()
-	t.Run("Successfully update AddOn", func(t *testing.T) {
+	t.Run("Successfully update addon ", func(t *testing.T) {
 		finalStatus := "C"
 
-		// mock pulling status of update AddOn request until final status reaches
+		// mock pulling status of update addon  request until final status reaches
 		mockedClientReq_temp := req4
-		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/v1.0/requests/" + reqId)
+		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/requests/" + reqId)
 		err5 := keepPullingUntilFinalStatusReached(&reqStatus, finalStatus, mockedServer, mockedClientReq_temp)
 
-		// mock respond to completed update AddOn
+		// mock respond to completed update addon
 		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
@@ -664,7 +665,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, "some-req-id", reqId)
 		assert.Equal(t, finalStatus, reqStatus)
 		assert.Contains(t, mockedServer.URL, getStatusReq.URL.Host)
-		assert.Equal(t, "/api/v1.0/requests/some-req-id", getStatusReq.URL.Path)
+		assert.Equal(t, "/api/requests/some-req-id", getStatusReq.URL.Path)
 
 		assert.Equal(t, nil, err1)
 		assert.Equal(t, nil, err2)
@@ -672,18 +673,19 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, nil, err4)
 		assert.Equal(t, nil, err5)
 		assert.Equal(t, nil, err6)
+		// assert.Equal(t, nil, err)
 	})
 
-	t.Run("Update AddOn request is aborted", func(t *testing.T) {
+	t.Run("Update addon  request is aborted", func(t *testing.T) {
 		finalStatus := "X"
 
-		// mock pulling status of update AddOn request until final status reaches
+		// mock pulling status of update addon  request until final status reaches
 		mockedClientReq_temp := req4
-		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/v1.0/requests/" + reqId)
+		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/requests/" + reqId)
 		err5 := keepPullingUntilFinalStatusReached(&reqStatus, finalStatus, mockedServer, mockedClientReq_temp)
 
-		// mock respond to abort update AddOn
-		expectedErr6 := fmt.Errorf("AddOn update is aborted.")
+		// mock respond to abort update addon
+		expectedErr6 := fmt.Errorf("Addon update is aborted.\n")
 		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
@@ -692,7 +694,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, "some-req-id", reqId)
 		assert.Equal(t, finalStatus, reqStatus)
 		assert.Contains(t, mockedServer.URL, getStatusReq.URL.Host)
-		assert.Equal(t, "/api/v1.0/requests/some-req-id", getStatusReq.URL.Path)
+		assert.Equal(t, "/api/requests/some-req-id", getStatusReq.URL.Path)
 
 		assert.Equal(t, nil, err1)
 		assert.Equal(t, nil, err2)
@@ -702,20 +704,20 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, expectedErr6, err6)
 	})
 
-	t.Run("Failed to update AddOn", func(t *testing.T) {
+	t.Run("Failed to update addon ", func(t *testing.T) {
 		finalStatus := "E"
 
-		// mock pulling status of update AddOn request until final status reaches
+		// mock pulling status of update addon  request until final status reaches
 		mockedClientReq_temp := req4
-		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/v1.0/requests/" + reqId)
+		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/requests/" + reqId)
 		err5 := keepPullingUntilFinalStatusReached(&reqStatus, finalStatus, mockedServer, mockedClientReq_temp)
 
-		// mock respond to cancel update AddOn
+		// mock respond to cancel update addon
 		req5 := mockedClientReq{
-			url:    parseRawURL(servKey.Url + "/api/v1.0/requests/" + reqId),
+			url:    parseRawURL(servKey.Url + "/api/requests/" + reqId),
 			method: http.MethodDelete,
 			header: map[string][]string{
-				"Authorization": {"Bearer" + accessToken},
+				"Authorization": {"Bearer " + accessToken},
 				"Content-Type":  {"application/json"},
 				"Accept":        {"application/json"},
 			},
@@ -725,7 +727,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 
 		servKey_temp.Url = mockedServer_cancelUpdateAddOn.URL
 
-		expectedErr6 := fmt.Errorf("AddOn update failed.")
+		expectedErr6 := fmt.Errorf("Addon update failed.\n")
 		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
@@ -734,7 +736,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, "some-req-id", reqId)
 		assert.Equal(t, finalStatus, reqStatus)
 		assert.Contains(t, mockedServer.URL, getStatusReq.URL.Host)
-		assert.Equal(t, "/api/v1.0/requests/some-req-id", getStatusReq.URL.Path)
+		assert.Equal(t, "/api/requests/some-req-id", getStatusReq.URL.Path)
 
 		assert.Equal(t, nil, err1)
 		assert.Equal(t, nil, err2)
@@ -747,17 +749,17 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 	t.Run("Non-200 status code was returned", func(t *testing.T) {
 		finalStatus := "E"
 
-		// mock pulling status of update AddOn request until final status reaches
+		// mock pulling status of update addon  request until final status reaches
 		mockedClientReq_temp := req4
-		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/v1.0/requests/" + reqId)
+		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/requests/" + reqId)
 		err5 := keepPullingUntilFinalStatusReached(&reqStatus, finalStatus, mockedServer, mockedClientReq_temp)
 
-		// mock respond to cancel update AddOn
+		// mock respond to cancel update addon
 		req5 := mockedClientReq{
-			url:    parseRawURL(servKey.Url + "/api/v1.0/requests/" + reqId),
+			url:    parseRawURL(servKey.Url + "/api/requests/" + reqId),
 			method: http.MethodDelete,
 			header: map[string][]string{
-				"Authorization": {"Bearer" + accessToken},
+				"Authorization": {"Bearer " + accessToken},
 				"Content-Type":  {"application/json"},
 				"Accept":        {"application/json"},
 			},
@@ -775,22 +777,22 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, "some-req-id", reqId)
 		assert.Equal(t, finalStatus, reqStatus)
 		assert.Contains(t, mockedServer.URL, getStatusReq.URL.Host)
-		assert.Equal(t, "/api/v1.0/requests/some-req-id", getStatusReq.URL.Path)
+		assert.Equal(t, "/api/requests/some-req-id", getStatusReq.URL.Path)
 
 		assert.Equal(t, nil, err1)
 		assert.Equal(t, nil, err2)
 		assert.Equal(t, nil, err3)
 		assert.Equal(t, nil, err4)
 		assert.Equal(t, nil, err5)
-		assert.Equal(t, err6.Error(), "Failed to cancel addon update. Error: Unexpected response status 400 Bad Request received when canceling addon update request with id some-req-id.")
+		assert.Equal(t, err6.Error(), "Failed to cancel addon update. Error: Unexpected response status 400 Bad Request received when canceling addon update request some-req-id.\n\n")
 	})
 
 	t.Run("Other error returned", func(t *testing.T) {
 		finalStatus := "E"
 
-		// mock pulling status of update AddOn request until final status reaches
+		// mock pulling status of update addon  request until final status reaches
 		mockedClientReq_temp := req4
-		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/v1.0/requests/" + reqId)
+		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/requests/" + reqId)
 		err5 := keepPullingUntilFinalStatusReached(&reqStatus, finalStatus, mockedServer, mockedClientReq_temp)
 		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey, reqId, reqStatus)
 
@@ -800,7 +802,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		assert.Equal(t, "some-req-id", reqId)
 		assert.Equal(t, finalStatus, reqStatus)
 		assert.Contains(t, mockedServer.URL, getStatusReq.URL.Host)
-		assert.Equal(t, "/api/v1.0/requests/some-req-id", getStatusReq.URL.Path)
+		assert.Equal(t, "/api/requests/some-req-id", getStatusReq.URL.Path)
 
 		assert.Equal(t, nil, err1)
 		assert.Equal(t, nil, err2)

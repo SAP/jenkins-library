@@ -101,37 +101,37 @@ func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateA
 		return err
 	}
 
-	// update addOn in the system
+	// update addon in the system
 	updateAddOnErr := updateAddOn(config, client, clientAT, servKey, systemId, &reqId)
 	if updateAddOnErr != nil {
-		err = fmt.Errorf("Failed to update addOn in the system with systemId %v. Error: %v\n", systemId, updateAddOnErr)
+		err = fmt.Errorf("Failed to update addon in the system with systemId %v. Error: %v\n", systemId, updateAddOnErr)
 		return err
 	}
 
 	// query status of request
 	getStatusOfUpdateAddOnErr := getStatusOfUpdateAddOn(config, client, clientAT, servKey, reqId, &reqStatus, &getStatusReq)
 	if getStatusOfUpdateAddOnErr != nil {
-		err = fmt.Errorf("Failed to get status of addOn update request %v. Error: %v\n", reqId, getStatusOfUpdateAddOnErr)
+		err = fmt.Errorf("Failed to get status of addon update request %v. Error: %v\n", reqId, getStatusOfUpdateAddOnErr)
 		return err
 	}
 
-	// keep pulling status of addOn update request until it reaches a final status (C/E/X)
+	// keep pulling status of addon update request until it reaches a final status (C/E/X)
 	for reqStatus == StatusInProgress || reqStatus == StatusScheduled {
 		// pull status every 30s
 		time.Sleep(30 * time.Second)
 		pullStatusOfUpdateAddOnErr := pullStatusOfUpdateAddOn(client, &getStatusReq, reqId, &reqStatus)
 
 		if pullStatusOfUpdateAddOnErr != nil {
-			err = fmt.Errorf("Error happened when waiting for the addOn update request %v to reach a final status. Error: %v\n", reqId, pullStatusOfUpdateAddOnErr)
+			err = fmt.Errorf("Error happened when waiting for the addon update request %v to reach a final status. Error: %v\n", reqId, pullStatusOfUpdateAddOnErr)
 			return err
 		}
 	}
 
-	// respond to the final status of addOn update
+	// respond to the final status of addon update
 	respondToUpdateAddOnFinalStatusErr := respondToUpdateAddOnFinalStatus(config, client, clientAT, servKey, reqId, reqStatus)
 
 	if respondToUpdateAddOnFinalStatusErr != nil {
-		err = fmt.Errorf("The final status of addon update is %v. Error: %v", reqStatus, respondToUpdateAddOnFinalStatusErr)
+		err = fmt.Errorf("The final status of addon update is %v. Error: %v\n", reqStatus, respondToUpdateAddOnFinalStatusErr)
 		return err
 	}
 
@@ -272,7 +272,7 @@ func getSystemBySystemNumber(config *abapLandscapePortalUpdateAddOnProductOption
 	return nil
 }
 
-// this function is used to define and maintain the request body of querying status of addOn update request, and send request to pull the status of request
+// this function is used to define and maintain the request body of querying status of addon update request, and send request to pull the status of request
 func getStatusOfUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string, status *string, getStatusReq *http.Request) error {
 	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
@@ -313,7 +313,7 @@ func getStatusOfUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions
 	return nil
 }
 
-// this function is used to pull status of addOn update request and maintain the status
+// this function is used to pull status of addon update request and maintain the status
 func pullStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string, status *string) error {
 	// send request and get response
 	resp, getStatusErr := client.Do(req)
@@ -344,7 +344,7 @@ func pullStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string
 	return nil
 }
 
-// this function is used to update addOn
+// this function is used to update addon
 func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId string, reqId *string) error {
 	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
@@ -398,7 +398,7 @@ func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client ht
 
 	// error case of response status code being non 200
 	if resp.StatusCode != http.StatusOK {
-		err := fmt.Errorf("Unexpected response status %v received when updating addOn in system with systemId %v.\n", resp.Status, systemId)
+		err := fmt.Errorf("Unexpected response status %v received when updating addon in system with systemId %v.\n", resp.Status, systemId)
 		return err
 	}
 
@@ -411,11 +411,11 @@ func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client ht
 
 	*reqId = respBody.RequestId
 
-	fmt.Printf("Successfully triggered addOn update in system with systemId %v, the returned request id is %v.\n", systemId, respBody.RequestId)
+	fmt.Printf("Successfully triggered addon update in system with systemId %v, the returned request id is %v.\n", systemId, respBody.RequestId)
 	return nil
 }
 
-// this function is used to cancel addOn update
+// this function is used to cancel addon update
 func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string) error {
 	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
@@ -454,34 +454,34 @@ func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, cli
 
 	// error case of response status code being non 204
 	if resp.StatusCode != http.StatusNoContent {
-		err := fmt.Errorf("Unexpected response status %v received when canceling addOn update request %v.\n", resp.Status, reqId)
+		err := fmt.Errorf("Unexpected response status %v received when canceling addon update request %v.\n", resp.Status, reqId)
 		return err
 	}
 
-	fmt.Printf("Successfully canceled addOn update request %v.\n", reqId)
+	fmt.Printf("Successfully canceled addon update request %v.\n", reqId)
 	return nil
 }
 
-// this function is used to respond to a final status of addOn update
+// this function is used to respond to a final status of addon update
 func respondToUpdateAddOnFinalStatus(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string, status string) error {
 	switch status {
 	case StatusComplete:
-		fmt.Printf("AddOn update request %v succeeded.\n", reqId)
+		fmt.Println("Addon update succeeded.")
 	case StatusError:
-		fmt.Printf("AddOn update failed and request %v will be canceled.\n", reqId)
+		fmt.Println("Addon update failed and will be canceled.")
 
 		cancelUpdateAddOnErr := cancelUpdateAddOn(config, client, clientAT, servKey, reqId)
 		if cancelUpdateAddOnErr != nil {
-			err := fmt.Errorf("Failed to cancel addOn update request %v. Error: %v\n", reqId, cancelUpdateAddOnErr)
+			err := fmt.Errorf("Failed to cancel addon update. Error: %v\n", cancelUpdateAddOnErr)
 			return err
 		}
 
-		err := fmt.Errorf("AddOn update failed.")
+		err := fmt.Errorf("Addon update failed.\n")
 		return err
 
 	case StatusAborted:
-		fmt.Println("AddOn update is aborted.")
-		err := fmt.Errorf("AddOn update is aborted.")
+		fmt.Println("Addon update is aborted.")
+		err := fmt.Errorf("Addon update is aborted.\n")
 		return err
 	}
 
