@@ -30,6 +30,8 @@ type codeqlExecuteScanOptions struct {
 	UploadResults               bool   `json:"uploadResults,omitempty"`
 	SarifCheckMaxRetries        int    `json:"sarifCheckMaxRetries,omitempty"`
 	SarifCheckRetryInterval     int    `json:"sarifCheckRetryInterval,omitempty"`
+	TargetGithubRepoURL         string `json:"targetGithubRepoURL,omitempty"`
+	TargetGithubBranchName      string `json:"targetGithubBranchName,omitempty"`
 	Threads                     string `json:"threads,omitempty"`
 	Ram                         string `json:"ram,omitempty"`
 	AnalyzedRef                 string `json:"analyzedRef,omitempty"`
@@ -37,6 +39,8 @@ type codeqlExecuteScanOptions struct {
 	CommitID                    string `json:"commitId,omitempty"`
 	VulnerabilityThresholdTotal int    `json:"vulnerabilityThresholdTotal,omitempty"`
 	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
+	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
 }
 
 type codeqlExecuteScanReports struct {
@@ -120,7 +124,7 @@ and Java plus Maven.`,
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -193,6 +197,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
 	cmd.Flags().IntVar(&stepConfig.SarifCheckMaxRetries, "sarifCheckMaxRetries", 10, "Maximum number of retries when waiting for the server to finish processing the SARIF upload.")
 	cmd.Flags().IntVar(&stepConfig.SarifCheckRetryInterval, "sarifCheckRetryInterval", 30, "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload.")
+	cmd.Flags().StringVar(&stepConfig.TargetGithubRepoURL, "targetGithubRepoURL", os.Getenv("PIPER_targetGithubRepoURL"), "")
+	cmd.Flags().StringVar(&stepConfig.TargetGithubBranchName, "targetGithubBranchName", os.Getenv("PIPER_targetGithubBranchName"), "")
 	cmd.Flags().StringVar(&stepConfig.Threads, "threads", `0`, "Use this many threads for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.Ram, "ram", os.Getenv("PIPER_ram"), "Use this much ram (MB) for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
@@ -200,6 +206,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threashold for maximum number of allowed vulnerabilities.")
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -325,6 +333,24 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Default:     30,
 					},
 					{
+						Name:        "targetGithubRepoURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetGithubRepoURL"),
+					},
+					{
+						Name:        "targetGithubBranchName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetGithubBranchName"),
+					},
+					{
 						Name:        "threads",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -401,6 +427,24 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "projectSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
+					},
+					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 				},
 			},

@@ -362,4 +362,7 @@ spec:
           - filePattern: "**/bom-*.xml"
             type: sbom
   containers:
-    - image: "paketobuildpacks/builder:base"
+    - image: "paketobuildpacks/builder-jammy-base:latest"
+      options:
+        - name: -u
+          value: "0"

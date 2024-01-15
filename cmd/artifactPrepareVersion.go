@@ -10,6 +10,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -55,6 +56,7 @@ type artifactPrepareVersionUtils interface {
 	RunExecutable(e string, p ...string) error
 
 	DownloadFile(url, filename string, header netHttp.Header, cookies []*netHttp.Cookie) error
+	piperhttp.Sender
 
 	Glob(pattern string) (matches []string, err error)
 	FileExists(filename string) (bool, error)
@@ -64,7 +66,7 @@ type artifactPrepareVersionUtils interface {
 	FileRead(path string) ([]byte, error)
 	FileRemove(path string) error
 
-	NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error)
+	GetConfigProvider() (orchestrator.ConfigProvider, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
@@ -73,8 +75,8 @@ type artifactPrepareVersionUtilsBundle struct {
 	*piperhttp.Client
 }
 
-func (a *artifactPrepareVersionUtilsBundle) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
-	return orchestrator.NewOrchestratorSpecificConfigProvider()
+func (a *artifactPrepareVersionUtilsBundle) GetConfigProvider() (orchestrator.ConfigProvider, error) {
+	return orchestrator.GetOrchestratorConfigProvider(nil)
 }
 
 func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
@@ -158,7 +160,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
 		// make sure that versioning does not create tags (when set to "cloud")
 		// for PR pipelines, optimized pipelines (= no build)
-		provider, err := utils.NewOrchestratorSpecificConfigProvider()
+		provider, err := utils.GetConfigProvider()
 		if err != nil {
 			log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 		}
@@ -203,8 +205,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		}
 
 		if config.VersioningType == "cloud" {
+			certs, err := certutils.CertificateDownload(config.CustomTLSCertificateLinks, utils)
 			// commit changes and push to repository (including new version tag)
-			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
+			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now, certs)
 			if err != nil {
 				if strings.Contains(fmt.Sprint(err), "reference already exists") {
 					log.SetErrorCategory(log.ErrorCustom)
@@ -334,7 +337,7 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 	return nil
 }
 
-func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time) (string, error) {
+func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time, certs []byte) (string, error) {
 
 	var commitID string
 
@@ -355,6 +358,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 	pushOptions := git.PushOptions{
 		RefSpecs: []gitConfig.RefSpec{gitConfig.RefSpec(ref)},
+		CABundle: certs,
 	}
 
 	currentRemoteOrigin, err := repository.Remote("origin")

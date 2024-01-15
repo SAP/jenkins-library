@@ -96,7 +96,7 @@ void call(Map parameters = [:]) {
 
         if (config.useGoStep != false) {
             List credentials = [
-                [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
+                [type: 'token', id: 'credentialsId', env: ['PIPER_serviceKey']]
             ]
 
             if (namedUser) {

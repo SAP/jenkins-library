@@ -127,6 +127,7 @@ spec:
         description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
         aliases:
           - name: detect/serverUrl
+          - name: detectServerUrl
         type: string
         mandatory: true
         scope:
@@ -299,30 +300,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        deprecated: true
-      - name: useDetect7
-        description:
-          "This flag allows to use the currently supported 8 version of Detect Script instead of v7"
-        aliases:
-          - name: detect/useDetect7
-        type: bool
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: false
-      - name: useDetect8
-        description:
-          "This flag allows to use the currently supported 8 version of Detect Script instead of v7"
-        aliases:
-          - name: detect/useDetect8
-            deprecated: true
-        type: bool
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
         deprecated: true
       - name: successOnSkip
         description:
