@@ -249,7 +249,7 @@ func TestInitGitInfo(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
 		repoInfo, err := initGitInfo(&config)
 		assert.NoError(t, err)
-		_, err = orchestrator.NewOrchestratorSpecificConfigProvider()
+		_, err = orchestrator.GetOrchestratorConfigProvider(nil)
 		assert.Equal(t, "abcd1234", repoInfo.CommitId)
 		assert.Equal(t, "refs/head/branch", repoInfo.Ref)
 		if err != nil {
