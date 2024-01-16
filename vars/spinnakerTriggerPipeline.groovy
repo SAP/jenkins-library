@@ -98,11 +98,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('spinnaker/pipelineNameOrId')
             .use()
 
-        // telemetry reporting
-        new Utils().pushToSWA([
-            step: STEP_NAME
-        ], config)
-
         String paramsString = ""
         if (config.spinnaker.pipelineParameters) {
             def pipelineParameters = [parameters: config.spinnaker.pipelineParameters]

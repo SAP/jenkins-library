@@ -41,10 +41,6 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
-
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
-
         if (config.multicloudDeploy) {
             durationMeasure(script: script, measurementName: 'deploy_performance_multicloud_duration') {
                 multicloudDeploy(script: script, stage: stageName)

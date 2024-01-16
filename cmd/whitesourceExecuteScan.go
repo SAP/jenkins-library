@@ -1122,7 +1122,7 @@ func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error
 		ContainerRegistryUser:     config.ContainerRegistryUser,
 		ContainerRegistryPassword: config.ContainerRegistryPassword,
 		DockerConfigJSON:          config.DockerConfigJSON,
-		FilePath:                  config.ProjectName, // previously was config.ProjectName
+		FilePath:                  config.ProjectName, // consider changing this to config.ScanPath + "/" + config.ProjectName
 		ImageFormat:               "legacy",           // keep the image format legacy or whitesource is not able to read layers
 	}
 	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}

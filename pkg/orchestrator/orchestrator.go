@@ -93,18 +93,22 @@ func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
 			provider = newUnknownOrchestratorConfigProvider()
 			err = errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 		}
-
-		if opts == nil {
-			log.Entry().Debug("ConfigProvider initialized without options. Some data may be unavailable")
-			return
-		}
-
-		if cfgErr := provider.Configure(opts); cfgErr != nil {
-			err = errors.Wrap(cfgErr, "provider configuration failed")
-		}
 	})
+	if err != nil {
+		return provider, err
+	}
 
-	return provider, err
+	if opts == nil {
+		log.Entry().Debug("ConfigProvider options are not set. Provider configuration is skipped.")
+		return provider, nil
+	}
+
+	// This allows configuration of the provider during initialization and/or after it (reconfiguration)
+	if cfgErr := provider.Configure(opts); cfgErr != nil {
+		return provider, errors.Wrap(cfgErr, "provider configuration failed")
+	}
+
+	return provider, nil
 }
 
 // DetectOrchestrator function determines in which orchestrator Piper is running by examining environment variables.
