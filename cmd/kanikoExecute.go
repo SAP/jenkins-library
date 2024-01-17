@@ -357,6 +357,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		config.BuildOptions = append(config.BuildOptions, "--no-push")
 	}
 
+	if config.ContainerContextSubPath != "" {
+		config.BuildOptions = append(config.BuildOptions, "--context-sub-path", config.ContainerContextSubPath)
+	}
+
 	if err = runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 		return err
 	}
