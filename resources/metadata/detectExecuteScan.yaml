@@ -119,6 +119,7 @@ spec:
           - --blackduck.trust.cert=true
           - --logging.level.com.synopsys.integration=DEBUG
           - --detect.maven.excluded.scopes=test
+          - --detect.project.version.distribution=EXTERNAL \
         scope:
           - PARAMETERS
           - STAGES
