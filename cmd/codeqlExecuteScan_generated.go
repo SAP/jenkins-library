@@ -5,6 +5,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -41,6 +43,61 @@ type codeqlExecuteScanOptions struct {
 	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
 	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
+}
+
+type codeqlExecuteScanInflux struct {
+	step_data struct {
+		fields struct {
+			codeql bool
+		}
+		tags struct {
+		}
+	}
+	codeql_data struct {
+		fields struct {
+			repositoryURL          string
+			repositoryReferenceURL string
+			codeScanningLink       string
+			querySuite             string
+			optionalTotal          int
+			optionalAudited        int
+			auditAllTotal          int
+			auditAllAudited        int
+		}
+		tags struct {
+		}
+	}
+}
+
+func (i *codeqlExecuteScanInflux) persist(path, resourceName string) {
+	measurementContent := []struct {
+		measurement string
+		valType     string
+		name        string
+		value       interface{}
+	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "codeql", value: i.step_data.fields.codeql},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "repositoryUrl", value: i.codeql_data.fields.repositoryURL},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "repositoryReferenceUrl", value: i.codeql_data.fields.repositoryReferenceURL},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "codeScanningLink", value: i.codeql_data.fields.codeScanningLink},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "querySuite", value: i.codeql_data.fields.querySuite},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "optionalTotal", value: i.codeql_data.fields.optionalTotal},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "optionalAudited", value: i.codeql_data.fields.optionalAudited},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "auditAllTotal", value: i.codeql_data.fields.auditAllTotal},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "auditAllAudited", value: i.codeql_data.fields.auditAllAudited},
+	}
+
+	errCount := 0
+	for _, metric := range measurementContent {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting influx environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Influx environment")
+	}
 }
 
 type codeqlExecuteScanReports struct {
@@ -89,6 +146,7 @@ func CodeqlExecuteScanCommand() *cobra.Command {
 	metadata := codeqlExecuteScanMetadata()
 	var stepConfig codeqlExecuteScanOptions
 	var startTime time.Time
+	var influx codeqlExecuteScanInflux
 	var reports codeqlExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
@@ -149,6 +207,7 @@ and Java plus Maven.`,
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -176,7 +235,7 @@ and Java plus Maven.`,
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			codeqlExecuteScan(stepConfig, &stepTelemetryData)
+			codeqlExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -453,6 +512,14 @@ func codeqlExecuteScanMetadata() config.StepData {
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"name": "step_data", "fields": []map[string]string{{"name": "codeql"}}},
+							{"name": "codeql_data", "fields": []map[string]string{{"name": "repositoryUrl"}, {"name": "repositoryReferenceUrl"}, {"name": "codeScanningLink"}, {"name": "querySuite"}, {"name": "optionalTotal"}, {"name": "optionalAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}}},
+						},
+					},
 					{
 						Name: "reports",
 						Type: "reports",
