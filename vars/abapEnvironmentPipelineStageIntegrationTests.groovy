@@ -14,7 +14,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'confirmDeletion',
     /** If set to true, the system is never deleted */
     'debug',
-    'testBuild' // Parameter for test execution mode, if true stage will be skipped
+    'testBuild', // Parameter for test execution mode, if true stage will be skipped
+    'integrationTestOption' // Integration test option
 ]
 @Field Set STAGE_STEP_KEYS = GENERAL_CONFIG_KEYS
 @Field Set STEP_CONFIG_KEYS = STAGE_STEP_KEYS
@@ -31,29 +32,42 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
-        .addIfEmpty('confirmDeletion', true)
+        .addIfEmpty('confirmDeletion', false)
         .addIfEmpty('debug', false)
         .addIfEmpty('testBuild', false)
+        .addIfEmpty('integrationTestOption', 'addOnDeployment')
         .use()
 
     if (config.testBuild) {
         echo "Stage 'Integration Tests' skipped as parameter 'testBuild' is active"
     } else {
         piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-            try {
-                abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
-                cloudFoundryCreateServiceKey(script: parameters.script)
-                abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
-            } catch (Exception e) {
-                echo "Deployment test of add-on product failed."
+            if (config.integrationTestOption === 'systemProvisioning') {
+                try {
+                    abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
+                    cloudFoundryCreateServiceKey(script: parameters.script)
+                    abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
+                } catch (Exception e) {
+                    echo "Deployment test of add-on product failed."
+                    throw e
+                } finally {
+                    if (config.confirmDeletion) {
+                        input message: "Deployment test has been executed. Once you proceed, the test system will be deleted."
+                    }
+                    if (!config.debug) {
+                        cloudFoundryDeleteService script: parameters.script
+                    }
+                }
+            } else if (config.integrationTestOption === 'addOnDeployment') {
+                try {
+                    abapLandscapePortalUpdateAddOnProduct(script: parameters.script)
+                } catch (Exception e) {
+                    echo "Deployment test of add-on product failed."
+                    throw e
+                }
+            } else {
+                const e = new Error('Unsupoorted integration test option.')
                 throw e
-            } finally {
-                if (config.confirmDeletion) {
-                    input message: "Deployment test has been executed. Once you proceed, the test system will be deleted."
-                }
-                if (!config.debug) {
-                    cloudFoundryDeleteService script: parameters.script
-                }
             }
         }
     }

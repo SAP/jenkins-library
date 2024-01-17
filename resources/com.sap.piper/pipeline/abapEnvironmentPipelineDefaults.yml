@@ -47,6 +47,7 @@ stages:
     abapSystemSizeOfPersistence: 2
     abapSystemSizeOfRuntime: 1
     confirmDeletion: 'true'
+    integrationTestOption: 'addOnDeployment'
     includeAddon: 'true'
     cfServiceKeyName: 'sap_com_0582'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
