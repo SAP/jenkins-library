@@ -42,7 +42,7 @@ void call(Map parameters = [:]) {
         echo "Stage 'Integration Tests' skipped as parameter 'testBuild' is active"
     } else {
         piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-            if (config.integrationTestOption === 'systemProvisioning') {
+            if (config.integrationTestOption == 'systemProvisioning') {
                 try {
                     abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
                     cloudFoundryCreateServiceKey(script: parameters.script)
@@ -58,7 +58,7 @@ void call(Map parameters = [:]) {
                         cloudFoundryDeleteService script: parameters.script
                     }
                 }
-            } else if (config.integrationTestOption === 'addOnDeployment') {
+            } else if (config.integrationTestOption == 'addOnDeployment') {
                 try {
                     abapLandscapePortalUpdateAddOnProduct(script: parameters.script)
                 } catch (Exception e) {
