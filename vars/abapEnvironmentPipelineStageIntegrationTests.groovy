@@ -66,7 +66,7 @@ void call(Map parameters = [:]) {
                     throw e
                 }
             } else {
-                const e = new Error('Unsupoorted integration test option.')
+                e = new Error('Unsupoorted integration test option.')
                 throw e
             }
         }
