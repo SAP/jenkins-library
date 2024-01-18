@@ -122,7 +122,11 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, integrationTestOption: 'addOnDeployment')
 
 
-        assertThat(stepsCalled, not(hasItem('input')))
+        assertThat(stepsCalled, not(hasItems('input',
+                                                'abapEnvironmentCreateSystem',
+                                                'cloudFoundryDeleteService',
+                                                'abapEnvironmentBuild',
+                                                'cloudFoundryCreateServiceKey')))
         assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct'))
     }
 
@@ -142,7 +146,11 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
             // failure expected
         }
 
-        assertThat(stepsCalled, not(hasItem('input')))
+        assertThat(stepsCalled, not(hasItems('input',
+                                                'abapEnvironmentCreateSystem',
+                                                'cloudFoundryDeleteService',
+                                                'abapEnvironmentBuild',
+                                                'cloudFoundryCreateServiceKey')))
         assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct'))
     }
 }
