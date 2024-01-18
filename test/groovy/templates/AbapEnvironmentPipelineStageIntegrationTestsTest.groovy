@@ -113,4 +113,36 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
                                                 'cloudFoundryCreateServiceKey')))
     }
 
+    @Test
+    void testabapLandscapePortalUpdateAddOnProduct() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Integration Tests': true
+        ]
+        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, integrationTestOption: 'addOnDeployment')
+
+
+        assertThat(stepsCalled, not(hasItem('input')))
+        assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct'))
+    }
+
+    @Test
+    void testabapLandscapePortalUpdateAddOnProductFails() {
+
+        helper.registerAllowedMethod('abapLandscapePortalUpdateAddOnProduct', [Map.class], {m -> stepsCalled.add('abapLandscapePortalUpdateAddOnProduct'); error("Failed")})
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Integration Tests': true
+        ]
+
+        try {
+            jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, integrationTestOption: 'addOnDeployment')
+            fail("Expected exception")
+        } catch (Exception e) {
+            // failure expected
+        }
+
+        assertThat(stepsCalled, not(hasItem('input')))
+        assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct'))
+    }
 }
