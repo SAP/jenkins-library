@@ -43,7 +43,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         helper.registerAllowedMethod('cloudFoundryDeleteService', [Map.class], {m -> stepsCalled.add('cloudFoundryDeleteService')})
         helper.registerAllowedMethod('abapEnvironmentBuild', [Map.class], {m -> stepsCalled.add('abapEnvironmentBuild')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
-        helper.registerAllowedMethod('abapLandscapePortalUpdateAddOnProduct', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
+        helper.registerAllowedMethod('abapLandscapePortalUpdateAddOnProduct', [Map.class], {m -> stepsCalled.add('abapLandscapePortalUpdateAddOnProduct')})
     }
 
     @Test
