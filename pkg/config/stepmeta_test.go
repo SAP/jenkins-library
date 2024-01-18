@@ -255,7 +255,17 @@ func TestGetContextParameterFilters(t *testing.T) {
 	metadata3 := StepData{
 		Spec: StepSpec{
 			Sidecars: []Container{
-				{Name: "testsidecar"},
+				{Name: "testsidecar",
+					Conditions: []Condition{
+						{
+							Params: []Param{
+								{
+									Name:  "conditionParam",
+									Value: "conditionValue",
+								},
+							},
+						},
+					}},
 			},
 		},
 	}
@@ -305,7 +315,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Sidecars", func(t *testing.T) {
 		filters := metadata3.GetContextParameterFilters()
-		params := defaultParams("containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace")
+		params := defaultParams("containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace", "conditionValue", "conditionParam")
 		assert.Equal(t, params, filters.All, "incorrect filter All")
 		assert.Equal(t, params, filters.General, "incorrect filter General")
 		assert.Equal(t, params, filters.Steps, "incorrect filter Steps")
@@ -506,10 +516,10 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "testConditionMet", d.Defaults[0].Steps["testStep"]["testConditionParameter"])
 		assert.Nil(t, d.Defaults[0].Steps["testStep"]["dockerImage"])
 
-		metParameter := d.Defaults[0].Steps["testStep"]["testConditionMet"].(map[string]interface{})
+		metParameter := d.Defaults[0].Steps["testStep"][`container[testConditionParameter=="testConditionMet"]`].(map[string]interface{})
 		assert.Equal(t, "testImage2:tag", metParameter["dockerImage"])
 
-		notMetParameter := d.Defaults[0].Steps["testStep"]["testConditionNotMet"].(map[string]interface{})
+		notMetParameter := d.Defaults[0].Steps["testStep"][`container[testConditionParameter=="testConditionNotMet"]`].(map[string]interface{})
 		assert.Equal(t, "testImage1:tag", notMetParameter["dockerImage"])
 	})
 

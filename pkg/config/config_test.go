@@ -976,3 +976,34 @@ func TestCloneConfig(t *testing.T) {
 	testConfig.General["p0"] = "new_value"
 	assert.NotEqual(t, testConfig.General, clone.General)
 }
+
+func TestApplyContainerConditions(t *testing.T) {
+	testConfig := &StepConfig{
+		Config: map[string]interface{}{
+			"key": "test",
+			`test[key=="test"]`: map[string]interface{}{
+				"merge-me": "please",
+			},
+			`test[key=="not-test"]`: map[string]interface{}{
+				"ignore-me": "please",
+			},
+		},
+	}
+
+	ApplyContainerConditions("test", []Container{{
+		Conditions: []Condition{{
+			ConditionRef: "strings-equal",
+			Params:       []Param{{Name: "key", Value: "test"}},
+		}},
+	}, {
+		Conditions: []Condition{{
+			ConditionRef: "strings-equal",
+			Params:       []Param{{Name: "key", Value: "not-test"}},
+		}},
+	}}, testConfig)
+
+	assert.Equal(t, map[string]interface{}{
+		"key":      "test",
+		"merge-me": "please",
+	}, testConfig.Config)
+}
