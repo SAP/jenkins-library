@@ -313,10 +313,10 @@ func (api *SAP_COM_0948) initialRequest() error {
 
 	headConnection := api.con
 	headConnection.XCsrfToken = "fetch"
-	headConnection.URL = api.con.URL + api.path
+	headConnection.URL = api.con.URL + api.path + api.actionsEntity
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := GetHTTPResponse("HEAD", headConnection, nil, api.client)
+	resp, err := GetHTTPResponse("GET", headConnection, nil, api.client)
 	if err != nil {
 		_, err = HandleHTTPError(resp, err, "Authentication on the ABAP system failed", api.con)
 		return err
