@@ -10,10 +10,10 @@ require (
 	cloud.google.com/go/storage v1.29.0
 	dario.cat/mergo v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
-	github.com/BurntSushi/toml v1.2.1
-	github.com/Jeffail/gabs/v2 v2.6.1
+	github.com/BurntSushi/toml v1.3.2
+	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/antchfx/htmlquery v1.2.4
+	github.com/antchfx/htmlquery v1.3.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0
 	github.com/bmatcuk/doublestar v1.3.4
@@ -25,31 +25,31 @@ require (
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-billy/v5 v5.5.0
-	github.com/go-git/go-git/v5 v5.10.1
+	github.com/go-git/go-git/v5 v5.11.0
 	github.com/go-openapi/runtime v0.24.1
-	github.com/go-openapi/strfmt v0.21.3
-	github.com/go-playground/locales v0.14.0
-	github.com/go-playground/universal-translator v0.18.0
+	github.com/go-openapi/strfmt v0.22.0
+	github.com/go-playground/locales v0.14.1
+	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.13.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/google/uuid v1.3.1
-	github.com/hashicorp/go-retryablehttp v0.7.2
-	github.com/hashicorp/vault/api v1.9.2
+	github.com/google/uuid v1.5.0
+	github.com/hashicorp/go-retryablehttp v0.7.5
+	github.com/hashicorp/vault/api v1.10.0
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/influxdata/influxdb-client-go/v2 v2.5.1
 	github.com/jarcoal/httpmock v1.0.8
-	github.com/magiconair/properties v1.8.6
+	github.com/magiconair/properties v1.8.7
 	github.com/magicsong/sonargo v0.0.1
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/motemen/go-nuts v0.0.0-20210915132349-615a782f2c69
-	github.com/package-url/packageurl-go v0.1.0
+	github.com/package-url/packageurl-go v0.1.2
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -59,7 +59,7 @@ require (
 	golang.org/x/oauth2 v0.15.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.126.0
-	gopkg.in/ini.v1 v1.66.6
+	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.10.3
 	mvdan.cc/xurls/v2 v2.4.0
@@ -103,8 +103,8 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
-	github.com/antchfx/xpath v1.2.0 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
+	github.com/antchfx/xpath v1.2.3 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.7 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.18 // indirect
@@ -141,7 +141,7 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-openapi/analysis v0.21.2 // indirect
-	github.com/go-openapi/errors v0.20.2 // indirect
+	github.com/go-openapi/errors v0.21.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.1 // indirect
 	github.com/go-openapi/loads v0.21.1 // indirect
@@ -219,7 +219,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	github.com/xuri/efp v0.0.0-20210322160811-ab561f5b45e3 // indirect
-	go.mongodb.org/mongo-driver v1.11.6 // indirect
+	go.mongodb.org/mongo-driver v1.13.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/crypto v0.17.0
