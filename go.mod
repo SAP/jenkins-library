@@ -16,9 +16,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0
 	github.com/bmatcuk/doublestar v1.3.4
-	github.com/bndr/gojenkins v1.1.1-0.20221212185249-45fe3142a0a1
+	github.com/bndr/gojenkins v1.1.1-0.20240109173050-c316119c46d5
 	github.com/buildpacks/lifecycle v0.13.0
-	github.com/docker/cli v23.0.1+incompatible
+	github.com/docker/cli v23.0.8+incompatible
 	github.com/elliotchance/orderedmap v1.4.0
 	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/getsentry/sentry-go v0.26.0
@@ -359,7 +359,7 @@ require (
 	k8s.io/client-go v0.27.2 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
-	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
+	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 	oras.land/oras-go v1.2.3 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
