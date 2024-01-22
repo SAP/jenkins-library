@@ -8,7 +8,6 @@ replace golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d => golang.org/x/c
 
 require (
 	cloud.google.com/go/storage v1.29.0
-	dario.cat/mergo v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Jeffail/gabs/v2 v2.6.1
@@ -39,6 +38,7 @@ require (
 	github.com/hashicorp/vault v1.14.1
 	github.com/hashicorp/vault/api v1.9.2
 	github.com/iancoleman/orderedmap v0.2.0
+	github.com/imdario/mergo v0.3.15
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.6
@@ -69,6 +69,7 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	dario.cat/mergo v1.0.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.23 // indirect
@@ -96,7 +97,6 @@ require (
 	github.com/hashicorp/go-kms-wrapping/wrappers/ocikms/v2 v2.0.7 // indirect
 	github.com/hashicorp/go-kms-wrapping/wrappers/transit/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcp-sdk-go v0.23.0 // indirect
-	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
