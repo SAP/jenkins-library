@@ -26,7 +26,7 @@ func TestTelemetry_Initialize(t *testing.T) {
 		baseData             BaseData
 		baseMetaData         BaseMetaData
 		data                 Data
-		provider             orchestrator.OrchestratorSpecificConfigProviding
+		provider             orchestrator.ConfigProvider
 		disabled             bool
 		client               *piperhttp.Client
 		CustomReportingDsn   string
@@ -81,7 +81,7 @@ func TestTelemetry_Send(t *testing.T) {
 		baseData             BaseData
 		baseMetaData         BaseMetaData
 		data                 Data
-		provider             orchestrator.OrchestratorSpecificConfigProviding
+		provider             orchestrator.ConfigProvider
 		disabled             bool
 		client               *piperhttp.Client
 		CustomReportingDsn   string
@@ -268,7 +268,7 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 
 	type fields struct {
 		data     Data
-		provider orchestrator.OrchestratorSpecificConfigProviding
+		provider orchestrator.ConfigProvider
 	}
 	tests := []struct {
 		name       string

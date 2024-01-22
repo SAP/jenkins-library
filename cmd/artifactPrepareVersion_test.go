@@ -192,7 +192,7 @@ func (a *artifactPrepareVersionMockUtils) DownloadFile(url, filename string, hea
 	return nil
 }
 
-func (a *artifactPrepareVersionMockUtils) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
+func (a *artifactPrepareVersionMockUtils) GetConfigProvider() (orchestrator.ConfigProvider, error) {
 	return &orchestrator.UnknownOrchestratorConfigProvider{}, nil
 }
 

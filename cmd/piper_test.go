@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,6 +63,7 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 			// init
 			defer resetEnv(os.Environ())
 			os.Clearenv()
+			orchestrator.ResetConfigProvider()
 
 			//mock Jenkins env
 			os.Setenv("JENKINS_HOME", "anything")
