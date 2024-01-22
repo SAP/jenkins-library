@@ -18,7 +18,7 @@ require (
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/bndr/gojenkins v1.1.1-0.20221212185249-45fe3142a0a1
 	github.com/buildpacks/lifecycle v0.13.0
-	github.com/docker/cli v23.0.1+incompatible
+	github.com/docker/cli v23.0.8+incompatible
 	github.com/elliotchance/orderedmap v1.4.0
 	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/getsentry/sentry-go v0.26.0
