@@ -1414,8 +1414,6 @@ github.com/montanaflynn/stats v0.7.0 h1:r3y12KyNxj/Sb/iOE46ws+3mS1+MZca1wlHQFPsY
 github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
 github.com/morikuni/aec v1.0.0 h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=
 github.com/morikuni/aec v1.0.0/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
-github.com/motemen/go-nuts v0.0.0-20210915132349-615a782f2c69 h1:1KtusfE10/BxzK4Vks+ULP7S63TicyRu6cq86vCRWX8=
-github.com/motemen/go-nuts v0.0.0-20210915132349-615a782f2c69/go.mod h1:xUDtqIPhzzkB+XSl0pW8qQKXzzR+SU6xcZToxwKi5zA=
 github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31 h1:lQ+0Zt2gm+w5+9iaBWKdJXC/gMrWjHhNbw9ts/9rSZ4=
 github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31/go.mod h1:vkBO+XDNzovo+YLBpUod2SFvuWLObXlERnfj99RP3rU=
 github.com/moul/http2curl v1.0.0/go.mod h1:8UbvGypXm98wA/IqH45anm5Y2Z6ep6O31QGOAZ3H0fQ=
