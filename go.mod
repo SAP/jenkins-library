@@ -22,7 +22,7 @@ require (
 	github.com/docker/cli v23.0.1+incompatible
 	github.com/elliotchance/orderedmap v1.4.0
 	github.com/evanphx/json-patch v5.6.0+incompatible
-	github.com/getsentry/sentry-go v0.11.0
+	github.com/getsentry/sentry-go v0.26.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.11.0
@@ -30,7 +30,7 @@ require (
 	github.com/go-openapi/strfmt v0.22.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
-	github.com/go-playground/validator/v10 v10.11.0
+	github.com/go-playground/validator/v10 v10.11.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.13.0
 	github.com/google/go-github/v45 v45.2.0
