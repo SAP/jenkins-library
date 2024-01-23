@@ -236,6 +236,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// merge command line flags
 	if flagValues != nil {
+		flagFilter := append(filters.Parameters, vaultFilter...)
 		stepConfig.mixIn(flagValues, flagFilter, metadata)
 	}
 
