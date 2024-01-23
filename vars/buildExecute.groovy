@@ -1,3 +1,5 @@
+import hudson.AbortException
+
 import com.sap.piper.DockerUtils
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
@@ -32,7 +34,11 @@ import static com.sap.piper.Prerequisites.checkScript
     /** For buildTool npm: Execute npm install (boolean, default 'true') */
     'npmInstall',
     /** For buildTool npm: List of npm run scripts to execute */
-    'npmRunScripts'
+    'npmRunScripts',
+    /** Defines if a container image(s) should be created with Cloud Native Buildpacks using the artifact produced by the `buildTool`. */
+    'cnbBuild',
+    /** toggles if a helmExecute is triggered at end of the step after invoking the build tool  */
+    'helmExecute'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -68,9 +74,6 @@ void call(Map parameters = [:]) {
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
             .use()
 
-        // telemetry reporting
-        utils.pushToSWA([stepParam1: config.buildTool, 'buildTool': config.buildTool], config)
-
         switch(config.buildTool){
             case 'maven':
                 mavenBuild script: script
@@ -85,8 +88,7 @@ void call(Map parameters = [:]) {
             case 'npm':
                 npmExecuteScripts script: script, install: config.npmInstall, runScripts: config.npmRunScripts
                 break
-            case ['docker', 'kaniko']:
-                kanikoExecute script: script
+            case ['docker', 'kaniko']: //handled below
                 break
             default:
                 if (config.dockerImage && config.dockerCommand) {
@@ -99,6 +101,18 @@ void call(Map parameters = [:]) {
                 } else {
                     error "[${STEP_NAME}] buildTool not set and no dockerImage & dockerCommand provided."
                 }
+        }
+        if (config.cnbBuild) {
+            if (config.buildTool in ['npm', 'gradle', 'maven', 'mta', 'docker']) {
+                cnbBuild script: script
+            } else {
+                throw new AbortException("ERROR - 'cnbBuild' does not support '${config.buildTool}' as a buildTool.")
+            }
+        } else if (config.buildTool == 'kaniko' || config.buildTool == 'docker') {
+            kanikoExecute script: script
+        }
+        if(config.helmExecute) {
+          helmExecute script: script
         }
     }
 }

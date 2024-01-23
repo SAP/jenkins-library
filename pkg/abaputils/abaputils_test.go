@@ -6,13 +6,14 @@ package abaputils
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -303,12 +304,12 @@ func TestHandleHTTPError(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s: %s - %s", receivedErr.Error(), abapErrorCode, abapErrorMessage))
 		log.Entry().Info(err.Error())
 	})
@@ -322,12 +323,12 @@ func TestHandleHTTPError(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
@@ -341,13 +342,30 @@ func TestHandleHTTPError(t *testing.T) {
 		resp := http.Response{
 			Status:     "400 Bad Request",
 			StatusCode: 400,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
+	})
+
+	t.Run("EOF Error", func(t *testing.T) {
+
+		message := "Custom Error Message"
+		errorValue := "Received Error EOF"
+		receivedErr := errors.New(errorValue)
+
+		_, hook := test.NewNullLogger()
+		log.RegisterHook(hook)
+
+		_, err := HandleHTTPError(nil, receivedErr, message, ConnectionDetailsHTTP{})
+
+		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
+		assert.Equal(t, 5, len(hook.Entries), "Expected a different number of entries")
+		assert.Equal(t, `A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)`, hook.AllEntries()[2].Message, "Expected a different message")
+		hook.Reset()
 	})
 }

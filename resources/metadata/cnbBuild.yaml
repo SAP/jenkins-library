@@ -97,7 +97,7 @@ spec:
             param: container/registryUrl
       - name: buildpacks
         type: "[]string"
-        description: List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`.
+        description: List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`. When this property is specified, buildpacks which are part of the builder will be ignored.
         scope:
           - PARAMETERS
           - STAGES
@@ -105,6 +105,26 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/buildpacks
+      - name: preBuildpacks
+        type: "[]string"
+        description: Buildpacks to prepend to the groups in the builder's order.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/preBuildpacks
+      - name: postBuildpacks
+        type: "[]string"
+        description: Buildpacks to append to the groups in the builder's order.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/postBuildpacks
       - name: buildEnvVars
         type: "map[string]interface{}"
         description: |
@@ -150,13 +170,18 @@ spec:
           - PARAMETERS
         secret: true
         resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/dockerConfigJSON
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+      - name: dockerConfigJSONCPE
+        type: string
+        description: This property is intended only for reading the `dockerConfigJSON` from the Common Pipeline Environment. If you want to provide your own credentials, please refer to the [dockerConfigJSON](#dockerConfigJSON) property. If both properties are set, the config files will be merged, with the [dockerConfigJSON](#dockerConfigJSON) having higher priority.
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
       - name: customTlsCertificateLinks
         type: "[]string"
         description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
@@ -337,4 +362,7 @@ spec:
           - filePattern: "**/bom-*.xml"
             type: sbom
   containers:
-    - image: "paketobuildpacks/builder:base"
+    - image: "paketobuildpacks/builder-jammy-base:latest"
+      options:
+        - name: -u
+          value: "0"

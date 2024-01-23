@@ -5,6 +5,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -21,7 +23,6 @@ import (
 
 type codeqlExecuteScanOptions struct {
 	GithubToken                 string `json:"githubToken,omitempty"`
-	GithubAPIURL                string `json:"githubApiUrl,omitempty"`
 	BuildTool                   string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
 	BuildCommand                string `json:"buildCommand,omitempty"`
 	Language                    string `json:"language,omitempty"`
@@ -29,6 +30,10 @@ type codeqlExecuteScanOptions struct {
 	Database                    string `json:"database,omitempty"`
 	QuerySuite                  string `json:"querySuite,omitempty"`
 	UploadResults               bool   `json:"uploadResults,omitempty"`
+	SarifCheckMaxRetries        int    `json:"sarifCheckMaxRetries,omitempty"`
+	SarifCheckRetryInterval     int    `json:"sarifCheckRetryInterval,omitempty"`
+	TargetGithubRepoURL         string `json:"targetGithubRepoURL,omitempty"`
+	TargetGithubBranchName      string `json:"targetGithubBranchName,omitempty"`
 	Threads                     string `json:"threads,omitempty"`
 	Ram                         string `json:"ram,omitempty"`
 	AnalyzedRef                 string `json:"analyzedRef,omitempty"`
@@ -36,6 +41,63 @@ type codeqlExecuteScanOptions struct {
 	CommitID                    string `json:"commitId,omitempty"`
 	VulnerabilityThresholdTotal int    `json:"vulnerabilityThresholdTotal,omitempty"`
 	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
+	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
+}
+
+type codeqlExecuteScanInflux struct {
+	step_data struct {
+		fields struct {
+			codeql bool
+		}
+		tags struct {
+		}
+	}
+	codeql_data struct {
+		fields struct {
+			repositoryURL          string
+			repositoryReferenceURL string
+			codeScanningLink       string
+			querySuite             string
+			optionalTotal          int
+			optionalAudited        int
+			auditAllTotal          int
+			auditAllAudited        int
+		}
+		tags struct {
+		}
+	}
+}
+
+func (i *codeqlExecuteScanInflux) persist(path, resourceName string) {
+	measurementContent := []struct {
+		measurement string
+		valType     string
+		name        string
+		value       interface{}
+	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "codeql", value: i.step_data.fields.codeql},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "repositoryUrl", value: i.codeql_data.fields.repositoryURL},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "repositoryReferenceUrl", value: i.codeql_data.fields.repositoryReferenceURL},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "codeScanningLink", value: i.codeql_data.fields.codeScanningLink},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "querySuite", value: i.codeql_data.fields.querySuite},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "optionalTotal", value: i.codeql_data.fields.optionalTotal},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "optionalAudited", value: i.codeql_data.fields.optionalAudited},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "auditAllTotal", value: i.codeql_data.fields.auditAllTotal},
+		{valType: config.InfluxField, measurement: "codeql_data", name: "auditAllAudited", value: i.codeql_data.fields.auditAllAudited},
+	}
+
+	errCount := 0
+	for _, metric := range measurementContent {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting influx environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Influx environment")
+	}
 }
 
 type codeqlExecuteScanReports struct {
@@ -51,6 +113,7 @@ func (p *codeqlExecuteScanReports) persist(stepConfig codeqlExecuteScanOptions, 
 		{FilePattern: "**/*.csv", ParamRef: "", StepResultType: "codeql"},
 		{FilePattern: "**/*.sarif", ParamRef: "", StepResultType: "codeql"},
 		{FilePattern: "**/toolrun_codeql_*.json", ParamRef: "", StepResultType: "codeql"},
+		{FilePattern: "**/piper_codeql_report.json", ParamRef: "", StepResultType: "codeql"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -83,6 +146,7 @@ func CodeqlExecuteScanCommand() *cobra.Command {
 	metadata := codeqlExecuteScanMetadata()
 	var stepConfig codeqlExecuteScanOptions
 	var startTime time.Time
+	var influx codeqlExecuteScanInflux
 	var reports codeqlExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
@@ -118,7 +182,7 @@ and Java plus Maven.`,
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -143,6 +207,7 @@ and Java plus Maven.`,
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -151,20 +216,26 @@ and Java plus Maven.`,
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
-			codeqlExecuteScan(stepConfig, &stepTelemetryData)
+			codeqlExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -176,7 +247,6 @@ and Java plus Maven.`,
 
 func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `githubTokenCredentialsId` parameter.")
-	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Defines the build tool which is used for building the project.")
 	cmd.Flags().StringVar(&stepConfig.BuildCommand, "buildCommand", os.Getenv("PIPER_buildCommand"), "Command to build the project")
 	cmd.Flags().StringVar(&stepConfig.Language, "language", os.Getenv("PIPER_language"), "The programming language used to analyze.")
@@ -184,6 +254,10 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.Database, "database", `codeqlDB`, "Path to the CodeQL database to create. This directory will be created, and must not already exist.")
 	cmd.Flags().StringVar(&stepConfig.QuerySuite, "querySuite", os.Getenv("PIPER_querySuite"), "The name of a CodeQL query suite. If omitted, the default query suite for the language of the database being analyzed will be used.")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
+	cmd.Flags().IntVar(&stepConfig.SarifCheckMaxRetries, "sarifCheckMaxRetries", 10, "Maximum number of retries when waiting for the server to finish processing the SARIF upload.")
+	cmd.Flags().IntVar(&stepConfig.SarifCheckRetryInterval, "sarifCheckRetryInterval", 30, "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload.")
+	cmd.Flags().StringVar(&stepConfig.TargetGithubRepoURL, "targetGithubRepoURL", os.Getenv("PIPER_targetGithubRepoURL"), "")
+	cmd.Flags().StringVar(&stepConfig.TargetGithubBranchName, "targetGithubBranchName", os.Getenv("PIPER_targetGithubBranchName"), "")
 	cmd.Flags().StringVar(&stepConfig.Threads, "threads", `0`, "Use this many threads for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.Ram, "ram", os.Getenv("PIPER_ram"), "Use this much ram (MB) for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
@@ -191,6 +265,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threashold for maximum number of allowed vulnerabilities.")
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -233,15 +309,6 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
-					},
-					{
-						Name:        "githubApiUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `https://api.github.com`,
 					},
 					{
 						Name:        "buildTool",
@@ -305,6 +372,42 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "sarifCheckMaxRetries",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     10,
+					},
+					{
+						Name:        "sarifCheckRetryInterval",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     30,
+					},
+					{
+						Name:        "targetGithubRepoURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetGithubRepoURL"),
+					},
+					{
+						Name:        "targetGithubBranchName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetGithubBranchName"),
 					},
 					{
 						Name:        "threads",
@@ -384,6 +487,24 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     false,
 					},
+					{
+						Name:        "projectSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
+					},
+					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -392,12 +513,21 @@ func codeqlExecuteScanMetadata() config.StepData {
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"name": "step_data", "fields": []map[string]string{{"name": "codeql"}}},
+							{"name": "codeql_data", "fields": []map[string]string{{"name": "repositoryUrl"}, {"name": "repositoryReferenceUrl"}, {"name": "codeScanningLink"}, {"name": "querySuite"}, {"name": "optionalTotal"}, {"name": "optionalAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}}},
+						},
+					},
+					{
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/*.csv", "type": "codeql"},
 							{"filePattern": "**/*.sarif", "type": "codeql"},
 							{"filePattern": "**/toolrun_codeql_*.json", "type": "codeql"},
+							{"filePattern": "**/piper_codeql_report.json", "type": "codeql"},
 						},
 					},
 				},

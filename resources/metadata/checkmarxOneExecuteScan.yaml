@@ -256,7 +256,7 @@ spec:
         default: "1"
       - name: groupName
         type: string
-        description: The full name of the group to assign newly created projects to which is preferred to groupId
+        description: The full name of the group to which the newly created projects will be assigned
         scope:
           - PARAMETERS
           - STAGES
@@ -469,7 +469,7 @@ spec:
               - name: group_full_path_on_report_date
               - name: scan_start
               - name: scan_time
-              - name: checkmarxOne_version
+              - name: tool_version
               - name: scan_type
               - name: preset
               - name: deep_link
@@ -484,4 +484,6 @@ spec:
           - filePattern: "**/ScanReport.*"
             type: checkmarxone
           - filePattern: "**/toolrun_checkmarxone_*.json"
+            type: checkmarxone
+          - filePattern: "**/piper_checkmarxone_report.json"
             type: checkmarxone

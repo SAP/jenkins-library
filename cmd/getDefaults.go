@@ -81,6 +81,9 @@ func getDefaults() ([]map[string]string, error) {
 			var yamlContent string
 
 			if !defaultsOptions.useV1 {
+				log.Entry().Warning("This step is using deprecated format of stage conditions which will be removed in Jan 2024. " +
+					"To avoid pipeline breakage, please call getDefaults command with --useV1 flag.",
+				)
 				var c config.Config
 				c.ReadConfig(fc)
 
@@ -128,7 +131,7 @@ func generateDefaults(utils getDefaultsUtils) ([]byte, error) {
 	if len(defaultsOptions.outputFile) > 0 {
 		err := utils.FileWrite(defaultsOptions.outputFile, []byte(jsonOutput), 0666)
 		if err != nil {
-			return jsonOutput, fmt.Errorf("failed to write output file %v: %w", configOptions.outputFile, err)
+			return jsonOutput, fmt.Errorf("failed to write output file %v: %w", defaultsOptions.outputFile, err)
 		}
 		return jsonOutput, nil
 	}

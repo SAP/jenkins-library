@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
@@ -93,7 +92,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		projectDir := path.Join(wd, path.Join(bundle.TestDir...))
 		// 1. Copy test files to a temp dir in order to avoid non-repeatable test executions because of changed state
 		// 2. Don't remove the temp dir to allow investigation of failed tests. Maybe add an option for cleaning it later?
-		tempDir, err := ioutil.TempDir("", "piper-integration-test")
+		tempDir, err := os.MkdirTemp("", "piper-integration-test")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -293,9 +292,7 @@ func (d *IntegrationTestDockerExecRunner) assertFileContentEquals(t *testing.T, 
 		t.Fatalf("unable to get tar file content: %s", err)
 	}
 
-	if !strings.Contains(str.String(), contentWant) {
-		assert.Equal(t, str.String(), contentWant, fmt.Sprintf("Unexpected content of file '%s'", fileWant))
-	}
+	assert.Equal(t, str.String(), contentWant, fmt.Sprintf("Unexpected content of file '%s'", fileWant))
 }
 
 func (d *IntegrationTestDockerExecRunner) terminate(t *testing.T) {

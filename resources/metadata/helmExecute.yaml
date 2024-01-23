@@ -36,8 +36,11 @@ spec:
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
         type: jenkins
+      - name: sourceRepositoryCredentialsId
+        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (source repo)
+        type: jenkins
       - name: targetRepositoryCredentialsId
-        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication
+        description: Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (target repo)
         type: jenkins
     resources:
       - name: deployDescriptor
@@ -58,6 +61,7 @@ spec:
         type: string
         description: Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -356,6 +360,13 @@ spec:
         type: string
         description: When templating value files, use this end delimiter.
         default: "}}"
+        scope:
+          - STEPS
+          - PARAMETERS
+      - name: renderValuesTemplate
+        type: bool
+        description: A flag to turn templating value files on or off.
+        default: true
         scope:
           - STEPS
           - PARAMETERS

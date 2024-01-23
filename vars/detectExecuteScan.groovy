@@ -12,7 +12,8 @@ void call(Map parameters = [:]) {
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
     List credentials = [
         [type: 'token', id: 'detectTokenCredentialsId', env: ['PIPER_token']],
-        [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']]
+        [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
+        [type: 'usernamePassword', id: 'golangPrivateModulesGitTokenCredentialsId', env: ['PIPER_privateModulesGitUsername', 'PIPER_privateModulesGitToken']]
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

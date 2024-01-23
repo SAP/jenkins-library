@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
@@ -38,7 +37,7 @@ func (c *whitesourceMockClient) SendRequest(method, url string, body io.Reader, 
 	if c.requestError != nil {
 		return &http.Response{}, c.requestError
 	}
-	return &http.Response{StatusCode: c.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(c.responseBody)))}, nil
+	return &http.Response{StatusCode: c.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(c.responseBody)))}, nil
 }
 
 func TestGetProductsMetaInfo(t *testing.T) {
@@ -61,7 +60,7 @@ func TestGetProductsMetaInfo(t *testing.T) {
 	products, err := sys.GetProductsMetaInfo()
 	assert.NoError(t, err)
 
-	requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+	requestBody, err := io.ReadAll(myTestClient.requestBody)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedRequestBody, string(requestBody))
 
@@ -84,7 +83,7 @@ func TestCreateProduct(t *testing.T) {
 		productToken, err := sys.CreateProduct("test_product_name")
 		// assert
 		assert.EqualError(t, err, "WhiteSource request failed after 3 retries: invalid request, error code 3000, message 'WhiteSource backend has a hickup'")
-		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		requestBody, err := io.ReadAll(myTestClient.requestBody)
 		require.NoError(t, err)
 		assert.Equal(t, "", productToken)
 		assert.Equal(t, expectedRequestBody, string(requestBody))
@@ -100,7 +99,7 @@ func TestCreateProduct(t *testing.T) {
 		productToken, err := sys.CreateProduct("test_product_name")
 		// assert
 		assert.EqualError(t, err, "invalid request, error code 5001, message 'User is not allowed to perform this action'")
-		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		requestBody, err := io.ReadAll(myTestClient.requestBody)
 		require.NoError(t, err)
 		assert.Equal(t, "", productToken)
 		assert.Equal(t, expectedRequestBody, string(requestBody))
@@ -116,7 +115,7 @@ func TestCreateProduct(t *testing.T) {
 		productToken, err := sys.CreateProduct("test_product_name")
 		// assert
 		assert.NoError(t, err)
-		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		requestBody, err := io.ReadAll(myTestClient.requestBody)
 		require.NoError(t, err)
 		assert.Equal(t, "test_product_token", productToken)
 		assert.Equal(t, expectedRequestBody, string(requestBody))
@@ -174,7 +173,7 @@ func TestGetProjectsMetaInfo(t *testing.T) {
 	projects, err := sys.GetProjectsMetaInfo("test_product_token")
 	assert.NoError(t, err)
 
-	requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+	requestBody, err := io.ReadAll(myTestClient.requestBody)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedRequestBody, string(requestBody))
 
@@ -517,7 +516,7 @@ func TestGetProjectAlertsByType(t *testing.T) {
 		alerts, err := sys.GetProjectAlertsByType("test_project_token", "SECURITY_VULNERABILITY")
 
 		assert.NoError(t, err)
-		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		requestBody, err := io.ReadAll(myTestClient.requestBody)
 		assert.NoError(t, err)
 		assert.Contains(t, string(requestBody), `"requestType":"getProjectAlertsByType"`)
 		assert.Equal(t, []Alert{{Vulnerability: Vulnerability{Name: "testVulnerability1"}, Type: "SECURITY_VULNERABILITY"}}, alerts)

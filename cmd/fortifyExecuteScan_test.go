@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -438,7 +437,7 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 		}
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
-		err := ioutil.WriteFile(path, []byte(classpathMaven), 0o644)
+		err := os.WriteFile(path, []byte(classpathMaven), 0o644)
 		if err != nil {
 			return err
 		}
@@ -1120,4 +1119,18 @@ func TestRemoveDuplicates(t *testing.T) {
 
 func toFortifyTime(time time.Time) models.Iso8601MilliDateTime {
 	return models.Iso8601MilliDateTime(time.UTC())
+}
+
+func TestGetProxyParams(t *testing.T) {
+	t.Run("Valid Proxy URL", func(t *testing.T) {
+		proxyPort, proxyHost := getProxyParams("http://testproxy.com:8080")
+		assert.Equal(t, "8080", proxyPort)
+		assert.Equal(t, "testproxy.com", proxyHost)
+	})
+
+	t.Run("Invalid Proxy URL", func(t *testing.T) {
+		proxyPort, proxyHost := getProxyParams("testproxy.com:8080")
+		assert.Equal(t, "", proxyPort)
+		assert.Equal(t, "", proxyHost)
+	})
 }

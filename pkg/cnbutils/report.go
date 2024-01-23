@@ -3,8 +3,8 @@ package cnbutils
 import (
 	"fmt"
 
+	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform"
-	"github.com/pelletier/go-toml"
 )
 
 const reportFile = "/layers/report.toml"

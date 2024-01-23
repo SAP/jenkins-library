@@ -2,7 +2,6 @@ package versioning
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -35,10 +34,10 @@ func (y *YAMLfile) init() {
 		y.artifactIDField = "ID"
 	}
 	if y.readFile == nil {
-		y.readFile = ioutil.ReadFile
+		y.readFile = os.ReadFile
 	}
 	if y.writeFile == nil {
-		y.writeFile = ioutil.WriteFile
+		y.writeFile = os.WriteFile
 	}
 }
 

@@ -5,7 +5,6 @@ package versioning
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,7 +18,7 @@ func TestPropertiesFileGetVersion(t *testing.T) {
 		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
-		ioutil.WriteFile(propsFilePath, []byte("version = 1.2.3"), 0666)
+		os.WriteFile(propsFilePath, []byte("version = 1.2.3"), 0666)
 
 		propsfile := PropertiesFile{
 			path: propsFilePath,
@@ -34,7 +33,7 @@ func TestPropertiesFileGetVersion(t *testing.T) {
 		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
-		ioutil.WriteFile(propsFilePath, []byte("customversion = 1.2.3"), 0666)
+		os.WriteFile(propsFilePath, []byte("customversion = 1.2.3"), 0666)
 
 		propsfile := PropertiesFile{
 			path:         propsFilePath,
@@ -63,7 +62,7 @@ func TestPropertiesFileGetVersion(t *testing.T) {
 		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
-		ioutil.WriteFile(propsFilePath, []byte("versionx = 1.2.3"), 0666)
+		os.WriteFile(propsFilePath, []byte("versionx = 1.2.3"), 0666)
 
 		propsfile := PropertiesFile{
 			path: propsFilePath,
@@ -79,7 +78,7 @@ func TestPropertiesFileSetVersion(t *testing.T) {
 		tmpFolder := t.TempDir()
 
 		propsFilePath := filepath.Join(tmpFolder, "my.props")
-		ioutil.WriteFile(propsFilePath, []byte("version = 0.0.1"), 0666)
+		os.WriteFile(propsFilePath, []byte("version = 0.0.1"), 0666)
 
 		var content []byte
 		propsfile := PropertiesFile{

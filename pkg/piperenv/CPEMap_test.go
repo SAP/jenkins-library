@@ -6,7 +6,6 @@ package piperenv
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -49,7 +48,7 @@ func Test_writeMapToDisk(t *testing.T) {
 	for _, testCase := range testData {
 		t.Run(fmt.Sprintf("check path %s", testCase.Path), func(t *testing.T) {
 			tPath := path.Join(tmpDir, testCase.Path)
-			bytes, err := ioutil.ReadFile(tPath)
+			bytes, err := os.ReadFile(tPath)
 			require.NoError(t, err)
 			require.Equal(t, testCase.ExpectedValue, string(bytes))
 		})
@@ -60,18 +59,18 @@ func TestCPEMap_LoadFromDisk(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 
-	err := ioutil.WriteFile(path.Join(tmpDir, "Foo"), []byte("Bar"), 0644)
+	err := os.WriteFile(path.Join(tmpDir, "Foo"), []byte("Bar"), 0644)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(path.Join(tmpDir, "Hello"), []byte("World"), 0644)
+	err = os.WriteFile(path.Join(tmpDir, "Hello"), []byte("World"), 0644)
 	require.NoError(t, err)
 	subPath := path.Join(tmpDir, "Batman")
 	err = os.Mkdir(subPath, 0744)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(path.Join(subPath, "Bruce"), []byte("Wayne"), 0644)
+	err = os.WriteFile(path.Join(subPath, "Bruce"), []byte("Wayne"), 0644)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(path.Join(subPath, "Robin"), []byte("toBeEmptied"), 0644)
+	err = os.WriteFile(path.Join(subPath, "Robin"), []byte("toBeEmptied"), 0644)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(path.Join(subPath, "Test.json"), []byte("54"), 0644)
+	err = os.WriteFile(path.Join(subPath, "Test.json"), []byte("54"), 0644)
 	require.NoError(t, err)
 
 	cpe := CPEMap{}
@@ -90,7 +89,7 @@ func TestNumbersArePassedCorrectly(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	const jsonNumber = "5.5000"
-	err := ioutil.WriteFile(path.Join(tmpDir, "test.json"), []byte(jsonNumber), 0644)
+	err := os.WriteFile(path.Join(tmpDir, "test.json"), []byte(jsonNumber), 0644)
 	require.NoError(t, err)
 
 	cpeMap := CPEMap{}

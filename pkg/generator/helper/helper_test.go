@@ -6,7 +6,6 @@ package helper
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,7 +109,7 @@ spec:
 	default:
 		r = ""
 	}
-	return ioutil.NopCloser(strings.NewReader(r)), nil
+	return io.NopCloser(strings.NewReader(r)), nil
 }
 
 var files map[string][]byte
@@ -130,7 +129,7 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
-		expected, err := ioutil.ReadFile(goldenFilePath)
+		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
@@ -141,7 +140,7 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	t.Run("test code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
-		expected, err := ioutil.ReadFile(goldenFilePath)
+		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
@@ -154,7 +153,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
-		expected, err := ioutil.ReadFile(goldenFilePath)
+		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}

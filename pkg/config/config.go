@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,7 +43,7 @@ type StepConfig struct {
 func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 	defer configuration.Close()
 
-	content, err := ioutil.ReadAll(configuration)
+	content, err := io.ReadAll(configuration)
 	if err != nil {
 		return errors.Wrapf(err, "error reading %v", configuration)
 	}
@@ -188,15 +187,15 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	stepConfig.mixInStepDefaults(parameters)
 
 	// merge parameters provided by Piper environment
-	stepConfig.mixIn(envParameters, filters.All)
-	stepConfig.mixIn(envParameters, ReportingParameters.getReportingFilter())
+	stepConfig.mixIn(envParameters, filters.All, metadata)
+	stepConfig.mixIn(envParameters, ReportingParameters.getReportingFilter(), metadata)
 
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range c.defaults.Defaults {
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
-		stepConfig.mixIn(def.General, filters.General)
-		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
-		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
+		stepConfig.mixIn(def.General, filters.General, metadata)
+		stepConfig.mixIn(def.Steps[stepName], filters.Steps, metadata)
+		stepConfig.mixIn(def.Stages[stageName], filters.Steps, metadata)
 		stepConfig.mixinVaultConfig(parameters, def.General, def.Steps[stepName], def.Stages[stageName])
 		reportingConfig, err := cloneConfig(&def)
 		if err != nil {
@@ -205,16 +204,16 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 		stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
-		stepConfig.mixInHookConfig(def.Hooks)
+		stepConfig.mixInHookConfig(def.Hooks, metadata)
 	}
 
 	// read config & merge - general -> steps -> stages
-	stepConfig.mixIn(c.General, filters.General)
-	stepConfig.mixIn(c.Steps[stepName], filters.Steps)
-	stepConfig.mixIn(c.Stages[stageName], filters.Stages)
+	stepConfig.mixIn(c.General, filters.General, metadata)
+	stepConfig.mixIn(c.Steps[stepName], filters.Steps, metadata)
+	stepConfig.mixIn(c.Stages[stageName], filters.Stages, metadata)
 
 	// merge parameters provided via env vars
-	stepConfig.mixIn(envValues(filters.All), filters.All)
+	stepConfig.mixIn(envValues(filters.All), filters.All, metadata)
 
 	// if parameters are provided in JSON format merge them
 	if len(paramJSON) != 0 {
@@ -231,13 +230,13 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 				params = setParamValueFromAlias(stepName, params, filters.Parameters, s.Name, s.Aliases)
 			}
 
-			stepConfig.mixIn(params, filters.Parameters)
+			stepConfig.mixIn(params, filters.Parameters, metadata)
 		}
 	}
 
 	// merge command line flags
 	if flagValues != nil {
-		stepConfig.mixIn(flagValues, filters.Parameters)
+		stepConfig.mixIn(flagValues, filters.Parameters, metadata)
 	}
 
 	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
@@ -265,8 +264,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		if vaultClient != nil {
 			defer vaultClient.MustRevokeToken()
 			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
-			resolveVaultTestCredentials(&stepConfig, vaultClient)
-			resolveVaultCredentials(&stepConfig, vaultClient)
+			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
+			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
 		}
 	}
 
@@ -315,12 +314,12 @@ func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON str
 		log.Entry().Warnf("invalid stepConfig JSON: %v", err)
 	}
 
-	stepConfig.mixIn(stepConfigMap, filters.All)
+	stepConfig.mixIn(stepConfigMap, filters.All, StepData{})
 
 	// ToDo: mix in parametersJSON
 
 	if flagValues != nil {
-		stepConfig.mixIn(flagValues, filters.Parameters)
+		stepConfig.mixIn(flagValues, filters.Parameters, StepData{})
 	}
 	return stepConfig
 }
@@ -403,22 +402,22 @@ func envValues(filter []string) map[string]interface{} {
 	return vals
 }
 
-func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
+func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string, metadata StepData) {
 
 	if s.Config == nil {
 		s.Config = map[string]interface{}{}
 	}
 
-	s.Config = merge(s.Config, filterMap(mergeData, filter))
+	s.Config = merge(s.Config, filterMap(mergeData, filter), metadata)
 }
 
-func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}) {
+func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}, metadata StepData) {
 
 	if s.HookConfig == nil {
 		s.HookConfig = map[string]interface{}{}
 	}
 
-	s.HookConfig = merge(s.HookConfig, mergeData)
+	s.HookConfig = merge(s.HookConfig, mergeData, metadata)
 }
 
 func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
@@ -481,7 +480,7 @@ func filterMap(data map[string]interface{}, filter []string) map[string]interfac
 	return result
 }
 
-func merge(base, overlay map[string]interface{}) map[string]interface{} {
+func merge(base, overlay map[string]interface{}, metadata StepData) map[string]interface{} {
 
 	result := map[string]interface{}{}
 
@@ -496,12 +495,18 @@ func merge(base, overlay map[string]interface{}) map[string]interface{} {
 	for key, value := range overlay {
 		if val, ok := value.(map[string]interface{}); ok {
 			if valBaseKey, ok := base[key].(map[string]interface{}); !ok {
-				result[key] = merge(map[string]interface{}{}, val)
+				result[key] = merge(map[string]interface{}{}, val, metadata)
 			} else {
-				result[key] = merge(valBaseKey, val)
+				result[key] = merge(valBaseKey, val, metadata)
 			}
 		} else {
 			result[key] = value
+			for _, v := range metadata.Spec.Inputs.Parameters {
+				tVal := reflect.TypeOf(value).String()
+				if v.Name == key && tVal != v.Type {
+					log.Entry().Warn("config value provided for", v.Name, " is of wrong type", tVal, "should be of type", v.Type)
+				}
+			}
 		}
 	}
 	return result
