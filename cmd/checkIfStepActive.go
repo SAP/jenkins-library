@@ -85,13 +85,16 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	if checkStepActiveOptions.v1Active {
 		runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
 		runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
-		err = runConfigV1.InitRunConfigV1(projectConfig, nil, nil, nil, nil, utils, GeneralConfig.EnvRootPath)
+		err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return err
 		}
 		runSteps = runConfigV1.RunSteps
 		runStages = runConfigV1.RunStages
 	} else {
+		log.Entry().Warning("This step is using deprecated format of stage conditions which will be removed in Jan 2024. " +
+			"To avoid pipeline breakage, please call checkIfStepActive command with --useV1 flag.",
+		)
 		runConfig := &config.RunConfig{StageConfigFile: stageConfigFile}
 		err = runConfig.InitRunConfig(projectConfig, nil, nil, nil, nil, doublestar.Glob, checkStepActiveOptions.openFile)
 		if err != nil {

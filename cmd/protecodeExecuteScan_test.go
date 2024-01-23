@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -40,7 +39,7 @@ func TestRunProtecodeScan(t *testing.T) {
 
 		if requestURI == "/api/product/4486/" || requestURI == "/api/product/4711/" {
 			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
-			byteContent, err := ioutil.ReadFile(violations)
+			byteContent, err := os.ReadFile(violations)
 			require.NoErrorf(t, err, "failed reading %v", violations)
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 			err = json.Unmarshal(byteContent, &response)
@@ -49,7 +48,7 @@ func TestRunProtecodeScan(t *testing.T) {
 
 		} else if requestURI == "/api/fetch/" {
 			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
-			byteContent, err := ioutil.ReadFile(violations)
+			byteContent, err := os.ReadFile(violations)
 			require.NoErrorf(t, err, "failed reading %v", violations)
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4486, ReportURL: requestURI}}
 			err = json.Unmarshal(byteContent, &response)
@@ -202,7 +201,7 @@ func TestCreateProtecodeClient(t *testing.T) {
 
 func TestUploadScanOrDeclareFetch(t *testing.T) {
 	// init
-	testFile, err := ioutil.TempFile("", "testFileUpload")
+	testFile, err := os.CreateTemp("", "testFileUpload")
 	require.NoError(t, err)
 	defer os.RemoveAll(testFile.Name()) // clean up
 	fileName := filepath.Base(testFile.Name())
@@ -287,7 +286,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		var b bytes.Buffer
 
 		if requestURI == "/api/product/4711/" {
-			byteContent, err := ioutil.ReadFile(violationsAbsPath)
+			byteContent, err := os.ReadFile(violationsAbsPath)
 			require.NoErrorf(t, err, "failed reading %v", violationsAbsPath)
 			response := protecode.ResultData{}
 			err = json.Unmarshal(byteContent, &response)

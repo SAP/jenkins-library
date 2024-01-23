@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"sync"
 
@@ -52,7 +52,7 @@ func (cl *URLLogger) WriteURLsLogToJSON() error {
 			err = fmt.Errorf("can't close file: %w", dErr)
 		}
 	}()
-	fileBuf, err := ioutil.ReadAll(file)
+	fileBuf, err := io.ReadAll(file)
 	if err != nil {
 		return fmt.Errorf("can't read from gile: %w", err)
 	}

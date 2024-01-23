@@ -21,6 +21,9 @@ spec:
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
+      - name: golangPrivateModulesGitTokenCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.
+        type: jenkins
     params:
       - name: token
         aliases:
@@ -124,6 +127,7 @@ spec:
         description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
         aliases:
           - name: detect/serverUrl
+          - name: detectServerUrl
         type: string
         mandatory: true
         scope:
@@ -244,6 +248,22 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: buildMaven
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for maven multi-modules projects building"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: pomPath
+        type: string
+        description: Path to the pom file which should be installed including all children.
+        scope:
+          - STEPS
+        mandatory: false
+        default: pom.xml
       - name: includedPackageManagers
         description:
           "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder
@@ -296,6 +316,19 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        deprecated: true
+      - name: successOnSkip
+        description:
+          "This flag allows forces Black Duck to exit with 0 error code if any step is skipped"
+        aliases:
+          - name: detect/successOnSkip
+            deprecated: true
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
         deprecated: true
       - name: customEnvironmentVariables
         description:
@@ -452,6 +485,32 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: privateModules
+        type: "string"
+        description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        alias:
+          - goprivate
+      - name: privateModulesGitToken
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: golangPrivateModulesGitTokenCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: golangPrivateModulesGitTokenVaultSecret
+            default: golang
   outputs:
     resources:
       - name: influx

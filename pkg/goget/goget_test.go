@@ -8,7 +8,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 )
@@ -113,7 +112,7 @@ func (c *httpMock) SendRequest(method string, url string, r io.Reader, header ht
 	c.Header = header
 
 	if r != nil {
-		_, err := ioutil.ReadAll(r)
+		_, err := io.ReadAll(r)
 
 		if err != nil {
 			return nil, err

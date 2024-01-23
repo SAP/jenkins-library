@@ -59,7 +59,10 @@ import hudson.AbortException
      * as key and the corresponding value as value. The value can also be
      * a nested structure.
      * The properties will be added to the pod spec inside node `spec` at the
-     * same level like e.g. `containers`.
+     * same level like e.g. `containers`
+     * for eg., additionalPodProperties: [
+     *               imagePullSecrets: ['secret-name']
+     *        ]
      * This property provides some kind of an expert mode. Any property
      * which is not handled otherwise by the step can be set. It is not
      * possible to overwrite e.g. the `containers` property or to
@@ -251,12 +254,6 @@ void call(Map parameters = [:], body) {
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
             .use()
-
-        utils.pushToSWA([
-            step         : STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1   : parameters?.script == null
-        ], config)
 
         if (!config.containerMap && config.dockerImage) {
             config.containerName = 'container-exec'
@@ -579,8 +576,11 @@ private List getContainerList(config) {
             command        : []
         ]
         def resources = getResources(sideCarContainerName, config)
-        if(resources) {
+        if (resources) {
             containerSpec.resources = resources
+        }
+        if (config.containerMountPath) {
+            containerSpec.volumeMounts = [[name: "volume", mountPath: config.containerMountPath]]
         }
         result.push(containerSpec)
     }

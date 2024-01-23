@@ -96,17 +96,20 @@ type PartialFingerprints struct {
 // SarifProperties adding additional information/context to the finding
 type SarifProperties struct {
 	// common
-	RuleGUID              string `json:"ruleGUID,omitempty"`
-	InstanceID            string `json:"instanceID,omitempty"`
-	Audited               bool   `json:"audited"`
-	ToolSeverity          string `json:"toolSeverity"`
-	ToolSeverityIndex     int    `json:"toolSeverityIndex"`
-	ToolState             string `json:"toolState"`
-	ToolStateIndex        int    `json:"toolStateIndex"`
-	ToolAuditMessage      string `json:"toolAuditMessage"`
-	UnifiedAuditState     string `json:"unifiedAuditState"`
-	AuditRequirement      string `json:"auditRequirement"`
-	AuditRequirementIndex int    `json:"auditRequirementIndex"`
+	RuleGUID              string  `json:"ruleGUID,omitempty"`
+	InstanceID            string  `json:"instanceID,omitempty"`
+	Audited               bool    `json:"audited"`
+	ToolSeverity          string  `json:"toolSeverity"`
+	ToolSeverityIndex     int     `json:"toolSeverityIndex"`
+	ToolState             string  `json:"toolState"`
+	ToolStateIndex        int     `json:"toolStateIndex"`
+	ToolAuditMessage      string  `json:"toolAuditMessage"`
+	UnifiedAuditState     string  `json:"unifiedAuditState,omitempty"`
+	UnifiedSeverity       string  `json:"unifiedSeverity,omitempty"`
+	UnifiedCriticality    float32 `json:"unifiedCriticality,omitempty"`
+	UnifiedAuditUser      string  `json:"unifiedAuditUser,omitempty"`
+	AuditRequirement      string  `json:"auditRequirement"`
+	AuditRequirementIndex int     `json:"auditRequirementIndex"`
 
 	// specific
 	InstanceSeverity      string `json:"instanceSeverity"`

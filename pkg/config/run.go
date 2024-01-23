@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
@@ -73,13 +72,13 @@ type StepCondition struct {
 	FilePattern               string                   `json:"filePattern,omitempty"`
 	FilePatternFromConfig     string                   `json:"filePatternFromConfig,omitempty"`
 	Inactive                  bool                     `json:"inactive,omitempty"`
+	OnlyActiveStepInStage     bool                     `json:"onlyActiveStepInStage,omitempty"`
 	NpmScript                 string                   `json:"npmScript,omitempty"`
 	CommonPipelineEnvironment map[string]interface{}   `json:"commonPipelineEnvironment,omitempty"`
 	PipelineEnvironmentFilled string                   `json:"pipelineEnvironmentFilled,omitempty"`
 }
 
-func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
+func (r *RunConfigV1) InitRunConfigV1(config *Config, utils piperutils.FileUtils, envRootPath string) error {
 
 	if len(r.PipelineConfig.Spec.Stages) == 0 {
 		if err := r.LoadConditionsV1(); err != nil {
@@ -87,7 +86,7 @@ func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFil
 		}
 	}
 
-	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, utils, envRootPath)
+	err := r.evaluateConditionsV1(config, utils, envRootPath)
 	if err != nil {
 		return fmt.Errorf("failed to evaluate step conditions: %w", err)
 	}
@@ -142,7 +141,7 @@ func (r *RunConfig) getStepConfig(config *Config, stageName, stepName string, fi
 
 func (r *RunConfig) loadConditions() error {
 	defer r.StageConfigFile.Close()
-	content, err := ioutil.ReadAll(r.StageConfigFile)
+	content, err := io.ReadAll(r.StageConfigFile)
 	if err != nil {
 		return errors.Wrapf(err, "error: failed to read the stageConfig file")
 	}
@@ -157,7 +156,7 @@ func (r *RunConfig) loadConditions() error {
 // LoadConditionsV1 loads stage conditions (in CRD-style) into PipelineConfig
 func (r *RunConfigV1) LoadConditionsV1() error {
 	defer r.StageConfigFile.Close()
-	content, err := ioutil.ReadAll(r.StageConfigFile)
+	content, err := io.ReadAll(r.StageConfigFile)
 	if err != nil {
 		return errors.Wrapf(err, "error: failed to read the stageConfig file")
 	}

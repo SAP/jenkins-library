@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/format"
+	"github.com/SAP/jenkins-library/pkg/golang"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -46,6 +48,7 @@ type whitesource interface {
 	GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error)
 	GetProjectAlerts(projectToken string) ([]ws.Alert, error)
 	GetProjectAlertsByType(projectToken, alertType string) ([]ws.Alert, error)
+	GetProjectIgnoredAlertsByType(projectToken string, alertType string) ([]ws.Alert, error)
 	GetProjectLibraryLocations(projectToken string) ([]ws.Library, error)
 	GetProjectHierarchy(projectToken string, includeInHouse bool) ([]ws.Library, error)
 }
@@ -138,7 +141,9 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 }
 
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) {
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", config.CustomTLSCertificateLinks)
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.GithubToken, config.GithubAPIURL).
+		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
@@ -153,6 +158,13 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 }
 
 func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+	if config != nil && config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
+		//configuring go private packages
+		if err := golang.PrepareGolangPrivatePackages("WhitesourceExecuteStep", config.PrivateModules, config.PrivateModulesGitToken); err != nil {
+			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())
+		}
+	}
+
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
 		return errors.Wrapf(err, "failed to resolve and aggregate project name")
 	}
@@ -184,28 +196,25 @@ func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *w
 }
 
 func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
-		saveImageOptions := containerSaveImageOptions{
-			ContainerImage:            config.ScanImage,
-			ContainerRegistryURL:      config.ScanImageRegistryURL,
-			ContainerRegistryUser:     config.ContainerRegistryUser,
-			ContainerRegistryPassword: config.ContainerRegistryPassword,
-			DockerConfigJSON:          config.DockerConfigJSON,
-			FilePath:                  config.ProjectName,
-			ImageFormat:               "legacy", // keep the image format legacy or whitesource is not able to read layers
-		}
-		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
-		dClient := &piperDocker.Client{}
-		dClient.SetOptions(dClientOptions)
-		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
-			if strings.Contains(fmt.Sprint(err), "no image found") {
-				log.SetErrorCategory(log.ErrorConfiguration)
+		if len(config.ScanImages) != 0 && config.ActivateMultipleImagesScan {
+			for _, image := range config.ScanImages {
+				config.ScanImage = image
+				err := downloadDockerImageAsTarNew(config, utils)
+				if err != nil {
+					return errors.Wrapf(err, "failed to download docker image")
+				}
 			}
-			return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
-		}
 
+		} else {
+			err := downloadDockerImageAsTar(config, utils)
+			if err != nil {
+				return errors.Wrapf(err, "failed to download docker image")
+			}
+		}
 	}
 
 	// Start the scan
@@ -363,8 +372,11 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	if err := resolveProductToken(config, sys); err != nil {
 		return errors.Wrap(err, "error resolving product token")
 	}
-	if err := resolveAggregateProjectToken(config, sys); err != nil {
-		return errors.Wrap(err, "error resolving aggregate project token")
+
+	if !config.SkipParentProjectResolution {
+		if err := resolveAggregateProjectToken(config, sys); err != nil {
+			return errors.Wrap(err, "error resolving aggregate project token")
+		}
 	}
 
 	scan.ProductToken = config.ProductToken
@@ -453,33 +465,34 @@ func validateProductVersion(version string) string {
 
 func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	return &ws.ScanOptions{
-		BuildTool:                  config.BuildTool,
-		ScanType:                   "", // no longer provided via config
-		OrgToken:                   config.OrgToken,
-		UserToken:                  config.UserToken,
-		ProductName:                config.ProductName,
-		ProductToken:               config.ProductToken,
-		ProductVersion:             config.Version,
-		ProjectName:                config.ProjectName,
-		BuildDescriptorFile:        config.BuildDescriptorFile,
-		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
-		PomPath:                    config.BuildDescriptorFile,
-		M2Path:                     config.M2Path,
-		GlobalSettingsFile:         config.GlobalSettingsFile,
-		ProjectSettingsFile:        config.ProjectSettingsFile,
-		InstallArtifacts:           config.InstallArtifacts,
-		DefaultNpmRegistry:         config.DefaultNpmRegistry,
-		AgentDownloadURL:           config.AgentDownloadURL,
-		AgentFileName:              config.AgentFileName,
-		ConfigFilePath:             config.ConfigFilePath,
-		Includes:                   config.Includes,
-		Excludes:                   config.Excludes,
-		JreDownloadURL:             config.JreDownloadURL,
-		AgentURL:                   config.AgentURL,
-		ServiceURL:                 config.ServiceURL,
-		ScanPath:                   config.ScanPath,
-		InstallCommand:             config.InstallCommand,
-		Verbose:                    GeneralConfig.Verbose,
+		BuildTool:                   config.BuildTool,
+		ScanType:                    "", // no longer provided via config
+		OrgToken:                    config.OrgToken,
+		UserToken:                   config.UserToken,
+		ProductName:                 config.ProductName,
+		ProductToken:                config.ProductToken,
+		ProductVersion:              config.Version,
+		ProjectName:                 config.ProjectName,
+		BuildDescriptorFile:         config.BuildDescriptorFile,
+		BuildDescriptorExcludeList:  config.BuildDescriptorExcludeList,
+		PomPath:                     config.BuildDescriptorFile,
+		M2Path:                      config.M2Path,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		InstallArtifacts:            config.InstallArtifacts,
+		DefaultNpmRegistry:          config.DefaultNpmRegistry,
+		AgentDownloadURL:            config.AgentDownloadURL,
+		AgentFileName:               config.AgentFileName,
+		ConfigFilePath:              config.ConfigFilePath,
+		Includes:                    config.Includes,
+		Excludes:                    config.Excludes,
+		JreDownloadURL:              config.JreDownloadURL,
+		AgentURL:                    config.AgentURL,
+		ServiceURL:                  config.ServiceURL,
+		ScanPath:                    config.ScanPath,
+		InstallCommand:              config.InstallCommand,
+		Verbose:                     GeneralConfig.Verbose,
+		SkipParentProjectResolution: config.SkipParentProjectResolution,
 	}
 }
 
@@ -511,6 +524,7 @@ func checkPolicyViolations(ctx context.Context, config *ScanOptions, scan *ws.Sc
 		if err != nil {
 			return piperutils.Path{}, fmt.Errorf("failed to retrieve project policy alerts from WhiteSource: %w", err)
 		}
+
 		policyViolationCount += len(alerts)
 		allAlerts = append(allAlerts, alerts...)
 	}
@@ -746,7 +760,11 @@ func reportGitHubIssuesAndCreateReports(
 
 	reportPaths = append(reportPaths, paths...)
 
-	sarif := ws.CreateSarifResultFile(scan, &allAlerts)
+	combinedAlerts := make([]ws.Alert, 0, len(allAlerts)+len(allAssessedAlerts))
+	combinedAlerts = append(combinedAlerts, allAlerts...)
+	combinedAlerts = append(combinedAlerts, allAssessedAlerts...)
+
+	sarif := ws.CreateSarifResultFile(scan, &combinedAlerts)
 	paths, err = ws.WriteSarifFile(sarif, utils)
 	if err != nil {
 		errorsOccured = append(errorsOccured, fmt.Sprint(err))
@@ -796,10 +814,14 @@ func readAssessmentsFromFile(assessmentFilePath string, utils whitesourceUtils) 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed. Besides the potential error the list of unassessed and assessed alerts are being returned to allow generating reports and issues from the data.
 func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float64, project ws.Project, sys whitesource, assessments *[]format.Assessment, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
-	assessedAlerts := []ws.Alert{}
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
-		return 0, alerts, assessedAlerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
+		return 0, alerts, []ws.Alert{}, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
+	}
+
+	assessedAlerts, err := sys.GetProjectIgnoredAlertsByType(project.Token, "SECURITY_VULNERABILITY")
+	if err != nil {
+		return 0, alerts, []ws.Alert{}, fmt.Errorf("failed to retrieve project ignored alerts from WhiteSource: %w", err)
 	}
 
 	// filter alerts related to existing assessments
@@ -887,6 +909,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 			if err != nil {
 				return errors.Wrapf(err, "failed to get project alerts by type")
 			}
+
 			log.Entry().Infof("Found project: %s with %v vulnerabilities.", project.Name, len(alerts))
 			versionWideAlerts = append(versionWideAlerts, alerts...)
 		}
@@ -1017,9 +1040,14 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 // create toolrecord file for whitesource
 func createToolRecordWhitesource(utils whitesourceUtils, workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(utils, workspace, "whitesource", config.ServiceURL)
-	wsUiRoot := "https://saas.whitesourcesoftware.com"
+	// rest api url https://.../api/v1.x
+	apiUrl, err := url.Parse(config.ServiceURL)
+	if err != nil {
+		return "", err
+	}
+	wsUiRoot := "https://" + apiUrl.Hostname()
 	productURL := wsUiRoot + "/Wss/WSS.html#!product;token=" + config.ProductToken
-	err := record.AddKeyData("product",
+	err = record.AddKeyData("product",
 		config.ProductToken,
 		config.ProductName,
 		productURL)
@@ -1030,11 +1058,13 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 	for idx, project := range scan.ScannedProjects() {
 		max_idx = idx
 		name := project.Name
+		projectId := strconv.FormatInt(project.ID, 10)
 		token := project.Token
 		projectURL := ""
-		if token != "" {
-			projectURL = wsUiRoot + "/Wss/WSS.html#!project;token=" + token
-		} else {
+		if projectId != "" {
+			projectURL = wsUiRoot + "/Wss/WSS.html#!project;id=" + projectId
+		}
+		if token == "" {
 			// token is empty, provide a dummy to have an indication
 			token = "unknown"
 		}
@@ -1056,4 +1086,54 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+func downloadDockerImageAsTarNew(config *ScanOptions, utils whitesourceUtils) error {
+
+	imageNameToSave := strings.Replace(config.ScanImage, "/", "-", -1)
+
+	saveImageOptions := containerSaveImageOptions{
+		ContainerImage:            config.ScanImage,
+		ContainerRegistryURL:      config.ScanImageRegistryURL,
+		ContainerRegistryUser:     config.ContainerRegistryUser,
+		ContainerRegistryPassword: config.ContainerRegistryPassword,
+		DockerConfigJSON:          config.DockerConfigJSON,
+		FilePath:                  config.ScanPath + "/" + imageNameToSave, // previously was config.ProjectName
+		ImageFormat:               "legacy",                                // keep the image format legacy or whitesource is not able to read layers
+	}
+	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
+	dClient := &piperDocker.Client{}
+	dClient.SetOptions(dClientOptions)
+	if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
+		if strings.Contains(fmt.Sprint(err), "no image found") {
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
+		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+	}
+
+	return nil
+}
+
+func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error {
+
+	saveImageOptions := containerSaveImageOptions{
+		ContainerImage:            config.ScanImage,
+		ContainerRegistryURL:      config.ScanImageRegistryURL,
+		ContainerRegistryUser:     config.ContainerRegistryUser,
+		ContainerRegistryPassword: config.ContainerRegistryPassword,
+		DockerConfigJSON:          config.DockerConfigJSON,
+		FilePath:                  config.ProjectName, // consider changing this to config.ScanPath + "/" + config.ProjectName
+		ImageFormat:               "legacy",           // keep the image format legacy or whitesource is not able to read layers
+	}
+	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
+	dClient := &piperDocker.Client{}
+	dClient.SetOptions(dClientOptions)
+	if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
+		if strings.Contains(fmt.Sprint(err), "no image found") {
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
+		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+	}
+
+	return nil
 }

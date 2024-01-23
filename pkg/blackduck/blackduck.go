@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -144,6 +143,7 @@ type VulnerabilityWithRemediation struct {
 	ExploitabilitySubscore float32 `json:"exploitabilitySubscore,omitempty"`
 	ImpactSubscore         float32 `json:"impactSubscore,omitempty"`
 	RelatedVulnerability   string  `json:"relatedVulnerability,omitempty"`
+	RemidiatedBy           string  `json:"remediationCreatedBy,omitempty"`
 }
 
 // Title returns the issue title representation of the contents
@@ -518,7 +518,7 @@ func (b *Client) sendRequest(method, apiEndpoint string, params map[string]strin
 		return responseBody, errors.Wrap(err, "request to BlackDuck API failed")
 	}
 
-	responseBody, err = ioutil.ReadAll(response.Body)
+	responseBody, err = io.ReadAll(response.Body)
 	if err != nil {
 		return responseBody, errors.Wrap(err, "reading BlackDuck response failed")
 	}

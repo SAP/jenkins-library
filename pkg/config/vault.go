@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -84,10 +83,10 @@ type vaultClient interface {
 
 func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
 	for _, config := range configs {
-		s.mixIn(config, vaultFilter)
+		s.mixIn(config, vaultFilter, StepData{})
 		// when an empty filter is returned we skip the mixin call since an empty filter will allow everything
 		if referencesFilter := getFilterForResourceReferences(parameters); len(referencesFilter) > 0 {
-			s.mixIn(config, referencesFilter)
+			s.mixIn(config, referencesFilter, StepData{})
 		}
 	}
 }
@@ -95,33 +94,33 @@ func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...ma
 func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
 	address, addressOk := config.Config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
-
 	if !addressOk || creds.VaultToken == "" && (creds.AppRoleID == "" || creds.AppRoleSecretID == "") {
-		log.Entry().Debug("Skipping fetching secrets from Vault since it is not configured")
+		log.Entry().Debug("Vault not configured")
 		return nil, nil
 	}
+	log.Entry().Info("Logging into Vault")
+	log.Entry().Debugf("  with URL %s", address)
 	namespace := ""
 	// namespaces are only available in vault enterprise so using them should be optional
 	if config.Config["vaultNamespace"] != nil {
 		namespace = config.Config["vaultNamespace"].(string)
-		log.Entry().Debugf("Using Vault namespace %s", namespace)
+		log.Entry().Debugf("  with namespace %s", namespace)
 	}
-
 	var client vaultClient
 	var err error
 	clientConfig := &vault.Config{Config: &api.Config{Address: address}, Namespace: namespace}
 	if creds.VaultToken != "" {
-		log.Entry().Debugf("Using Vault Token Authentication")
+		log.Entry().Debugf("  with Token authentication")
 		client, err = vault.NewClient(clientConfig, creds.VaultToken)
 	} else {
-		log.Entry().Debugf("Using Vault AppRole Authentication")
+		log.Entry().Debugf("  with AppRole authentication")
 		client, err = vault.NewClientWithAppRole(clientConfig, creds.AppRoleID, creds.AppRoleSecretID)
 	}
 	if err != nil {
+		log.Entry().Info("  failed")
 		return nil, err
 	}
-
-	log.Entry().Infof("Fetching secrets from Vault at %s", address)
+	log.Entry().Info("  succeeded")
 	return client, nil
 }
 
@@ -143,6 +142,8 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 		return
 	}
 
+	log.Entry().Infof("Resolving '%s'", param.Name)
+
 	var secretValue *string
 	for _, vaultPath := range getSecretReferencePaths(ref, config.Config) {
 		// it should be possible to configure the root path were the secret is stored
@@ -153,7 +154,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 
 		secretValue = lookupPath(client, vaultPath, &param)
 		if secretValue != nil {
-			log.Entry().Infof("Resolved param '%s' with Vault path '%s'", param.Name, vaultPath)
+			log.Entry().Infof("  succeeded with Vault path '%s'", vaultPath)
 			if ref.Type == "vaultSecret" {
 				config.Config[param.Name] = *secretValue
 			} else if ref.Type == "vaultSecretFile" {
@@ -168,52 +169,62 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 		}
 	}
 	if secretValue == nil {
-		log.Entry().Warnf("Could not resolve param '%s' from Vault", param.Name)
+		log.Entry().Warn("  failed")
 	}
 }
 
 func resolveVaultTestCredentialsWrapper(config *StepConfig, client vaultClient) {
-	log.Entry().Debugln("resolveVaultTestCredentialsWrapper")
-	resolveVaultTestCredentialsWrapperBase(config, client, vaultTestCredentialPath, vaultTestCredentialKeys, resolveVaultTestCredentials)
+	log.Entry().Infof("Resolving test credentials wrapper")
+	resolveVaultCredentialsWrapperBase(config, client, vaultTestCredentialPath, vaultTestCredentialKeys, vaultTestCredentialEnvPrefix, resolveVaultTestCredentials)
 }
 
 func resolveVaultCredentialsWrapper(config *StepConfig, client vaultClient) {
-	log.Entry().Debugln("resolveVaultCredentialsWrapper")
-	resolveVaultTestCredentialsWrapperBase(config, client, vaultCredentialPath, vaultCredentialKeys, resolveVaultCredentials)
+	log.Entry().Infof("Resolving credentials wrapper")
+	resolveVaultCredentialsWrapperBase(config, client, vaultCredentialPath, vaultCredentialKeys, vaultCredentialEnvPrefix, resolveVaultCredentials)
 }
 
-func resolveVaultTestCredentialsWrapperBase(
+func resolveVaultCredentialsWrapperBase(
 	config *StepConfig, client vaultClient,
-	vaultCredPath, vaultCredKeys string,
+	vaultCredPath, vaultCredKeys, vaultCredEnvPrefix string,
 	resolveVaultCredentials func(config *StepConfig, client vaultClient),
 ) {
 	switch config.Config[vaultCredPath].(type) {
 	case string:
 		resolveVaultCredentials(config, client)
 	case []interface{}:
-		vaultCredentialPathCopy := config.Config[vaultCredPath]
-		vaultCredentialKeysCopy := config.Config[vaultCredKeys]
+		vaultCredentialPathCopy := config.Config[vaultCredPath].([]interface{})
+		vaultCredentialKeysCopy, keysOk := config.Config[vaultCredKeys].([]interface{})
+		vaultCredentialEnvPrefixCopy, prefixOk := config.Config[vaultCredEnvPrefix].([]interface{})
 
-		if _, ok := vaultCredentialKeysCopy.([]interface{}); !ok {
-			log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: unknown type of keys")
+		if !keysOk {
+			log.Entry().Debugf("  failed, unknown type of keys")
 			return
 		}
 
-		if len(vaultCredentialKeysCopy.([]interface{})) != len(vaultCredentialPathCopy.([]interface{})) {
-			log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: not same count of values and keys")
+		if len(vaultCredentialKeysCopy) != len(vaultCredentialPathCopy) {
+			log.Entry().Debugf("  failed, not same count of values and keys")
 			return
 		}
 
-		for i := 0; i < len(vaultCredentialPathCopy.([]interface{})); i++ {
-			config.Config[vaultCredPath] = vaultCredentialPathCopy.([]interface{})[i]
-			config.Config[vaultCredKeys] = vaultCredentialKeysCopy.([]interface{})[i]
+		if prefixOk && len(vaultCredentialEnvPrefixCopy) != len(vaultCredentialPathCopy) {
+			log.Entry().Debugf("  failed, not same count of values and environment prefixes")
+			return
+		}
+
+		for i := 0; i < len(vaultCredentialPathCopy); i++ {
+			if prefixOk {
+				config.Config[vaultCredEnvPrefix] = vaultCredentialEnvPrefixCopy[i]
+			}
+			config.Config[vaultCredPath] = vaultCredentialPathCopy[i]
+			config.Config[vaultCredKeys] = vaultCredentialKeysCopy[i]
 			resolveVaultCredentials(config, client)
 		}
 
 		config.Config[vaultCredPath] = vaultCredentialPathCopy
 		config.Config[vaultCredKeys] = vaultCredentialKeysCopy
+		config.Config[vaultCredEnvPrefix] = vaultCredentialEnvPrefixCopy
 	default:
-		log.Entry().Debugf("Not fetching credentials from vault since they are not (properly) configured: unknown type of path")
+		log.Entry().Debugf("  failed, unknown type of path")
 		return
 	}
 }
@@ -426,7 +437,7 @@ func createTemporarySecretFile(namePattern string, content string) (string, erro
 		}
 	}
 
-	file, err := ioutil.TempFile(VaultSecretFileDirectory, namePattern)
+	file, err := os.CreateTemp(VaultSecretFileDirectory, namePattern)
 	if err != nil {
 		return "", err
 	}
@@ -439,7 +450,7 @@ func createTemporarySecretFile(namePattern string, content string) (string, erro
 }
 
 func lookupPath(client vaultClient, path string, param *StepParameters) *string {
-	log.Entry().Debugf("Trying to resolve Vault parameter '%s' at '%s'", param.Name, path)
+	log.Entry().Debugf("  with Vault path '%s'", path)
 	secret, err := client.GetKvSecret(path)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Couldn't fetch secret at '%s'", path)

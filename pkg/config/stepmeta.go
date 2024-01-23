@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -13,6 +12,8 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
+
+const SupportedVolumeName = "volume"
 
 // StepData defines the metadata for a step, like step descriptions, parameters, ...
 type StepData struct {
@@ -106,25 +107,25 @@ type StepOutputs struct {
 // Container defines an execution container
 type Container struct {
 	//ToDo: check dockerOptions, dockerVolumeBind, containerPortMappings, sidecarOptions, sidecarVolumeBind
-	Command         []string    `json:"command"`
-	EnvVars         []EnvVar    `json:"env"`
-	Image           string      `json:"image"`
-	ImagePullPolicy string      `json:"imagePullPolicy"`
-	Name            string      `json:"name"`
-	ReadyCommand    string      `json:"readyCommand"`
-	Shell           string      `json:"shell"`
-	WorkingDir      string      `json:"workingDir"`
-	Conditions      []Condition `json:"conditions,omitempty"`
-	Options         []Option    `json:"options,omitempty"`
-	//VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty"`
+	Command         []string      `json:"command"`
+	EnvVars         []EnvVar      `json:"env"`
+	Image           string        `json:"image"`
+	ImagePullPolicy string        `json:"imagePullPolicy"`
+	Name            string        `json:"name"`
+	ReadyCommand    string        `json:"readyCommand"`
+	Shell           string        `json:"shell"`
+	WorkingDir      string        `json:"workingDir"`
+	Conditions      []Condition   `json:"conditions,omitempty"`
+	Options         []Option      `json:"options,omitempty"`
+	VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 // ToDo: Add the missing Volumes part to enable the volume mount completely
 // VolumeMount defines a mount path
-// type VolumeMount struct {
-//	MountPath string `json:"mountPath"`
-//	Name      string `json:"name"`
-//}
+type VolumeMount struct {
+	Name      string `json:"name"`
+	MountPath string `json:"mountPath"`
+}
 
 // Option defines an docker option
 type Option struct {
@@ -163,7 +164,7 @@ type StepFilters struct {
 // ReadPipelineStepData loads step definition in yaml format
 func (m *StepData) ReadPipelineStepData(metadata io.ReadCloser) error {
 	defer metadata.Close()
-	content, err := ioutil.ReadAll(metadata)
+	content, err := io.ReadAll(metadata)
 	if err != nil {
 		return errors.Wrapf(err, "error reading %v", metadata)
 	}
@@ -355,7 +356,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		return nil, errors.Wrap(err, "failed to create context defaults")
 	}
 
-	r := ioutil.NopCloser(bytes.NewReader(JSON))
+	r := io.NopCloser(bytes.NewReader(JSON))
 	return r, nil
 }
 
@@ -386,7 +387,7 @@ func (container *Container) commonConfiguration(keyPrefix string, config *map[st
 	}
 	putStringIfNotEmpty(*config, keyPrefix+"Workspace", container.WorkingDir)
 	putSliceIfNotEmpty(*config, keyPrefix+"Options", OptionsAsStringSlice(container.Options))
-	//putSliceIfNotEmpty(*config, keyPrefix+"VolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
+	putSliceIfNotEmpty(*config, keyPrefix+"VolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
 
 }
 
@@ -519,11 +520,14 @@ func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map
 	return metadata, nil
 }
 
-//ToDo: Enable this when the Volumes part is also implemented
-//func volumeMountsAsStringSlice(volumeMounts []VolumeMount) []string {
-//	e := []string{}
-//	for _, v := range volumeMounts {
-//		e = append(e, fmt.Sprintf("%v:%v", v.Name, v.MountPath))
-//	}
-//	return e
-//}
+func volumeMountsAsStringSlice(volumeMounts []VolumeMount) []string {
+	e := []string{}
+	for _, v := range volumeMounts {
+		if v.Name != SupportedVolumeName {
+			log.Entry().Warningf("Unsupported volume name: %q, only %q is supported", v.Name, SupportedVolumeName)
+			continue
+		}
+		e = append(e, fmt.Sprintf("%v:%v", v.Name, v.MountPath))
+	}
+	return e
+}

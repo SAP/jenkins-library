@@ -203,6 +203,7 @@ func (p *checkmarxOneExecuteScanReports) persist(stepConfig checkmarxOneExecuteS
 		{FilePattern: "**/Cx1_SASTResults_*.xml", ParamRef: "", StepResultType: "checkmarxone"},
 		{FilePattern: "**/ScanReport.*", ParamRef: "", StepResultType: "checkmarxone"},
 		{FilePattern: "**/toolrun_checkmarxone_*.json", ParamRef: "", StepResultType: "checkmarxone"},
+		{FilePattern: "**/piper_checkmarxone_report.json", ParamRef: "", StepResultType: "checkmarxone"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -281,7 +282,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -368,7 +369,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.IamURL, "iamUrl", os.Getenv("PIPER_iamUrl"), "The URL pointing to the access control root of the checkmarxOne IAM server to be used")
 	cmd.Flags().StringVar(&stepConfig.Tenant, "tenant", os.Getenv("PIPER_tenant"), "The name of the checkmarxOne tenant to be used")
 	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used  [Not yet supported]")
-	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to assign newly created projects to which is preferred to groupId")
+	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to which the newly created projects will be assigned")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The full name of the Checkmarx One application to which the newly created projects will be assigned")
 	cmd.Flags().StringVar(&stepConfig.ClientID, "clientId", os.Getenv("PIPER_clientId"), "The username to authenticate")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
@@ -843,6 +844,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 							{"filePattern": "**/Cx1_SASTResults_*.xml", "type": "checkmarxone"},
 							{"filePattern": "**/ScanReport.*", "type": "checkmarxone"},
 							{"filePattern": "**/toolrun_checkmarxone_*.json", "type": "checkmarxone"},
+							{"filePattern": "**/piper_checkmarxone_report.json", "type": "checkmarxone"},
 						},
 					},
 				},

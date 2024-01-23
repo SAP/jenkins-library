@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -55,7 +55,7 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 
 	defer response.Body.Close()
 
-	content, err := ioutil.ReadAll(response.Body)
+	content, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Entry().Warnf("error while reading the general purpose configuration: %v", err)
 		return
