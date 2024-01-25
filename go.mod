@@ -2,10 +2,6 @@ module github.com/SAP/jenkins-library
 
 go 1.20
 
-//downgraded for :https://cs.opensource.google/go/x/crypto/+/5d542ad81a58c89581d596f49d0ba5d435481bcf : or else will break for some github instances
-// not downgraded using go get since it breaks other dependencies.
-replace golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d => golang.org/x/crypto v0.0.0-20220314234716-a5774263c1e0
-
 // It is a locked dependency of github.com/buildpacks/lifecycle@v0.18.4. The maintainers may remove the lock
 // in future releases. Check if 'replace' statement still there in their go.mod file. Remove line below if not.
 replace github.com/moby/buildkit => github.com/moby/buildkit v0.11.6
