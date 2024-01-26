@@ -595,7 +595,7 @@ spec:
         - conditionRef: strings-equal
           params:
             - name: containerDistro
-              value: 'alpine'
+              value: alpine
     - name: inspector-centos
       image: blackducksoftware/blackduck-imageinspector-centos:5.1.0
       command: ['']
