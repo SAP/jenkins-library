@@ -138,6 +138,21 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: expandBuildEnvVars
+        type: "bool"
+        default: false
+        description: |
+          Replace placeholder with environment variables set by `buildEnvVars`.
+          Example:
+          ```yaml
+          expandBuildEnvVars: true
+          buildEnvVars:
+            foo: ${BAR}
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: path
         type: string
         description: |
