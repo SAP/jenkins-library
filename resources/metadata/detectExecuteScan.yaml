@@ -511,6 +511,18 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: containerDistro
+        description: Distro of the container that is scanned
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "ubuntu"
+        possibleValues:
+          - ubuntu
+          - centos
+          - alpine
   outputs:
     resources:
       - name: influx
