@@ -311,14 +311,41 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
-		if len(m.Spec.Sidecars[0].Command) > 0 {
-			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
-		}
-		m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
-		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
+		for _, container := range m.Spec.Sidecars {
+			key := ""
+			conditionParam := ""
+			if len(container.Conditions) > 0 {
+				key = container.Conditions[0].Params[0].Value
+				conditionParam = container.Conditions[0].Params[0].Name
+			}
+			p := map[string]interface{}{}
+			if key != "" {
+				root[key] = p
+				//add default for condition parameter if available
+				for _, inputParam := range m.Spec.Inputs.Parameters {
+					if inputParam.Name == conditionParam {
+						root[conditionParam] = inputParam.Default
+					}
+				}
+			} else {
+				p = root
+			}
+			if len(container.Command) > 0 {
+				p["containerCommand"] = container.Command[0]
+			}
 
-		// not filled for now since this is not relevant in Kubernetes case
-		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
+			putStringIfNotEmpty(p, "containerName", container.Name)
+			putStringIfNotEmpty(p, "containerShell", container.Shell)
+			container.commonConfiguration("docker", &p)
+		}
+		// if len(m.Spec.Sidecars[0].Command) > 0 {
+		// 	root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
+		// }
+		// m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
+		// putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
+
+		// // not filled for now since this is not relevant in Kubernetes case
+		// //putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
 	}
 
 	if len(m.Spec.Inputs.Resources) > 0 {
