@@ -518,7 +518,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "ubuntu"
         possibleValues:
           - ubuntu
           - centos
