@@ -562,3 +562,37 @@ spec:
       options:
         - name: -u
           value: "0"
+  sidecars:
+    - name: inspector-ubuntu
+      image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: imageinspector-shared
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: containerDistro
+              value: ubuntu
+    - name: inspector-alpine
+      image: blackducksoftware/blackduck-imageinspector-alpine:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: imageinspector-shared
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: containerDistro
+              value: alpine
+    - name: inspector-centos
+      image: blackducksoftware/blackduck-imageinspector-centos:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: imageinspector-shared
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: containerDistro
+              value: centos

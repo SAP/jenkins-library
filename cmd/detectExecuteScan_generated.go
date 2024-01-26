@@ -778,6 +778,11 @@ func detectExecuteScanMetadata() config.StepData {
 			Containers: []config.Container{
 				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
+			Sidecars: []config.Container{
+				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "ubuntu"}}}}},
+				{Name: "inspector-alpine", Image: "blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "alpine"}}}}},
+				{Name: "inspector-centos", Image: "blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "centos"}}}}},
+			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
