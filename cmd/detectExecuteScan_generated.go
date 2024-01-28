@@ -791,7 +791,7 @@ func detectExecuteScanMetadata() config.StepData {
 			},
 			Sidecars: []config.Container{
 				{Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "ubuntu"}}}}},
-				{Image: "blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "alpine"}}}}},
+				{Image: "blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}}},
 				{Image: "blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "centos"}}}}},
 			},
 			Outputs: config.StepOutputs{
