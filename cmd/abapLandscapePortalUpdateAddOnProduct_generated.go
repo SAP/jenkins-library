@@ -19,7 +19,6 @@ type abapLandscapePortalUpdateAddOnProductOptions struct {
 	LandscapePortalAPIServiceKey string `json:"landscapePortalAPIServiceKey,omitempty"`
 	AbapSystemNumber             string `json:"abapSystemNumber,omitempty"`
 	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
 // AbapLandscapePortalUpdateAddOnProductCommand Update the AddOn product in SAP BTP ABAP Environment system of Landscape Portal
@@ -125,12 +124,10 @@ func addAbapLandscapePortalUpdateAddOnProductFlags(cmd *cobra.Command, stepConfi
 	cmd.Flags().StringVar(&stepConfig.LandscapePortalAPIServiceKey, "landscapePortalAPIServiceKey", os.Getenv("PIPER_landscapePortalAPIServiceKey"), "Service key JSON string to access the Landscape Portal Access API")
 	cmd.Flags().StringVar(&stepConfig.AbapSystemNumber, "abapSystemNumber", os.Getenv("PIPER_abapSystemNumber"), "System Number of the abap integration test system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `addon.yml`, "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("landscapePortalAPIServiceKey")
 	cmd.MarkFlagRequired("abapSystemNumber")
 	cmd.MarkFlagRequired("addonDescriptorFileName")
-	cmd.MarkFlagRequired("addonDescriptor")
 }
 
 // retrieve step metadata
@@ -179,20 +176,6 @@ func abapLandscapePortalUpdateAddOnProductMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     `addon.yml`,
-					},
-					{
-						Name: "addonDescriptor",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "abap/addonDescriptor",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},
