@@ -85,6 +85,7 @@ func (s *Scan) ScannedProjects() []Project {
 	var projects []Project
 	for _, project := range s.scannedProjects {
 		if len(project.Token) == 0 && s.SkipProjectsWithEmptyTokens {
+			log.Entry().Debugf("Project will be skipped as the token is empty, project_name: %s", project.Name)
 			continue
 		}
 		projects = append(projects, project)
