@@ -574,7 +574,7 @@ spec:
         - name: -u
           value: "0"
   sidecars:
-    - image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
+    - image: blackducksoftware/blackduck-imageinspector-alipne:5.1.0
       # name: inspector-ubuntu
       command: ['']
       volumeMounts:
