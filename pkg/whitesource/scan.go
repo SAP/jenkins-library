@@ -17,14 +17,15 @@ type Scan struct {
 	// It does not include the ProductVersion.
 	AggregateProjectName string
 	// ProductVersion is the global version that is used across all Projects (modules) during the scan.
-	BuildTool       string
-	ProductToken    string
-	ProductVersion  string
-	scannedProjects map[string]Project
-	scanTimes       map[string]time.Time
-	AgentName       string
-	AgentVersion    string
-	Coordinates     versioning.Coordinates
+	BuildTool                   string
+	ProductToken                string
+	ProductVersion              string
+	scannedProjects             map[string]Project
+	scanTimes                   map[string]time.Time
+	AgentName                   string
+	AgentVersion                string
+	Coordinates                 versioning.Coordinates
+	SkipProjectsWithEmptyTokens bool
 }
 
 func (s *Scan) init() {
