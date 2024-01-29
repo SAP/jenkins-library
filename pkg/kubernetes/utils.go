@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"gopkg.in/yaml.v2"
@@ -96,4 +99,13 @@ func GetChartInfo(chartYamlFile string, utils DeployUtils) (string, string, erro
 	}
 
 	return name, version, nil
+}
+
+// ExpandVaultEnv replaces ${var} or $var (starting with config.VaultCredentialEnvPrefixDefault) in params according to the values of the current environment variables
+func ExpandVaultEnv(param string) string {
+	if strings.Contains(param, config.VaultCredentialEnvPrefixDefault) {
+		return os.ExpandEnv(param)
+	}
+
+	return param
 }

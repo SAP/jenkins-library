@@ -3,6 +3,8 @@ package cnbutils
 import (
 	"fmt"
 	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/kubernetes"
 )
 
 func CreateEnvFiles(utils BuildUtils, platformPath string, env map[string]interface{}) error {
@@ -13,7 +15,7 @@ func CreateEnvFiles(utils BuildUtils, platformPath string, env map[string]interf
 	}
 
 	for k, v := range env {
-		err = utils.FileWrite(filepath.Join(envDir, k), []byte(fmt.Sprintf("%v", v)), 0644)
+		err = utils.FileWrite(filepath.Join(envDir, k), []byte(kubernetes.ExpandVaultEnv(fmt.Sprintf("%v", v))), 0644)
 		if err != nil {
 			return err
 		}

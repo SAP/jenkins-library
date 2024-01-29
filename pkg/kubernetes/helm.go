@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -175,8 +173,8 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 		helmParams = append(helmParams, "--render-subchart-notes")
 	}
 
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
+	for _, param := range h.config.AdditionalParameters {
+		helmParams = append(helmParams, ExpandVaultEnv(param))
 	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
@@ -251,8 +249,8 @@ func (h *HelmExecute) RunHelmInstall() error {
 		helmParams = append(helmParams, "--render-subchart-notes")
 	}
 
-	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
+	for _, param := range h.config.AdditionalParameters {
+		helmParams = append(helmParams, ExpandVaultEnv(param))
 	}
 
 	if h.verbose {
@@ -476,19 +474,4 @@ func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 	}
 
 	return nil
-}
-
-// expandEnv replaces ${var} or $var in params according to the values of the current environment variables
-func expandEnv(params []string) []string {
-	expanded := []string{}
-
-	for _, param := range params {
-		if strings.Contains(param, config.VaultCredentialEnvPrefixDefault) {
-			expanded = append(expanded, os.ExpandEnv(param))
-		} else {
-			expanded = append(expanded, param)
-		}
-	}
-
-	return expanded
 }
