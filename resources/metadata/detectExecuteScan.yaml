@@ -248,6 +248,22 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: buildMaven
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for maven multi-modules projects building"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: pomPath
+        type: string
+        description: Path to the pom file which should be installed including all children.
+        scope:
+          - STEPS
+        mandatory: false
+        default: pom.xml
       - name: includedPackageManagers
         description:
           "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder
@@ -300,30 +316,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        deprecated: true
-      - name: useDetect7
-        description:
-          "This flag allows to use the currently supported 8 version of Detect Script instead of v7"
-        aliases:
-          - name: detect/useDetect7
-        type: bool
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: false
-      - name: useDetect8
-        description:
-          "This flag allows to use the currently supported 8 version of Detect Script instead of v7"
-        aliases:
-          - name: detect/useDetect8
-            deprecated: true
-        type: bool
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
         deprecated: true
       - name: successOnSkip
         description:

@@ -33,7 +33,7 @@ type detectTestUtilsBundle struct {
 	orchestrator *orchestratorConfigProviderMock
 }
 
-func (d *detectTestUtilsBundle) GetProvider() orchestrator.OrchestratorSpecificConfigProviding {
+func (d *detectTestUtilsBundle) GetProvider() orchestrator.ConfigProvider {
 	return d.orchestrator
 }
 

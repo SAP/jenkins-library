@@ -212,6 +212,27 @@ spec:
     - image: ""
   outputs:
     resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: codeql
+                type: bool
+          - name: codeql_data
+            fields:
+              - name: repositoryUrl
+              - name: repositoryReferenceUrl
+              - name: codeScanningLink
+              - name: querySuite
+              - name: optionalTotal
+                type: int
+              - name: optionalAudited
+                type: int
+              - name: auditAllTotal
+                type: int
+              - name: auditAllAudited
+                type: int
       - name: reports
         type: reports
         params:

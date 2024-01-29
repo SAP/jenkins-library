@@ -46,7 +46,7 @@ type detectUtils interface {
 
 	GetIssueService() *github.IssuesService
 	GetSearchService() *github.SearchService
-	GetProvider() orchestrator.OrchestratorSpecificConfigProviding
+	GetProvider() orchestrator.ConfigProvider
 }
 
 type detectUtilsBundle struct {
@@ -55,7 +55,7 @@ type detectUtilsBundle struct {
 	*piperhttp.Client
 	issues   *github.IssuesService
 	search   *github.SearchService
-	provider orchestrator.OrchestratorSpecificConfigProviding
+	provider orchestrator.ConfigProvider
 }
 
 func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
@@ -66,7 +66,7 @@ func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 	return d.search
 }
 
-func (d *detectUtilsBundle) GetProvider() orchestrator.OrchestratorSpecificConfigProviding {
+func (d *detectUtilsBundle) GetProvider() orchestrator.ConfigProvider {
 	return d.provider
 }
 
@@ -112,7 +112,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning(err)
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
@@ -139,6 +139,9 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
+
+	// Log config for debug purpose
+	logConfigInVerboseMode(config)
 
 	if config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
 		//configuring go private packages
@@ -180,6 +183,17 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
 		}, utils)
+		if err != nil {
+			return err
+		}
+	}
+
+	if config.BuildMaven {
+		log.Entry().Infof("running Maven Build")
+		mavenConfig := setMavenConfig(config)
+		mavenUtils := maven.NewUtilsBundle()
+
+		err := runMavenBuild(&mavenConfig, nil, mavenUtils, &mavenBuildCommonPipelineEnvironment{})
 		if err != nil {
 			return err
 		}
@@ -305,11 +319,16 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	log.Entry().Infof("Downloading Detect Script")
 
-	if config.UseDetect7 {
-		return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
+	err := utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+	if err != nil {
+		time.Sleep(time.Second * 5)
+		err = utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+		if err != nil {
+			return err
+		}
 	}
 
-	return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+	return nil
 }
 
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem) ([]string, error) {
@@ -376,48 +395,26 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
 
-	// Since detect8 adds quotes by default, to avoid double quotation they should be removed for several arguments
-	if config.UseDetect7 {
-		args = append(args, fmt.Sprintf("\"--detect.project.name='%v'\"", config.ProjectName))
-		args = append(args, fmt.Sprintf("\"--detect.project.version.name='%v'\"", detectVersionName))
+	args = append(args, fmt.Sprintf("\"--detect.project.name=%v\"", config.ProjectName))
+	args = append(args, fmt.Sprintf("\"--detect.project.version.name=%v\"", detectVersionName))
 
-		// Groups parameter is added only when there is atleast one non-empty groupname provided
-		if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
-			args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
-		}
-
-		// Atleast 1, non-empty category to fail on must be provided
-		if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
-			args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
-		}
-
-		args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
-
-		if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
-			args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
-		}
-	} else {
-		args = append(args, fmt.Sprintf("\"--detect.project.name=%v\"", config.ProjectName))
-		args = append(args, fmt.Sprintf("\"--detect.project.version.name=%v\"", detectVersionName))
-
-		// Groups parameter is added only when there is atleast one non-empty groupname provided
-		if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
-			args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
-		}
-
-		// Atleast 1, non-empty category to fail on must be provided
-		if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
-			args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
-		}
-
-		args = append(args, fmt.Sprintf("\"--detect.code.location.name=%v\"", codelocation))
-
-		if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
-			args = append(args, fmt.Sprintf("\"--detect.maven.build.command=%v\"", strings.Join(mavenArgs, " ")))
-		}
-
-		args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=true\""))
+	// Groups parameter is added only when there is atleast one non-empty groupname provided
+	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
+		args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
 	}
+
+	// Atleast 1, non-empty category to fail on must be provided
+	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
+		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
+	}
+
+	args = append(args, fmt.Sprintf("\"--detect.code.location.name=%v\"", codelocation))
+
+	if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
+		args = append(args, fmt.Sprintf("\"--detect.maven.build.command=%v\"", strings.Join(mavenArgs, " ")))
+	}
+
+	args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=true\""))
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
@@ -585,9 +582,9 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 }
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
-
-	if utils.GetProvider().IsPullRequest() {
-		issueNumber, err := strconv.Atoi(utils.GetProvider().GetPullRequestConfig().Key)
+	provider := utils.GetProvider()
+	if provider.IsPullRequest() {
+		issueNumber, err := strconv.Atoi(provider.PullRequestConfig().Key)
 		if err != nil {
 			log.Entry().Warning("Can not get issue number ", err)
 			return nil
@@ -911,4 +908,29 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
+	mavenConfig := mavenBuildOptions{
+		PomPath:                     config.PomPath,
+		Flatten:                     true,
+		Verify:                      false,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		M2Path:                      config.M2Path,
+		LogSuccessfulMavenTransfers: false,
+		CreateBOM:                   false,
+		CustomTLSCertificateLinks:   config.CustomTLSCertificateLinks,
+		Publish:                     false,
+	}
+
+	return mavenConfig
+}
+
+func logConfigInVerboseMode(config detectExecuteScanOptions) {
+	config.Token = "********"
+	config.GithubToken = "********"
+	config.PrivateModulesGitToken = "********"
+	debugLog, _ := json.Marshal(config)
+	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
 }
