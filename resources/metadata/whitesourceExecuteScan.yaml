@@ -661,6 +661,7 @@ spec:
           - STAGES
           - STEPS
         type: bool
+        default: false
     resources:
       - name: buildDescriptor
         type: stash
