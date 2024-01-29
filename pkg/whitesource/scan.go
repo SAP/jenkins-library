@@ -84,6 +84,9 @@ func (s *Scan) ProjectByName(projectName string) (Project, bool) {
 func (s *Scan) ScannedProjects() []Project {
 	var projects []Project
 	for _, project := range s.scannedProjects {
+		if len(project.Token) == 0 && s.SkipProjectsWithEmptyTokens {
+			continue
+		}
 		projects = append(projects, project)
 	}
 	return projects
