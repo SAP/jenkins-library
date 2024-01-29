@@ -311,11 +311,33 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
-		if len(m.Spec.Sidecars[0].Command) > 0 {
-			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
+		for _, sideCar := range m.Spec.Sidecars {
+			key := ""
+			conditionParam := ""
+			if len(sideCar.Conditions) > 0 {
+				key = sideCar.Conditions[0].Params[0].Value
+				conditionParam = sideCar.Conditions[0].Params[0].Name
+			}
+			p := map[string]interface{}{}
+			if key != "" {
+				root[key] = p
+				//add default for condition parameter if available
+				for _, inputParam := range m.Spec.Inputs.Parameters {
+					if inputParam.Name == conditionParam {
+						root[conditionParam] = inputParam.Default
+					}
+				}
+			} else {
+				p = root
+			}
+			if len(sideCar.Command) > 0 {
+				root["sidecarCommand"] = sideCar.Command[0]
+			}
+
+			putStringIfNotEmpty(root, "sidecarReadyCommand", sideCar.ReadyCommand)
+			sideCar.commonConfiguration("sidecar", &p)
+
 		}
-		m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
-		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
 
 		// not filled for now since this is not relevant in Kubernetes case
 		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
