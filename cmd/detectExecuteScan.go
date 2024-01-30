@@ -216,9 +216,9 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
-
-	if config.ScanImages {
+	if !config.ScanImages {
+		err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
+	} else {
 		err = mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
 	}
 
