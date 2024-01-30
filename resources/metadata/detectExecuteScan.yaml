@@ -511,6 +511,14 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: scanImages
+        description: If images found in the cpe, they will also be scanned
+        type: "bool"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: containerDistro
         description: Distro of the container that is scanned
         type: "string"
@@ -522,6 +530,45 @@ spec:
           - ubuntu
           - centos
           - alpine
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: containerRegistryPassword
+        description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: containerRegistryUser
+        description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
   outputs:
     resources:
       - name: influx
