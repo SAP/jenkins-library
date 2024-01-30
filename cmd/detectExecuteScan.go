@@ -20,7 +20,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -271,25 +270,19 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 }
 
 func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, influx *detectExecuteScanInflux, blackduckSystem *blackduckSystem) error {
-	cpePath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-	imagesRaw := piperenv.GetResourceParameter(cpePath, "container", "imageNameTags.json")
-	if imagesRaw == "" {
+	// cpePath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	imagesRaw := config.ImageNameTags
+	if len(imagesRaw) == 0 {
 		log.Entry().Debugf("No images found to be scanned")
 		return nil
 	}
 
-	images := []string{}
-	err := json.Unmarshal([]byte(imagesRaw), &images)
-	if err != nil {
-		return errors.Wrap(err, "Unable to read cpe")
-	}
+	registryUser := config.ContainerRegistryUser
+	registryPassword := config.ContainerRegistryPassword
+	registryURL := config.ContainerRegistryURL
 
-	registryUser := piperenv.GetResourceParameter(cpePath, "container", "repositoryUsername")
-	registryPassword := piperenv.GetResourceParameter(cpePath, "container", "repositoryPassword")
-	registryURL := piperenv.GetResourceParameter(cpePath, "container", "registryUrl")
-
-	log.Entry().Infof("Scanning %d images", len(images))
-	for _, image := range images {
+	log.Entry().Infof("Scanning %d images", len(imagesRaw))
+	for _, image := range imagesRaw {
 		// Download image to be scanned
 		log.Entry().Debugf("Scanning image: %q", image)
 		tarName := fmt.Sprintf("%s.tar", strings.Split(image, ":")[0])
@@ -305,7 +298,7 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 		containerSaveImage(options, &telemetry.CustomData{})
 
 		args := []string{"./detect.sh"}
-		args, err = addDetectArgsImages(args, config, utils, sys, tarName)
+		args, err := addDetectArgsImages(args, config, utils, sys, tarName)
 		if err != nil {
 			return err
 		}

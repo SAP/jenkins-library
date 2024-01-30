@@ -569,6 +569,16 @@ spec:
             param: container/repositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+      - name: imageNameTags
+        description: "For `buildTool: docker`: image name and tags of the image to be scanned."
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
   outputs:
     resources:
       - name: influx
