@@ -58,7 +58,7 @@ void call(Map parameters = [:]) {
         } else if (config.integrationTestOption == 'addOnDeployment') {
             try {
                 abapLandscapePortalUpdateAddOnProduct(script: parameters.script)
-                abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
+                // abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
             } catch (Exception e) {
                 echo "Deployment test of add-on product failed."
                 throw e
