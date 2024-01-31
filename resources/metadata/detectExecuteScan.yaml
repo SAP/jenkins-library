@@ -634,6 +634,10 @@ spec:
     - image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
       name: inspector-ubuntu
       command: ['']
+      containerPortMappings:
+        'blackduck-imageinspector-ubuntu:5.1.0':
+          - containerPort: 9002
+            hostPort: 9002
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
           name: volume
