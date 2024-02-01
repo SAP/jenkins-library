@@ -79,6 +79,7 @@ type whitesourceExecuteScanOptions struct {
 	CustomTLSCertificateLinks            []string `json:"customTlsCertificateLinks,omitempty"`
 	PrivateModules                       string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken               string   `json:"privateModulesGitToken,omitempty"`
+	SkipModulesWithDuplicatedNames       bool     `json:"skipModulesWithDuplicatedNames,omitempty"`
 }
 
 type whitesourceExecuteScanCommonPipelineEnvironment struct {
@@ -377,6 +378,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
+	cmd.Flags().BoolVar(&stepConfig.SkipModulesWithDuplicatedNames, "skipModulesWithDuplicatedNames", false, "This parameter was added only for testing purposes. It should be removed in the future.")
 
 	cmd.MarkFlagRequired("buildTool")
 	cmd.MarkFlagRequired("orgToken")
@@ -1040,6 +1042,15 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_privateModulesGitToken"),
+					},
+					{
+						Name:        "skipModulesWithDuplicatedNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
