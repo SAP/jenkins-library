@@ -142,7 +142,7 @@ spec:
         type: "bool"
         default: false
         description: |
-          Replace placeholder with environment variables set by `buildEnvVars`.
+          Expand environment variables used in `buildEnvVars`.
           Example:
           ```yaml
           expandBuildEnvVars: true
