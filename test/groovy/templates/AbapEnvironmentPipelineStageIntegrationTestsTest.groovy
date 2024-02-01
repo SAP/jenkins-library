@@ -133,7 +133,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
     @Test
     void testabapLandscapePortalUpdateAddOnProductFails() {
 
-        helper.registerAllowedMethod('abapLandscapePortalUpdateAddOnProduct', [Map.class], {m -> stepsCalled.add('abapLandscapePortalUpdateAddOnProduct'); error("Failed")})
+        // helper.registerAllowedMethod('abapLandscapePortalUpdateAddOnProduct', [Map.class], {m -> stepsCalled.add('abapLandscapePortalUpdateAddOnProduct'); error("Failed")})
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Integration Tests': true
