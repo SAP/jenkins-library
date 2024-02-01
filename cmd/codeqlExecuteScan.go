@@ -52,16 +52,19 @@ func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	return &utils
 }
 
-func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData) {
+func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, influx *codeqlExecuteScanInflux) {
 
 	utils := newCodeqlExecuteScanUtils()
 
-	reports, err := runCodeqlExecuteScan(&config, telemetryData, utils)
+	influx.step_data.fields.codeql = false
+
+	reports, err := runCodeqlExecuteScan(&config, telemetryData, utils, influx)
 	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Codeql scan failed")
 	}
+	influx.step_data.fields.codeql = true
 }
 
 func codeqlQuery(cmd []string, codeqlQuery string) []string {
@@ -261,7 +264,7 @@ func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader cod
 	}
 }
 
-func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
+func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils, influx *codeqlExecuteScanInflux) ([]piperutils.Path, error) {
 	codeqlVersion, err := os.ReadFile("/etc/image-version")
 	if err != nil {
 		log.Entry().Infof("CodeQL image version: unknown")
@@ -361,6 +364,8 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		repoInfo.CommitId = targetCommitId
 	}
 
+	var scanResults []codeql.CodeqlFindings
+
 	if !config.UploadResults {
 		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
 	} else {
@@ -380,7 +385,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 
 		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo, token, []string{})
-		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
+		scanResults, err = codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
@@ -394,14 +399,18 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 		if config.CheckForCompliance {
 			for _, scanResult := range scanResults {
-				unaudited := scanResult.Total - scanResult.Audited
-				if unaudited > config.VulnerabilityThresholdTotal {
-					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
-					return reports, errors.Errorf(msg)
+				if scanResult.ClassificationName == codeql.AuditAll {
+					unaudited := scanResult.Total - scanResult.Audited
+					if unaudited > config.VulnerabilityThresholdTotal {
+						msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
+						return reports, errors.Errorf(msg)
+					}
 				}
 			}
 		}
 	}
+
+	addDataToInfluxDB(repoUrl, repoReference, repoCodeqlScanUrl, config.QuerySuite, scanResults, influx)
 
 	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, config.ModulePath)
 	if err != nil {
@@ -411,6 +420,24 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	return reports, nil
+}
+
+func addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) {
+	influx.codeql_data.fields.repositoryURL = repoUrl
+	influx.codeql_data.fields.repositoryReferenceURL = repoRef
+	influx.codeql_data.fields.codeScanningLink = repoScanUrl
+	influx.codeql_data.fields.querySuite = querySuite
+
+	for _, sr := range scanResults {
+		if sr.ClassificationName == codeql.AuditAll {
+			influx.codeql_data.fields.auditAllAudited = sr.Audited
+			influx.codeql_data.fields.auditAllTotal = sr.Total
+		}
+		if sr.ClassificationName == codeql.Optional {
+			influx.codeql_data.fields.optionalAudited = sr.Audited
+			influx.codeql_data.fields.optionalTotal = sr.Total
+		}
+	}
 }
 
 func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {

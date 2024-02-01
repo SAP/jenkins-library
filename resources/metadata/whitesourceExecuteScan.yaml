@@ -662,6 +662,15 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: SkipProjectsWithEmptyTokens
+        description: Skips projects with empty tokens after scanning. This is for testing purposes only and should not be used until we roll out the new parameter
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        default: false
     resources:
       - name: buildDescriptor
         type: stash
