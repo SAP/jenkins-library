@@ -662,6 +662,15 @@ spec:
           - STEPS
         type: bool
         default: false
+      - name: skipModulesWithDuplicatedNames
+        type: bool
+        description: "This parameter was added only for testing purposes. It should be removed in the future."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
     resources:
       - name: buildDescriptor
         type: stash

@@ -11,6 +11,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
+var (
+	DuplicatedProjectName = fmt.Errorf("project with the same name was already scanned")
+)
+
 // Scan stores information about scanned WhiteSource projects (modules).
 type Scan struct {
 	// AggregateProjectName stores the name of the WhiteSource project where scans shall be aggregated.
@@ -43,19 +47,19 @@ func (s *Scan) versionSuffix() string {
 
 // AppendScannedProject checks that no Project with the same name is already contained in the list of scanned projects,
 // and appends a new Project with the given name. The global product version is appended to the name.
-func (s *Scan) AppendScannedProject(projectName string) error {
+func (s *Scan) AppendScannedProject(projectName string, skipModulesWithDuplicatedNames bool) error {
 	if len(projectName) == 0 {
 		return fmt.Errorf("projectName must not be empty")
 	}
 	if strings.HasSuffix(projectName, s.versionSuffix()) {
 		return fmt.Errorf("projectName is not expected to include the product version already")
 	}
-	return s.AppendScannedProjectVersion(projectName + s.versionSuffix())
+	return s.AppendScannedProjectVersion(projectName+s.versionSuffix(), skipModulesWithDuplicatedNames)
 }
 
 // AppendScannedProjectVersion checks that no Project with the same name is already contained in the list of scanned
 // projects,  and appends a new Project with the given name (which is expected to include the product version).
-func (s *Scan) AppendScannedProjectVersion(projectName string) error {
+func (s *Scan) AppendScannedProjectVersion(projectName string, skipModulesWithDuplicatedNames bool) error {
 	if !strings.HasSuffix(projectName, s.versionSuffix()) {
 		return fmt.Errorf("projectName is expected to include the product version")
 	}
@@ -67,6 +71,10 @@ func (s *Scan) AppendScannedProjectVersion(projectName string) error {
 	if exists {
 		log.Entry().Errorf("A module with the name '%s' was already scanned. "+
 			"Your project's modules must have unique names.", projectName)
+		if skipModulesWithDuplicatedNames {
+			return DuplicatedProjectName
+		}
+
 		return fmt.Errorf("project with name '%s' was already scanned", projectName)
 	}
 	s.scannedProjects[projectName] = Project{Name: projectName}
