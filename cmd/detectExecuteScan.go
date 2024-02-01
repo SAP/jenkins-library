@@ -296,9 +296,13 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 			ImageFormat:               "legacy",
 		}
 		containerSaveImage(options, &telemetry.CustomData{})
+		err := detectUtils.Chmod(tarName, 0666)
+		if err != nil {
+			return err
+		}
 
 		args := []string{"./detect.sh"}
-		args, err := addDetectArgsImages(args, config, utils, sys, tarName)
+		args, err = addDetectArgsImages(args, config, utils, sys, tarName)
 		if err != nil {
 			return err
 		}
