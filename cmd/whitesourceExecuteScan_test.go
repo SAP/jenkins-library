@@ -484,7 +484,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		ctx := context.Background()
 		config := ScanOptions{ProductName: "mock-product", Version: "1"}
 		scan := newWhitesourceScan(&config)
-		if err := scan.AppendScannedProject("testProject1"); err != nil {
+		if err := scan.AppendScannedProject("testProject1", false); err != nil {
 			t.Fail()
 		}
 		systemMock := ws.NewSystemMock("ignored")
@@ -513,7 +513,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		ctx := context.Background()
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
-		if err := scan.AppendScannedProject("testProject1"); err != nil {
+		if err := scan.AppendScannedProject("testProject1", false); err != nil {
 			t.Fail()
 		}
 		systemMock := ws.NewSystemMock("ignored")
@@ -534,7 +534,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		ctx := context.Background()
 		config := ScanOptions{FailOnSevereVulnerabilities: true}
 		scan := newWhitesourceScan(&config)
-		if err := scan.AppendScannedProject("testProject1"); err != nil {
+		if err := scan.AppendScannedProject("testProject1", false); err != nil {
 			t.Fail()
 		}
 		systemMock := ws.NewSystemMock("ignored")
@@ -562,7 +562,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		ctx := context.Background()
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
-		if err := scan.AppendScannedProject("testProject1"); err != nil {
+		if err := scan.AppendScannedProject("testProject1", false); err != nil {
 			t.Fail()
 		}
 		systemMock := ws.NewSystemMock("ignored")
@@ -579,7 +579,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		ctx := context.Background()
 		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
-		if err := scan.AppendScannedProject("testProject1"); err != nil {
+		if err := scan.AppendScannedProject("testProject1", false); err != nil {
 			t.Fail()
 		}
 		systemMock := ws.NewSystemMock("ignored")
@@ -597,7 +597,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 		ctx := context.Background()
 		config := ScanOptions{ProductName: "mock-product", Version: "1"}
 		scan := newWhitesourceScan(&config)
-		if err := scan.AppendScannedProject("testProject1"); err != nil {
+		if err := scan.AppendScannedProject("testProject1", false); err != nil {
 			t.Fail()
 		}
 		systemMock := ws.NewSystemMock("ignored")
@@ -623,7 +623,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 			CvssSeverityLimit: "7",
 		}
 		scan := newWhitesourceScan(&config)
-		if err := scan.AppendScannedProject("testProject1"); err != nil {
+		if err := scan.AppendScannedProject("testProject1", false); err != nil {
 			t.Fail()
 		}
 		systemMock := ws.NewSystemMock("ignored")
@@ -678,7 +678,7 @@ func TestCheckSecurityViolations(t *testing.T) {
 			FailOnSevereVulnerabilities: true,
 		}
 		scan := newWhitesourceScan(&config)
-		if err := scan.AppendScannedProject("testProject1"); err != nil {
+		if err := scan.AppendScannedProject("testProject1", false); err != nil {
 			t.Fail()
 		}
 		systemMock := ws.NewSystemMock("ignored")
@@ -832,7 +832,7 @@ func TestPersistScannedProjects(t *testing.T) {
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{Version: "1"}
 		scan := newWhitesourceScan(config)
-		_ = scan.AppendScannedProject("project")
+		_ = scan.AppendScannedProject("project", false)
 		// test
 		persistScannedProjects(config, scan, &cpe)
 		// assert
@@ -843,8 +843,8 @@ func TestPersistScannedProjects(t *testing.T) {
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{Version: "1"}
 		scan := newWhitesourceScan(config)
-		_ = scan.AppendScannedProject("project-app")
-		_ = scan.AppendScannedProject("project-db")
+		_ = scan.AppendScannedProject("project-app", false)
+		_ = scan.AppendScannedProject("project-db", false)
 		// test
 		persistScannedProjects(config, scan, &cpe)
 		// assert
