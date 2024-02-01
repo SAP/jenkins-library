@@ -125,9 +125,8 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         assertThat(stepsCalled, not(hasItems('input',
                                                 'abapEnvironmentCreateSystem',
                                                 'cloudFoundryDeleteService',
-                                                'abapEnvironmentBuild',
                                                 'cloudFoundryCreateServiceKey')))
-        assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct'))
+        assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct', 'abapEnvironmentBuild'))
     }
 
     @Test
@@ -149,8 +148,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         assertThat(stepsCalled, not(hasItems('input',
                                                 'abapEnvironmentCreateSystem',
                                                 'cloudFoundryDeleteService',
-                                                'abapEnvironmentBuild',
                                                 'cloudFoundryCreateServiceKey')))
-        assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct'))
+        assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct', 'abapEnvironmentBuild'))
     }
 }

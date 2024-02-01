@@ -69,8 +69,8 @@ type updateAddOnResp struct {
 }
 
 func abapLandscapePortalUpdateAddOnProduct(config abapLandscapePortalUpdateAddOnProductOptions, telemetryData *telemetry.CustomData) {
-	// define a http client
 	client := http.Client{}
+
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err := runAbapLandscapePortalUpdateAddOnProduct(&config, client)
@@ -167,7 +167,6 @@ func parseServiceKeyAndPrepareAccessTokenHttpClient(servKeyJSON string, clientAT
 
 // this function is used to get access token of Landscape Portal API
 func getLPAPIAccessToken(clientAT http.Client, servKey serviceKey) (string, error) {
-	// define the raw url of the request
 	authRawURL := servKey.Uaa.CertUrl + "/oauth/token"
 
 	// configure request body
@@ -185,7 +184,6 @@ func getLPAPIAccessToken(clientAT http.Client, servKey serviceKey) (string, erro
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	// send request and get response
 	resp, getAccessTokenErr := clientAT.Do(req)
 	if getAccessTokenErr != nil {
 		return "", getAccessTokenErr
@@ -208,7 +206,6 @@ func getLPAPIAccessToken(clientAT http.Client, servKey serviceKey) (string, erro
 
 // this function is used to check the existence of integration test system
 func getSystemBySystemNumber(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId *string) error {
-	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
@@ -221,7 +218,6 @@ func getSystemBySystemNumber(config *abapLandscapePortalUpdateAddOnProductOption
 		return urlParseErr
 	}
 
-	// define the request
 	req := http.Request{
 		Method: http.MethodGet,
 		URL:    getSystemURL,
@@ -232,7 +228,6 @@ func getSystemBySystemNumber(config *abapLandscapePortalUpdateAddOnProductOption
 		},
 	}
 
-	// send request and get response
 	resp, getSystemErr := client.Do(&req)
 	if getSystemErr != nil {
 		return getSystemErr
@@ -248,7 +243,6 @@ func getSystemBySystemNumber(config *abapLandscapePortalUpdateAddOnProductOption
 
 	// read and parse response body
 	respBody := systemEntity{}
-
 	if parseRespBodyErr := parseRespBody[systemEntity](resp, &respBody); parseRespBodyErr != nil {
 		return parseRespBodyErr
 	}
@@ -261,7 +255,6 @@ func getSystemBySystemNumber(config *abapLandscapePortalUpdateAddOnProductOption
 
 // this function is used to define and maintain the request body of querying status of addon update request
 func prepareGetStatusHttpRequest(clientAT http.Client, servKey serviceKey, reqId string, getStatusReq *http.Request) error {
-	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
@@ -274,7 +267,6 @@ func prepareGetStatusHttpRequest(clientAT http.Client, servKey serviceKey, reqId
 		return urlParseErr
 	}
 
-	// define the request
 	req := http.Request{
 		Method: http.MethodGet,
 		URL:    getStatusURL,
@@ -291,46 +283,8 @@ func prepareGetStatusHttpRequest(clientAT http.Client, servKey serviceKey, reqId
 	return nil
 }
 
-// this function is used to send request to poll the status of request
-// func getStatusOfUpdateAddOn(client http.Client, getStatusReq *http.Request, reqId string, status *string) error {
-// 	// // get access token
-// 	// accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
-// 	// if getAccessTokenErr != nil {
-// 	// 	return getAccessTokenErr
-// 	// }
-
-// 	// // define the raw url of the request and parse it into required form used in http.Request
-// 	// getStatusRawURL := servKey.Url + "/api/requests/" + reqId
-// 	// getStatusURL, urlParseErr := url.Parse(getStatusRawURL)
-// 	// if urlParseErr != nil {
-// 	// 	return urlParseErr
-// 	// }
-
-// 	// // define the request
-// 	// req := http.Request{
-// 	// 	Method: http.MethodGet,
-// 	// 	URL:    getStatusURL,
-// 	// 	Header: map[string][]string{
-// 	// 		"Authorization": {"Bearer " + accessToken},
-// 	// 		"Content-Type":  {"application/json"},
-// 	// 		"Accept":        {"application/json"},
-// 	// 	},
-// 	// }
-
-// 	// // store the req in the global variable for later usage
-// 	// *getStatusReq = req
-
-// 	// call function to poll status of request
-// 	if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, getStatusReq, reqId, status); pollStatusOfUpdateAddOnErr != nil {
-// 		return pollStatusOfUpdateAddOnErr
-// 	}
-
-// 	return nil
-// }
-
 // this function is used to poll status of addon update request and maintain the status
 func pollStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string, status *string) error {
-	// send request and get response
 	resp, getStatusErr := client.Do(req)
 	if getStatusErr != nil {
 		return getStatusErr
@@ -346,7 +300,6 @@ func pollStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string
 
 	// read and parse response body
 	respBody := reqEntity{}
-
 	if parseRespBodyErr := parseRespBody[reqEntity](resp, &respBody); parseRespBodyErr != nil {
 		return parseRespBodyErr
 	}
@@ -359,7 +312,6 @@ func pollStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string
 
 // this function is used to update addon
 func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId string, reqId *string) error {
-	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
@@ -382,10 +334,8 @@ func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client ht
 
 	// encode the request body to JSON
 	var reqBuff bytes.Buffer
-
 	json.NewEncoder(&reqBuff).Encode(reqBody)
 
-	// define the http request
 	req, reqErr := http.NewRequest(http.MethodPost, updateAddOnRawURL, &reqBuff)
 	if reqErr != nil {
 		return reqErr
@@ -397,7 +347,6 @@ func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client ht
 		"Accept":        {"application/json"},
 	}
 
-	// send request and get response
 	resp, updateAddOnErr := client.Do(req)
 	if updateAddOnErr != nil {
 		return updateAddOnErr
@@ -411,8 +360,8 @@ func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client ht
 		return err
 	}
 
+	// read and parse response body
 	respBody := updateAddOnResp{}
-
 	if parseRespBodyErr := parseRespBody[updateAddOnResp](resp, &respBody); parseRespBodyErr != nil {
 		return parseRespBodyErr
 	}
@@ -425,7 +374,6 @@ func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client ht
 
 // this function is used to cancel addon update
 func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string) error {
-	// get access token
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
@@ -438,7 +386,6 @@ func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, cli
 		return urlParseErr
 	}
 
-	// define the http request
 	req := http.Request{
 		Method: http.MethodDelete,
 		URL:    cancelUpdateAddOnURL,
@@ -449,7 +396,6 @@ func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, cli
 		},
 	}
 
-	// send request and get response
 	resp, cancelUpdateAddOnErr := client.Do(&req)
 	if cancelUpdateAddOnErr != nil {
 		return cancelUpdateAddOnErr
@@ -494,7 +440,6 @@ func respondToUpdateAddOnFinalStatus(config *abapLandscapePortalUpdateAddOnProdu
 
 // this function is used to parse response body of http request
 func parseRespBody[T comparable](resp *http.Response, respBody *T) error {
-	// read response body
 	respBodyRaw, readRespErr := io.ReadAll(resp.Body)
 	if readRespErr != nil {
 		return readRespErr
