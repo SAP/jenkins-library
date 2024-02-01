@@ -296,7 +296,7 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 			ImageFormat:               "legacy",
 		}
 		containerSaveImage(options, &telemetry.CustomData{})
-		err := detectUtils.Chmod(tarName, 0666)
+		err := utils.Chmod(tarName, 0666)
 		if err != nil {
 			return err
 		}
