@@ -6,12 +6,12 @@ import (
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 type checkStepActiveCommandOptions struct {
@@ -91,17 +91,6 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 		}
 		runSteps = runConfigV1.RunSteps
 		runStages = runConfigV1.RunStages
-	} else {
-		log.Entry().Warning("This step is using deprecated format of stage conditions which will be removed in Jan 2024. " +
-			"To avoid pipeline breakage, please call checkIfStepActive command with --useV1 flag.",
-		)
-		runConfig := &config.RunConfig{StageConfigFile: stageConfigFile}
-		err = runConfig.InitRunConfig(projectConfig, nil, nil, nil, nil, doublestar.Glob, checkStepActiveOptions.openFile)
-		if err != nil {
-			return err
-		}
-		runSteps = runConfig.RunSteps
-		runStages = runConfig.RunStages
 	}
 
 	log.Entry().Debugf("RunSteps: %v", runSteps)
