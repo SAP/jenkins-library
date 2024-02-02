@@ -311,7 +311,6 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
-
 		// if there one side care dont check conditions and consider the only side care as default . this is default behaviour
 		// if there are more than one side car then check conditions,
 		if len(m.Spec.Sidecars) == 1 {
@@ -349,7 +348,6 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 
 			}
 		}
-
 		// not filled for now since this is not relevant in Kubernetes case
 		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
 	}
