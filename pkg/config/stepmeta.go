@@ -310,7 +310,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
-		// if there one side care dont check conditions and consider the only side care as default . this is default behaviour
+		// if there one side car do not check conditions and consider the only side care as default . this is default behaviour
 		// if there are more than one side car then check conditions,
 		if len(m.Spec.Sidecars) == 1 {
 			if len(m.Spec.Sidecars[0].Command) > 0 {
