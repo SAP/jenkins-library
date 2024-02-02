@@ -311,32 +311,43 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
-		for _, sideCar := range m.Spec.Sidecars {
-			key := ""
-			conditionParam := ""
-			if len(sideCar.Conditions) > 0 {
-				key = sideCar.Conditions[0].Params[0].Value
-				conditionParam = sideCar.Conditions[0].Params[0].Name
+
+		// if there one side care dont check conditions and consider the only side care as default . this is default behaviour
+		// if there are more than one side car then check conditions,
+		if len(m.Spec.Sidecars) == 1 {
+			if len(m.Spec.Sidecars[0].Command) > 0 {
+				root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 			}
-			p := map[string]interface{}{}
-			if key != "" {
-				root[key] = p
-				//add default for condition parameter if available
-				for _, inputParam := range m.Spec.Inputs.Parameters {
-					if inputParam.Name == conditionParam {
-						root[conditionParam] = inputParam.Default
-					}
+			m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
+			putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
+		} else {
+			for _, sideCar := range m.Spec.Sidecars {
+				key := ""
+				conditionParam := ""
+				if len(sideCar.Conditions) > 0 {
+					key = sideCar.Conditions[0].Params[0].Value
+					conditionParam = sideCar.Conditions[0].Params[0].Name
 				}
-			} else {
-				p = root
-			}
-			if len(sideCar.Command) > 0 {
-				root["sidecarCommand"] = sideCar.Command[0]
-			}
+				p := map[string]interface{}{}
+				if key != "" {
+					root[key] = p
+					//add default for condition parameter if available
+					for _, inputParam := range m.Spec.Inputs.Parameters {
+						if inputParam.Name == conditionParam {
+							root[conditionParam] = inputParam.Default
+						}
+					}
+				} else {
+					p = root
+				}
+				if len(sideCar.Command) > 0 {
+					root["sidecarCommand"] = sideCar.Command[0]
+				}
 
-			putStringIfNotEmpty(root, "sidecarReadyCommand", sideCar.ReadyCommand)
-			sideCar.commonConfiguration("sidecar", &p)
+				putStringIfNotEmpty(root, "sidecarReadyCommand", sideCar.ReadyCommand)
+				sideCar.commonConfiguration("sidecar", &p)
 
+			}
 		}
 
 		// not filled for now since this is not relevant in Kubernetes case
