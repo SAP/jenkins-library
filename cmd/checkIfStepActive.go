@@ -63,6 +63,9 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	if checkStepActiveOptions.stageName == "" {
 		return errors.New("stage name must not be empty")
 	}
+	if checkStepActiveOptions.v1Active {
+		log.Entry().Warning("Please avoid using --useV1 flag since it is deprecated and will be removed in future releases")
+	}
 	var pConfig config.Config
 
 	// load project config and defaults
@@ -78,9 +81,6 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	}
 	defer stageConfigFile.Close()
 
-	var runSteps map[string]map[string]bool
-	var runStages map[string]bool
-
 	// load and evaluate step conditions
 	runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
 	runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
@@ -88,8 +88,8 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	if err != nil {
 		return err
 	}
-	runSteps = runConfigV1.RunSteps
-	runStages = runConfigV1.RunStages
+	runSteps := runConfigV1.RunSteps
+	runStages := runConfigV1.RunStages
 
 	log.Entry().Debugf("RunSteps: %v", runSteps)
 	log.Entry().Debugf("RunStages: %v", runStages)
