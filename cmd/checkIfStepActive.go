@@ -82,16 +82,14 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	var runStages map[string]bool
 
 	// load and evaluate step conditions
-	if checkStepActiveOptions.v1Active {
-		runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
-		runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
-		err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
-		if err != nil {
-			return err
-		}
-		runSteps = runConfigV1.RunSteps
-		runStages = runConfigV1.RunStages
+	runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
+	runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
+	err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
+	if err != nil {
+		return err
 	}
+	runSteps = runConfigV1.RunSteps
+	runStages = runConfigV1.RunStages
 
 	log.Entry().Debugf("RunSteps: %v", runSteps)
 	log.Entry().Debugf("RunStages: %v", runStages)
@@ -138,7 +136,7 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 		"Default config of piper pipeline stages")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepName, "step", "", "Name of the step being checked")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageName, "stage", "", "Name of the stage in which contains the step being checked")
-	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration")
+	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration (deprecated)")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
 	_ = cmd.MarkFlagRequired("step")
