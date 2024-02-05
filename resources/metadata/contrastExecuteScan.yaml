@@ -1,0 +1,99 @@
+metadata:
+  name: contrastExecuteScan
+  description: This step executes a contrast scan on the specified project.
+  longDescription: |-
+    This step executes a contrast scan on the specified project.
+
+spec:
+  inputs:
+    secrets:
+      - name: userCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user api key for Contrast.
+        type: jenkins
+      - name: serviceKeyCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing service key for Contrast.
+        type: jenkins
+    params:
+      - name: userApiKey
+        description: "User API Key for Contrast in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `userApiKeyCredentialsId` parameter."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: userCredentialsId
+            type: secret
+            param: userApiKey
+          - type: vaultSecret
+            default: contrast
+            name: userApiKey
+      - name: serviceKey
+        description: "Service Key for Contrast in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `serviceKeyCredentialsId` parameter."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        aliases:
+          - name: service_key
+        resourceRef:
+          - name: serviceKeyCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: contrast
+            name: serviceKey
+      - name: username
+        description: "User name for Contrast in plain text."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: userCredentialsId
+            type: secret
+            param: username
+          - type: vaultSecret
+            default: contrast
+            name: username
+      - name: server
+        type: string
+        description: "Contrast server url."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: organizationId
+        type: string
+        description: "Organization Id in Contrast."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: applicationId
+        type: string
+        description: "Application Id in Contrast."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: vulnerabilityThresholdTotal
+        description: "Threashold for maximum number of allowed vulnerabilities."
+        type: int
+        default: 0
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: checkForCompliance
+        description: "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
+        type: bool
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
