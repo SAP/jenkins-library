@@ -64,7 +64,7 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 		return errors.New("stage name must not be empty")
 	}
 	if checkStepActiveOptions.v1Active {
-		log.Entry().Warning("Please avoid using --useV1 flag since it is deprecated and will be removed in future releases")
+		log.Entry().Warning("Please do not use --useV1 flag since it is deprecated and will be removed in future releases")
 	}
 	var pConfig config.Config
 
