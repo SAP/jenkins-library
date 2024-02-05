@@ -149,6 +149,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: "4000"
       - name: analyzedRef
         type: string
         description: "Name of the ref that was analyzed."
