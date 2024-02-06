@@ -14,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -22,6 +23,8 @@ const (
 	StatusInProgress = "I"
 	StatusScheduled  = "S"
 	StatusAborted    = "X"
+	maxRuntimeInMinutes = time.Duration(30)*time.Minute
+	pollIntervalInSeconds = time.Duration(3)*time.Second
 )
 
 type uaa struct {
@@ -98,7 +101,7 @@ func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateA
 	}
 
 	// update addon in the system
-	if updateAddOnErr := updateAddOn(config, client, clientAT, servKey, systemId, &reqId); updateAddOnErr != nil {
+	if updateAddOnErr := updateAddOn(config.AddonDescriptorFileName, client, clientAT, servKey, systemId, &reqId); updateAddOnErr != nil {
 		err = fmt.Errorf("Failed to update addon in the system with systemId %v. Error: %v\n", systemId, updateAddOnErr)
 		return err
 	}
@@ -109,25 +112,31 @@ func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateA
 		return err
 	}
 
-	// query status of request
-	if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, &getStatusReq, reqId, &reqStatus); pollStatusOfUpdateAddOnErr != nil {
-		err = fmt.Errorf("Failed to poll status of addon update request %v. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
-		return err
-	}
+	// // query status of request
+	// if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, &getStatusReq, reqId, &reqStatus); pollStatusOfUpdateAddOnErr != nil {
+	// 	err = fmt.Errorf("Failed to poll status of addon update request %v. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
+	// 	return err
+	// }
 
-	// keep polling status of addon update request until it reaches a final status (C/E/X)
-	for reqStatus == StatusInProgress || reqStatus == StatusScheduled {
-		// poll status every 30s
-		time.Sleep(30 * time.Second)
+	// // keep polling status of addon update request until it reaches a final status (C/E/X)
+	// for reqStatus == StatusInProgress || reqStatus == StatusScheduled {
+	// 	// poll status every 30s
+	// 	time.Sleep(30 * time.Second)
 
-		if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, &getStatusReq, reqId, &reqStatus); pollStatusOfUpdateAddOnErr != nil {
-			err = fmt.Errorf("Error happened when waiting for the addon update request %v to reach a final status. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
-			return err
-		}
+	// 	if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, &getStatusReq, reqId, &reqStatus); pollStatusOfUpdateAddOnErr != nil {
+	// 		err = fmt.Errorf("Error happened when waiting for the addon update request %v to reach a final status. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
+	// 		return err
+	// 	}
+	// }
+
+	// keep polling request status until it reaches a final status or timeout
+	if waitToBeFinishedErr := waitToBeFinished(maxRuntimeInMinutes, pollIntervalInSeconds, client, &getStatusReq, reqId, &reqStatus); waitToBeFinishedErr != nil {
+		err = fmt.Errorf("Error occurred before a final status can be reached. Error: %v\n", waitToBeFinishedErr)
+		return err;
 	}
 
 	// respond to the final status of addon update
-	if respondToUpdateAddOnFinalStatusErr := respondToUpdateAddOnFinalStatus(config, client, clientAT, servKey, reqId, reqStatus); respondToUpdateAddOnFinalStatusErr != nil {
+	if respondToUpdateAddOnFinalStatusErr := respondToUpdateAddOnFinalStatus(client, clientAT, servKey, reqId, reqStatus); respondToUpdateAddOnFinalStatusErr != nil {
 		err = fmt.Errorf("The final status of addon update is %v. Error: %v\n", reqStatus, respondToUpdateAddOnFinalStatusErr)
 		return err
 	}
@@ -198,8 +207,10 @@ func getLPAPIAccessToken(clientAT http.Client, servKey serviceKey) (string, erro
 	}
 
 	// read and parse response body
-	var respBody accessTokenResp
-	parseRespBody[accessTokenResp](resp, &respBody)
+	respBody := accessTokenResp{}
+	if parseRespBodyErr := parseRespBody[accessTokenResp](resp, &respBody); parseRespBodyErr != nil {
+		return "", parseRespBodyErr
+	}
 
 	return respBody.AccessToken, nil
 }
@@ -311,14 +322,14 @@ func pollStatusOfUpdateAddOn(client http.Client, req *http.Request, reqId string
 }
 
 // this function is used to update addon
-func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, systemId string, reqId *string) error {
+func updateAddOn(addOnFileName string, client http.Client, clientAT http.Client, servKey serviceKey, systemId string, reqId *string) error {
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
 	}
 
 	// read productName and productVersion from addon.yml
-	addOnDescriptor, readAddOnErr := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
+	addOnDescriptor, readAddOnErr := abaputils.ReadAddonDescriptor(addOnFileName)
 	if readAddOnErr != nil {
 		return readAddOnErr
 	}
@@ -373,7 +384,7 @@ func updateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client ht
 }
 
 // this function is used to cancel addon update
-func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string) error {
+func cancelUpdateAddOn(client http.Client, clientAT http.Client, servKey serviceKey, reqId string) error {
 	accessToken, getAccessTokenErr := getLPAPIAccessToken(clientAT, servKey)
 	if getAccessTokenErr != nil {
 		return getAccessTokenErr
@@ -414,14 +425,14 @@ func cancelUpdateAddOn(config *abapLandscapePortalUpdateAddOnProductOptions, cli
 }
 
 // this function is used to respond to a final status of addon update
-func respondToUpdateAddOnFinalStatus(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, clientAT http.Client, servKey serviceKey, reqId string, status string) error {
+func respondToUpdateAddOnFinalStatus(client http.Client, clientAT http.Client, servKey serviceKey, reqId string, status string) error {
 	switch status {
 	case StatusComplete:
 		fmt.Println("Addon update succeeded.")
 	case StatusError:
 		fmt.Println("Addon update failed and will be canceled.")
 
-		if cancelUpdateAddOnErr := cancelUpdateAddOn(config, client, clientAT, servKey, reqId); cancelUpdateAddOnErr != nil {
+		if cancelUpdateAddOnErr := cancelUpdateAddOn(client, clientAT, servKey, reqId); cancelUpdateAddOnErr != nil {
 			err := fmt.Errorf("Failed to cancel addon update. Error: %v\n", cancelUpdateAddOnErr)
 			return err
 		}
@@ -450,4 +461,28 @@ func parseRespBody[T comparable](resp *http.Response, respBody *T) error {
 	}
 
 	return nil
+}
+
+// this function is used to wait for a final status/timeout
+func waitToBeFinished(maxRuntimeInMinutes time.Duration, pollIntervalInSeconds time.Duration, client http.Client, getStatusReq *http.Request, reqId string, reqStatus *string) error {
+	timeout := time.After(maxRuntimeInMinutes)
+	ticker := time.Tick(pollIntervalInSeconds)
+	reqFinalStatus := []string{StatusComplete, StatusError, StatusAborted}
+	for {
+		select {
+			case <-timeout:
+				return fmt.Errorf("Timed out: max Runtime %v min reached.", maxRuntimeInMinutes)
+			case <-ticker:
+				if !slices.Contains(reqFinalStatus, *reqStatus) {
+					if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, getStatusReq, reqId, reqStatus); pollStatusOfUpdateAddOnErr != nil {
+						err := fmt.Errorf("Error happened when waiting for the addon update request %v to reach a final status. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
+						return err
+					}
+
+					fmt.Printf("Addon update request %v is still in progress.", reqId)
+				} else {
+					return nil
+				}
+		}
+	}
 }

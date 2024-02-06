@@ -163,7 +163,7 @@ func keepPollingUntilFinalStatusReached(fromStatus *string, toStatus string, moc
 
 	// mock the process of polling status of update addon  request
 	for i := 0; i < 3; i++ {
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Millisecond)
 		err := pollStatusOfUpdateAddOn(httpClient, &httpReq, "some-request-guid", fromStatus)
 
 		if err != nil {
@@ -450,7 +450,7 @@ func TestUpdateAddOn(t *testing.T) {
 
 		servKey_temp.Url = mockedServer.URL
 
-		err := updateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, systemId, &reqId)
+		err := updateAddOn(updateAddOnConfig.AddonDescriptorFileName, httpClient, httpClientAT, servKey_temp, systemId, &reqId)
 
 		assert.Equal(t, wantedRequest.RequestId, reqId)
 		assert.Equal(t, nil, err)
@@ -464,7 +464,7 @@ func TestUpdateAddOn(t *testing.T) {
 		servKey_temp.Url = mockedServer.URL
 
 		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when updating addon in system with systemId %v.\n", systemId)
-		err := updateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, systemId, &reqId)
+		err := updateAddOn(updateAddOnConfig.AddonDescriptorFileName, httpClient, httpClientAT, servKey_temp, systemId, &reqId)
 
 		assert.Equal(t, "", reqId)
 		assert.Equal(t, expectedErr, err)
@@ -473,7 +473,7 @@ func TestUpdateAddOn(t *testing.T) {
 	t.Run("Error returned when returned when updating addon  in a system", func(t *testing.T) {
 		var reqId string
 
-		err := updateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey, systemId, &reqId)
+		err := updateAddOn(updateAddOnConfig.AddonDescriptorFileName, httpClient, httpClientAT, servKey, systemId, &reqId)
 
 		assert.Equal(t, "", reqId)
 		assert.ErrorContains(t, err, "no such host")
@@ -502,7 +502,7 @@ func TestCancelUpdateAddOn(t *testing.T) {
 
 		servKey_temp.Url = mockedServer.URL
 
-		err := cancelUpdateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId)
+		err := cancelUpdateAddOn(httpClient, httpClientAT, servKey_temp, reqId)
 
 		assert.Equal(t, nil, err)
 	})
@@ -513,13 +513,13 @@ func TestCancelUpdateAddOn(t *testing.T) {
 		servKey_temp.Url = mockedServer.URL
 
 		expectedErr := fmt.Errorf("Unexpected response status 400 Bad Request received when canceling addon update request %v.\n", reqId)
-		err := cancelUpdateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId)
+		err := cancelUpdateAddOn(httpClient, httpClientAT, servKey_temp, reqId)
 
 		assert.Equal(t, expectedErr, err)
 	})
 
 	t.Run("Error returned when returned when canceling update addon  request", func(t *testing.T) {
-		err := cancelUpdateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey, reqId)
+		err := cancelUpdateAddOn(httpClient, httpClientAT, servKey, reqId)
 
 		assert.ErrorContains(t, err, "no such host")
 	})
@@ -548,7 +548,7 @@ func TestRespondToUpdateAddOnFinalStatus(t *testing.T) {
 		servKey_temp.Url = mockedServer.URL
 
 		expectedErr := fmt.Errorf("Addon update failed.\n")
-		err := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, status)
+		err := respondToUpdateAddOnFinalStatus(httpClient, httpClientAT, servKey_temp, reqId, status)
 
 		assert.Equal(t, expectedErr, err)
 	})
@@ -622,7 +622,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 
 	servKey_temp.Url = mockedServer.URL
 
-	err3 := updateAddOn(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, systemId, &reqId)
+	err3 := updateAddOn(updateAddOnConfig.AddonDescriptorFileName, httpClient, httpClientAT, servKey_temp, systemId, &reqId)
 
 	// mock server for pollStatusOfUpdateAddOn and execute it
 	req4 := mockedClientReq{
@@ -659,7 +659,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		err5 := keepPollingUntilFinalStatusReached(&reqStatus, finalStatus, mockedServer, mockedClientReq_temp)
 
 		// mock respond to completed update addon
-		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
+		err6 := respondToUpdateAddOnFinalStatus(httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
 		assert.Equal(t, "some-access-token", accessToken)
@@ -688,7 +688,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 
 		// mock respond to abort update addon
 		expectedErr6 := fmt.Errorf("Addon update is aborted.\n")
-		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
+		err6 := respondToUpdateAddOnFinalStatus(httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
 		assert.Equal(t, "some-access-token", accessToken)
@@ -730,7 +730,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		servKey_temp.Url = mockedServer_cancelUpdateAddOn.URL
 
 		expectedErr6 := fmt.Errorf("Addon update failed.\n")
-		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
+		err6 := respondToUpdateAddOnFinalStatus(httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
 		assert.Equal(t, "some-access-token", accessToken)
@@ -771,7 +771,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 
 		servKey_temp.Url = mockedServer_cancelUpdateAddOn.URL
 
-		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
+		err6 := respondToUpdateAddOnFinalStatus(httpClient, httpClientAT, servKey_temp, reqId, reqStatus)
 
 		// assertions
 		assert.Equal(t, "some-access-token", accessToken)
@@ -796,7 +796,7 @@ func TestRunAbapLandcapePortalUpdateAddOnProduct(t *testing.T) {
 		mockedClientReq_temp := req4
 		mockedClientReq_temp.url = parseRawURL(mockedServer.URL + "/api/requests/" + reqId)
 		err5 := keepPollingUntilFinalStatusReached(&reqStatus, finalStatus, mockedServer, mockedClientReq_temp)
-		err6 := respondToUpdateAddOnFinalStatus(&updateAddOnConfig, httpClient, httpClientAT, servKey, reqId, reqStatus)
+		err6 := respondToUpdateAddOnFinalStatus(httpClient, httpClientAT, servKey, reqId, reqStatus)
 
 		// assertions
 		assert.Equal(t, "some-access-token", accessToken)
