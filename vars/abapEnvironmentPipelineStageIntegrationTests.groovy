@@ -31,10 +31,10 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
-        .addIfEmpty('confirmDeletion', true)
+        .addIfEmpty('confirmDeletion', false)
         .addIfEmpty('debug', false)
         .addIfEmpty('testBuild', false)
-        .addIfEmpty('integrationTestOption', 'systemProvisioning')
+        .addIfEmpty('integrationTestOption', 'addOnDeployment')
         .use()
 
     if (config.testBuild) {
@@ -58,7 +58,7 @@ void call(Map parameters = [:]) {
         } else if (config.integrationTestOption == 'addOnDeployment') {
             try {
                 abapLandscapePortalUpdateAddOnProduct(script: parameters.script)
-                abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
+                // abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
             } catch (Exception e) {
                 echo "Deployment test of add-on product failed."
                 throw e
