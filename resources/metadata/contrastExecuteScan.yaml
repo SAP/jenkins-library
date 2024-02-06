@@ -8,14 +8,14 @@ spec:
   inputs:
     secrets:
       - name: userCredentialsId
-        description: Jenkins 'Username with password' credentials ID containing user api key for Contrast.
+        description: "Jenkins 'Username with password' credentials ID containing username and user API Key to communicate with the Contrast server."
         type: jenkins
       - name: serviceKeyCredentialsId
-        description: Jenkins 'Secret text' credentials ID containing service key for Contrast.
+        description: "Jenkins 'Secret text' credentials ID containing service key to communicate with the Contrast server."
         type: jenkins
     params:
       - name: userApiKey
-        description: "User API Key for Contrast in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `userApiKeyCredentialsId` parameter."
+        description: "User API Key for authorizing access to Contrast."
         scope:
           - PARAMETERS
           - STAGES
@@ -30,7 +30,7 @@ spec:
             default: contrast
             name: userApiKey
       - name: serviceKey
-        description: "Service Key for Contrast in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `serviceKeyCredentialsId` parameter."
+        description: "Service Key for authorization access to Contrast."
         scope:
           - PARAMETERS
           - STAGES
@@ -46,7 +46,7 @@ spec:
             default: contrast
             name: serviceKey
       - name: username
-        description: "User name for Contrast in plain text."
+        description: "Username or email to use for authorization access to Contrast."
         scope:
           - PARAMETERS
           - STAGES
@@ -82,7 +82,7 @@ spec:
           - STAGES
           - STEPS
       - name: vulnerabilityThresholdTotal
-        description: "Threashold for maximum number of allowed vulnerabilities."
+        description: "Threshold for maximum number of allowed vulnerabilities."
         type: int
         default: 0
         scope:
@@ -90,7 +90,7 @@ spec:
           - STAGES
           - STEPS
       - name: checkForCompliance
-        description: "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
+        description: "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
         type: bool
         default: false
         scope:

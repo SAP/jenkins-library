@@ -106,11 +106,11 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 			assert.True(t, f.ClassificationName == AuditAll || f.ClassificationName == Optional)
 			if f.ClassificationName == AuditAll {
 				assert.Equal(t, 5, f.Total)
-				assert.Equal(t, 2, f.Audited)
+				assert.Equal(t, 3, f.Audited)
 			}
 			if f.ClassificationName == Optional {
 				assert.Equal(t, 1, f.Total)
-				assert.Equal(t, 0, f.Audited)
+				assert.Equal(t, 1, f.Audited)
 			}
 		}
 	})
@@ -155,7 +155,7 @@ func TestGetFindings(t *testing.T) {
 		}
 		auditAll, optional := getFindings(vulns)
 		assert.Equal(t, 6, auditAll.Total)
-		assert.Equal(t, 3, auditAll.Audited)
+		assert.Equal(t, 5, auditAll.Audited)
 		assert.Equal(t, 0, optional.Total)
 		assert.Equal(t, 0, optional.Audited)
 	})
@@ -170,7 +170,7 @@ func TestGetFindings(t *testing.T) {
 		}
 		auditAll, optional := getFindings(vulns)
 		assert.Equal(t, 6, auditAll.Total)
-		assert.Equal(t, 3, auditAll.Audited)
+		assert.Equal(t, 5, auditAll.Audited)
 		assert.Equal(t, 0, optional.Total)
 		assert.Equal(t, 0, optional.Audited)
 	})
@@ -185,7 +185,7 @@ func TestGetFindings(t *testing.T) {
 		}
 		auditAll, optional := getFindings(vulns)
 		assert.Equal(t, 6, auditAll.Total)
-		assert.Equal(t, 3, auditAll.Audited)
+		assert.Equal(t, 5, auditAll.Audited)
 		assert.Equal(t, 0, optional.Total)
 		assert.Equal(t, 0, optional.Audited)
 	})
@@ -202,7 +202,7 @@ func TestGetFindings(t *testing.T) {
 		assert.Equal(t, 0, auditAll.Total)
 		assert.Equal(t, 0, auditAll.Audited)
 		assert.Equal(t, 6, optional.Total)
-		assert.Equal(t, 3, optional.Audited)
+		assert.Equal(t, 5, optional.Audited)
 	})
 	t.Run("Note severity", func(t *testing.T) {
 		vulns := []Vulnerability{
@@ -217,7 +217,7 @@ func TestGetFindings(t *testing.T) {
 		assert.Equal(t, 0, auditAll.Total)
 		assert.Equal(t, 0, auditAll.Audited)
 		assert.Equal(t, 6, optional.Total)
-		assert.Equal(t, 3, optional.Audited)
+		assert.Equal(t, 5, optional.Audited)
 	})
 
 	t.Run("Mixed severity", func(t *testing.T) {
@@ -232,22 +232,7 @@ func TestGetFindings(t *testing.T) {
 		assert.Equal(t, 3, auditAll.Total)
 		assert.Equal(t, 2, auditAll.Audited)
 		assert.Equal(t, 2, optional.Total)
-		assert.Equal(t, 1, optional.Audited)
-	})
-}
-
-func TestIsVulnerabilityResolved(t *testing.T) {
-	t.Parallel()
-	t.Run("Vulnerability is resolved", func(t *testing.T) {
-		assert.True(t, isVulnerabilityResolved("FIXED"))
-		assert.True(t, isVulnerabilityResolved("REMEDIATED"))
-		assert.True(t, isVulnerabilityResolved("NOT_A_PROBLEM"))
-		assert.True(t, isVulnerabilityResolved("AUTO_REMEDIATED"))
-	})
-	t.Run("Vulnerability isn't resolved", func(t *testing.T) {
-		assert.False(t, isVulnerabilityResolved("REPORTED"))
-		assert.False(t, isVulnerabilityResolved("SUSPICIOUS"))
-		assert.False(t, isVulnerabilityResolved("CONFIRMED"))
+		assert.Equal(t, 2, optional.Audited)
 	})
 }
 

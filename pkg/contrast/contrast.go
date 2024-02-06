@@ -7,17 +7,14 @@ import (
 )
 
 const (
-	StatusFixed          = "FIXED"
-	StatusNotAProblem    = "NOT_A_PROBLEM"
-	StatusRemediated     = "REMEDIATED"
-	StatusAutoRemediated = "AUTO_REMEDIATED"
-	Critical             = "CRITICAL"
-	High                 = "HIGH"
-	Medium               = "MEDIUM"
-	AuditAll             = "Audit All"
-	Optional             = "Optional"
-	pageSize             = 100
-	startPage            = 0
+	StatusReported = "REPORTED"
+	Critical       = "CRITICAL"
+	High           = "HIGH"
+	Medium         = "MEDIUM"
+	AuditAll       = "Audit All"
+	Optional       = "Optional"
+	pageSize       = 100
+	startPage      = 0
 )
 
 type VulnerabilitiesResponse struct {
@@ -131,28 +128,18 @@ func getFindings(vulnerabilities []Vulnerability) (ContrastFindings, ContrastFin
 
 	for _, vuln := range vulnerabilities {
 		if vuln.Severity == Critical || vuln.Severity == High || vuln.Severity == Medium {
-			if isVulnerabilityResolved(vuln.Status) {
+			if vuln.Status != StatusReported {
 				auditAllFindings.Audited += 1
 			}
 			auditAllFindings.Total += 1
 		} else {
-			if isVulnerabilityResolved(vuln.Status) {
+			if vuln.Status != StatusReported {
 				optionalFindings.Audited += 1
 			}
 			optionalFindings.Total += 1
 		}
 	}
 	return auditAllFindings, optionalFindings
-}
-
-func isVulnerabilityResolved(status string) bool {
-	resolvedStatuses := map[string]bool{
-		StatusFixed:          true,
-		StatusNotAProblem:    true,
-		StatusRemediated:     true,
-		StatusAutoRemediated: true,
-	}
-	return resolvedStatuses[status]
 }
 
 func accumulateFindings(auditAllFindings, optionalFindings ContrastFindings, contrastFindings []ContrastFindings) {
