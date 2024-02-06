@@ -24,44 +24,88 @@ func TestCreateToolRecordContrast(t *testing.T) {
 
 	t.Run("Valid toolrun file", func(t *testing.T) {
 		appInfo := &ApplicationInfo{
-			Url:  "https://contrastsecurity.com",
+			Url:    "https://server.com/application",
+			Id:     "application-id",
+			Name:   "app name",
+			Server: "https://server.com",
+		}
+		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
+		assert.NoError(t, err)
+		assert.Equal(t, "contrast", toolRecord.ToolName)
+		assert.Equal(t, appInfo.Server, toolRecord.ToolInstance)
+		assert.Equal(t, appInfo.Name, toolRecord.DisplayName)
+		assert.Equal(t, appInfo.Url, toolRecord.DisplayURL)
+		assert.Equal(t, 1, len(toolRecord.Keys))
+		assert.Equal(t, "application", toolRecord.Keys[0].Name)
+		assert.Equal(t, appInfo.Url, toolRecord.Keys[0].URL)
+		assert.Equal(t, appInfo.Id, toolRecord.Keys[0].Value)
+		assert.Equal(t, appInfo.Name, toolRecord.Keys[0].DisplayName)
+	})
+
+	t.Run("Empty server", func(t *testing.T) {
+		appInfo := &ApplicationInfo{
+			Url:  "https://server.com/application",
 			Id:   "application-id",
 			Name: "app name",
 		}
 		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
 		assert.NoError(t, err)
 		assert.Equal(t, "contrast", toolRecord.ToolName)
-		assert.Equal(t, appInfo.Url, toolRecord.ToolInstance)
-	})
-
-	t.Run("Empty server", func(t *testing.T) {
-		appInfo := &ApplicationInfo{
-			Id:   "application-id",
-			Name: "app name",
-		}
-		_, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
-		assert.Error(t, err)
-		assert.ErrorContains(t, err, "Contrast server is not set")
-	})
-
-	t.Run("Empty organization id", func(t *testing.T) {
-		appInfo := &ApplicationInfo{
-			Url:  "https://contrastsecurity.com",
-			Id:   "application-id",
-			Name: "app name",
-		}
-		_, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
-		assert.Error(t, err)
-		assert.ErrorContains(t, err, "Organization Id is not set")
+		assert.Equal(t, "", toolRecord.ToolInstance)
+		assert.Equal(t, appInfo.Name, toolRecord.DisplayName)
+		assert.Equal(t, appInfo.Url, toolRecord.DisplayURL)
+		assert.Equal(t, 1, len(toolRecord.Keys))
+		assert.Equal(t, "application", toolRecord.Keys[0].Name)
+		assert.Equal(t, appInfo.Url, toolRecord.Keys[0].URL)
+		assert.Equal(t, appInfo.Id, toolRecord.Keys[0].Value)
+		assert.Equal(t, appInfo.Name, toolRecord.Keys[0].DisplayName)
 	})
 
 	t.Run("Empty application id", func(t *testing.T) {
 		appInfo := &ApplicationInfo{
-			Url:  "https://contrastsecurity.com",
-			Name: "app name",
+			Url:    "https://server.com/application",
+			Name:   "app name",
+			Server: "https://server.com",
 		}
 		_, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
 		assert.Error(t, err)
-		assert.ErrorContains(t, err, "Application Id is not set")
+	})
+
+	t.Run("Empty application name", func(t *testing.T) {
+		appInfo := &ApplicationInfo{
+			Url:    "https://contrastsecurity.com",
+			Id:     "application-id",
+			Server: "https://server.com",
+		}
+		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
+		assert.NoError(t, err)
+		assert.Equal(t, "contrast", toolRecord.ToolName)
+		assert.Equal(t, appInfo.Server, toolRecord.ToolInstance)
+		assert.Equal(t, "", toolRecord.DisplayName)
+		assert.Equal(t, appInfo.Url, toolRecord.DisplayURL)
+		assert.Equal(t, 1, len(toolRecord.Keys))
+		assert.Equal(t, "application", toolRecord.Keys[0].Name)
+		assert.Equal(t, appInfo.Url, toolRecord.Keys[0].URL)
+		assert.Equal(t, appInfo.Id, toolRecord.Keys[0].Value)
+		assert.Equal(t, "", toolRecord.Keys[0].DisplayName)
+	})
+
+	t.Run("Empty application url", func(t *testing.T) {
+		appInfo := &ApplicationInfo{
+			Name:   "app name",
+			Id:     "application-id",
+			Server: "https://server.com",
+		}
+		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
+		assert.NoError(t, err)
+		assert.Equal(t, "contrast", toolRecord.ToolName)
+		assert.Equal(t, appInfo.Server, toolRecord.ToolInstance)
+		assert.Equal(t, appInfo.Name, toolRecord.DisplayName)
+		assert.Equal(t, "", toolRecord.DisplayURL)
+		assert.Equal(t, 1, len(toolRecord.Keys))
+		assert.Equal(t, "application", toolRecord.Keys[0].Name)
+		assert.Equal(t, "", toolRecord.Keys[0].URL)
+		assert.Equal(t, appInfo.Id, toolRecord.Keys[0].Value)
+		assert.Equal(t, appInfo.Name, toolRecord.Keys[0].DisplayName)
 	})
 }
