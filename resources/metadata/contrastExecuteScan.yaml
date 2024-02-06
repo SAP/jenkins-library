@@ -11,6 +11,11 @@ spec:
       - name: serviceKeyCredentialsId
         description: "Jenkins 'Secret text' credentials ID containing service key to communicate with the Contrast server."
         type: jenkins
+    resources:
+      - name: buildDescriptor
+        type: stash
+      - name: tests
+        type: stash
     params:
       - name: userApiKey
         description: "User API Key for authorizing access to Contrast."

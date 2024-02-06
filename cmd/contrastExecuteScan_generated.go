@@ -153,6 +153,10 @@ func contrastExecuteScanMetadata() config.StepData {
 					{Name: "userCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and user API Key to communicate with the Contrast server.", Type: "jenkins"},
 					{Name: "serviceKeyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key to communicate with the Contrast server.", Type: "jenkins"},
 				},
+				Resources: []config.StepResources{
+					{Name: "buildDescriptor", Type: "stash"},
+					{Name: "tests", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "userApiKey",
