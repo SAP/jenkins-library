@@ -246,7 +246,6 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		}
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
 		contextFilters = append(contextFilters, parameterKeysForSideCar...)
-		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 
 	contextFilters = addVaultContextParametersFilter(m, contextFilters)
