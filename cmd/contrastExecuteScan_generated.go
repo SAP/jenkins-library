@@ -26,7 +26,7 @@ type contrastExecuteScanOptions struct {
 	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
 }
 
-// ContrastExecuteScanCommand This step executes a contrast scan on the specified project.
+// ContrastExecuteScanCommand
 func ContrastExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "contrastExecuteScan"
 
@@ -39,8 +39,8 @@ func ContrastExecuteScanCommand() *cobra.Command {
 
 	var createContrastExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This step executes a contrast scan on the specified project.",
-		Long:  `This step executes a contrast scan on the specified project.`,
+		Short: "",
+		Long:  `This step evaluates if the audit requirements for Contrast Assess have been fulfilled after the execution of security tests by Contrast Assess. For further information on the tool, please consult the [documentation](https://github.wdf.sap.corp/pages/Security-Testing/doc/contrast/introduction/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -128,14 +128,14 @@ func ContrastExecuteScanCommand() *cobra.Command {
 }
 
 func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.UserAPIKey, "userApiKey", os.Getenv("PIPER_userApiKey"), "User API Key for Contrast in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `userApiKeyCredentialsId` parameter.")
-	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service Key for Contrast in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `serviceKeyCredentialsId` parameter.")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for Contrast in plain text.")
+	cmd.Flags().StringVar(&stepConfig.UserAPIKey, "userApiKey", os.Getenv("PIPER_userApiKey"), "User API Key for authorizing access to Contrast.")
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service Key for authorization access to Contrast.")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Username or email to use for authorization access to Contrast.")
 	cmd.Flags().StringVar(&stepConfig.Server, "server", os.Getenv("PIPER_server"), "Contrast server url.")
 	cmd.Flags().StringVar(&stepConfig.OrganizationID, "organizationId", os.Getenv("PIPER_organizationId"), "Organization Id in Contrast.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationID, "applicationId", os.Getenv("PIPER_applicationId"), "Application Id in Contrast.")
-	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threashold for maximum number of allowed vulnerabilities.")
-	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
+	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threshold for maximum number of allowed vulnerabilities.")
+	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 
 }
 
@@ -145,13 +145,13 @@ func contrastExecuteScanMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "contrastExecuteScan",
 			Aliases:     []config.Alias{},
-			Description: "This step executes a contrast scan on the specified project.",
+			Description: "",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "userCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user api key for Contrast.", Type: "jenkins"},
-					{Name: "serviceKeyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for Contrast.", Type: "jenkins"},
+					{Name: "userCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and user API Key to communicate with the Contrast server.", Type: "jenkins"},
+					{Name: "serviceKeyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key to communicate with the Contrast server.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
