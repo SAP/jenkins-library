@@ -20,6 +20,7 @@ spec:
       - name: userApiKey
         description: "User API Key for authorizing access to Contrast."
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -35,6 +36,7 @@ spec:
       - name: serviceKey
         description: "Service Key for authorization access to Contrast."
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -51,6 +53,7 @@ spec:
       - name: username
         description: "Username or email to use for authorization access to Contrast."
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -100,3 +103,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+  containers:
+    - image: ""
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/toolrun_contrast_*.json"
+            type: contrast
+          - filePattern: "**/piper_contrast_report.json"
+            type: contrast
