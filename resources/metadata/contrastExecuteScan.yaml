@@ -1,5 +1,6 @@
 metadata:
   name: contrastExecuteScan
+  description: This step evaluates if the audit requirements for Contrast Assess have been fulfilled.
   longDescription: |-
     This step evaluates if the audit requirements for Contrast Assess have been fulfilled after the execution of security tests by Contrast Assess. For further information on the tool, please consult the [documentation](https://github.wdf.sap.corp/pages/Security-Testing/doc/contrast/introduction/).
 spec:
@@ -32,7 +33,7 @@ spec:
             param: userApiKey
           - type: vaultSecret
             default: contrast
-            name: userApiKey
+            name: contrastVaultSecretName
       - name: serviceKey
         description: "Service Key for authorization access to Contrast."
         scope:
@@ -49,7 +50,7 @@ spec:
             type: secret
           - type: vaultSecret
             default: contrast
-            name: serviceKey
+            name: contrastVaultSecretName
       - name: username
         description: "Username or email to use for authorization access to Contrast."
         scope:
@@ -65,7 +66,7 @@ spec:
             param: username
           - type: vaultSecret
             default: contrast
-            name: username
+            name: contrastVaultSecretName
       - name: server
         type: string
         description: "Contrast server url."

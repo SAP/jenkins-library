@@ -67,7 +67,7 @@ func (p *contrastExecuteScanReports) persist(stepConfig contrastExecuteScanOptio
 	}
 }
 
-// ContrastExecuteScanCommand
+// ContrastExecuteScanCommand This step evaluates if the audit requirements for Contrast Assess have been fulfilled.
 func ContrastExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "contrastExecuteScan"
 
@@ -81,7 +81,7 @@ func ContrastExecuteScanCommand() *cobra.Command {
 
 	var createContrastExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "",
+		Short: "This step evaluates if the audit requirements for Contrast Assess have been fulfilled.",
 		Long:  `This step evaluates if the audit requirements for Contrast Assess have been fulfilled after the execution of security tests by Contrast Assess. For further information on the tool, please consult the [documentation](https://github.wdf.sap.corp/pages/Security-Testing/doc/contrast/introduction/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -188,7 +188,7 @@ func contrastExecuteScanMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "contrastExecuteScan",
 			Aliases:     []config.Alias{},
-			Description: "",
+			Description: "This step evaluates if the audit requirements for Contrast Assess have been fulfilled.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -211,7 +211,7 @@ func contrastExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:    "userApiKey",
+								Name:    "contrastVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "contrast",
 							},
@@ -231,7 +231,7 @@ func contrastExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:    "serviceKey",
+								Name:    "contrastVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "contrast",
 							},
@@ -252,7 +252,7 @@ func contrastExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:    "username",
+								Name:    "contrastVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "contrast",
 							},
