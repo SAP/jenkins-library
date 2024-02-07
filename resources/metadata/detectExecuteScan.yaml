@@ -584,14 +584,14 @@ spec:
           value: "0"
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
-          name: imageinspector-shared
+          name: volume
   sidecars:
     - name: inspector-ubuntu
       image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
-          name: imageinspector-shared
+          name: volume
       conditions:
         - conditionRef: strings-equal
           params:
@@ -602,7 +602,7 @@ spec:
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
-          name: imageinspector-shared
+          name: volume
       conditions:
         - conditionRef: strings-equal
           params:
@@ -613,7 +613,7 @@ spec:
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
-          name: imageinspector-shared
+          name: volume
       conditions:
         - conditionRef: strings-equal
           params:
