@@ -16,6 +16,7 @@ import (
 )
 
 type imagePushToRegistryOptions struct {
+	StageBOM               map[string]interface{} `json:"StageBOM,omitempty"`
 	TargetImages           map[string]interface{} `json:"targetImages,omitempty"`
 	SourceImages           []string               `json:"sourceImages,omitempty" validate:"required_if=PushLocalDockerImage false"`
 	SourceImageTag         string                 `json:"sourceImageTag,omitempty" validate:"required_if=PushLocalDockerImage false"`
@@ -176,6 +177,19 @@ func imagePushToRegistryMetadata() config.StepData {
 					{Name: "source", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name: "StageBOM",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/stageBOM",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "map[string]interface{}",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
 					{
 						Name:        "targetImages",
 						ResourceRef: []config.ResourceReference{},

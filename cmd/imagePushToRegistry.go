@@ -68,6 +68,9 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 	// It can also be used for example as a mavenExecRunner.
 	utils := newImagePushToRegistryUtils()
 
+	// this check is for xmake step to replace needed configs
+	// if config.StageBOM {}
+
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go

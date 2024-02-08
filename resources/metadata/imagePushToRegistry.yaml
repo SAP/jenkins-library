@@ -14,6 +14,17 @@ spec:
       - name: source
         type: stash
     params:
+      - name: StageBOM
+        type: "map[string]interface{}"
+        description: |
+          Used only for xmake step as it, not like other steps, writes needed CPE values to custom/stageBOM
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/stageBOM
       - name: targetImages
         type: "map[string]interface{}"
         description: |
