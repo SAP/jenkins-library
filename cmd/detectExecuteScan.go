@@ -219,7 +219,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 
 	err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
 
-	if config.ScanImages {
+	if config.ScanContainerDistro != "" {
 		err = mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
 	}
 
@@ -554,11 +554,11 @@ func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils d
 	args = append(args, "--detect.tools.excluded=DETECTOR")
 	args = append(args, "--detect.docker.passthrough.shared.dir.path.local=/opt/blackduck/blackduck-imageinspector/shared/")
 	args = append(args, "--detect.docker.passthrough.shared.dir.path.imageinspector=/opt/blackduck/blackduck-imageinspector/shared")
-	args = append(args, fmt.Sprintf("--detect.docker.passthrough.imageinspector.service.distro.default=%s", config.ContainerDistro))
+	args = append(args, fmt.Sprintf("--detect.docker.passthrough.imageinspector.service.distro.default=%s", config.ScanContainerDistro))
 	args = append(args, "--detect.docker.passthrough.imageinspector.service.start=false")
 	args = append(args, "--detect.docker.passthrough.output.include.squashedimage=false")
 
-	switch config.ContainerDistro {
+	switch config.ScanContainerDistro {
 	case "ubuntu":
 		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8082")
 	case "centos":
@@ -566,7 +566,7 @@ func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils d
 	case "alpine":
 		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8080")
 	default:
-		return nil, fmt.Errorf("unknown container distro %q", config.ContainerDistro)
+		return nil, fmt.Errorf("unknown container distro %q", config.ScanContainerDistro)
 	}
 
 	return args, nil

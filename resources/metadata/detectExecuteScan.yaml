@@ -511,22 +511,13 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
-      - name: scanImages
-        description: If images found in the cpe, they will also be scanned
-        type: "bool"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: false
-      - name: containerDistro
-        description: Distro of the container that is scanned
+      - name: scanContainerDistro
+        description: To also scan your images in the CPE, choose the distro
         type: "string"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "ubuntu"
         possibleValues:
           - ubuntu
           - centos
@@ -595,7 +586,7 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: containerDistro
+            - name: scanContainerDistro
               value: ubuntu
     - name: inspector-alpine
       image: blackducksoftware/blackduck-imageinspector-alpine:5.1.0
@@ -606,7 +597,7 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: containerDistro
+            - name: scanContainerDistro
               value: alpine
     - name: inspector-centos
       image: blackducksoftware/blackduck-imageinspector-centos:5.1.0
@@ -617,5 +608,5 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: containerDistro
+            - name: scanContainerDistro
               value: centos
