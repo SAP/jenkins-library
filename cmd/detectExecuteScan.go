@@ -268,27 +268,18 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 		return nil
 	}
 
-	images := []string{}
-	err := json.Unmarshal([]byte(imagesRaw), &images)
-	if err != nil {
-		return errors.Wrap(err, "Unable to read cpe")
-	}
-
-	registryUser := piperenv.GetResourceParameter(cpePath, "container", "repositoryUsername")
-	registryPassword := piperenv.GetResourceParameter(cpePath, "container", "repositoryPassword")
-	registryURL := piperenv.GetResourceParameter(cpePath, "container", "registryUrl")
-
-	log.Entry().Infof("Scanning %d images", len(images))
-	for _, image := range images {
+	var err error
+	log.Entry().Infof("Scanning %d images", len(config.ImageNameTags))
+	for _, image := range config.ImageNameTags {
 		// Download image to be scanned
 		log.Entry().Debugf("Scanning image: %q", image)
 		tarName := fmt.Sprintf("%s.tar", strings.Split(image, ":")[0])
 
 		options := containerSaveImageOptions{
-			ContainerRegistryURL:      registryURL,
+			ContainerRegistryURL:      config.RegistryURL,
 			ContainerImage:            image,
-			ContainerRegistryPassword: registryPassword,
-			ContainerRegistryUser:     registryUser,
+			ContainerRegistryPassword: config.RepositoryPassword,
+			ContainerRegistryUser:     config.RepositoryUsername,
 			FilePath:                  tarName,
 			ImageFormat:               "legacy",
 		}
