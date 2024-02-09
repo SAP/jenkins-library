@@ -511,6 +511,74 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: scanImages
+        description: If images found in the cpe, they will also be scanned
+        type: "bool"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: containerDistro
+        description: Distro of the container that is scanned
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - ubuntu
+          - centos
+          - alpine
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: containerRegistryPassword
+        description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: containerRegistryUser
+        description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: imageNameTags
+        description: "For `buildTool: docker`: image name and tags of the image to be scanned."
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
   outputs:
     resources:
       - name: influx
@@ -562,3 +630,40 @@ spec:
       options:
         - name: -u
           value: "0"
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+  sidecars:
+    - image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
+      name: inspector-ubuntu
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: containerDistro
+              value: ubuntu
+    - image: blackducksoftware/blackduck-imageinspector-alpine:5.1.0
+      name: inspector-alpine 
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: containerDistro
+              value: alpine
+    - image: blackducksoftware/blackduck-imageinspector-centos:5.1.0
+      name: inspector-centos
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: containerDistro
+              value: centos

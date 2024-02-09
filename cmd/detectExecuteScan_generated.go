@@ -64,6 +64,12 @@ type detectExecuteScanOptions struct {
 	NpmArguments                []string `json:"npmArguments,omitempty"`
 	PrivateModules              string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken      string   `json:"privateModulesGitToken,omitempty"`
+	ScanImages                  bool     `json:"scanImages,omitempty"`
+	ContainerDistro             string   `json:"containerDistro,omitempty" validate:"possible-values=ubuntu centos alpine"`
+	ContainerRegistryURL        string   `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryPassword   string   `json:"containerRegistryPassword,omitempty"`
+	ContainerRegistryUser       string   `json:"containerRegistryUser,omitempty"`
+	ImageNameTags               []string `json:"imageNameTags,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -198,6 +204,8 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			log.RegisterSecret(stepConfig.Token)
 			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.PrivateModulesGitToken)
+			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
+			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -310,6 +318,12 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.NpmArguments, "npmArguments", []string{}, "List of additional arguments that Detect will add at then end of the npm ls command line when Detect executes the NPM CLI Detector on an NPM project.")
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
+	cmd.Flags().BoolVar(&stepConfig.ScanImages, "scanImages", false, "If images found in the cpe, they will also be scanned")
+	cmd.Flags().StringVar(&stepConfig.ContainerDistro, "containerDistro", os.Getenv("PIPER_containerDistro"), "Distro of the container that is scanned")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment.")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "For `buildTool: docker`: image name and tags of the image to be scanned.")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -773,10 +787,99 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_privateModulesGitToken"),
 					},
+					{
+						Name:        "scanImages",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "containerDistro",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerDistro"),
+					},
+					{
+						Name: "containerRegistryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
+					},
+					{
+						Name: "containerRegistryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryPassword",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_containerRegistryPassword"),
+					},
+					{
+						Name: "containerRegistryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUsername",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_containerRegistryUser"),
+					},
+					{
+						Name: "imageNameTags",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
 				},
 			},
 			Containers: []config.Container{
 				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+			},
+			Sidecars: []config.Container{
+				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "ubuntu"}}}}},
+				{Name: "inspector-alpine", Image: "blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "alpine"}}}}},
+				{Name: "inspector-centos", Image: "blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "containerDistro", Value: "centos"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
