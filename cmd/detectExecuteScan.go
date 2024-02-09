@@ -218,9 +218,15 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	utils.SetEnv(envs)
 
 	err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
-
 	if config.ScanContainerDistro != "" {
-		err = mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
+		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
+		if imageError != nil {
+			if err != nil {
+				err = errors.Wrapf(err, "error during scanning images: %q", imageError.Error())
+			} else {
+				err = imageError
+			}
+		}
 	}
 
 	reportingErr := postScanChecksAndReporting(ctx, config, influx, utils, blackduckSystem)
