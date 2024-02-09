@@ -171,12 +171,12 @@ func ContrastExecuteScanCommand() *cobra.Command {
 }
 
 func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.UserAPIKey, "userApiKey", os.Getenv("PIPER_userApiKey"), "User API Key for authorizing access to Contrast.")
-	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service Key for authorization access to Contrast.")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Username or email to use for authorization access to Contrast.")
-	cmd.Flags().StringVar(&stepConfig.Server, "server", os.Getenv("PIPER_server"), "Contrast server url.")
-	cmd.Flags().StringVar(&stepConfig.OrganizationID, "organizationId", os.Getenv("PIPER_organizationId"), "Organization Id in Contrast.")
-	cmd.Flags().StringVar(&stepConfig.ApplicationID, "applicationId", os.Getenv("PIPER_applicationId"), "Application Id in Contrast.")
+	cmd.Flags().StringVar(&stepConfig.UserAPIKey, "userApiKey", os.Getenv("PIPER_userApiKey"), "User API key for authorization access to Contrast Assess. Could not be rotated")
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "User Service Key for authorization access to Contrast Assess. Can be rotated")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Email to use for authorization access to Contrast Assess.")
+	cmd.Flags().StringVar(&stepConfig.Server, "server", os.Getenv("PIPER_server"), "The URL of the Contrast Assess Team server.")
+	cmd.Flags().StringVar(&stepConfig.OrganizationID, "organizationId", os.Getenv("PIPER_organizationId"), "Organization UUID. Could be found in many places, f.e it's the first UUID in most navigation URLs.")
+	cmd.Flags().StringVar(&stepConfig.ApplicationID, "applicationId", os.Getenv("PIPER_applicationId"), "Application UUID. Could be found in URL when you open the application view")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threshold for maximum number of allowed vulnerabilities.")
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 

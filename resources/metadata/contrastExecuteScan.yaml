@@ -19,7 +19,7 @@ spec:
         type: stash
     params:
       - name: userApiKey
-        description: "User API Key for authorizing access to Contrast."
+        description: "User API key for authorization access to Contrast Assess. Could not be rotated"
         scope:
           - GENERAL
           - PARAMETERS
@@ -35,7 +35,7 @@ spec:
             default: contrast
             name: contrastVaultSecretName
       - name: serviceKey
-        description: "Service Key for authorization access to Contrast."
+        description: "User Service Key for authorization access to Contrast Assess. Can be rotated"
         scope:
           - GENERAL
           - PARAMETERS
@@ -52,7 +52,7 @@ spec:
             default: contrast
             name: contrastVaultSecretName
       - name: username
-        description: "Username or email to use for authorization access to Contrast."
+        description: "Email to use for authorization access to Contrast Assess."
         scope:
           - GENERAL
           - PARAMETERS
@@ -69,21 +69,21 @@ spec:
             name: contrastVaultSecretName
       - name: server
         type: string
-        description: "Contrast server url."
+        description: "The URL of the Contrast Assess Team server."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: organizationId
         type: string
-        description: "Organization Id in Contrast."
+        description: "Organization UUID. Could be found in many places, f.e it's the first UUID in most navigation URLs."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: applicationId
         type: string
-        description: "Application Id in Contrast."
+        description: "Application UUID. Could be found in URL when you open the application view"
         scope:
           - PARAMETERS
           - STAGES
