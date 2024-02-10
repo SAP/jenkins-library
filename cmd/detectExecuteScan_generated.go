@@ -182,7 +182,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Executes Synopsys Detect scan",
 		Long: `This step executes [Synopsys Detect](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus) scans.
-Synopsys Detect command line utlity can be used to run various scans including BlackDuck and Polaris scans. This step allows users to run BlackDuck scans by default.
+Synopsys Detect command-line utlity can be used to run various scans including BlackDuck and Polaris scans. This step allows users to run BlackDuck scans by default.
 Please configure your BlackDuck server Url using the serverUrl parameter and the API token of your user using the apiToken parameter for this step.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
