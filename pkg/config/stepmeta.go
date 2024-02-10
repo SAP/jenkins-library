@@ -235,19 +235,21 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		contextFilters = append(contextFilters, parameterKeys...)
 	}
 	if len(m.Spec.Sidecars) > 0 {
+		log.Entry().Debugf("vij sidecar is there: %v", len(m.Spec.Sidecars))
 		parameterKeysForSideCar := []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}
 		for _, sidecar := range m.Spec.Sidecars {
 			for _, condition := range sidecar.Conditions {
 				for _, dependentParam := range condition.Params {
 					parameterKeysForSideCar = append(parameterKeysForSideCar, dependentParam.Value)
 					parameterKeysForSideCar = append(parameterKeysForSideCar, dependentParam.Name)
+					log.Entry().Debugf("vij parameterKeysForSideCar: %v", parameterKeysForSideCar)
 				}
 			}
 		}
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
 		contextFilters = append(contextFilters, parameterKeysForSideCar...)
 	}
-
+	log.Entry().Debugf("vij contextFilters: %v", contextFilters)
 	contextFilters = addVaultContextParametersFilter(m, contextFilters)
 
 	if len(contextFilters) > 0 {
