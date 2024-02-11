@@ -2,8 +2,6 @@ module github.com/SAP/jenkins-library
 
 go 1.21
 
-toolchain go1.21.6
-
 // It is a locked dependency of github.com/buildpacks/lifecycle@v0.18.4. The maintainers may remove the lock
 // in future releases. Check if 'replace' statement still there in their go.mod file. Remove line below if not.
 replace github.com/moby/buildkit => github.com/moby/buildkit v0.11.6
