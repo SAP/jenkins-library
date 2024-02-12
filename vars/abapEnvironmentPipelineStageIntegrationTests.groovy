@@ -31,10 +31,10 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
-        .addIfEmpty('confirmDeletion', false)
+        .addIfEmpty('confirmDeletion', true)
         .addIfEmpty('debug', false)
         .addIfEmpty('testBuild', false)
-        .addIfEmpty('integrationTestOption', 'addOnDeployment')
+        .addIfEmpty('integrationTestOption', 'systemProvisioning')
         .use()
 
     if (config.testBuild) {

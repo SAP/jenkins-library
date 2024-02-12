@@ -23,8 +23,8 @@ const (
 	StatusInProgress = "I"
 	StatusScheduled  = "S"
 	StatusAborted    = "X"
-	maxRuntimeInMinutes = time.Duration(30)*time.Minute
-	pollIntervalInSeconds = time.Duration(3)*time.Second
+	maxRuntimeInMinute = time.Duration(120)*time.Minute
+	pollIntervalInSecond = time.Duration(30)*time.Second
 )
 
 type uaa struct {
@@ -76,13 +76,13 @@ func abapLandscapePortalUpdateAddOnProduct(config abapLandscapePortalUpdateAddOn
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runAbapLandscapePortalUpdateAddOnProduct(&config, client)
+	err := runAbapLandscapePortalUpdateAddOnProduct(&config, client, maxRuntimeInMinute, pollIntervalInSecond)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client) error {
+func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateAddOnProductOptions, client http.Client, maxRuntimeInMinute time.Duration, pollIntervalInSecond time.Duration) error {
 	var systemId, reqId, reqStatus string
 	var clientAT http.Client
 	var servKey serviceKey
@@ -130,7 +130,7 @@ func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateA
 	// }
 
 	// keep polling request status until it reaches a final status or timeout
-	if waitToBeFinishedErr := waitToBeFinished(maxRuntimeInMinutes, pollIntervalInSeconds, client, &getStatusReq, reqId, &reqStatus); waitToBeFinishedErr != nil {
+	if waitToBeFinishedErr := waitToBeFinished(maxRuntimeInMinute, pollIntervalInSecond, client, &getStatusReq, reqId, &reqStatus); waitToBeFinishedErr != nil {
 		err = fmt.Errorf("Error occurred before a final status can be reached. Error: %v\n", waitToBeFinishedErr)
 		return err;
 	}
@@ -464,22 +464,21 @@ func parseRespBody[T comparable](resp *http.Response, respBody *T) error {
 }
 
 // this function is used to wait for a final status/timeout
-func waitToBeFinished(maxRuntimeInMinutes time.Duration, pollIntervalInSeconds time.Duration, client http.Client, getStatusReq *http.Request, reqId string, reqStatus *string) error {
-	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalInSeconds)
+func waitToBeFinished(maxRuntimeInMinute time.Duration, pollIntervalInSecond time.Duration, client http.Client, getStatusReq *http.Request, reqId string, reqStatus *string) error {
+	timeout := time.After(maxRuntimeInMinute)
+	ticker := time.Tick(pollIntervalInSecond)
 	reqFinalStatus := []string{StatusComplete, StatusError, StatusAborted}
 	for {
 		select {
 			case <-timeout:
-				return fmt.Errorf("Timed out: max Runtime %v min reached.", maxRuntimeInMinutes)
+				return fmt.Errorf("Timed out: max runtime %v reached.", maxRuntimeInMinute)
 			case <-ticker:
+				if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, getStatusReq, reqId, reqStatus); pollStatusOfUpdateAddOnErr != nil {
+					err := fmt.Errorf("Error happened when waiting for the addon update request %v to reach a final status. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
+					return err
+				}
 				if !slices.Contains(reqFinalStatus, *reqStatus) {
-					if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, getStatusReq, reqId, reqStatus); pollStatusOfUpdateAddOnErr != nil {
-						err := fmt.Errorf("Error happened when waiting for the addon update request %v to reach a final status. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
-						return err
-					}
-
-					fmt.Printf("Addon update request %v is still in progress.", reqId)
+					fmt.Printf("Addon update request %v is still in progress, will poll the status in %v.\n", reqId, pollIntervalInSecond)
 				} else {
 					return nil
 				}
