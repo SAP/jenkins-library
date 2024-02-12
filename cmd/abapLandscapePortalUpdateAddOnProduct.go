@@ -18,13 +18,13 @@ import (
 )
 
 const (
-	StatusComplete   = "C"
-	StatusError      = "E"
-	StatusInProgress = "I"
-	StatusScheduled  = "S"
-	StatusAborted    = "X"
-	maxRuntimeInMinute = time.Duration(120)*time.Minute
-	pollIntervalInSecond = time.Duration(30)*time.Second
+	StatusComplete       = "C"
+	StatusError          = "E"
+	StatusInProgress     = "I"
+	StatusScheduled      = "S"
+	StatusAborted        = "X"
+	maxRuntimeInMinute   = time.Duration(120) * time.Minute
+	pollIntervalInSecond = time.Duration(30) * time.Second
 )
 
 type uaa struct {
@@ -132,7 +132,7 @@ func runAbapLandscapePortalUpdateAddOnProduct(config *abapLandscapePortalUpdateA
 	// keep polling request status until it reaches a final status or timeout
 	if waitToBeFinishedErr := waitToBeFinished(maxRuntimeInMinute, pollIntervalInSecond, client, &getStatusReq, reqId, &reqStatus); waitToBeFinishedErr != nil {
 		err = fmt.Errorf("Error occurred before a final status can be reached. Error: %v\n", waitToBeFinishedErr)
-		return err;
+		return err
 	}
 
 	// respond to the final status of addon update
@@ -470,18 +470,18 @@ func waitToBeFinished(maxRuntimeInMinute time.Duration, pollIntervalInSecond tim
 	reqFinalStatus := []string{StatusComplete, StatusError, StatusAborted}
 	for {
 		select {
-			case <-timeout:
-				return fmt.Errorf("Timed out: max runtime %v reached.", maxRuntimeInMinute)
-			case <-ticker:
-				if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, getStatusReq, reqId, reqStatus); pollStatusOfUpdateAddOnErr != nil {
-					err := fmt.Errorf("Error happened when waiting for the addon update request %v to reach a final status. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
-					return err
-				}
-				if !slices.Contains(reqFinalStatus, *reqStatus) {
-					fmt.Printf("Addon update request %v is still in progress, will poll the status in %v.\n", reqId, pollIntervalInSecond)
-				} else {
-					return nil
-				}
+		case <-timeout:
+			return fmt.Errorf("Timed out: max runtime %v reached.", maxRuntimeInMinute)
+		case <-ticker:
+			if pollStatusOfUpdateAddOnErr := pollStatusOfUpdateAddOn(client, getStatusReq, reqId, reqStatus); pollStatusOfUpdateAddOnErr != nil {
+				err := fmt.Errorf("Error happened when waiting for the addon update request %v to reach a final status. Error: %v\n", reqId, pollStatusOfUpdateAddOnErr)
+				return err
+			}
+			if !slices.Contains(reqFinalStatus, *reqStatus) {
+				fmt.Printf("Addon update request %v is still in progress, will poll the status in %v.\n", reqId, pollIntervalInSecond)
+			} else {
+				return nil
+			}
 		}
 	}
 }
