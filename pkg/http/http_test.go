@@ -77,7 +77,7 @@ func TestSend(t *testing.T) {
 
 		// then
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "no such host")
+		assert.Contains(t, err.Error(), "lookup proxy.dummy.sap.com: no such host")
 		assert.Nil(t, response)
 	})
 }

@@ -52,19 +52,16 @@ func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	return &utils
 }
 
-func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, influx *codeqlExecuteScanInflux) {
+func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData) {
 
 	utils := newCodeqlExecuteScanUtils()
 
-	influx.step_data.fields.codeql = false
-
-	reports, err := runCodeqlExecuteScan(&config, telemetryData, utils, influx)
+	reports, err := runCodeqlExecuteScan(&config, telemetryData, utils)
 	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Codeql scan failed")
 	}
-	influx.step_data.fields.codeql = true
 }
 
 func codeqlQuery(cmd []string, codeqlQuery string) []string {
@@ -153,7 +150,6 @@ func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
 		}
 	}
 	if len(config.TargetGithubRepoURL) > 0 {
-		log.Entry().Infof("Checking target GitHub repo URL: %s", config.TargetGithubRepoURL)
 		if strings.Contains(repoInfo.ServerUrl, "github") {
 			log.Entry().Errorf("TargetGithubRepoURL should not be set as the source repo is on github.")
 			return repoInfo, errors.New("TargetGithubRepoURL should not be set as the source repo is on github.")
@@ -164,7 +160,6 @@ func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
 			return repoInfo, err
 		}
 		if len(config.TargetGithubBranchName) > 0 {
-			log.Entry().Infof("Target GitHub branch name: %s", config.TargetGithubBranchName)
 			repoInfo.Ref = config.TargetGithubBranchName
 			if len(strings.Split(config.TargetGithubBranchName, "/")) < 3 {
 				repoInfo.Ref = "refs/heads/" + config.TargetGithubBranchName
@@ -266,7 +261,7 @@ func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader cod
 	}
 }
 
-func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils, influx *codeqlExecuteScanInflux) ([]piperutils.Path, error) {
+func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
 	codeqlVersion, err := os.ReadFile("/etc/image-version")
 	if err != nil {
 		log.Entry().Infof("CodeQL image version: unknown")
@@ -344,7 +339,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
 
 	if len(config.TargetGithubRepoURL) > 0 {
-		log.Entry().Infof("DB sources for %s will be uploaded to target GitHub repo: %s", config.Repository, repoUrl)
 		hasToken, token := getToken(config)
 		if !hasToken {
 			return reports, errors.New("failed running upload db sources to GitHub as githubToken was not specified")
@@ -365,15 +359,11 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
 		}
 		repoInfo.CommitId = targetCommitId
-		log.Entry().Info("DB sources were successfully uploaded to target GitHub repo")
 	}
-
-	var scanResults []codeql.CodeqlFindings
 
 	if !config.UploadResults {
 		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
 	} else {
-		log.Entry().Infof("The sarif results will be uploaded to the repository %s", repoUrl)
 		hasToken, token := getToken(config)
 		if !hasToken {
 			return reports, errors.New("failed running upload-results as githubToken was not specified")
@@ -390,7 +380,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 
 		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo, token, []string{})
-		scanResults, err = codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
+		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
@@ -404,18 +394,14 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 		if config.CheckForCompliance {
 			for _, scanResult := range scanResults {
-				if scanResult.ClassificationName == codeql.AuditAll {
-					unaudited := scanResult.Total - scanResult.Audited
-					if unaudited > config.VulnerabilityThresholdTotal {
-						msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
-						return reports, errors.Errorf(msg)
-					}
+				unaudited := scanResult.Total - scanResult.Audited
+				if unaudited > config.VulnerabilityThresholdTotal {
+					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
+					return reports, errors.Errorf(msg)
 				}
 			}
 		}
 	}
-
-	addDataToInfluxDB(repoUrl, repoReference, repoCodeqlScanUrl, config.QuerySuite, scanResults, influx)
 
 	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, config.ModulePath)
 	if err != nil {
@@ -425,24 +411,6 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	return reports, nil
-}
-
-func addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) {
-	influx.codeql_data.fields.repositoryURL = repoUrl
-	influx.codeql_data.fields.repositoryReferenceURL = repoRef
-	influx.codeql_data.fields.codeScanningLink = repoScanUrl
-	influx.codeql_data.fields.querySuite = querySuite
-
-	for _, sr := range scanResults {
-		if sr.ClassificationName == codeql.AuditAll {
-			influx.codeql_data.fields.auditAllAudited = sr.Audited
-			influx.codeql_data.fields.auditAllTotal = sr.Total
-		}
-		if sr.ClassificationName == codeql.Optional {
-			influx.codeql_data.fields.optionalAudited = sr.Audited
-			influx.codeql_data.fields.optionalTotal = sr.Total
-		}
-	}
 }
 
 func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {

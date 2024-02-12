@@ -168,6 +168,14 @@ void call(Map parameters = [:], body) {
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
 
+        utils.pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null,
+            stepParamKey2: 'kubernetes',
+            stepParam2: isKubernetes()
+        ], config)
+
         if (isKubernetes() && config.dockerImage) {
             List dockerEnvVars = []
             config.dockerEnvVars?.each { key, value ->

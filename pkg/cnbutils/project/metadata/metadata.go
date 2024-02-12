@@ -9,12 +9,12 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/buildpacks/lifecycle/platform/files"
+	"github.com/buildpacks/lifecycle/platform"
 )
 
 var metadataFilePath = "/layers/project-metadata.toml"
 
-func writeProjectMetadata(metadata files.ProjectMetadata, path string, utils cnbutils.BuildUtils) error {
+func writeProjectMetadata(metadata platform.ProjectMetadata, path string, utils cnbutils.BuildUtils) error {
 	var buf bytes.Buffer
 
 	err := toml.NewEncoder(&buf).Encode(metadata)
@@ -30,10 +30,10 @@ func writeProjectMetadata(metadata files.ProjectMetadata, path string, utils cnb
 	return nil
 }
 
-func extractMetadataFromCPE(piperEnvRoot string, utils cnbutils.BuildUtils) files.ProjectMetadata {
+func extractMetadataFromCPE(piperEnvRoot string, utils cnbutils.BuildUtils) platform.ProjectMetadata {
 	cpePath := filepath.Join(piperEnvRoot, "commonPipelineEnvironment")
-	return files.ProjectMetadata{
-		Source: &files.ProjectSource{
+	return platform.ProjectMetadata{
+		Source: &platform.ProjectSource{
 			Type: "git",
 			Version: map[string]interface{}{
 				"commit":   piperenv.GetResourceParameter(cpePath, "git", "headCommitId"),

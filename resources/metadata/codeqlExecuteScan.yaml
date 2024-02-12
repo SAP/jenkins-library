@@ -122,14 +122,14 @@ spec:
         default: 30
       - name: targetGithubRepoURL
         type: string
-        description: "Target github repo url. Only relevant, if project uses a combination of Piper and non-GitHub SCM."
+        descriptoin: "Target github repo url. Only relevant, if project uses a combination of Piper and non-GitHub SCM."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: targetGithubBranchName
         type: string
-        description: "Target github branch name. Only relevant, if project uses a combination of Piper and non-GitHub SCM."
+        descriptoin: "Target github branch name. Only relevant, if project uses a combination of Piper and non-GitHub SCM."
         scope:
           - PARAMETERS
           - STAGES
@@ -149,7 +149,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "4000"
       - name: analyzedRef
         type: string
         description: "Name of the ref that was analyzed."
@@ -213,27 +212,6 @@ spec:
     - image: ""
   outputs:
     resources:
-      - name: influx
-        type: influx
-        params:
-          - name: step_data
-            fields:
-              - name: codeql
-                type: bool
-          - name: codeql_data
-            fields:
-              - name: repositoryUrl
-              - name: repositoryReferenceUrl
-              - name: codeScanningLink
-              - name: querySuite
-              - name: optionalTotal
-                type: int
-              - name: optionalAudited
-                type: int
-              - name: auditAllTotal
-                type: int
-              - name: auditAllAudited
-                type: int
       - name: reports
         type: reports
         params:

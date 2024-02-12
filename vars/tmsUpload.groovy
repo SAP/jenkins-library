@@ -111,6 +111,13 @@ void call(Map parameters = [:]) {
         echo "[TransportManagementService] Using deprecated Groovy implementation of '${STEP_NAME}' step instead of the default Golang one, since 'useGoStep' toggle parameter is explicitly set to 'false'."
         echo "[TransportManagementService] WARNING: Note that the deprecated Groovy implementation will be completely removed after February 29th, 2024. Consider using the Golang implementation by not setting the 'useGoStep' toggle parameter to 'false'."
 
+        // telemetry reporting
+        new Utils().pushToSWA([
+            step         : STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1   : parameters?.script == null
+        ], config)
+
         def jsonUtilsObject = new JsonUtils()
 
         // make sure that all relevant descriptors, are available in workspace

@@ -138,21 +138,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: expandBuildEnvVars
-        type: "bool"
-        default: false
-        description: |
-          Expand environment variables used in `buildEnvVars`.
-          Example:
-          ```yaml
-          expandBuildEnvVars: true
-          buildEnvVars:
-            foo: ${BAR}
-          ```
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: path
         type: string
         description: |

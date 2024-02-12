@@ -25,14 +25,11 @@ stages:
 steps:`
 	case "stage-config.yml":
 		fileContent = `
-spec:
-  stages:
-    - name: testStage
-      displayName: testStage
-      steps:
-        - name: testStep
-          conditions:
-            - configKey: testConfig`
+stages:
+  testStage:
+    stepConditions:
+      testStep:
+        config: testConfig`
 	case ".pipeline/config.yml":
 		fileContent = `
 steps: 

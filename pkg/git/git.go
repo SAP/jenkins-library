@@ -77,17 +77,15 @@ func pushChangesToRepository(username, password string, force *bool, repository 
 }
 
 // PlainClone Clones a non-bare repository to the provided directory
-func PlainClone(username, password, serverURL, branchName, directory string, caCerts []byte) (*git.Repository, error) {
+func PlainClone(username, password, serverURL, directory string, caCerts []byte) (*git.Repository, error) {
 	abstractedGit := &abstractionGit{}
-	return plainClone(username, password, serverURL, branchName, directory, abstractedGit, caCerts)
+	return plainClone(username, password, serverURL, directory, abstractedGit, caCerts)
 }
 
-func plainClone(username, password, serverURL, branchName, directory string, abstractionGit utilsGit, caCerts []byte) (*git.Repository, error) {
+func plainClone(username, password, serverURL, directory string, abstractionGit utilsGit, caCerts []byte) (*git.Repository, error) {
 	gitCloneOptions := git.CloneOptions{
-		Auth:          &http.BasicAuth{Username: username, Password: password},
-		URL:           serverURL,
-		ReferenceName: plumbing.NewBranchReferenceName(branchName),
-		SingleBranch:  true, // we don't need other branches, clone only branchName
+		Auth: &http.BasicAuth{Username: username, Password: password},
+		URL:  serverURL,
 	}
 
 	if len(caCerts) > 0 {

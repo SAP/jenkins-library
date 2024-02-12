@@ -238,17 +238,16 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "my-image:0.0.1", commonPipelineEnvironment.container.imageNameTag)
 	})
 
-	t.Run("success case (custom buildpacks and custom env variables with expand, renaming docker conf file, additional tag)", func(t *testing.T) {
-		t.Setenv("BAR", "BAZZ")
+	t.Run("success case (custom buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
+		t.Parallel()
 		config := cnbBuildOptions{
 			ContainerImageName:   "my-image",
 			ContainerImageTag:    "0.0.1",
 			ContainerRegistryURL: imageRegistry,
 			DockerConfigJSON:     "/path/to/test.json",
 			Buildpacks:           []string{"test"},
-			ExpandBuildEnvVars:   true,
 			BuildEnvVars: map[string]interface{}{
-				"FOO": "${BAR}",
+				"FOO": "BAR",
 			},
 			AdditionalTags: []string{"latest"},
 		}
@@ -270,8 +269,6 @@ func TestRunCnbBuild(t *testing.T) {
 
 		copiedFileExists, _ := utils.FileExists("/tmp/config.json")
 		assert.True(t, copiedFileExists)
-
-		assetBuildEnv(t, utils, "FOO", "BAZZ")
 	})
 
 	t.Run("success case (custom buildpacks, pre and post buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
@@ -284,9 +281,8 @@ func TestRunCnbBuild(t *testing.T) {
 			PreBuildpacks:        []string{"pre-test"},
 			PostBuildpacks:       []string{"post-test"},
 			Buildpacks:           []string{"test"},
-			ExpandBuildEnvVars:   false,
 			BuildEnvVars: map[string]interface{}{
-				"FOO": "${BAR}",
+				"FOO": "BAR",
 			},
 			AdditionalTags: []string{"latest"},
 		}
@@ -308,8 +304,6 @@ func TestRunCnbBuild(t *testing.T) {
 
 		copiedFileExists, _ := utils.FileExists("/tmp/config.json")
 		assert.True(t, copiedFileExists)
-
-		assetBuildEnv(t, utils, "FOO", "${BAR}")
 	})
 
 	t.Run("success case (custom pre and post buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {

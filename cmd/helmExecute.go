@@ -127,14 +127,14 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 }
 
 func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
+	if err := helmExecutor.RunHelmLint(); err != nil {
+		return fmt.Errorf("failed to execute helm lint: %v", err)
+	}
+
 	if len(config.Dependency) > 0 {
 		if err := helmExecutor.RunHelmDependency(); err != nil {
 			return fmt.Errorf("failed to execute helm dependency: %v", err)
 		}
-	}
-
-	if err := helmExecutor.RunHelmLint(); err != nil {
-		return fmt.Errorf("failed to execute helm lint: %v", err)
 	}
 
 	if config.Publish {

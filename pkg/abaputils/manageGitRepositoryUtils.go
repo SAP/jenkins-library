@@ -116,7 +116,7 @@ func printLogProtocolEntries(logEntry LogResultsV2, logProtocols []LogProtocol) 
 	sort.SliceStable(logProtocols, func(i, j int) bool {
 		return logProtocols[i].ProtocolLine < logProtocols[j].ProtocolLine
 	})
-	if logEntry.Status == `Error` {
+	if logEntry.Status != `Success` {
 		for _, entry := range logProtocols {
 			log.Entry().Info(entry.Description)
 		}

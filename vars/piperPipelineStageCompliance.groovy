@@ -38,6 +38,10 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
+
+        // telemetry reporting
+        utils.pushToSWA([step: STEP_NAME], config)
+
         if (config.sonarExecuteScan) {
             durationMeasure(script: script, measurementName: 'sonar_duration') {
                 sonarExecuteScan script: script

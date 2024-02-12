@@ -31,47 +31,45 @@ func newCodeqlExecuteScanTestsUtils() codeqlExecuteScanMockUtils {
 
 func TestRunCodeqlExecuteScan(t *testing.T) {
 
-	influx := &codeqlExecuteScanInflux{}
-
 	t.Run("Valid CodeqlExecuteScan", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ModulePath: "./"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 	})
 
 	t.Run("No auth token passed on upload results", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", UploadResults: true, ModulePath: "./"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
 		assert.Error(t, err)
 	})
 
 	t.Run("GitCommitID is NA on upload results", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", UploadResults: true, ModulePath: "./", CommitID: "NA"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
 		assert.Error(t, err)
 	})
 
 	t.Run("Custom buildtool", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "custom", Language: "javascript", ModulePath: "./"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 	})
 
 	t.Run("Custom buildtool but no language specified", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "custom", ModulePath: "./", GithubToken: "test"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
 		assert.Error(t, err)
 	})
 
 	t.Run("Invalid buildtool and no language specified", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "test", ModulePath: "./", GithubToken: "test"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
 		assert.Error(t, err)
 	})
 
 	t.Run("Invalid buildtool but language specified", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "test", Language: "javascript", ModulePath: "./", GithubToken: "test"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 	})
 }
@@ -400,92 +398,6 @@ func TestGetMavenSettings(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "global.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
 		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, " --global-settings=global.xml --settings=.pipeline/mavenProjectSettings.xml", params)
-	})
-}
-
-func TestAddDataToInfluxDB(t *testing.T) {
-	repoUrl := "https://github.htllo.test/Testing/codeql"
-	repoRef := "https://github.htllo.test/Testing/codeql/tree/branch"
-	repoScanUrl := "https://github.htllo.test/Testing/codeql/security/code-scanning"
-	querySuite := "security.ql"
-
-	t.Run("No findings", func(t *testing.T) {
-		scanResults := []codeql.CodeqlFindings{}
-		influx := &codeqlExecuteScanInflux{}
-		addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite, scanResults, influx)
-		assert.Equal(t, repoUrl, influx.codeql_data.fields.repositoryURL)
-		assert.Equal(t, repoRef, influx.codeql_data.fields.repositoryReferenceURL)
-		assert.Equal(t, repoScanUrl, influx.codeql_data.fields.codeScanningLink)
-		assert.Equal(t, querySuite, influx.codeql_data.fields.querySuite)
-		assert.Equal(t, 0, influx.codeql_data.fields.auditAllTotal)
-		assert.Equal(t, 0, influx.codeql_data.fields.auditAllAudited)
-		assert.Equal(t, 0, influx.codeql_data.fields.optionalTotal)
-		assert.Equal(t, 0, influx.codeql_data.fields.optionalAudited)
-	})
-
-	t.Run("Audit All findings category only", func(t *testing.T) {
-		scanResults := []codeql.CodeqlFindings{
-			{
-				ClassificationName: codeql.AuditAll,
-				Total:              100,
-				Audited:            50,
-			},
-		}
-		influx := &codeqlExecuteScanInflux{}
-		addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite, scanResults, influx)
-		assert.Equal(t, repoUrl, influx.codeql_data.fields.repositoryURL)
-		assert.Equal(t, repoRef, influx.codeql_data.fields.repositoryReferenceURL)
-		assert.Equal(t, repoScanUrl, influx.codeql_data.fields.codeScanningLink)
-		assert.Equal(t, querySuite, influx.codeql_data.fields.querySuite)
-		assert.Equal(t, scanResults[0].Total, influx.codeql_data.fields.auditAllTotal)
-		assert.Equal(t, scanResults[0].Audited, influx.codeql_data.fields.auditAllAudited)
-		assert.Equal(t, 0, influx.codeql_data.fields.optionalTotal)
-		assert.Equal(t, 0, influx.codeql_data.fields.optionalAudited)
-	})
-
-	t.Run("Optional findings category only", func(t *testing.T) {
-		scanResults := []codeql.CodeqlFindings{
-			{
-				ClassificationName: codeql.Optional,
-				Total:              100,
-				Audited:            50,
-			},
-		}
-		influx := &codeqlExecuteScanInflux{}
-		addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite, scanResults, influx)
-		assert.Equal(t, repoUrl, influx.codeql_data.fields.repositoryURL)
-		assert.Equal(t, repoRef, influx.codeql_data.fields.repositoryReferenceURL)
-		assert.Equal(t, repoScanUrl, influx.codeql_data.fields.codeScanningLink)
-		assert.Equal(t, querySuite, influx.codeql_data.fields.querySuite)
-		assert.Equal(t, 0, influx.codeql_data.fields.auditAllTotal)
-		assert.Equal(t, 0, influx.codeql_data.fields.auditAllAudited)
-		assert.Equal(t, scanResults[0].Total, influx.codeql_data.fields.optionalTotal)
-		assert.Equal(t, scanResults[0].Audited, influx.codeql_data.fields.optionalAudited)
-	})
-
-	t.Run("Both findings category", func(t *testing.T) {
-		scanResults := []codeql.CodeqlFindings{
-			{
-				ClassificationName: codeql.AuditAll,
-				Total:              100,
-				Audited:            50,
-			},
-			{
-				ClassificationName: codeql.Optional,
-				Total:              100,
-				Audited:            50,
-			},
-		}
-		influx := &codeqlExecuteScanInflux{}
-		addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite, scanResults, influx)
-		assert.Equal(t, repoUrl, influx.codeql_data.fields.repositoryURL)
-		assert.Equal(t, repoRef, influx.codeql_data.fields.repositoryReferenceURL)
-		assert.Equal(t, repoScanUrl, influx.codeql_data.fields.codeScanningLink)
-		assert.Equal(t, querySuite, influx.codeql_data.fields.querySuite)
-		assert.Equal(t, scanResults[0].Total, influx.codeql_data.fields.auditAllTotal)
-		assert.Equal(t, scanResults[0].Audited, influx.codeql_data.fields.auditAllAudited)
-		assert.Equal(t, scanResults[1].Total, influx.codeql_data.fields.optionalTotal)
-		assert.Equal(t, scanResults[1].Audited, influx.codeql_data.fields.optionalAudited)
 	})
 }
 

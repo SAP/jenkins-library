@@ -134,10 +134,9 @@ func newWhitesourceUtils(config *ScanOptions, client *github.Client) *whitesourc
 
 func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	return &ws.Scan{
-		AggregateProjectName:        config.ProjectName,
-		ProductVersion:              config.Version,
-		BuildTool:                   config.BuildTool,
-		SkipProjectsWithEmptyTokens: config.SkipProjectsWithEmptyTokens,
+		AggregateProjectName: config.ProjectName,
+		ProductVersion:       config.Version,
+		BuildTool:            config.BuildTool,
 	}
 }
 

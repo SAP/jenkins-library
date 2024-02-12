@@ -42,6 +42,10 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
+
+        // telemetry reporting
+        utils.pushToSWA([step: STEP_NAME], config)
+
         boolean publishResults = false
         try {
             writeTemporaryCredentials(script: script) {

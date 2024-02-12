@@ -455,10 +455,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 	commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, imageNameAlias)
 
-	if config.ExpandBuildEnvVars {
-		config.BuildEnvVars = expandEnvVars(config.BuildEnvVars)
-	}
-
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
 		imageSummary.AddEnv(config.BuildEnvVars)
@@ -621,19 +617,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	return nil
-}
-
-func expandEnvVars(envVars map[string]any) map[string]any {
-	expandedEnvVars := map[string]any{}
-	for key, value := range envVars {
-		valueString, valueIsString := value.(string)
-		if valueIsString {
-			expandedEnvVars[key] = os.ExpandEnv(valueString)
-		} else {
-			expandedEnvVars[key] = value
-		}
-	}
-	return expandedEnvVars
 }
 
 func createInitialTelemetrySegment(config *cnbBuildOptions, utils cnbutils.BuildUtils) *buildpacks.Segment {

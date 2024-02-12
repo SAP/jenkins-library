@@ -153,6 +153,16 @@ void call(Map parameters = [:], Closure body = null) {
         config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
             .use()
 
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'buildTool',
+            stepParam1: config.buildTool,
+            stepParamKey2: 'artifactType',
+            stepParam2: config.artifactType,
+            stepParamKey3: 'scriptMissing',
+            stepParam3: parameters?.script == null
+        ], config)
+
         def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
         def currentVersion = artifactVersioning.getVersion()
 

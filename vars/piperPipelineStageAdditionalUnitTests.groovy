@@ -45,6 +45,10 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
+
+        // telemetry reporting
+        utils.pushToSWA([step: STEP_NAME], config)
+
         if (config.batsExecuteTests) {
             durationMeasure(script: script, measurementName: 'bats_duration') {
                 batsExecuteTests script: script

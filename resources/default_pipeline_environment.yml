@@ -5,7 +5,7 @@
 
 #Project Setup
 general:
-  collectTelemetryData: false
+  collectTelemetryData: true
   logFormat: 'plain'
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE

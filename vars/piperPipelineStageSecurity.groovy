@@ -104,6 +104,9 @@ void call(Map parameters = [:]) {
         }
 
         if (securityScanMap.size() > 0) {
+            // telemetry reporting
+            utils.pushToSWA([step: STEP_NAME], config)
+
             parallel securityScanMap.plus([failFast: false])
         }
     }

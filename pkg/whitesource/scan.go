@@ -17,15 +17,14 @@ type Scan struct {
 	// It does not include the ProductVersion.
 	AggregateProjectName string
 	// ProductVersion is the global version that is used across all Projects (modules) during the scan.
-	BuildTool                   string
-	ProductToken                string
-	ProductVersion              string
-	scannedProjects             map[string]Project
-	scanTimes                   map[string]time.Time
-	AgentName                   string
-	AgentVersion                string
-	Coordinates                 versioning.Coordinates
-	SkipProjectsWithEmptyTokens bool
+	BuildTool       string
+	ProductToken    string
+	ProductVersion  string
+	scannedProjects map[string]Project
+	scanTimes       map[string]time.Time
+	AgentName       string
+	AgentVersion    string
+	Coordinates     versioning.Coordinates
 }
 
 func (s *Scan) init() {
@@ -84,10 +83,6 @@ func (s *Scan) ProjectByName(projectName string) (Project, bool) {
 func (s *Scan) ScannedProjects() []Project {
 	var projects []Project
 	for _, project := range s.scannedProjects {
-		if len(project.Token) == 0 && s.SkipProjectsWithEmptyTokens {
-			log.Entry().Debugf("Project will be skipped as the token is empty, project_name: %s", project.Name)
-			continue
-		}
 		projects = append(projects, project)
 	}
 	return projects

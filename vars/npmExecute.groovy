@@ -50,6 +50,12 @@ void call(Map parameters = [:], body = null) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], configuration)
+
         try {
             if (!fileExists('package.json')) {
                 error "[${STEP_NAME}] package.json is not found."

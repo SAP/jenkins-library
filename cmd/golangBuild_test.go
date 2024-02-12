@@ -707,7 +707,7 @@ func TestPrepareLdflags(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 
-	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0o777)
+	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
 	assert.NoError(t, err, "Error when creating folder structure")
 
 	err = os.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
@@ -869,6 +869,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
+
 }
 
 func TestPrepareGolangEnvironment(t *testing.T) {
@@ -960,7 +961,6 @@ func TestRunGolangciLint(t *testing.T) {
 		exitCode            int
 		expectedCommand     []string
 		expectedErr         error
-		failOnLintingError  bool
 	}{
 		{
 			name:                "success",
@@ -992,15 +992,6 @@ func TestRunGolangciLint(t *testing.T) {
 			exitCode:            1,
 			expectedCommand:     []string{},
 			expectedErr:         fmt.Errorf("golangci-lint found issues, see report above"),
-			failOnLintingError:  true,
-		},
-		{
-			name:                "success - ignore failed with ExitCode == 1",
-			shouldFailOnCommand: map[string]error{},
-			exitCode:            1,
-			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
-			expectedErr:         nil,
-			failOnLintingError:  false,
 		},
 	}
 
@@ -1012,7 +1003,7 @@ func TestRunGolangciLint(t *testing.T) {
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
-			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings)
+			err := runGolangciLint(utils, golangciLintDir, lintSettings)
 
 			if test.expectedErr == nil {
 				assert.Equal(t, test.expectedCommand[0], utils.Calls[0].Exec)

@@ -393,8 +393,8 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmDependency").Return(testCase.methodPackageError)
 			helmExecute.On("RunHelmLint").Return(testCase.methodLintError)
+			helmExecute.On("RunHelmDependency").Return(testCase.methodPackageError)
 			helmExecute.On("RunHelmPublish").Return(testCase.methodPublishError)
 
 			err := runHelmExecute(testCase.config, helmExecute, &testCase.fileUtils, &cpe)

@@ -135,7 +135,12 @@ def generateSha1(input) {
 
 void pushToSWA(Map parameters, Map config) {
     try {
-        echo "SAP web analytics is disabled. Please remove any remaining use of 'pushToSWA' function!"
+        parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
+        parameters.eventType = parameters.get('eventType') ?: 'library-os'
+        parameters.jobUrlSha1 = generateSha1(env.JOB_URL ?: '')
+        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL ?: '')
+
+        Telemetry.notify(this, config, parameters)
     } catch (ignore) {
         // some error occured in telemetry reporting. This should not break anything though.
         echo "[${parameters.step}] Telemetry Report failed: ${ignore.getMessage()}"
