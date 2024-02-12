@@ -8,5 +8,5 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     List credentials = [[type: 'usernamePassword', id: 'checkmarxOneCredentialsId', env: ['PIPER_clientId', 'PIPER_clientSecret']],
                         [type: 'token', id: 'checkmarxOneAPIKey', env: ['PIPER_APIKey']]]
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, true)
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

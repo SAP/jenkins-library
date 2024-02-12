@@ -14,8 +14,8 @@ type BaseData struct {
 	URL             string `json:"url"`
 	StepName        string `json:"e_3"` // set by step generator
 	StageName       string `json:"e_10"`
-	PipelineURLHash string `json:"e_4"`  // defaults to sha1 of provider.GetBuildURL()
-	BuildURLHash    string `json:"e_5"`  // defaults to sha1 of provider.GetJobURL()
+	PipelineURLHash string `json:"e_4"`  // defaults to sha1 of provider.BuildURL()
+	BuildURLHash    string `json:"e_5"`  // defaults to sha1 of provider.JobURL()
 	Orchestrator    string `json:"e_14"` // defaults to provider.OrchestratorType()
 }
 

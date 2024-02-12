@@ -6,7 +6,7 @@ import com.sap.piper.JenkinsUtils
 
 void call(Map parameters = [:]) {
     List credentials = [
-        [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
+        [type: 'token', id: 'credentialsId', env: ['PIPER_serviceKey']]
     ]
 
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)

@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -58,7 +58,6 @@ func TestPullStep(t *testing.T) {
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
 		client := &abaputils.ClientMock{
 			BodyList: []string{
-				`{"d" : [] }`,
 				`{"d" : ` + executionLogStringPull + `}`,
 				logResultSuccess,
 				`{"d" : { "status" : "S" } }`,
@@ -70,7 +69,8 @@ func TestPullStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -95,7 +95,9 @@ func TestPullStep(t *testing.T) {
 		}
 
 		config := abapEnvironmentPullGitRepoOptions{}
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
+
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
 
@@ -145,7 +147,8 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.NoError(t, err)
 	})
 
@@ -200,7 +203,8 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -258,7 +262,8 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', tag 'v-1.0.1-build-0001' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -297,7 +302,8 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/SWC', commit '123456' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -335,7 +341,8 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/SWC' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -381,7 +388,8 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 
@@ -430,63 +438,9 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
+		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
 		assert.EqualError(t, err, expectedErrorMessage)
-	})
-}
-
-func TestTriggerPull(t *testing.T) {
-
-	t.Run("Test trigger pull: success case", func(t *testing.T) {
-
-		receivedURI := "example.com/Entity"
-		uriExpected := receivedURI
-		tokenExpected := "myToken"
-
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      tokenExpected,
-			StatusCode: 200,
-		}
-
-		repoName := "testRepo1"
-		testCommit := "9caede7f31028cd52333eb496434275687fefb47"
-
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Entity/",
-		}
-		entityConnection, err := triggerPull(abaputils.Repository{Name: repoName, CommitID: testCommit}, con, client)
-		assert.Nil(t, err)
-		assert.Equal(t, uriExpected, entityConnection.URL)
-		assert.Equal(t, tokenExpected, entityConnection.XCsrfToken)
-	})
-
-	t.Run("Test trigger pull: ABAP Error", func(t *testing.T) {
-
-		errorMessage := "ABAP Error Message"
-		errorCode := "ERROR/001"
-		HTTPErrorMessage := "HTTP Error Message"
-		combinedErrorMessage := "HTTP Error Message: ERROR/001 - ABAP Error Message"
-
-		client := &abaputils.ClientMock{
-			Body:       `{"error" : { "code" : "` + errorCode + `", "message" : { "lang" : "en", "value" : "` + errorMessage + `" } } }`,
-			Token:      "myToken",
-			StatusCode: 400,
-			Error:      errors.New(HTTPErrorMessage),
-		}
-
-		repoName := "testRepo1"
-		testCommit := "9caede7f31028cd52333eb496434275687fefb47"
-
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Entity/",
-		}
-		_, err := triggerPull(abaputils.Repository{Name: repoName, CommitID: testCommit}, con, client)
-		assert.Equal(t, combinedErrorMessage, err.Error(), "Different error message expected")
 	})
 }
 

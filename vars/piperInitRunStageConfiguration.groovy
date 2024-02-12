@@ -39,7 +39,6 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
-
     def script = checkScript(this, parameters) ?: this
     String stageName = parameters.stageName ?: env.STAGE_NAME
 
@@ -74,6 +73,9 @@ void call(Map parameters = [:]) {
     if (stepsJSONObject) {
         script.commonPipelineEnvironment.configuration.runStep = new LinkedHashMap(stepsJSONObject)
     }
+
+    handleRenamedStages(script)
+
     // Retaining this groovy code as some additional checks for activating-deactivating a stage seems to be done.
     script.commonPipelineEnvironment.configuration.runStage.each {stage ->
         String currentStage = stage.getKey()
@@ -117,4 +119,28 @@ private static boolean checkExtensionExists(Script script, Map config, String st
     def projectInterceptorFile = "${config.projectExtensionsDirectory}${stageName}.groovy"
     def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
     return script.fileExists(projectInterceptorFile) || script.fileExists(globalInterceptorFile)
+}
+
+/**
+ Before syncing the piper-stage-config.yml file, there were differences in the display names of some stages.
+ This function duplicates the runStage and runStep values from the new stage name into the old one to ensure compatibility.
+ For example, the 'Build' is not used in Jenkins but is used by other orchestrators, whereas 'Central Build' is
+ used by Jenkins but unused by other orchestrators.
+ */
+private static void handleRenamedStages(Script script) {
+    if(script.commonPipelineEnvironment.configuration.runStage.containsKey("Build")) {
+        script.commonPipelineEnvironment.configuration.runStage["Central Build"] = script.commonPipelineEnvironment.configuration.runStage["Build"]
+    }
+
+    if(script.commonPipelineEnvironment.configuration.runStep.containsKey("Build")) {
+        script.commonPipelineEnvironment.configuration.runStep["Central Build"] = script.commonPipelineEnvironment.configuration.runStep["Build"]
+    }
+
+    if(script.commonPipelineEnvironment.configuration.runStage.containsKey("Post")) {
+        script.commonPipelineEnvironment.configuration.runStage["Post Actions"] = script.commonPipelineEnvironment.configuration.runStage["Post"]
+    }
+
+    if(script.commonPipelineEnvironment.configuration.runStep.containsKey("Post")) {
+        script.commonPipelineEnvironment.configuration.runStep["Post Actions"] = script.commonPipelineEnvironment.configuration.runStep["Post"]
+    }
 }

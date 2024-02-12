@@ -72,12 +72,6 @@ void call(Map parameters = [:]) {
         def piperGoVersion = sh(returnStdout: true, script: "./piper version")
         echo "PiperGoVersion: ${piperGoVersion}"
 
-        //
-        // since there is no valid config provided (... null) telemetry is disabled (same for other go releated steps at the moment).
-        utils.pushToSWA([
-            step: STEP_NAME,
-        ], null)
-
         String configFiles = prepareConfigurations([PIPER_DEFAULTS].plus(script.commonPipelineEnvironment.getCustomDefaults()), ADDITIONAL_CONFIGS_FOLDER)
 
         writeFile(file: "${METADATA_FOLDER}/${METADATA_FILE}", text: libraryResource(METADATA_FILE))

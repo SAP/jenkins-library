@@ -28,8 +28,13 @@ type uaa struct {
 }
 
 type serviceKey struct {
-	Uaa uaa    `json:"uaa"`
-	Uri string `json:"uri"`
+	Uaa           uaa           `json:"uaa"`
+	Uri           string        `json:"uri"`
+	CALMEndpoints cALMEndpoints `json:"endpoints"`
+}
+
+type cALMEndpoints *struct {
+	API string `json:"Api"`
 }
 
 type CommunicationInstance struct {
@@ -105,15 +110,15 @@ type CommunicationInterface interface {
 }
 
 type Options struct {
-	TmsServiceKey            string                 `json:"tmsServiceKey,omitempty"`
-	CustomDescription        string                 `json:"customDescription,omitempty"`
-	NamedUser                string                 `json:"namedUser,omitempty"`
-	NodeName                 string                 `json:"nodeName,omitempty"`
-	MtaPath                  string                 `json:"mtaPath,omitempty"`
-	MtaVersion               string                 `json:"mtaVersion,omitempty"`
-	NodeExtDescriptorMapping map[string]interface{} `json:"nodeExtDescriptorMapping,omitempty"`
-	Proxy                    string                 `json:"proxy,omitempty"`
-	StashContent             []string               `json:"stashContent,omitempty"`
+	ServiceKey               string
+	CustomDescription        string
+	NamedUser                string
+	NodeName                 string
+	MtaPath                  string
+	MtaVersion               string
+	NodeExtDescriptorMapping map[string]interface{}
+	Proxy                    string
+	StashContent             []string
 	Verbose                  bool
 }
 
@@ -123,6 +128,7 @@ type tmsUtilsBundle struct {
 }
 
 const DEFAULT_TR_DESCRIPTION = "Created by Piper"
+const CALM_REROUTING_ENDPOINT_TO_CTMS = "/imp-cdm-transport-management-api/v1"
 
 func NewTmsUtils() TmsUtils {
 	utils := tmsUtilsBundle{
@@ -139,6 +145,14 @@ func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err erro
 	err = json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
 	if err != nil {
 		return
+	}
+	if len(serviceKey.Uri) == 0 {
+		if serviceKey.CALMEndpoints != nil && len(serviceKey.CALMEndpoints.API) > 0 {
+			serviceKey.Uri = serviceKey.CALMEndpoints.API + CALM_REROUTING_ENDPOINT_TO_CTMS
+		} else {
+			err = fmt.Errorf("neither uri nor endpoints.Api is set in service key json string")
+			return
+		}
 	}
 	return
 }
@@ -237,9 +251,9 @@ func SetupCommunication(config Options) (communicationInstance CommunicationInte
 		}
 	}
 
-	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
+	serviceKey, err := unmarshalServiceKey(config.ServiceKey)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
+		log.Entry().WithError(err).Fatal("Failed to unmarshal service key")
 	}
 	log.RegisterSecret(serviceKey.Uaa.ClientSecret)
 

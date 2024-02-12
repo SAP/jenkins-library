@@ -81,11 +81,6 @@ void call(Map parameters = [:]) {
             config.sourceRegistry = dockerUtils.getRegistryFromUrl(config.sourceRegistryUrl)
         }
 
-        // telemetry reporting
-        new Utils().pushToSWA([
-            step: STEP_NAME
-        ], config)
-
         if (!config.dockerImage)
             config.dockerImage = config.sourceImage
 

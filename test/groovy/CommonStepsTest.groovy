@@ -229,6 +229,7 @@ public class CommonStepsTest extends BasePiperTest{
         'apiProviderList', //implementing new golang pattern without fields    
         'tmsUpload',
         'tmsExport',
+        'imagePushToRegistry',
     ]
 
     @Test

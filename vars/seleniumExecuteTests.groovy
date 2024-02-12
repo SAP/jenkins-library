@@ -100,12 +100,6 @@ void call(Map parameters = [:], Closure body) {
             .dependingOn('buildTool').mixin('dockerWorkspace')
             .use()
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], config)
-
         // Inject config via env vars so that scripts running inside selenium can respond to that
         config.dockerEnvVars = config.dockerEnvVars ?: [:]
         config.dockerEnvVars.PIPER_SELENIUM_HOSTNAME = config.dockerName

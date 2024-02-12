@@ -74,9 +74,6 @@ void call(Map parameters = [:]) {
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
             .use()
 
-        // telemetry reporting
-        utils.pushToSWA([stepParam1: config.buildTool, 'buildTool': config.buildTool], config)
-
         switch(config.buildTool){
             case 'maven':
                 mavenBuild script: script

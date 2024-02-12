@@ -309,7 +309,7 @@ func TestHandleHTTPError(t *testing.T) {
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s: %s - %s", receivedErr.Error(), abapErrorCode, abapErrorMessage))
 		log.Entry().Info(err.Error())
 	})
@@ -328,7 +328,7 @@ func TestHandleHTTPError(t *testing.T) {
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
@@ -347,7 +347,7 @@ func TestHandleHTTPError(t *testing.T) {
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
@@ -361,7 +361,7 @@ func TestHandleHTTPError(t *testing.T) {
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err := HandleHTTPError(nil, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(nil, receivedErr, message, ConnectionDetailsHTTP{})
 
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		assert.Equal(t, 5, len(hook.Entries), "Expected a different number of entries")

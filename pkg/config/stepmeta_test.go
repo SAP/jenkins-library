@@ -397,10 +397,10 @@ func TestGetContextDefaults(t *testing.T) {
 							{Name: "opt1", Value: "optValue1"},
 							{Name: "opt2", Value: "optValue2"},
 						},
-						//VolumeMounts: []VolumeMount{
-						//	{MountPath: "mp1", Name: "mn1"},
-						//	{MountPath: "mp2", Name: "mn2"},
-						//},
+						VolumeMounts: []VolumeMount{
+							{MountPath: "mp1", Name: "volume"},
+							{MountPath: "mp2", Name: "mn2"},
+						},
 					},
 				},
 				Sidecars: []Container{
@@ -419,10 +419,10 @@ func TestGetContextDefaults(t *testing.T) {
 							{Name: "opt3", Value: "optValue3"},
 							{Name: "opt4", Value: "optValue4"},
 						},
-						//VolumeMounts: []VolumeMount{
-						//	{MountPath: "mp3", Name: "mn3"},
-						//	{MountPath: "mp4", Name: "mn4"},
-						//},
+						VolumeMounts: []VolumeMount{
+							{MountPath: "mp3", Name: "mn3"},
+							{MountPath: "mp4", Name: "volume"},
+						},
 					},
 				},
 			},
@@ -451,7 +451,7 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, true, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
 		assert.Equal(t, "/test/dir", d.Defaults[0].Steps["testStep"]["dockerWorkspace"], "dockerWorkspace default not available")
 		assert.Equal(t, []interface{}{"opt1 optValue1", "opt2 optValue2"}, d.Defaults[0].Steps["testStep"]["dockerOptions"], "dockerOptions default not available")
-		//assert.Equal(t, []interface{}{"mn1:mp1", "mn2:mp2"}, d.Defaults[0].Steps["testStep"]["dockerVolumeBind"], "dockerVolumeBind default not available")
+		assert.Equal(t, []interface{}{"volume:mp1"}, d.Defaults[0].Steps["testStep"]["dockerVolumeBind"], "dockerVolumeBind default not available")
 
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarCommand"], "sidecarCommand default not available")
 		assert.Equal(t, map[string]interface{}{"env3": "val3", "env4": "val4"}, d.Defaults[0].Steps["testStep"]["sidecarEnvVars"], "sidecarEnvVars default not available")
@@ -461,7 +461,7 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarReadyCommand"], "sidecarReadyCommand default not available")
 		assert.Equal(t, "/sidecar/dir", d.Defaults[0].Steps["testStep"]["sidecarWorkspace"], "sidecarWorkspace default not available")
 		assert.Equal(t, []interface{}{"opt3 optValue3", "opt4 optValue4"}, d.Defaults[0].Steps["testStep"]["sidecarOptions"], "sidecarOptions default not available")
-		//assert.Equal(t, []interface{}{"mn3:mp3", "mn4:mp4"}, d.Defaults[0].Steps["testStep"]["sidecarVolumeBind"], "sidecarVolumeBind default not available")
+		assert.Equal(t, []interface{}{"volume:mp4"}, d.Defaults[0].Steps["testStep"]["sidecarVolumeBind"], "sidecarVolumeBind default not available")
 	})
 
 	t.Run("Container conditions", func(t *testing.T) {

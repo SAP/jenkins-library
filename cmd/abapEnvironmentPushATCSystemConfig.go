@@ -199,7 +199,7 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := abaputils.GetHTTPResponse("HEAD", connectionDetails, nil, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
+		_, err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
 		return connectionDetails.XCsrfToken, errors.Errorf("X-Csrf-Token fetch failed for Service ATC System Configuration: %v", err)
 	}
 	defer resp.Body.Close()

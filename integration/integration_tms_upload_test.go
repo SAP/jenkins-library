@@ -32,7 +32,7 @@ func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
-		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 
@@ -58,7 +58,7 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
-		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 
@@ -105,7 +105,7 @@ func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
-		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 
@@ -126,7 +126,7 @@ func TestTmsUploadIntegrationYaml(t *testing.T) {
 		Image:       "devxci/mbtci-java11-node14",
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
-		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 

@@ -506,3 +506,50 @@ func TestRunTmsUpload(t *testing.T) {
 		assert.EqualError(t, err, "failed to upload file to node: Something went wrong on uploading file to node")
 	})
 }
+
+func Test_convertUploadOptions(t *testing.T) {
+	t.Parallel()
+	mockServiceKey := `no real serviceKey json necessary for these tests`
+
+	t.Run("Use of new serviceKey parameter works", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsUploadOptions{ServiceKey: mockServiceKey}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertUploadOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
+	})
+
+	t.Run("Use of old tmsServiceKey parameter works as well", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsUploadOptions{TmsServiceKey: mockServiceKey}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertUploadOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
+	})
+
+	t.Run("Use of both tmsServiceKey and serviceKey parameter favors the new serviceKey parameter", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsUploadOptions{ServiceKey: mockServiceKey, TmsServiceKey: "some other string"}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertUploadOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
+	})
+}

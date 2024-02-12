@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,7 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type GitHubActionsConfigProvider struct {
+type githubActionsConfigProvider struct {
 	client      *github.Client
 	ctx         context.Context
 	owner       string
@@ -26,7 +27,6 @@ type GitHubActionsConfigProvider struct {
 	runData     run
 	jobs        []job
 	jobsFetched bool
-	currentJob  job
 }
 
 type run struct {
@@ -46,31 +46,37 @@ type fullLog struct {
 	b [][]byte
 }
 
-// InitOrchestratorProvider initializes http client for GitHubActionsDevopsConfigProvider
-func (g *GitHubActionsConfigProvider) InitOrchestratorProvider(settings *OrchestratorSettings) {
-	var err error
-	g.ctx, g.client, err = piperGithub.NewClientBuilder(settings.GitHubToken, getEnv("GITHUB_API_URL", "")).Build()
-	if err != nil {
-		log.Entry().Errorf("failed to create github client: %v", err)
-		return
+func newGithubActionsConfigProvider() *githubActionsConfigProvider {
+	owner, repo := getOwnerAndRepoNames()
+	return &githubActionsConfigProvider{
+		owner: owner,
+		repo:  repo,
 	}
-
-	g.owner, g.repo = getOwnerAndRepoNames()
-
-	log.Entry().Debug("Successfully initialized GitHubActions config provider")
 }
 
-func (g *GitHubActionsConfigProvider) OrchestratorVersion() string {
+// Configure initializes http client for GitHubActionsDevopsConfigProvider
+func (g *githubActionsConfigProvider) Configure(opts *Options) error {
+	var err error
+	g.ctx, g.client, err = piperGithub.NewClientBuilder(opts.GitHubToken, getEnv("GITHUB_API_URL", "")).Build()
+	if err != nil {
+		return errors.Wrap(err, "failed to create github client")
+	}
+
+	log.Entry().Debug("Successfully initialized GitHubActions config provider")
+	return nil
+}
+
+func (g *githubActionsConfigProvider) OrchestratorVersion() string {
 	log.Entry().Debugf("OrchestratorVersion() for GitHub Actions is not applicable.")
 	return "n/a"
 }
 
-func (g *GitHubActionsConfigProvider) OrchestratorType() string {
+func (g *githubActionsConfigProvider) OrchestratorType() string {
 	return "GitHubActions"
 }
 
-// GetBuildStatus returns current run status
-func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
+// BuildStatus returns current run status
+func (g *githubActionsConfigProvider) BuildStatus() string {
 	g.fetchRunData()
 	switch g.runData.Status {
 	case "success":
@@ -84,8 +90,13 @@ func (g *GitHubActionsConfigProvider) GetBuildStatus() string {
 	}
 }
 
-// GetLog returns the whole logfile for the current pipeline run
-func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
+// FullLogs returns the whole logfile for the current pipeline run
+func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
+	if g.client == nil {
+		log.Entry().Debug("ConfigProvider for GitHub Actions is not configured. Unable to fetch logs")
+		return []byte{}, nil
+	}
+
 	if err := g.fetchJobs(); err != nil {
 		return nil, err
 	}
@@ -100,7 +111,13 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 		wg.Go(func() error {
 			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, true)
 			if err != nil {
-				return errors.Wrap(err, "fetching job logs failed")
+				// GetWorkflowJobLogs returns "200 OK" as error when log download is successful.
+				// Therefore, ignore this error.
+				// GitHub API returns redirect URL instead of plain text logs. See:
+				// https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#download-job-logs-for-a-workflow-run
+				if err.Error() != "unexpected status code: 200 OK" {
+					return errors.Wrap(err, "fetching job logs failed")
+				}
 			}
 			defer resp.Body.Close()
 
@@ -123,31 +140,31 @@ func (g *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	return bytes.Join(fullLogs.b, []byte("")), nil
 }
 
-// GetBuildID returns current run ID
-func (g *GitHubActionsConfigProvider) GetBuildID() string {
+// BuildID returns current run ID
+func (g *githubActionsConfigProvider) BuildID() string {
 	return getEnv("GITHUB_RUN_ID", "n/a")
 }
 
-func (g *GitHubActionsConfigProvider) GetChangeSet() []ChangeSet {
-	log.Entry().Debug("GetChangeSet for GitHubActions not implemented")
+func (g *githubActionsConfigProvider) ChangeSets() []ChangeSet {
+	log.Entry().Debug("ChangeSets for GitHubActions not implemented")
 	return []ChangeSet{}
 }
 
-// GetPipelineStartTime returns the pipeline start time in UTC
-func (g *GitHubActionsConfigProvider) GetPipelineStartTime() time.Time {
+// PipelineStartTime returns the pipeline start time in UTC
+func (g *githubActionsConfigProvider) PipelineStartTime() time.Time {
 	g.fetchRunData()
 	return g.runData.StartedAt.UTC()
 }
 
-// GetStageName returns the human-readable name given to a stage.
-func (g *GitHubActionsConfigProvider) GetStageName() string {
+// StageName returns the human-readable name given to a stage.
+func (g *githubActionsConfigProvider) StageName() string {
 	return getEnv("GITHUB_JOB", "unknown")
 }
 
-// GetBuildReason returns the reason of workflow trigger.
+// BuildReason returns the reason of workflow trigger.
 // BuildReasons are unified with AzureDevOps build reasons, see
 // https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml#build-variables-devops-services
-func (g *GitHubActionsConfigProvider) GetBuildReason() string {
+func (g *githubActionsConfigProvider) BuildReason() string {
 	switch getEnv("GITHUB_EVENT_NAME", "") {
 	case "workflow_dispatch":
 		return BuildReasonManual
@@ -164,47 +181,50 @@ func (g *GitHubActionsConfigProvider) GetBuildReason() string {
 	}
 }
 
-// GetBranch returns the source branch name, e.g. main
-func (g *GitHubActionsConfigProvider) GetBranch() string {
+// Branch returns the source branch name, e.g. main
+func (g *githubActionsConfigProvider) Branch() string {
 	return getEnv("GITHUB_REF_NAME", "n/a")
 }
 
-// GetReference return the git reference. For example, refs/heads/your_branch_name
-func (g *GitHubActionsConfigProvider) GetReference() string {
+// GitReference return the git reference. For example, refs/heads/your_branch_name
+func (g *githubActionsConfigProvider) GitReference() string {
 	return getEnv("GITHUB_REF", "n/a")
 }
 
-// GetBuildURL returns the builds URL. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
-func (g *GitHubActionsConfigProvider) GetBuildURL() string {
-	return g.GetRepoURL() + "/actions/runs/" + g.GetBuildID()
+// BuildURL returns the builds URL. The URL should point to the pipeline (not to the stage)
+// that is currently being executed. For example, https://github.com/SAP/jenkins-library/actions/runs/5815297487
+func (g *githubActionsConfigProvider) BuildURL() string {
+	return g.RepoURL() + "/actions/runs/" + g.BuildID()
 }
 
-// GetJobURL returns the current job HTML URL (not API URL).
-// For example, https://github.com/SAP/jenkins-library/actions/runs/123456/jobs/7654321
-func (g *GitHubActionsConfigProvider) GetJobURL() string {
-	// We need to query the GitHub API here because the environment variable GITHUB_JOB returns
-	// the name of the job, not a numeric ID (which we need to form the URL)
-	g.guessCurrentJob()
-	return g.currentJob.HtmlURL
+// JobURL returns the job URL. The URL should point to project’s pipelines.
+// For example, https://github.com/SAP/jenkins-library/actions/workflows/workflow-file-name.yaml
+func (g *githubActionsConfigProvider) JobURL() string {
+	fileName := workflowFileName()
+	if fileName == "" {
+		return ""
+	}
+
+	return g.RepoURL() + "/actions/workflows/" + fileName
 }
 
-// GetJobName returns the current workflow name. For example, "Piper workflow"
-func (g *GitHubActionsConfigProvider) GetJobName() string {
+// JobName returns the current workflow name. For example, "Piper workflow"
+func (g *githubActionsConfigProvider) JobName() string {
 	return getEnv("GITHUB_WORKFLOW", "unknown")
 }
 
-// GetCommit returns the commit SHA that triggered the workflow. For example, ffac537e6cbbf934b08745a378932722df287a53
-func (g *GitHubActionsConfigProvider) GetCommit() string {
+// CommitSHA returns the commit SHA that triggered the workflow. For example, ffac537e6cbbf934b08745a378932722df287a53
+func (g *githubActionsConfigProvider) CommitSHA() string {
 	return getEnv("GITHUB_SHA", "n/a")
 }
 
-// GetRepoURL returns full url to repository. For example, https://github.com/SAP/jenkins-library
-func (g *GitHubActionsConfigProvider) GetRepoURL() string {
+// RepoURL returns full url to repository. For example, https://github.com/SAP/jenkins-library
+func (g *githubActionsConfigProvider) RepoURL() string {
 	return getEnv("GITHUB_SERVER_URL", "n/a") + "/" + getEnv("GITHUB_REPOSITORY", "n/a")
 }
 
-// GetPullRequestConfig returns pull request configuration
-func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
+// PullRequestConfig returns pull request configuration
+func (g *githubActionsConfigProvider) PullRequestConfig() PullRequestConfig {
 	// See https://docs.github.com/en/enterprise-server@3.6/actions/learn-github-actions/variables#default-environment-variables
 	githubRef := getEnv("GITHUB_REF", "n/a")
 	prNumber := strings.TrimSuffix(strings.TrimPrefix(githubRef, "refs/pull/"), "/merge")
@@ -216,13 +236,13 @@ func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 }
 
 // IsPullRequest indicates whether the current build is triggered by a PR
-func (g *GitHubActionsConfigProvider) IsPullRequest() bool {
-	return truthy("GITHUB_HEAD_REF")
+func (g *githubActionsConfigProvider) IsPullRequest() bool {
+	return envVarIsTrue("GITHUB_HEAD_REF")
 }
 
 func isGitHubActions() bool {
 	envVars := []string{"GITHUB_ACTION", "GITHUB_ACTIONS"}
-	return areIndicatingEnvVarsSet(envVars)
+	return envVarsAreSet(envVars)
 }
 
 // actionsURL returns URL to actions resource. For example,
@@ -231,7 +251,12 @@ func actionsURL() string {
 	return getEnv("GITHUB_API_URL", "") + "/repos/" + getEnv("GITHUB_REPOSITORY", "") + "/actions"
 }
 
-func (g *GitHubActionsConfigProvider) fetchRunData() {
+func (g *githubActionsConfigProvider) fetchRunData() {
+	if g.client == nil {
+		log.Entry().Debug("ConfigProvider for GitHub Actions is not configured. Unable to fetch run data")
+		return
+	}
+
 	if g.runData.fetched {
 		return
 	}
@@ -259,7 +284,7 @@ func convertRunData(runData *github.WorkflowRun) run {
 	}
 }
 
-func (g *GitHubActionsConfigProvider) fetchJobs() error {
+func (g *githubActionsConfigProvider) fetchJobs() error {
 	if g.jobsFetched {
 		return nil
 	}
@@ -295,34 +320,8 @@ func convertJobs(jobs []*github.WorkflowJob) []job {
 	return result
 }
 
-func (g *GitHubActionsConfigProvider) guessCurrentJob() {
-	// check if the current job has already been guessed
-	if g.currentJob.ID != 0 {
-		return
-	}
-
-	// fetch jobs if they haven't been fetched yet
-	if err := g.fetchJobs(); err != nil {
-		log.Entry().Errorf("failed to fetch jobs: %s", err)
-		g.jobs = []job{}
-		return
-	}
-
-	targetJobName := getEnv("GITHUB_JOB", "unknown")
-	log.Entry().Debugf("looking for job '%s' in jobs list: %v", targetJobName, g.jobs)
-	for _, j := range g.jobs {
-		// j.Name may be something like "piper / Init / Init"
-		// but GITHUB_JOB env may contain only "Init"
-		if strings.HasSuffix(j.Name, targetJobName) {
-			log.Entry().Debugf("current job id: %d", j.ID)
-			g.currentJob = j
-			return
-		}
-	}
-}
-
-func (g *GitHubActionsConfigProvider) runIdInt64() (int64, error) {
-	strRunId := g.GetBuildID()
+func (g *githubActionsConfigProvider) runIdInt64() (int64, error) {
+	strRunId := g.BuildID()
 	runId, err := strconv.ParseInt(strRunId, 10, 64)
 	if err != nil {
 		return 0, errors.Wrapf(err, "invalid GITHUB_RUN_ID value %s: %s", strRunId, err)
@@ -340,4 +339,16 @@ func getOwnerAndRepoNames() (string, string) {
 	}
 
 	return s[0], s[1]
+}
+
+func workflowFileName() string {
+	workflowRef := getEnv("GITHUB_WORKFLOW_REF", "")
+	re := regexp.MustCompile(`\.github/workflows/([a-zA-Z0-9_-]+\.(yml|yaml))`)
+	matches := re.FindStringSubmatch(workflowRef)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+
+	log.Entry().Debugf("unable to determine workflow file name from GITHUB_WORKFLOW_REF: %s", workflowRef)
+	return ""
 }

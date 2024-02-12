@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/BurntSushi/toml"
-	"github.com/buildpacks/lifecycle/platform"
+	"github.com/buildpacks/lifecycle/platform/files"
 )
 
 const reportFile = "/layers/report.toml"
 
 func DigestFromReport(utils BuildUtils) (string, error) {
-	report := platform.ExportReport{}
+	report := files.Report{}
 
 	data, err := utils.FileRead(reportFile)
 	if err != nil {

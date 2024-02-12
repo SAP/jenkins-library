@@ -49,12 +49,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
-
         boolean shareConfidentialInformation = configuration?.get('shareConfidentialInformation') ?: false
 
         Map result = DebugReport.instance.generateReport(script, shareConfidentialInformation)

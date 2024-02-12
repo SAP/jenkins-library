@@ -68,12 +68,6 @@ void call(parameters = [:]) {
 
         Map config = configHelper.use()
 
-        utils.pushToSWA([
-            step         : STEP_NAME,
-            stepParamKey1: 'enableZeroDowntimeDeployment',
-            stepParam1   : config.enableZeroDowntimeDeployment
-        ], config)
-
         def index = 1
         def deployments = [:]
 

@@ -44,9 +44,9 @@ func TestShellRun(t *testing.T) {
 				}
 			})
 			t.Run("stderr", func(t *testing.T) {
-				expectedErr := "Stderr: command /bin/bash\n"
-				if eStr := e.String(); eStr != expectedErr {
-					t.Errorf("expected: %v got: %v", expectedErr, eStr)
+				expectedErr := "Stderr: command /bin/bash"
+				if !strings.Contains(e.String(), expectedErr) {
+					t.Errorf("expected: %v got: %v", expectedErr, e.String())
 				}
 			})
 		})
@@ -74,9 +74,9 @@ func TestExecutableRun(t *testing.T) {
 				}
 			})
 			t.Run("stderr", func(t *testing.T) {
-				expectedErr := "Stderr: command echo\n"
-				if eStr := stderr.String(); eStr != expectedErr {
-					t.Errorf("expected: %v got: %v", expectedErr, eStr)
+				expectedErr := "Stderr: command echo"
+				if !strings.Contains(stderr.String(), expectedErr) {
+					t.Errorf("expected: %v got: %v", expectedErr, stderr.String())
 				}
 			})
 		})

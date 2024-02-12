@@ -47,12 +47,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], config)
-
         config.stashIncludes.each {stashKey, stashIncludes ->
             def useDefaultExcludes = !config.noDefaultExludes.contains(stashKey)
             utils.stashWithMessage(stashKey, "[${STEP_NAME}] no files detected for stash '${stashKey}': ", stashIncludes, config.stashExcludes[stashKey]?:'', useDefaultExcludes)

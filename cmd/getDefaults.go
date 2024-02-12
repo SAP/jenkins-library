@@ -6,11 +6,12 @@ import (
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 type defaultsCommandOptions struct {

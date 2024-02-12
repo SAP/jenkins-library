@@ -152,30 +152,6 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
     } finally {
         //Perform stashing of selected files in workspace
         utils.stashStageFiles(script, stageName)
-
-        // In general telemetry reporting is disabled by the config settings. This flag is used to disable the reporting when the config is not yet read (e.g. init stage).
-        if (!telemetryDisabled) {
-            def duration = System.currentTimeMillis() - startTime
-            utils.pushToSWA([
-                eventType       : 'library-os-stage',
-                stageName       : stageName,
-                stepParamKey1   : 'buildResult',
-                stepParam1      : "${script.currentBuild.currentResult}",
-                buildResult     : "${script.currentBuild.currentResult}",
-                stepParamKey2   : 'stageStartTime',
-                stepParam2      : "${startTime}",
-                stageStartTime  : "${startTime}",
-                stepParamKey3   : 'stageDuration',
-                stepParam3      : "${duration}",
-                stageDuration   : "${duration}",
-                stepParamKey4   : 'projectExtension',
-                stepParam4      : "${projectExtensions}",
-                projectExtension: "${projectExtensions}",
-                stepParamKey5   : 'globalExtension',
-                stepParam5      : "${globalExtensions}",
-                globalExtension : "${globalExtensions}"
-            ], config)
-        }
     }
 }
 

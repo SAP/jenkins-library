@@ -2,6 +2,7 @@ package codeql
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"gopkg.in/yaml.v2"
@@ -61,6 +63,7 @@ type gitUtils interface {
 	listRemote() ([]reference, error)
 	cloneRepo(dir string, opts *git.CloneOptions) (*git.Repository, error)
 	switchOrphan(ref string, repo *git.Repository) error
+	initRepo(dir string) (*git.Repository, error)
 }
 
 type repository interface {
@@ -83,7 +86,8 @@ type reference interface {
 const (
 	CommitMessageMirroringCode = "Mirroring code for revision %s from %s"
 	SrcZip                     = "src.zip"
-	codeqlDatabaseYml          = "codeql-database.yml"
+	CodeqlDatabaseYml          = "codeql-database.yml"
+	OriginRemote               = "origin"
 )
 
 func (uploader *GitUploaderInstance) UploadProjectToGithub() (string, error) {
@@ -93,12 +97,12 @@ func (uploader *GitUploaderInstance) UploadProjectToGithub() (string, error) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	refExists, err := doesRefExist(uploader, uploader.ref)
+	refExists, repoEmpty, err := doesRefExist(uploader, uploader.ref)
 	if err != nil {
 		return "", err
 	}
 
-	repo, err := clone(uploader, uploader.targetRepo, uploader.token, uploader.ref, tmpDir, refExists)
+	repo, err := clone(uploader, uploader.targetRepo, uploader.token, uploader.ref, tmpDir, repoEmpty, refExists)
 	if err != nil {
 		return "", err
 	}
@@ -112,7 +116,7 @@ func (uploader *GitUploaderInstance) UploadProjectToGithub() (string, error) {
 		return "", err
 	}
 
-	srcLocationPrefix, err := getSourceLocationPrefix(filepath.Join(uploader.dbDir, codeqlDatabaseYml))
+	srcLocationPrefix, err := getSourceLocationPrefix(filepath.Join(uploader.dbDir, CodeqlDatabaseYml))
 	if err != nil {
 		return "", err
 	}
@@ -143,7 +147,7 @@ func (uploader *GitUploaderInstance) UploadProjectToGithub() (string, error) {
 
 func (uploader *GitUploaderInstance) listRemote() ([]reference, error) {
 	rem := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		Name: "origin",
+		Name: OriginRemote,
 		URLs: []string{uploader.targetRepo},
 	})
 
@@ -163,6 +167,28 @@ func (uploader *GitUploaderInstance) listRemote() ([]reference, error) {
 	return convertedList, err
 }
 
+func (uploader *GitUploaderInstance) initRepo(dir string) (*git.Repository, error) {
+	// git init -b <ref>
+	repo, err := git.PlainInitWithOptions(dir, &git.PlainInitOptions{
+		InitOptions: git.InitOptions{
+			DefaultBranch: plumbing.ReferenceName(uploader.ref),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// git remote add origin <repo>
+	_, err = repo.CreateRemote(&config.RemoteConfig{
+		Name: OriginRemote,
+		URLs: []string{uploader.targetRepo},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
+}
+
 func (uploader *GitUploaderInstance) cloneRepo(dir string, opts *git.CloneOptions) (*git.Repository, error) {
 	return git.PlainClone(dir, false, opts)
 }
@@ -173,21 +199,28 @@ func (uploader *GitUploaderInstance) switchOrphan(ref string, r *git.Repository)
 	return r.Storer.SetReference(plumbing.NewSymbolicReference(plumbing.HEAD, newRef))
 }
 
-func doesRefExist(uploader gitUtils, ref string) (bool, error) {
+func doesRefExist(uploader gitUtils, ref string) (bool, bool, error) {
 	// git ls-remote <repo>
 	remoteRefs, err := uploader.listRemote()
 	if err != nil {
-		return false, err
+		if errors.Is(err, transport.ErrEmptyRemoteRepository) {
+			return false, true, nil
+		}
+		return false, false, err
 	}
 	for _, r := range remoteRefs {
 		if string(r.Name()) == ref {
-			return true, nil
+			return true, false, nil
 		}
 	}
-	return false, nil
+	return false, false, nil
 }
 
-func clone(uploader gitUtils, url, token, ref, dir string, refExists bool) (*git.Repository, error) {
+func clone(uploader gitUtils, url, token, ref, dir string, repoEmpty, refExists bool) (*git.Repository, error) {
+	if repoEmpty {
+		return uploader.initRepo(dir)
+	}
+
 	opts := &git.CloneOptions{
 		URL: url,
 		Auth: &http.BasicAuth{

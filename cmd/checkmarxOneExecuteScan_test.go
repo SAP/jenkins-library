@@ -240,6 +240,10 @@ func (sys *checkmarxOneSystemMock) UpdateProjectConfiguration(projectID string, 
 	return nil
 }
 
+func (sys *checkmarxOneSystemMock) GetVersion() (checkmarxOne.VersionInfo, error) {
+	return checkmarxOne.VersionInfo{}, nil
+}
+
 type checkmarxOneExecuteScanHelperMock struct {
 	ctx     context.Context
 	config  checkmarxOneExecuteScanOptions

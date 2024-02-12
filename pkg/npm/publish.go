@@ -58,7 +58,6 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 
 	scope, err := exec.readPackageScope(packageJSON)
-
 	if err != nil {
 		return errors.Wrapf(err, "error reading package scope from %s", packageJSON)
 	}
@@ -82,6 +81,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	// temporary installation folder used to install BOM to be ignored
 	log.Entry().Debug("adding tmp to npmignore")
 	npmignore.Add("tmp/")
+	log.Entry().Debug("adding sboms to npmignore")
+	npmignore.Add("**/bom*.xml")
 
 	npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
@@ -206,7 +207,6 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
 	b, err := exec.Utils.FileRead(packageJSON)
-
 	if err != nil {
 		return "", err
 	}

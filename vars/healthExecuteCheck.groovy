@@ -51,8 +51,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('testServerUrl')
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
-
         def checkUrl = config.testServerUrl
         if(config.healthEndpoint){
             if(!checkUrl.endsWith('/'))

@@ -41,10 +41,6 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
-
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
-
         durationMeasure(script: script, measurementName: 'promote_duration') {
             if (config.containerPushToRegistry) {
                 containerPushToRegistry script: script

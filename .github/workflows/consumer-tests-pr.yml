@@ -44,7 +44,7 @@ jobs:
         with:
           repository: ${{ steps.repository.outputs.repository }}
           ref: ${{ steps.branch_name.outputs.branch_name }}
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: zulu

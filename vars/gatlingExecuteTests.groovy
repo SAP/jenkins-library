@@ -48,12 +48,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('pomPath')
             .use()
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'pomPath',
-            stepParam1: config.pomPath,
-        ], config)
-
         def appUrls = parameters.get('appUrls')
         if (appUrls && !(appUrls instanceof List)) {
             error "The optional parameter 'appUrls' needs to be a List of Maps, where each Map contains the two entries 'url' and 'credentialsId'."

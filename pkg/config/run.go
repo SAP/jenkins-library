@@ -94,27 +94,6 @@ func (r *RunConfigV1) InitRunConfigV1(config *Config, utils piperutils.FileUtils
 	return nil
 }
 
-// InitRunConfig ...
-func (r *RunConfig) InitRunConfig(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error),
-	openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
-	r.OpenFile = openFile
-	r.RunSteps = map[string]map[string]bool{}
-
-	if len(r.StageConfig.Stages) == 0 {
-		if err := r.loadConditions(); err != nil {
-			return errors.Wrap(err, "failed to load pipeline run conditions")
-		}
-	}
-
-	err := r.evaluateConditions(config, filters, parameters, secrets, stepAliases, glob)
-	if err != nil {
-		return errors.Wrap(err, "failed to evaluate step conditions: %v")
-	}
-
-	return nil
-}
-
 // ToDo: optimize parameter handling
 func (r *RunConfig) getStepConfig(config *Config, stageName, stepName string, filters map[string]StepFilters,
 	parameters map[string][]StepParameters, secrets map[string][]StepSecrets, stepAliases map[string][]Alias) (StepConfig, error) {
@@ -139,20 +118,6 @@ func (r *RunConfig) getStepConfig(config *Config, stageName, stepName string, fi
 	return config.GetStepConfig(flagValues, paramJSON, nil, nil, false, filters[stepName], stepMeta, envParameters, stageName, stepName)
 }
 
-func (r *RunConfig) loadConditions() error {
-	defer r.StageConfigFile.Close()
-	content, err := io.ReadAll(r.StageConfigFile)
-	if err != nil {
-		return errors.Wrapf(err, "error: failed to read the stageConfig file")
-	}
-
-	err = yaml.Unmarshal(content, &r.StageConfig)
-	if err != nil {
-		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
-	}
-	return nil
-}
-
 // LoadConditionsV1 loads stage conditions (in CRD-style) into PipelineConfig
 func (r *RunConfigV1) LoadConditionsV1() error {
 	defer r.StageConfigFile.Close()
@@ -164,47 +129,6 @@ func (r *RunConfigV1) LoadConditionsV1() error {
 	err = yaml.Unmarshal(content, &r.PipelineConfig)
 	if err != nil {
 		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
-	}
-	return nil
-}
-
-func stepConfigLookup(m map[string]interface{}, stepName, key string) interface{} {
-	// flat map: key is on top level
-	if m[key] != nil {
-		return m[key]
-	}
-	// lookup for step config with following format
-	// general:
-	//   <key>: <value>
-	// stages:
-	//   <stepName>:
-	//     <key>: <value>
-	// steps:
-	//   <stepName>:
-	//     <key>: <value>
-	if m["general"] != nil {
-		general := m["general"].(map[string]interface{})
-		if general[key] != nil {
-			return general[key]
-		}
-	}
-	if m["stages"] != nil {
-		stages := m["stages"].(map[string]interface{})
-		if stages[stepName] != nil {
-			stageStepConfig := stages[stepName].(map[string]interface{})
-			if stageStepConfig[key] != nil {
-				return stageStepConfig[key]
-			}
-		}
-	}
-	if m["steps"] != nil {
-		steps := m["steps"].(map[string]interface{})
-		if steps[stepName] != nil {
-			stepConfig := steps[stepName].(map[string]interface{})
-			if stepConfig[key] != nil {
-				return stepConfig[key]
-			}
-		}
 	}
 	return nil
 }

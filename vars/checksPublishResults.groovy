@@ -93,12 +93,6 @@ void call(Map parameters = [:]) {
             error "[ERROR] Configuration of the aggregation view is no longer possible. Migrate any thresholds defined here to tool specific quality gates. (piper-lib/${STEP_NAME})"
         }
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
-
         // JAVA
         if(configuration.pmd.active) {
           report(pmdParser(createToolOptions(configuration.pmd)), configuration.pmd, configuration.archive)
