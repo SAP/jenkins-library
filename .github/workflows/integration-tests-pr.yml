@@ -134,11 +134,11 @@ jobs:
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Download Piper binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: piper
       - name: Download integration tests binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: integration_tests
           path: ./integration/
