@@ -807,7 +807,7 @@ func TestAddDetectArgs(t *testing.T) {
 			config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: v.options.ProjectName, Version: v.options.Version, CustomScanVersion: v.options.CustomScanVersion}
 			sys := newBlackduckMockSystem(config)
 
-			got, err := addDetectArgs(v.args, v.options, newDetectTestUtilsBundle(v.isPullRequest), &sys)
+			got, err := addDetectArgs(v.args, v.options, newDetectTestUtilsBundle(v.isPullRequest), &sys, NO_VERSION_SUFFIX, "")
 			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
 		})
