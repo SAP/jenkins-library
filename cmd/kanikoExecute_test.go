@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -38,7 +37,7 @@ func (c *kanikoMockClient) SendRequest(method, url string, body io.Reader, heade
 	if len(c.errorMessage) > 0 {
 		return nil, fmt.Errorf(c.errorMessage)
 	}
-	return &http.Response{StatusCode: c.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(c.responseBody)))}, nil
+	return &http.Response{StatusCode: c.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(c.responseBody)))}, nil
 }
 func (c *kanikoMockClient) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	if len(c.errorMessage) > 0 {
@@ -51,12 +50,12 @@ func TestRunKanikoExecute(t *testing.T) {
 
 	// required due to config resolution during build settings retrieval
 	// ToDo: proper mocking
-	openFileBak := configOptions.openFile
+	openFileBak := configOptions.OpenFile
 	defer func() {
-		configOptions.openFile = openFileBak
+		configOptions.OpenFile = openFileBak
 	}()
 
-	configOptions.openFile = configOpenFileMock
+	configOptions.OpenFile = configOpenFileMock
 
 	t.Run("success case", func(t *testing.T) {
 		config := &kanikoExecuteOptions{

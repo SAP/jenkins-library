@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -310,7 +309,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		tmpFolder := getTempDirForKubeCtlJSON()
 		defer os.RemoveAll(tmpFolder) // clean up
 		jsonData, _ := json.Marshal(dockerRegistrySecretData)
-		if err := ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777); err != nil {
+		if err := os.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777); err != nil {
 			log.Entry().WithError(err).Warning("failed to write secret")
 		}
 
@@ -464,7 +463,7 @@ func createKey(parts ...string) string {
 }
 
 func getTempDirForKubeCtlJSON() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("creating temp directory failed")
 	}

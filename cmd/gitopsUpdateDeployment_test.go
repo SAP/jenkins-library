@@ -772,6 +772,7 @@ type filesMock struct {
 	failOnCreation bool
 	failOnDeletion bool
 	failOnWrite    bool
+	failOnRead     bool
 	failOnGlob     bool
 	path           string
 }
@@ -781,6 +782,13 @@ func (f filesMock) FileWrite(path string, content []byte, perm os.FileMode) erro
 		return errors.New("error appeared")
 	}
 	return piperutils.Files{}.FileWrite(path, content, perm)
+}
+
+func (f filesMock) FileRead(path string) ([]byte, error) {
+	if f.failOnRead {
+		return []byte{}, errors.New("error appeared")
+	}
+	return piperutils.Files{}.FileRead(path)
 }
 
 func (f filesMock) TempDir(dir string, pattern string) (name string, err error) {
@@ -848,7 +856,7 @@ func (v *gitUtilsMock) CommitFiles(newFiles []string, commitMessage string, _ st
 	return [20]byte{123}, nil
 }
 
-func (v gitUtilsMock) PushChangesToRepository(_ string, _ string, force *bool) error {
+func (v gitUtilsMock) PushChangesToRepository(_ string, _ string, force *bool, caCerts []byte) error {
 	if v.failOnPush {
 		return errors.New("error on push")
 	}
@@ -858,7 +866,7 @@ func (v gitUtilsMock) PushChangesToRepository(_ string, _ string, force *bool) e
 	return nil
 }
 
-func (v *gitUtilsMock) PlainClone(_, _, _, directory string) error {
+func (v *gitUtilsMock) PlainClone(_, _, _, _, directory string, caCerts []byte) error {
 	if v.skipClone {
 		return nil
 	}

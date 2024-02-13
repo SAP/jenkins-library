@@ -3,7 +3,6 @@ package format
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/ghodss/yaml"
@@ -113,7 +112,7 @@ func ReadAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
 		Assessments: []Assessment{},
 	}
 
-	content, err := ioutil.ReadAll(assessmentFile)
+	content, err := io.ReadAll(assessmentFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading %v", assessmentFile)
 	}

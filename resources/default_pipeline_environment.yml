@@ -5,7 +5,7 @@
 
 #Project Setup
 general:
-  collectTelemetryData: true
+  collectTelemetryData: false
   logFormat: 'plain'
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
@@ -481,6 +481,7 @@ steps:
       active: false
     jmeter:
       pattern: '**/*.jtl'
+      filterRegex: ''
       errorFailedThreshold: 20
       errorUnstableThreshold: 10
       errorUnstableResponseTimeThreshold: ''

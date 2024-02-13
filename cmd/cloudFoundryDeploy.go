@@ -251,6 +251,11 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 	// deploy command will be provided by the prepare functions below
 
 	if deployType == "blue-green" {
+		log.Entry().Warn("[WARN] Blue-green deployment type is deprecated for cf native builds " +
+			"and will be completely removed by 01.02.2024" +
+			"Instead set parameter `cfNativeDeployParameters: '--strategy rolling'`. " +
+			"Please refer to the Cloud Foundry documentation for further information: " +
+			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html")
 		deployCommand, deployOptions, smokeTestScript, err = prepareBlueGreenCfNativeDeploy(config)
 		if err != nil {
 			return errors.Wrapf(err, "Cannot prepare cf native deployment. DeployType '%s'", deployType)

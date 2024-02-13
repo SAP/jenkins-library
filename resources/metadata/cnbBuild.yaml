@@ -138,6 +138,21 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: expandBuildEnvVars
+        type: "bool"
+        default: false
+        description: |
+          Expand environment variables used in `buildEnvVars`.
+          Example:
+          ```yaml
+          expandBuildEnvVars: true
+          buildEnvVars:
+            foo: ${BAR}
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: path
         type: string
         description: |
@@ -362,4 +377,7 @@ spec:
           - filePattern: "**/bom-*.xml"
             type: sbom
   containers:
-    - image: "paketobuildpacks/builder:base"
+    - image: "paketobuildpacks/builder-jammy-base:latest"
+      options:
+        - name: -u
+          value: "0"

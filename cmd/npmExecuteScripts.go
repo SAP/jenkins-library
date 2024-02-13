@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
@@ -19,6 +21,11 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 }
 
 func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) error {
+	// setting env. variable to omit installation of dev. dependencies
+	if config.Production {
+		os.Setenv("NODE_ENV", "production")
+	}
+
 	if config.Install {
 		if len(config.BuildDescriptorList) > 0 {
 			if err := npmExecutor.InstallAllDependencies(config.BuildDescriptorList); err != nil {
@@ -79,14 +86,21 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if config.Publish {
-		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
-		if err != nil {
-			return err
-		}
+		if len(config.BuildDescriptorList) > 0 {
+			err = npmExecutor.PublishAllPackages(config.BuildDescriptorList, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish)
+			if err != nil {
+				return err
+			}
+		} else {
+			packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+			if err != nil {
+				return err
+			}
 
-		err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish)
-		if err != nil {
-			return err
+			err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

@@ -67,14 +67,14 @@ func (p *PolicyViolationReport) ToMarkdown() ([]byte, error) {
 	}
 
 	// only fill with orchestrator information if orchestrator can be identified properly
-	if provider, err := orchestrator.NewOrchestratorSpecificConfigProvider(); err == nil {
+	if provider, err := orchestrator.GetOrchestratorConfigProvider(nil); err == nil {
 		// only add information if not yet provided
 		if len(p.CommitID) == 0 {
-			p.CommitID = provider.GetCommit()
+			p.CommitID = provider.CommitSHA()
 		}
 		if len(p.PipelineLink) == 0 {
-			p.PipelineLink = provider.GetJobURL()
-			p.PipelineName = provider.GetJobName()
+			p.PipelineLink = provider.JobURL()
+			p.PipelineName = provider.JobName()
 		}
 	}
 

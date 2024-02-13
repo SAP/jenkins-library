@@ -69,6 +69,8 @@ import groovy.text.GStringTemplateEngine
 /**
  * Enables UI test execution with Selenium in a sidecar container.
  *
+ * This step is Jenkins-only.
+ *
  * The step executes a closure (see example below) connecting to a sidecar container with a Selenium Server.
  *
  * When executing in a
@@ -97,12 +99,6 @@ void call(Map parameters = [:], Closure body) {
             .dependingOn('buildTool').mixin('dockerName')
             .dependingOn('buildTool').mixin('dockerWorkspace')
             .use()
-
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], config)
 
         // Inject config via env vars so that scripts running inside selenium can respond to that
         config.dockerEnvVars = config.dockerEnvVars ?: [:]

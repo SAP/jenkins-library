@@ -16,20 +16,21 @@ import (
 )
 
 type gitopsUpdateDeploymentOptions struct {
-	BranchName            string   `json:"branchName,omitempty"`
-	CommitMessage         string   `json:"commitMessage,omitempty"`
-	ServerURL             string   `json:"serverUrl,omitempty"`
-	ForcePush             bool     `json:"forcePush,omitempty"`
-	Username              string   `json:"username,omitempty"`
-	Password              string   `json:"password,omitempty"`
-	FilePath              string   `json:"filePath,omitempty"`
-	ContainerName         string   `json:"containerName,omitempty"`
-	ContainerRegistryURL  string   `json:"containerRegistryUrl,omitempty"`
-	ContainerImageNameTag string   `json:"containerImageNameTag,omitempty"`
-	ChartPath             string   `json:"chartPath,omitempty"`
-	HelmValues            []string `json:"helmValues,omitempty"`
-	DeploymentName        string   `json:"deploymentName,omitempty"`
-	Tool                  string   `json:"tool,omitempty" validate:"possible-values=kubectl helm kustomize"`
+	BranchName                string   `json:"branchName,omitempty"`
+	CommitMessage             string   `json:"commitMessage,omitempty"`
+	ServerURL                 string   `json:"serverUrl,omitempty"`
+	ForcePush                 bool     `json:"forcePush,omitempty"`
+	Username                  string   `json:"username,omitempty"`
+	Password                  string   `json:"password,omitempty"`
+	FilePath                  string   `json:"filePath,omitempty"`
+	ContainerName             string   `json:"containerName,omitempty"`
+	ContainerRegistryURL      string   `json:"containerRegistryUrl,omitempty"`
+	ContainerImageNameTag     string   `json:"containerImageNameTag,omitempty"`
+	ChartPath                 string   `json:"chartPath,omitempty"`
+	HelmValues                []string `json:"helmValues,omitempty"`
+	DeploymentName            string   `json:"deploymentName,omitempty"`
+	Tool                      string   `json:"tool,omitempty" validate:"possible-values=kubectl helm kustomize"`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
@@ -79,7 +80,7 @@ For *kustomize* the ` + "`" + `images` + "`" + ` section will be update with the
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -155,6 +156,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. In case of `kustomize` this is the name or alias of the image in the `kustomization.yaml`")
 	cmd.Flags().StringVar(&stepConfig.Tool, "tool", `kubectl`, "Defines the tool which should be used to update the deployment description.")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 
 	cmd.MarkFlagRequired("branchName")
 	cmd.MarkFlagRequired("serverUrl")
@@ -342,6 +344,15 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     `kubectl`,
+					},
+					{
+						Name:        "customTlsCertificateLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

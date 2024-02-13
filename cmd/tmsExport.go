@@ -28,7 +28,7 @@ func tmsExport(exportConfig tmsExportOptions, telemetryData *telemetry.CustomDat
 
 func runTmsExport(exportConfig tmsExportOptions, communicationInstance tms.CommunicationInterface, utils tms.TmsUtils) error {
 	config := convertExportOptions(exportConfig)
-	fileId, errUploadFile := tms.UploadFile(config, communicationInstance, utils)
+	fileInfo, errUploadFile := tms.UploadFile(config, communicationInstance, utils)
 	if errUploadFile != nil {
 		return errUploadFile
 	}
@@ -38,7 +38,7 @@ func runTmsExport(exportConfig tmsExportOptions, communicationInstance tms.Commu
 		return errUploadDescriptors
 	}
 
-	_, errExportFileToNode := communicationInstance.ExportFileToNode(config.NodeName, fileId, config.CustomDescription, config.NamedUser)
+	_, errExportFileToNode := communicationInstance.ExportFileToNode(fileInfo, config.NodeName, config.CustomDescription, config.NamedUser)
 	if errExportFileToNode != nil {
 		log.SetErrorCategory(log.ErrorService)
 		return fmt.Errorf("failed to export file to node: %w", errExportFileToNode)
@@ -49,7 +49,11 @@ func runTmsExport(exportConfig tmsExportOptions, communicationInstance tms.Commu
 
 func convertExportOptions(exportConfig tmsExportOptions) tms.Options {
 	var config tms.Options
-	config.TmsServiceKey = exportConfig.TmsServiceKey
+	config.ServiceKey = exportConfig.ServiceKey
+	if exportConfig.ServiceKey == "" && exportConfig.TmsServiceKey != "" {
+		config.ServiceKey = exportConfig.TmsServiceKey
+		log.Entry().Warn("DEPRECATION WARNING: The tmsServiceKey parameter has been deprecated, please use the serviceKey parameter instead.")
+	}
 	config.CustomDescription = exportConfig.CustomDescription
 	if config.CustomDescription == "" {
 		config.CustomDescription = tms.DEFAULT_TR_DESCRIPTION

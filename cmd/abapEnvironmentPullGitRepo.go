@@ -1,11 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http/cookiejar"
-	"reflect"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -28,37 +24,27 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *te
 		Exec: &c,
 	}
 
-	client := piperhttp.Client{}
+	apiManager := abaputils.SoftwareComponentApiManager{
+		Client:        &piperhttp.Client{},
+		PollIntervall: 5 * time.Second,
+	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentPullGitRepo(&options, &autils, &client)
+	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, client piperhttp.Sender) (err error) {
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
 
 	subOptions := convertPullConfig(options)
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
+	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "")
 	if err != nil {
 		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
-
-	cookieJar, err := cookiejar.New(nil)
-	if err != nil {
-		return errors.Wrap(err, "Could not create a Cookie Jar")
-	}
-	clientOptions := piperhttp.ClientOptions{
-		MaxRequestDuration: 180 * time.Second,
-		CookieJar:          cookieJar,
-		Username:           connectionDetails.User,
-		Password:           connectionDetails.Password,
-	}
-	client.SetOptions(clientOptions)
-	pollIntervall := com.GetPollIntervall()
 
 	var repositories []abaputils.Repository
 	err = checkPullRepositoryConfiguration(*options)
@@ -71,15 +57,15 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 		return err
 	}
 
-	err = pullRepositories(repositories, connectionDetails, client, pollIntervall)
+	err = pullRepositories(repositories, connectionDetails, apiManager)
 	return err
 
 }
 
-func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
 	log.Entry().Infof("Start pulling %v repositories", len(repositories))
 	for _, repo := range repositories {
-		err = handlePull(repo, pullConnectionDetails, client, pollIntervall)
+		err = handlePull(repo, pullConnectionDetails, apiManager)
 		if err != nil {
 			break
 		}
@@ -90,22 +76,27 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 	return err
 }
 
-func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
 
 	logString := repo.GetPullLogString()
 	errorString := "Pull of the " + logString + " failed on the ABAP system"
 
-	abaputils.AddDefaultDashedLine()
+	abaputils.AddDefaultDashedLine(1)
 	log.Entry().Info("Start pulling the " + logString)
-	abaputils.AddDefaultDashedLine()
+	abaputils.AddDefaultDashedLine(1)
 
-	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
+	api, errGetAPI := apiManager.GetAPI(con, repo)
+	if errGetAPI != nil {
+		return errors.Wrap(errGetAPI, "Could not initialize the connection to the system")
+	}
+
+	err = api.Pull()
 	if err != nil {
 		return errors.Wrapf(err, errorString)
 	}
 
 	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
 	if errorPollEntity != nil {
 		return errors.Wrapf(errorPollEntity, errorString)
 	}
@@ -114,61 +105,6 @@ func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.Conne
 	}
 	log.Entry().Info(repo.Name + " was pulled successfully")
 	return err
-}
-
-func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
-
-	uriConnectionDetails := pullConnectionDetails
-	uriConnectionDetails.URL = ""
-	pullConnectionDetails.XCsrfToken = "fetch"
-
-	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := abaputils.GetHTTPResponse("HEAD", pullConnectionDetails, nil, client)
-	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
-		return uriConnectionDetails, err
-	}
-	defer resp.Body.Close()
-
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Debug("Authentication on the ABAP system successful")
-	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
-	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
-
-	// Trigger the Pull of a Repository
-	if repo.Name == "" {
-		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
-	}
-
-	jsonBody := []byte(repo.GetPullRequestBody())
-	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
-	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not pull the "+repo.GetPullLogString(), uriConnectionDetails)
-		return uriConnectionDetails, err
-	}
-	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Debug("Triggered Pull of repository / software component")
-
-	// Parse Response
-	var body abaputils.PullEntity
-	var abapResp map[string]*json.RawMessage
-	bodyText, errRead := ioutil.ReadAll(resp.Body)
-	if errRead != nil {
-		return uriConnectionDetails, err
-	}
-	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return uriConnectionDetails, err
-	}
-	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return uriConnectionDetails, err
-	}
-	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).WithField("Tag", repo.Tag).Error("Could not pull the repository / software component")
-		err := errors.New("Request to ABAP System not successful")
-		return uriConnectionDetails, err
-	}
-
-	uriConnectionDetails.URL = body.Metadata.URI
-	return uriConnectionDetails, nil
 }
 
 func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions) error {
@@ -183,7 +119,7 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 }
 
 func finishPullLogs() {
-	abaputils.AddDefaultDashedLine()
+	abaputils.AddDefaultDashedLine(1)
 	log.Entry().Info("All repositories were pulled successfully")
 }
 

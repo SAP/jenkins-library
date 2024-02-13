@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -70,12 +71,17 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 					PackageURLPlusCVEHash: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID))),
 				},
 				Properties: &format.SarifProperties{
-					Audited:           isAudited,
-					ToolSeverity:      v.Severity,
-					ToolSeverityIndex: severityIndex[v.Severity],
-					ToolAuditMessage:  v.VulnerabilityWithRemediation.RemediationComment,
-					ToolState:         v.RemediationStatus,
-					UnifiedAuditState: unifiedStatusValue,
+					Audited:               isAudited,
+					ToolSeverity:          v.Severity,
+					ToolSeverityIndex:     severityIndex[v.Severity],
+					ToolState:             v.RemediationStatus,
+					ToolAuditMessage:      v.VulnerabilityWithRemediation.RemediationComment,
+					UnifiedAuditState:     unifiedStatusValue,
+					UnifiedSeverity:       strings.ToLower(v.Severity),
+					UnifiedCriticality:    v.BaseScore,
+					UnifiedAuditUser:      v.VulnerabilityWithRemediation.RemidiatedBy,
+					AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+					AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
 				},
 			}
 

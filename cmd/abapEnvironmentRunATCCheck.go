@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -84,7 +85,7 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 	// Parse response
 	var body []byte
 	if err == nil {
-		body, err = ioutil.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 	}
 	if err == nil {
 		defer resp.Body.Close()
@@ -225,7 +226,7 @@ func logAndPersistAndEvaluateATCResults(utils piperutils.FileUtils, body []byte,
 		log.Entry().Info("There were no results from this run, most likely the checked Software Components are empty or contain no ATC findings")
 	}
 
-	err := ioutil.WriteFile(atcResultFileName, body, 0o644)
+	err := os.WriteFile(atcResultFileName, body, 0o644)
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", atcResultFileName)
 		var reports []piperutils.Path
@@ -242,7 +243,7 @@ func logAndPersistAndEvaluateATCResults(utils piperutils.FileUtils, body []byte,
 			htmlString := generateHTMLDocument(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			atcResultHTMLFileName := strings.Trim(atcResultFileName, ".xml") + ".html"
-			err = ioutil.WriteFile(atcResultHTMLFileName, htmlStringByte, 0o644)
+			err = os.WriteFile(atcResultHTMLFileName, htmlStringByte, 0o644)
 			if err == nil {
 				log.Entry().Info("Writing " + atcResultHTMLFileName + " file was successful")
 				reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results HTML file", Mandatory: true})
@@ -305,7 +306,7 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	_ = logResponseBody(resp)
 	if err != nil || (resp != nil && resp.StatusCode == 400) { // send request does not seem to produce error with StatusCode 400!!!
-		err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
+		_, err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
 		log.SetErrorCategory(log.ErrorService)
 		return resp, errors.Errorf("triggering ATC run failed: %v", err)
 	}
@@ -317,7 +318,7 @@ func logResponseBody(resp *http.Response) error {
 	var bodyText []byte
 	var readError error
 	if resp != nil {
-		bodyText, readError = ioutil.ReadAll(resp.Body)
+		bodyText, readError = io.ReadAll(resp.Body)
 		if readError != nil {
 			return readError
 		}
@@ -353,7 +354,7 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 		if err != nil {
 			return "", errors.Errorf("Getting HTTP response failed: %v", err)
 		}
-		bodyText, err := ioutil.ReadAll(resp.Body)
+		bodyText, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", errors.Errorf("Reading response body failed: %v", err)
 		}

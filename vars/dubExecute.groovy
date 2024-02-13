@@ -50,12 +50,6 @@ void call(Map parameters = [:], body = null) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
-
         if (!fileExists('dub.json') && !fileExists('dub.sdl')) {
             error "[${STEP_NAME}] Neither dub.json nor dub.sdl was found."
         }

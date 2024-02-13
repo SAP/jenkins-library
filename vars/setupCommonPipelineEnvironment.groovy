@@ -107,12 +107,6 @@ void call(Map parameters = [:]) {
 
         inferBuildTool(script, config)
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey4: 'customDefaults',
-            stepParam4: parameters.customDefaults?'true':'false'
-        ], config)
-
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
 
@@ -271,7 +265,10 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     }
 
     if(gitBranch.contains("/")){
-        gitBranch = gitBranch.split("/")[1]
+        gitBranchSplit = gitBranch.split("/")
+        if(gitBranchSplit[0] == "origin") {
+            gitBranch = gitBranchSplit[1..-1].join("/")
+        }
     }
 
     if (!gitBranch.contains("PR")) {

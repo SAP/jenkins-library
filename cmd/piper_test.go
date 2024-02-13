@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,6 +63,7 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 			// init
 			defer resetEnv(os.Environ())
 			os.Clearenv()
+			orchestrator.ResetConfigProvider()
 
 			//mock Jenkins env
 			os.Setenv("JENKINS_HOME", "anything")
@@ -217,7 +218,7 @@ func TestGetProjectConfigFile(t *testing.T) {
 			}
 
 			for _, file := range test.filesAvailable {
-				if err := ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700); err != nil {
 					t.Fail()
 				}
 			}
