@@ -412,7 +412,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	// disables telemetry reporting in go
 	// follow-up cleanup needed
-	GeneralConfig.NoTelemetry = true
+	// GeneralConfig.NoTelemetry = true
 
 	stepConfig.Config = checkTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
