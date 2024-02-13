@@ -99,7 +99,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	}
 	// t.baseMetaData = baseMetaData
 
-	pipelineID := readCommonPipelineEnvironment("custom/pipelineID")
+	pipelineID := readCommonPipelineEnvironment("custom/cumulusPipelineID")
 	log.Entry().Println("pipelineID:", pipelineID)
 
 	t.PendoToken = token
