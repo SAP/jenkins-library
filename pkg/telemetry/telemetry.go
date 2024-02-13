@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -37,7 +38,7 @@ type Telemetry struct {
 	BaseURL              string
 	Endpoint             string
 	SiteID               string
-	Token                string
+	PendoToken           string
 	Pendo                Pendo
 }
 
@@ -85,8 +86,6 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 	}
 
-	t.Token = token
-
 	t.baseData = BaseData{
 		Orchestrator:    t.provider.OrchestratorType(),
 		StageName:       t.provider.StageName(),
@@ -100,17 +99,30 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	}
 	// t.baseMetaData = baseMetaData
 
+	pipelineID := readCommonPipelineEnvironment("custom/pipelineID")
+	log.Entry().Println("pipelineID:", pipelineID)
+
+	t.PendoToken = token
 	t.Pendo = Pendo{
 		Type:       "track",
 		Event:      stepName,
-		VisitorID:  "123-456-789",
-		AccountID:  "123-456-789",
+		VisitorID:  pipelineID,
+		AccountID:  pipelineID,
 		Timestamp:  time.Now().UnixMilli(),
 		Properties: t.data,
 	}
 
 	fmt.Printf("pendo data: %+v\n", t.Pendo)
 
+}
+
+func readCommonPipelineEnvironment(filePath string) string {
+	contentFile, err := os.ReadFile(".pipeline/commonPipelineEnvironment/" + filePath)
+	if err != nil {
+		log.Entry().Debugf("Could not read %v file. %v", filePath, err)
+		contentFile = []byte("N/A")
+	}
+	return string(contentFile)
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
@@ -172,7 +184,7 @@ func (t *Telemetry) Send() {
 
 	h := http.Header{}
 	http.Header.Add(h, "Content-Type", "application/json")
-	http.Header.Add(h, "x-pendo-integration-key", t.Token)
+	http.Header.Add(h, "x-pendo-integration-key", t.PendoToken)
 
 	log.Entry().Debug("Sending telemetry data")
 	t.client.SendRequest(http.MethodPost, t.BaseURL+t.Endpoint, bytes.NewReader(b), h, nil)
