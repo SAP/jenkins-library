@@ -64,10 +64,6 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 		log.Entry().Errorf("error while getting vulns")
 		return nil, err
 	}
-	log.Entry().Debugf("Contrast Findings:")
-	for _, f := range findings {
-		log.Entry().Debugf("Classification %s, total: %d, audited: %d", f.ClassificationName, f.Total, f.Audited)
-	}
 
 	contrastAudit := contrast.ContrastAudit{
 		ToolName:       "contrast",

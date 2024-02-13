@@ -61,6 +61,13 @@ func (c *contrastHttpClientMock) ExecuteRequest(url string, params map[string]st
 			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "CRITICAL", Status: "NOT_A_PROBLEM"})
 		}
 		*c.page++
+	case vulnsUrlEmpty:
+		vulns, ok := dest.(*VulnerabilitiesResponse)
+		if !ok {
+			return fmt.Errorf("wrong destination type")
+		}
+		vulns.Empty = true
+		vulns.Last = true
 	default:
 		return fmt.Errorf("error")
 	}
@@ -72,6 +79,7 @@ const (
 	errorUrl          = "https://server.com/error"
 	vulnsUrl          = "https://server.com/vulnerabilities"
 	vulnsUrlPaginated = "https://server.com/vulnerabilities/pagination"
+	vulnsUrlEmpty     = "https://server.com/vulnerabilities/empty"
 )
 
 func TestGetApplicationFromClient(t *testing.T) {
@@ -133,6 +141,14 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 				assert.Equal(t, 60, f.Audited)
 			}
 		}
+	})
+
+	t.Run("Empty response", func(t *testing.T) {
+		contrastClient := &contrastHttpClientMock{}
+		findings, err := getVulnerabilitiesFromClient(contrastClient, vulnsUrlEmpty, 0)
+		assert.NoError(t, err)
+		assert.Empty(t, findings)
+		assert.Equal(t, 0, len(findings))
 	})
 
 	t.Run("Error", func(t *testing.T) {

@@ -104,8 +104,8 @@ func getVulnerabilitiesFromClient(client ContrastHttpClient, url string, page in
 	}
 
 	if vulnsResponse.Empty {
-		log.Entry().Debug("empty response")
-		return nil, nil
+		log.Entry().Info("empty vulnerabilities response")
+		return []ContrastFindings{}, nil
 	}
 
 	auditAllFindings, optionalFindings := getFindings(vulnsResponse.Vulnerabilities)
