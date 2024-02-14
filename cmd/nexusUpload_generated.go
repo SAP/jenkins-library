@@ -137,9 +137,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			if len(GeneralConfig.HookConfig.PendoConfig.Token) > 0 {
-				telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
-			}
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			nexusUpload(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

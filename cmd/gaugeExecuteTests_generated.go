@@ -200,9 +200,7 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			if len(GeneralConfig.HookConfig.PendoConfig.Token) > 0 {
-				telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
-			}
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			gaugeExecuteTests(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

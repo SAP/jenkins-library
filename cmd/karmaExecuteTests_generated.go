@@ -166,9 +166,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			if len(GeneralConfig.HookConfig.PendoConfig.Token) > 0 {
-				telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
-			}
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			karmaExecuteTests(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

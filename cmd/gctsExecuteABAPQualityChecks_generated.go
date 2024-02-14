@@ -129,9 +129,7 @@ You can use this step as of SAP S/4HANA 2020 with SAP Note [3159798](https://lau
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			if len(GeneralConfig.HookConfig.PendoConfig.Token) > 0 {
-				telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
-			}
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			gctsExecuteABAPQualityChecks(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
