@@ -117,7 +117,9 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			if len(GeneralConfig.HookConfig.PendoConfig.Token) > 0 {
+				telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			}
 			abapAddonAssemblyKitPublishTargetVector(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
