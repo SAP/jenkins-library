@@ -555,13 +555,18 @@ func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils d
 	args = append(args, "--detect.docker.passthrough.imageinspector.service.start=false")
 	args = append(args, "--detect.docker.passthrough.output.include.squashedimage=false")
 
+	host := "localhost"
+	if orchestrator.DetectOrchestrator() != orchestrator.Jenkins {
+		host = fmt.Sprintf("inspector-%s", config.ScanContainerDistro)
+	}
+
 	switch config.ScanContainerDistro {
 	case "ubuntu":
-		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8082")
+		args = append(args, fmt.Sprintf("--detect.docker.passthrough.imageinspector.service.url=http://%s:8082", host))
 	case "centos":
-		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8081")
+		args = append(args, fmt.Sprintf("--detect.docker.passthrough.imageinspector.service.url=http://%s:8081", host))
 	case "alpine":
-		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8080")
+		args = append(args, fmt.Sprintf("--detect.docker.passthrough.imageinspector.service.url=http://%s:8080", host))
 	default:
 		return nil, fmt.Errorf("unknown container distro %q", config.ScanContainerDistro)
 	}
