@@ -15,11 +15,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 )
 
-// eventType
-const eventType = "library-os-ng"
-
-// actionName
-const actionName = "Piper Library OS"
+const (
+	eventType      = "library-os-ng"
+	actionName     = "Piper Library OS"
+	pipelineIDPath = ".pipeline/commonPipelineEnvironment/custom/cumulusPipelineID"
+)
 
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
@@ -27,7 +27,6 @@ var LibraryRepository string
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
 	baseData             BaseData
-	baseMetaData         BaseMetaData
 	data                 Data
 	provider             orchestrator.ConfigProvider
 	disabled             bool
@@ -48,7 +47,7 @@ type Pendo struct {
 	VisitorID  string `json:"visitorId"`
 	AccountID  string `json:"accountId"`
 	Timestamp  int64  `json:"timestamp"`
-	Properties Data   `json:"properties"`
+	Properties *Data  `json:"properties"`
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
@@ -69,19 +68,16 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
 
 	if t.BaseURL == "" {
-		//SWA baseURL
-		// t.BaseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
+		// Pendo baseURL
 		t.BaseURL = "https://app.pendo.io"
 	}
 	if t.Endpoint == "" {
-		// SWA endpoint
-		// t.Endpoint = "/tracker/log"
+		// Pendo endpoint
 		t.Endpoint = "/data/track"
 	}
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
 	}
-
 	if t.SiteID == "" {
 		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 	}
@@ -97,32 +93,17 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
 		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
-	// t.baseMetaData = baseMetaData
 
-	pipelineID := readCommonPipelineEnvironment("custom/cumulusPipelineID")
-	log.Entry().Println("pipelineID:", pipelineID)
+	pipelineID := (pipelineIDPath)
 
 	t.PendoToken = token
 	t.Pendo = Pendo{
-		Type:       "track",
-		Event:      stepName,
-		VisitorID:  pipelineID,
-		AccountID:  pipelineID,
-		Timestamp:  time.Now().UnixMilli(),
-		Properties: t.data,
+		Type:      "track",
+		Event:     stepName,
+		VisitorID: pipelineID,
+		AccountID: pipelineID,
+		Timestamp: time.Now().UnixMilli(),
 	}
-
-	fmt.Printf("pendo data: %+v\n", t.Pendo)
-
-}
-
-func readCommonPipelineEnvironment(filePath string) string {
-	contentFile, err := os.ReadFile(".pipeline/commonPipelineEnvironment/" + filePath)
-	if err != nil {
-		log.Entry().Debugf("Could not read %v file. %v", filePath, err)
-		contentFile = []byte("N/A")
-	}
-	return string(contentFile)
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
@@ -145,13 +126,12 @@ func (t *Telemetry) toSha1OrNA(input string) string {
 // SetData sets the custom telemetry data and base data into the Data object
 func (t *Telemetry) SetData(customData *CustomData) {
 	t.data = Data{
-		BaseData: t.baseData,
-		// BaseMetaData: t.baseMetaData,
+		BaseData:   t.baseData,
 		CustomData: *customData,
 	}
+	t.Pendo.Properties = &t.data
 
-	t.Pendo.Properties = t.data
-
+	// to be deleted
 	fmt.Printf("pendo data (2): %+v\n", t.Pendo)
 }
 
@@ -170,23 +150,18 @@ func (t *Telemetry) Send() {
 		return
 	}
 
-	// request, _ := url.Parse(t.BaseURL)
-	// request.Path = t.Endpoint
-	// request.RawQuery = t.data.toPayloadString()
-	// log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
-
 	b, err := json.Marshal(t.Pendo)
 	if err != nil {
-		log.Entry().WithError(err).Warn("failed to marshal")
+		log.Entry().WithError(err).Warn("Failed to marshal data")
 	}
 
+	// to be deleted
 	fmt.Println("json b:", string(b))
 
-	h := http.Header{}
-	http.Header.Add(h, "Content-Type", "application/json")
-	http.Header.Add(h, "x-pendo-integration-key", t.PendoToken)
-
 	log.Entry().Debug("Sending telemetry data")
+	h := http.Header{}
+	h.Add("Content-Type", "application/json")
+	h.Add("X-Pendo-Integration-Key", t.PendoToken)
 	t.client.SendRequest(http.MethodPost, t.BaseURL+t.Endpoint, bytes.NewReader(b), h, nil)
 }
 
@@ -227,4 +202,13 @@ func (t *Telemetry) logStepTelemetryData() {
 		// log step telemetry data, changes here need to change the regex in the internal piper lib
 		log.Entry().Infof("Step telemetry data:%v", string(stepTelemetryJSON))
 	}
+}
+
+func readPipelineID(filePath string) string {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Entry().Debugf("Could not read %v file: %v", filePath, err)
+		content = []byte("N/A")
+	}
+	return string(content)
 }
