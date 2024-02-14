@@ -202,9 +202,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-      
-      
-
       - name: testResultFormat
         type: "string"
         description: Defines the output format of the test results.

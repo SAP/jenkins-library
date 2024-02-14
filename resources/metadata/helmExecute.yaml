@@ -65,9 +65,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-
-      
-
       - name: targetRepositoryURL
         description: "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment."
         type: string

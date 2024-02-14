@@ -33,6 +33,7 @@ type CustomData struct {
 	LegacyJobNameTemplate string `json:"legacyJobNameTemplate,omitempty"`
 	LegacyJobName         string `json:"legacyJobName,omitempty"`
 	DeployType            string `json:"deployType,omitempty"`
+	CnbBuildStepData      string `json:"cnbBuildStepData,omitempty"`
 }
 
 // StepTelemetryData definition for telemetry reporting and monitoring

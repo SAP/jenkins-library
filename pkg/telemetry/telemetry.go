@@ -152,7 +152,8 @@ func (t *Telemetry) Send() {
 
 	b, err := json.Marshal(t.Pendo)
 	if err != nil {
-		log.Entry().WithError(err).Warn("Failed to marshal data")
+		log.Entry().WithError(err).Println("Failed to marshal data")
+		return
 	}
 
 	// to be deleted
