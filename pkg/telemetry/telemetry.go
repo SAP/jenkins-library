@@ -94,7 +94,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
 
-	pipelineID := (pipelineIDPath)
+	pipelineID := readPipelineID(pipelineIDPath)
 
 	t.PendoToken = token
 	t.Pendo = Pendo{
