@@ -54,8 +54,6 @@ type Pendo struct {
 func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	if token == "" {
 		telemetryDisabled = true
-		// to be deleted
-		log.Entry().Println("Telemetry is disabled")
 	}
 	t.disabled = telemetryDisabled
 
@@ -75,12 +73,10 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	if t.BaseURL == "" {
 		// Pendo baseURL
 		t.BaseURL = "https://app.pendo.io"
-		// t.BaseURL = "https://data-dev-u3000-tcp.splunk.tools.sap:10080"
 	}
 	if t.Endpoint == "" {
 		// Pendo endpoint
 		t.Endpoint = "/data/track"
-		// t.Endpoint = ""
 	}
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
@@ -136,8 +132,6 @@ func (t *Telemetry) SetData(customData *CustomData) {
 		Timestamp:  time.Now().UnixMilli(),
 		Properties: &t.data,
 	}
-	// to be deleted
-	fmt.Printf("pendo data (2): %+v\n", t.Pendo)
 }
 
 // GetData returns telemetryData
@@ -160,9 +154,6 @@ func (t *Telemetry) Send() {
 		log.Entry().WithError(err).Println("Failed to marshal data")
 		return
 	}
-
-	// to be deleted
-	fmt.Println("json b:", string(b))
 
 	log.Entry().Debug("Sending telemetry data")
 	h := http.Header{}
