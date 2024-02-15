@@ -52,6 +52,11 @@ type Pendo struct {
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
 func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
+	if token == "" {
+		telemetryDisabled = true
+		// to be deleted
+		log.Entry().Println("Telemetry is disabled")
+	}
 	t.disabled = telemetryDisabled
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
@@ -69,13 +74,13 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 
 	if t.BaseURL == "" {
 		// Pendo baseURL
-		// t.BaseURL = "https://app.pendo.io"
-		t.BaseURL = "https://data-dev-u3000-tcp.splunk.tools.sap:10080"
+		t.BaseURL = "https://app.pendo.io"
+		// t.BaseURL = "https://data-dev-u3000-tcp.splunk.tools.sap:10080"
 	}
 	if t.Endpoint == "" {
 		// Pendo endpoint
-		// t.Endpoint = "/data/track"
-		t.Endpoint = ""
+		t.Endpoint = "/data/track"
+		// t.Endpoint = ""
 	}
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
@@ -83,6 +88,8 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 	if t.SiteID == "" {
 		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 	}
+
+	t.PendoToken = token
 
 	t.baseData = BaseData{
 		Orchestrator:    t.provider.OrchestratorType(),
@@ -94,17 +101,6 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 		SiteID:          t.SiteID,
 		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
 		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
-	}
-
-	pipelineID := readPipelineID(pipelineIDPath)
-
-	t.PendoToken = token
-	t.Pendo = Pendo{
-		Type:      "track",
-		Event:     stepName,
-		VisitorID: pipelineID,
-		AccountID: pipelineID,
-		Timestamp: time.Now().UnixMilli(),
 	}
 }
 
@@ -125,14 +121,21 @@ func (t *Telemetry) toSha1OrNA(input string) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(input)))
 }
 
-// SetData sets the custom telemetry data and base data into the Data object
+// SetData sets the custom telemetry, Pendo and base data
 func (t *Telemetry) SetData(customData *CustomData) {
 	t.data = Data{
 		BaseData:   t.baseData,
 		CustomData: *customData,
 	}
-	t.Pendo.Properties = &t.data
-
+	pipelineID := readPipelineID(pipelineIDPath)
+	t.Pendo = Pendo{
+		Type:       "track",
+		Event:      t.baseData.StepName,
+		AccountID:  pipelineID,
+		VisitorID:  pipelineID,
+		Timestamp:  time.Now().UnixMilli(),
+		Properties: &t.data,
+	}
 	// to be deleted
 	fmt.Printf("pendo data (2): %+v\n", t.Pendo)
 }
