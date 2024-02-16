@@ -202,6 +202,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
 	rootCmd.AddCommand(AscAppUploadCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
+	rootCmd.AddCommand(EmitEventsCommand())
 
 	addRootFlags(rootCmd)
 
