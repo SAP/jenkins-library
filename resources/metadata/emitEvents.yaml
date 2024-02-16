@@ -1,0 +1,27 @@
+metadata:
+  name: emitEvents
+  description: This step generates (CDEvents)[https://cdevents.dev/https://cdevents.dev/] and sends the events to eventing system
+  longDescription: |-
+     This step generates (CDEvents)[https://cdevents.dev/https://cdevents.dev/] and sends the events to eventing system
+
+spec:
+  inputs:
+    params:
+      - name: eventingSystem
+        type: "[]string"
+        description: Defines a list of eventing system where the generated CDEvents will be fired. 
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default:
+          - 'GCP pubsub'
+        possibleValues:
+          - 'GCP pubsub'
+      - name: OIDCTokenExchange
+        type: "[]map[string]interface{}"
+        description: Defines a list of OIDC compliant entities that help in exchanging identity token for federated / access token to the eventingSystem
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
