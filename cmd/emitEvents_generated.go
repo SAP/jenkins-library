@@ -17,7 +17,7 @@ import (
 
 type emitEventsOptions struct {
 	EventingSystem    []string                 `json:"eventingSystem,omitempty"`
-	OIDCTokenExchange []map[string]interface{} `json:"OIDCTokenExchange,omitempty"`
+	OidcTokenExchange []map[string]interface{} `json:"oidcTokenExchange,omitempty"`
 }
 
 // EmitEventsCommand This step generates (CDEvents)[https://cdevents.dev/https://cdevents.dev/] and sends the events to eventing system
@@ -144,7 +144,7 @@ func emitEventsMetadata() config.StepData {
 						Default:     []string{`GCP pubsub`},
 					},
 					{
-						Name:        "OIDCTokenExchange",
+						Name:        "oidcTokenExchange",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]map[string]interface{}",
