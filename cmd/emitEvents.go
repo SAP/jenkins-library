@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -58,7 +59,7 @@ func emitEvents(config emitEventsOptions, telemetryData *telemetry.CustomData) {
 }
 
 func runEmitEvents(config *emitEventsOptions, telemetryData *telemetry.CustomData, utils emitEventsUtils) error {
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
+	log.Entry().WithField("LogField", "Log field content").Infof("This is just a demo for a simple step. %w", config.OidcTokenExchange)
 
 	// Example of calling methods from external dependencies directly on utils:
 	exists, err := utils.FileExists("file.txt")
