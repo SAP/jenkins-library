@@ -16,7 +16,7 @@ import (
 )
 
 type emitEventsOptions struct {
-	EventingSystem    []string                 `json:"eventingSystem,omitempty" validate:"possible-values=GCP pubsub"`
+	EventingSystem    []string                 `json:"eventingSystem,omitempty"`
 	OIDCTokenExchange []map[string]interface{} `json:"OIDCTokenExchange,omitempty"`
 }
 

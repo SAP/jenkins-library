@@ -16,8 +16,6 @@ spec:
           - STEPS
         default:
           - 'GCP pubsub'
-        possibleValues:
-          - 'GCP pubsub'
       - name: OIDCTokenExchange
         type: "[]map[string]interface{}"
         description: Defines a list of OIDC compliant entities that help in exchanging identity token for federated / access token to the eventingSystem
