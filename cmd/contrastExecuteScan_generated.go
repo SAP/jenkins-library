@@ -180,6 +180,12 @@ func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecute
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threshold for maximum number of allowed vulnerabilities.")
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 
+	cmd.MarkFlagRequired("userApiKey")
+	cmd.MarkFlagRequired("serviceKey")
+	cmd.MarkFlagRequired("username")
+	cmd.MarkFlagRequired("server")
+	cmd.MarkFlagRequired("organizationId")
+	cmd.MarkFlagRequired("applicationId")
 }
 
 // retrieve step metadata
@@ -218,7 +224,7 @@ func contrastExecuteScanMetadata() config.StepData {
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_userApiKey"),
 					},
@@ -238,7 +244,7 @@ func contrastExecuteScanMetadata() config.StepData {
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "service_key"}},
 						Default:   os.Getenv("PIPER_serviceKey"),
 					},
@@ -259,7 +265,7 @@ func contrastExecuteScanMetadata() config.StepData {
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_username"),
 					},
@@ -268,7 +274,7 @@ func contrastExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_server"),
 					},
@@ -277,7 +283,7 @@ func contrastExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_organizationId"),
 					},
@@ -286,7 +292,7 @@ func contrastExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_applicationId"),
 					},
