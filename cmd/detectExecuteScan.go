@@ -20,7 +20,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -267,13 +266,6 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 }
 
 func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, influx *detectExecuteScanInflux, blackduckSystem *blackduckSystem) error {
-	cpePath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-	imagesRaw := piperenv.GetResourceParameter(cpePath, "container", "imageNameTags.json")
-	if imagesRaw == "" {
-		log.Entry().Debugf("No images found to be scanned")
-		return nil
-	}
-
 	var err error
 	log.Entry().Infof("Scanning %d images", len(config.ImageNameTags))
 	for _, image := range config.ImageNameTags {
