@@ -266,22 +266,22 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 }
 
 func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, influx *detectExecuteScanInflux, blackduckSystem *blackduckSystem) error {
-	var err error
 	log.Entry().Infof("Scanning %d images", len(config.ImageNameTags))
 	for _, image := range config.ImageNameTags {
 		// Download image to be scanned
 		log.Entry().Debugf("Scanning image: %q", image)
-		tarName := fmt.Sprintf("%s.tar", strings.Split(image, ":")[0])
 
 		options := containerSaveImageOptions{
 			ContainerRegistryURL:      config.RegistryURL,
 			ContainerImage:            image,
 			ContainerRegistryPassword: config.RepositoryPassword,
 			ContainerRegistryUser:     config.RepositoryUsername,
-			FilePath:                  tarName,
 			ImageFormat:               "legacy",
 		}
-		containerSaveImage(options, &telemetry.CustomData{})
+		tarName, err := containerSaveImage(options, &telemetry.CustomData{})
+		if err != nil {
+			return err
+		}
 
 		args := []string{"./detect.sh"}
 		args, err = addDetectArgsImages(args, config, utils, sys, tarName)

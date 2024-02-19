@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func containerSaveImage(config containerSaveImageOptions, telemetryData *telemetry.CustomData) {
+func containerSaveImage(config containerSaveImageOptions, telemetryData *telemetry.CustomData) (string, error) {
 	var cachePath = "./cache"
 
 	fileUtils := piperutils.Files{}
@@ -23,10 +23,7 @@ func containerSaveImage(config containerSaveImageOptions, telemetryData *telemet
 	dClient := &piperDocker.Client{}
 	dClient.SetOptions(dClientOptions)
 
-	_, err := runContainerSaveImage(&config, telemetryData, cachePath, "", dClient, fileUtils)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
-	}
+	return runContainerSaveImage(&config, telemetryData, cachePath, "", dClient, fileUtils)
 }
 
 func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *telemetry.CustomData, cachePath, rootPath string, dClient piperDocker.Download, fileUtils piperutils.FileUtils) (string, error) {
