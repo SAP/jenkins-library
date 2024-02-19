@@ -1,5 +1,7 @@
 import com.sap.piper.Utils
 import groovy.transform.Field
+import org.jenkinsci.plugins.plaincredentials.StringCredentials
+
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
@@ -7,12 +9,35 @@ import static com.sap.piper.Prerequisites.checkScript
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
-    String stageName = parameters.stageName ?: env.STAGE_NAME
-
     def utils = parameters.juStabUtils ?: new Utils()
+    String stageName = parameters.stageName ?: env.STAGE_NAME
+    String piperGoPath = parameters.piperGoPath ?: './piper'
+
+    // Set the default credential type to usernamePassword
+    def cfCred = [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']]
+
+    withEnv([
+        "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+        "PIPER_correlationID=${env.BUILD_URL}",
+    ]) {
+        String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
+        String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
+        Map config
+        piperExecuteBin.handleErrorDetails(STEP_NAME) {
+            config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
+            echo "Context Config: ${config}"
+        }
+        def cfCredentialsId = config['cfCredentialsId']
+        if (cfCredentialsId) {
+            def cfCredential = utils.getJenkinsCredentialEntry(cfCredentialsId)
+            if (cfCredential instanceof StringCredentials) {
+                cfCred = [type: 'token', id: 'cfCredentialsId', env: ['PIPER_IDP_JSON_CREDENTIAL']]
+            }
+        }
+    }
     utils.unstashAll(["deployDescriptor"])
     List credentials = [
-        [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+        cfCred,
         [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
     ]
 

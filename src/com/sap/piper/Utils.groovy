@@ -195,3 +195,15 @@ static List appendParameterToStringList(List list, Map parameters, String paramN
     }
     return result
 }
+
+/*
+ * Retrieves a specified credential from the Jenkins credentials store
+ */
+def getJenkinsCredentialEntry(credentialId){
+    return com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+        com.cloudbees.plugins.credentials.Credentials.class,
+        Jenkins.instance,
+        null,
+        null
+    ).find { it.id == credentialId }
+}
