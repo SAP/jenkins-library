@@ -14,6 +14,7 @@ import (
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/golang"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -49,6 +50,7 @@ type detectUtils interface {
 	GetIssueService() *github.IssuesService
 	GetSearchService() *github.SearchService
 	GetProvider() orchestrator.ConfigProvider
+	GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download
 }
 
 type detectUtilsBundle struct {
@@ -70,6 +72,13 @@ func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 
 func (d *detectUtilsBundle) GetProvider() orchestrator.ConfigProvider {
 	return d.provider
+}
+
+func (d *detectUtilsBundle) GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download {
+	client := &piperDocker.Client{}
+	client.SetOptions(options)
+
+	return client
 }
 
 type blackduckSystem struct {
@@ -271,14 +280,18 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 		// Download image to be scanned
 		log.Entry().Debugf("Scanning image: %q", image)
 
-		options := containerSaveImageOptions{
+		options := &containerSaveImageOptions{
 			ContainerRegistryURL:      config.RegistryURL,
 			ContainerImage:            image,
 			ContainerRegistryPassword: config.RepositoryPassword,
 			ContainerRegistryUser:     config.RepositoryUsername,
 			ImageFormat:               "legacy",
 		}
-		tarName, err := containerSaveImage(options, &telemetry.CustomData{})
+
+		dClientOptions := piperDocker.ClientOptions{ImageName: options.ContainerImage, RegistryURL: options.ContainerRegistryURL, ImageFormat: options.ImageFormat}
+		dClient := utils.GetDockerClient(dClientOptions)
+
+		tarName, err := runContainerSaveImage(options, &telemetry.CustomData{}, "./cache", "", dClient, utils)
 		if err != nil {
 			return err
 		}
