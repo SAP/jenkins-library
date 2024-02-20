@@ -565,20 +565,27 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		log.Entry().Warnf("failed to retrieve dockerImage configuration: '%v'", err)
 	}
 
-	analyzerArgs := []string{}
+	analyzerArgs := []string{
+		"-no-color",
+	}
 	detectorArgs := []string{
 		"-buildpacks", buildpacksPath,
 		"-platform", platformPath,
 		"-order", orderPath,
+		"-no-color",
 	}
 	restorerArgs := []string{
 		"-build-image", dockerImage,
+		"-no-color",
 	}
 	extenderArgs := []string{
 		"-buildpacks", buildpacksPath,
 		"-platform", platformPath,
+		"-no-color",
 	}
-	exporterArgs := []string{}
+	exporterArgs := []string{
+		"-no-color",
+	}
 
 	if config.RunImage != "" {
 		analyzerArgs = append(analyzerArgs, "-run-image", config.RunImage)
@@ -631,6 +638,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		return errors.Wrapf(err, "execution of '%s' failed", extenderArgs)
 	}
 
+	// TODO: do not run this phase if no run-image extensions participating
 	err = utils.RunExecutable("/cnb/lifecycle/extender", append(extenderArgs, "-kind", "run")...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
