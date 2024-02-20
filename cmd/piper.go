@@ -206,6 +206,7 @@ func Execute() {
 	rootCmd.AddCommand(TmsExportCommand())
 	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
 	rootCmd.AddCommand(AscAppUploadCommand())
+	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
 
 	addRootFlags(rootCmd)
