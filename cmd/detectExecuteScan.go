@@ -14,6 +14,7 @@ import (
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/golang"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -49,6 +50,7 @@ type detectUtils interface {
 	GetIssueService() *github.IssuesService
 	GetSearchService() *github.SearchService
 	GetProvider() orchestrator.ConfigProvider
+	GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download
 }
 
 type detectUtilsBundle struct {
@@ -70,6 +72,13 @@ func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 
 func (d *detectUtilsBundle) GetProvider() orchestrator.ConfigProvider {
 	return d.provider
+}
+
+func (d *detectUtilsBundle) GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download {
+	client := &piperDocker.Client{}
+	client.SetOptions(options)
+
+	return client
 }
 
 type blackduckSystem struct {
@@ -266,22 +275,26 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 }
 
 func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, influx *detectExecuteScanInflux, blackduckSystem *blackduckSystem) error {
-	var err error
 	log.Entry().Infof("Scanning %d images", len(config.ImageNameTags))
 	for _, image := range config.ImageNameTags {
 		// Download image to be scanned
 		log.Entry().Debugf("Scanning image: %q", image)
-		tarName := fmt.Sprintf("%s.tar", strings.Split(image, ":")[0])
 
-		options := containerSaveImageOptions{
+		options := &containerSaveImageOptions{
 			ContainerRegistryURL:      config.RegistryURL,
 			ContainerImage:            image,
 			ContainerRegistryPassword: config.RepositoryPassword,
 			ContainerRegistryUser:     config.RepositoryUsername,
-			FilePath:                  tarName,
 			ImageFormat:               "legacy",
 		}
-		containerSaveImage(options, &telemetry.CustomData{})
+
+		dClientOptions := piperDocker.ClientOptions{ImageName: options.ContainerImage, RegistryURL: options.ContainerRegistryURL, ImageFormat: options.ImageFormat}
+		dClient := utils.GetDockerClient(dClientOptions)
+
+		tarName, err := runContainerSaveImage(options, &telemetry.CustomData{}, "./cache", "", dClient, utils)
+		if err != nil {
+			return err
+		}
 
 		args := []string{"./detect.sh"}
 		args, err = addDetectArgsImages(args, config, utils, sys, tarName)
