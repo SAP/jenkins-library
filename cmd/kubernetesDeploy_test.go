@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 type kubernetesDeployMockUtils struct {
@@ -97,8 +97,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, mockUtils.Calls[2].Params, "Wrong upgrade parameters")
 
 		assert.Equal(t, &telemetry.CustomData{
-			Custom1Label: "deployTool",
-			Custom1:      "helm",
+			DeployTool: "helm",
 		}, telemetryData)
 	})
 
@@ -384,8 +383,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, mockUtils.Calls[1].Params, "Wrong upgrade parameters")
 
 		assert.Equal(t, &telemetry.CustomData{
-			Custom1Label: "deployTool",
-			Custom1:      "helm3",
+			DeployTool: "helm3",
 		}, telemetryData)
 	})
 
