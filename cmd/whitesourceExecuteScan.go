@@ -148,7 +148,7 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
-	if log.GetVerbose() {
+	if log.IsVerbose() {
 		logWorkspaceContent()
 	}
 	utils := newWhitesourceUtils(&config, client)

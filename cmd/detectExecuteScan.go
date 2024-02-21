@@ -152,7 +152,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 	}
 
 	// Log config and workspace content for debug purpose
-	if log.GetVerbose() {
+	if log.IsVerbose() {
 		logConfigInVerboseMode(config)
 		logWorkspaceContent()
 	}

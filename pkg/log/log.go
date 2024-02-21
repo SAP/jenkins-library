@@ -92,8 +92,8 @@ func SetVerbose(verbose bool) {
 	}
 }
 
-// GetVerbose returns true if DegbuLevel is enabled.
-func GetVerbose() bool {
+// IsVerbose returns true if DegbuLevel is enabled.
+func IsVerbose() bool {
 	return logrus.GetLevel() == logrus.DebugLevel
 }
 
