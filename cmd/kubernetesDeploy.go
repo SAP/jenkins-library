@@ -554,6 +554,9 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 
 			dv.add(createKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
 			dv.add(createKey("image", key, "tag"), tag)
+			// usable for subcharts:
+			dv.add(createKey(key, "image", "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createKey(key, "image", "tag"), tag)
 
 			if len(config.ImageNames) == 1 {
 				dv.singleImage = true
