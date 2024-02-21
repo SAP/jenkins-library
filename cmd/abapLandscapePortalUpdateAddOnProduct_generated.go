@@ -15,27 +15,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type shellExecuteOptions struct {
-	Sources         []string `json:"sources,omitempty"`
-	GithubToken     string   `json:"githubToken,omitempty"`
-	ScriptArguments []string `json:"scriptArguments,omitempty"`
+type abapLandscapePortalUpdateAddOnProductOptions struct {
+	LandscapePortalAPIServiceKey string `json:"landscapePortalAPIServiceKey,omitempty"`
+	AbapSystemNumber             string `json:"abapSystemNumber,omitempty"`
+	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty"`
 }
 
-// ShellExecuteCommand Step executes defined script
-func ShellExecuteCommand() *cobra.Command {
-	const STEP_NAME = "shellExecute"
+// AbapLandscapePortalUpdateAddOnProductCommand Update the AddOn product in SAP BTP ABAP Environment system of Landscape Portal
+func AbapLandscapePortalUpdateAddOnProductCommand() *cobra.Command {
+	const STEP_NAME = "abapLandscapePortalUpdateAddOnProduct"
 
-	metadata := shellExecuteMetadata()
-	var stepConfig shellExecuteOptions
+	metadata := abapLandscapePortalUpdateAddOnProductMetadata()
+	var stepConfig abapLandscapePortalUpdateAddOnProductOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createShellExecuteCmd = &cobra.Command{
+	var createAbapLandscapePortalUpdateAddOnProductCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Step executes defined script",
-		Long:  `Step executes defined script provided in the 'sources' parameter`,
+		Short: "Update the AddOn product in SAP BTP ABAP Environment system of Landscape Portal",
+		Long:  `This step describes the AddOn product update in SAP BTP ABAP Environment system of Landscape Portal`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -52,7 +52,7 @@ func ShellExecuteCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.GithubToken)
+			log.RegisterSecret(stepConfig.LandscapePortalAPIServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -110,79 +110,74 @@ func ShellExecuteCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
-			shellExecute(stepConfig, &stepTelemetryData)
+			abapLandscapePortalUpdateAddOnProduct(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addShellExecuteFlags(createShellExecuteCmd, &stepConfig)
-	return createShellExecuteCmd
+	addAbapLandscapePortalUpdateAddOnProductFlags(createAbapLandscapePortalUpdateAddOnProductCmd, &stepConfig)
+	return createAbapLandscapePortalUpdateAddOnProductCmd
 }
 
-func addShellExecuteFlags(cmd *cobra.Command, stepConfig *shellExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.Sources, "sources", []string{}, "Scripts paths that must be present in the current workspace or https links to scripts. Only https urls from github are allowed and must be in the format :https://{githubBaseurl}/api/v3/repos/{owner}/{repository}/contents/{path to script} Authentication for the download is only supported via the 'githubToken' param. Make sure the script has the necessary execute permissions.")
-	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringSliceVar(&stepConfig.ScriptArguments, "scriptArguments", []string{}, "scriptArguments that are needed to be passed to scripts. the scriptArguments list is a flat list and has a positional relationship to the `sources` param. For e.g. The scriptArguments string at position 1 will be considered as the argument(s) for script at position 1 in `sources` list. For multiple arguments for a script please add them as a comma seperated string.")
+func addAbapLandscapePortalUpdateAddOnProductFlags(cmd *cobra.Command, stepConfig *abapLandscapePortalUpdateAddOnProductOptions) {
+	cmd.Flags().StringVar(&stepConfig.LandscapePortalAPIServiceKey, "landscapePortalAPIServiceKey", os.Getenv("PIPER_landscapePortalAPIServiceKey"), "Service key JSON string to access the Landscape Portal Access API")
+	cmd.Flags().StringVar(&stepConfig.AbapSystemNumber, "abapSystemNumber", os.Getenv("PIPER_abapSystemNumber"), "System Number of the abap integration test system")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `addon.yml`, "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
 
+	cmd.MarkFlagRequired("landscapePortalAPIServiceKey")
+	cmd.MarkFlagRequired("abapSystemNumber")
+	cmd.MarkFlagRequired("addonDescriptorFileName")
 }
 
 // retrieve step metadata
-func shellExecuteMetadata() config.StepData {
+func abapLandscapePortalUpdateAddOnProductMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "shellExecute",
+			Name:        "abapLandscapePortalUpdateAddOnProduct",
 			Aliases:     []config.Alias{},
-			Description: "Step executes defined script",
+			Description: "Update the AddOn product in SAP BTP ABAP Environment system of Landscape Portal",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "githubTokenCredentialsId", Description: "Jenkins credentials ID containing the github token.", Type: "jenkins"},
+					{Name: "landscapePortalAPICredentialsId", Description: "Jenkins secret text credential ID containing the service key to access the Landscape Portal Access API", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:        "sources",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{},
-					},
-					{
-						Name: "githubToken",
+						Name: "landscapePortalAPIServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "githubTokenCredentialsId",
-								Type: "secret",
-							},
-
-							{
-								Name:    "githubVaultSecretName",
-								Type:    "vaultSecret",
-								Default: "github",
+								Name:  "landscapePortalAPICredentialsId",
+								Param: "landscapePortalAPIServiceKey",
+								Type:  "secret",
 							},
 						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "access_token"}},
-						Default:   os.Getenv("PIPER_githubToken"),
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_landscapePortalAPIServiceKey"),
 					},
 					{
-						Name:        "scriptArguments",
+						Name:        "abapSystemNumber",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
+						Type:        "string",
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     os.Getenv("PIPER_abapSystemNumber"),
+					},
+					{
+						Name:        "addonDescriptorFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     `addon.yml`,
 					},
 				},
-			},
-			Containers: []config.Container{
-				{Name: "shell", Image: "node:lts-buster", WorkingDir: "/home/node"},
 			},
 		},
 	}

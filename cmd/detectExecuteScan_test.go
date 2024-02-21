@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/google/go-github/v45/github"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type detectTestUtilsBundle struct {
@@ -31,6 +33,7 @@ type detectTestUtilsBundle struct {
 	*mock.FilesMock
 	customEnv    []string
 	orchestrator *orchestratorConfigProviderMock
+	dClient      *mock.DownloadMock
 }
 
 func (d *detectTestUtilsBundle) GetProvider() orchestrator.ConfigProvider {
@@ -43,6 +46,10 @@ func (d *detectTestUtilsBundle) GetIssueService() *github.IssuesService {
 
 func (d *detectTestUtilsBundle) GetSearchService() *github.SearchService {
 	return nil
+}
+
+func (d *detectTestUtilsBundle) GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download {
+	return d.dClient
 }
 
 type orchestratorConfigProviderMock struct {
@@ -289,6 +296,7 @@ func newDetectTestUtilsBundle(isPullRequest bool) *detectTestUtilsBundle {
 		ShellMockRunner: &mock.ShellMockRunner{},
 		FilesMock:       &mock.FilesMock{},
 		orchestrator:    &orchestratorConfigProviderMock{isPullRequest: isPullRequest},
+		dClient:         &mock.DownloadMock{},
 	}
 	return &utilsBundle
 }
@@ -343,6 +351,28 @@ func TestRunDetect(t *testing.T) {
 
 		expectedParam := "\"--detect.maven.build.command=--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "\""
 		assert.Contains(t, utilsMock.Calls[0], expectedParam)
+	})
+
+	t.Run("images scan", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		utilsMock := newDetectTestUtilsBundle(false)
+		utilsMock.CurrentDir = "root_folder"
+		utilsMock.AddFile("detect.sh", []byte(""))
+		err := runDetect(ctx, detectExecuteScanOptions{
+			ScanContainerDistro: "ubuntu",
+			ImageNameTags:       []string{"foo/bar:latest", "bar/bazz:latest"},
+		}, utilsMock, &detectExecuteScanInflux{})
+
+		assert.NoError(t, err)
+		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
+		require.Equal(t, 3, len(utilsMock.Calls))
+
+		expectedParam1 := "--detect.docker.tar=./foo_bar_latest.tar --detect.target.type=IMAGE --detect.tools.excluded=DETECTOR --detect.docker.passthrough.shared.dir.path.local=/opt/blackduck/blackduck-imageinspector/shared/ --detect.docker.passthrough.shared.dir.path.imageinspector=/opt/blackduck/blackduck-imageinspector/shared --detect.docker.passthrough.imageinspector.service.distro.default=ubuntu --detect.docker.passthrough.imageinspector.service.start=false --detect.docker.passthrough.output.include.squashedimage=false --detect.docker.passthrough.imageinspector.service.url=http://localhost:8082"
+		assert.Contains(t, utilsMock.Calls[1], expectedParam1)
+
+		expectedParam2 := "--detect.docker.tar=./bar_bazz_latest.tar --detect.target.type=IMAGE --detect.tools.excluded=DETECTOR --detect.docker.passthrough.shared.dir.path.local=/opt/blackduck/blackduck-imageinspector/shared/ --detect.docker.passthrough.shared.dir.path.imageinspector=/opt/blackduck/blackduck-imageinspector/shared --detect.docker.passthrough.imageinspector.service.distro.default=ubuntu --detect.docker.passthrough.imageinspector.service.start=false --detect.docker.passthrough.output.include.squashedimage=false --detect.docker.passthrough.imageinspector.service.url=http://localhost:8082"
+		assert.Contains(t, utilsMock.Calls[2], expectedParam2)
 	})
 }
 
