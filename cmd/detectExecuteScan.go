@@ -153,6 +153,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 
 	// Log config for debug purpose
 	logConfigInVerboseMode(config)
+	logWorkspaceContent()
 
 	if config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
 		//configuring go private packages
