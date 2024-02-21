@@ -45,7 +45,14 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 			tarfilePath = fmt.Sprintf("%s.tar", tarfilePath)
 		}
 	}
-
+	// to remove timestamp and artifact version
+	regex := regexp.MustCompile(`-\d{14}_\w{40}\.tar$`)
+	if regex.MatchString(tarfilePath) {
+		tarfilePath = regex.ReplaceAllString(tarfilePath, ".tar")
+		log.Entry().Infof("Modified tarfilePath is : %s", tarfilePath)
+	} else {
+		log.Entry().Infof("No modification required in the tarfilePath")
+	}
 	log.Entry().Infof("Downloading '%s' to '%s'", config.ContainerImage, tarfilePath)
 	if _, err := dClient.DownloadImage(config.ContainerImage, tarfilePath); err != nil {
 		return "", errors.Wrap(err, "failed to download docker image")
