@@ -92,6 +92,11 @@ func SetVerbose(verbose bool) {
 	}
 }
 
+// GetVerbose returns true if DegbuLevel is enabled.
+func GetVerbose() bool {
+	return logrus.GetLevel() == logrus.DebugLevel
+}
+
 // SetFormatter specifies the log format to use for piper's output
 func SetFormatter(logFormat string) {
 	Entry().Logger.SetFormatter(&PiperLogFormatter{logFormat: logFormat})
