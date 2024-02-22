@@ -151,8 +151,11 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 
-	// Log config for debug purpose
-	logConfigInVerboseMode(config)
+	// Log config and workspace content for debug purpose
+	if log.IsVerbose() {
+		logConfigInVerboseMode(config)
+		logWorkspaceContent()
+	}
 
 	if config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
 		//configuring go private packages
