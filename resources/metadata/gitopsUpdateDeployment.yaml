@@ -151,6 +151,27 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/imageNameTag
+      - name: containerImageNameTags
+        aliases:
+          - name: image
+            deprecated: true
+          - name: containerImage
+        type: string
+        mandatory: true
+        description: Container image names with version tags to annotate in the deployment configuration.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+       - name: multipleImages
+          aliases:
+            - name: images
+          type: "[]map[string]interface{}"
+          description: | "dummy"
+          
       - name: chartPath
         aliases:
           - name: helmChartPath
