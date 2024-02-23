@@ -138,6 +138,7 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 	conn.Header["User-Agent"] = []string{"Piper-abapAddonAssemblyKit/1.0"}
 	if originHash != "" {
 		conn.Header["build-config-token"] = []string{originHash}
+		log.Entry().Info("Origin info for restricted scenario added")
 	}
 
 	cookieJar, _ := cookiejar.New(nil)
