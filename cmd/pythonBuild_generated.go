@@ -57,7 +57,7 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 	}
 }
 
-// PythonBuildCommand Step build a python project
+// PythonBuildCommand Step builds a python project
 func PythonBuildCommand() *cobra.Command {
 	const STEP_NAME = "pythonBuild"
 
@@ -71,8 +71,19 @@ func PythonBuildCommand() *cobra.Command {
 
 	var createPythonBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Step build a python project",
-		Long:  `Step build python project with using test Vault credentials`,
+		Short: "Step builds a python project",
+		Long: `Step build python project using the setup.py manifest and builds a wheel and tarball artifact . please note that currently python build only supports setup.py
+
+  ### build with depedencies from a private repository
+if your build has dependencies from a private repository you can include the standard requirements.txt into the source code with ` + "`" + `--extra-index-url` + "`" + ` as the first line
+
+` + "`" + `` + "`" + `` + "`" + `
+--extra-index-url https://${PIPER_VAULTCREDENTIAL_USERNAME}:${PIPER_VAULTCREDENTIAL_PASSWORD}@<privateRepoUrl>/simple
+` + "`" + `` + "`" + `` + "`" + `
+
+` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD` + "`" + ` are the username and password for the private repository
+and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
+[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -178,7 +189,7 @@ func pythonBuildMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "pythonBuild",
 			Aliases:     []config.Alias{},
-			Description: "Step build a python project",
+			Description: "Step builds a python project",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
