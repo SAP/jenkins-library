@@ -79,6 +79,14 @@ spec:
           - STAGES
           - PARAMETERS
         default: piperBuild-env
+      - name: requirementsFilePath
+        type: string
+        description: file path to the requirements.txt file needed for the sbom cycloneDx file creation.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: requirements.txt
   outputs:
     resources:
       - name: commonPipelineEnvironment

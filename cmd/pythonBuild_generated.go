@@ -26,6 +26,7 @@ type pythonBuildOptions struct {
 	TargetRepositoryURL      string   `json:"targetRepositoryURL,omitempty"`
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
 	VirutalEnvironmentName   string   `json:"virutalEnvironmentName,omitempty"`
+	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
@@ -167,6 +168,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.VirutalEnvironmentName, "virutalEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
+	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
 
 }
 
@@ -272,6 +274,15 @@ func pythonBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `piperBuild-env`,
+					},
+					{
+						Name:        "requirementsFilePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `requirements.txt`,
 					},
 				},
 			},
