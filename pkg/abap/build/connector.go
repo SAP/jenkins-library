@@ -130,12 +130,15 @@ func (conn Connector) createUrl(appendum string) string {
 }
 
 // InitAAKaaS : initialize Connector for communication with AAKaaS backend
-func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender) error {
+func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender, originHash string) error {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
 	conn.Header["Content-Type"] = []string{"application/json"}
 	conn.Header["User-Agent"] = []string{"Piper-abapAddonAssemblyKit/1.0"}
+	if originHash != "" {
+		conn.Header["build-config-token"] = []string{originHash}
+	}
 
 	cookieJar, _ := cookiejar.New(nil)
 	conn.Client.SetOptions(piperhttp.ClientOptions{
