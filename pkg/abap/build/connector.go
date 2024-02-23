@@ -2,6 +2,9 @@ package build
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -13,6 +16,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/pkcs12"
 )
 
 // Connector : Connector Utility Wrapping http client
@@ -130,7 +134,7 @@ func (conn Connector) createUrl(appendum string) string {
 }
 
 // InitAAKaaS : initialize Connector for communication with AAKaaS backend
-func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender, originHash string) error {
+func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender, originHash string, certFile string, certPass string) error {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
@@ -148,6 +152,44 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 		CookieJar: cookieJar,
 	})
 	conn.Baseurl = aAKaaSEndpoint
+
+	if certFile != "" && certPass != "" {
+		certFileInBytes, err := base64.StdEncoding.DecodeString(certFile)
+		if err != nil {
+			return errors.Wrap(err, "Base64 decoding of certificate File string failed")
+		}
+
+		pemBlocks, err := pkcs12.ToPEM(certFileInBytes, certPass)
+		if err != nil {
+			return errors.Wrap(err, "Decoding certificate File from PKCS12 to PEM failed")
+		}
+
+		var key []byte
+		var certificate []byte
+
+		for _, pemBlock := range pemBlocks {
+			if pemBlock.Type == "PRIVATE KEY" {
+				key = pemBlock.Bytes
+			}
+
+			if pemBlock.Type == "CERTIFICATE" {
+				var tempCert, err = x509.ParseCertificate(pemBlock.Bytes)
+				if err != nil {
+					return errors.Wrap(err, "Parsing x509 Certificate from PEM Block failed")
+				}
+
+				if tempCert.IsCA == false { //We ignore the 2 additional CA Certificates
+					certificate = pemBlock.Bytes
+				}
+			}
+		}
+
+		cert, err := tls.X509KeyPair(certificate, key)
+		if err != nil {
+			return errors.Wrap(err, "Creating x509 Key Pair failed")
+		}
+
+	}
 
 	if username == "" || password == "" {
 		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
