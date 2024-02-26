@@ -34,7 +34,7 @@ void call(Map parameters = [:]) {
         .addIfEmpty('confirmDeletion', true)
         .addIfEmpty('debug', false)
         .addIfEmpty('testBuild', false)
-        .addIfEmpty('integrationTestOption', 'systemProvisioning')
+        .addIfEmpty('integrationTestOption', 'addOnDeployment')
         .use()
 
     if (config.testBuild) {
