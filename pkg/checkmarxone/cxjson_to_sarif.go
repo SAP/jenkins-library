@@ -226,7 +226,6 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 
 		if r.VulnerabilityDetails.CweId != 0 {
 			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", r.VulnerabilityDetails.CweId))
-<<<<<<< HEAD
 		}
 
 		match := false
@@ -238,8 +237,6 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		}
 		if !match {
 			rulesArray = append(rulesArray, rule)
-=======
->>>>>>> ebf8e7d08dfc9d782fba409e204b378ca464427c
 		}
 	}
 
