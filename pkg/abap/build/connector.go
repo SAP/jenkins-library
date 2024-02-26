@@ -146,22 +146,38 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 	}
 
 	cookieJar, _ := cookiejar.New(nil)
-	conn.Client.SetOptions(piperhttp.ClientOptions{
-		Username:  username,
-		Password:  password,
-		CookieJar: cookieJar,
-	})
 	conn.Baseurl = aAKaaSEndpoint
 
+	tlsCertificates, err := conn.handleLogonCertificate(certFile, certPass)
+	if err != nil {
+		return errors.Wrap(err, "Handling certificates for client logon failed")
+	}
+
+	conn.Client.SetOptions(piperhttp.ClientOptions{
+		Username:     username,
+		Password:     password,
+		CookieJar:    cookieJar,
+		Certificates: tlsCertificates,
+	})
+
+	if username == "" || password == "" {
+		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
+	} else {
+		return nil
+	}
+}
+
+func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.Certificate, error) {
+	var tlsCertificate tls.Certificate
 	if certFile != "" && certPass != "" {
 		certFileInBytes, err := base64.StdEncoding.DecodeString(certFile)
 		if err != nil {
-			return errors.Wrap(err, "Base64 decoding of certificate File string failed")
+			return nil, errors.Wrap(err, "Base64 decoding of certificate File string failed")
 		}
 
 		pemBlocks, err := pkcs12.ToPEM(certFileInBytes, certPass)
 		if err != nil {
-			return errors.Wrap(err, "Decoding certificate File from PKCS12 to PEM failed")
+			return nil, errors.Wrap(err, "Decoding certificate File from PKCS12 to PEM failed")
 		}
 
 		var key []byte
@@ -175,7 +191,7 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 			if pemBlock.Type == "CERTIFICATE" {
 				var tempCert, err = x509.ParseCertificate(pemBlock.Bytes)
 				if err != nil {
-					return errors.Wrap(err, "Parsing x509 Certificate from PEM Block failed")
+					return nil, errors.Wrap(err, "Parsing x509 Certificate from PEM Block failed")
 				}
 
 				if tempCert.IsCA == false { //We ignore the 2 additional CA Certificates
@@ -184,17 +200,15 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 			}
 		}
 
-		cert, err := tls.X509KeyPair(certificate, key)
+		tlsCertificate, err = tls.X509KeyPair(certificate, key)
 		if err != nil {
-			return errors.Wrap(err, "Creating x509 Key Pair failed")
+			return nil, errors.Wrap(err, "Creating x509 Key Pair failed")
 		}
 
-	}
+		return []tls.Certificate{tlsCertificate}, nil
 
-	if username == "" || password == "" {
-		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
 	} else {
-		return nil
+		return nil, nil
 	}
 }
 
