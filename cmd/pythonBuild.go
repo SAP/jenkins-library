@@ -146,8 +146,20 @@ func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 }
 
 func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
-	pipInstallFlags = append(pipInstallFlags, cycloneDxPackageVersion)
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
+	pipInstallOriginalFlags := pipInstallFlags
+	exists, _ := utils.FileExists(config.RequirementsFilePath)
+	if exists {
+		pipInstallRequirementsFlags := append(pipInstallOriginalFlags, "--requirement", config.RequirementsFilePath)
+		if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallRequirementsFlags...); err != nil {
+			return err
+		}
+	} else {
+		log.Entry().Warnf("unable to find requirements.txt file at %s , continuing SBOM generation without requirements.txt", config.RequirementsFilePath)
+	}
+
+	pipInstallCycloneDxFlags := append(pipInstallOriginalFlags, cycloneDxPackageVersion)
+
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallCycloneDxFlags...); err != nil {
 		return err
 	}
 	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-py")

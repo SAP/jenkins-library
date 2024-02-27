@@ -43,6 +43,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         helper.registerAllowedMethod('cloudFoundryDeleteService', [Map.class], {m -> stepsCalled.add('cloudFoundryDeleteService')})
         helper.registerAllowedMethod('abapEnvironmentBuild', [Map.class], {m -> stepsCalled.add('abapEnvironmentBuild')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
+        helper.registerAllowedMethod('abapLandscapePortalUpdateAddOnProduct', [Map.class], {m -> stepsCalled.add('abapLandscapePortalUpdateAddOnProduct')})
     }
 
     @Test
@@ -51,7 +52,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Integration Tests': true
         ]
-        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, confirmDeletion: true)
+        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, integrationTestOption: 'systemProvisioning', confirmDeletion: true)
 
         assertThat(stepsCalled, hasItems('input'))
         assertThat(stepsCalled, hasItems('abapEnvironmentCreateSystem'))
@@ -66,7 +67,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Integration Tests': true
         ]
-        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, confirmDeletion: false)
+        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, integrationTestOption: 'systemProvisioning', confirmDeletion: false)
 
 
         assertThat(stepsCalled, not(hasItem('input')))
@@ -86,7 +87,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         ]
 
         try {
-            jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, confirmDeletion: false)
+            jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, integrationTestOption: 'systemProvisioning', confirmDeletion: false)
             fail("Expected exception")
         } catch (Exception e) {
             // failure expected
@@ -112,4 +113,40 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
                                                 'cloudFoundryCreateServiceKey')))
     }
 
+    @Test
+    void testabapLandscapePortalUpdateAddOnProduct() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Integration Tests': true
+        ]
+        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, integrationTestOption: 'addOnDeployment')
+
+
+        assertThat(stepsCalled, not(hasItems('input',
+                                                'abapEnvironmentCreateSystem',
+                                                'cloudFoundryDeleteService',
+                                                'cloudFoundryCreateServiceKey')))
+        assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentBuild'))
+    }
+
+    @Test
+    void testabapLandscapePortalUpdateAddOnProductFails() {
+
+        helper.registerAllowedMethod('abapLandscapePortalUpdateAddOnProduct', [Map.class], {m -> stepsCalled.add('abapLandscapePortalUpdateAddOnProduct'); error("Failed")})
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Integration Tests': true
+        ]
+
+        try {
+            jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, integrationTestOption: 'addOnDeployment')
+            fail("Expected exception")
+        } catch (Exception e) {
+            // failure expected
+        }
+
+        assertThat(stepsCalled, not(hasItem('input')))
+        assertThat(stepsCalled, hasItems('abapLandscapePortalUpdateAddOnProduct'))
+    }
 }

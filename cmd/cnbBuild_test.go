@@ -180,7 +180,7 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "sha256:52eac630560210e5ae13eb10797c4246d6f02d425f32b9430ca00bde697c79ec", commonPipelineEnvironment.container.imageDigest)
 		assert.Contains(t, commonPipelineEnvironment.container.imageDigests, "sha256:52eac630560210e5ae13eb10797c4246d6f02d425f32b9430ca00bde697c79ec")
 
-		customDataAsString := telemetryData.Custom1
+		customDataAsString := telemetryData.CnbBuildStepData
 		customData := &buildpacks.BuildpacksTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), customData)
 		require.NoError(t, err)
@@ -615,7 +615,7 @@ uri = "some-buildpack"`))
 		err := callCnbBuild(&config, telemetryData, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 		require.NoError(t, err)
 
-		customDataAsString := telemetryData.Custom1
+		customDataAsString := telemetryData.CnbBuildStepData
 		customData := &buildpacks.BuildpacksTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), customData)
 
@@ -732,7 +732,7 @@ uri = "some-buildpack"
 		err := callCnbBuild(&config, telemetryData, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 		require.NoError(t, err)
 
-		customDataAsString := telemetryData.Custom1
+		customDataAsString := telemetryData.CnbBuildStepData
 		customData := &buildpacks.BuildpacksTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), customData)
 
@@ -774,7 +774,7 @@ uri = "some-buildpack"
 		err := callCnbBuild(&config, telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		require.NoError(t, err)
 
-		customDataAsString := telemetryData.Custom1
+		customDataAsString := telemetryData.CnbBuildStepData
 		customData := &buildpacks.BuildpacksTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), customData)
 		assert.NoError(t, err)

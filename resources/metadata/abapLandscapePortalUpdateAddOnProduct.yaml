@@ -1,0 +1,41 @@
+metadata:
+  name: abapLandscapePortalUpdateAddOnProduct
+  description: "Update the AddOn product in SAP BTP ABAP Environment system of Landscape Portal"
+  longDescription: |
+    This step describes the AddOn product update in SAP BTP ABAP Environment system of Landscape Portal
+spec:
+  inputs:
+    secrets:
+      - name: landscapePortalAPICredentialsId
+        description: Jenkins secret text credential ID containing the service key to access the Landscape Portal Access API
+        type: jenkins
+    params:
+      - name: landscapePortalAPIServiceKey
+        type: string
+        description: Service key JSON string to access the Landscape Portal Access API
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: landscapePortalAPICredentialsId
+            type: secret
+            param: landscapePortalAPIServiceKey
+      - name: abapSystemNumber
+        description: System Number of the abap integration test system
+        type: string
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: addonDescriptorFileName
+        type: string
+        description: File name of the YAML file which describes the Product Version and corresponding Software Component Versions
+        mandatory: true
+        default: addon.yml
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL

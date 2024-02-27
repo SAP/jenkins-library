@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -147,6 +148,9 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
+	}
+	if log.IsVerbose() {
+		logWorkspaceContent()
 	}
 	utils := newWhitesourceUtils(&config, client)
 	scan := newWhitesourceScan(&config)
@@ -1105,11 +1109,16 @@ func downloadDockerImageAsTarNew(config *ScanOptions, utils whitesourceUtils) er
 	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
 	dClient := &piperDocker.Client{}
 	dClient.SetOptions(dClientOptions)
-	if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
+	tarFilePath, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils)
+	if err != nil {
 		if strings.Contains(fmt.Sprint(err), "no image found") {
 			log.SetErrorCategory(log.ErrorConfiguration)
 		}
 		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+	}
+	// to remove timestamp and artifact version
+	if err := renameTarfilePath(tarFilePath); err != nil {
+		return errors.Wrapf(err, "failed to rename image %v", err)
 	}
 
 	return nil
@@ -1136,5 +1145,22 @@ func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error
 		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
 	}
 
+	return nil
+}
+
+func renameTarfilePath(tarFilepath string) error {
+	if _, err := os.Stat(tarFilepath); os.IsNotExist(err) {
+		return fmt.Errorf("file %s does not exist", tarFilepath)
+	}
+	pattern := `-\d{14}_[a-f0-9]{40}\.tar$` //format is -<timestamp>_<commitHash>.tar
+	regex := regexp.MustCompile(pattern)
+	if regex.MatchString(tarFilepath) {
+		newName := regex.ReplaceAllString(tarFilepath, ".tar")
+		err := os.Rename(tarFilepath, newName)
+		if err != nil {
+			return fmt.Errorf("error renaming file %s to %s: %v", tarFilepath, newName, err)
+		}
+		log.Entry().Infof("Renamed file %s to %s\n", tarFilepath, newName)
+	}
 	return nil
 }
