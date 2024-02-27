@@ -125,6 +125,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapEnvironmentRunAUnitTest', //implementing new golang pattern without fields
         'abapEnvironmentCreateSystem', //implementing new golang pattern without fields
         'abapEnvironmentPushATCSystemConfig', //implementing new golang pattern without fields
+        'abapLandscapePortalUpdateAddOnProduct', //implementing new golang pattern without fields
         'artifactPrepareVersion',
         'cloudFoundryCreateService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
