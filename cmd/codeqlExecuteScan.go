@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,7 +12,9 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -22,20 +25,26 @@ type codeqlExecuteScanUtils interface {
 	command.ExecRunner
 
 	piperutils.FileUtils
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type codeqlExecuteScanUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	*piperhttp.Client
 }
 
-const sarifUploadComplete = "complete"
-const sarifUploadFailed = "failed"
+const (
+	sarifUploadComplete = "complete"
+	sarifUploadFailed   = "failed"
+)
 
 func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	utils := codeqlExecuteScanUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
 	}
 
 	utils.Stdout(log.Writer())
@@ -43,16 +52,19 @@ func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	return &utils
 }
 
-func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData) {
+func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, influx *codeqlExecuteScanInflux) {
 
 	utils := newCodeqlExecuteScanUtils()
 
-	reports, err := runCodeqlExecuteScan(&config, telemetryData, utils)
+	influx.step_data.fields.codeql = false
+
+	reports, err := runCodeqlExecuteScan(&config, telemetryData, utils, influx)
 	piperutils.PersistReportsAndLinks("codeqlExecuteScan", "./", utils, reports, nil)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Codeql scan failed")
 	}
+	influx.step_data.fields.codeql = true
 }
 
 func codeqlQuery(cmd []string, codeqlQuery string) []string {
@@ -121,26 +133,27 @@ func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
 	repoInfo.Ref = config.AnalyzedRef
 	repoInfo.CommitId = config.CommitID
 
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().Warn("No orchestrator found. We assume piper is running locally.")
 	} else {
 		if repoInfo.Ref == "" {
-			repoInfo.Ref = provider.GetReference()
+			repoInfo.Ref = provider.GitReference()
 		}
 
 		if repoInfo.CommitId == "" || repoInfo.CommitId == "NA" {
-			repoInfo.CommitId = provider.GetCommit()
+			repoInfo.CommitId = provider.CommitSHA()
 		}
 
 		if repoInfo.ServerUrl == "" {
-			err = getGitRepoInfo(provider.GetRepoURL(), &repoInfo)
+			err = getGitRepoInfo(provider.RepoURL(), &repoInfo)
 			if err != nil {
 				log.Entry().Error(err)
 			}
 		}
 	}
 	if len(config.TargetGithubRepoURL) > 0 {
+		log.Entry().Infof("Checking target GitHub repo URL: %s", config.TargetGithubRepoURL)
 		if strings.Contains(repoInfo.ServerUrl, "github") {
 			log.Entry().Errorf("TargetGithubRepoURL should not be set as the source repo is on github.")
 			return repoInfo, errors.New("TargetGithubRepoURL should not be set as the source repo is on github.")
@@ -151,6 +164,7 @@ func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
 			return repoInfo, err
 		}
 		if len(config.TargetGithubBranchName) > 0 {
+			log.Entry().Infof("Target GitHub branch name: %s", config.TargetGithubBranchName)
 			repoInfo.Ref = config.TargetGithubBranchName
 			if len(strings.Split(config.TargetGithubBranchName, "/")) < 3 {
 				repoInfo.Ref = "refs/heads/" + config.TargetGithubBranchName
@@ -252,7 +266,7 @@ func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader cod
 	}
 }
 
-func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
+func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils, influx *codeqlExecuteScanInflux) ([]piperutils.Path, error) {
 	codeqlVersion, err := os.ReadFile("/etc/image-version")
 	if err != nil {
 		log.Entry().Infof("CodeQL image version: unknown")
@@ -280,9 +294,10 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
 
-	//codeql has an autobuilder which tries to build the project based on specified programming language
 	if len(config.BuildCommand) > 0 {
-		cmd = append(cmd, "--command="+config.BuildCommand)
+		buildCmd := config.BuildCommand
+		buildCmd = buildCmd + getMavenSettings(config, utils)
+		cmd = append(cmd, "--command="+buildCmd)
 	}
 
 	err = execute(utils, cmd, GeneralConfig.Verbose)
@@ -329,6 +344,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
 
 	if len(config.TargetGithubRepoURL) > 0 {
+		log.Entry().Infof("DB sources for %s will be uploaded to target GitHub repo: %s", config.Repository, repoUrl)
 		hasToken, token := getToken(config)
 		if !hasToken {
 			return reports, errors.New("failed running upload db sources to GitHub as githubToken was not specified")
@@ -349,11 +365,15 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
 		}
 		repoInfo.CommitId = targetCommitId
+		log.Entry().Info("DB sources were successfully uploaded to target GitHub repo")
 	}
+
+	var scanResults []codeql.CodeqlFindings
 
 	if !config.UploadResults {
 		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
 	} else {
+		log.Entry().Infof("The sarif results will be uploaded to the repository %s", repoUrl)
 		hasToken, token := getToken(config)
 		if !hasToken {
 			return reports, errors.New("failed running upload-results as githubToken was not specified")
@@ -370,7 +390,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 
 		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo, token, []string{})
-		scanResults, err := codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
+		scanResults, err = codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
 		if err != nil {
 			return reports, errors.Wrap(err, "failed to get scan results")
 		}
@@ -384,14 +404,18 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 
 		if config.CheckForCompliance {
 			for _, scanResult := range scanResults {
-				unaudited := scanResult.Total - scanResult.Audited
-				if unaudited > config.VulnerabilityThresholdTotal {
-					msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
-					return reports, errors.Errorf(msg)
+				if scanResult.ClassificationName == codeql.AuditAll {
+					unaudited := scanResult.Total - scanResult.Audited
+					if unaudited > config.VulnerabilityThresholdTotal {
+						msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
+						return reports, errors.Errorf(msg)
+					}
 				}
 			}
 		}
 	}
+
+	addDataToInfluxDB(repoUrl, repoReference, repoCodeqlScanUrl, config.QuerySuite, scanResults, influx)
 
 	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, config.ModulePath)
 	if err != nil {
@@ -403,6 +427,24 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	return reports, nil
 }
 
+func addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) {
+	influx.codeql_data.fields.repositoryURL = repoUrl
+	influx.codeql_data.fields.repositoryReferenceURL = repoRef
+	influx.codeql_data.fields.codeScanningLink = repoScanUrl
+	influx.codeql_data.fields.querySuite = querySuite
+
+	for _, sr := range scanResults {
+		if sr.ClassificationName == codeql.AuditAll {
+			influx.codeql_data.fields.auditAllAudited = sr.Audited
+			influx.codeql_data.fields.auditAllTotal = sr.Total
+		}
+		if sr.ClassificationName == codeql.Optional {
+			influx.codeql_data.fields.optionalAudited = sr.Audited
+			influx.codeql_data.fields.optionalTotal = sr.Total
+		}
+	}
+}
+
 func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
 	params := make([]string, 0, 2)
 	if len(config.Threads) > 0 {
@@ -410,6 +452,21 @@ func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
 	}
 	if len(config.Ram) > 0 {
 		params = append(params, "--ram="+config.Ram)
+	}
+	return params
+}
+
+func getMavenSettings(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
+	params := ""
+	if len(config.BuildCommand) > 0 && config.BuildTool == "maven" && !strings.Contains(config.BuildCommand, "--global-settings") && !strings.Contains(config.BuildCommand, "--settings") {
+		mvnParams, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
+		if err != nil {
+			log.Entry().Error("failed to download and get maven parameters: ", err)
+			return params
+		}
+		for i := 1; i < len(mvnParams); i += 2 {
+			params = fmt.Sprintf("%s %s=%s", params, mvnParams[i-1], mvnParams[i])
+		}
 	}
 	return params
 }

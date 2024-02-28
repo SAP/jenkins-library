@@ -40,13 +40,13 @@ type detectExecuteScanOptions struct {
 	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
 	M2Path                      string   `json:"m2Path,omitempty"`
 	InstallArtifacts            bool     `json:"installArtifacts,omitempty"`
+	BuildMaven                  bool     `json:"buildMaven,omitempty"`
+	PomPath                     string   `json:"pomPath,omitempty"`
 	IncludedPackageManagers     []string `json:"includedPackageManagers,omitempty"`
 	ExcludedPackageManagers     []string `json:"excludedPackageManagers,omitempty"`
 	MavenExcludedScopes         []string `json:"mavenExcludedScopes,omitempty"`
 	DetectTools                 []string `json:"detectTools,omitempty"`
 	ScanOnChanges               bool     `json:"scanOnChanges,omitempty"`
-	UseDetect7                  bool     `json:"useDetect7,omitempty"`
-	UseDetect8                  bool     `json:"useDetect8,omitempty"`
 	SuccessOnSkip               bool     `json:"successOnSkip,omitempty"`
 	CustomEnvironmentVariables  []string `json:"customEnvironmentVariables,omitempty"`
 	MinScanInterval             int      `json:"minScanInterval,omitempty"`
@@ -64,6 +64,11 @@ type detectExecuteScanOptions struct {
 	NpmArguments                []string `json:"npmArguments,omitempty"`
 	PrivateModules              string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken      string   `json:"privateModulesGitToken,omitempty"`
+	ScanContainerDistro         string   `json:"scanContainerDistro,omitempty" validate:"possible-values=ubuntu centos alpine"`
+	ImageNameTags               []string `json:"imageNameTags,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
+	RegistryURL                 string   `json:"registryUrl,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
+	RepositoryUsername          string   `json:"repositoryUsername,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
+	RepositoryPassword          string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 }
 
 type detectExecuteScanInflux struct {
@@ -256,7 +261,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			detectExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -286,13 +291,13 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running detect. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
+	cmd.Flags().BoolVar(&stepConfig.BuildMaven, "buildMaven", false, "Experiment parameter for maven multi-modules projects building")
+	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
 	cmd.Flags().StringSliceVar(&stepConfig.IncludedPackageManagers, "includedPackageManagers", []string{}, "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-included-advanced)")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludedPackageManagers, "excludedPackageManagers", []string{}, "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-excluded-advanced)")
 	cmd.Flags().StringSliceVar(&stepConfig.MavenExcludedScopes, "mavenExcludedScopes", []string{}, "The maven scopes that need to be excluded from the scan. For example, setting the value 'test' will exclude all components which are defined with a test scope in maven")
 	cmd.Flags().StringSliceVar(&stepConfig.DetectTools, "detectTools", []string{}, "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included. For the complete list of possible values, Please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fpaths.html&_LANG=enus&anchor=detect-tools-included)")
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", false, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect7, "useDetect7", false, "This flag allows to use the currently supported 8 version of Detect Script instead of v7")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", true, "This flag allows to use the currently supported 8 version of Detect Script instead of v7")
 	cmd.Flags().BoolVar(&stepConfig.SuccessOnSkip, "successOnSkip", true, "This flag allows forces Black Duck to exit with 0 error code if any step is skipped")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by Synopsys. The full list can be found [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=configuring%2Fenvvars.html&_LANG=enus) This list affects the detect script downloaded while running the scan. Right now only detect7.sh is available for downloading")
 	cmd.Flags().IntVar(&stepConfig.MinScanInterval, "minScanInterval", 0, "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan.")
@@ -310,6 +315,11 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.NpmArguments, "npmArguments", []string{}, "List of additional arguments that Detect will add at then end of the npm ls command line when Detect executes the NPM CLI Detector on an NPM project.")
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
+	cmd.Flags().StringVar(&stepConfig.ScanContainerDistro, "scanContainerDistro", os.Getenv("PIPER_scanContainerDistro"), "To also scan your images in the CPE, choose the distro")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "Images to be scanned (typically filled by CPE)")
+	cmd.Flags().StringVar(&stepConfig.RegistryURL, "registryUrl", os.Getenv("PIPER_registryUrl"), "Used accessing for the images to be scanned (typically filled by CPE)")
+	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
+	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -515,6 +525,24 @@ func detectExecuteScanMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "buildMaven",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "pomPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `pom.xml`,
+					},
+					{
 						Name:        "includedPackageManagers",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -558,24 +586,6 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
-					},
-					{
-						Name:        "useDetect7",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect7"}},
-						Default:     false,
-					},
-					{
-						Name:        "useDetect8",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect8", Deprecated: true}},
-						Default:     true,
 					},
 					{
 						Name:        "successOnSkip",
@@ -773,10 +783,80 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_privateModulesGitToken"),
 					},
+					{
+						Name:        "scanContainerDistro",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scanContainerDistro"),
+					},
+					{
+						Name: "imageNameTags",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "registryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_registryUrl"),
+					},
+					{
+						Name: "repositoryUsername",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_repositoryUsername"),
+					},
+					{
+						Name: "repositoryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_repositoryPassword"),
+					},
 				},
 			},
 			Containers: []config.Container{
 				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+			},
+			Sidecars: []config.Container{
+				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "ubuntu"}}}}},
+				{Name: "inspector-alpine", Image: "blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "alpine"}}}}},
+				{Name: "inspector-centos", Image: "blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "centos"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

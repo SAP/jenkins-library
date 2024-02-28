@@ -96,8 +96,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
-
         //this takes care that terminated builds due to milestone-locking do not cause an error
         if (script.commonPipelineEnvironment.getBuildResult() == 'ABORTED') return
 

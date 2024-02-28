@@ -192,7 +192,7 @@ func (a *artifactPrepareVersionMockUtils) DownloadFile(url, filename string, hea
 	return nil
 }
 
-func (a *artifactPrepareVersionMockUtils) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
+func (a *artifactPrepareVersionMockUtils) GetConfigProvider() (orchestrator.ConfigProvider, error) {
 	return &orchestrator.UnknownOrchestratorConfigProvider{}, nil
 }
 
@@ -247,7 +247,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.Equal(t, worktree.commitHash.String(), cpe.git.commitID)
 		assert.Equal(t, "Test commit message", cpe.git.commitMessage)
 
-		assert.Equal(t, telemetry.CustomData{Custom1Label: "buildTool", Custom1: "maven", Custom2Label: "filePath", Custom2: ""}, telemetryData)
+		assert.Equal(t, telemetry.CustomData{BuildTool: "maven", FilePath: ""}, telemetryData)
 	})
 
 	t.Run("success case - cloud_noTag", func(t *testing.T) {
