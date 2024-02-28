@@ -260,10 +260,7 @@ func pushImageNameTagsToTargetRegistry(config *imagePushToRegistryOptions, utils
 	g, ctx := errgroup.WithContext(context.Background())
 	g.SetLimit(10)
 
-	log.Entry().Debugf("SourceImageNameTags: %s", config.SourceImageNameTags)
-
 	for i, sourceImageNameTag := range config.SourceImageNameTags {
-		log.Entry().Debugf("sourceImageNameTag: %s", sourceImageNameTag)
 		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, sourceImageNameTag)
 
 		dst := ""
