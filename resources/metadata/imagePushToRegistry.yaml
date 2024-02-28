@@ -171,6 +171,30 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: sourceImageNameTags
+        type: "[]string"
+        description: List of full names (registry and tag) of the images to be copied.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: targetImageNameTags
+        type: "[]string"
+        description: List of full names (registry and tag) of the images to be deployed.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: useImageNameTags
+        description: ""
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: tagLatest
         description: "Defines if the image should be tagged as `latest`. The parameter is true if targetImageTag is not specified."
         type: bool
