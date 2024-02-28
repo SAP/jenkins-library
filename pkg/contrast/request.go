@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -56,7 +57,9 @@ func newHttpRequest(url, apiKey, auth string, params map[string]string) (*http.R
 	return req, nil
 }
 func performRequest(req *http.Request) (*http.Response, error) {
-	client := http.Client{}
+	client := http.Client{
+		Timeout: 30 * time.Second,
+	}
 	response, err := client.Do(req)
 	if err != nil {
 		return nil, err
