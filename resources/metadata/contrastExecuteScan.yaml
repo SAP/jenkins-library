@@ -27,6 +27,7 @@ spec:
           - STEPS
         type: string
         secret: true
+        mandatory: true
         resourceRef:
           - name: userCredentialsId
             type: secret
@@ -43,6 +44,7 @@ spec:
           - STEPS
         type: string
         secret: true
+        mandatory: true
         aliases:
           - name: service_key
         resourceRef:
@@ -60,6 +62,7 @@ spec:
           - STEPS
         type: string
         secret: true
+        mandatory: true
         resourceRef:
           - name: userCredentialsId
             type: secret
