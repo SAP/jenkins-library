@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -30,6 +31,8 @@ func (c *ContrastHttpClientInstance) ExecuteRequest(url string, params map[strin
 	if err != nil {
 		return errors.Wrap(err, "failed to create request")
 	}
+
+	log.Entry().Debugf("GET call request to: %s", url)
 	response, err := performRequest(req)
 	if err != nil {
 		return errors.Wrap(err, "failed to perform request")
