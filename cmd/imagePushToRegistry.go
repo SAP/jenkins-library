@@ -261,24 +261,21 @@ func pushImageNameTagsToTargetRegistry(config *imagePushToRegistryOptions, utils
 	g.SetLimit(10)
 
 	for i, sourceImageNameTag := range config.SourceImageNameTags {
-		sourceImageNameTag := sourceImageNameTag
+		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, sourceImageNameTag)
 
-		targetImageNameTag := ""
+		dst := ""
 		if len(config.TargetImageNameTags) == 0 {
-			registry, _ := docker.ContainerRegistryFromImage(sourceImageNameTag)
-			targetImageNameTag = strings.Replace(sourceImageNameTag, registry, config.TargetRegistryURL, 1)
-
-			fmt.Println(targetImageNameTag, registry)
+			dst = fmt.Sprintf("%s/%s", config.TargetRegistryURL, sourceImageNameTag)
 		} else {
-			targetImageNameTag = config.TargetImageNameTags[i]
+			dst = fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImageNameTags[i])
 		}
 
 		g.Go(func() error {
-			log.Entry().Infof("Copying %s to %s...", sourceImageNameTag, targetImageNameTag)
-			if err := utils.CopyImage(ctx, sourceImageNameTag, targetImageNameTag, ""); err != nil {
+			log.Entry().Infof("Copying %s to %s...", src, dst)
+			if err := utils.CopyImage(ctx, src, dst, ""); err != nil {
 				return err
 			}
-			log.Entry().Infof("Copying %s to %s... Done", sourceImageNameTag, targetImageNameTag)
+			log.Entry().Infof("Copying %s to %s... Done", src, dst)
 			return nil
 		})
 	}

@@ -77,9 +77,9 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		config := imagePushToRegistryOptions{
 			SourceRegistryURL: "https://source.registry",
 			SourceImages:      []string{"source-image"},
-			SourceImageNameTags: []string{"source.registry/com.sap.docker/ppiper:240104-20240227184612",
-				"source.registry/com.sap.docker/ppiper:240104-20240227184612-amd64",
-				"source.registry/com.sap.docker/ppiper:240104-20240227184612-aarch64",
+			SourceImageNameTags: []string{"com.sap.docker/ppiper:240104-20240227184612",
+				"com.sap.docker/ppiper:240104-20240227184612-amd64",
+				"com.sap.docker/ppiper:240104-20240227184612-aarch64",
 			},
 			SourceRegistryUser:     "sourceuser",
 			SourceRegistryPassword: "sourcepassword",
