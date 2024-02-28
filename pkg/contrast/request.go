@@ -34,6 +34,10 @@ func (c *ContrastHttpClientInstance) ExecuteRequest(url string, params map[strin
 
 	log.Entry().Debugf("GET call request to: %s", url)
 	response, err := performRequest(req)
+	if response != nil && response.StatusCode != http.StatusOK {
+		return errors.Errorf("failed to perform request, status code: %v and status %v", response.StatusCode, response.Status)
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "failed to perform request")
 	}
