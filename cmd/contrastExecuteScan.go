@@ -42,34 +42,9 @@ func contrastExecuteScan(config contrastExecuteScanOptions, telemetryData *telem
 	}
 }
 
-func validateConfigs(config *contrastExecuteScanOptions) error {
-	validations := map[string]string{
-		"server":         config.Server,
-		"organizationId": config.OrganizationID,
-		"applicationId":  config.ApplicationID,
-		"userApiKey":     config.UserAPIKey,
-		"username":       config.Username,
-		"serviceKey":     config.ServiceKey,
-	}
-
-	for k, v := range validations {
-		if v == "" {
-			return fmt.Errorf("%s is empty", k)
-		}
-	}
-
+func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *telemetry.CustomData, utils contrastExecuteScanUtils) (reports []piperutils.Path, err error) {
 	if !strings.HasPrefix(config.Server, "https://") {
 		config.Server = "https://" + config.Server
-	}
-
-	return nil
-}
-
-func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *telemetry.CustomData, utils contrastExecuteScanUtils) (reports []piperutils.Path, err error) {
-	err = validateConfigs(config)
-	if err != nil {
-		log.Entry().Errorf("config is invalid: %v", err)
-		return nil, err
 	}
 
 	auth := getAuth(config)
