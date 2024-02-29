@@ -511,6 +511,85 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: scanContainerDistro
+        description: To also scan your images in the CPE, choose the distro
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - ubuntu
+          - centos
+          - alpine
+      - name: imageNameTags
+        type: "[]string"
+        mandatoryIf:
+          - name: scanContainerDistro
+            value: ubuntu
+          - name: scanContainerDistro
+            value: centos
+          - name: scanContainerDistro
+            value: alpine
+        description: Images to be scanned (typically filled by CPE)
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+      - name: registryUrl
+        type: string
+        mandatoryIf:
+          - name: scanContainerDistro
+            value: ubuntu
+          - name: scanContainerDistro
+            value: centos
+          - name: scanContainerDistro
+            value: alpine
+        description: Used accessing for the images to be scanned (typically filled by CPE)
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: repositoryUsername
+        type: string
+        mandatoryIf:
+          - name: scanContainerDistro
+            value: ubuntu
+          - name: scanContainerDistro
+            value: centos
+          - name: scanContainerDistro
+            value: alpine
+        description: Used accessing for the images to be scanned (typically filled by CPE)
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+      - name: repositoryPassword
+        type: string
+        mandatoryIf:
+          - name: scanContainerDistro
+            value: ubuntu
+          - name: scanContainerDistro
+            value: centos
+          - name: scanContainerDistro
+            value: alpine
+        description: Used accessing for the images to be scanned (typically filled by CPE)
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
   outputs:
     resources:
       - name: influx
@@ -562,3 +641,40 @@ spec:
       options:
         - name: -u
           value: "0"
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+  sidecars:
+    - name: inspector-ubuntu
+      image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanContainerDistro
+              value: ubuntu
+    - name: inspector-alpine
+      image: blackducksoftware/blackduck-imageinspector-alpine:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanContainerDistro
+              value: alpine
+    - name: inspector-centos
+      image: blackducksoftware/blackduck-imageinspector-centos:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanContainerDistro
+              value: centos
