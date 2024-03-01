@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	DuplicatedProjectName = fmt.Errorf("project with the same name was already scanned")
+	ErrDuplicatedProjectName = fmt.Errorf("project with the same name was already scanned")
 )
 
 // Scan stores information about scanned WhiteSource projects (modules).
@@ -72,7 +72,7 @@ func (s *Scan) AppendScannedProjectVersion(projectName string, skipModulesWithDu
 		log.Entry().Errorf("A module with the name '%s' was already scanned. "+
 			"Your project's modules must have unique names.", projectName)
 		if skipModulesWithDuplicatedNames {
-			return DuplicatedProjectName
+			return ErrDuplicatedProjectName
 		}
 
 		return fmt.Errorf("project with name '%s' was already scanned", projectName)

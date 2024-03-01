@@ -100,7 +100,7 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	// ToDo: check if this is required
 	if !config.SkipParentProjectResolution {
 		if err := s.AppendScannedProject(s.AggregateProjectName, config.SkipModulesWithDuplicatedNames); err != nil {
-			if config.SkipModulesWithDuplicatedNames && errors.Is(err, DuplicatedProjectName) {
+			if config.SkipModulesWithDuplicatedNames && errors.Is(err, ErrDuplicatedProjectName) {
 				return nil
 			}
 
