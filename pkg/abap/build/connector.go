@@ -160,9 +160,13 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 		Certificates: tlsCertificates,
 	})
 
-	if username == "" || password == "" {
+	if tlsCertificates != nil {
+		log.Entry().Info("Logon procedure: via Certificate")
+		return nil
+	} else if username == "" || password == "" {
 		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
 	} else {
+		log.Entry().Info("Logon procedure: via Password")
 		return nil
 	}
 }
