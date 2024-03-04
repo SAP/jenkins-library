@@ -190,7 +190,7 @@ func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.
 
 		for _, pemBlock := range pemBlocks {
 			if pemBlock.Type == "PRIVATE KEY" {
-				key = pemBlock.Bytes
+				key = pem.EncodeToMemory(pemBlock)
 			}
 
 			if pemBlock.Type == "CERTIFICATE" {
