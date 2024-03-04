@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -185,7 +186,7 @@ func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.
 		}
 
 		var key []byte
-		var certificate []byte
+		var userCertificate []byte
 
 		for _, pemBlock := range pemBlocks {
 			if pemBlock.Type == "PRIVATE KEY" {
@@ -199,12 +200,12 @@ func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.
 				}
 
 				if tempCert.IsCA == false { //We ignore the 2 additional CA Certificates
-					certificate = pemBlock.Bytes
+					userCertificate = pem.EncodeToMemory(pemBlock)
 				}
 			}
 		}
 
-		tlsCertificate, err = tls.X509KeyPair(certificate, key)
+		tlsCertificate, err = tls.X509KeyPair(userCertificate, key)
 		if err != nil {
 			return nil, errors.Wrap(err, "Creating x509 Key Pair failed")
 		}
