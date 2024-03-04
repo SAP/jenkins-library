@@ -166,12 +166,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/imageNameTags
-       - name: multipleImages
-          aliases:
-            - name: images
-          type: "[]map[string]interface{}"
-          description: | "dummy"
-          
+      - name: multipleImages
+        type: "[]map[string]interface{}"
+        description: "dummy for now"
       - name: chartPath
         aliases:
           - name: helmChartPath

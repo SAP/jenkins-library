@@ -16,21 +16,23 @@ import (
 )
 
 type gitopsUpdateDeploymentOptions struct {
-	BranchName                string   `json:"branchName,omitempty"`
-	CommitMessage             string   `json:"commitMessage,omitempty"`
-	ServerURL                 string   `json:"serverUrl,omitempty"`
-	ForcePush                 bool     `json:"forcePush,omitempty"`
-	Username                  string   `json:"username,omitempty"`
-	Password                  string   `json:"password,omitempty"`
-	FilePath                  string   `json:"filePath,omitempty"`
-	ContainerName             string   `json:"containerName,omitempty"`
-	ContainerRegistryURL      string   `json:"containerRegistryUrl,omitempty"`
-	ContainerImageNameTag     string   `json:"containerImageNameTag,omitempty"`
-	ChartPath                 string   `json:"chartPath,omitempty"`
-	HelmValues                []string `json:"helmValues,omitempty"`
-	DeploymentName            string   `json:"deploymentName,omitempty"`
-	Tool                      string   `json:"tool,omitempty" validate:"possible-values=kubectl helm kustomize"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	BranchName                string                   `json:"branchName,omitempty"`
+	CommitMessage             string                   `json:"commitMessage,omitempty"`
+	ServerURL                 string                   `json:"serverUrl,omitempty"`
+	ForcePush                 bool                     `json:"forcePush,omitempty"`
+	Username                  string                   `json:"username,omitempty"`
+	Password                  string                   `json:"password,omitempty"`
+	FilePath                  string                   `json:"filePath,omitempty"`
+	ContainerName             string                   `json:"containerName,omitempty"`
+	ContainerRegistryURL      string                   `json:"containerRegistryUrl,omitempty"`
+	ContainerImageNameTag     string                   `json:"containerImageNameTag,omitempty"`
+	ContainerImageNameTags    string                   `json:"containerImageNameTags,omitempty"`
+	MultipleImages            []map[string]interface{} `json:"multipleImages,omitempty"`
+	ChartPath                 string                   `json:"chartPath,omitempty"`
+	HelmValues                []string                 `json:"helmValues,omitempty"`
+	DeploymentName            string                   `json:"deploymentName,omitempty"`
+	Tool                      string                   `json:"tool,omitempty" validate:"possible-values=kubectl helm kustomize"`
+	CustomTLSCertificateLinks []string                 `json:"customTlsCertificateLinks,omitempty"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
@@ -152,6 +154,8 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.ContainerName, "containerName", os.Getenv("PIPER_containerName"), "The name of the container to update")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image is located")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageNameTag, "containerImageNameTag", os.Getenv("PIPER_containerImageNameTag"), "Container image name with version tag to annotate in the deployment configuration.")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageNameTags, "containerImageNameTags", os.Getenv("PIPER_containerImageNameTags"), "Container image names with version tags to annotate in the deployment configuration.")
+
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm. Globbing is supported to merge multiple charts into one resource.yaml that will be commited.")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. In case of `kustomize` this is the name or alias of the image in the `kustomization.yaml`")
@@ -165,6 +169,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("containerImageNameTag")
+	cmd.MarkFlagRequired("containerImageNameTags")
 	cmd.MarkFlagRequired("tool")
 }
 
@@ -308,6 +313,28 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "image", Deprecated: true}, {Name: "containerImage"}},
 						Default:   os.Getenv("PIPER_containerImageNameTag"),
+					},
+					{
+						Name: "containerImageNameTags",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "image", Deprecated: true}, {Name: "containerImage"}},
+						Default:   os.Getenv("PIPER_containerImageNameTags"),
+					},
+					{
+						Name:        "multipleImages",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{},
+						Type:        "[]map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "chartPath",
