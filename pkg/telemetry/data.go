@@ -34,6 +34,12 @@ type CustomData struct {
 	LegacyJobName         string `json:"legacyJobName,omitempty"`
 	DeployType            string `json:"deployType,omitempty"`
 	CnbBuildStepData      string `json:"cnbBuildStepData,omitempty"`
+	ServerURL             string `json:"serverURL,omitempty"`
+	ECCNMessageStatus     string `json:"eccnMessageStatus,omitempty"`
+	ChangeRequestUpload   string `json:"changeRequestUpload,omitempty"`
+	BuildVersionCreation  string `json:"buildVersionCreation,omitempty"`
+	PullRequestMode       string `json:"pullRequestMode,omitempty"`
+	GroovyTemplateUsed    string `json:"groovyTemplateUsed,omitempty"`
 }
 
 // StepTelemetryData definition for telemetry reporting and monitoring
