@@ -311,12 +311,14 @@ func (api *SAP_COM_0948) initialRequest() error {
 		Password:           api.con.Password,
 	})
 
+	// HEAD request to the root is not sufficient, as an unauthorized called is allowed to do so
+	// Therefore, the request goes to the "Actions" entity without actually fetching data
 	headConnection := api.con
 	headConnection.XCsrfToken = "fetch"
-	headConnection.URL = api.con.URL + api.path
+	headConnection.URL = api.con.URL + api.path + api.actionsEntity + "?$top=0"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := GetHTTPResponse("HEAD", headConnection, nil, api.client)
+	resp, err := GetHTTPResponse("GET", headConnection, nil, api.client)
 	if err != nil {
 		_, err = HandleHTTPError(resp, err, "Authentication on the ABAP system failed", api.con)
 		return err

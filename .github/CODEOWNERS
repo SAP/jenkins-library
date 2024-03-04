@@ -63,6 +63,9 @@ AbapEnvironment*                                @SAP/jenkins-library-abap
 ascAppUpload*                                   @Mau04 @inf2381
 AscAppUpload*                                   @Mau04 @inf2381
 
+credentialdiggerScan*                           @SAP/credential-digger-members @SAP/credential-digger-admins 
+CredentialdiggerScan*                           @SAP/credential-digger-admins @SAP/credential-digger-members 
+
 #####################
 # Integration tests #
 #####################

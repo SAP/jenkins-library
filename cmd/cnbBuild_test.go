@@ -180,7 +180,7 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "sha256:52eac630560210e5ae13eb10797c4246d6f02d425f32b9430ca00bde697c79ec", commonPipelineEnvironment.container.imageDigest)
 		assert.Contains(t, commonPipelineEnvironment.container.imageDigests, "sha256:52eac630560210e5ae13eb10797c4246d6f02d425f32b9430ca00bde697c79ec")
 
-		customDataAsString := telemetryData.Custom1
+		customDataAsString := telemetryData.CnbBuildStepData
 		customData := &buildpacks.BuildpacksTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), customData)
 		require.NoError(t, err)
@@ -238,16 +238,17 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "my-image:0.0.1", commonPipelineEnvironment.container.imageNameTag)
 	})
 
-	t.Run("success case (custom buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
-		t.Parallel()
+	t.Run("success case (custom buildpacks and custom env variables with expand, renaming docker conf file, additional tag)", func(t *testing.T) {
+		t.Setenv("BAR", "BAZZ")
 		config := cnbBuildOptions{
 			ContainerImageName:   "my-image",
 			ContainerImageTag:    "0.0.1",
 			ContainerRegistryURL: imageRegistry,
 			DockerConfigJSON:     "/path/to/test.json",
 			Buildpacks:           []string{"test"},
+			ExpandBuildEnvVars:   true,
 			BuildEnvVars: map[string]interface{}{
-				"FOO": "BAR",
+				"FOO": "${BAR}",
 			},
 			AdditionalTags: []string{"latest"},
 		}
@@ -269,6 +270,8 @@ func TestRunCnbBuild(t *testing.T) {
 
 		copiedFileExists, _ := utils.FileExists("/tmp/config.json")
 		assert.True(t, copiedFileExists)
+
+		assetBuildEnv(t, utils, "FOO", "BAZZ")
 	})
 
 	t.Run("success case (custom buildpacks, pre and post buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
@@ -281,8 +284,9 @@ func TestRunCnbBuild(t *testing.T) {
 			PreBuildpacks:        []string{"pre-test"},
 			PostBuildpacks:       []string{"post-test"},
 			Buildpacks:           []string{"test"},
+			ExpandBuildEnvVars:   false,
 			BuildEnvVars: map[string]interface{}{
-				"FOO": "BAR",
+				"FOO": "${BAR}",
 			},
 			AdditionalTags: []string{"latest"},
 		}
@@ -304,6 +308,8 @@ func TestRunCnbBuild(t *testing.T) {
 
 		copiedFileExists, _ := utils.FileExists("/tmp/config.json")
 		assert.True(t, copiedFileExists)
+
+		assetBuildEnv(t, utils, "FOO", "${BAR}")
 	})
 
 	t.Run("success case (custom pre and post buildpacks and custom env variables, renaming docker conf file, additional tag)", func(t *testing.T) {
@@ -609,7 +615,7 @@ uri = "some-buildpack"`))
 		err := callCnbBuild(&config, telemetryData, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 		require.NoError(t, err)
 
-		customDataAsString := telemetryData.Custom1
+		customDataAsString := telemetryData.CnbBuildStepData
 		customData := &buildpacks.BuildpacksTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), customData)
 
@@ -726,7 +732,7 @@ uri = "some-buildpack"
 		err := callCnbBuild(&config, telemetryData, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 		require.NoError(t, err)
 
-		customDataAsString := telemetryData.Custom1
+		customDataAsString := telemetryData.CnbBuildStepData
 		customData := &buildpacks.BuildpacksTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), customData)
 
@@ -768,7 +774,7 @@ uri = "some-buildpack"
 		err := callCnbBuild(&config, telemetryData, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		require.NoError(t, err)
 
-		customDataAsString := telemetryData.Custom1
+		customDataAsString := telemetryData.CnbBuildStepData
 		customData := &buildpacks.BuildpacksTelemetry{}
 		err = json.Unmarshal([]byte(customDataAsString), customData)
 		assert.NoError(t, err)
