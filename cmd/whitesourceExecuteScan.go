@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -134,9 +135,10 @@ func newWhitesourceUtils(config *ScanOptions, client *github.Client) *whitesourc
 
 func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	return &ws.Scan{
-		AggregateProjectName: config.ProjectName,
-		ProductVersion:       config.Version,
-		BuildTool:            config.BuildTool,
+		AggregateProjectName:        config.ProjectName,
+		ProductVersion:              config.Version,
+		BuildTool:                   config.BuildTool,
+		SkipProjectsWithEmptyTokens: config.SkipProjectsWithEmptyTokens,
 	}
 }
 
@@ -146,6 +148,9 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
+	}
+	if log.IsVerbose() {
+		logWorkspaceContent()
 	}
 	utils := newWhitesourceUtils(&config, client)
 	scan := newWhitesourceScan(&config)
@@ -196,28 +201,25 @@ func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *w
 }
 
 func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
-		saveImageOptions := containerSaveImageOptions{
-			ContainerImage:            config.ScanImage,
-			ContainerRegistryURL:      config.ScanImageRegistryURL,
-			ContainerRegistryUser:     config.ContainerRegistryUser,
-			ContainerRegistryPassword: config.ContainerRegistryPassword,
-			DockerConfigJSON:          config.DockerConfigJSON,
-			FilePath:                  config.ProjectName,
-			ImageFormat:               "legacy", // keep the image format legacy or whitesource is not able to read layers
-		}
-		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
-		dClient := &piperDocker.Client{}
-		dClient.SetOptions(dClientOptions)
-		if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
-			if strings.Contains(fmt.Sprint(err), "no image found") {
-				log.SetErrorCategory(log.ErrorConfiguration)
+		if len(config.ScanImages) != 0 && config.ActivateMultipleImagesScan {
+			for _, image := range config.ScanImages {
+				config.ScanImage = image
+				err := downloadDockerImageAsTarNew(config, utils)
+				if err != nil {
+					return errors.Wrapf(err, "failed to download docker image")
+				}
 			}
-			return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
-		}
 
+		} else {
+			err := downloadDockerImageAsTar(config, utils)
+			if err != nil {
+				return errors.Wrapf(err, "failed to download docker image")
+			}
+		}
 	}
 
 	// Start the scan
@@ -375,8 +377,11 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	if err := resolveProductToken(config, sys); err != nil {
 		return errors.Wrap(err, "error resolving product token")
 	}
-	if err := resolveAggregateProjectToken(config, sys); err != nil {
-		return errors.Wrap(err, "error resolving aggregate project token")
+
+	if !config.SkipParentProjectResolution {
+		if err := resolveAggregateProjectToken(config, sys); err != nil {
+			return errors.Wrap(err, "error resolving aggregate project token")
+		}
 	}
 
 	scan.ProductToken = config.ProductToken
@@ -465,33 +470,34 @@ func validateProductVersion(version string) string {
 
 func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	return &ws.ScanOptions{
-		BuildTool:                  config.BuildTool,
-		ScanType:                   "", // no longer provided via config
-		OrgToken:                   config.OrgToken,
-		UserToken:                  config.UserToken,
-		ProductName:                config.ProductName,
-		ProductToken:               config.ProductToken,
-		ProductVersion:             config.Version,
-		ProjectName:                config.ProjectName,
-		BuildDescriptorFile:        config.BuildDescriptorFile,
-		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
-		PomPath:                    config.BuildDescriptorFile,
-		M2Path:                     config.M2Path,
-		GlobalSettingsFile:         config.GlobalSettingsFile,
-		ProjectSettingsFile:        config.ProjectSettingsFile,
-		InstallArtifacts:           config.InstallArtifacts,
-		DefaultNpmRegistry:         config.DefaultNpmRegistry,
-		AgentDownloadURL:           config.AgentDownloadURL,
-		AgentFileName:              config.AgentFileName,
-		ConfigFilePath:             config.ConfigFilePath,
-		Includes:                   config.Includes,
-		Excludes:                   config.Excludes,
-		JreDownloadURL:             config.JreDownloadURL,
-		AgentURL:                   config.AgentURL,
-		ServiceURL:                 config.ServiceURL,
-		ScanPath:                   config.ScanPath,
-		InstallCommand:             config.InstallCommand,
-		Verbose:                    GeneralConfig.Verbose,
+		BuildTool:                   config.BuildTool,
+		ScanType:                    "", // no longer provided via config
+		OrgToken:                    config.OrgToken,
+		UserToken:                   config.UserToken,
+		ProductName:                 config.ProductName,
+		ProductToken:                config.ProductToken,
+		ProductVersion:              config.Version,
+		ProjectName:                 config.ProjectName,
+		BuildDescriptorFile:         config.BuildDescriptorFile,
+		BuildDescriptorExcludeList:  config.BuildDescriptorExcludeList,
+		PomPath:                     config.BuildDescriptorFile,
+		M2Path:                      config.M2Path,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		InstallArtifacts:            config.InstallArtifacts,
+		DefaultNpmRegistry:          config.DefaultNpmRegistry,
+		AgentDownloadURL:            config.AgentDownloadURL,
+		AgentFileName:               config.AgentFileName,
+		ConfigFilePath:              config.ConfigFilePath,
+		Includes:                    config.Includes,
+		Excludes:                    config.Excludes,
+		JreDownloadURL:              config.JreDownloadURL,
+		AgentURL:                    config.AgentURL,
+		ServiceURL:                  config.ServiceURL,
+		ScanPath:                    config.ScanPath,
+		InstallCommand:              config.InstallCommand,
+		Verbose:                     GeneralConfig.Verbose,
+		SkipParentProjectResolution: config.SkipParentProjectResolution,
 	}
 }
 
@@ -1085,4 +1091,76 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+func downloadDockerImageAsTarNew(config *ScanOptions, utils whitesourceUtils) error {
+
+	imageNameToSave := strings.Replace(config.ScanImage, "/", "-", -1)
+
+	saveImageOptions := containerSaveImageOptions{
+		ContainerImage:            config.ScanImage,
+		ContainerRegistryURL:      config.ScanImageRegistryURL,
+		ContainerRegistryUser:     config.ContainerRegistryUser,
+		ContainerRegistryPassword: config.ContainerRegistryPassword,
+		DockerConfigJSON:          config.DockerConfigJSON,
+		FilePath:                  config.ScanPath + "/" + imageNameToSave, // previously was config.ProjectName
+		ImageFormat:               "legacy",                                // keep the image format legacy or whitesource is not able to read layers
+	}
+	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
+	dClient := &piperDocker.Client{}
+	dClient.SetOptions(dClientOptions)
+	tarFilePath, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils)
+	if err != nil {
+		if strings.Contains(fmt.Sprint(err), "no image found") {
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
+		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+	}
+	// to remove timestamp and artifact version
+	if err := renameTarfilePath(tarFilePath); err != nil {
+		return errors.Wrapf(err, "failed to rename image %v", err)
+	}
+
+	return nil
+}
+
+func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error {
+
+	saveImageOptions := containerSaveImageOptions{
+		ContainerImage:            config.ScanImage,
+		ContainerRegistryURL:      config.ScanImageRegistryURL,
+		ContainerRegistryUser:     config.ContainerRegistryUser,
+		ContainerRegistryPassword: config.ContainerRegistryPassword,
+		DockerConfigJSON:          config.DockerConfigJSON,
+		FilePath:                  config.ProjectName, // consider changing this to config.ScanPath + "/" + config.ProjectName
+		ImageFormat:               "legacy",           // keep the image format legacy or whitesource is not able to read layers
+	}
+	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
+	dClient := &piperDocker.Client{}
+	dClient.SetOptions(dClientOptions)
+	if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
+		if strings.Contains(fmt.Sprint(err), "no image found") {
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
+		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+	}
+
+	return nil
+}
+
+func renameTarfilePath(tarFilepath string) error {
+	if _, err := os.Stat(tarFilepath); os.IsNotExist(err) {
+		return fmt.Errorf("file %s does not exist", tarFilepath)
+	}
+	pattern := `-\d{14}_[a-f0-9]{40}\.tar$` //format is -<timestamp>_<commitHash>.tar
+	regex := regexp.MustCompile(pattern)
+	if regex.MatchString(tarFilepath) {
+		newName := regex.ReplaceAllString(tarFilepath, ".tar")
+		err := os.Rename(tarFilepath, newName)
+		if err != nil {
+			return fmt.Errorf("error renaming file %s to %s: %v", tarFilepath, newName, err)
+		}
+		log.Entry().Infof("Renamed file %s to %s\n", tarFilepath, newName)
+	}
+	return nil
 }

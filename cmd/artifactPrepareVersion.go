@@ -66,7 +66,7 @@ type artifactPrepareVersionUtils interface {
 	FileRead(path string) ([]byte, error)
 	FileRemove(path string) error
 
-	NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error)
+	GetConfigProvider() (orchestrator.ConfigProvider, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
@@ -75,8 +75,8 @@ type artifactPrepareVersionUtilsBundle struct {
 	*piperhttp.Client
 }
 
-func (a *artifactPrepareVersionUtilsBundle) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
-	return orchestrator.NewOrchestratorSpecificConfigProvider()
+func (a *artifactPrepareVersionUtilsBundle) GetConfigProvider() (orchestrator.ConfigProvider, error) {
+	return orchestrator.GetOrchestratorConfigProvider(nil)
 }
 
 func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
@@ -109,10 +109,8 @@ var sshAgentAuth = ssh.NewSSHAgentAuth
 
 func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, utils artifactPrepareVersionUtils, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
 
-	telemetryData.Custom1Label = "buildTool"
-	telemetryData.Custom1 = config.BuildTool
-	telemetryData.Custom2Label = "filePath"
-	telemetryData.Custom2 = config.FilePath
+	telemetryData.BuildTool = config.BuildTool
+	telemetryData.FilePath = config.FilePath
 
 	// Options for artifact
 	artifactOpts := versioning.Options{
@@ -160,7 +158,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
 		// make sure that versioning does not create tags (when set to "cloud")
 		// for PR pipelines, optimized pipelines (= no build)
-		provider, err := utils.NewOrchestratorSpecificConfigProvider()
+		provider, err := utils.GetConfigProvider()
 		if err != nil {
 			log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 		}

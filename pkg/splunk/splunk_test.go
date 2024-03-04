@@ -69,8 +69,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing Success Step - Send Telemetry Only",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "100",
 						ErrorCode:     "0",
@@ -101,8 +100,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing Success Step - Send Telemetry Only Although sendLogs Active",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "100",
 						ErrorCode:     "0",
@@ -133,8 +131,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing Failure Step - Send Telemetry Only",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "100",
 						ErrorCode:     "0",
@@ -166,8 +163,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing Failure Step - Send Telemetry and Logs",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "100",
 						ErrorCode:     "1",
@@ -199,8 +195,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing len(maxBatchSize)==len(logMessages)",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:  "100",
 						ErrorCode: "1",
@@ -231,8 +226,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing len(maxBatchSize)<len(logMessages)",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:  "100",
 						ErrorCode: "1",
@@ -263,9 +257,8 @@ func TestSend(t *testing.T) {
 		{name: "Testing len(maxBatchSize)>len(logMessages)",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
-					CustomData:   telemetry.CustomData{},
+					BaseData:   telemetry.BaseData{},
+					CustomData: telemetry.CustomData{},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -361,8 +354,7 @@ func Test_prepareTelemetry(t *testing.T) {
 		{name: "Testing prepare telemetry information",
 			args: args{
 				telemetryData: telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "1234",
 						ErrorCode:     "0",

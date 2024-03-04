@@ -51,10 +51,12 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		config := imagePushToRegistryOptions{
 			SourceRegistryURL:      "https://source.registry",
 			SourceImages:           []string{"source-image"},
+			SourceImageTag:         "1.0.0-123+456",
 			SourceRegistryUser:     "sourceuser",
 			SourceRegistryPassword: "sourcepassword",
 			TargetRegistryURL:      "https://target.registry",
 			TargetImages:           map[string]any{"source-image": "target-image"},
+			TargetImageTag:         "1.0.0-123+456",
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
 		}
@@ -65,6 +67,8 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		createdConfig, err := utils.FileRead(targetDockerConfigPath)
 		assert.NoError(t, err)
 		assert.Equal(t, customDockerConfig, string(createdConfig))
+		assert.Equal(t, "1.0.0-123-456", config.SourceImageTag)
+		assert.Equal(t, "1.0.0-123-456", config.TargetImageTag)
 	})
 
 	t.Run("failed to copy image", func(t *testing.T) {

@@ -19,6 +19,8 @@ const auditStateOpen string = "open"
 const auditStateDismissed string = "dismissed"
 const codeqlToolName string = "CodeQL"
 const perPageCount int = 100
+const AuditAll string = "Audit All"
+const Optional string = "Optional"
 
 func NewCodeqlScanAuditInstance(serverUrl, owner, repository, token string, trustedCerts []string) CodeqlScanAuditInstance {
 	return CodeqlScanAuditInstance{serverUrl: serverUrl, owner: owner, repository: repository, token: token, trustedCerts: trustedCerts}
@@ -104,12 +106,12 @@ func getVulnerabilitiesFromClient(ctx context.Context, codeScanning githubCodeql
 	}
 
 	auditAll := CodeqlFindings{
-		ClassificationName: "Audit All",
+		ClassificationName: AuditAll,
 		Total:              totalAlerts,
 		Audited:            audited,
 	}
 	optionalIssues := CodeqlFindings{
-		ClassificationName: "Optional",
+		ClassificationName: Optional,
 		Total:              totalOptionalAlerts,
 		Audited:            optionalAudited,
 	}
