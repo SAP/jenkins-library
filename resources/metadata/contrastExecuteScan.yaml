@@ -7,10 +7,10 @@ spec:
   inputs:
     secrets:
       - name: userCredentialsId
-        description: "Jenkins 'Username with password' credentials ID containing username and user API Key to communicate with the Contrast server."
+        description: "Jenkins 'Username with password' credentials ID containing username (email) and service key to communicate with the Contrast server."
         type: jenkins
-      - name: serviceKeyCredentialsId
-        description: "Jenkins 'Secret text' credentials ID containing service key to communicate with the Contrast server."
+      - name: apiKeyCredentialsId
+        description: "Jenkins 'Secret text' credentials ID containing user API key to communicate with the Contrast server."
         type: jenkins
     resources:
       - name: buildDescriptor
@@ -29,9 +29,8 @@ spec:
         secret: true
         mandatory: true
         resourceRef:
-          - name: userCredentialsId
+          - name: apiKeyCredentialsId
             type: secret
-            param: userApiKey
           - type: vaultSecret
             default: contrast
             name: contrastVaultSecretName
@@ -48,8 +47,9 @@ spec:
         aliases:
           - name: service_key
         resourceRef:
-          - name: serviceKeyCredentialsId
+          - name: userCredentialsId
             type: secret
+            param: serviceKey
           - type: vaultSecret
             default: contrast
             name: contrastVaultSecretName

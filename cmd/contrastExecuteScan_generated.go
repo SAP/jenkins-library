@@ -199,8 +199,8 @@ func contrastExecuteScanMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "userCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and user API Key to communicate with the Contrast server.", Type: "jenkins"},
-					{Name: "serviceKeyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key to communicate with the Contrast server.", Type: "jenkins"},
+					{Name: "userCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username (email) and service key to communicate with the Contrast server.", Type: "jenkins"},
+					{Name: "apiKeyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing user API key to communicate with the Contrast server.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
@@ -211,9 +211,8 @@ func contrastExecuteScanMetadata() config.StepData {
 						Name: "userApiKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "userCredentialsId",
-								Param: "userApiKey",
-								Type:  "secret",
+								Name: "apiKeyCredentialsId",
+								Type: "secret",
 							},
 
 							{
@@ -232,8 +231,9 @@ func contrastExecuteScanMetadata() config.StepData {
 						Name: "serviceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "serviceKeyCredentialsId",
-								Type: "secret",
+								Name:  "userCredentialsId",
+								Param: "serviceKey",
+								Type:  "secret",
 							},
 
 							{
