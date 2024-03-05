@@ -299,11 +299,7 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 		deployStatement = append(deployStatement, strings.Fields(config.CfNativeDeployParameters)...)
 	}
 
-	stopOldAppIfRunning := func(_cmd command.ExecRunner) error {
-		return nil
-	}
-
-	return cfDeploy(config, deployStatement, additionalEnvironment, stopOldAppIfRunning, cmd)
+	return cfDeploy(config, deployStatement, additionalEnvironment, cmd)
 }
 
 func getManifest(name string) (cloudfoundry.Manifest, error) {
@@ -324,9 +320,7 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	if len(config.AppName) > 0 {
 		return config.AppName, nil
 	}
-	if config.DeployType == "blue-green" {
-		return "", fmt.Errorf("Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)")
-	}
+
 	manifestFile, err := getManifestFileName(config)
 
 	fileExists, err := fileUtils.FileExists(manifestFile)
@@ -438,7 +432,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 
 	cfDeployParams = append(cfDeployParams, extFileParams...)
 
-	err := cfDeploy(config, cfDeployParams, nil, nil, command)
+	err := cfDeploy(config, cfDeployParams, nil, command)
 
 	for _, extFile := range extFiles {
 		renameError := fileUtils.FileRename(extFile+".original", extFile)
@@ -565,7 +559,6 @@ func cfDeploy(
 	config *cloudFoundryDeployOptions,
 	cfDeployParams []string,
 	additionalEnvironment []string,
-	postDeployAction func(command command.ExecRunner) error,
 	command command.ExecRunner) error {
 
 	const cfLogFile = "cf.log"
@@ -613,10 +606,6 @@ func cfDeploy(
 		if err != nil {
 			log.Entry().WithError(err).Errorf("Command '%s' failed.", cfDeployParams)
 		}
-	}
-
-	if err == nil && postDeployAction != nil {
-		err = postDeployAction(command)
 	}
 
 	if loginPerformed {

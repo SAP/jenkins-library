@@ -11,77 +11,78 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type cloudFoundryDeployOptions struct {
-	APIEndpoint              string                 `json:"apiEndpoint,omitempty"`
-	AppName                  string                 `json:"appName,omitempty"`
-	ArtifactVersion          string                 `json:"artifactVersion,omitempty"`
-	CommitHash               string                 `json:"commitHash,omitempty"`
-	CfHome                   string                 `json:"cfHome,omitempty"`
-	CfNativeDeployParameters string                 `json:"cfNativeDeployParameters,omitempty"`
-	CfPluginHome             string                 `json:"cfPluginHome,omitempty"`
-	DeployDockerImage        string                 `json:"deployDockerImage,omitempty"`
-	DeployTool               string                 `json:"deployTool,omitempty"`
-	BuildTool                string                 `json:"buildTool,omitempty"`
-	DeployType               string                 `json:"deployType,omitempty"`
-	DockerPassword           string                 `json:"dockerPassword,omitempty"`
-	DockerUsername           string                 `json:"dockerUsername,omitempty"`
-	KeepOldInstance          bool                   `json:"keepOldInstance,omitempty"`
-	LoginParameters          string                 `json:"loginParameters,omitempty"`
-	Manifest                 string                 `json:"manifest,omitempty"`
-	ManifestVariables        []string               `json:"manifestVariables,omitempty"`
-	ManifestVariablesFiles   []string               `json:"manifestVariablesFiles,omitempty"`
-	MtaDeployParameters      string                 `json:"mtaDeployParameters,omitempty"`
-	MtaExtensionDescriptor   string                 `json:"mtaExtensionDescriptor,omitempty"`
-	MtaExtensionCredentials  map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
-	MtaPath                  string                 `json:"mtaPath,omitempty"`
-	Org                      string                 `json:"org,omitempty"`
-	Password                 string                 `json:"password,omitempty"`
-	Space                    string                 `json:"space,omitempty"`
-	Username                 string                 `json:"username,omitempty"`
+	APIEndpoint string `json:"apiEndpoint,omitempty"`
+	AppName string `json:"appName,omitempty"`
+	ArtifactVersion string `json:"artifactVersion,omitempty"`
+	CommitHash string `json:"commitHash,omitempty"`
+	CfHome string `json:"cfHome,omitempty"`
+	CfNativeDeployParameters string `json:"cfNativeDeployParameters,omitempty"`
+	CfPluginHome string `json:"cfPluginHome,omitempty"`
+	DeployDockerImage string `json:"deployDockerImage,omitempty"`
+	DeployTool string `json:"deployTool,omitempty"`
+	BuildTool string `json:"buildTool,omitempty"`
+	DeployType string `json:"deployType,omitempty"`
+	DockerPassword string `json:"dockerPassword,omitempty"`
+	DockerUsername string `json:"dockerUsername,omitempty"`
+	KeepOldInstance bool `json:"keepOldInstance,omitempty"`
+	LoginParameters string `json:"loginParameters,omitempty"`
+	Manifest string `json:"manifest,omitempty"`
+	ManifestVariables []string `json:"manifestVariables,omitempty"`
+	ManifestVariablesFiles []string `json:"manifestVariablesFiles,omitempty"`
+	MtaDeployParameters string `json:"mtaDeployParameters,omitempty"`
+	MtaExtensionDescriptor string `json:"mtaExtensionDescriptor,omitempty"`
+	MtaExtensionCredentials map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
+	MtaPath string `json:"mtaPath,omitempty"`
+	Org string `json:"org,omitempty"`
+	Password string `json:"password,omitempty"`
+	Space string `json:"space,omitempty"`
+	Username string `json:"username,omitempty"`
 }
+
 
 type cloudFoundryDeployInflux struct {
 	deployment_data struct {
 		fields struct {
 			artifactURL string
-			deployTime  string
-			commitHash  string
-			jobTrigger  string
+			deployTime string
+			commitHash string
+			jobTrigger string
 		}
 		tags struct {
 			artifactVersion string
-			deployUser      string
-			deployResult    string
-			cfAPIEndpoint   string
-			cfOrg           string
-			cfSpace         string
+			deployUser string
+			deployResult string
+			cfAPIEndpoint string
+			cfOrg string
+			cfSpace string
 		}
 	}
 }
 
 func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
-	measurementContent := []struct {
+	measurementContent := []struct{
 		measurement string
 		valType     string
 		name        string
 		value       interface{}
 	}{
-		{valType: config.InfluxField, measurement: "deployment_data", name: "artifactUrl", value: i.deployment_data.fields.artifactURL},
-		{valType: config.InfluxField, measurement: "deployment_data", name: "deployTime", value: i.deployment_data.fields.deployTime},
-		{valType: config.InfluxField, measurement: "deployment_data", name: "commitHash", value: i.deployment_data.fields.commitHash},
-		{valType: config.InfluxField, measurement: "deployment_data", name: "jobTrigger", value: i.deployment_data.fields.jobTrigger},
-		{valType: config.InfluxTag, measurement: "deployment_data", name: "artifactVersion", value: i.deployment_data.tags.artifactVersion},
-		{valType: config.InfluxTag, measurement: "deployment_data", name: "deployUser", value: i.deployment_data.tags.deployUser},
-		{valType: config.InfluxTag, measurement: "deployment_data", name: "deployResult", value: i.deployment_data.tags.deployResult},
-		{valType: config.InfluxTag, measurement: "deployment_data", name: "cfApiEndpoint", value: i.deployment_data.tags.cfAPIEndpoint},
-		{valType: config.InfluxTag, measurement: "deployment_data", name: "cfOrg", value: i.deployment_data.tags.cfOrg},
-		{valType: config.InfluxTag, measurement: "deployment_data", name: "cfSpace", value: i.deployment_data.tags.cfSpace},
+		{valType: config.InfluxField, measurement: "deployment_data" , name: "artifactUrl", value: i.deployment_data.fields.artifactURL},
+		{valType: config.InfluxField, measurement: "deployment_data" , name: "deployTime", value: i.deployment_data.fields.deployTime},
+		{valType: config.InfluxField, measurement: "deployment_data" , name: "commitHash", value: i.deployment_data.fields.commitHash},
+		{valType: config.InfluxField, measurement: "deployment_data" , name: "jobTrigger", value: i.deployment_data.fields.jobTrigger},
+		{valType: config.InfluxTag, measurement: "deployment_data" , name: "artifactVersion", value: i.deployment_data.tags.artifactVersion},
+		{valType: config.InfluxTag, measurement: "deployment_data" , name: "deployUser", value: i.deployment_data.tags.deployUser},
+		{valType: config.InfluxTag, measurement: "deployment_data" , name: "deployResult", value: i.deployment_data.tags.deployResult},
+		{valType: config.InfluxTag, measurement: "deployment_data" , name: "cfApiEndpoint", value: i.deployment_data.tags.cfAPIEndpoint},
+		{valType: config.InfluxTag, measurement: "deployment_data" , name: "cfOrg", value: i.deployment_data.tags.cfOrg},
+		{valType: config.InfluxTag, measurement: "deployment_data" , name: "cfSpace", value: i.deployment_data.tags.cfSpace},
 	}
 
 	errCount := 0
@@ -96,6 +97,7 @@ func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
 		log.Entry().Error("failed to persist Influx environment")
 	}
 }
+
 
 // CloudFoundryDeployCommand Deploys an application to Cloud Foundry
 func CloudFoundryDeployCommand() *cobra.Command {
@@ -112,7 +114,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 	var createCloudFoundryDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Deploys an application to Cloud Foundry",
-		Long:  `Deploys an application to a test or production space within Cloud Foundry.`,
+		Long: `Deploys an application to a test or production space within Cloud Foundry.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -173,18 +175,18 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.SplunkConfig.Dsn,
-						GeneralConfig.HookConfig.SplunkConfig.Token,
-						GeneralConfig.HookConfig.SplunkConfig.Index,
-						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
-						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
-						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
-						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+					GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+					GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
@@ -212,7 +214,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.DeployDockerImage, "deployDockerImage", os.Getenv("PIPER_deployDockerImage"), "Docker image deployments are supported (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker]. If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html] for details. Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", os.Getenv("PIPER_deployTool"), "Defines the tool which should be used for deployment.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact. If provided, `deployTool` is automatically derived from it. For MTA projects, `deployTool` defaults to `mtaDeployPlugin`. For other projects `cf_native` will be used.")
-	cmd.Flags().StringVar(&stepConfig.DeployType, "deployType", `standard`, "Defines the type of deployment, for example, `standard` deployment which results in a system downtime. To eliminate system downtime, an alternative is to pass '--strategy rolling' to the parameter `cfNativeDeployParameters`.")
+	cmd.Flags().StringVar(&stepConfig.DeployType, "deployType", `standard`, "Defines the type of deployment, for example, `standard` deployment which results in a system downtime, `blue-green` deployment which results in zero downtime for mta deploy tool. To eliminate system downtime, an alternative is to pass '--strategy rolling' to the parameter `cfNativeDeployParameters` for cf native deploy tool.")
 	cmd.Flags().StringVar(&stepConfig.DockerPassword, "dockerPassword", os.Getenv("PIPER_dockerPassword"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the password to be used.")
 	cmd.Flags().StringVar(&stepConfig.DockerUsername, "dockerUsername", os.Getenv("PIPER_dockerUsername"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the username to be used.")
 	cmd.Flags().BoolVar(&stepConfig.KeepOldInstance, "keepOldInstance", false, "If this option is set to true the old instance will remain stopped in the Cloud Foundry space.\"")
@@ -222,7 +224,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariablesFiles, "manifestVariablesFiles", []string{`manifest-variables.yml`}, "path(s) of the Yaml file(s) containing the variable values to use as a replacement in the manifest file. The order of the files is relevant in case there are conflicting variable names and values within variable files. In such a case, the values of the last file win.")
 	cmd.Flags().StringVar(&stepConfig.MtaDeployParameters, "mtaDeployParameters", `-f`, "Additional parameters passed to mta deployment command")
 	cmd.Flags().StringVar(&stepConfig.MtaExtensionDescriptor, "mtaExtensionDescriptor", os.Getenv("PIPER_mtaExtensionDescriptor"), "Defines additional extension descriptor file for deployment with the mtaDeployPlugin")
-
+	
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the path to *.mtar for deployment with the mtaDeployPlugin")
 	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "Cloud Foundry target organization.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
@@ -240,301 +242,304 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 func cloudFoundryDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "cloudFoundryDeploy",
-			Aliases:     []config.Alias{},
+			Name:    "cloudFoundryDeploy",
+			Aliases: []config.Alias{},
 			Description: "Deploys an application to Cloud Foundry",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cfCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.", Type: "jenkins", Aliases: []config.Alias{{Name: "cloudFoundry/credentialsId", Deprecated: true}}},
-					{Name: "dockerCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.", Type: "jenkins"},
+					{Name: "cfCredentialsId",Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.",Type: "jenkins",Aliases: []config.Alias{ {Name: "cloudFoundry/credentialsId", Deprecated: true}, },
+					}, 
+					{Name: "dockerCredentialsId",Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.",Type: "jenkins",
+					}, 
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:        "apiEndpoint",
+						Name:      "apiEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cfApiEndpoint"}, {Name: "cloudFoundry/apiEndpoint", Deprecated: true}},
-						Default:     `https://api.cf.eu10.hana.ondemand.com`,
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "cfApiEndpoint"},{Name: "cloudFoundry/apiEndpoint", Deprecated: true},},
+						Default:   `https://api.cf.eu10.hana.ondemand.com`,
 					},
 					{
-						Name:        "appName",
+						Name:      "appName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cfAppName"}, {Name: "cloudFoundry/appName", Deprecated: true}},
-						Default:     os.Getenv("PIPER_appName"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "cfAppName"},{Name: "cloudFoundry/appName", Deprecated: true},},
+						Default:   os.Getenv("PIPER_appName"),
 					},
 					{
-						Name: "artifactVersion",
+						Name:      "artifactVersion",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "commonPipelineEnvironment",
+								Name:"commonPipelineEnvironment",
 								Param: "artifactVersion",
 							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+                        },
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_artifactVersion"),
 					},
 					{
-						Name: "commitHash",
+						Name:      "commitHash",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "commonPipelineEnvironment",
+								Name:"commonPipelineEnvironment",
 								Param: "git/headCommitId",
 							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+                        },
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_commitHash"),
 					},
 					{
-						Name:        "cfHome",
+						Name:      "cfHome",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_cfHome"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_cfHome"),
 					},
 					{
-						Name:        "cfNativeDeployParameters",
+						Name:      "cfNativeDeployParameters",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_cfNativeDeployParameters"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_cfNativeDeployParameters"),
 					},
 					{
-						Name:        "cfPluginHome",
+						Name:      "cfPluginHome",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_cfPluginHome"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_cfPluginHome"),
 					},
 					{
-						Name:        "deployDockerImage",
+						Name:      "deployDockerImage",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_deployDockerImage"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_deployDockerImage"),
 					},
 					{
-						Name:        "deployTool",
+						Name:      "deployTool",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_deployTool"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_deployTool"),
 					},
 					{
-						Name: "buildTool",
+						Name:      "buildTool",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "commonPipelineEnvironment",
+								Name:"commonPipelineEnvironment",
 								Param: "buildTool",
 							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+                        },
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildTool"),
 					},
 					{
-						Name:        "deployType",
+						Name:      "deployType",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `standard`,
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   `standard`,
 					},
 					{
-						Name: "dockerPassword",
+						Name:      "dockerPassword",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "dockerCredentialsId",
+								Name:"dockerCredentialsId",
 								Param: "password",
-								Type:  "secret",
+								Type: "secret",
 							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+                        },
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_dockerPassword"),
 					},
 					{
-						Name: "dockerUsername",
+						Name:      "dockerUsername",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "dockerCredentialsId",
+								Name:"dockerCredentialsId",
 								Param: "username",
-								Type:  "secret",
+								Type: "secret",
 							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+                        },
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_dockerUsername"),
 					},
 					{
-						Name:        "keepOldInstance",
+						Name:      "keepOldInstance",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   false,
 					},
 					{
-						Name:        "loginParameters",
+						Name:      "loginParameters",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_loginParameters"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_loginParameters"),
 					},
 					{
-						Name:        "manifest",
+						Name:      "manifest",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cfManifest"}, {Name: "cloudFoundry/manifest", Deprecated: true}},
-						Default:     os.Getenv("PIPER_manifest"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "cfManifest"},{Name: "cloudFoundry/manifest", Deprecated: true},},
+						Default:   os.Getenv("PIPER_manifest"),
 					},
 					{
-						Name:        "manifestVariables",
+						Name:      "manifestVariables",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cfManifestVariables"}, {Name: "cloudFoundry/manifestVariables", Deprecated: true}},
-						Default:     []string{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "cfManifestVariables"},{Name: "cloudFoundry/manifestVariables", Deprecated: true},},
+						Default:   []string{},
 					},
 					{
-						Name:        "manifestVariablesFiles",
+						Name:      "manifestVariablesFiles",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cfManifestVariablesFiles"}, {Name: "cloudFoundry/manifestVariablesFiles", Deprecated: true}},
-						Default:     []string{`manifest-variables.yml`},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "cfManifestVariablesFiles"},{Name: "cloudFoundry/manifestVariablesFiles", Deprecated: true},},
+						Default:   []string{`manifest-variables.yml`},
 					},
 					{
-						Name:        "mtaDeployParameters",
+						Name:      "mtaDeployParameters",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `-f`,
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   `-f`,
 					},
 					{
-						Name:        "mtaExtensionDescriptor",
+						Name:      "mtaExtensionDescriptor",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionDescriptor", Deprecated: true}},
-						Default:     os.Getenv("PIPER_mtaExtensionDescriptor"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "cloudFoundry/mtaExtensionDescriptor", Deprecated: true},},
+						Default:   os.Getenv("PIPER_mtaExtensionDescriptor"),
 					},
 					{
-						Name:        "mtaExtensionCredentials",
+						Name:      "mtaExtensionCredentials",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "map[string]interface{}",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionCredentials", Deprecated: true}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "map[string]interface{}",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "cloudFoundry/mtaExtensionCredentials", Deprecated: true},},
+						
 					},
 					{
-						Name: "mtaPath",
+						Name:      "mtaPath",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "commonPipelineEnvironment",
+								Name:"commonPipelineEnvironment",
 								Param: "mtarFilePath",
 							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+                        },
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_mtaPath"),
 					},
 					{
-						Name:        "org",
+						Name:      "org",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cfOrg"}, {Name: "cloudFoundry/org", Deprecated: true}},
-						Default:     os.Getenv("PIPER_org"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "cfOrg"},{Name: "cloudFoundry/org", Deprecated: true},},
+						Default:   os.Getenv("PIPER_org"),
 					},
 					{
-						Name: "password",
+						Name:      "password",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "cfCredentialsId",
+								Name:"cfCredentialsId",
 								Param: "password",
-								Type:  "secret",
+								Type: "secret",
 							},
-
+                        
 							{
-								Name:    "cloudfoundryVaultSecretName",
-								Type:    "vaultSecret",
+								Name:"cloudfoundryVaultSecretName",
+								Type: "vaultSecret",
 								Default: "cloudfoundry-$(org)-$(space)",
 							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+                        },
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{
-						Name:        "space",
+						Name:      "space",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cfSpace"}, {Name: "cloudFoundry/space", Deprecated: true}},
-						Default:     os.Getenv("PIPER_space"),
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "cfSpace"},{Name: "cloudFoundry/space", Deprecated: true},},
+						Default:   os.Getenv("PIPER_space"),
 					},
 					{
-						Name: "username",
+						Name:      "username",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "cfCredentialsId",
+								Name:"cfCredentialsId",
 								Param: "username",
-								Type:  "secret",
+								Type: "secret",
 							},
-
+                        
 							{
-								Name:    "cloudfoundryVaultSecretName",
-								Type:    "vaultSecret",
+								Name:"cloudfoundryVaultSecretName",
+								Type: "vaultSecret",
 								Default: "cloudfoundry-$(org)-$(space)",
 							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+                        },
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
@@ -543,7 +548,8 @@ func cloudFoundryDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cfDeploy", Image: "ppiper/cf-cli:latest"},
+				{Name: "cfDeploy",Image: "ppiper/cf-cli:latest",
+				}, 
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -551,7 +557,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"name": "deployment_data", "fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "commitHash"}, {"name": "jobTrigger"}}, "tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
+							{"name": "deployment_data","fields": []map[string]string{ {"name": "artifactUrl"},  {"name": "deployTime"},  {"name": "commitHash"},  {"name": "jobTrigger"}, },"tags": []map[string]string{ {"name": "artifactVersion"},  {"name": "deployUser"},  {"name": "deployResult"},  {"name": "cfApiEndpoint"},  {"name": "cfOrg"},  {"name": "cfSpace"}, },},
 						},
 					},
 				},
