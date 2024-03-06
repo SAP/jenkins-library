@@ -18,12 +18,13 @@ import (
 )
 
 type abapAddonAssemblyKitReleasePackagesOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
-	MaxRuntimeInMinutes          int    `json:"maxRuntimeInMinutes,omitempty"`
-	PollingIntervalInSeconds     int    `json:"pollingIntervalInSeconds,omitempty"`
+	AbapAddonAssemblyKitEndpoint   string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	Username                       string `json:"username,omitempty"`
+	Password                       string `json:"password,omitempty"`
+	AddonDescriptor                string `json:"addonDescriptor,omitempty"`
+	MaxRuntimeInMinutes            int    `json:"maxRuntimeInMinutes,omitempty"`
+	PollingIntervalInSeconds       int    `json:"pollingIntervalInSeconds,omitempty"`
+	AbapAddonAssemblyKitOriginHash string `json:"abapAddonAssemblyKitOriginHash,omitempty"`
 }
 
 type abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment struct {
@@ -89,6 +90,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitOriginHash)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -164,6 +166,7 @@ func addAbapAddonAssemblyKitReleasePackagesFlags(cmd *cobra.Command, stepConfig 
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 5, "Maximum runtime for status polling in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 30, "Wait time in seconds between polling calls")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitOriginHash, "abapAddonAssemblyKitOriginHash", os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"), "Origin Hash for restricted AAKaaS scenarios")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -243,6 +246,15 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     30,
+					},
+					{
+						Name:        "abapAddonAssemblyKitOriginHash",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"),
 					},
 				},
 			},

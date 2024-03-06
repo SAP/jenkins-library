@@ -91,7 +91,6 @@ func (mc *MockClient) SetOptions(opts piperhttp.ClientOptions) {}
 func (mc *MockClient) SendRequest(Method, Url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	response, ok := mc.getResponse(Method, Url)
 	if !ok {
-		//return nil, errors.New("No Mock data for given Method+Url")
 		return nil, fmt.Errorf("No Mock data for %s", Method+Url)
 	}
 	return &response, nil
