@@ -163,6 +163,24 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("test copyFieldsToRepositories Planned success with predecessorcommitI short AAKaaS", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Package.PredecessorCommitID = "something"
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.NoError(t, err)
+	})
+
+	t.Run("test copyFieldsToRepositories Planned success with predecessorcommitID short addon.yml", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Package.PredecessorCommitID = "something40charslongPREDECESSORyyyyyyyyy"
+		pckgWR[0].Repo.CommitID = "something"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.NoError(t, err)
+	})
+
 	t.Run("test copyFieldsToRepositories Planned error with predecessorcommitID same as commitID", func(t *testing.T) {
 		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
 		pckgWR[0].Package.PredecessorCommitID = pckgWR[0].Repo.CommitID
