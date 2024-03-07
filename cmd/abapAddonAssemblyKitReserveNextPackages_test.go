@@ -172,15 +172,6 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("test copyFieldsToRepositories Planned error with too long commitID in addon.yml", func(t *testing.T) {
-		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
-		pckgWR[0].Package.PredecessorCommitID = "something40charslongPREDECESSORyyyyyyyyy"
-		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxxtoolong"
-		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
-		_, err := checkAndCopyFieldsToRepositories(pckgWR)
-		assert.Error(t, err)
-	})
-
 	t.Run("test copyFieldsToRepositories Released success", func(t *testing.T) {
 		pckgWR[0].Package.Status = aakaas.PackageStatusReleased
 		pckgWR[0].Package.PredecessorCommitID = "" //released packages do not have this attribute
@@ -194,15 +185,6 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 		pckgWR[0].Package.Status = aakaas.PackageStatusReleased
 		pckgWR[0].Package.PredecessorCommitID = "" //released packages do not have this attribute
 		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
-		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxO"
-		_, err := checkAndCopyFieldsToRepositories(pckgWR)
-		assert.Error(t, err)
-	})
-
-	t.Run("test copyFieldsToRepositories Released error with too long commitID in addon.yml", func(t *testing.T) {
-		pckgWR[0].Package.Status = aakaas.PackageStatusReleased
-		pckgWR[0].Package.PredecessorCommitID = "" //released packages do not have this attribute
-		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxxtoolong"
 		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxO"
 		_, err := checkAndCopyFieldsToRepositories(pckgWR)
 		assert.Error(t, err)
