@@ -183,8 +183,8 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 
 	t.Run("test copyFieldsToRepositories Planned error with predecessorcommitID same as commitID", func(t *testing.T) {
 		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
-		pckgWR[0].Package.PredecessorCommitID = pckgWR[0].Repo.CommitID
 		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.PredecessorCommitID = pckgWR[0].Repo.CommitID
 		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
 		_, err := checkAndCopyFieldsToRepositories(pckgWR)
 		assert.Error(t, err)
