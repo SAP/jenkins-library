@@ -11,15 +11,18 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"io"
 	"log"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func GenerateSelfSignedCertificate() (pemKey, pemCert []byte) {
+func GenerateSelfSignedCertificate(usages []x509.ExtKeyUsage) (pemKey, pemCert []byte) {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		log.Fatalf("Failed to generate private key: %v", err)
@@ -40,8 +43,8 @@ func GenerateSelfSignedCertificate() (pemKey, pemCert []byte) {
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(3 * time.Hour),
 
-		KeyUsage:              x509.KeyUsage(x509.ExtKeyUsageAny), //???
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           usages,
 		BasicConstraintsValid: true,
 	}
 
@@ -67,15 +70,26 @@ func GenerateSelfSignedCertificate() (pemKey, pemCert []byte) {
 	return pemKey, pemCert
 }
 
+func GenerateSelfSignedServerAuthCertificate() (pemKey, pemCert []byte) {
+	return GenerateSelfSignedCertificate([]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth})
+}
+
+func GenerateSelfSignedClientAuthCertificate() (pemKey, pemCert []byte) {
+	return GenerateSelfSignedCertificate([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth})
+}
+
 func TestCertificateLogon(t *testing.T) {
+	testOkayString := "Okidoki"
+
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		//Irrelevant for test
+		rw.Write([]byte(testOkayString))
 	}))
-	pemKey, pemCert := GenerateSelfSignedCertificate()
+
+	clientPemKey, clientPemCert := GenerateSelfSignedClientAuthCertificate()
 
 	//server
 	clientCertPool := x509.NewCertPool()
-	clientCertPool.AppendCertsFromPEM(pemCert)
+	clientCertPool.AppendCertsFromPEM(clientPemCert)
 
 	tlsConfig := tls.Config{
 		MinVersion:               tls.VersionTLS13,
@@ -89,5 +103,71 @@ func TestCertificateLogon(t *testing.T) {
 	defer server.Close()
 
 	//client
+	tlsKeyPair, err := tls.X509KeyPair(clientPemCert, clientPemKey)
+	if err != nil {
+		log.Fatal("Failed to create clients tls key pair")
+	}
 
+	t.Run("Success - Login with certificate", func(t *testing.T) {
+		c := Client{}
+		c.SetOptions(ClientOptions{
+			TransportSkipVerification: true,
+			MaxRetries:                1,
+			Certificates:              []tls.Certificate{tlsKeyPair},
+		})
+
+		response, err := c.SendRequest("GET", server.URL, nil, nil, nil)
+		assert.NoError(t, err, "Error occurred but none expected")
+		content, err := io.ReadAll(response.Body)
+		assert.Equal(t, testOkayString, string(content), "Returned content incorrect")
+		response.Body.Close()
+	})
+
+	t.Run("Failure - Login without certificate", func(t *testing.T) {
+		c := Client{}
+		c.SetOptions(ClientOptions{
+			TransportSkipVerification: true,
+			MaxRetries:                1,
+		})
+
+		_, err := c.SendRequest("GET", server.URL, nil, nil, nil)
+		assert.ErrorContains(t, err, "bad certificate")
+	})
+
+	t.Run("Failure - Login with wrong certificate", func(t *testing.T) {
+		otherClientPemKey, otherClientPemCert := GenerateSelfSignedClientAuthCertificate()
+
+		otherTlsKeyPair, err := tls.X509KeyPair(otherClientPemCert, otherClientPemKey)
+		if err != nil {
+			log.Fatal("Failed to create clients tls key pair")
+		}
+
+		c := Client{}
+		c.SetOptions(ClientOptions{
+			TransportSkipVerification: true,
+			MaxRetries:                1,
+			Certificates:              []tls.Certificate{otherTlsKeyPair},
+		})
+
+		_, err = c.SendRequest("GET", server.URL, nil, nil, nil)
+		assert.ErrorContains(t, err, "bad certificate")
+	})
+
+	t.Run("SanityCheck", func(t *testing.T) {
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					//RootCAs:      certPool,
+					InsecureSkipVerify: true,
+					Certificates:       []tls.Certificate{tlsKeyPair},
+				},
+			},
+		}
+
+		response, err := client.Get(server.URL)
+		assert.NoError(t, err, "Error occurred but none expected")
+		content, err := io.ReadAll(response.Body)
+		assert.Equal(t, testOkayString, string(content), "Returned content incorrect")
+		response.Body.Close()
+	})
 }
