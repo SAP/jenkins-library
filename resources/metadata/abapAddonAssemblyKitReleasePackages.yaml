@@ -66,6 +66,13 @@ spec:
           - STEPS
           - GENERAL
         default: 30
+      - name: abapAddonAssemblyKitOriginHash
+        type: string
+        description: Origin Hash for restricted AAKaaS scenarios
+        scope:
+          - PARAMETERS
+        mandatory: false
+        secret: true
   outputs:
     resources:
       - name: commonPipelineEnvironment
