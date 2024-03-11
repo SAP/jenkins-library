@@ -16,13 +16,14 @@ import (
 )
 
 type abapAddonAssemblyKitPublishTargetVectorOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"possible-values=T P"`
-	MaxRuntimeInMinutes          int    `json:"maxRuntimeInMinutes,omitempty"`
-	PollingIntervalInSeconds     int    `json:"pollingIntervalInSeconds,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitEndpoint   string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	Username                       string `json:"username,omitempty"`
+	Password                       string `json:"password,omitempty"`
+	TargetVectorScope              string `json:"targetVectorScope,omitempty" validate:"possible-values=T P"`
+	MaxRuntimeInMinutes            int    `json:"maxRuntimeInMinutes,omitempty"`
+	PollingIntervalInSeconds       int    `json:"pollingIntervalInSeconds,omitempty"`
+	AddonDescriptor                string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitOriginHash string `json:"abapAddonAssemblyKitOriginHash,omitempty"`
 }
 
 // AbapAddonAssemblyKitPublishTargetVectorCommand This step triggers the publication of the Target Vector according to the specified scope.
@@ -61,6 +62,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitOriginHash)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -136,6 +138,7 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 16, "Maximum runtime for status polling in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 60, "Wait time in seconds between polling calls")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitOriginHash, "abapAddonAssemblyKitOriginHash", os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"), "Origin Hash for restricted AAKaaS scenarios")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -224,6 +227,15 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_addonDescriptor"),
+					},
+					{
+						Name:        "abapAddonAssemblyKitOriginHash",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"),
 					},
 				},
 			},

@@ -18,10 +18,11 @@ import (
 )
 
 type abapAddonAssemblyKitRegisterPackagesOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitEndpoint   string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	Username                       string `json:"username,omitempty"`
+	Password                       string `json:"password,omitempty"`
+	AddonDescriptor                string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitOriginHash string `json:"abapAddonAssemblyKitOriginHash,omitempty"`
 }
 
 type abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment struct {
@@ -91,6 +92,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitOriginHash)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -164,6 +166,7 @@ func addAbapAddonAssemblyKitRegisterPackagesFlags(cmd *cobra.Command, stepConfig
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitOriginHash, "abapAddonAssemblyKitOriginHash", os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"), "Origin Hash for restricted AAKaaS scenarios")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -225,6 +228,15 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_addonDescriptor"),
+					},
+					{
+						Name:        "abapAddonAssemblyKitOriginHash",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"),
 					},
 				},
 			},
