@@ -24,7 +24,7 @@ func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePacka
 func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils,
 	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils, config.AbapAddonAssemblyKitOriginHash, "", ""); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils, config.AbapAddonAssemblyKitOriginHash, config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 	var addonDescriptor abaputils.AddonDescriptor
