@@ -561,7 +561,7 @@ func (f *FilesMock) CreateArchive(content map[string][]byte) ([]byte, error) {
 		err := tw.WriteHeader(&tar.Header{
 			Name:     fileName,
 			Size:     int64(len(fileContent)),
-			Typeflag: tar.TypeRegA,
+			Typeflag: tar.TypeReg,
 		})
 
 		if err != nil {

@@ -43,7 +43,7 @@ func TestRetry(t *testing.T) {
 			},
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
@@ -73,7 +73,7 @@ func TestRetry(t *testing.T) {
 			},
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
@@ -117,7 +117,7 @@ func TestRetry(t *testing.T) {
 			},
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		api.setSleepTimeConfig(time.Nanosecond, 20*time.Nanosecond)
@@ -164,7 +164,7 @@ func TestRetry(t *testing.T) {
 			},
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		api.setSleepTimeConfig(time.Nanosecond, 999*time.Nanosecond)
@@ -193,7 +193,7 @@ func TestClone(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)
@@ -216,7 +216,7 @@ func TestClone(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
@@ -245,7 +245,7 @@ func TestClone(t *testing.T) {
 			},
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
@@ -270,7 +270,7 @@ func TestPull(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)
@@ -292,7 +292,7 @@ func TestPull(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)
@@ -316,7 +316,7 @@ func TestCheckout(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)
@@ -338,7 +338,7 @@ func TestCheckout(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)
@@ -362,7 +362,7 @@ func TestGetRepo(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)
@@ -387,7 +387,7 @@ func TestCreateTag(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)
@@ -409,7 +409,7 @@ func TestCreateTag(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)
@@ -431,7 +431,7 @@ func TestCreateTag(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond, Force0510: true}
 
 		api, err := apiManager.GetAPI(con, repo)
 		assert.NoError(t, err)

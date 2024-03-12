@@ -17,57 +17,61 @@ import (
 type codeqlExecuteScanMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	*mock.HttpClientMock
 }
 
 func newCodeqlExecuteScanTestsUtils() codeqlExecuteScanMockUtils {
 	utils := codeqlExecuteScanMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
+		HttpClientMock: &mock.HttpClientMock{},
 	}
 	return utils
 }
 
 func TestRunCodeqlExecuteScan(t *testing.T) {
 
+	influx := &codeqlExecuteScanInflux{}
+
 	t.Run("Valid CodeqlExecuteScan", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ModulePath: "./"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
 		assert.NoError(t, err)
 	})
 
 	t.Run("No auth token passed on upload results", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", UploadResults: true, ModulePath: "./"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
 		assert.Error(t, err)
 	})
 
 	t.Run("GitCommitID is NA on upload results", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", UploadResults: true, ModulePath: "./", CommitID: "NA"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
 		assert.Error(t, err)
 	})
 
 	t.Run("Custom buildtool", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "custom", Language: "javascript", ModulePath: "./"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
 		assert.NoError(t, err)
 	})
 
 	t.Run("Custom buildtool but no language specified", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "custom", ModulePath: "./", GithubToken: "test"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
 		assert.Error(t, err)
 	})
 
 	t.Run("Invalid buildtool and no language specified", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "test", ModulePath: "./", GithubToken: "test"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
 		assert.Error(t, err)
 	})
 
 	t.Run("Invalid buildtool but language specified", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "test", Language: "javascript", ModulePath: "./", GithubToken: "test"}
-		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils())
+		_, err := runCodeqlExecuteScan(&config, nil, newCodeqlExecuteScanTestsUtils(), influx)
 		assert.NoError(t, err)
 	})
 }
@@ -247,7 +251,7 @@ func TestInitGitInfo(t *testing.T) {
 		config := codeqlExecuteScanOptions{Repository: "https://github.hello.test", AnalyzedRef: "refs/head/branch", CommitID: "abcd1234"}
 		repoInfo, err := initGitInfo(&config)
 		assert.NoError(t, err)
-		_, err = orchestrator.NewOrchestratorSpecificConfigProvider()
+		_, err = orchestrator.GetOrchestratorConfigProvider(nil)
 		assert.Equal(t, "abcd1234", repoInfo.CommitId)
 		assert.Equal(t, "refs/head/branch", repoInfo.Ref)
 		if err != nil {
@@ -304,62 +308,184 @@ func TestGetMavenSettings(t *testing.T) {
 	t.Parallel()
 	t.Run("No maven", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "npm"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "", params)
 	})
 
 	t.Run("No build command", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "", params)
 	})
 
 	t.Run("Project Settings file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "test.xml"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, " --settings=test.xml", params)
 	})
 
 	t.Run("Skip Project Settings file incase already used", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install --settings=project.xml", ProjectSettingsFile: "test.xml"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "", params)
 	})
 
 	t.Run("Global Settings file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "gloabl.xml"}
-		params := getMavenSettings(&config)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, " --global-settings=gloabl.xml", params)
 	})
 
 	t.Run("Project and Global Settings file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "test.xml", GlobalSettingsFile: "global.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, " --settings=test.xml --global-settings=global.xml", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=global.xml --settings=test.xml", params)
 	})
 
-	t.Run("Skip incase of ProjectSettingsFile https url", func(t *testing.T) {
+	t.Run("ProjectSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "https://jenkins-sap-test.com/test.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, "", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --settings=.pipeline/mavenProjectSettings.xml", params)
 	})
 
-	t.Run("Skip incase of ProjectSettingsFile http url", func(t *testing.T) {
+	t.Run("ProjectSettingsFile http url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, "", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --settings=.pipeline/mavenProjectSettings.xml", params)
 	})
 
-	t.Run("Skip incase of GlobalSettingsFile https url", func(t *testing.T) {
+	t.Run("GlobalSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, "", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml", params)
 	})
 
-	t.Run("Skip incase of GlobalSettingsFile http url", func(t *testing.T) {
+	t.Run("GlobalSettingsFile http url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml"}
-		params := getMavenSettings(&config)
-		assert.Equal(t, "", params)
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile and GlobalSettingsFile https url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile and GlobalSettingsFile http url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile file and GlobalSettingsFile https url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=test.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile file and GlobalSettingsFile https url", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=test.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile https url and GlobalSettingsFile file", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "global.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=global.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+	})
+
+	t.Run("ProjectSettingsFile http url and GlobalSettingsFile file", func(t *testing.T) {
+		config := codeqlExecuteScanOptions{BuildTool: "maven", BuildCommand: "mvn clean install", GlobalSettingsFile: "global.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
+		params := getMavenSettings(&config, newCodeqlExecuteScanTestsUtils())
+		assert.Equal(t, " --global-settings=global.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+	})
+}
+
+func TestAddDataToInfluxDB(t *testing.T) {
+	repoUrl := "https://github.htllo.test/Testing/codeql"
+	repoRef := "https://github.htllo.test/Testing/codeql/tree/branch"
+	repoScanUrl := "https://github.htllo.test/Testing/codeql/security/code-scanning"
+	querySuite := "security.ql"
+
+	t.Run("No findings", func(t *testing.T) {
+		scanResults := []codeql.CodeqlFindings{}
+		influx := &codeqlExecuteScanInflux{}
+		addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite, scanResults, influx)
+		assert.Equal(t, repoUrl, influx.codeql_data.fields.repositoryURL)
+		assert.Equal(t, repoRef, influx.codeql_data.fields.repositoryReferenceURL)
+		assert.Equal(t, repoScanUrl, influx.codeql_data.fields.codeScanningLink)
+		assert.Equal(t, querySuite, influx.codeql_data.fields.querySuite)
+		assert.Equal(t, 0, influx.codeql_data.fields.auditAllTotal)
+		assert.Equal(t, 0, influx.codeql_data.fields.auditAllAudited)
+		assert.Equal(t, 0, influx.codeql_data.fields.optionalTotal)
+		assert.Equal(t, 0, influx.codeql_data.fields.optionalAudited)
+	})
+
+	t.Run("Audit All findings category only", func(t *testing.T) {
+		scanResults := []codeql.CodeqlFindings{
+			{
+				ClassificationName: codeql.AuditAll,
+				Total:              100,
+				Audited:            50,
+			},
+		}
+		influx := &codeqlExecuteScanInflux{}
+		addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite, scanResults, influx)
+		assert.Equal(t, repoUrl, influx.codeql_data.fields.repositoryURL)
+		assert.Equal(t, repoRef, influx.codeql_data.fields.repositoryReferenceURL)
+		assert.Equal(t, repoScanUrl, influx.codeql_data.fields.codeScanningLink)
+		assert.Equal(t, querySuite, influx.codeql_data.fields.querySuite)
+		assert.Equal(t, scanResults[0].Total, influx.codeql_data.fields.auditAllTotal)
+		assert.Equal(t, scanResults[0].Audited, influx.codeql_data.fields.auditAllAudited)
+		assert.Equal(t, 0, influx.codeql_data.fields.optionalTotal)
+		assert.Equal(t, 0, influx.codeql_data.fields.optionalAudited)
+	})
+
+	t.Run("Optional findings category only", func(t *testing.T) {
+		scanResults := []codeql.CodeqlFindings{
+			{
+				ClassificationName: codeql.Optional,
+				Total:              100,
+				Audited:            50,
+			},
+		}
+		influx := &codeqlExecuteScanInflux{}
+		addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite, scanResults, influx)
+		assert.Equal(t, repoUrl, influx.codeql_data.fields.repositoryURL)
+		assert.Equal(t, repoRef, influx.codeql_data.fields.repositoryReferenceURL)
+		assert.Equal(t, repoScanUrl, influx.codeql_data.fields.codeScanningLink)
+		assert.Equal(t, querySuite, influx.codeql_data.fields.querySuite)
+		assert.Equal(t, 0, influx.codeql_data.fields.auditAllTotal)
+		assert.Equal(t, 0, influx.codeql_data.fields.auditAllAudited)
+		assert.Equal(t, scanResults[0].Total, influx.codeql_data.fields.optionalTotal)
+		assert.Equal(t, scanResults[0].Audited, influx.codeql_data.fields.optionalAudited)
+	})
+
+	t.Run("Both findings category", func(t *testing.T) {
+		scanResults := []codeql.CodeqlFindings{
+			{
+				ClassificationName: codeql.AuditAll,
+				Total:              100,
+				Audited:            50,
+			},
+			{
+				ClassificationName: codeql.Optional,
+				Total:              100,
+				Audited:            50,
+			},
+		}
+		influx := &codeqlExecuteScanInflux{}
+		addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite, scanResults, influx)
+		assert.Equal(t, repoUrl, influx.codeql_data.fields.repositoryURL)
+		assert.Equal(t, repoRef, influx.codeql_data.fields.repositoryReferenceURL)
+		assert.Equal(t, repoScanUrl, influx.codeql_data.fields.codeScanningLink)
+		assert.Equal(t, querySuite, influx.codeql_data.fields.querySuite)
+		assert.Equal(t, scanResults[0].Total, influx.codeql_data.fields.auditAllTotal)
+		assert.Equal(t, scanResults[0].Audited, influx.codeql_data.fields.auditAllAudited)
+		assert.Equal(t, scanResults[1].Total, influx.codeql_data.fields.optionalTotal)
+		assert.Equal(t, scanResults[1].Audited, influx.codeql_data.fields.optionalAudited)
 	})
 }
 

@@ -178,7 +178,7 @@ spec:
           - STEPS
       - name: cvssSeverityLimit
         type: string
-        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build."
+        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build. A negative value (like the default of -1) means that the build won't fail."
         scope:
           - PARAMETERS
           - STAGES
@@ -377,6 +377,33 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: scanImages
+        type: "[]string"
+        description: "For `buildTool: docker`: Allowing to scan multiple docker images. In case parent project will not contain any dependecies, use skipParentProjectResolution parameter"
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: skipParentProjectResolution
+        type: bool
+        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose
+        Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: activateMultipleImagesScan
+        type: bool
+        description: "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
@@ -626,6 +653,15 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: SkipProjectsWithEmptyTokens
+        description: Skips projects with empty tokens after scanning. This is for testing purposes only and should not be used until we roll out the new parameter
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        default: false
     resources:
       - name: buildDescriptor
         type: stash

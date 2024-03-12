@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -21,7 +20,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
-
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
@@ -455,6 +453,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 	commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, imageNameAlias)
 
+	if config.ExpandBuildEnvVars {
+		config.BuildEnvVars = expandEnvVars(config.BuildEnvVars)
+	}
+
 	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
 		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
 		imageSummary.AddEnv(config.BuildEnvVars)
@@ -581,13 +583,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
-	attr := &syscall.SysProcAttr{
-		Credential: &syscall.Credential{
-			Uid:         uint32(uid),
-			Gid:         uint32(gid),
-			NoSetGroups: true,
-		},
-	}
+	attr := getSysProcAttr(uid, gid)
 
 	err = utils.RunExecutableWithAttrs(creatorPath, attr, creatorArgs...)
 	if err != nil {
@@ -617,6 +613,19 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	return nil
+}
+
+func expandEnvVars(envVars map[string]any) map[string]any {
+	expandedEnvVars := map[string]any{}
+	for key, value := range envVars {
+		valueString, valueIsString := value.(string)
+		if valueIsString {
+			expandedEnvVars[key] = os.ExpandEnv(valueString)
+		} else {
+			expandedEnvVars[key] = value
+		}
+	}
+	return expandedEnvVars
 }
 
 func createInitialTelemetrySegment(config *cnbBuildOptions, utils cnbutils.BuildUtils) *buildpacks.Segment {

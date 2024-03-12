@@ -110,7 +110,7 @@ func runBatsExecuteTests(config *batsExecuteTestsOptions, telemetryData *telemet
 func (b *batsExecuteTestsUtilsBundle) CloneRepo(URL string) error {
 	// ToDo: BatsExecute test needs to check if the repo can come from a
 	// enterprise github instance and needs ca-cert handelling seperately
-	_, err := pipergit.PlainClone("", "", URL, "bats-core", []byte{})
+	_, err := pipergit.PlainClone("", "", URL, "", "bats-core", []byte{})
 	return err
 
 }

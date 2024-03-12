@@ -53,6 +53,7 @@ type GeneralConfigOptions struct {
 type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
 	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
+	PendoConfig  PendoConfiguration  `json:"pendo,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -69,6 +70,10 @@ type SplunkConfiguration struct {
 	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
 	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
 	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
+}
+
+type PendoConfiguration struct {
+	Token string `json:"token,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
@@ -201,6 +206,7 @@ func Execute() {
 	rootCmd.AddCommand(TmsExportCommand())
 	rootCmd.AddCommand(IntegrationArtifactTransportCommand())
 	rootCmd.AddCommand(AscAppUploadCommand())
+	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
 
 	addRootFlags(rootCmd)
@@ -212,16 +218,13 @@ func Execute() {
 }
 
 func addRootFlags(rootCmd *cobra.Command) {
-	var provider orchestrator.OrchestratorSpecificConfigProviding
-	var err error
-
-	provider, err = orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().Error(err)
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
 
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.GetBuildURL(), "ID for unique identification of a pipeline run")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.BuildURL(), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.GitHubTokens, "gitHubTokens", AccessTokensFromEnvJSON(os.Getenv("PIPER_gitHubTokens")), "List of entries in form of <hostname>:<token> to allow GitHub token authentication for downloading config / defaults")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
@@ -290,12 +293,12 @@ func initStageName(outputToLog bool) {
 	}
 
 	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning("Cannot infer stage name from CI environment")
 	} else {
 		stageNameSource = "env variable"
-		GeneralConfig.StageName = provider.GetStageName()
+		GeneralConfig.StageName = provider.StageName()
 	}
 
 	if len(GeneralConfig.ParametersJSON) == 0 {
@@ -406,10 +409,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
-	}
-
-	if fmt.Sprintf("%v", stepConfig.Config["collectTelemetryData"]) == "false" {
-		GeneralConfig.NoTelemetry = true
 	}
 
 	stepConfig.Config = checkTypes(stepConfig.Config, options)
