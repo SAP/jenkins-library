@@ -194,6 +194,9 @@ spec:
       - name: branch
         type: string
         description: Used to supply the branch scanned in the repository, or a friendly-name set by the user
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
         scope:
           - PARAMETERS
           - STAGES
