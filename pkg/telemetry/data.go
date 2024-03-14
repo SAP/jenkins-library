@@ -33,7 +33,8 @@ type CustomData struct {
 	LegacyJobNameTemplate string `json:"legacyJobNameTemplate,omitempty"`
 	LegacyJobName         string `json:"legacyJobName,omitempty"`
 	DeployType            string `json:"deployType,omitempty"`
-	CnbBuildStepData      string `json:"cnbBuildStepData,omitempty"`
+	CnbBuilder            string `json:"cnbBuilder,omitempty"`
+	CnbRunImage           string `json:"cnbRunImage,omitempty"`
 	ServerURL             string `json:"serverURL,omitempty"`
 	ECCNMessageStatus     string `json:"eccnMessageStatus,omitempty"`
 	ChangeRequestUpload   string `json:"changeRequestUpload,omitempty"`
