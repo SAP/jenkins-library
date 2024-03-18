@@ -41,7 +41,6 @@ func TestNpm(t *testing.T) {
 		packageJSONFiles := exec.FindPackageJSONFiles()
 
 		assert.Equal(t, []string{"package.json"}, packageJSONFiles)
-
 	})
 
 	t.Run("find package.json files with two package.json and default filter", func(t *testing.T) {
@@ -364,6 +363,8 @@ func TestNpm(t *testing.T) {
 			"XML",
 			"--spec-version",
 			cycloneDxSchemaVersion,
+			"--omit",
+			"dev",
 			"--output-file",
 		}
 
@@ -373,7 +374,6 @@ func TestNpm(t *testing.T) {
 				assert.Equal(t, mock.ExecCall{Exec: "./tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, "bom-npm.xml", "package.json")}, utils.execRunner.Calls[1])
 				assert.Equal(t, mock.ExecCall{Exec: "./tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src", "package.json"))}, utils.execRunner.Calls[2])
 			}
-
 		}
 	})
 
@@ -408,7 +408,6 @@ func TestNpm(t *testing.T) {
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, "bom-npm.xml", ".")}, utils.execRunner.Calls[2])
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src"))}, utils.execRunner.Calls[3])
 			}
-
 		}
 	})
 }
