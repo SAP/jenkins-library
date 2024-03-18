@@ -171,9 +171,18 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: useImageNameTags
+        description: |
+          Will use the sourceImageNameTags and targetImageNameTags parameters, instead of sourceImages and targetImages.
+          sourceImageNameTags can be set by a build step, e.g. kanikoExecute, and is then available in the pipeline environment.
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: sourceImageNameTags
         type: "[]string"
-        description: List of full names (registry and tag) of the images to be copied.
+        description: "List of full names (registry and tag) of the images to be copied. Works in combination with useImageNameTags."
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/imageNameTags
@@ -183,14 +192,9 @@ spec:
           - STEPS
       - name: targetImageNameTags
         type: "[]string"
-        description: List of full names (registry and tag) of the images to be deployed.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: useImageNameTags
-        description: ""
-        type: bool
+        description: |
+          List of full names (registry and tag) of the images to be deployed. Works in combination with useImageNameTags.
+          If not set, the value will be the sourceImageNameTags with the targetRegistryUrl incorporated.
         scope:
           - PARAMETERS
           - STAGES

@@ -26,9 +26,9 @@ type imagePushToRegistryOptions struct {
 	TargetRegistryUser     string                 `json:"targetRegistryUser,omitempty"`
 	TargetRegistryPassword string                 `json:"targetRegistryPassword,omitempty"`
 	TargetImageTag         string                 `json:"targetImageTag,omitempty" validate:"required_if=TagLatest false"`
+	UseImageNameTags       bool                   `json:"useImageNameTags,omitempty"`
 	SourceImageNameTags    []string               `json:"sourceImageNameTags,omitempty"`
 	TargetImageNameTags    []string               `json:"targetImageNameTags,omitempty"`
-	UseImageNameTags       bool                   `json:"useImageNameTags,omitempty"`
 	TagLatest              bool                   `json:"tagLatest,omitempty"`
 	DockerConfigJSON       string                 `json:"dockerConfigJSON,omitempty"`
 	PushLocalDockerImage   bool                   `json:"pushLocalDockerImage,omitempty"`
@@ -154,9 +154,9 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().StringVar(&stepConfig.TargetRegistryUser, "targetRegistryUser", os.Getenv("PIPER_targetRegistryUser"), "Username of the target registry where the image should be pushed to.")
 	cmd.Flags().StringVar(&stepConfig.TargetRegistryPassword, "targetRegistryPassword", os.Getenv("PIPER_targetRegistryPassword"), "Password of the target registry where the image should be pushed to.")
 	cmd.Flags().StringVar(&stepConfig.TargetImageTag, "targetImageTag", os.Getenv("PIPER_targetImageTag"), "Tag of the targetImages")
-	cmd.Flags().StringSliceVar(&stepConfig.SourceImageNameTags, "sourceImageNameTags", []string{}, "List of full names (registry and tag) of the images to be copied.")
-	cmd.Flags().StringSliceVar(&stepConfig.TargetImageNameTags, "targetImageNameTags", []string{}, "List of full names (registry and tag) of the images to be deployed.")
-	cmd.Flags().BoolVar(&stepConfig.UseImageNameTags, "useImageNameTags", false, "")
+	cmd.Flags().BoolVar(&stepConfig.UseImageNameTags, "useImageNameTags", false, "Will use the sourceImageNameTags and targetImageNameTags parameters, instead of sourceImages and targetImages.\nsourceImageNameTags can be set by a build step, e.g. kanikoExecute, and is then available in the pipeline environment.\n")
+	cmd.Flags().StringSliceVar(&stepConfig.SourceImageNameTags, "sourceImageNameTags", []string{}, "List of full names (registry and tag) of the images to be copied. Works in combination with useImageNameTags.")
+	cmd.Flags().StringSliceVar(&stepConfig.TargetImageNameTags, "targetImageNameTags", []string{}, "List of full names (registry and tag) of the images to be deployed. Works in combination with useImageNameTags.\nIf not set, the value will be the sourceImageNameTags with the targetRegistryUrl incorporated.\n")
 	cmd.Flags().BoolVar(&stepConfig.TagLatest, "tagLatest", false, "Defines if the image should be tagged as `latest`. The parameter is true if targetImageTag is not specified.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().BoolVar(&stepConfig.PushLocalDockerImage, "pushLocalDockerImage", false, "Defines if the local image should be pushed to registry")
@@ -326,6 +326,15 @@ func imagePushToRegistryMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_targetImageTag"),
 					},
 					{
+						Name:        "useImageNameTags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
 						Name: "sourceImageNameTags",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -347,15 +356,6 @@ func imagePushToRegistryMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
-					},
-					{
-						Name:        "useImageNameTags",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
 					},
 					{
 						Name:        "tagLatest",

@@ -94,7 +94,6 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		err := runImagePushToRegistry(&config, nil, utils)
 		assert.NoError(t, err)
 		createdConfig, err := utils.FileRead(targetDockerConfigPath)
-		assert.NoError(t, err)
 		assert.Equal(t, customDockerConfig, string(createdConfig))
 	})
 
