@@ -71,6 +71,32 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		assert.Equal(t, "1.0.0-123-456", config.TargetImageTag)
 	})
 
+	t.Run("multiple imageNameTags", func(t *testing.T) {
+		t.Parallel()
+
+		config := imagePushToRegistryOptions{
+			SourceRegistryURL: "https://source.registry",
+			SourceImages:      []string{"source-image"},
+			SourceImageNameTags: []string{"com.sap.docker/ppiper:240104-20240227184612",
+				"com.sap.docker/ppiper:240104-20240227184612-amd64",
+				"com.sap.docker/ppiper:240104-20240227184612-aarch64",
+			},
+			SourceRegistryUser:     "sourceuser",
+			SourceRegistryPassword: "sourcepassword",
+			TargetRegistryURL:      "https://target.registry",
+			TargetImageTag:         "1.0.0-123+456",
+			TargetRegistryUser:     "targetuser",
+			TargetRegistryPassword: "targetpassword",
+			UseImageNameTags:       true,
+		}
+		craneMockUtils := &dockermock.CraneMockUtils{}
+		utils := newImagePushToRegistryMockUtils(craneMockUtils)
+		err := runImagePushToRegistry(&config, nil, utils)
+		assert.NoError(t, err)
+		createdConfig, err := utils.FileRead(targetDockerConfigPath)
+		assert.Equal(t, customDockerConfig, string(createdConfig))
+	})
+
 	t.Run("failed to copy image", func(t *testing.T) {
 		t.Parallel()
 

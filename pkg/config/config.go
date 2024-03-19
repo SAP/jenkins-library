@@ -379,7 +379,13 @@ func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, e
 	var header http.Header
 	if len(accessTokens[u.Host]) > 0 {
 		client.SetOptions(piperhttp.ClientOptions{Token: fmt.Sprintf("token %v", accessTokens[u.Host])})
-		header = map[string][]string{"Accept": {"application/vnd.github.v3.raw"}}
+		if strings.Contains(u.Path, "releases/assets") {
+			// Assets download endpoint requires 'application/octet-stream' media type.
+			// See: https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28#get-a-release-asset
+			header = map[string][]string{"Accept": {"application/octet-stream"}}
+		} else {
+			header = map[string][]string{"Accept": {"application/vnd.github.v3.raw"}}
+		}
 	}
 
 	response, err := client.SendRequest("GET", name, nil, header, nil)

@@ -249,10 +249,12 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 
 	if deployType == "blue-green" {
 		log.Entry().Warn("[WARN] Blue-green deployment type is deprecated for cf native builds " +
-			"and will be completely removed by 01.02.2024" +
+			"and will be completely removed by 05.0.2024" +
 			"Instead set parameter `cfNativeDeployParameters: '--strategy rolling'`. " +
 			"Please refer to the Cloud Foundry documentation for further information: " +
-			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html")
+			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html." +
+			"Or alternatively, switch to mta build tool. Please refer to mta build tool" +
+			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.")
 		deployCommand, deployOptions, smokeTestScript, err = prepareBlueGreenCfNativeDeploy(config)
 		if err != nil {
 			return errors.Wrapf(err, "Cannot prepare cf native deployment. DeployType '%s'", deployType)

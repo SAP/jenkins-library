@@ -134,9 +134,10 @@ func newWhitesourceUtils(config *ScanOptions, client *github.Client) *whitesourc
 
 func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	return &ws.Scan{
-		AggregateProjectName: config.ProjectName,
-		ProductVersion:       config.Version,
-		BuildTool:            config.BuildTool,
+		AggregateProjectName:        config.ProjectName,
+		ProductVersion:              config.Version,
+		BuildTool:                   config.BuildTool,
+		SkipProjectsWithEmptyTokens: config.SkipProjectsWithEmptyTokens,
 	}
 }
 
@@ -146,6 +147,9 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
+	}
+	if log.IsVerbose() {
+		logWorkspaceContent()
 	}
 	utils := newWhitesourceUtils(&config, client)
 	scan := newWhitesourceScan(&config)
@@ -203,7 +207,7 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 		if len(config.ScanImages) != 0 && config.ActivateMultipleImagesScan {
 			for _, image := range config.ScanImages {
 				config.ScanImage = image
-				err := downloadDockerImageAsTarNew(config, utils)
+				err := downloadMultipleDockerImageAsTar(config, utils)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download docker image")
 				}
@@ -1088,7 +1092,7 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 	return record.GetFileName(), nil
 }
 
-func downloadDockerImageAsTarNew(config *ScanOptions, utils whitesourceUtils) error {
+func downloadMultipleDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error {
 
 	imageNameToSave := strings.Replace(config.ScanImage, "/", "-", -1)
 
@@ -1104,11 +1108,16 @@ func downloadDockerImageAsTarNew(config *ScanOptions, utils whitesourceUtils) er
 	dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", ImageFormat: "legacy"}
 	dClient := &piperDocker.Client{}
 	dClient.SetOptions(dClientOptions)
-	if _, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils); err != nil {
+	tarFilePath, err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient, utils)
+	if err != nil {
 		if strings.Contains(fmt.Sprint(err), "no image found") {
 			log.SetErrorCategory(log.ErrorConfiguration)
 		}
 		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+	}
+	// remove contents after : in the image name
+	if err := renameTarfilePath(tarFilePath); err != nil {
+		return errors.Wrapf(err, "failed to rename image %v", err)
 	}
 
 	return nil
@@ -1135,5 +1144,21 @@ func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error
 		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
 	}
 
+	return nil
+}
+
+// rename tarFilepath to remove all contents after :
+func renameTarfilePath(tarFilepath string) error {
+	if _, err := os.Stat(tarFilepath); os.IsNotExist(err) {
+		return fmt.Errorf("file %s does not exist", tarFilepath)
+	}
+	newFileName := ""
+	if index := strings.Index(tarFilepath, ":"); index != -1 {
+		newFileName = tarFilepath[:index]
+		newFileName += ".tar"
+	}
+	if err := os.Rename(tarFilepath, newFileName); err != nil {
+		return fmt.Errorf("error renaming file %s to %s: %v", tarFilepath, newFileName, err)
+	}
 	return nil
 }

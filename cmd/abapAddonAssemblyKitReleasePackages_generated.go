@@ -18,12 +18,15 @@ import (
 )
 
 type abapAddonAssemblyKitReleasePackagesOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
-	MaxRuntimeInMinutes          int    `json:"maxRuntimeInMinutes,omitempty"`
-	PollingIntervalInSeconds     int    `json:"pollingIntervalInSeconds,omitempty"`
+	AbapAddonAssemblyKitCertificateFile string `json:"abapAddonAssemblyKitCertificateFile,omitempty"`
+	AbapAddonAssemblyKitCertificatePass string `json:"abapAddonAssemblyKitCertificatePass,omitempty"`
+	AbapAddonAssemblyKitEndpoint        string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	Username                            string `json:"username,omitempty"`
+	Password                            string `json:"password,omitempty"`
+	AddonDescriptor                     string `json:"addonDescriptor,omitempty"`
+	MaxRuntimeInMinutes                 int    `json:"maxRuntimeInMinutes,omitempty"`
+	PollingIntervalInSeconds            int    `json:"pollingIntervalInSeconds,omitempty"`
+	AbapAddonAssemblyKitOriginHash      string `json:"abapAddonAssemblyKitOriginHash,omitempty"`
 }
 
 type abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment struct {
@@ -72,6 +75,8 @@ func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
 The physical Delivery Packages in status “L” are released. The new status "R"eleased is written back to the addonDescriptor in the commonPipelineEnvironment.
 <br />
+For logon you can either provide a credential with basic authorization (username and password) or two secret text credentials containing the technical s-users certificate (see note [2805811](https://me.sap.com/notes/2805811) for download) as base64 encoded string and the password to decrypt the file
+<br />
 For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -89,6 +94,9 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificateFile)
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificatePass)
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitOriginHash)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -146,7 +154,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapAddonAssemblyKitReleasePackages(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -158,16 +166,17 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 }
 
 func addAbapAddonAssemblyKitReleasePackagesFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitReleasePackagesOptions) {
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitCertificateFile, "abapAddonAssemblyKitCertificateFile", os.Getenv("PIPER_abapAddonAssemblyKitCertificateFile"), "base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitCertificatePass, "abapAddonAssemblyKitCertificatePass", os.Getenv("PIPER_abapAddonAssemblyKitCertificatePass"), "password to decrypt the certificate file")
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 5, "Maximum runtime for status polling in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 30, "Wait time in seconds between polling calls")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitOriginHash, "abapAddonAssemblyKitOriginHash", os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"), "Origin Hash for restricted AAKaaS scenarios")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
-	cmd.MarkFlagRequired("username")
-	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("addonDescriptor")
 }
 
@@ -183,8 +192,40 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCertificateFileCredentialsId", Description: "Jenkins secret text credential ID containing the base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCertificatePassCredentialsId", Description: "Jenkins secret text credential ID containing the password to decrypt the certificate file stored in abapAddonAssemblyKitCertificateFileCredentialsId", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name: "abapAddonAssemblyKitCertificateFile",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapAddonAssemblyKitCertificateFileCredentialsId",
+								Param: "abapAddonAssemblyKitCertificateFile",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_abapAddonAssemblyKitCertificateFile"),
+					},
+					{
+						Name: "abapAddonAssemblyKitCertificatePass",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapAddonAssemblyKitCertificatePassCredentialsId",
+								Param: "abapAddonAssemblyKitCertificatePass",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_abapAddonAssemblyKitCertificatePass"),
+					},
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
@@ -199,7 +240,7 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_username"),
 					},
@@ -208,7 +249,7 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_password"),
 					},
@@ -243,6 +284,15 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     30,
+					},
+					{
+						Name:        "abapAddonAssemblyKitOriginHash",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"),
 					},
 				},
 			},
