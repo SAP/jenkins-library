@@ -99,8 +99,8 @@ func HelmExecuteCommand() *cobra.Command {
 Executes helm functionality as the package manager for Kubernetes.
 
 * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
-* [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
-* [Helm Charts] (https://artifacthub.io/)
+* [Helm documentation](https://helm.sh/docs/intro/using_helm/) and [best practices](https://helm.sh/docs/chart_best_practices/conventions/)
+* [Helm Charts](https://artifacthub.io/)
 ` + "`" + `` + "`" + `` + "`" + `
 Available Commands:
 ` + "`" + `upgrade` + "`" + `, ` + "`" + `lint` + "`" + `, ` + "`" + `install` + "`" + `, ` + "`" + `test` + "`" + `, ` + "`" + `uninstall` + "`" + `, ` + "`" + `dependency` + "`" + `, ` + "`" + `publish` + "`" + `
@@ -110,8 +110,8 @@ Available Commands:
   install       install a chart
   test          run tests for a release
   uninstall     uninstall a release
-  dependency     package a chart directory into a chart archive
-  publish       package and puslish a release
+  dependency    package a chart directory into a chart archive
+  publish       package and publish a release
 
 ` + "`" + `` + "`" + `` + "`" + `
 
