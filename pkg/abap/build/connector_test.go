@@ -99,25 +99,25 @@ func TestInitAAKaaSHeader(t *testing.T) {
 	client.Header["Content-Type"] = []string{"application/json"}
 	client.Header["User-Agent"] = []string{"Piper-abapAddonAssemblyKit/1.0"}
 	t.Run("InitAAKaaS success no hash", func(t *testing.T) {
-		conn.InitAAKaaS("endpoint", "user", "pw", &client, "")
+		conn.InitAAKaaS("endpoint", "user", "pw", &client, "", "", "")
 		_, err := conn.Get("something")
 		assert.NoError(t, err)
 	})
 	t.Run("InitAAKaaS success with hash", func(t *testing.T) {
 		client.Header["build-config-token"] = []string{"hash"}
-		conn.InitAAKaaS("endpoint", "user", "pw", &client, "hash")
+		conn.InitAAKaaS("endpoint", "user", "pw", &client, "hash", "", "")
 		_, err := conn.Get("something")
 		assert.NoError(t, err)
 	})
 	t.Run("InitAAKaaS sanity check Header", func(t *testing.T) {
 		client.Header["FAIL"] = []string{"verify HeaderVerifyingMockClient works"}
-		conn.InitAAKaaS("endpoint", "user", "pw", &client, "hash")
+		conn.InitAAKaaS("endpoint", "user", "pw", &client, "hash", "", "")
 		_, err := conn.Get("something")
 		assert.Error(t, err)
 	})
 	t.Run("InitAAKaaS sanity check wrong Value in existing Header", func(t *testing.T) {
 		client.Header["Accept"] = []string{"verify HeaderVerifyingMockClient works"}
-		conn.InitAAKaaS("endpoint", "user", "pw", &client, "hash")
+		conn.InitAAKaaS("endpoint", "user", "pw", &client, "hash", "", "")
 		_, err := conn.Get("something")
 		assert.Error(t, err)
 	})

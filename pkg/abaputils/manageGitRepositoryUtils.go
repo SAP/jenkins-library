@@ -202,12 +202,21 @@ func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
 	return logString
 }
 
-func (repo *Repository) GetCloneRequestBody() (body string) {
+func (repo *Repository) GetCloneRequestBodyWithSWC() (body string) {
 	if repo.CommitID != "" && repo.Tag != "" {
 		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
 	}
 	requestBodyString := repo.GetRequestBodyForCommitOrTag()
 	body = `{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
+	return body
+}
+
+func (repo *Repository) GetCloneRequestBody() (body string) {
+	if repo.CommitID != "" && repo.Tag != "" {
+		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
+	}
+	requestBodyString := repo.GetRequestBodyForCommitOrTag()
+	body = `{"branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
 	return body
 }
 
