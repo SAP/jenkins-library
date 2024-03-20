@@ -178,7 +178,7 @@ spec:
           - STEPS
       - name: cvssSeverityLimit
         type: string
-        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build."
+        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build. A negative value (like the default of -1) means that the build won't fail."
         scope:
           - PARAMETERS
           - STAGES
@@ -653,6 +653,15 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: SkipProjectsWithEmptyTokens
+        description: Skips projects with empty tokens after scanning. This is for testing purposes only and should not be used until we roll out the new parameter
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        default: false
     resources:
       - name: buildDescriptor
         type: stash

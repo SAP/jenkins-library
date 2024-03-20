@@ -40,7 +40,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 	}
 
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client, config.AbapAddonAssemblyKitOriginHash, config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 
@@ -49,7 +49,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 	}
 
 	conn2 := new(abapbuild.Connector) // we need a second connector without the added Header
-	if err := conn2.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+	if err := conn2.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client, config.AbapAddonAssemblyKitOriginHash, config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 

@@ -43,6 +43,7 @@ type Client struct {
 	doLogResponseBodyOnDebug  bool
 	useDefaultTransport       bool
 	trustedCerts              []string
+	certificates              []tls.Certificate // contains one or more certificate chains to present to the other side of the connection (client-authentication)
 	fileUtils                 piperutils.FileUtils
 	httpClient                *http.Client
 }
@@ -68,7 +69,8 @@ type ClientOptions struct {
 	DoLogRequestBodyOnDebug   bool
 	DoLogResponseBodyOnDebug  bool
 	UseDefaultTransport       bool
-	TrustedCerts              []string
+	TrustedCerts              []string          // defines the set of root certificate authorities that clients use when verifying server certificates
+	Certificates              []tls.Certificate // contains one or more certificate chains to present to the other side of the connection (client-authentication)
 }
 
 // TransportWrapper is a wrapper for central round trip capabilities
@@ -261,6 +263,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.cookieJar = options.CookieJar
 	c.trustedCerts = options.TrustedCerts
 	c.fileUtils = &piperutils.Files{}
+	c.certificates = options.Certificates
 }
 
 // SetFileUtils can be used to overwrite the default file utils
@@ -291,6 +294,7 @@ func (c *Client) initializeHttpClient() *http.Client {
 			TLSHandshakeTimeout:   c.transportTimeout,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: c.transportSkipVerification,
+				Certificates:       c.certificates,
 			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
@@ -430,7 +434,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 func transformHeaders(header http.Header) http.Header {
 	var h http.Header = map[string][]string{}
 	for name, value := range header {
-		if name == "Authorization" {
+		if name == "Authorization" || name == "X-Pendo-Integration-Key" {
 			for _, v := range value {
 				// The format of the Authorization header value is: <type> <cred>.
 				// We don't register the full string since only the part after
@@ -550,6 +554,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: false,
 				RootCAs:            rootCAs,
+				Certificates:       c.certificates,
 			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,

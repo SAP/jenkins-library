@@ -234,7 +234,7 @@ and Java plus Maven.`,
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			codeqlExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -256,10 +256,10 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", false, "Allows you to upload codeql SARIF results to your github project. You will need to set githubToken for this.")
 	cmd.Flags().IntVar(&stepConfig.SarifCheckMaxRetries, "sarifCheckMaxRetries", 10, "Maximum number of retries when waiting for the server to finish processing the SARIF upload.")
 	cmd.Flags().IntVar(&stepConfig.SarifCheckRetryInterval, "sarifCheckRetryInterval", 30, "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload.")
-	cmd.Flags().StringVar(&stepConfig.TargetGithubRepoURL, "targetGithubRepoURL", os.Getenv("PIPER_targetGithubRepoURL"), "")
-	cmd.Flags().StringVar(&stepConfig.TargetGithubBranchName, "targetGithubBranchName", os.Getenv("PIPER_targetGithubBranchName"), "")
+	cmd.Flags().StringVar(&stepConfig.TargetGithubRepoURL, "targetGithubRepoURL", os.Getenv("PIPER_targetGithubRepoURL"), "Target github repo url. Only relevant, if project uses a combination of Piper and non-GitHub SCM.")
+	cmd.Flags().StringVar(&stepConfig.TargetGithubBranchName, "targetGithubBranchName", os.Getenv("PIPER_targetGithubBranchName"), "Target github branch name. Only relevant, if project uses a combination of Piper and non-GitHub SCM.")
 	cmd.Flags().StringVar(&stepConfig.Threads, "threads", `0`, "Use this many threads for the codeql operations.")
-	cmd.Flags().StringVar(&stepConfig.Ram, "ram", os.Getenv("PIPER_ram"), "Use this much ram (MB) for the codeql operations.")
+	cmd.Flags().StringVar(&stepConfig.Ram, "ram", `4000`, "Use this much ram (MB) for the codeql operations.")
 	cmd.Flags().StringVar(&stepConfig.AnalyzedRef, "analyzedRef", os.Getenv("PIPER_analyzedRef"), "Name of the ref that was analyzed.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "URL of the GitHub instance")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "SHA of commit that was analyzed.")
@@ -425,7 +425,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_ram"),
+						Default:     `4000`,
 					},
 					{
 						Name: "analyzedRef",
