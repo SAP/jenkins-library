@@ -2,6 +2,10 @@ package build
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -13,6 +17,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/pkcs12"
 )
 
 // Connector : Connector Utility Wrapping http client
@@ -130,25 +135,85 @@ func (conn Connector) createUrl(appendum string) string {
 }
 
 // InitAAKaaS : initialize Connector for communication with AAKaaS backend
-func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender) error {
+func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender, originHash string, certFile string, certPass string) error {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
 	conn.Header["Content-Type"] = []string{"application/json"}
 	conn.Header["User-Agent"] = []string{"Piper-abapAddonAssemblyKit/1.0"}
+	if originHash != "" {
+		conn.Header["build-config-token"] = []string{originHash}
+		log.Entry().Info("Origin info for restricted scenario added")
+	}
 
 	cookieJar, _ := cookiejar.New(nil)
-	conn.Client.SetOptions(piperhttp.ClientOptions{
-		Username:  username,
-		Password:  password,
-		CookieJar: cookieJar,
-	})
 	conn.Baseurl = aAKaaSEndpoint
 
-	if username == "" || password == "" {
+	tlsCertificates, err := conn.handleLogonCertificate(certFile, certPass)
+	if err != nil {
+		return errors.Wrap(err, "Handling certificates for client logon failed")
+	}
+
+	conn.Client.SetOptions(piperhttp.ClientOptions{
+		Username:     username,
+		Password:     password,
+		CookieJar:    cookieJar,
+		Certificates: tlsCertificates,
+	})
+
+	if tlsCertificates != nil {
+		log.Entry().Info("Logon procedure: via Certificate")
+		return nil
+	} else if username == "" || password == "" {
 		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
 	} else {
+		log.Entry().Info("Logon procedure: via Password")
 		return nil
+	}
+}
+
+func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.Certificate, error) {
+	var tlsCertificate tls.Certificate
+	if certFile != "" && certPass != "" {
+		certFileInBytes, err := base64.StdEncoding.DecodeString(certFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "Base64 decoding of certificate File string failed")
+		}
+
+		pemBlocks, err := pkcs12.ToPEM(certFileInBytes, certPass)
+		if err != nil {
+			return nil, errors.Wrap(err, "Decoding certificate File from PKCS12 to PEM failed")
+		}
+
+		var key []byte
+		var userCertificate []byte
+
+		for _, pemBlock := range pemBlocks {
+			if pemBlock.Type == "PRIVATE KEY" {
+				key = pem.EncodeToMemory(pemBlock)
+			}
+
+			if pemBlock.Type == "CERTIFICATE" {
+				var tempCert, err = x509.ParseCertificate(pemBlock.Bytes)
+				if err != nil {
+					return nil, errors.Wrap(err, "Parsing x509 Certificate from PEM Block failed")
+				}
+
+				if tempCert.IsCA == false { //We ignore the 2 additional CA Certificates
+					userCertificate = pem.EncodeToMemory(pemBlock)
+				}
+			}
+		}
+
+		tlsCertificate, err = tls.X509KeyPair(userCertificate, key)
+		if err != nil {
+			return nil, errors.Wrap(err, "Creating x509 Key Pair failed")
+		}
+
+		return []tls.Certificate{tlsCertificate}, nil
+
+	} else {
+		return nil, nil
 	}
 }
 

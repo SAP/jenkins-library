@@ -271,7 +271,7 @@ func (api *SAP_COM_0510) Clone() error {
 
 	cloneConnectionDetails := api.con
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.cloneEntity
-	body := []byte(api.repository.GetCloneRequestBody())
+	body := []byte(api.repository.GetCloneRequestBodyWithSWC())
 
 	return api.triggerRequest(cloneConnectionDetails, body)
 
