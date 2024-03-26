@@ -1,34 +1,16 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
+	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
-type abapAddonAssemblyKitCheckUtils interface {
-	command.ExecRunner
-	piperhttp.Sender
-}
-
-type abapAddonAssemblyKitCheckUtilsBundle struct {
-	*command.Command
-	*piperhttp.Client
-}
-
-func newAbapAddonAssemblyKitCheckUtils() abapAddonAssemblyKitCheckUtils {
-	utils := abapAddonAssemblyKitCheckUtilsBundle{
-		Command: &command.Command{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
 func abapAddonAssemblyKitCheck(config abapAddonAssemblyKitCheckOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *abapAddonAssemblyKitCheckCommonPipelineEnvironment) {
-	utils := newAbapAddonAssemblyKitCheckUtils()
+	utils := aakaas.NewAakBundle()
 
 	err := runAbapAddonAssemblyKitCheck(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
@@ -36,7 +18,31 @@ func abapAddonAssemblyKitCheck(config abapAddonAssemblyKitCheckOptions, telemetr
 	}
 }
 
-func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, telemetryData *telemetry.CustomData, utils abapAddonAssemblyKitCheckUtils, commonPipelineEnvironment *abapAddonAssemblyKitCheckCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, telemetryData *telemetry.CustomData, utils aakaas.AakUtils, commonPipelineEnvironment *abapAddonAssemblyKitCheckCommonPipelineEnvironment) error {
+
+	log.Entry().Info("╔═══════════════════════════╗")
+	log.Entry().Info("║ abapAddonAssemblyKitCheck ║")
+	log.Entry().Info("╚═══════════════════════════╝")
+
+	conn := new(abapbuild.Connector)
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, utils, "", config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
+		return err
+	}
+
+	log.Entry().Infof("Reading addonDescriptor (aka addon.yml) file: %s", config.AddonDescriptorFileName)
+	addonDescriptor, err := utils.ReadAddonDescriptor(config.AddonDescriptorFileName)
+	if err != nil {
+		return err
+	}
+
+	pvh, err := NewProductVersionHeader(&addonDescriptor, conn)
+	if err != nil {
+		return err
+	}
+
+	if err := pvh.check(); err != nil {
+		return err
+	}
 
 	// log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 	// // Example of calling methods from external dependencies directly on utils:
@@ -64,7 +70,7 @@ type ProductVersionHeader struct {
 	PatchLevel             string
 	Vendor                 string
 	VendorType             string
-	Content                []ProductVersionContent
+	Content                []ProductVersionContent //maybe some struct in between see TargetVector???
 }
 
 type ProductVersionContent struct {
@@ -77,4 +83,41 @@ type ProductVersionContent struct {
 	PatchLevel                       string
 	Vendor                           string
 	VendorType                       string
+}
+
+func NewProductVersionHeader(addonDescriptor *abaputils.AddonDescriptor, conn *abapbuild.Connector) (*ProductVersionHeader, error) {
+	productVersion := new(aakaas.ProductVersion)
+	if err := productVersion.ConstructProductversion(*addonDescriptor, *conn); err != nil {
+		return nil, err
+	}
+	pvh := ProductVersionHeader{
+		ProductName:            productVersion.Name,
+		SemanticProductVersion: productVersion.Version,
+		Content:                []ProductVersionContent{},
+	}
+
+	for _, repo := range addonDescriptor.Repositories {
+		componentVersion := new(aakaas.ComponentVersion)
+		if err := componentVersion.ConstructComponentVersion(repo, *conn); err != nil {
+			return nil, err
+		}
+		pvc := ProductVersionContent{
+			ProductName:                      pvh.ProductName,
+			SemanticProductVersion:           pvh.ProductName,
+			SoftwareComponentName:            componentVersion.Name,
+			SemanticSoftwareComponentVersion: componentVersion.Version,
+		}
+		pvh.Content = append(pvh.Content, pvc)
+	}
+
+	if len(pvh.Content) == 0 {
+		return nil, errors.New("addonDescriptor must contain at least one software component repository")
+	}
+
+	return &pvh, nil
+}
+
+func (pv *ProductVersionHeader) check() error {
+
+	return nil
 }
