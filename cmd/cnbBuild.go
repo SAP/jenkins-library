@@ -529,17 +529,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		}
 	}
 
-	credentials := cnbutils.NewCredentials(utils)
-	cnbRegistryAuth, err := credentials.GenerateCredentials(config.DockerConfigJSON)
+	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(config.DockerConfigJSON, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
-	}
-
-	found := credentials.Validate(targetImage.ContainerRegistry.Host)
-	if !found {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New(fmt.Sprintf("DockerConfigJSON does not contain credentials for target registry (%s)", targetImage.ContainerRegistry.Host))
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
