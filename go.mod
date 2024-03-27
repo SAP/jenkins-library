@@ -1,6 +1,8 @@
 module github.com/SAP/jenkins-library
 
-go 1.20
+go 1.21
+
+toolchain go1.22.1
 
 // It is a locked dependency of github.com/buildpacks/lifecycle@v0.18.4. The maintainers may remove the lock
 // in future releases. Check if 'replace' statement still there in their go.mod file. Remove line below if not.
@@ -113,7 +115,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
-	github.com/CycloneDX/cyclonedx-go v0.6.0
+	github.com/CycloneDX/cyclonedx-go v0.8.0
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
