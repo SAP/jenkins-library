@@ -257,6 +257,15 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: buildMTA
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for MTA projects building"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: pomPath
         type: string
         description: Path to the pom file which should be installed including all children.

@@ -213,6 +213,18 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		}
 	}
 
+	// for MTA
+	if config.BuildMTA {
+		log.Entry().Infof("running MTA Build")
+		mtaConfig := setMTAConfig(config)
+		mtaUtils := newMtaBuildUtilsBundle()
+
+		err := runMtaBuild(mtaConfig, &mtaBuildCommonPipelineEnvironment{}, mtaUtils)
+		if err != nil {
+			return err
+		}
+	}
+
 	blackduckSystem := newBlackduckSystem(config)
 
 	args := []string{"./detect.sh"}
@@ -1035,6 +1047,19 @@ func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 	}
 
 	return mavenConfig
+}
+
+func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
+	mtaConfig := mtaBuildOptions{
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		InstallArtifacts:    false,
+		CreateBOM:           false,
+	}
+
+	return mtaConfig
+
 }
 
 func logConfigInVerboseMode(config detectExecuteScanOptions) {
