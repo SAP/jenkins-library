@@ -1,6 +1,10 @@
 package codeql
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+)
 
 var longShortFlagsMap = map[string]string{
 	"--language":          "-l",
@@ -39,6 +43,10 @@ func AppendCustomFlags(cmd []string, flags map[string]string) []string {
 	return cmd
 }
 
+// parseFlags parses the input string and extracts individual flags.
+// Flags can have values, which can be enclosed in single quotes (”) or double quotes ("").
+// Flags are separated by whitespace.
+// The function returns a slice of strings, where each string represents a flag or a flag with its value.
 func parseFlags(input string) []string {
 	result := []string{}
 	isFlagStarted := false
@@ -81,9 +89,13 @@ func parseFlags(input string) []string {
 }
 
 func removeDuplicateFlags(customFlags map[string]string, shortFlags map[string]string) {
-	for longFlag, correspondingShortFlag := range shortFlags {
-		if _, exists := customFlags[longFlag]; exists {
-			delete(customFlags, correspondingShortFlag)
+	for longFlag, shortFlag := range shortFlags {
+		if _, longExists := customFlags[longFlag]; longExists {
+			if _, shortExists := customFlags[shortFlag]; shortExists {
+				log.Entry().Warnf("Both forms of the flag %s and %s are presented, %s will be ignored.",
+					longFlag, shortFlag, customFlags[shortFlag])
+				delete(customFlags, shortFlag)
+			}
 		}
 	}
 }
