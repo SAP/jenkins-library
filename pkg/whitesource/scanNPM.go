@@ -136,7 +136,7 @@ func (s *Scan) executeNpmScanForModule(modulePath string, config *ScanOptions, u
 		return err
 	}
 
-	if err := s.AppendScannedProject(projectName); err != nil {
+	if err := s.AppendScannedProject(projectName, false); err != nil {
 		return err
 	}
 

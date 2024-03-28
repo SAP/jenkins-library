@@ -117,7 +117,7 @@ func (s *Scan) appendModulesThatWillBeScanned(utils Utils, excludes []string) er
 				return fmt.Errorf("artifactId missing from '%s'", info.PomXMLPath)
 			}
 
-			err := s.AppendScannedProject(project.ArtifactID)
+			err := s.AppendScannedProject(project.ArtifactID, false)
 			if err != nil {
 				return err
 			}

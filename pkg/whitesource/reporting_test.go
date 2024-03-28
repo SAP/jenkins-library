@@ -29,7 +29,7 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 			AggregateProjectName: config.ProjectName,
 			ProductVersion:       config.ProductVersion,
 		}
-		scan.AppendScannedProject("testProject")
+		scan.AppendScannedProject("testProject", false)
 		alerts := []Alert{
 			{Library: Library{Filename: "vul1"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
 			{Library: Library{Filename: "vul2"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
@@ -77,7 +77,7 @@ func TestCreateCycloneSBOM(t *testing.T) {
 			ProductVersion:       config.ProductVersion,
 			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
 		}
-		scan.AppendScannedProject("testProject")
+		scan.AppendScannedProject("testProject", false)
 		alerts := []Alert{
 			{Library: Library{KeyID: 42, Name: "log4j", GroupID: "apache-logging", ArtifactID: "log4j", Filename: "vul1"}, Vulnerability: Vulnerability{CVSS3Score: 7.0, Score: 6}},
 			{Library: Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Filename: "vul2"}, Vulnerability: Vulnerability{CVSS3Score: 8.0, TopFix: Fix{Message: "this is the top fix"}}},
@@ -126,7 +126,7 @@ func TestCreateCycloneSBOM(t *testing.T) {
 			ProductToken:         "productToken-123",
 			Coordinates:          versioning.Coordinates{GroupID: "com.sap", ArtifactID: "myproduct", Version: "1.3.4"},
 		}
-		scan.AppendScannedProject("testProject")
+		scan.AppendScannedProject("testProject", false)
 
 		lib3 := Library{KeyID: 43, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "2.4.30", LibType: "Java", Filename: "vul2"}
 		lib4 := Library{KeyID: 45, Name: "commons-lang", GroupID: "apache-commons", ArtifactID: "commons-lang", Version: "3.15", LibType: "Java", Filename: "novul"}
@@ -177,7 +177,7 @@ func TestWriteCycloneSBOM(t *testing.T) {
 
 func TestCreateSarifResultFile(t *testing.T) {
 	scan := &Scan{ProductVersion: "1"}
-	scan.AppendScannedProject("project1")
+	scan.AppendScannedProject("project1", false)
 	scan.AgentName = "Some test agent"
 	scan.AgentVersion = "1.2.6"
 	alerts := []Alert{
@@ -203,8 +203,8 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		productName := "mock-product"
 		scan := &Scan{ProductVersion: "1"}
-		scan.AppendScannedProject("project1")
-		scan.AppendScannedProject("project2")
+		scan.AppendScannedProject("project1", false)
+		scan.AppendScannedProject("project2", false)
 
 		scanReport := reporting.ScanReport{}
 		var utilsMock piperutils.FileUtils
@@ -240,7 +240,7 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 	t.Run("failed to write json report", func(t *testing.T) {
 		productName := "mock-product"
 		scan := &Scan{ProductVersion: "1"}
-		scan.AppendScannedProject("project1")
+		scan.AppendScannedProject("project1", false)
 		scanReport := reporting.ScanReport{}
 		utilsMock := &mock.FilesMock{}
 		utilsMock.FileWriteErrors = map[string]error{

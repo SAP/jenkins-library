@@ -23,7 +23,7 @@ func TestDownloadReports(t *testing.T) {
 		utils := &mock.FilesMock{}
 		system := NewSystemMock("2010-05-30 00:15:00 +0100")
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("mock-project")
+		_ = scan.AppendScannedProject("mock-project", false)
 		_ = scan.UpdateProjects("mock-product-token", system)
 		// test
 		paths, err := scan.DownloadReports(options, utils, system)
@@ -76,7 +76,7 @@ func TestDownloadReports(t *testing.T) {
 		utils := &mock.FilesMock{}
 		system := NewSystemMock("2010-05-30 00:15:00 +0100")
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("no-such-project")
+		_ = scan.AppendScannedProject("no-such-project", false)
 		_ = scan.UpdateProjects("mock-product-token", system)
 		// test
 		paths, err := scan.DownloadReports(options, utils, system)
@@ -93,7 +93,7 @@ func TestDownloadReports(t *testing.T) {
 		utils := &mock.FilesMock{}
 		system := NewSystemMock("2010-05-30 00:15:00 +0100")
 		scan := &Scan{ProductVersion: "1"}
-		err := scan.AppendScannedProjectVersion("mock-project - 1")
+		err := scan.AppendScannedProjectVersion("mock-project - 1", false)
 		require.NoError(t, err)
 		_ = scan.UpdateProjects("mock-product-token", system)
 		// test

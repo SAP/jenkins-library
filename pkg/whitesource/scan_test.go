@@ -17,7 +17,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
-		err := scan.AppendScannedProjectVersion("module-a - 1")
+		err := scan.AppendScannedProjectVersion("module-a - 1", false)
 		// assert
 		assert.NoError(t, err)
 		expected := make(map[string]Project)
@@ -30,8 +30,8 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
-		err1 := scan.AppendScannedProjectVersion("module-a - 1")
-		err2 := scan.AppendScannedProjectVersion("module-b - 1")
+		err1 := scan.AppendScannedProjectVersion("module-a - 1", false)
+		err2 := scan.AppendScannedProjectVersion("module-b - 1", false)
 		// assert
 		assert.NoError(t, err1)
 		assert.NoError(t, err2)
@@ -46,7 +46,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
-		err := scan.AppendScannedProjectVersion("module-a")
+		err := scan.AppendScannedProjectVersion("module-a", false)
 		// assert
 		assert.EqualError(t, err, "projectName is expected to include the product version")
 		assert.Len(t, scan.scannedProjects, 0)
@@ -55,8 +55,8 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
-		err1 := scan.AppendScannedProjectVersion("module-a - 1")
-		err2 := scan.AppendScannedProjectVersion("module-a - 1")
+		err1 := scan.AppendScannedProjectVersion("module-a - 1", false)
+		err2 := scan.AppendScannedProjectVersion("module-a - 1", false)
 		// assert
 		assert.NoError(t, err1)
 		assert.EqualError(t, err2, "project with name 'module-a - 1' was already scanned")
@@ -69,7 +69,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
-		err := scan.AppendScannedProject("")
+		err := scan.AppendScannedProject("", false)
 		// assert
 		assert.EqualError(t, err, "projectName must not be empty")
 		assert.Len(t, scan.scannedProjects, 0)
@@ -79,7 +79,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
-		err := scan.AppendScannedProject("name - 1")
+		err := scan.AppendScannedProject("name - 1", false)
 		// assert
 		assert.EqualError(t, err, "projectName is not expected to include the product version already")
 		assert.Len(t, scan.scannedProjects, 0)
@@ -89,7 +89,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
-		err := scan.AppendScannedProjectVersion(" - 1")
+		err := scan.AppendScannedProjectVersion(" - 1", false)
 		// assert
 		assert.EqualError(t, err, "projectName consists only of the product version")
 		assert.Len(t, scan.scannedProjects, 0)
@@ -103,7 +103,7 @@ func TestAppendScannedProject(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
-		err := scan.AppendScannedProject("module-a")
+		err := scan.AppendScannedProject("module-a", false)
 		// assert
 		assert.NoError(t, err)
 		expected := make(map[string]Project)
@@ -126,7 +126,7 @@ func TestProjectByName(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		err := scan.AppendScannedProject("module-a")
+		err := scan.AppendScannedProject("module-a", false)
 		require.NoError(t, err)
 		// test
 		project, exists := scan.ProjectByName("module-a - 1")
@@ -137,7 +137,7 @@ func TestProjectByName(t *testing.T) {
 	t.Run("no such project", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		err := scan.AppendScannedProject("module-a")
+		err := scan.AppendScannedProject("module-a", false)
 		require.NoError(t, err)
 		// test
 		project, exists := scan.ProjectByName("not there")
@@ -160,7 +160,7 @@ func TestScannedProjects(t *testing.T) {
 	t.Run("single module", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("module-a")
+		_ = scan.AppendScannedProject("module-a", false)
 		// test
 		projects := scan.ScannedProjects()
 		// assert
@@ -170,8 +170,8 @@ func TestScannedProjects(t *testing.T) {
 	t.Run("two modules", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("module-a")
-		_ = scan.AppendScannedProject("module-b")
+		_ = scan.AppendScannedProject("module-a", false)
+		_ = scan.AppendScannedProject("module-b", false)
 		// test
 		projects := scan.ScannedProjects()
 		// assert
@@ -191,24 +191,24 @@ func TestScannedProjectNames(t *testing.T) {
 
 	t.Run("one project", func(t *testing.T) {
 		scan := &Scan{ProductVersion: "1"}
-		scan.AppendScannedProject("testProject1")
+		scan.AppendScannedProject("testProject1", false)
 		assert.Equal(t, []string{"testProject1 - 1"}, scan.ScannedProjectNames())
 	})
 
 	t.Run("multiple sorted", func(t *testing.T) {
 		scan := &Scan{ProductVersion: "1"}
-		scan.AppendScannedProject("testProject1")
-		scan.AppendScannedProject("testProject2")
-		scan.AppendScannedProject("testProject3")
+		scan.AppendScannedProject("testProject1", false)
+		scan.AppendScannedProject("testProject2", false)
+		scan.AppendScannedProject("testProject3", false)
 
 		assert.Equal(t, []string{"testProject1 - 1", "testProject2 - 1", "testProject3 - 1"}, scan.ScannedProjectNames())
 	})
 
 	t.Run("multiple mixed", func(t *testing.T) {
 		scan := &Scan{ProductVersion: "1"}
-		scan.AppendScannedProject("testProject3")
-		scan.AppendScannedProject("testProject1")
-		scan.AppendScannedProject("testProject2")
+		scan.AppendScannedProject("testProject3", false)
+		scan.AppendScannedProject("testProject1", false)
+		scan.AppendScannedProject("testProject2", false)
 
 		assert.Equal(t, []string{"testProject1 - 1", "testProject2 - 1", "testProject3 - 1"}, scan.ScannedProjectNames())
 	})
@@ -227,7 +227,7 @@ func TestScanTime(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("module-a")
+		_ = scan.AppendScannedProject("module-a", false)
 		// test
 		timeStamp := scan.ScanTime("module-a - 1")
 		// assert
@@ -236,7 +236,7 @@ func TestScanTime(t *testing.T) {
 	t.Run("project not scanned", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("module-a")
+		_ = scan.AppendScannedProject("module-a", false)
 		// test
 		timeStamp := scan.ScanTime("module-b - 1")
 		// assert
@@ -249,7 +249,7 @@ func TestScanUpdateProjects(t *testing.T) {
 	t.Run("update single project which exists", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("mock-project")
+		_ = scan.AppendScannedProject("mock-project", false)
 		mockSystem := NewSystemMock("just-now")
 		// test
 		err := scan.UpdateProjects("mock-product-token", mockSystem)
@@ -270,8 +270,8 @@ func TestScanUpdateProjects(t *testing.T) {
 	t.Run("update two projects, one of which exist", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("mock-project")
-		_ = scan.AppendScannedProject("unknown-project")
+		_ = scan.AppendScannedProject("mock-project", false)
+		_ = scan.AppendScannedProject("unknown-project", false)
 		mockSystem := NewSystemMock("just-now")
 		// test
 		err := scan.UpdateProjects("mock-product-token", mockSystem)
@@ -295,7 +295,7 @@ func TestScanUpdateProjects(t *testing.T) {
 	t.Run("update single project which does not exist", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
-		_ = scan.AppendScannedProject("mock-project")
+		_ = scan.AppendScannedProject("mock-project", false)
 		mockSystem := &SystemMock{} // empty mock with no products
 		// test
 		err := scan.UpdateProjects("mock-product-token", mockSystem)
