@@ -524,8 +524,9 @@ spec:
       - name: installArtifacts
         type: bool
         description:
-          "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource.
-          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+          "If enabled, all artifacts will be installed to the local Maven repository to ensure availability before running WhiteSource.
+          Currently, this parameter is not honored in whitesourceExecuteScan step, as it is internally managed by UA with the 'runPreStep'.
+          In the future, this parameter will be honored based on the individual build tool."
         scope:
           - GENERAL
           - STEPS
