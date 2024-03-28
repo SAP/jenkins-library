@@ -141,6 +141,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve version")
+	} else if len(version) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("version is empty - please check versioning configuration")
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 
