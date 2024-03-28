@@ -382,6 +382,14 @@ func exitCodeMapping(exitCodeKey int) string {
 	return "[" + strconv.Itoa(exitCodeKey) + "]: Not known exit code key"
 }
 
+func getDetectScriptUrl(config detectExecuteScanOptions) string {
+	if config.UseDetect9 {
+		return "https://detect.synopsys.com/detect9.sh"
+	}
+
+	return "https://detect.synopsys.com/detect8.sh"
+}
+
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	if config.ScanOnChanges {
 		log.Entry().Infof("The scanOnChanges option is deprecated")
@@ -389,10 +397,11 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	log.Entry().Infof("Downloading Detect Script")
 
-	err := utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+	url := getDetectScriptUrl(config)
+	err := utils.DownloadFile(url, "detect.sh", nil, nil)
 	if err != nil {
 		time.Sleep(time.Second * 5)
-		err = utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+		err = utils.DownloadFile(url, "detect.sh", nil, nil)
 		if err != nil {
 			return err
 		}
