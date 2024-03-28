@@ -119,13 +119,13 @@ spec:
           - name: maven/m2Path
       - name: logSuccessfulMavenTransfers
         type: bool
-        description: Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
+        description: Configures maven to log successful downloads.
         scope:
           - GENERAL
           - STEPS
           - STAGES
           - PARAMETERS
-        default: false
+        default: true
         aliases:
           - name: maven/logSuccessfulMavenTransfers
       - name: createBOM
