@@ -77,8 +77,9 @@ private void stageLocking(Map config, Closure body) {
         }
         else if(config.ordinal){
             resource += "/${config.ordinal}"
+
         }
-        lock(resource: resource, inversePrecedence: true) {
+        lock(resource: resource, inversePrecedence: !!config.ordinal) {
             if(config.ordinal) {
                 milestone config.ordinal
             }
