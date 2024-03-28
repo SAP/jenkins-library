@@ -28,6 +28,7 @@ type kanikoExecuteOptions struct {
 	ContainerImage                   string                   `json:"containerImage,omitempty"`
 	ContainerImageName               string                   `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
 	ContainerImageTag                string                   `json:"containerImageTag,omitempty"`
+	ContainerContextSubPath          string                   `json:"containerContextSubPath,omitempty"`
 	MultipleImages                   []map[string]interface{} `json:"multipleImages,omitempty"`
 	ContainerMultiImageBuild         bool                     `json:"containerMultiImageBuild,omitempty"`
 	ContainerMultiImageBuildExcludes []string                 `json:"containerMultiImageBuildExcludes,omitempty"`
@@ -300,6 +301,7 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If `containerImage` is not provided, then `containerImageName` or `--destination` (via buildOptions) should be provided.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used instead of parameter `containerImage`. If `containerImageName` is not provided, then `containerImage` or `--destination` (via buildOptions) should be provided.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerContextSubPath, "containerContextSubPath", os.Getenv("PIPER_containerContextSubPath"), "If is not empty, kaniko will be executed with `--context-sub-path` option.")
 
 	cmd.Flags().BoolVar(&stepConfig.ContainerMultiImageBuild, "containerMultiImageBuild", false, "Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).")
 	cmd.Flags().StringSliceVar(&stepConfig.ContainerMultiImageBuildExcludes, "containerMultiImageBuildExcludes", []string{}, "Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).")
@@ -395,6 +397,15 @@ func kanikoExecuteMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 						Default:   os.Getenv("PIPER_containerImageTag"),
+					},
+					{
+						Name:        "containerContextSubPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerContextSubPath"),
 					},
 					{
 						Name:        "multipleImages",

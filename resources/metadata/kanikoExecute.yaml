@@ -144,6 +144,13 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: containerContextSubPath
+        type: string
+        description: If is not empty, kaniko will be executed with `--context-sub-path` option.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: multipleImages
         aliases:
           - name: images
