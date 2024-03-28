@@ -67,9 +67,12 @@ func TestAppendCustomFlags(t *testing.T) {
 			"--flag3": "--flag3=3",
 		}
 		result := []string{}
-		expected := []string{"--flag1=1", "--flag2=2", "--flag3=3"}
 		result = AppendCustomFlags(result, flags)
-		assert.Equal(t, expected, result)
+		assert.Equal(t, 3, len(result))
+		jointFlags := strings.Join(result, " ")
+		assert.True(t, strings.Contains(jointFlags, "--flag1=1"))
+		assert.True(t, strings.Contains(jointFlags, "--flag2=2"))
+		assert.True(t, strings.Contains(jointFlags, "--flag3=3"))
 	})
 	t.Run("Flags without values", func(t *testing.T) {
 		flags := map[string]string{
@@ -78,9 +81,12 @@ func TestAppendCustomFlags(t *testing.T) {
 			"--flag3": "--flag3",
 		}
 		result := []string{}
-		expected := []string{"--flag1", "--flag2", "--flag3"}
 		result = AppendCustomFlags(result, flags)
-		assert.Equal(t, expected, result)
+		assert.Equal(t, 3, len(result))
+		jointFlags := strings.Join(result, " ")
+		assert.True(t, strings.Contains(jointFlags, "--flag1"))
+		assert.True(t, strings.Contains(jointFlags, "--flag2"))
+		assert.True(t, strings.Contains(jointFlags, "--flag3"))
 	})
 	t.Run("Some flags without values", func(t *testing.T) {
 		flags := map[string]string{
@@ -89,9 +95,12 @@ func TestAppendCustomFlags(t *testing.T) {
 			"--flag3": "--flag3",
 		}
 		result := []string{}
-		expected := []string{"--flag1=1", "--flag2=1", "--flag3"}
 		result = AppendCustomFlags(result, flags)
-		assert.Equal(t, expected, result)
+		assert.Equal(t, 3, len(result))
+		jointFlags := strings.Join(result, " ")
+		assert.True(t, strings.Contains(jointFlags, "--flag1=1"))
+		assert.True(t, strings.Contains(jointFlags, "--flag2=1"))
+		assert.True(t, strings.Contains(jointFlags, "--flag3"))
 	})
 	t.Run("Empty input", func(t *testing.T) {
 		flags := map[string]string{}
