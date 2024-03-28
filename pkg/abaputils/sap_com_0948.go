@@ -59,6 +59,36 @@ func (api *SAP_COM_0948) getUUID() string {
 	return api.uuid
 }
 
+// reads the execution log from the ABAP system
+func (api *SAP_COM_0948) GetExecutionLog() (execLog ExecutionLog, err error) {
+
+	connectionDetails := api.con
+	connectionDetails.URL = api.con.URL + api.path + api.actionsEntity + "/" + api.getUUID() + "/_Execution_log"
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		return execLog, err
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	bodyText, _ := io.ReadAll(resp.Body)
+
+	marshallError := json.Unmarshal(bodyText, &execLog)
+	if marshallError != nil {
+		return execLog, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
+
+	if reflect.DeepEqual(ExecutionLog{}, execLog) {
+		log.Entry().WithField("StatusCode", resp.Status).Error(api.failureMessage)
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		var err = errors.New("Request to ABAP System not successful")
+		return execLog, err
+	}
+	return execLog, nil
+}
+
 func (api *SAP_COM_0948) CreateTag(tag Tag) error {
 
 	if reflect.DeepEqual(Tag{}, tag) {

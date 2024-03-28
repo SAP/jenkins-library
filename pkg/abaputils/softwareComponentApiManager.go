@@ -59,14 +59,15 @@ type SoftwareComponentApiInterface interface {
 	setSleepTimeConfig(timeUnit time.Duration, maxSleepTime time.Duration)
 	getSleepTime(n int) (time.Duration, error)
 	getUUID() string
+	GetRepository() (bool, string, error)
 	Clone() error
 	Pull() error
 	CheckoutBranch() error
-	GetRepository() (bool, string, error)
 	GetAction() (string, error)
+	CreateTag(tag Tag) error
 	GetLogOverview() ([]LogResultsV2, error)
 	GetLogProtocol(LogResultsV2, int) (result []LogProtocol, count int, err error)
-	CreateTag(tag Tag) error
+	GetExecutionLog() (ExecutionLog, error)
 }
 
 /****************************************
@@ -146,6 +147,17 @@ type LogResultsV2 struct {
 	Status        string              `json:"type_of_found_issues"`
 	Timestamp     string              `json:"timestamp"`
 	ToLogProtocol LogProtocolDeferred `json:"to_Log_Protocol"`
+}
+
+type ExecutionLog struct {
+	Value []ExecutionLogValue `json:"value"`
+}
+
+type ExecutionLogValue struct {
+	IndexNo   int    `json:"index_no"`
+	Type      string `json:"type"`
+	Descr     string `json:"descr"`
+	Timestamp string `json:"timestamp"`
 }
 
 type LogProtocolDeferred struct {

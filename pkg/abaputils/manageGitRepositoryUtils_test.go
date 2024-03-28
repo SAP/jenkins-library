@@ -300,3 +300,18 @@ func TestCreateRequestBodies(t *testing.T) {
 		assert.Equal(t, `{"sc_name":"/DMO/REPO", "tag_name":"myTag"}`, body, "Expected different body")
 	})
 }
+
+func TestExecutionLogOutput(t *testing.T) {
+	t.Run("Test execution log output", func(t *testing.T) {
+
+		executionLogValue := []ExecutionLogValue{
+			{IndexNo: 1, Type: "Success", Descr: "Something went well", Timestamp: "/Date(1644332299000+0000)/"},
+			{IndexNo: 2, Type: "Error", Descr: "Something went wrong", Timestamp: "/Date(1644332299000+0000)/"},
+		}
+		executionLog := ExecutionLog{
+			Value: executionLogValue,
+		}
+		printExecutionLogs(executionLog)
+
+	})
+}

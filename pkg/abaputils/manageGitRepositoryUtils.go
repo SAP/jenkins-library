@@ -40,7 +40,13 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 }
 
 func PrintLogs(api SoftwareComponentApiInterface) {
-	// connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
+
+	// Get Execution Logs
+	executionLogs, err := api.GetExecutionLog()
+	if err == nil {
+		printExecutionLogs(executionLogs)
+	}
+
 	results, err := api.GetLogOverview()
 	if err != nil || len(results) == 0 {
 		// return if no logs are available
@@ -61,6 +67,17 @@ func PrintLogs(api SoftwareComponentApiInterface) {
 	AddDefaultDashedLine(1)
 
 	return
+}
+
+func printExecutionLogs(executionLogs ExecutionLog) {
+	log.Entry().Infof("\n")
+	AddDefaultDashedLine(1)
+	log.Entry().Infof("Execution Logs")
+	AddDefaultDashedLine(1)
+	for _, entry := range executionLogs.Value {
+		log.Entry().Infof("%7s - %s", entry.Type, entry.Descr)
+	}
+	AddDefaultDashedLine(1)
 }
 
 func printOverview(results []LogResultsV2) {
