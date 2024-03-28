@@ -525,7 +525,7 @@ spec:
         type: bool
         description:
           "If enabled, all artifacts will be installed to the local Maven repository to ensure availability before running WhiteSource.
-          Currently, this parameter is not honored in whitesourceExecuteScan step, as it is internally managed by UA with the 'runPreStep'. 
+          Currently, this parameter is not honored in whitesourceExecuteScan step, as it is internally managed by UA with the 'runPreStep'.
           In the future, this parameter will be honored based on the individual build tool."
         scope:
           - GENERAL
