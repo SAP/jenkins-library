@@ -96,6 +96,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 					"FAILURE_CONFIGURATION - Detect was unable to start due to issues with it's configuration.",
 					"FAILURE_DETECTOR - Detect had one or more detector failures while extracting dependencies. Check that all projects build and your environment is configured correctly.",
 					"FAILURE_SCAN - Detect was unable to run the signature scanner against your source. Check your configuration.",
+					"FAILURE_ACCURACY_NOT_MET - Detect was unable to meet the required accuracy.",
 				},
 				log.ErrorInfrastructure.String(): {
 					"FAILURE_PROXY_CONNECTIVITY - Detect was unable to use the configured proxy. Check your configuration and connection.",
@@ -346,6 +347,8 @@ func mapErrorCategory(exitCodeKey int) {
 		log.SetErrorCategory(log.ErrorService)
 	case 12:
 		log.SetErrorCategory(log.ErrorInfrastructure)
+	case 15:
+		log.SetErrorCategory(log.ErrorConfiguration)
 	case 99:
 		log.SetErrorCategory(log.ErrorService)
 	case 100:
@@ -373,6 +376,7 @@ func exitCodeMapping(exitCodeKey int) string {
 		99:  "FAILURE_GENERAL_ERROR => Detect encountered a known error, details of the error are provided.",
 		100: "FAILURE_UNKNOWN_ERROR => Detect encountered an unknown error.",
 		13:  "FAILURE_MINIMUM_INTERVAL_NOT_MET => Detect did not wait the minimum required scan interval.",
+		15:  "FAILURE_ACCURACY_NOT_MET => Detect was unable to meet the required accuracy.",
 	}
 
 	if _, isKeyExists := exitCodes[exitCodeKey]; isKeyExists {
