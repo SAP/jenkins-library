@@ -335,6 +335,16 @@ func TestTokenRevocation(t *testing.T) {
 		err := client.RevokeToken()
 		assert.NoError(t, err)
 	})
+
+	t.Run("Test revocation for batch tokens", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		vaultMock.On("Write",
+			"auth/token/revoke-self",
+			mock.IsType(map[string]interface{}{})).Return(nil, errors.New("unable to revoke batch token"))
+		err := client.RevokeToken()
+		assert.NoError(t, err)
+	})
 }
 
 func TestUnknownKvVersion(t *testing.T) {
