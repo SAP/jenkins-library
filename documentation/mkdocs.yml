@@ -95,6 +95,7 @@ nav:
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
+	    - contrastExecuteScan: steps/contrastExecuteScan.md
         - credentialdiggerScan: steps/credentialdiggerScan.md
         - debugReportArchive: steps/debugReportArchive.md
         - detectExecuteScan: steps/detectExecuteScan.md
