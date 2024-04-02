@@ -1050,10 +1050,16 @@ func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 }
 
 func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
+
+	if config.M2Path == "" {
+		config.M2Path = "/.m2"
+	}
+
 	mtaConfig := mtaBuildOptions{
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
+		Platform:            config.MtaPlatform,
 		InstallArtifacts:    false,
 		CreateBOM:           false,
 	}

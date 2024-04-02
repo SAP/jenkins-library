@@ -266,6 +266,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: mtaPlatform 
+        type: string
+        description: "The platform of the MTA project"
+        default: "CF"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: pomPath
         type: string
         description: Path to the pom file which should be installed including all children.
