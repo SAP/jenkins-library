@@ -275,6 +275,13 @@ func (v *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration
 // The client can't be used anymore after this function was called.
 func (v Client) RevokeToken() error {
 	_, err := v.lClient.Write("auth/token/revoke-self", map[string]interface{}{})
+
+	// vault recommends to use batch token instead of service tokens, batch token cannot be revoked as the revoke is done by vault
+	if strings.Contains(err.Error(), "unable to revoke batch token") {
+		log.Entry().Debug("batch token detected, not revoking token")
+		return nil
+	}
+
 	return err
 }
 
