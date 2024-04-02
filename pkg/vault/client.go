@@ -277,7 +277,7 @@ func (v Client) RevokeToken() error {
 	_, err := v.lClient.Write("auth/token/revoke-self", map[string]interface{}{})
 
 	// vault recommends to use batch token instead of service tokens, batch token cannot be revoked as the revoke is done by vault
-	if strings.Contains(err.Error(), "unable to revoke batch token") {
+	if err != nil && strings.Contains(err.Error(), "unable to revoke batch token") {
 		log.Entry().Debug("batch token detected, not revoking token")
 		return nil
 	}
