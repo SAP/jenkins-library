@@ -419,7 +419,7 @@ func TestGetMavenSettings(t *testing.T) {
 	})
 }
 
-func TestUpdateCmdFlagWithMavenSettings(t *testing.T) {
+func TestUpdateCmdFlag(t *testing.T) {
 	t.Parallel()
 
 	t.Run("No maven", func(t *testing.T) {
@@ -427,7 +427,7 @@ func TestUpdateCmdFlagWithMavenSettings(t *testing.T) {
 		customFlags := map[string]string{
 			"--command": "mvn clean install",
 		}
-		updateCmdFlagWithMavenSettings(&config, customFlags, newCodeqlExecuteScanTestsUtils())
+		updateCmdFlag(&config, customFlags, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "mvn clean install", customFlags["--command"])
 		assert.Equal(t, "", customFlags["-c"])
 	})
@@ -435,7 +435,7 @@ func TestUpdateCmdFlagWithMavenSettings(t *testing.T) {
 	t.Run("No custom flags with build command provided", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ProjectSettingsFile: "test.xml", GlobalSettingsFile: "global.xml"}
 		customFlags := map[string]string{}
-		updateCmdFlagWithMavenSettings(&config, customFlags, newCodeqlExecuteScanTestsUtils())
+		updateCmdFlag(&config, customFlags, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "", customFlags["--command"])
 		assert.Equal(t, "", customFlags["-c"])
 	})
@@ -446,7 +446,7 @@ func TestUpdateCmdFlagWithMavenSettings(t *testing.T) {
 			"--command": "mvn clean install",
 			"-c":        "mvn clean install -DskipTests",
 		}
-		updateCmdFlagWithMavenSettings(&config, customFlags, newCodeqlExecuteScanTestsUtils())
+		updateCmdFlag(&config, customFlags, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "mvn clean install", customFlags["--command"])
 		assert.Equal(t, "", customFlags["-c"])
 	})
@@ -456,7 +456,7 @@ func TestUpdateCmdFlagWithMavenSettings(t *testing.T) {
 		customFlags := map[string]string{
 			"-c": "mvn clean install -DskipTests",
 		}
-		updateCmdFlagWithMavenSettings(&config, customFlags, newCodeqlExecuteScanTestsUtils())
+		updateCmdFlag(&config, customFlags, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "mvn clean install -DskipTests", customFlags["--command"])
 		assert.Equal(t, "", customFlags["-c"])
 	})
@@ -466,7 +466,7 @@ func TestUpdateCmdFlagWithMavenSettings(t *testing.T) {
 		customFlags := map[string]string{
 			"--command": "mvn clean install",
 		}
-		updateCmdFlagWithMavenSettings(&config, customFlags, newCodeqlExecuteScanTestsUtils())
+		updateCmdFlag(&config, customFlags, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "mvn clean install --global-settings=global.xml --settings=test.xml", customFlags["--command"])
 		assert.Equal(t, "", customFlags["-c"])
 	})
@@ -476,7 +476,7 @@ func TestUpdateCmdFlagWithMavenSettings(t *testing.T) {
 		customFlags := map[string]string{
 			"--command": "mvn clean install --settings=test1.xml --global-settings=global1.xml",
 		}
-		updateCmdFlagWithMavenSettings(&config, customFlags, newCodeqlExecuteScanTestsUtils())
+		updateCmdFlag(&config, customFlags, newCodeqlExecuteScanTestsUtils())
 		assert.Equal(t, "mvn clean install --settings=test1.xml --global-settings=global1.xml", customFlags["--command"])
 		assert.Equal(t, "", customFlags["-c"])
 	})

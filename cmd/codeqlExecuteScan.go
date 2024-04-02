@@ -412,6 +412,7 @@ func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlEx
 			cmd = append(cmd, "--language="+config.Language)
 		}
 	}
+
 	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
 
 	if len(config.BuildCommand) > 0 && !codeql.IsFlagSetByUser(customFlags, []string{"--command", "-c"}) {
@@ -419,8 +420,9 @@ func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlEx
 		buildCmd = buildCmd + getMavenSettings(buildCmd, config, utils)
 		cmd = append(cmd, "--command="+buildCmd)
 	}
+
 	if codeql.IsFlagSetByUser(customFlags, []string{"--command", "-c"}) {
-		updateCmdFlagWithMavenSettings(config, customFlags, utils)
+		updateCmdFlag(config, customFlags, utils)
 	}
 	cmd = codeql.AppendCustomFlags(cmd, customFlags)
 
@@ -496,7 +498,7 @@ func getMavenSettings(buildCmd string, config *codeqlExecuteScanOptions, utils c
 	return params
 }
 
-func updateCmdFlagWithMavenSettings(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) {
+func updateCmdFlag(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) {
 	var buildCmd string
 	if customFlags["--command"] != "" {
 		buildCmd = customFlags["--command"]
