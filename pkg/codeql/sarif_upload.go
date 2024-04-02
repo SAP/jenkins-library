@@ -2,8 +2,17 @@ package codeql
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+)
+
+const (
+	sarifUploadComplete = "complete"
+	sarifUploadFailed   = "failed"
 )
 
 type CodeqlSarifUploader interface {
@@ -65,4 +74,34 @@ func getSarifUploadingStatus(sarifURL, token string) (SarifFileInfo, error) {
 		return SarifFileInfo{}, err
 	}
 	return sarifInfo, nil
+}
+
+func WaitSarifUploaded(maxRetries, checkRetryInterval int, codeqlSarifUploader CodeqlSarifUploader) error {
+	retryInterval := time.Duration(checkRetryInterval) * time.Second
+
+	log.Entry().Info("waiting for the SARIF to upload")
+	i := 1
+	for {
+		sarifStatus, err := codeqlSarifUploader.GetSarifStatus()
+		if err != nil {
+			return err
+		}
+		log.Entry().Infof("the SARIF processing status: %s", sarifStatus.ProcessingStatus)
+		if sarifStatus.ProcessingStatus == sarifUploadComplete {
+			return nil
+		}
+		if sarifStatus.ProcessingStatus == sarifUploadFailed {
+			for e := range sarifStatus.Errors {
+				log.Entry().Error(e)
+			}
+			return errors.New("failed to upload sarif file")
+		}
+		if i <= maxRetries {
+			log.Entry().Infof("still waiting for the SARIF to upload: retrying in %d seconds... (retry %d/%d)", checkRetryInterval, i, maxRetries)
+			time.Sleep(retryInterval)
+			i++
+			continue
+		}
+		return errors.New("failed to check sarif uploading status: max retries reached")
+	}
 }
