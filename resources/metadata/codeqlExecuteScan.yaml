@@ -235,17 +235,14 @@ spec:
           - PARAMETERS
       - name: filterPattern
         type: string
-        description: The pattern to include/exclude files/folders from scanning results.
+        description: "The pattern to include/exclude files/folders from scanning results."
         long_description: |
           Patterns should be divided by space. For example: "+<file pattern>[:<rule pattern>] -<file pattern>[:<rule pattern>]"
 
           Patterns may contain special characters:
-            A '?' matches any character in a name.
-            A '*' matches any sequence of characters (possibly empty) in a name. Both of these match only within a single component,
-                i.e., they will not match a path separator.
+            A '?' matches any character in a name. A '*' matches any sequence of characters (possibly empty) in a name. Both of these match only within a single component, i.e., they will not match a path separator.
             A component in a pattern may also be a literal '**', which matches zero or more components in the complete file name.
-            A backslash '\\' in a pattern acts as an escape character, and indicates that the following character is to be matched literally,
-                even if it is a special character.
+            A backslash '\\' in a pattern acts as an escape character, and indicates that the following character is to be matched literally, even if it is a special character.
         scope:
           - STEPS
           - STAGES
