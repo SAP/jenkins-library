@@ -45,6 +45,7 @@ type codeqlExecuteScanOptions struct {
 	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
 	DatabaseCreateFlags         string `json:"databaseCreateFlags,omitempty"`
 	DatabaseAnalyzeFlags        string `json:"databaseAnalyzeFlags,omitempty"`
+	FilterPattern               string `json:"filterPattern,omitempty"`
 }
 
 type codeqlExecuteScanInflux struct {
@@ -271,6 +272,7 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.DatabaseCreateFlags, "databaseCreateFlags", os.Getenv("PIPER_databaseCreateFlags"), "A space-separated string of flags for the 'codeql database create' command.")
 	cmd.Flags().StringVar(&stepConfig.DatabaseAnalyzeFlags, "databaseAnalyzeFlags", os.Getenv("PIPER_databaseAnalyzeFlags"), "A space-separated string of flags for the 'codeql database analyze' command.")
+	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", os.Getenv("PIPER_filterPattern"), "The pattern to include/exclude files/folders from scanning results.")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -526,6 +528,15 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_databaseAnalyzeFlags"),
+					},
+					{
+						Name:        "filterPattern",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_filterPattern"),
 					},
 				},
 			},
