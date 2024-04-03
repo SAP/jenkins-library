@@ -66,7 +66,7 @@ func getSignAndTrimPattern(pattern string) (bool, string) {
 	if strings.HasPrefix(pattern, "-") {
 		sign = false
 		pattern = strings.TrimPrefix(pattern, "-")
-	} else if strings.HasPrefix(pattern, "+") {
+	} else {
 		pattern = strings.TrimPrefix(pattern, "+")
 	}
 
