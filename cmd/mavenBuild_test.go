@@ -71,7 +71,7 @@ func TestMavenBuild(t *testing.T) {
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
 		assert.Nil(t, err)
-		assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.8.0:makeAggregateBom")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DschemaVersion=1.4")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeBomSerialNumber=true")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeCompileScope=true")
