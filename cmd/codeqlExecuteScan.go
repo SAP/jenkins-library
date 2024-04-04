@@ -318,7 +318,7 @@ func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlEx
 }
 
 func prepareCmdForDatabaseAnalyze(customFlags map[string]string, config *codeqlExecuteScanOptions, format, reportName string) ([]string, error) {
-	cmd := []string{"database", "analyze", "--format=" + format, fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", reportName)), config.Database}
+	cmd := []string{"database", "analyze", "--format=" + format, "--output=" + reportName, config.Database}
 	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
 	cmd = codeql.AppendCustomFlags(cmd, customFlags)
 	cmd = appendCodeqlQuery(cmd, config.QuerySuite)

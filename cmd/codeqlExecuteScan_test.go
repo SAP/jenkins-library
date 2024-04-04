@@ -411,7 +411,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		config := &codeqlExecuteScanOptions{
 			Database: "codeqlDB",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 5, len(cmd))
@@ -422,7 +422,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		config := &codeqlExecuteScanOptions{
 			Database: "codeqlDB",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "csv", "codeqlReport.csv")
+		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "csv", "target/codeqlReport.csv")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 5, len(cmd))
@@ -434,7 +434,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 			Database:   "codeqlDB",
 			QuerySuite: "security.ql",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 6, len(cmd))
@@ -448,7 +448,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 			Threads:    "1",
 			Ram:        "2000",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -465,7 +465,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"--threads": "--threads=2",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -482,7 +482,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"-j": "-j=2",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -499,7 +499,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"--no-download": "--no-download",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 9, len(cmd))
