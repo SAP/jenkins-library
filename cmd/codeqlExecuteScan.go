@@ -117,16 +117,17 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	printCodeqlImageVersion()
 
 	var reports []piperutils.Path
-	err := os.MkdirAll(filepath.Join(config.ModulePath, "target"), os.ModePerm)
+
+	dbCreateCustomFlags := codeql.ParseCustomFlags(config.DatabaseCreateFlags)
+	err := runDatabaseCreate(config, dbCreateCustomFlags, utils)
 	if err != nil {
-		log.Entry().WithError(err).Error("failed to create output directory for reports")
+		log.Entry().WithError(err).Error("failed to create codeql database")
 		return reports, err
 	}
 
-	dbCreateCustomFlags := codeql.ParseCustomFlags(config.DatabaseCreateFlags)
-	err = runDatabaseCreate(config, dbCreateCustomFlags, utils)
+	err = os.MkdirAll(filepath.Join(config.ModulePath, "target"), os.ModePerm)
 	if err != nil {
-		log.Entry().WithError(err).Error("failed to create codeql database")
+		log.Entry().WithError(err).Error("failed to create output directory for reports")
 		return reports, err
 	}
 
@@ -200,10 +201,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		}
 	}
 
-	err = addDataToInfluxDB(repoInfo, config.QuerySuite, scanResults, influx)
-	if err != nil {
-		log.Entry().WithError(err).Warn("failed to add data to InfluxDB")
-	}
+	addDataToInfluxDB(repoInfo, config.QuerySuite, scanResults, influx)
 
 	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, config.ModulePath)
 	if err != nil {
@@ -229,15 +227,15 @@ func runDatabaseCreate(config *codeqlExecuteScanOptions, customFlags map[string]
 }
 
 func runDatabaseAnalyze(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
-	reportPaths, err := executeAnalysis("sarif-latest", "codeqlReport.sarif", customFlags, config, utils)
+	sarifReport, err := executeAnalysis("sarif-latest", "codeqlReport.sarif", customFlags, config, utils)
 	if err != nil {
 		return nil, err
 	}
-	csvReportPaths, err := executeAnalysis("csv", "codeqlReport.csv", customFlags, config, utils)
+	csvReport, err := executeAnalysis("csv", "codeqlReport.csv", customFlags, config, utils)
 	if err != nil {
 		return nil, err
 	}
-	return append(reportPaths, csvReportPaths...), nil
+	return append(sarifReport, csvReport...), nil
 }
 
 func runGithubUploadResults(config *codeqlExecuteScanOptions, repoInfo *codeql.RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
@@ -410,7 +408,7 @@ func checkForCompliance(scanResults []codeql.CodeqlFindings, config *codeqlExecu
 	return nil
 }
 
-func addDataToInfluxDB(repoInfo *codeql.RepoInfo, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) error {
+func addDataToInfluxDB(repoInfo *codeql.RepoInfo, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) {
 	influx.codeql_data.fields.repositoryURL = repoInfo.FullUrl
 	influx.codeql_data.fields.repositoryReferenceURL = repoInfo.FullRef
 	influx.codeql_data.fields.codeScanningLink = repoInfo.ScanUrl
@@ -426,7 +424,6 @@ func addDataToInfluxDB(repoInfo *codeql.RepoInfo, querySuite string, scanResults
 			influx.codeql_data.fields.optionalTotal = sr.Total
 		}
 	}
-	return nil
 }
 
 func getMavenSettings(buildCmd string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
