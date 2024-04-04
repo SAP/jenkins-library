@@ -88,7 +88,5 @@ If you face such a [user permission issue][piper-issue-781], choose between the 
 [docker-install]: https://docs.docker.com/install
 [dockerhub-node]: https://hub.docker.com/_/node/
 [docker-getstarted]: https://docs.docker.com/get-started/
-[jenkins-doc-client]: https://jenkins.io/doc/book/managing/cli/
 [jenkins-docker-image]: https://github.com/jenkinsci/docker/
 [piper-issue-781]: https://github.com/SAP/jenkins-library/issues/781
-[devops-cxs-plugins]: https://github.com/SAP/devops-docker-cx-server/blob/master/jenkins-master/plugins.txt
