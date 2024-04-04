@@ -170,7 +170,7 @@ func TestGetRepoInfo(t *testing.T) {
 func TestBuildRepoReference(t *testing.T) {
 	t.Run("Valid AnalyzedRef with branch", func(t *testing.T) {
 		repo := "https://github.hello.test/Testing/fortify"
-		analyzedRef := "refs/head/branch"
+		analyzedRef := "refs/heads/branch"
 		ref, err := buildRepoReference(repo, analyzedRef)
 		assert.NoError(t, err)
 		assert.Equal(t, "https://github.hello.test/Testing/fortify/tree/branch", ref)
@@ -184,7 +184,7 @@ func TestBuildRepoReference(t *testing.T) {
 	})
 	t.Run("Invalid AnalyzedRef without branch name", func(t *testing.T) {
 		repo := "https://github.hello.test/Testing/fortify"
-		analyzedRef := "refs/head"
+		analyzedRef := "refs/heads"
 		ref, err := buildRepoReference(repo, analyzedRef)
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "Wrong analyzedRef format")

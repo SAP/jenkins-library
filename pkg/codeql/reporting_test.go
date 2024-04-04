@@ -26,7 +26,7 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 		repoInfo := &RepoInfo{
 			ServerUrl:   "https://github.hello.test",
 			CommitId:    "test",
-			AnalyzedRef: "refs/head/branch",
+			AnalyzedRef: "refs/heads/branch",
 			Owner:       "Testing",
 			Repo:        "codeql",
 			FullUrl:     "https://github.hello.test/Testing/codeql",
@@ -37,12 +37,12 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, toolRecord.ToolName, "codeql")
 		assert.Equal(t, toolRecord.ToolInstance, "https://github.hello.test")
-		assert.Equal(t, toolRecord.DisplayName, "Testing codeql - refs/head/branch test")
-		assert.Equal(t, toolRecord.DisplayURL, "https://github.hello.test/Testing/codeql/security/code-scanning?query=is:open+ref:refs/head/branch")
+		assert.Equal(t, toolRecord.DisplayName, "Testing codeql - refs/heads/branch test")
+		assert.Equal(t, toolRecord.DisplayURL, "https://github.hello.test/Testing/codeql/security/code-scanning?query=is:open+ref:refs/heads/branch")
 	})
 
 	t.Run("Empty repository URL", func(t *testing.T) {
-		repoInfo := &RepoInfo{ServerUrl: "", CommitId: "test", AnalyzedRef: "refs/head/branch", Owner: "Testing", Repo: "codeql"}
+		repoInfo := &RepoInfo{ServerUrl: "", CommitId: "test", AnalyzedRef: "refs/heads/branch", Owner: "Testing", Repo: "codeql"}
 		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), repoInfo, modulePath)
 
 		assert.Error(t, err)
@@ -58,7 +58,7 @@ func TestCreateToolRecordCodeql(t *testing.T) {
 	})
 
 	t.Run("Empty CommitId", func(t *testing.T) {
-		repoInfo := &RepoInfo{ServerUrl: "https://github.hello.test", CommitId: "", AnalyzedRef: "refs/head/branch", Owner: "Testing", Repo: "codeql"}
+		repoInfo := &RepoInfo{ServerUrl: "https://github.hello.test", CommitId: "", AnalyzedRef: "refs/heads/branch", Owner: "Testing", Repo: "codeql"}
 		_, err := createToolRecordCodeql(newCodeqlExecuteScanTestsUtils(), repoInfo, modulePath)
 
 		assert.Error(t, err)
