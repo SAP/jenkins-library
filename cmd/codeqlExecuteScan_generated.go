@@ -22,30 +22,30 @@ import (
 )
 
 type codeqlExecuteScanOptions struct {
-	GithubToken                 string `json:"githubToken,omitempty"`
-	BuildTool                   string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
-	BuildCommand                string `json:"buildCommand,omitempty"`
-	Language                    string `json:"language,omitempty"`
-	ModulePath                  string `json:"modulePath,omitempty"`
-	Database                    string `json:"database,omitempty"`
-	QuerySuite                  string `json:"querySuite,omitempty"`
-	UploadResults               bool   `json:"uploadResults,omitempty"`
-	SarifCheckMaxRetries        int    `json:"sarifCheckMaxRetries,omitempty"`
-	SarifCheckRetryInterval     int    `json:"sarifCheckRetryInterval,omitempty"`
-	TargetGithubRepoURL         string `json:"targetGithubRepoURL,omitempty"`
-	TargetGithubBranchName      string `json:"targetGithubBranchName,omitempty"`
-	Threads                     string `json:"threads,omitempty"`
-	Ram                         string `json:"ram,omitempty"`
-	AnalyzedRef                 string `json:"analyzedRef,omitempty"`
-	Repository                  string `json:"repository,omitempty"`
-	CommitID                    string `json:"commitId,omitempty"`
-	VulnerabilityThresholdTotal int    `json:"vulnerabilityThresholdTotal,omitempty"`
-	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
-	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
-	DatabaseCreateFlags         string `json:"databaseCreateFlags,omitempty"`
-	DatabaseAnalyzeFlags        string `json:"databaseAnalyzeFlags,omitempty"`
-	FilterPattern               string `json:"filterPattern,omitempty"`
+	GithubToken                 string   `json:"githubToken,omitempty"`
+	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
+	BuildCommand                string   `json:"buildCommand,omitempty"`
+	Language                    string   `json:"language,omitempty"`
+	ModulePath                  string   `json:"modulePath,omitempty"`
+	Database                    string   `json:"database,omitempty"`
+	QuerySuite                  string   `json:"querySuite,omitempty"`
+	UploadResults               bool     `json:"uploadResults,omitempty"`
+	SarifCheckMaxRetries        int      `json:"sarifCheckMaxRetries,omitempty"`
+	SarifCheckRetryInterval     int      `json:"sarifCheckRetryInterval,omitempty"`
+	TargetGithubRepoURL         string   `json:"targetGithubRepoURL,omitempty"`
+	TargetGithubBranchName      string   `json:"targetGithubBranchName,omitempty"`
+	Threads                     string   `json:"threads,omitempty"`
+	Ram                         string   `json:"ram,omitempty"`
+	AnalyzedRef                 string   `json:"analyzedRef,omitempty"`
+	Repository                  string   `json:"repository,omitempty"`
+	CommitID                    string   `json:"commitId,omitempty"`
+	VulnerabilityThresholdTotal int      `json:"vulnerabilityThresholdTotal,omitempty"`
+	CheckForCompliance          bool     `json:"checkForCompliance,omitempty"`
+	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	DatabaseCreateFlags         string   `json:"databaseCreateFlags,omitempty"`
+	DatabaseAnalyzeFlags        string   `json:"databaseAnalyzeFlags,omitempty"`
+	FilterPattern               []string `json:"filterPattern,omitempty"`
 }
 
 type codeqlExecuteScanInflux struct {
@@ -272,7 +272,7 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.DatabaseCreateFlags, "databaseCreateFlags", os.Getenv("PIPER_databaseCreateFlags"), "A space-separated string of flags for the 'codeql database create' command.")
 	cmd.Flags().StringVar(&stepConfig.DatabaseAnalyzeFlags, "databaseAnalyzeFlags", os.Getenv("PIPER_databaseAnalyzeFlags"), "A space-separated string of flags for the 'codeql database analyze' command.")
-	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", os.Getenv("PIPER_filterPattern"), "The pattern to include/exclude files/folders from scanning results.")
+	cmd.Flags().StringSliceVar(&stepConfig.FilterPattern, "filterPattern", []string{}, "Array of patterns to include/exclude files/folders in scan results.")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -533,10 +533,10 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Name:        "filterPattern",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_filterPattern"),
+						Default:     []string{},
 					},
 				},
 			},

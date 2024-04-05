@@ -10,14 +10,14 @@ func TestParsePatterns(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Empty input", func(t *testing.T) {
-		input := ""
+		input := []string{}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.Empty(t, patterns)
 	})
 
 	t.Run("One pattern to exclude", func(t *testing.T) {
-		input := "-file_pattern"
+		input := []string{"-file_pattern"}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, patterns)
@@ -28,7 +28,7 @@ func TestParsePatterns(t *testing.T) {
 	})
 
 	t.Run("One pattern to include", func(t *testing.T) {
-		input := "+file_pattern"
+		input := []string{"+file_pattern"}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, patterns)
@@ -39,7 +39,7 @@ func TestParsePatterns(t *testing.T) {
 	})
 
 	t.Run("One pattern without sign", func(t *testing.T) {
-		input := "file_pattern"
+		input := []string{"file_pattern"}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, patterns)
@@ -50,7 +50,7 @@ func TestParsePatterns(t *testing.T) {
 	})
 
 	t.Run("Several patterns to exclude", func(t *testing.T) {
-		input := "-file_pattern_1 -file_pattern_2"
+		input := []string{"-file_pattern_1", "-file_pattern_2"}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, patterns)
@@ -64,7 +64,7 @@ func TestParsePatterns(t *testing.T) {
 	})
 
 	t.Run("Several patterns to include", func(t *testing.T) {
-		input := "+file_pattern_1 file_pattern_2"
+		input := []string{"+file_pattern_1", "file_pattern_2"}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, patterns)
@@ -78,7 +78,7 @@ func TestParsePatterns(t *testing.T) {
 	})
 
 	t.Run("One pattern to exclude, one pattern to include", func(t *testing.T) {
-		input := "-file_pattern_1 +file_pattern_2"
+		input := []string{"-file_pattern_1", "+file_pattern_2"}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, patterns)
@@ -92,7 +92,7 @@ func TestParsePatterns(t *testing.T) {
 	})
 
 	t.Run("Several patterns to exclude and include", func(t *testing.T) {
-		input := "-file_pattern_1 +file_pattern_2 -file_pattern_3 file_pattern_4"
+		input := []string{"-file_pattern_1", "+file_pattern_2", "-file_pattern_3", "file_pattern_4"}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, patterns)
@@ -111,107 +111,38 @@ func TestParsePatterns(t *testing.T) {
 		assert.True(t, patterns[3].sign)
 	})
 
-	t.Run("Pattern with spaces", func(t *testing.T) {
-		input := "-file\\ pattern"
-		patterns, err := ParsePatterns(input)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, patterns)
-		assert.Equal(t, 1, len(patterns))
-		assert.Equal(t, "file\\ pattern", patterns[0].filePattern)
-		assert.Equal(t, "**", patterns[0].rulePattern)
-		assert.False(t, patterns[0].sign)
-	})
-
 	t.Run("Patterns with spaces", func(t *testing.T) {
-		input := "-file\\ pattern\\ 1 -file\\ pattern\\ 2"
+		input := []string{"-file pattern 1", "-file pattern 2"}
 		patterns, err := ParsePatterns(input)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, patterns)
 		assert.Equal(t, 2, len(patterns))
-		assert.Equal(t, "file\\ pattern\\ 1", patterns[0].filePattern)
+		assert.Equal(t, "file pattern 1", patterns[0].filePattern)
 		assert.Equal(t, "**", patterns[0].rulePattern)
 		assert.False(t, patterns[0].sign)
-		assert.Equal(t, "file\\ pattern\\ 2", patterns[1].filePattern)
+		assert.Equal(t, "file pattern 2", patterns[1].filePattern)
+		assert.Equal(t, "**", patterns[1].rulePattern)
+		assert.False(t, patterns[1].sign)
+	})
+
+	t.Run("Patterns with slashes", func(t *testing.T) {
+		input := []string{"-file/pattern/1", "-file\\\\pattern\\\\2"} // -file\pattern\2
+		patterns, err := ParsePatterns(input)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, patterns)
+		assert.Equal(t, 2, len(patterns))
+		assert.Equal(t, "file/pattern/1", patterns[0].filePattern)
+		assert.Equal(t, "**", patterns[0].rulePattern)
+		assert.False(t, patterns[0].sign)
+		assert.Equal(t, "file\\pattern\\2", patterns[1].filePattern)
 		assert.Equal(t, "**", patterns[1].rulePattern)
 		assert.False(t, patterns[1].sign)
 	})
 
 	t.Run("Invalid pattern", func(t *testing.T) {
-		input := "file\\ :pattern:rule"
+		input := []string{"file :pattern:rule"}
 		_, err := ParsePatterns(input)
 		assert.Error(t, err)
-	})
-}
-
-func TestSplit(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Empty string", func(t *testing.T) {
-		input := ""
-		patterns := split(input)
-		assert.Equal(t, 0, len(patterns))
-	})
-
-	t.Run("Patterns with spaces", func(t *testing.T) {
-		input := "-file\\ pattern -file\\ pattern\\ 2"
-		patterns := split(input)
-		assert.NotEmpty(t, patterns)
-		assert.Equal(t, 2, len(patterns))
-		assert.Equal(t, "-file\\ pattern", patterns[0])
-		assert.Equal(t, "-file\\ pattern\\ 2", patterns[1])
-	})
-
-	t.Run("First pattern with space", func(t *testing.T) {
-		input := "-file\\ pattern -file_pattern"
-		patterns := split(input)
-		assert.NotEmpty(t, patterns)
-		assert.Equal(t, 2, len(patterns))
-		assert.Equal(t, "-file\\ pattern", patterns[0])
-		assert.Equal(t, "-file_pattern", patterns[1])
-	})
-
-	t.Run("Second pattern with space", func(t *testing.T) {
-		input := "-file_pattern -file\\ pattern"
-		patterns := split(input)
-		assert.NotEmpty(t, patterns)
-		assert.Equal(t, 2, len(patterns))
-		assert.Equal(t, "-file_pattern", patterns[0])
-		assert.Equal(t, "-file\\ pattern", patterns[1])
-	})
-
-	t.Run("Patterns without spaces", func(t *testing.T) {
-		input := "-file_pattern_1 file_pattern_2 +file_pattern_3"
-		patterns := split(input)
-		assert.NotEmpty(t, patterns)
-		assert.Equal(t, 3, len(patterns))
-		assert.Equal(t, "-file_pattern_1", patterns[0])
-		assert.Equal(t, "file_pattern_2", patterns[1])
-		assert.Equal(t, "+file_pattern_3", patterns[2])
-	})
-
-	t.Run("Second pattern with escape symbol", func(t *testing.T) {
-		input := "-file_pattern_1 -file_pattern_2\\"
-		patterns := split(input)
-		assert.NotEmpty(t, patterns)
-		assert.Equal(t, 2, len(patterns))
-		assert.Equal(t, "-file_pattern_1", patterns[0])
-		assert.Equal(t, "-file_pattern_2\\", patterns[1])
-	})
-
-	t.Run("First pattern with escape symbol", func(t *testing.T) {
-		input := "-file_pattern_1\\ -file_pattern_2"
-		patterns := split(input)
-		assert.NotEmpty(t, patterns)
-		assert.Equal(t, 1, len(patterns))
-		assert.Equal(t, "-file_pattern_1\\ -file_pattern_2", patterns[0])
-	})
-
-	t.Run("Pattern with several spaces", func(t *testing.T) {
-		input := "-file\\ pattern\\ 1"
-		patterns := split(input)
-		assert.NotEmpty(t, patterns)
-		assert.Equal(t, 1, len(patterns))
-		assert.Equal(t, "-file\\ pattern\\ 1", patterns[0])
 	})
 }
 
