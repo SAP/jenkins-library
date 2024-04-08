@@ -211,7 +211,7 @@ spec:
           - STEPS
       - name: CAPVersioningPreference
         type: string
-        description: "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`)."
+        description: ""
         scope:
           - PARAMETERS
           - STAGES

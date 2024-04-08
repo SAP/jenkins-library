@@ -123,15 +123,6 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		VersionSource:       config.DockerVersionSource,
 	}
 
-	if config.BuildTool == "CAP" {
-		switch config.CAPVersioningPreference {
-		case "maven":
-			config.BuildTool = "maven"
-		case "npm":
-			config.BuildTool = "npm"
-		}
-	}
-
 	var err error
 	if artifact == nil {
 		artifact, err = versioning.GetArtifact(config.BuildTool, config.FilePath, &artifactOpts, utils)
