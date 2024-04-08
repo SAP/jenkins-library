@@ -20,7 +20,7 @@ import (
 type artifactPrepareVersionOptions struct {
 	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn CAP"`
 	AdditionalTargetDescriptors []string `json:"additionalTargetDescriptors,omitempty"`
-	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
+	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn CAP"`
 	CommitUserName              string   `json:"commitUserName,omitempty"`
 	CustomVersionField          string   `json:"customVersionField,omitempty"`
 	CustomVersionSection        string   `json:"customVersionSection,omitempty"`

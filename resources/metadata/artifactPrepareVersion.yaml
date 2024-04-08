@@ -152,6 +152,7 @@ spec:
           - pip
           - sbt
           - yarn
+          - CAP
       - name: commitUserName
         aliases:
           - name: gitUserName
