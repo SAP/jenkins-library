@@ -18,7 +18,7 @@ import (
 )
 
 type artifactPrepareVersionOptions struct {
-	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
+	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn CAP"`
 	AdditionalTargetDescriptors []string `json:"additionalTargetDescriptors,omitempty"`
 	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
 	CommitUserName              string   `json:"commitUserName,omitempty"`
@@ -261,7 +261,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name.")
 	cmd.Flags().BoolVar(&stepConfig.FetchCoordinates, "fetchCoordinates", false, "If set to `true` the step will retreive artifact coordinates and store them in the common pipeline environment.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
-	cmd.Flags().StringVar(&stepConfig.CAPVersioningPreference, "CAPVersioningPreference", `maven`, "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
+	cmd.Flags().StringVar(&stepConfig.CAPVersioningPreference, "CAPVersioningPreference", `maven`, "")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
 	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
