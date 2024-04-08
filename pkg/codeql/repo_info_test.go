@@ -187,7 +187,7 @@ func TestBuildRepoReference(t *testing.T) {
 		analyzedRef := "refs/heads"
 		ref, err := buildRepoReference(repo, analyzedRef)
 		assert.Error(t, err)
-		assert.ErrorContains(t, err, "Wrong analyzedRef format")
+		assert.ErrorContains(t, err, "wrong analyzedRef format")
 		assert.Equal(t, "", ref)
 	})
 	t.Run("Invalid AnalyzedRef without PR id", func(t *testing.T) {
@@ -195,7 +195,7 @@ func TestBuildRepoReference(t *testing.T) {
 		analyzedRef := "refs/pull/merge"
 		ref, err := buildRepoReference(repo, analyzedRef)
 		assert.Error(t, err)
-		assert.ErrorContains(t, err, "Wrong analyzedRef format")
+		assert.ErrorContains(t, err, "wrong analyzedRef format")
 		assert.Equal(t, "", ref)
 	})
 }
