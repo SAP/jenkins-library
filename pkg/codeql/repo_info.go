@@ -55,11 +55,11 @@ func GetRepoInfo(repository, analyzedRef, commitID, targetGithubRepoURL, targetG
 func buildRepoReference(repository, analyzedRef string) (string, error) {
 	ref := strings.Split(analyzedRef, "/")
 	if len(ref) < 3 {
-		return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
+		return "", fmt.Errorf("wrong analyzedRef format: %s", analyzedRef)
 	}
 	if strings.Contains(analyzedRef, "pull") {
 		if len(ref) < 4 {
-			return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
+			return "", fmt.Errorf("wrong analyzedRef format: %s", analyzedRef)
 		}
 		return fmt.Sprintf("%s/pull/%s", repository, ref[2]), nil
 	}
