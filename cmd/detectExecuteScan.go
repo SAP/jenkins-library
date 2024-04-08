@@ -1046,6 +1046,9 @@ func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 		Publish:                     false,
 	}
 
+	// Print the mavenBuildOptions configuration in verbose mode
+	log.Entry().Debugf("Maven configuration: %v", mavenConfig)
+
 	return mavenConfig
 }
 
@@ -1063,6 +1066,10 @@ func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
 		InstallArtifacts:    false,
 		CreateBOM:           false,
 	}
+
+	// Print the mtaBuildOptions configuration in verbose mode
+
+	log.Entry().Debugf("MTA configuration: %v", mtaConfig)
 
 	return mtaConfig
 
