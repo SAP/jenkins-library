@@ -155,9 +155,9 @@ func TestGetArtifact(t *testing.T) {
 			ProjectSettingsFile:     "projectsettings.xml",
 			GlobalSettingsFile:      "globalsettings.xml",
 			M2Path:                  "m2/path",
-			CAPVersioningPreference: Maven2,
+			CAPVersioningPreference: "maven",
 		}
-		maven, err := GetArtifact(CAP, "", &opts, nil)
+		maven, err := GetArtifact("CAP", "", &opts, nil)
 		assert.NoError(t, err)
 
 		theType, ok := maven.(*Maven)
@@ -194,7 +194,7 @@ func TestGetArtifact(t *testing.T) {
 	})
 
 	t.Run("CAP - npm", func(t *testing.T) {
-		npm, err := GetArtifact(CAP, "", &Options{VersionField: "theversion", CAPVersioningPreference: NPM}, nil)
+		npm, err := GetArtifact("CAP", "", &Options{VersionField: "theversion", CAPVersioningPreference: "npm"}, nil)
 		assert.NoError(t, err)
 
 		theType, ok := npm.(*JSONfile)
