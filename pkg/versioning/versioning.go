@@ -76,7 +76,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		fileExists = piperutils.FileExists
 	}
 
-	// CAPVersioningPreference can only be 'maven' or 'npm'. It is done on artifactPrepareVersion.yaml level
+	// CAPVersioningPreference can only be 'maven' or 'npm'. Verification done on artifactPrepareVersion.yaml level
 	if buildTool == "CAP" {
 		buildTool = opts.CAPVersioningPreference
 	}
