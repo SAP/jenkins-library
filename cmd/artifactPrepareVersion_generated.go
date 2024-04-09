@@ -18,7 +18,7 @@ import (
 )
 
 type artifactPrepareVersionOptions struct {
-	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn CAP"`
+	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
 	AdditionalTargetDescriptors []string `json:"additionalTargetDescriptors,omitempty"`
 	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn CAP"`
 	CommitUserName              string   `json:"commitUserName,omitempty"`
@@ -28,7 +28,7 @@ type artifactPrepareVersionOptions struct {
 	DockerVersionSource         string   `json:"dockerVersionSource,omitempty"`
 	FetchCoordinates            bool     `json:"fetchCoordinates,omitempty"`
 	FilePath                    string   `json:"filePath,omitempty"`
-	CAPVersioningPreference     string   `json:"CAPVersioningPreference,omitempty" validate:"possible-values=maven npm"`
+	CAPVersioningPreference     string   `json:"CAPVersioningPreference,omitempty" validate:"possible-values=maven npm,required_if=BuildTool CAP"`
 	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
 	IncludeCommitID             bool     `json:"includeCommitId,omitempty"`
 	IsOptimizedAndScheduled     bool     `json:"isOptimizedAndScheduled,omitempty"`

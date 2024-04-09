@@ -11,14 +11,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-const (
-	Maven2   = "maven"
-	NPM      = "npm"
-	CAP      = "CAP"
-	CAPMaven = CAP + Maven2
-	CAPNPM   = CAP + NPM
-)
-
 // Coordinates to address the artifact coordinates like groupId, artifactId, version and packaging
 type Coordinates struct {
 	GroupID    string
@@ -84,13 +76,9 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		fileExists = piperutils.FileExists
 	}
 
-	if buildTool == CAP {
-		switch opts.CAPVersioningPreference {
-		case Maven2:
-			buildTool = CAPMaven
-		case NPM:
-			buildTool = CAPNPM
-		}
+	// CAPVersioningPreference by default can only be 'maven' or 'npm'
+	if buildTool == "CAP" {
+		buildTool = opts.CAPVersioningPreference
 	}
 
 	switch buildTool {
@@ -147,7 +135,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			utils:            utils,
 			updateAppVersion: opts.HelmUpdateAppVersion,
 		}
-	case Maven2, CAPMaven:
+	case "maven":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "pom.xml"
 		}
@@ -171,7 +159,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			versionField:    "version",
 			artifactIDField: "ID",
 		}
-	case NPM, "yarn", CAPNPM:
+	case "npm", "yarn":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "package.json"
 		}

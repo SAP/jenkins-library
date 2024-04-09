@@ -115,7 +115,6 @@ spec:
           - pip
           - sbt
           - yarn
-          - CAP
       - name: additionalTargetDescriptors
         type: "[]string"
         description: Defines patterns for build descriptors which should be used for option [`additionalTargetTools`](additionaltargettools).
@@ -222,6 +221,9 @@ spec:
         possibleValues:
           - maven
           - npm
+        mandatoryIf:
+          - name: buildTool
+            value: CAP
       - name: globalSettingsFile
         aliases:
           - name: maven/globalSettingsFile
