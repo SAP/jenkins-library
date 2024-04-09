@@ -212,7 +212,12 @@ spec:
           - STEPS
       - name: CAPVersioningPreference
         type: string
-        description: ""
+        description: "For CAP build tool only: Defines which file should be used for versioning."
+        longDescription: |
+          If `maven` is chosen (default value), then the step expects a pom.xml file in the project's root folder. Alternatively, you can specify the path to the file using the `filePath` parameter.
+          If `npm` is chosen, then the step expects a package.json file in the project's root folder. Alternatively, you can specify the path to the file using the `filePath` parameter.
+
+          In case you want to propagate version to addition file(s), it can be done via `additionalTargetTools` and `additionalTargetDescriptors` parameters.
         scope:
           - PARAMETERS
           - STAGES
