@@ -392,3 +392,5 @@ spec:
           params:
             - name: buildTool
               value: maven
+            - name: buildTool
+              value: CAP
