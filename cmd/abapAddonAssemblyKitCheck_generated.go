@@ -70,8 +70,7 @@ func AbapAddonAssemblyKitCheckCommand() *cobra.Command {
 	var createAbapAddonAssemblyKitCheckCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step calls AAKaaS to check the validity of the Addon Product Modelling.",
-		Long: `This step does the following:
-<ul> 
+		Long: `This step does the following:<ul>
   <li>[The Addon Product Modelling](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#add-on-descriptor-file) is read from the <b>addonDescriptorFileName</b> (e.g. addon.yml)</li>
   <li>A connection to AAKaaS (Addon Assembly Kit as a Service) is established and the Addon Product Modelling is transfered for detailed [checks](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#versioning-rules)</li>
   <li>The semantic versions are resolved and stored into the piper commonPipelineEnviroment for usage of subsequent pipeline steps</li>
