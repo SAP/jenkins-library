@@ -125,7 +125,7 @@ func TestRunCnbBuild(t *testing.T) {
 		`
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		utils.FilesMock.AddFile("project.toml", []byte(projectToml))
 		addBuilderFiles(&utils)
 
@@ -133,7 +133,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner, 2)
 		assert.Contains(t, runner.Calls[1].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, config.ContainerImageName, config.ContainerImageTag))
 		assert.Contains(t, runner.Calls[1].Params, "-run-image")
@@ -160,7 +160,7 @@ func TestRunCnbBuild(t *testing.T) {
 		`
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		utils.FilesMock.AddFile("project.toml", []byte(projectToml))
 		addBuilderFiles(&utils)
 
@@ -169,7 +169,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner, 2)
 		assert.Contains(t, runner.Calls[1].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, "io-buildpacks-my-app", config.ContainerImageTag))
 		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
@@ -190,14 +190,14 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner, 2)
 		assert.Contains(t, runner.Calls[1].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, config.ContainerImageName, config.ContainerImageTag))
 		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
@@ -215,14 +215,14 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assertLifecycleCalls(t, runner, 2)
 		assert.Contains(t, runner.Calls[1].Params, fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag))
 		assert.Equal(t, fmt.Sprintf("https://%s", config.ContainerRegistryURL), commonPipelineEnvironment.container.registryURL)
@@ -245,14 +245,14 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Equal(t, creatorPath, runner.Calls[1].Exec)
 		assert.Contains(t, runner.Calls[1].Params, "/tmp/buildpacks")
 		assert.Contains(t, runner.Calls[1].Params, "/tmp/buildpacks/order.toml")
@@ -283,14 +283,14 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Equal(t, creatorPath, runner.Calls[1].Exec)
 		assert.Contains(t, runner.Calls[1].Params, "/tmp/buildpacks")
 		assert.Contains(t, runner.Calls[1].Params, "/tmp/buildpacks/order.toml")
@@ -319,14 +319,14 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Equal(t, creatorPath, runner.Calls[1].Exec)
 		assert.Contains(t, runner.Calls[1].Params, "/tmp/buildpacks")
 		assert.Contains(t, runner.Calls[1].Params, "/tmp/buildpacks/order.toml")
@@ -358,7 +358,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		utils := newCnbBuildTestsUtils()
 		utils.FilesMock.AddFile(caCertsFile, []byte("test\n"))
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, client)
@@ -370,7 +370,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Contains(t, runner.Env, fmt.Sprintf("SSL_CERT_FILE=%s", caCertsTmpFile))
 		assertLifecycleCalls(t, runner, 2)
 		assert.Contains(t, runner.Calls[1].Params, fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag))
@@ -387,7 +387,7 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
@@ -412,7 +412,6 @@ func TestRunCnbBuild(t *testing.T) {
 				"OPTIONS_KEY": "OPTIONS_VALUE",
 				"OVERWRITE":   "this should win",
 			},
-			DockerConfigJSON: "/path/to/config.json",
 		}
 
 		projectToml := `[project]
@@ -428,7 +427,6 @@ func TestRunCnbBuild(t *testing.T) {
 		`
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		utils.FilesMock.AddFile("project.toml", []byte(projectToml))
 		addBuilderFiles(&utils)
 
@@ -455,7 +453,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils := newCnbBuildTestsUtils()
 		utils.FilesMock.CurrentDir = "/jenkins"
 		utils.FilesMock.AddDir("/jenkins")
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		utils.FilesMock.AddFile("/workspace/pom.xml", []byte("test"))
 		addBuilderFiles(&utils)
 
@@ -480,7 +478,7 @@ func TestRunCnbBuild(t *testing.T) {
 		utils := newCnbBuildTestsUtils()
 		utils.FilesMock.CurrentDir = "/jenkins"
 		utils.FilesMock.AddDir("/jenkins")
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
@@ -502,28 +500,11 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":"dXNlcjpwYXNz"}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":"dXNlcjpwYXNz"}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
 		assert.EqualError(t, err, "failed to generate CNB_REGISTRY_AUTH: json: cannot unmarshal string into Go struct field ConfigFile.auths of type types.AuthConfig")
-	})
-
-	t.Run("error case: missing target registry in docker credentials", func(t *testing.T) {
-		t.Parallel()
-		config := cnbBuildOptions{
-			ContainerImageTag:    "0.0.1",
-			ContainerRegistryURL: imageRegistry,
-			ContainerImageName:   "my-image",
-			DockerConfigJSON:     "/path/to/config.json",
-		}
-
-		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-other-registry":{"auth":"dXNlcjpwYXNz"}}}`))
-		addBuilderFiles(&utils)
-
-		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
-		assert.EqualError(t, err, "DockerConfigJSON does not contain credentials for target registry (some-registry)")
 	})
 
 	t.Run("error case: DockerConfigJSON file not there (config.json)", func(t *testing.T) {
@@ -580,7 +561,7 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
@@ -602,26 +583,9 @@ func TestRunCnbBuild(t *testing.T) {
 					"runImage": "bar",
 				},
 			},
-			DockerConfigJSON: "/path/to/config.json",
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
-		utils.FilesMock.AddDir("target")
-		utils.FilesMock.AddFile("target/project.toml", []byte(`[project]
-id = "test"
-name = "test"
-version = "1.0.0"
-
-[build]
-include = []
-exclude = ["*.tar"]
-
-[[build.buildpacks]]
-uri = "some-buildpack"`))
-		utils.FilesMock.AddFile("a_file", []byte(`{}`))
-		utils.FilesMock.AddFile("target/somelib.jar", []byte(`FFFFFF`))
-
 		addBuilderFiles(&utils)
 
 		telemetryData := &telemetry.CustomData{}
@@ -646,7 +610,7 @@ uri = "some-buildpack"`))
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		utils.FilesMock.AddDir("target")
 		utils.FilesMock.AddFile("target/app.jar", []byte(`FFFFFF`))
 		utils.FilesMock.AddFile("target/app-src.jar", []byte(`FFFFFF`))
@@ -673,7 +637,7 @@ uri = "some-buildpack"`))
 		}
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		utils.FilesMock.AddDir("target")
 		utils.FilesMock.AddFile("target/app.jar", []byte(`FFFFFF`))
 
@@ -684,7 +648,7 @@ uri = "some-buildpack"`))
 
 		require.NoError(t, err)
 		runner := utils.ExecMockRunner
-		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"some-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
 		assert.Contains(t, runner.Calls[1].Params, fmt.Sprintf("%s/%s:%s", imageRegistry, config.ContainerImageName, config.ContainerImageTag))
 		assert.Equal(t, config.ContainerRegistryURL, commonPipelineEnvironment.container.registryURL)
 		assert.Equal(t, "my-image:3.1.5", commonPipelineEnvironment.container.imageNameTag)
@@ -704,7 +668,7 @@ uri = "some-buildpack"`))
 		expectedImageCount := len(config.MultipleImages)
 
 		utils := newCnbBuildTestsUtils()
-		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"some-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
 		telemetryData := &telemetry.CustomData{}
