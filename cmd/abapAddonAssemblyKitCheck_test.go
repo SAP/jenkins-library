@@ -40,20 +40,21 @@ func TestRunAbapAddonAssemblyKitCheck(t *testing.T) {
 		err := runAbapAddonAssemblyKitCheck(&config, nil, utils, &cpe)
 
 		assert.NoError(t, err)
-		assert.EqualError(t, err, "dummy - get logoutput")
 	})
 
 	t.Run("error path", func(t *testing.T) {
-		// t.Parallel()
-		// // init
-		// config := abapAddonAssemblyKitCheckOptions{}
+		config.AddonDescriptorFileName = "addon.yml.mock"
+		bundle.SetBody(aakaas.ResponseCheck)
+		bundle.MockAddonDescriptor = abaputils.AddonDescriptor{
+			AddonProduct:     "/DRNMSPC/PRD01",
+			AddonVersionYAML: "2.0.0",
+			Repositories:     []abaputils.Repository{
+				//no repos should fail during pvh creation...
+			},
+		}
 
-		// utils := newAbapAddonAssemblyKitCheckTestsUtils()
+		err := runAbapAddonAssemblyKitCheck(&config, nil, utils, &cpe)
 
-		// // test
-		// err := runAbapAddonAssemblyKitCheck(&config, nil, utils, nil)
-
-		// // assert
-		// assert.EqualError(t, err, "cannot run without important file")
+		assert.EqualError(t, err, "addonDescriptor must contain at least one software component repository")
 	})
 }
