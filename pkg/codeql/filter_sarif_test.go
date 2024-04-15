@@ -317,228 +317,6 @@ func TestSeparateFileAndRulePattern(t *testing.T) {
 	})
 }
 
-func TestMatchComponent(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Empty inputs", func(t *testing.T) {
-		fileName := ""
-		pattern := ""
-		assert.True(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Empty pattern, non-empty filename", func(t *testing.T) {
-		fileName := "file"
-		pattern := ""
-		assert.False(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Empty filename, pattern is *", func(t *testing.T) {
-		fileName := ""
-		pattern := "*"
-		assert.True(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Non-empty pattern, empty filename", func(t *testing.T) {
-		fileName := ""
-		pattern := "pattern"
-		assert.False(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Pattern starts with *, non-empty filename", func(t *testing.T) {
-		fileName := "file"
-		pattern := "*"
-		assert.True(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Pattern starts with ? matches non-empty filename", func(t *testing.T) {
-		fileName := "file"
-		pattern := "????"
-		assert.True(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Pattern starts with ? doesn't match non-empty filename", func(t *testing.T) {
-		fileName := "file"
-		pattern := "?"
-		assert.False(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Escape symbol in pattern, matches filename", func(t *testing.T) {
-		fileName := "file"
-		pattern := "\\file"
-		assert.True(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Escape symbol in pattern, doesn't match filename", func(t *testing.T) {
-		fileName := "file"
-		pattern := "\\pattern"
-		assert.False(t, matchComponent(pattern, fileName))
-	})
-
-	t.Run("Components match, glob", func(t *testing.T) {
-		filePath := "file"
-		pattern := "**"
-		assert.True(t, matchComponent(pattern, filePath))
-	})
-
-	t.Run("Components match", func(t *testing.T) {
-		filePath := "file"
-		pattern := "file"
-		assert.True(t, matchComponent(pattern, filePath))
-	})
-
-	t.Run("Components don't match", func(t *testing.T) {
-		filePath := "file"
-		pattern := "pattern"
-		assert.False(t, matchComponent(pattern, filePath))
-	})
-
-	t.Run("Component with escape symbol", func(t *testing.T) {
-		filePath := "file\\ name"
-		pattern := "*"
-		assert.True(t, matchComponent(pattern, filePath))
-	})
-}
-
-func TestMatchComponents(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Empty filepath and pattern", func(t *testing.T) {
-		file := []string{}
-		pattern := []string{}
-		assert.True(t, matchComponents(pattern, file))
-	})
-
-	t.Run("Empty filepath, non-empty pattern", func(t *testing.T) {
-		file := []string{}
-		pattern := []string{"pattern"}
-		assert.False(t, matchComponents(pattern, file))
-	})
-
-	t.Run("Non-empty filepath, empty pattern", func(t *testing.T) {
-		file := []string{"path", "to", "file"}
-		pattern := []string{}
-		assert.False(t, matchComponents(pattern, file))
-	})
-
-	t.Run("Components have matching element", func(t *testing.T) {
-		file := []string{
-			"path",
-			"to",
-			"src",
-			"file",
-		}
-		pattern := []string{"**", "src", "*"}
-		assert.True(t, matchComponents(pattern, file))
-	})
-
-	t.Run("Components have matching elements", func(t *testing.T) {
-		file := []string{
-			"path",
-			"to",
-			"src",
-			"file",
-		}
-		pattern := []string{"**", "src", "file"}
-		assert.True(t, matchComponents(pattern, file))
-	})
-
-	t.Run("Components don't have matching elements", func(t *testing.T) {
-		file := []string{
-			"path",
-			"to",
-			"file.txt",
-		}
-		pattern := []string{"**", "src", "*"}
-		assert.False(t, matchComponents(pattern, file))
-	})
-
-	t.Run("Match with single character placeholders", func(t *testing.T) {
-		file := []string{
-			"path",
-			"to",
-			"src",
-			"file.go",
-		}
-		pattern := []string{"*", "??", "src", "file.??"}
-		assert.True(t, matchComponents(pattern, file))
-	})
-}
-
-func TestMatch(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Exact match", func(t *testing.T) {
-		fileName := "path/to/src/file"
-		pattern := "path/to/src/file"
-		matches, err := match(pattern, fileName)
-		assert.NoError(t, err)
-		assert.True(t, matches)
-	})
-
-	t.Run("Pattern has ** and matches filename", func(t *testing.T) {
-		fileName := "path/to/src/file"
-		pattern := "**/src/file"
-		matches, err := match(pattern, fileName)
-		assert.NoError(t, err)
-		assert.True(t, matches)
-	})
-
-	t.Run("Invalid pattern", func(t *testing.T) {
-		fileName := "path/to/src/file"
-		pattern := "**src/file"
-		_, err := match(pattern, fileName)
-		assert.Error(t, err)
-	})
-
-	t.Run("Different paths to file with the same name", func(t *testing.T) {
-		fileName := "path/to/src/file"
-		pattern := "path/**/file"
-		matches, err := match(pattern, fileName)
-		assert.NoError(t, err)
-		assert.True(t, matches)
-	})
-
-	t.Run("Pattern ends with / at filename end", func(t *testing.T) {
-		fileName := "path/to/src/file.go"
-		pattern := "**/file.go/"
-		matches, err := match(pattern, fileName)
-		assert.NoError(t, err)
-		assert.True(t, matches)
-	})
-
-	t.Run("'*' matches only within a single component", func(t *testing.T) {
-		fileName := "path/to/src/folder/some/files"
-		pattern := "**/src/*"
-		matches, err := match(pattern, fileName)
-		assert.NoError(t, err)
-		assert.False(t, matches)
-	})
-
-	t.Run("'**' matches zero or more components in the complete file name", func(t *testing.T) {
-		fileName := "path/to/src/folder/some/files"
-		pattern := "**/src/**"
-		matches, err := match(pattern, fileName)
-		assert.NoError(t, err)
-		assert.True(t, matches)
-	})
-
-	t.Run("Path doesn't match pattern", func(t *testing.T) {
-		fileName := "path/to/file"
-		pattern := "**/src/*"
-		matches, err := match(pattern, fileName)
-		assert.NoError(t, err)
-		assert.False(t, matches)
-	})
-
-	t.Run("Pattern contains **/**", func(t *testing.T) {
-		fileName := "path/to/src/file"
-		pattern := "path/**/**/file"
-		matches, err := match(pattern, fileName)
-		assert.NoError(t, err)
-		assert.True(t, matches)
-	})
-}
-
 func TestMatchPathAndRule(t *testing.T) {
 	t.Parallel()
 
@@ -630,6 +408,35 @@ func TestMatchPathAndRule(t *testing.T) {
 		include, err := matchPathAndRule(path, ruleId, patterns)
 		assert.NoError(t, err)
 		assert.True(t, include)
+	})
+
+	t.Run("Invalid pattern", func(t *testing.T) {
+		path := "path/to/src/file"
+		ruleId := "rule"
+		patterns := []*Pattern{
+			{
+				sign:        false,
+				filePattern: "path/[",
+				rulePattern: "rule*",
+			},
+		}
+		_, err := matchPathAndRule(path, ruleId, patterns)
+		assert.Error(t, err)
+	})
+
+	t.Run("Empty path", func(t *testing.T) {
+		path := ""
+		ruleId := "rule"
+		patterns := []*Pattern{
+			{
+				sign:        false,
+				filePattern: "*",
+				rulePattern: "rule*",
+			},
+		}
+		include, err := matchPathAndRule(path, ruleId, patterns)
+		assert.NoError(t, err)
+		assert.False(t, include)
 	})
 }
 

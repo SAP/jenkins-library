@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/bmatcuk/doublestar"
 )
 
 type Pattern struct {
@@ -164,90 +164,21 @@ func FilterSarif(sarif map[string]interface{}, patterns []*Pattern) (map[string]
 }
 
 func matchPathAndRule(path string, ruleId string, patterns []*Pattern) (bool, error) {
-	result := true
+	include := true
 	for _, p := range patterns {
-		matchedRule, err := match(p.rulePattern, ruleId)
+		matchedPath, err := doublestar.PathMatch(p.filePattern, path)
 		if err != nil {
 			return false, err
 		}
-		matchedFile, err := match(p.filePattern, path)
+		matchedRule, err := doublestar.Match(p.rulePattern, ruleId)
 		if err != nil {
 			return false, err
 		}
-		if matchedRule && matchedFile {
-			result = p.sign
+		if matchedPath && matchedRule {
+			include = p.sign
 		}
 	}
-	return result, nil
-}
-
-func match(pattern string, fileName string) (bool, error) {
-	re1 := regexp.MustCompile(`[^\x2f\x5c]\*\*`)
-	re2 := regexp.MustCompile(`^\*\*[^/]`)
-	re3 := regexp.MustCompile(`[^\x5c]\*\*[^/]`)
-
-	if re1.MatchString(pattern) || re2.MatchString(pattern) || re3.MatchString(pattern) {
-		return false, fmt.Errorf("`**` in %v not alone between path separators \n", pattern)
-	}
-
-	pattern = strings.TrimSuffix(pattern, "/")
-	fileName = strings.TrimSuffix(fileName, "/")
-	for strings.Contains(pattern, "**/**") {
-		pattern = strings.Replace(pattern, "**/**", "**", -1)
-	}
-
-	splitter := regexp.MustCompile(`[\\/]+`)
-	fileNameComponents := splitter.Split(fileName, -1)
-	patternComponents := strings.Split(pattern, "/")
-
-	return matchComponents(patternComponents, fileNameComponents), nil
-}
-
-func matchComponents(patternComponents []string, fileNameComponents []string) bool {
-	if len(patternComponents) == 0 && len(fileNameComponents) == 0 {
-		return true
-	}
-	if len(patternComponents) == 0 {
-		return false
-	}
-	if len(fileNameComponents) == 0 {
-		return len(patternComponents) == 1 && patternComponents[0] == "**"
-	}
-	if patternComponents[0] == "**" {
-		return matchComponents(patternComponents, fileNameComponents[1:]) ||
-			matchComponents(patternComponents[1:], fileNameComponents)
-	} else {
-		return matchComponent(patternComponents[0], fileNameComponents[0]) &&
-			matchComponents(patternComponents[1:], fileNameComponents[1:])
-	}
-}
-
-func matchComponent(patternComponent string, fileNameComponent string) bool {
-	if len(patternComponent) == 0 && len(fileNameComponent) == 0 {
-		return true
-	}
-	if len(patternComponent) == 0 {
-		return false
-	}
-	if len(fileNameComponent) == 0 {
-		return patternComponent == "*"
-	}
-	if string(patternComponent[0]) == "*" {
-		return matchComponent(patternComponent, fileNameComponent[1:]) ||
-			matchComponent(patternComponent[1:], fileNameComponent)
-	}
-	if string(patternComponent[0]) == "?" {
-		return matchComponent(patternComponent[1:], fileNameComponent[1:])
-	}
-	if string(patternComponent[0]) == "\\" {
-		return len(patternComponent) >= 2 && patternComponent[1] == fileNameComponent[0] &&
-			matchComponent(patternComponent[2:], fileNameComponent[1:])
-	}
-	if patternComponent[0] != fileNameComponent[0] {
-		return false
-	}
-
-	return matchComponent(patternComponent[1:], fileNameComponent[1:])
+	return include, nil
 }
 
 func ReadSarifFile(input string) (map[string]interface{}, error) {
