@@ -37,22 +37,53 @@ func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, tele
 	if err != nil {
 		return err
 	}
-
+	log.Entry().Info("Building Product Modeling (and Resolving potential wildcards)")
 	pvh, err := NewProductVersionHeader(&addonDescriptor, conn)
 	if err != nil {
 		return err
 	}
+	printProductVersionHeader(*pvh)
 
+	log.Entry().Info("Tranfering Product Modeling to AAKaaS to be checked...")
 	if err := pvh.checkAndResolveVersion(conn); err != nil {
 		return err
 	}
+	log.Entry().Info("... success!")
 	pvh.SyncAddonDescriptorVersionFields(&addonDescriptor)
-
+	log.Entry().Info("Resolved Version Fields:")
+	printAddonDescriptorVersionFields(addonDescriptor)
+	log.Entry().Info("Transfering addonDescriptor to commonPipelineEnvironment for usage by following steps of the pipeline")
 	commonPipelineEnvironment.abap.addonDescriptor = string(addonDescriptor.AsJSON())
 
 	publishAddonYaml(config, utils)
-
 	return nil
+}
+
+func printProductVersionHeader(pvh ProductVersionHeader) {
+	logLine30 := "──────────────────────────────"
+	log.Entry().Infof("┌─%-30v─┬─%-30v─┐", logLine30, logLine30)
+	log.Entry().Infof("│ %-30v │ %-30v │", "Product Name", pvh.ProductName)
+	log.Entry().Infof("│ %-30v │ %-30v │", "Product Version", pvh.SemanticProductVersion)
+	log.Entry().Infof("├─%-30v─┼─%-30v─┤", logLine30, logLine30)
+	log.Entry().Infof("│ %-30v │ %-30v │", "Software Component Name", "Software Component Version")
+	log.Entry().Infof("├─%-30v─┼─%-30v─┤", logLine30, logLine30)
+	for _, pvc := range pvh.Content {
+		log.Entry().Infof("│ %-30v │ %-30v │", pvc.SoftwareComponentName, pvc.SemanticSoftwareComponentVersion)
+	}
+	log.Entry().Infof("└─%-30v─┴─%-30v─┘", logLine30, logLine30)
+}
+
+func printAddonDescriptorVersionFields(addonDescriptor abaputils.AddonDescriptor) {
+	logLine30 := "──────────────────────────────"
+	logLine4 := "────"
+	log.Entry().Infof("┌─%-30v─┬─%-4v─┬─%-4v─┬─%-4v─┐", logLine30, logLine4, logLine4, logLine4)
+	log.Entry().Infof("│ %-30v │ %-4v │ %-4v │ %-4v │", "Name", "Vers", "SP", "Pat.")
+	log.Entry().Infof("├─%-30v─┼─%-4v─┼─%-4v─┼─%-4v─┤", logLine30, logLine4, logLine4, logLine4)
+	log.Entry().Infof("│ %-30v │ %-4v │ %-4v │ %-4v │", addonDescriptor.AddonProduct, addonDescriptor.AddonVersion, addonDescriptor.AddonSpsLevel, addonDescriptor.AddonPatchLevel)
+	for _, repo := range addonDescriptor.Repositories {
+		log.Entry().Infof("│ %-30v │ %-4v │ %-4v │ %-4v │", repo.Name, repo.Version, repo.SpLevel, repo.PatchLevel)
+	}
+	log.Entry().Infof("└─%-30v─┴─%-4v─┴─%-4v─┴─%-4v─┘", logLine30, logLine4, logLine4, logLine4)
 }
 
 func publishAddonYaml(config *abapAddonAssemblyKitCheckOptions, utils aakaas.AakUtils) {
@@ -65,6 +96,10 @@ func publishAddonYaml(config *abapAddonAssemblyKitCheckOptions, utils aakaas.Aak
 	}
 }
 
+type jsonProductVersionHeader struct {
+	Pvh *ProductVersionHeader `json:"d"`
+}
+
 type ProductVersionHeader struct {
 	ProductName            string
 	SemanticProductVersion string `json:"SemProductVersion"`
@@ -73,7 +108,12 @@ type ProductVersionHeader struct {
 	PatchLevel             string
 	Vendor                 string
 	VendorType             string
-	Content                []ProductVersionContent //maybe some struct in between see TargetVector???
+	Content                []ProductVersionContent `json:"-"`       //for developer access
+	JsonContent            ProductVersionContents  `json:"Content"` //for json (Un)Marshaling
+}
+
+type ProductVersionContents struct {
+	Content []ProductVersionContent `json:"results"`
 }
 
 type ProductVersionContent struct {
@@ -106,7 +146,7 @@ func NewProductVersionHeader(addonDescriptor *abaputils.AddonDescriptor, conn *a
 		}
 		pvc := ProductVersionContent{
 			ProductName:                      pvh.ProductName,
-			SemanticProductVersion:           pvh.ProductName,
+			SemanticProductVersion:           pvh.SemanticProductVersion,
 			SoftwareComponentName:            componentVersion.Name,
 			SemanticSoftwareComponentVersion: componentVersion.Version,
 		}
@@ -121,28 +161,32 @@ func NewProductVersionHeader(addonDescriptor *abaputils.AddonDescriptor, conn *a
 }
 
 func (pv *ProductVersionHeader) checkAndResolveVersion(conn *abapbuild.Connector) error {
+	pv.JsonContent = ProductVersionContents{
+		Content: pv.Content,
+	}
 	requestJson, err := json.Marshal(pv)
 	if err != nil {
 		return err
 	}
+
 	appendum := "/odata/aas_ocs_package/ProductVersionHeaderSet"
 	responseBody, err := conn.Post(appendum, string(requestJson))
 	if err != nil {
 		return errors.Wrap(err, "Checking Product Modeling in AAkaaS failed")
 	}
-	var resultPv ProductVersionHeader //wrapper struct needed???
+
+	var resultPv jsonProductVersionHeader
 	if err := json.Unmarshal(responseBody, &resultPv); err != nil {
 		return errors.Wrap(err, "Unexpected AAKaaS response for checking Product Modeling "+string(responseBody))
 	}
 
-	pv.ProductVersion = resultPv.ProductVersion
-	pv.Spslevel = resultPv.Spslevel
-	pv.PatchLevel = resultPv.PatchLevel
+	pv.ProductVersion = resultPv.Pvh.ProductVersion
+	pv.Spslevel = resultPv.Pvh.Spslevel
+	pv.PatchLevel = resultPv.Pvh.PatchLevel
 
-	//transfer resolved version fields (and others)
 	for pvc_index, pvc := range pv.Content {
 		foundPvc := ProductVersionContent{}
-		for _, resultPvc := range resultPv.Content {
+		for _, resultPvc := range resultPv.Pvh.JsonContent.Content {
 			if pvc.SoftwareComponentName == resultPvc.SoftwareComponentName && foundPvc.SoftwareComponentName == "" {
 				foundPvc = resultPvc
 			} else if pvc.SoftwareComponentName == resultPvc.SoftwareComponentName {
@@ -157,6 +201,7 @@ func (pv *ProductVersionHeader) checkAndResolveVersion(conn *abapbuild.Connector
 		pv.Content[pvc_index].SoftwareComponentVersion = foundPvc.SoftwareComponentVersion
 	}
 
+	pv.JsonContent = ProductVersionContents{}
 	return nil
 }
 
@@ -167,7 +212,6 @@ func (pv *ProductVersionHeader) SyncAddonDescriptorVersionFields(addonDescriptor
 
 	//in NewPvh function pvh was build up 1:1 based on addonDescriptor
 	//in checkAndResolve pvh was synced from AAKaaS reply assuming it does not contain more content than before(if it does it is ignored)
-	//anyway we are defenisve once more
 	for repo_index, repo := range addonDescriptor.Repositories {
 		foundPvc := ProductVersionContent{}
 		for _, pvc := range pv.Content {
