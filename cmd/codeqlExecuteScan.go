@@ -67,7 +67,7 @@ func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry
 	influx.step_data.fields.codeql = true
 }
 
-func codeqlQuery(cmd []string, codeqlQuery string) []string {
+func appendCodeqlQuery(cmd []string, codeqlQuery string) []string {
 	if len(codeqlQuery) > 0 {
 		cmd = append(cmd, codeqlQuery)
 	}
@@ -189,27 +189,7 @@ func getToken(config *codeqlExecuteScanOptions) (bool, string) {
 }
 
 func uploadResults(config *codeqlExecuteScanOptions, repoInfo codeql.RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
-	cmd := []string{"github", "upload-results", "--sarif=" + filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
-
-	if config.GithubToken != "" {
-		cmd = append(cmd, "-a="+token)
-	}
-
-	if repoInfo.CommitId != "" {
-		cmd = append(cmd, "--commit="+repoInfo.CommitId)
-	}
-
-	if repoInfo.ServerUrl != "" {
-		cmd = append(cmd, "--github-url="+repoInfo.ServerUrl)
-	}
-
-	if repoInfo.Repo != "" {
-		cmd = append(cmd, "--repository="+(repoInfo.Owner+"/"+repoInfo.Repo))
-	}
-
-	if repoInfo.Ref != "" {
-		cmd = append(cmd, "--ref="+repoInfo.Ref)
-	}
+	cmd := prepareCmdForUploadResults(config, &repoInfo, token)
 
 	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
 	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
@@ -275,29 +255,12 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	var reports []piperutils.Path
-	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", ".", "--working-dir", config.ModulePath}
 
-	language := getLangFromBuildTool(config.BuildTool)
-
-	if len(language) == 0 && len(config.Language) == 0 {
-		if config.BuildTool == "custom" {
-			return reports, fmt.Errorf("as the buildTool is custom. please specify the language parameter")
-		} else {
-			return reports, fmt.Errorf("the step could not recognize the specified buildTool %s. please specify valid buildtool", config.BuildTool)
-		}
-	}
-	if len(language) > 0 {
-		cmd = append(cmd, "--language="+language)
-	} else {
-		cmd = append(cmd, "--language="+config.Language)
-	}
-
-	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
-
-	if len(config.BuildCommand) > 0 {
-		buildCmd := config.BuildCommand
-		buildCmd = buildCmd + getMavenSettings(config, utils)
-		cmd = append(cmd, "--command="+buildCmd)
+	dbCreateCustomFlags := codeql.ParseCustomFlags(config.DatabaseCreateFlags)
+	cmd, err := prepareCmdForDatabaseCreate(dbCreateCustomFlags, config, utils)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to prepare command for codeql database create")
+		return reports, err
 	}
 
 	err = execute(utils, cmd, GeneralConfig.Verbose)
@@ -311,28 +274,29 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		return reports, fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	cmd = nil
-	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")), config.Database)
-	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
-	cmd = codeqlQuery(cmd, config.QuerySuite)
+	dbAnalyzeCustomFlags := codeql.ParseCustomFlags(config.DatabaseAnalyzeFlags)
+	cmd, err = prepareCmdForDatabaseAnalyze(dbAnalyzeCustomFlags, config, "sarif-latest", "codeqlReport.sarif")
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to prepare command for codeql database analyze format=sarif-latest")
+		return reports, err
+	}
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database analyze for sarif generation")
 		return reports, err
 	}
-
 	reports = append(reports, piperutils.Path{Target: filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")})
 
-	cmd = nil
-	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", "codeqlReport.csv")), config.Database)
-	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
-	cmd = codeqlQuery(cmd, config.QuerySuite)
+	cmd, err = prepareCmdForDatabaseAnalyze(dbAnalyzeCustomFlags, config, "csv", "codeqlReport.csv")
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to prepare command for codeql database analyze format=csv")
+		return reports, err
+	}
 	err = execute(utils, cmd, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().Error("failed running command codeql database analyze for csv generation")
 		return reports, err
 	}
-
 	reports = append(reports, piperutils.Path{Target: filepath.Join(config.ModulePath, "target", "codeqlReport.csv")})
 
 	repoInfo, err := initGitInfo(config)
@@ -427,6 +391,80 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	return reports, nil
 }
 
+func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) ([]string, error) {
+	cmd := []string{"database", "create", config.Database}
+	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--overwrite", "--no-overwrite"}, []string{"--overwrite"}, customFlags)
+	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--source-root", "-s"}, []string{"--source-root", "."}, customFlags)
+	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--working-dir"}, []string{"--working-dir", config.ModulePath}, customFlags)
+
+	if !codeql.IsFlagSetByUser(customFlags, []string{"--language", "-l"}) {
+		language := getLangFromBuildTool(config.BuildTool)
+		if len(language) == 0 && len(config.Language) == 0 {
+			if config.BuildTool == "custom" {
+				return nil, fmt.Errorf("as the buildTool is custom. please specify the language parameter")
+			} else {
+				return nil, fmt.Errorf("the step could not recognize the specified buildTool %s. please specify valid buildtool", config.BuildTool)
+			}
+		}
+		if len(language) > 0 {
+			cmd = append(cmd, "--language="+language)
+		} else {
+			cmd = append(cmd, "--language="+config.Language)
+		}
+	}
+
+	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
+
+	if len(config.BuildCommand) > 0 && !codeql.IsFlagSetByUser(customFlags, []string{"--command", "-c"}) {
+		buildCmd := config.BuildCommand
+		buildCmd = buildCmd + getMavenSettings(buildCmd, config, utils)
+		cmd = append(cmd, "--command="+buildCmd)
+	}
+
+	if codeql.IsFlagSetByUser(customFlags, []string{"--command", "-c"}) {
+		updateCmdFlag(config, customFlags, utils)
+	}
+	cmd = codeql.AppendCustomFlags(cmd, customFlags)
+
+	return cmd, nil
+}
+
+func prepareCmdForDatabaseAnalyze(customFlags map[string]string, config *codeqlExecuteScanOptions, format, reportName string) ([]string, error) {
+	cmd := []string{"database", "analyze", "--format=" + format, fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", reportName)), config.Database}
+	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
+	cmd = codeql.AppendCustomFlags(cmd, customFlags)
+	cmd = appendCodeqlQuery(cmd, config.QuerySuite)
+	return cmd, nil
+}
+
+func prepareCmdForUploadResults(config *codeqlExecuteScanOptions, repoInfo *codeql.RepoInfo, token string) []string {
+	cmd := []string{"github", "upload-results", "--sarif=" + filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
+
+	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
+	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
+
+	if token != "" {
+		cmd = append(cmd, "-a="+token)
+	}
+
+	if repoInfo.CommitId != "" {
+		cmd = append(cmd, "--commit="+repoInfo.CommitId)
+	}
+
+	if repoInfo.ServerUrl != "" {
+		cmd = append(cmd, "--github-url="+repoInfo.ServerUrl)
+	}
+
+	if repoInfo.Repo != "" && repoInfo.Owner != "" {
+		cmd = append(cmd, "--repository="+(repoInfo.Owner+"/"+repoInfo.Repo))
+	}
+
+	if repoInfo.Ref != "" {
+		cmd = append(cmd, "--ref="+repoInfo.Ref)
+	}
+	return cmd
+}
+
 func addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) {
 	influx.codeql_data.fields.repositoryURL = repoUrl
 	influx.codeql_data.fields.repositoryReferenceURL = repoRef
@@ -445,20 +483,9 @@ func addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite string, scanRes
 	}
 }
 
-func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
-	params := make([]string, 0, 2)
-	if len(config.Threads) > 0 {
-		params = append(params, "--threads="+config.Threads)
-	}
-	if len(config.Ram) > 0 {
-		params = append(params, "--ram="+config.Ram)
-	}
-	return params
-}
-
-func getMavenSettings(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
+func getMavenSettings(buildCmd string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
 	params := ""
-	if len(config.BuildCommand) > 0 && config.BuildTool == "maven" && !strings.Contains(config.BuildCommand, "--global-settings") && !strings.Contains(config.BuildCommand, "--settings") {
+	if len(buildCmd) > 0 && config.BuildTool == "maven" && !strings.Contains(buildCmd, "--global-settings") && !strings.Contains(buildCmd, "--settings") {
 		mvnParams, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
 		if err != nil {
 			log.Entry().Error("failed to download and get maven parameters: ", err)
@@ -469,4 +496,16 @@ func getMavenSettings(config *codeqlExecuteScanOptions, utils codeqlExecuteScanU
 		}
 	}
 	return params
+}
+
+func updateCmdFlag(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) {
+	var buildCmd string
+	if customFlags["--command"] != "" {
+		buildCmd = customFlags["--command"]
+	} else {
+		buildCmd = customFlags["-c"]
+	}
+	buildCmd += getMavenSettings(buildCmd, config, utils)
+	customFlags["--command"] = buildCmd
+	delete(customFlags, "-c")
 }
