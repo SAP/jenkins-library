@@ -52,7 +52,7 @@ func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, tele
 	pvh.SyncAddonDescriptorVersionFields(&addonDescriptor)
 	log.Entry().Info("resolved version fields:")
 	printAddonDescriptorVersionFields(addonDescriptor)
-	log.Entry().Info("transfering addonDescriptor to commonPipelineEnvironment for usage by following steps of the pipeline")
+	log.Entry().Info("transfering addonDescriptor to commonPipelineEnvironment for usage by subsequent steps of the pipeline")
 	commonPipelineEnvironment.abap.addonDescriptor = string(addonDescriptor.AsJSON())
 
 	publishAddonYaml(config, utils)
