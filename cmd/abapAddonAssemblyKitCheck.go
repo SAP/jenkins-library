@@ -104,7 +104,7 @@ type ProductVersionHeader struct {
 	ProductName            string
 	SemanticProductVersion string `json:"SemProductVersion"`
 	ProductVersion         string
-	Spslevel               string
+	SpsLevel               string
 	PatchLevel             string
 	Vendor                 string
 	VendorType             string
@@ -182,7 +182,7 @@ func (pv *ProductVersionHeader) checkAndResolveVersion(conn *abapbuild.Connector
 	}
 
 	pv.ProductVersion = resultPv.Pvh.ProductVersion
-	pv.Spslevel = resultPv.Pvh.Spslevel
+	pv.SpsLevel = resultPv.Pvh.SpsLevel
 	pv.PatchLevel = resultPv.Pvh.PatchLevel
 
 	for pvc_index, pvc := range pv.Content {
@@ -208,7 +208,7 @@ func (pv *ProductVersionHeader) checkAndResolveVersion(conn *abapbuild.Connector
 
 func (pv *ProductVersionHeader) SyncAddonDescriptorVersionFields(addonDescriptor *abaputils.AddonDescriptor) error {
 	addonDescriptor.AddonVersion = pv.ProductVersion
-	addonDescriptor.AddonSpsLevel = pv.Spslevel
+	addonDescriptor.AddonSpsLevel = pv.SpsLevel
 	addonDescriptor.AddonPatchLevel = pv.PatchLevel
 
 	//in NewPvh function pvh was build up 1:1 based on addonDescriptor
