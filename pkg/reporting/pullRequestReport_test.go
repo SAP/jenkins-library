@@ -113,7 +113,7 @@ func TestCreateMarkdownReport(t *testing.T) {
 					ErrorMessage:                   "",
 				},
 			},
-			expectedReport: "\n##  :x: **OSS related checks failed**\n ### :clipboard: Policies violated by added OSS components\n " +
+			expectedReport: "\n :x: **OSS related checks failed**\n :clipboard: Policies violated by added OSS components\n " +
 				"<table>\n <tr><td><b>Component name</b></td><td><b>High Vulnerability Security Issue</b></td><td><b>OutdatedFOSSLibraries</b></td><td><b>" +
 				"Test High Severity Vuln Filter</b></td></tr>\n <tr><td>Chalk 1.1.3 (npmjs:chalk/1.1.3)</td><td>0</td><td>1</td><td>0</td></tr><tr><td>Lodash " +
 				"4.17.10 (npmjs:lodash/4.17.10)</td><td>3</td><td>1</td><td>3</td></tr><tr><td>qs -  QS Querystring 5.2.1 " +
@@ -137,7 +137,7 @@ func TestCreateMarkdownReport(t *testing.T) {
 		{
 			testName:   "No vulnerabilities && successful build",
 			components: &Components{},
-			expectedReport: "\n## :heavy_check_mark: **OSS related checks passed successfully**\n ### :clipboard: OSS related checks executed by Black Duck " +
+			expectedReport: "\n :heavy_check_mark: **OSS related checks passed successfully**\n :clipboard: OSS related checks executed by Black Duck " +
 				"- rapid scan passed successfully.\n" +
 				" <h4><a href=\"https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/runningdetect/rapidscan.html\">" +
 				"RAPID SCAN</a></h4>\n\n\n",
