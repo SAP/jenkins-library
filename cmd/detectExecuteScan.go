@@ -1054,9 +1054,9 @@ func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 
 func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
 
-	// if config.M2Path == "" {
-	// 	config.M2Path = ".m2"
-	// }
+	if config.M2Path == "" {
+		config.M2Path = "/.m2"
+	}
 
 	mtaConfig := mtaBuildOptions{
 		ProjectSettingsFile: config.ProjectSettingsFile,
