@@ -1063,7 +1063,7 @@ func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
 		Platform:            config.MtaPlatform,
-		InstallArtifacts:    false,
+		InstallArtifacts:    true,
 		CreateBOM:           false,
 	}
 
