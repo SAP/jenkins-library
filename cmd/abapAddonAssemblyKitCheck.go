@@ -32,27 +32,27 @@ func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, tele
 		return err
 	}
 
-	log.Entry().Infof("Reading addonDescriptor (aka addon.yml) file: %s", config.AddonDescriptorFileName)
+	log.Entry().Infof("reading addonDescriptor (aka addon.yml) file: %s", config.AddonDescriptorFileName)
 	addonDescriptor, err := utils.ReadAddonDescriptor(config.AddonDescriptorFileName)
 	if err != nil {
 		return err
 	}
-	log.Entry().Info("Building Product Modeling (and Resolving potential wildcards)")
+	log.Entry().Info("building product modeling (and resolving potential wildcards)")
 	pvh, err := NewProductVersionHeader(&addonDescriptor, conn)
 	if err != nil {
 		return err
 	}
 	printProductVersionHeader(*pvh)
 
-	log.Entry().Info("Calling AAKaaS to be check product Modelling...")
+	log.Entry().Info("calling AAKaaS to check product modelling...")
 	if err := pvh.checkAndResolveVersion(conn); err != nil {
 		return err
 	}
 	log.Entry().Info("... success!")
 	pvh.SyncAddonDescriptorVersionFields(&addonDescriptor)
-	log.Entry().Info("Resolved Version Fields:")
+	log.Entry().Info("resolved version fields:")
 	printAddonDescriptorVersionFields(addonDescriptor)
-	log.Entry().Info("Transfering addonDescriptor to commonPipelineEnvironment for usage by following steps of the pipeline")
+	log.Entry().Info("transfering addonDescriptor to commonPipelineEnvironment for usage by following steps of the pipeline")
 	commonPipelineEnvironment.abap.addonDescriptor = string(addonDescriptor.AsJSON())
 
 	publishAddonYaml(config, utils)
@@ -88,9 +88,9 @@ func printAddonDescriptorVersionFields(addonDescriptor abaputils.AddonDescriptor
 
 func publishAddonYaml(config *abapAddonAssemblyKitCheckOptions, utils aakaas.AakUtils) {
 	var filesToPublish []piperutils.Path
-	log.Entry().Infof("Add %s to be published", config.AddonDescriptorFileName)
+	log.Entry().Infof("adding %s to be published", config.AddonDescriptorFileName)
 	filesToPublish = append(filesToPublish, piperutils.Path{Target: config.AddonDescriptorFileName, Name: "AddonDescriptor", Mandatory: true})
-	log.Entry().Infof("Publishing %v files", len(filesToPublish))
+	log.Entry().Infof("publishing %v files", len(filesToPublish))
 	if err := piperutils.PersistReportsAndLinks("abapAddonAssemblyKitCheckPV", "", utils, filesToPublish, nil); err != nil {
 		log.Entry().WithError(err).Error("failed to persist report information")
 	}
