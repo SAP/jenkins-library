@@ -37,7 +37,7 @@ func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, tele
 	if err != nil {
 		return err
 	}
-	log.Entry().Info("building product modeling (and resolving potential wildcards)")
+	log.Entry().Info("building product modelling (and resolving potential wildcards)")
 	pvh, err := NewProductVersionHeader(&addonDescriptor, conn)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, tele
 	pvh.SyncAddonDescriptorVersionFields(&addonDescriptor)
 	log.Entry().Info("resolved version fields:")
 	printAddonDescriptorVersionFields(addonDescriptor)
-	log.Entry().Info("transfering addonDescriptor to commonPipelineEnvironment for usage by subsequent steps of the pipeline")
+	log.Entry().Info("transferring addonDescriptor to commonPipelineEnvironment for usage by subsequent steps of the pipeline")
 	commonPipelineEnvironment.abap.addonDescriptor = string(addonDescriptor.AsJSON())
 
 	publishAddonYaml(config, utils)
