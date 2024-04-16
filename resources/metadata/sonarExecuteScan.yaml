@@ -151,7 +151,8 @@ spec:
             deprecated: true
       - name: waitForQualityGate
         type: bool
-        description: "Whether the scan should wait for and consider the result of the quality gate."
+        description: "Whether the scan should wait for and consider the result of the quality gate. if the quality gate fails, then the step and the pipeline will fail"
+        default: true
         scope:
           - PARAMETERS
           - STAGES
