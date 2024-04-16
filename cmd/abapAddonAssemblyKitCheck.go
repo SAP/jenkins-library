@@ -44,7 +44,7 @@ func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, tele
 	}
 	printProductVersionHeader(*pvh)
 
-	log.Entry().Info("Tranfering Product Modeling to AAKaaS to be checked...")
+	log.Entry().Info("Calling AAKaaS to be check product Modelling...")
 	if err := pvh.checkAndResolveVersion(conn); err != nil {
 		return err
 	}
@@ -161,6 +161,7 @@ func NewProductVersionHeader(addonDescriptor *abaputils.AddonDescriptor, conn *a
 }
 
 func (pv *ProductVersionHeader) checkAndResolveVersion(conn *abapbuild.Connector) error {
+	conn.GetToken("/odata/aas_ocs_package")
 	pv.JsonContent = ProductVersionContents{
 		Content: pv.Content,
 	}
