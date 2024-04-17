@@ -592,7 +592,7 @@ func sonarExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.8", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:5.0", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
