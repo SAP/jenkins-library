@@ -92,6 +92,7 @@ var GeneralConfig GeneralConfigOptions
 func Execute() {
 	log.Entry().Infof("Version %s", GitCommit)
 
+	rootCmd.AddCommand(GcpPublishEventCommand())
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(DefaultsCommand())
