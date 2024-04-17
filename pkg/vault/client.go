@@ -34,6 +34,12 @@ type logicalClient interface {
 	Write(string, map[string]interface{}) (*api.Secret, error)
 }
 
+type VaultCredentials struct {
+	AppRoleID       string
+	AppRoleSecretID string
+	VaultToken      string
+}
+
 // NewClient instantiates a Client and sets the specified token
 func NewClient(config *Config, token string) (Client, error) {
 	if config == nil {
@@ -405,4 +411,11 @@ func (v *Client) lookupSecretID(secretID, appRolePath string) (map[string]interf
 	}
 
 	return secret.Data, nil
+}
+
+func (v Client) TestFunction() (string, error) {
+
+	fmt.Printf("test123")
+
+	return "", nil
 }
