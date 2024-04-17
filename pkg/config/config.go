@@ -31,6 +31,7 @@ type Config struct {
 	accessTokens     map[string]string
 	openFile         func(s string, t map[string]string) (io.ReadCloser, error)
 	vaultCredentials VaultCredentials
+	vaultClient      vaultClient
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -257,15 +258,19 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// fetch secrets from vault
-		vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
+		vaultClient, err := GetVaultClientFromConfig(stepConfig, c.vaultCredentials)
+		stepConfig.Config.vaultClient = vaultClient
 		if err != nil {
 			return StepConfig{}, err
 		}
 		if vaultClient != nil {
+			roleID :=stepConfig.HookConfig["oidc"].(map[string]interface{})["roleID"].(string)
+			vaultClient.GetOidcToken(roleID)
 			defer vaultClient.MustRevokeToken()
 			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
 			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
+			//vaultClient.GetOidcToken(StepConfig.HookConfig.oidc)
 		}
 	}
 

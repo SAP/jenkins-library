@@ -2,10 +2,12 @@ package vault
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -405,4 +407,89 @@ func (v *Client) lookupSecretID(secretID, appRolePath string) (map[string]interf
 	}
 
 	return secret.Data, nil
+}
+
+func (v Client) GetOidcToken(roleID string) (string,error){
+	oidcPath := sanitizePath(path.Join("identity/oidc/token/",roleID))
+	c := v.lClient;
+	jwt, err := c.Read(oidcPath)
+	if err != nil {
+		return 	"", err
+	}
+	// assignt to a env
+	PIPER_OIDCIdentityToken := jwt.Data["token"].(string)
+	os.Setenv("PIPER_OIDCIdentityToken", PIPER_OIDCIdentityToken)
+	return PIPER_OIDCIdentityToken, nil
+}
+
+func getJWTTokenPayload(token string) ([]byte, error){
+	// Split the token into parts by "."
+	parts := strings.Split(token, ".")
+	if len(parts) >= 2 {
+		// Decode the payload part
+		substr := parts[1]
+		decodedBytes, err := base64.RawStdEncoding.DecodeString(substr)
+		if err != nil {
+			fmt.Println("Error decoding base64:", err)
+			return nil,err
+		}
+		return decodedBytes, nil;
+	} else {
+		return nil, fmt.Errorf("Not a valid JWT token")
+	}
+}
+
+// JwtPayload struct
+type JwtPayload struct {	
+	Expire int64 `json:"exp"`
+}
+
+
+func validateOidcToken(token string) bool{
+	//validate the token
+	playoad, err:=getJWTTokenPayload(token)
+	if err != nil {
+		fmt.Println("Error decoding token:", err)
+		return false
+	}
+	var jwtPayload JwtPayload
+	err = json.Unmarshal(playoad, &jwtPayload)
+	if err != nil {
+		fmt.Println("Error decoding token:", err)
+		return false
+	}
+	// Convert the given timestamp to time.Time
+	ExpireTime := time.Unix(jwtPayload.Expire, 0)
+	fmt.Println("ExpireTime: ", ExpireTime)
+ 
+	// Get the current time
+	currentTime := time.Now()
+	fmt.Println("CurrentTime: ", currentTime)
+ 
+	// Check if the token is expired
+	return ExpireTime.Before(currentTime)
+}
+
+// public func to access the token, to validate it and if token is expired then get a new token or result same token
+func GetOidcTokenByValidation(vaultCredentials VaultCredentials, roleID string) (string,error){
+	// Get the vault client
+	
+	token :=os.Getenv("PIPER_OIDCIdentityToken")
+	if validateOidcToken(token){
+		return token, nil
+	}
+	if vaultCredentials.Token != "" {
+	vaultClient ,err = NewClient(vaultCredentials.Config, vaultCredentials.Token)
+	if err != nil {
+		return "", err
+	}
+	}
+	 token, err :=v.GetOidcToken("temp")
+	 if token == "" || err != nil {
+		 log.Entry().Error("Failed to get OIDC token")
+		 return "", err
+	 }
+
+	 return token, nil
+	
 }
