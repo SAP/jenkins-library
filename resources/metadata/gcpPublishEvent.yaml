@@ -1,0 +1,64 @@
+metadata:
+  name: gcpPublishEvent
+  description:
+  longDescription:
+spec:
+  inputs:
+    params:
+      - name: OIDCToken
+        description:
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: gcpProjectNumber
+        description:
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: gcpWorkloadIdentityPool
+        description: A workload identity pool is an entity that lets you manage external identities.
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: gcpWorkloadIdentityPoolProvider
+        description: A workload identity pool provider is an entity that describes a relationship between Google Cloud and your IdP.
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: topic
+        description: The pubsub topic to which the message is published.
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: type
+        description:
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+
+      # - name: name
+      #   description:
+      #   type: "string"
+      #   scope:
+      #     - PARAMETERS
+      #     - STAGES
+      #     - STEPS
+      # - name: source
+      #   description:
+      #   type: "string"
+      #   scope:
+      #     - PARAMETERS
+      #     - STAGES
+      #     - STEPS
