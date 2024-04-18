@@ -11,17 +11,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var con ConnectionDetailsHTTP
-var repo Repository
+var conTest0948 ConnectionDetailsHTTP
+var repoTest0948 Repository
 
 func init() {
 
-	con.User = "CC_USER"
-	con.Password = "123abc"
-	con.URL = "https://example.com"
+	conTest0948.User = "CC_USER"
+	conTest0948.Password = "123abc"
+	conTest0948.URL = "https://example.com"
 
-	repo.Name = "/DMO/REPO"
-	repo.Branch = "main"
+	repoTest0948.Name = "/DMO/REPO"
+	repoTest0948.Branch = "main"
 
 }
 
