@@ -124,6 +124,7 @@ func Execute() {
 	rootCmd.AddCommand(CheckmarxOneExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(CodeqlExecuteScanCommand())
+	rootCmd.AddCommand(ContrastExecuteScanCommand())
 	rootCmd.AddCommand(CredentialdiggerScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -25,14 +24,6 @@ type CodeqlFindings struct {
 	ClassificationName string `json:"classificationName"`
 	Total              int    `json:"total"`
 	Audited            int    `json:"audited"`
-}
-
-type RepoInfo struct {
-	ServerUrl string
-	Repo      string
-	CommitId  string
-	Ref       string
-	Owner     string
 }
 
 func WriteJSONReport(jsonReport CodeqlAudit, modulePath string) ([]piperutils.Path, error) {
@@ -56,22 +47,8 @@ func WriteJSONReport(jsonReport CodeqlAudit, modulePath string) ([]piperutils.Pa
 	return reportPaths, nil
 }
 
-func BuildRepoReference(repository, analyzedRef string) (string, error) {
-	ref := strings.Split(analyzedRef, "/")
-	if len(ref) < 3 {
-		return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
-	}
-	if strings.Contains(analyzedRef, "pull") {
-		if len(ref) < 4 {
-			return "", errors.New(fmt.Sprintf("Wrong analyzedRef format: %s", analyzedRef))
-		}
-		return fmt.Sprintf("%s/pull/%s", repository, ref[2]), nil
-	}
-	return fmt.Sprintf("%s/tree/%s", repository, ref[2]), nil
-}
-
-func CreateAndPersistToolRecord(utils piperutils.FileUtils, repoInfo RepoInfo, repoReference, repoUrl, modulePath string) (string, error) {
-	toolRecord, err := createToolRecordCodeql(utils, repoInfo, repoReference, repoUrl, modulePath)
+func CreateAndPersistToolRecord(utils piperutils.FileUtils, repoInfo *RepoInfo, modulePath string) (string, error) {
+	toolRecord, err := createToolRecordCodeql(utils, repoInfo, modulePath)
 	if err != nil {
 		return "", err
 	}
@@ -84,7 +61,7 @@ func CreateAndPersistToolRecord(utils piperutils.FileUtils, repoInfo RepoInfo, r
 	return toolRecordFileName, nil
 }
 
-func createToolRecordCodeql(utils piperutils.FileUtils, repoInfo RepoInfo, repoUrl, repoReference, modulePath string) (*toolrecord.Toolrecord, error) {
+func createToolRecordCodeql(utils piperutils.FileUtils, repoInfo *RepoInfo, modulePath string) (*toolrecord.Toolrecord, error) {
 	record := toolrecord.New(utils, modulePath, "codeql", repoInfo.ServerUrl)
 
 	if repoInfo.ServerUrl == "" {
@@ -95,33 +72,33 @@ func createToolRecordCodeql(utils piperutils.FileUtils, repoInfo RepoInfo, repoU
 		return record, errors.New("CommitId not set")
 	}
 
-	if repoInfo.Ref == "" {
+	if repoInfo.AnalyzedRef == "" {
 		return record, errors.New("Analyzed Reference not set")
 	}
 
-	record.DisplayName = fmt.Sprintf("%s %s - %s %s", repoInfo.Owner, repoInfo.Repo, repoInfo.Ref, repoInfo.CommitId)
-	record.DisplayURL = fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
+	record.DisplayName = fmt.Sprintf("%s %s - %s %s", repoInfo.Owner, repoInfo.Repo, repoInfo.AnalyzedRef, repoInfo.CommitId)
+	record.DisplayURL = repoInfo.ScanUrl
 
 	err := record.AddKeyData("repository",
 		fmt.Sprintf("%s/%s", repoInfo.Owner, repoInfo.Repo),
 		fmt.Sprintf("%s %s", repoInfo.Owner, repoInfo.Repo),
-		repoUrl)
+		repoInfo.FullUrl)
 	if err != nil {
 		return record, err
 	}
 
 	err = record.AddKeyData("repositoryReference",
-		repoInfo.Ref,
-		fmt.Sprintf("%s - %s", repoInfo.Repo, repoInfo.Ref),
-		repoReference)
+		repoInfo.AnalyzedRef,
+		fmt.Sprintf("%s - %s", repoInfo.Repo, repoInfo.AnalyzedRef),
+		repoInfo.FullRef)
 	if err != nil {
 		return record, err
 	}
 
 	err = record.AddKeyData("scanResult",
-		fmt.Sprintf("%s/%s", repoInfo.Ref, repoInfo.CommitId),
-		fmt.Sprintf("%s %s - %s %s", repoInfo.Owner, repoInfo.Repo, repoInfo.Ref, repoInfo.CommitId),
-		fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref))
+		fmt.Sprintf("%s/%s", repoInfo.AnalyzedRef, repoInfo.CommitId),
+		fmt.Sprintf("%s %s - %s %s", repoInfo.Owner, repoInfo.Repo, repoInfo.AnalyzedRef, repoInfo.CommitId),
+		repoInfo.ScanUrl)
 	if err != nil {
 		return record, err
 	}

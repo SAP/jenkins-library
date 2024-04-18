@@ -184,7 +184,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "gradle.resolveDependencies", Value: true, Force: true},
 			{Name: "gradle.ignoreSourceFiles", Value: true, Force: true},
-			{Name: "gradle.aggregateModules", Value: false, Force: true},
+			{Name: "gradle.aggregateModules", Value: false, Force: false},
 			{Name: "gradle.runAssembleCommand", Value: true},
 			{Name: "gradle.runPreStep", Value: true},
 			{Name: "gradle.preferredEnvironment", Value: "wrapper"},
