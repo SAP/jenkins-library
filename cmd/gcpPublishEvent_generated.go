@@ -21,7 +21,7 @@ type gcpPublishEventOptions struct {
 	GcpWorkloadIDentityPool         string `json:"gcpWorkloadIdentityPool,omitempty"`
 	GcpWorkloadIDentityPoolProvider string `json:"gcpWorkloadIdentityPoolProvider,omitempty"`
 	Topic                           string `json:"topic,omitempty"`
-	Type                            string `json:"type,omitempty"`
+	Type                            string `json:"type,omitempty" validate:"possible-values=PipelineRunStarted PipelineRunFinished"`
 }
 
 // GcpPublishEventCommand
