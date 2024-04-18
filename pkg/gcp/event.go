@@ -56,5 +56,7 @@ func Publish(projectNumber string, topic string, token string, data []byte) erro
 		return fmt.Errorf("invalid status code: %v", response.StatusCode)
 	}
 
+	//TODO: read response & messageIds
+
 	return nil
 }
