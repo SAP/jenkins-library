@@ -416,12 +416,12 @@ func (v *Client) lookupSecretID(secretID, appRolePath string) (map[string]interf
 }
 
 // GetOidcToken returns the genrated oidc token and set the token in the env
-func (v Client) getOidcToken(roleID string) (string,error){
-	oidcPath := sanitizePath(path.Join("identity/oidc/token/",roleID))
-	c := v.lClient;
+func (v Client) getOidcToken(roleID string) (string, error) {
+	oidcPath := sanitizePath(path.Join("identity/oidc/token/", roleID))
+	c := v.lClient
 	jwt, err := c.Read(oidcPath)
 	if err != nil {
-		return 	"", err
+		return "", err
 	}
 	// Set the OIDC token in the env
 	PIPER_OIDCIdentityToken := jwt.Data["token"].(string)
@@ -430,7 +430,7 @@ func (v Client) getOidcToken(roleID string) (string,error){
 }
 
 // getJWTTokenPayload returns the payload of the JWT token using base64 decoding
-func getJWTTokenPayload(token string) ([]byte, error){
+func getJWTTokenPayload(token string) ([]byte, error) {
 	// Split the token into parts by "."
 	parts := strings.Split(token, ".")
 	if len(parts) >= 2 {
@@ -439,23 +439,23 @@ func getJWTTokenPayload(token string) ([]byte, error){
 		decodedBytes, err := base64.RawStdEncoding.DecodeString(substr)
 		if err != nil {
 			fmt.Println("Error decoding base64:", err)
-			return nil,err
+			return nil, err
 		}
-		return decodedBytes, nil;
+		return decodedBytes, nil
 	} else {
 		return nil, fmt.Errorf("Not a valid JWT token")
 	}
 }
 
 // JwtPayload struct
-type JwtPayload struct {	
+type JwtPayload struct {
 	Expire int64 `json:"exp"`
 }
 
 // validateOidcToken validate the oidc token and return true if the token is expired
-func validateOidcToken(token string) bool{
+func validateOidcToken(token string) bool {
 	// Get the payload of the token
-	playoad, err:=getJWTTokenPayload(token)
+	playoad, err := getJWTTokenPayload(token)
 	if err != nil {
 		fmt.Println("Error decoding token:", err)
 		return false
@@ -469,29 +469,29 @@ func validateOidcToken(token string) bool{
 	}
 	// Convert the given timestamp to time.Time
 	ExpireTime := time.Unix(jwtPayload.Expire, 0)
- 
+
 	// Get the current time
 	currentTime := time.Now()
- 
+
 	// Check if the token is expired
 	return ExpireTime.Before(currentTime)
 }
 
 // GetOidcTokenByValidation pubic function to returns the token if token is expired then get a new token else return old token
-func (v Client) GetOidcTokenByValidation(roleID string) (string,error){
+func (v Client) GetOidcTokenByValidation(roleID string) (string, error) {
 	// Get the oidc token from env
-	token :=os.Getenv("PIPER_OIDCIdentityToken")
-	if (token != ""){
+	token := os.Getenv("PIPER_OIDCIdentityToken")
+	if token != "" {
 		// validate the token and return if it is not expired
-		if validateOidcToken(token){
+		if validateOidcToken(token) {
 			return token, nil
 		}
 	}
 	// Regenerate a new oidc token if the token is expired
-	token,err := v.getOidcToken(roleID)
-	 if token == "" || err != nil {
-		 log.Entry().Error("Failed to get OIDC token")
-		 return "", err
-	 }
-	 return token, nil
+	token, err := v.getOidcToken(roleID)
+	if token == "" || err != nil {
+		log.Entry().Error("Failed to get OIDC token")
+		return "", err
+	}
+	return token, nil
 }

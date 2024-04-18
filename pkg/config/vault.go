@@ -79,7 +79,7 @@ type VaultCredentials struct {
 type vaultClient interface {
 	GetKvSecret(string) (map[string]string, error)
 	MustRevokeToken()
-	GetOidcTokenByValidation(string) (string,error)
+	GetOidcTokenByValidation(string) (string, error)
 }
 
 func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {

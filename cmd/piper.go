@@ -76,6 +76,7 @@ type SplunkConfiguration struct {
 type PendoConfiguration struct {
 	Token string `json:"token,omitempty"`
 }
+
 // OidcConfiguration defines the configuration options for the OpenID Connect authentication system
 type OidcConfiguration struct {
 	RoleID string `json:",roleID,omitempty"`
