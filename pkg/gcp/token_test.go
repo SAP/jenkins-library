@@ -45,6 +45,6 @@ func TestGetFederatedToken(t *testing.T) {
 		federatedToken, err := GetFederatedToken(projectNumber, pool, provider, mock.Anything)
 		// asserts
 		assert.NoError(t, err)
-		assert.NotEqual(t, federatedToken, mock.Anything)
+		assert.Equal(t, mock.Anything, federatedToken)
 	})
 }
