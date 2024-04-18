@@ -79,6 +79,7 @@ type VaultCredentials struct {
 type vaultClient interface {
 	GetKvSecret(string) (map[string]string, error)
 	MustRevokeToken()
+	GetOidcTokenByValidation(string) (string, error)
 }
 
 func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
@@ -91,7 +92,7 @@ func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...ma
 	}
 }
 
-func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
+func GetVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
 	address, addressOk := config.Config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
 	if !addressOk || creds.VaultToken == "" && (creds.AppRoleID == "" || creds.AppRoleSecretID == "") {
