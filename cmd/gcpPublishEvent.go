@@ -1,9 +1,15 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/cloudevents/sdk-go/v2/event"
+
 	"github.com/pkg/errors"
 )
 
@@ -14,20 +20,32 @@ func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.Cus
 	}
 }
 
-func runGcpPublishEvent(config *gcpPublishEventOptions, telemetryData *telemetry.CustomData) error {
-	// cdevents.NewCDEvent("")
-	// create event
-	// pipelineID := ""
-	// pipelineURL := ""
-	// pipelineName := ""
-	// pipelineSource := ""
+func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData) error {
+	provider, _ := orchestrator.GetOrchestratorConfigProvider(nil)
 
-	// create event data
-	data := []byte{}
-	// data, err := events.CreatePipelineRunStartedCDEventAsBytes(pipelineID, pipelineName, pipelineSource, pipelineURL)
-	// if err != nil {
-	// 	return errors.Wrap(err, "failed to create event data")
-	// }
+	var data []byte
+	var err error
+
+	switch config.Type {
+	case string(events.PipelineRunStartedEventType):
+		data, err = events.ToByteArray(event.EventContextV1{}, events.PipelineRunStartedEventData{
+			URL:           provider.BuildURL(),
+			CommitId:      provider.CommitSHA(),
+			RepositoryURL: provider.RepoURL(),
+		})
+	case string(events.PipelineRunFinishedEventType):
+		data, err = events.ToByteArray(event.EventContextV1{}, events.PipelineRunFinishedEventData{
+			URL:           provider.BuildURL(),
+			CommitId:      provider.CommitSHA(),
+			RepositoryURL: provider.RepoURL(),
+			Outcome:       provider.BuildStatus(),
+		})
+	default:
+		return fmt.Errorf("event type %s not supported", config.Type)
+	}
+	if err != nil {
+		return errors.Wrap(err, "failed to create event data")
+	}
 
 	// get federated token
 	token, err := gcp.GetFederatedToken(config.GcpProjectNumber, config.GcpWorkloadIDentityPool, config.GcpWorkloadIDentityPoolProvider, config.OIDCToken)
