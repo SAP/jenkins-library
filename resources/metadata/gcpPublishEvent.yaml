@@ -43,6 +43,9 @@ spec:
       - name: type
         description:
         type: "string"
+        possibleValues:
+          - PipelineRunStarted
+          - PipelineRunFinished
         scope:
           - PARAMETERS
           - STAGES
