@@ -50,7 +50,22 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-
+      - name: vaultNamespace
+        type: "string"
+        description:
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: vaultServerUrl
+        type: "string"
+        description:
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       # - name: name
       #   description:
       #   type: "string"

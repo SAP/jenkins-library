@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	piperConfig "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -47,8 +48,13 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 		return errors.Wrap(err, "failed to create event data")
 	}
 
+	oidcToken, err := getOidcToken(config)
+	if err != nil {
+		return errors.Wrap(err, "failed to get OIDC token")
+	}
+
 	// get federated token
-	token, err := gcp.GetFederatedToken(config.GcpProjectNumber, config.GcpWorkloadIDentityPool, config.GcpWorkloadIDentityPoolProvider, config.OIDCToken)
+	token, err := gcp.GetFederatedToken(config.GcpProjectNumber, config.GcpWorkloadIDentityPool, config.GcpWorkloadIDentityPoolProvider, oidcToken)
 	if err != nil {
 		return errors.Wrap(err, "failed to get federated token")
 	}
@@ -59,5 +65,36 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 		return errors.Wrap(err, "failed to publish event")
 	}
 
+	log.Entry().Info("event published successfully!")
+
 	return nil
+}
+
+func getOidcToken(config *gcpPublishEventOptions) (string, error) {
+	vaultCreds := piperConfig.VaultCredentials{
+		AppRoleID:       GeneralConfig.VaultRoleID,
+		AppRoleSecretID: GeneralConfig.VaultRoleSecretID,
+		VaultToken:      GeneralConfig.VaultToken,
+	}
+	// GeneralConfig VaultServerURL and VaultNamespace are empty swicthing to stepConfig
+	var vaultConfig = map[string]interface{}{
+		"vaultServerUrl": config.VaultServerURL,
+		"vaultNamespace": config.VaultNamespace,
+	}
+
+	stepConfig := piperConfig.StepConfig{
+		Config: vaultConfig,
+	}
+	// Generating vault client
+	vaultClient, err := piperConfig.GetVaultClientFromConfig(stepConfig, vaultCreds)
+	if err != nil {
+		return "", errors.Wrap(err, "getting vault client failed")
+	}
+	// Getting oidc token and setting it in environment variable
+	token, err := vaultClient.GetOidcTokenByValidation(GeneralConfig.HookConfig.OidcConfig.RoleID)
+	if err != nil {
+		return "", errors.Wrap(err, "getting oidc token failed")
+	}
+
+	return token, nil
 }

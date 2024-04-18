@@ -22,6 +22,8 @@ type gcpPublishEventOptions struct {
 	GcpWorkloadIDentityPoolProvider string `json:"gcpWorkloadIdentityPoolProvider,omitempty"`
 	Topic                           string `json:"topic,omitempty"`
 	Type                            string `json:"type,omitempty" validate:"possible-values=PipelineRunStarted PipelineRunFinished"`
+	VaultNamespace                  string `json:"vaultNamespace,omitempty"`
+	VaultServerURL                  string `json:"vaultServerUrl,omitempty"`
 }
 
 // GcpPublishEventCommand
@@ -129,6 +131,8 @@ func addGcpPublishEventFlags(cmd *cobra.Command, stepConfig *gcpPublishEventOpti
 	cmd.Flags().StringVar(&stepConfig.GcpWorkloadIDentityPoolProvider, "gcpWorkloadIdentityPoolProvider", os.Getenv("PIPER_gcpWorkloadIdentityPoolProvider"), "A workload identity pool provider is an entity that describes a relationship between Google Cloud and your IdP.")
 	cmd.Flags().StringVar(&stepConfig.Topic, "topic", os.Getenv("PIPER_topic"), "The pubsub topic to which the message is published.")
 	cmd.Flags().StringVar(&stepConfig.Type, "type", os.Getenv("PIPER_type"), "")
+	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "")
+	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "")
 
 }
 
@@ -196,6 +200,24 @@ func gcpPublishEventMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_type"),
+					},
+					{
+						Name:        "vaultNamespace",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultNamespace"),
+					},
+					{
+						Name:        "vaultServerUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultServerUrl"),
 					},
 				},
 			},
