@@ -1,0 +1,123 @@
+metadata:
+  name: contrastExecuteScan
+  description: This step evaluates if the audit requirements for Contrast Assess have been fulfilled.
+  longDescription: |-
+    This step evaluates if the audit requirements for Contrast Assess have been fulfilled after the execution of security tests by Contrast Assess. For further information on the tool, please consult the [documentation](https://github.wdf.sap.corp/pages/Security-Testing/doc/contrast/introduction/).
+spec:
+  inputs:
+    secrets:
+      - name: userCredentialsId
+        description: "Jenkins 'Username with password' credentials ID containing username (email) and service key to communicate with the Contrast server."
+        type: jenkins
+      - name: apiKeyCredentialsId
+        description: "Jenkins 'Secret text' credentials ID containing user API key to communicate with the Contrast server."
+        type: jenkins
+    resources:
+      - name: buildDescriptor
+        type: stash
+      - name: tests
+        type: stash
+    params:
+      - name: userApiKey
+        description: "User API key for authorization access to Contrast Assess."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        mandatory: true
+        resourceRef:
+          - name: apiKeyCredentialsId
+            type: secret
+          - type: vaultSecret
+            default: contrast
+            name: contrastVaultSecretName
+      - name: serviceKey
+        description: "User Service Key for authorization access to Contrast Assess."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        mandatory: true
+        aliases:
+          - name: service_key
+        resourceRef:
+          - name: userCredentialsId
+            type: secret
+            param: serviceKey
+          - type: vaultSecret
+            default: contrast
+            name: contrastVaultSecretName
+      - name: username
+        description: "Email to use for authorization access to Contrast Assess."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        mandatory: true
+        resourceRef:
+          - name: userCredentialsId
+            type: secret
+            param: username
+          - type: vaultSecret
+            default: contrast
+            name: contrastVaultSecretName
+      - name: server
+        type: string
+        description: "The URL of the Contrast Assess Team server."
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: organizationId
+        type: string
+        description: "Organization UUID. It's the first UUID in most navigation URLs."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: applicationId
+        type: string
+        description: "Application UUID. It's the Last UUID of application View URL"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: vulnerabilityThresholdTotal
+        description: "Threshold for maximum number of allowed vulnerabilities."
+        type: int
+        default: 0
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: checkForCompliance
+        description: "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
+        type: bool
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - image: ""
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/toolrun_contrast_*.json"
+            type: contrast
+          - filePattern: "**/piper_contrast_report.json"
+            type: contrast

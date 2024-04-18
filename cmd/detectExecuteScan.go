@@ -14,6 +14,7 @@ import (
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/golang"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -29,6 +30,8 @@ import (
 	"github.com/google/go-github/v45/github"
 	"github.com/pkg/errors"
 )
+
+const NO_VERSION_SUFFIX = ""
 
 type detectUtils interface {
 	piperutils.FileUtils
@@ -47,6 +50,7 @@ type detectUtils interface {
 	GetIssueService() *github.IssuesService
 	GetSearchService() *github.SearchService
 	GetProvider() orchestrator.ConfigProvider
+	GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download
 }
 
 type detectUtilsBundle struct {
@@ -68,6 +72,13 @@ func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 
 func (d *detectUtilsBundle) GetProvider() orchestrator.ConfigProvider {
 	return d.provider
+}
+
+func (d *detectUtilsBundle) GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download {
+	client := &piperDocker.Client{}
+	client.SetOptions(options)
+
+	return client
 }
 
 type blackduckSystem struct {
@@ -140,8 +151,11 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 
-	// Log config for debug purpose
-	logConfigInVerboseMode(config)
+	// Log config and workspace content for debug purpose
+	if log.IsVerbose() {
+		logConfigInVerboseMode(config)
+		logWorkspaceContent()
+	}
 
 	if config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
 		//configuring go private packages
@@ -202,7 +216,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	blackduckSystem := newBlackduckSystem(config)
 
 	args := []string{"./detect.sh"}
-	args, err = addDetectArgs(args, config, utils, blackduckSystem)
+	args, err = addDetectArgs(args, config, utils, blackduckSystem, NO_VERSION_SUFFIX, NO_VERSION_SUFFIX)
 	if err != nil {
 		return err
 	}
@@ -214,7 +228,18 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	err = utils.RunShell("/bin/bash", script)
+	err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
+	if config.ScanContainerDistro != "" {
+		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
+		if imageError != nil {
+			if err != nil {
+				err = errors.Wrapf(err, "error during scanning images: %q", imageError.Error())
+			} else {
+				err = imageError
+			}
+		}
+	}
+
 	reportingErr := postScanChecksAndReporting(ctx, config, influx, utils, blackduckSystem)
 	if reportingErr != nil {
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
@@ -227,6 +252,17 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 			log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
 		}
 	}
+	// create Toolrecord file
+	toolRecordFileName, toolRecordErr := createToolRecordDetect(utils, "./", config, blackduckSystem)
+	if toolRecordErr != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
+	}
+
+	return err
+}
+
+func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtils) error {
 	if err != nil {
 		// Setting error category based on exit code
 		mapErrorCategory(utils.GetExitCode())
@@ -238,13 +274,47 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 			err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
 		}
 	}
-	// create Toolrecord file
-	toolRecordFileName, toolRecordErr := createToolRecordDetect(utils, "./", config, blackduckSystem)
-	if toolRecordErr != nil {
-		// do not fail until the framework is well established
-		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
-	}
 	return err
+}
+
+func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, influx *detectExecuteScanInflux, blackduckSystem *blackduckSystem) error {
+	log.Entry().Infof("Scanning %d images", len(config.ImageNameTags))
+	for _, image := range config.ImageNameTags {
+		// Download image to be scanned
+		log.Entry().Debugf("Scanning image: %q", image)
+
+		options := &containerSaveImageOptions{
+			ContainerRegistryURL:      config.RegistryURL,
+			ContainerImage:            image,
+			ContainerRegistryPassword: config.RepositoryPassword,
+			ContainerRegistryUser:     config.RepositoryUsername,
+			ImageFormat:               "legacy",
+		}
+
+		dClientOptions := piperDocker.ClientOptions{ImageName: options.ContainerImage, RegistryURL: options.ContainerRegistryURL, ImageFormat: options.ImageFormat}
+		dClient := utils.GetDockerClient(dClientOptions)
+
+		tarName, err := runContainerSaveImage(options, &telemetry.CustomData{}, "./cache", "", dClient, utils)
+		if err != nil {
+			return err
+		}
+
+		args := []string{"./detect.sh"}
+		args, err = addDetectArgsImages(args, config, utils, sys, tarName)
+		if err != nil {
+			return err
+		}
+		script := strings.Join(args, " ")
+
+		err = utils.RunShell("/bin/bash", script)
+		err = mapDetectError(err, config, utils)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Get proper error category
@@ -331,8 +401,11 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	return nil
 }
 
-func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem) ([]string, error) {
+func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, versionSuffix, locationSuffix string) ([]string, error) {
 	detectVersionName := getVersionName(config)
+	if versionSuffix != NO_VERSION_SUFFIX {
+		detectVersionName = fmt.Sprintf("%s-%s", detectVersionName, versionSuffix)
+	}
 	// Split on spaces, the scanPropeties, so that each property is available as a single string
 	// instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
@@ -351,12 +424,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
 		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
-	}
-
-	if config.MinScanInterval > 0 {
-		//Unmap doesnt work well with min-scan-interval and should be removed
-		config.Unmap = false
-		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%d'", config.MinScanInterval))
 	}
 
 	if config.Unmap {
@@ -393,6 +460,10 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	codelocation := config.CodeLocation
 	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
 		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
+
+		if locationSuffix != "" {
+			codelocation = fmt.Sprintf("%v-%v", codelocation, locationSuffix)
+		}
 	}
 
 	args = append(args, fmt.Sprintf("\"--detect.project.name=%v\"", config.ProjectName))
@@ -462,6 +533,39 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		}
 		args = append(args, "--detect.cleanup=false")
 		args = append(args, "--detect.output.path='report'")
+	}
+
+	return args, nil
+}
+
+func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, imageTar string) ([]string, error) {
+	// suffix := strings.Split(imageTar, ".")[0]
+	// In order to preserve source scan result
+	config.Unmap = false
+	args, err := addDetectArgs(args, config, utils, sys, NO_VERSION_SUFFIX, fmt.Sprintf("image-%s", strings.Split(imageTar, ".")[0]))
+	if err != nil {
+		return []string{}, err
+	}
+
+	args = append(args, fmt.Sprintf("--detect.docker.tar=./%s", imageTar))
+	args = append(args, "--detect.target.type=IMAGE")
+	// https://community.synopsys.com/s/article/Docker-image-scanning-CLI-examples-and-some-Q-As
+	args = append(args, "--detect.tools.excluded=DETECTOR")
+	args = append(args, "--detect.docker.passthrough.shared.dir.path.local=/opt/blackduck/blackduck-imageinspector/shared/")
+	args = append(args, "--detect.docker.passthrough.shared.dir.path.imageinspector=/opt/blackduck/blackduck-imageinspector/shared")
+	args = append(args, fmt.Sprintf("--detect.docker.passthrough.imageinspector.service.distro.default=%s", config.ScanContainerDistro))
+	args = append(args, "--detect.docker.passthrough.imageinspector.service.start=false")
+	args = append(args, "--detect.docker.passthrough.output.include.squashedimage=false")
+
+	switch config.ScanContainerDistro {
+	case "ubuntu":
+		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8082")
+	case "centos":
+		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8081")
+	case "alpine":
+		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8080")
+	default:
+		return nil, fmt.Errorf("unknown container distro %q", config.ScanContainerDistro)
 	}
 
 	return args, nil
