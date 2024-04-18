@@ -1,8 +1,6 @@
 module github.com/SAP/jenkins-library
 
-go 1.21
-
-toolchain go1.22.2
+go 1.20
 
 // It is a locked dependency of github.com/buildpacks/lifecycle@v0.18.4. The maintainers may remove the lock
 // in future releases. Check if 'replace' statement still there in their go.mod file. Remove line below if not.
@@ -62,7 +60,6 @@ require (
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.157.0
 	gopkg.in/ini.v1 v1.67.0
-	gopkg.in/square/go-jose.v2 v2.5.1
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.14.0
 	mvdan.cc/xurls/v2 v2.4.0
