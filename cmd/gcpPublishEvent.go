@@ -17,7 +17,8 @@ import (
 func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
 	err := runGcpPublishEvent(&config, telemetryData)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		// do not fail the step
+		log.Entry().WithError(err).Warnf("step execution failed")
 	}
 }
 
