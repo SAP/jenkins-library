@@ -3,8 +3,10 @@ package events
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -19,10 +21,35 @@ type SAPEvent interface {
 	GetType() string
 }
 
-type CommonEventData struct {
-	URL           string `json:"url"`
-	CommitId      string `json:"commitId"`
-	RepositoryURL string `json:"repositoryUrl"`
+// type CommonEventData struct {
+// 	URL           string `json:"url"`
+// 	CommitId      string `json:"commitId"`
+// 	RepositoryURL string `json:"repositoryUrl"`
+// }
+
+func ToCloudEvent(sapEvent SAPEvent, opts ...Option) cloudevents.Event {
+	cloudEvent := cloudevents.NewEvent("1.0")
+	// set default values
+	cloudEvent.SetID(uuid.New().String())
+	cloudEvent.SetType(sapEvent.GetType())
+	cloudEvent.SetTime(time.Now())
+	cloudEvent.SetSource("/default/sap.hyperspace.piper")
+	cloudEvent.SetData("application/json", sapEvent)
+
+	for _, applyOpt := range opts {
+		applyOpt(cloudEvent.Context.AsV1())
+	}
+
+	return cloudEvent
+}
+
+func ToByteArray(sapEvent SAPEvent, opts ...Option) ([]byte, error) {
+	event := ToCloudEvent(sapEvent, opts...)
+	data, err := json.Marshal(event)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal event data")
+	}
+	return data, nil
 }
 
 type PipelineRunStartedEventData struct {
@@ -44,23 +71,4 @@ type PipelineRunFinishedEventData struct {
 
 func (e PipelineRunFinishedEventData) GetType() string {
 	return strings.Join([]string{eventTypePrefix, "pipelinerunFinished"}, ".")
-}
-
-func ToCloudEvent(context cloudevents.EventContextV1, sapEvent SAPEvent) cloudevents.Event {
-	cloudEvent := cloudevents.NewEvent()
-	cloudEvent.Context = &context
-
-	cloudEvent.SetData("application/json", sapEvent)
-	cloudEvent.SetType(sapEvent.GetType())
-
-	return cloudEvent
-}
-
-func ToByteArray(context cloudevents.EventContextV1, sapEvent SAPEvent) ([]byte, error) {
-	event := ToCloudEvent(context, sapEvent)
-	data, err := json.Marshal(event)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal event data")
-	}
-	return data, nil
 }

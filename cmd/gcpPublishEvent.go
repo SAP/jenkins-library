@@ -9,7 +9,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/cloudevents/sdk-go/v2/event"
 
 	"github.com/pkg/errors"
 )
@@ -30,13 +29,13 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 
 	switch config.Type {
 	case string(events.PipelineRunStartedEventType):
-		data, err = events.ToByteArray(event.EventContextV1{}, events.PipelineRunStartedEventData{
+		data, err = events.ToByteArray(events.PipelineRunStartedEventData{
 			URL:           provider.BuildURL(),
 			CommitId:      provider.CommitSHA(),
 			RepositoryURL: provider.RepoURL(),
 		})
 	case string(events.PipelineRunFinishedEventType):
-		data, err = events.ToByteArray(event.EventContextV1{}, events.PipelineRunFinishedEventData{
+		data, err = events.ToByteArray(events.PipelineRunFinishedEventData{
 			URL:           provider.BuildURL(),
 			CommitId:      provider.CommitSHA(),
 			RepositoryURL: provider.RepoURL(),
