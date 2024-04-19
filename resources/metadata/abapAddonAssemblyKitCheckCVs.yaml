@@ -1,5 +1,6 @@
 metadata:
   name: abapAddonAssemblyKitCheckCVs
+  package: abapAddonAssemblyKit
   description: This step checks the validity of ABAP Software Component Versions.
   longDescription: |
     This steps takes the list of ABAP Software Component Versions(repositories) from the addonDescriptor configuration file specified via addonDescriptorFileName (e.g. addon.yml) and checks by calling AAKaaS whether they exist or are a valid successor of an existing Software Component Version.

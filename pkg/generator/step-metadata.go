@@ -9,6 +9,7 @@ import (
 	"os/exec"
 
 	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 	var targetDir string
 
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
-	flag.StringVar(&targetDir, "targetDir", "./cmd", "The target directory for the generated commands.")
+	flag.StringVar(&targetDir, "targetDir", "./cmd/...", "The target directory for the generated commands.")
 	flag.Parse()
 
 	fmt.Printf("metadataDir: %v\n, targetDir: %v\n", metadataPath, targetDir)
@@ -27,6 +28,7 @@ func main() {
 		OpenFile:     openMetaFile,
 		WriteFile:    fileWriter,
 		ExportPrefix: "",
+		FileUtils:    piperutils.Files{},
 	})
 	checkError(err)
 

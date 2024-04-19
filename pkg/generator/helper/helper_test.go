@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -124,7 +125,7 @@ func writeFileMock(filename string, data []byte, perm os.FileMode) error {
 
 func TestProcessMetaFiles(t *testing.T) {
 
-	stepHelperData := StepHelperData{configOpenFileMock, writeFileMock, ""}
+	stepHelperData := StepHelperData{configOpenFileMock, writeFileMock, "", &mock.FilesMock{}}
 	ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 	t.Run("step code", func(t *testing.T) {
@@ -149,7 +150,7 @@ func TestProcessMetaFiles(t *testing.T) {
 	})
 
 	t.Run("custom step code", func(t *testing.T) {
-		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
+		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd", &mock.FilesMock{}}
 		ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")

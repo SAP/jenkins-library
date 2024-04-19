@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 )
 
@@ -14,6 +15,7 @@ type StepHelperData struct {
 	OpenFile     func(s string) (io.ReadCloser, error)
 	WriteFile    func(filename string, data []byte, perm os.FileMode) error
 	ExportPrefix string
+	FileUtils    piperutils.FileUtils
 }
 
 // ContextDefaultData holds the meta data and the default data for the context default parameter descriptions
