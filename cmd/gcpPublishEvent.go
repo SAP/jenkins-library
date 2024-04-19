@@ -28,19 +28,10 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 	var err error
 
 	switch config.Type {
-	case string(events.PipelineRunStartedEventType):
-		data, err = events.ToByteArray(events.PipelineRunStartedEventData{
-			URL:           provider.BuildURL(),
-			CommitId:      provider.CommitSHA(),
-			RepositoryURL: provider.RepoURL(),
-		})
-	case string(events.PipelineRunFinishedEventType):
-		data, err = events.ToByteArray(events.PipelineRunFinishedEventData{
-			URL:           provider.BuildURL(),
-			CommitId:      provider.CommitSHA(),
-			RepositoryURL: provider.RepoURL(),
-			Outcome:       provider.BuildStatus(),
-		})
+	case string(events.PipelinerunStartedEventType):
+		data, err = events.NewPipelinerunStartedEvent(provider).Create().ToBytes()
+	case string(events.PipelinerunFinishedEventType):
+		data, err = events.NewPipelinerunFinishedEvent(provider).Create().ToBytes()
 	default:
 		return fmt.Errorf("event type %s not supported", config.Type)
 	}
