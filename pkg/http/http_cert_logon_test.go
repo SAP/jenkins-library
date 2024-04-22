@@ -87,7 +87,7 @@ func TestCertificateLogon(t *testing.T) {
 
 	clientPemKey, clientPemCert := GenerateSelfSignedClientAuthCertificate()
 
-	//server
+	// server
 	clientCertPool := x509.NewCertPool()
 	clientCertPool.AppendCertsFromPEM(clientPemCert)
 
@@ -102,7 +102,7 @@ func TestCertificateLogon(t *testing.T) {
 	server.StartTLS()
 	defer server.Close()
 
-	//client
+	// client
 	tlsKeyPair, err := tls.X509KeyPair(clientPemCert, clientPemKey)
 	if err != nil {
 		log.Fatal("Failed to create clients tls key pair")
@@ -131,7 +131,7 @@ func TestCertificateLogon(t *testing.T) {
 		})
 
 		_, err := c.SendRequest("GET", server.URL, nil, nil, nil)
-		assert.ErrorContains(t, err, "bad certificate")
+		assert.ErrorContains(t, err, "certificate required")
 	})
 
 	t.Run("Failure - Login with wrong certificate", func(t *testing.T) {
@@ -150,14 +150,14 @@ func TestCertificateLogon(t *testing.T) {
 		})
 
 		_, err = c.SendRequest("GET", server.URL, nil, nil, nil)
-		assert.ErrorContains(t, err, "bad certificate")
+		assert.ErrorContains(t, err, "unknown certificate authority")
 	})
 
 	t.Run("SanityCheck", func(t *testing.T) {
 		client := &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
-					//RootCAs:      certPool,
+					// RootCAs:      certPool,
 					InsecureSkipVerify: true,
 					Certificates:       []tls.Certificate{tlsKeyPair},
 				},
