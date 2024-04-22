@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -21,7 +20,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
-
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
@@ -298,8 +296,10 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	if err != nil {
 		log.Entry().Warnf("failed to retrieve dockerImage configuration: '%v'", err)
 	}
+	telemetry.WithBuilder(dockerImage)
 
-	telemetry.WithImage(dockerImage)
+	buildTool, _ := getBuildToolFromStageConfig("cnbBuild")
+	telemetry.WithBuildTool(buildTool)
 
 	cnbBuildConfig := buildsettings.BuildOptions{
 		CreateBOM:         config.CreateBOM,
@@ -353,10 +353,12 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		}
 	}
 
-	return telemetry.Export()
+	return nil
 }
 
 func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, imageSummary *cnbutils.ImageSummary, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+	telemetry.WithRunImage(config.RunImage)
+
 	err := cleanDir("/layers", utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -390,8 +392,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 	config.BuildEnvVars["TMPDIR"] = tempdir
 
-	telemetrySegment := createInitialTelemetrySegment(config, utils)
-
 	include := ignore.CompileIgnoreLines("**/*")
 	exclude := ignore.CompileIgnoreLines("piper", ".pipeline", ".git")
 
@@ -409,7 +409,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to parse %s", projDescPath)
 		}
-		telemetrySegment.WithProjectDescriptor(descriptor)
 
 		config.mergeEnvVars(descriptor.EnvVars)
 
@@ -441,8 +440,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
-
-	telemetry.AddSegment(telemetrySegment.WithBuildpacksOverall(config.Buildpacks).WithKeyValues(config.BuildEnvVars))
 
 	if commonPipelineEnvironment.container.imageNameTag == "" {
 		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
@@ -585,13 +582,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
-	attr := &syscall.SysProcAttr{
-		Credential: &syscall.Credential{
-			Uid:         uint32(uid),
-			Gid:         uint32(gid),
-			NoSetGroups: true,
-		},
-	}
+	attr := getSysProcAttr(uid, gid)
 
 	err = utils.RunExecutableWithAttrs(creatorPath, attr, creatorArgs...)
 	if err != nil {
@@ -634,17 +625,4 @@ func expandEnvVars(envVars map[string]any) map[string]any {
 		}
 	}
 	return expandedEnvVars
-}
-
-func createInitialTelemetrySegment(config *cnbBuildOptions, utils cnbutils.BuildUtils) *buildpacks.Segment {
-	telemetrySegment := buildpacks.NewSegment()
-	projectPath, _, _ := config.resolvePath(utils)          // ignore error here, telemetry problems should not fail the build
-	buildTool, _ := getBuildToolFromStageConfig("cnbBuild") // ignore error here, telemetry problems should not fail the build
-
-	return telemetrySegment.WithBindings(config.Bindings).
-		WithTags(config.ContainerImageTag, config.AdditionalTags).
-		WithPath(projectPath).
-		WithEnv(config.BuildEnvVars).
-		WithBuildTool(buildTool).
-		WithBuildpacksFromConfig(config.Buildpacks)
 }
