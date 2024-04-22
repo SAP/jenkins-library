@@ -34,6 +34,44 @@ var ResponseCheckCVs = `{
     }
 }`
 
+var ResponseCheck = `{
+	"d": {
+		"ProductName": "/DRNMSPC/PRD01",
+		"SemProductVersion": "2.0.0",
+		"ProductVersion": "0002",
+		"SpsLevel": "0000",
+		"PatchLevel": "0000",
+		"Vendor": "",
+		"VendorType": "",
+		"Content": {
+			"results": [
+				{
+					"ProductName": "/DRNMSPC/PRD01",
+					"SemProductVersion": "2.0.0",
+					"ScName": "/DRNMSPC/COMP01",
+					"SemScVersion": "2.0.0",
+					"ScVersion": "0002",
+					"SpLevel": "0000",
+					"PatchLevel": "0000",
+					"Vendor": "",
+					"VendorType": ""
+				},
+				{
+					"ProductName": "/DRNMSPC/PRD01",
+					"SemProductVersion": "2.0.0",
+					"ScName": "/DRNMSPC/COMP02",
+					"SemScVersion": "1.0.0",
+					"ScVersion": "0001",
+					"SpLevel": "0000",
+					"PatchLevel": "0000",
+					"Vendor": "",
+					"VendorType": ""
+				}
+			]
+		}
+	}
+}`
+
 var emptyResultBody = `{
     "d": {
         "results": []
