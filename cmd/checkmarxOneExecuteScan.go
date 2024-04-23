@@ -419,6 +419,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	}
 
 	branch := c.config.Branch
+	if len(branch) == 0 && len(c.config.GitBranch) > 0 {
+		branch = c.config.GitBranch
+	}
 	if len(c.config.PullRequestName) > 0 {
 		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
 	}
