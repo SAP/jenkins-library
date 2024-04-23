@@ -8,7 +8,7 @@ import "github.com/SAP/jenkins-library/cmd/abapAddonAssemblyKit"
 // GetStepMetadata return a map with all the step metadata mapped to their stepName
 func GetAllStepMetadata() map[string]config.StepData {
 	return map[string]config.StepData{
-		"abapAddonAssemblyKitCheck":                 abapAddonAssemblyKitCheckMetadata(),
+		"abapAddonAssemblyKitCheck":                 AbapAddonAssemblyKitCheckMetadata(),
 		"abapAddonAssemblyKitCheckCVs":              abapAddonAssemblyKit.AbapAddonAssemblyKitCheckCVsMetadata(),
 		"abapAddonAssemblyKitCheckPV":               AbapAddonAssemblyKitCheckPVMetadata(),
 		"abapAddonAssemblyKitCreateTargetVector":    AbapAddonAssemblyKitCreateTargetVectorMetadata(),

@@ -33,7 +33,7 @@ func main() {
 	checkError(err)
 
 	fmt.Printf("Running go fmt %v\n", targetDir)
-	cmd := exec.Command("go", "fmt", fmt.Stringf("%s/...", targetDir))
+	cmd := exec.Command("go", "fmt", fmt.Sprintf("%s/...", targetDir))
 	r, _ := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 	done := make(chan struct{})

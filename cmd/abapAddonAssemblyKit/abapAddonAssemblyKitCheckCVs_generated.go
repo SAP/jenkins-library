@@ -12,8 +12,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
@@ -21,13 +21,12 @@ import (
 type abapAddonAssemblyKitCheckCVsOptions struct {
 	AbapAddonAssemblyKitCertificateFile string `json:"abapAddonAssemblyKitCertificateFile,omitempty"`
 	AbapAddonAssemblyKitCertificatePass string `json:"abapAddonAssemblyKitCertificatePass,omitempty"`
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	AddonDescriptorFileName string `json:"addonDescriptorFileName,omitempty"`
-	AddonDescriptor string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitEndpoint        string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	Username                            string `json:"username,omitempty"`
+	Password                            string `json:"password,omitempty"`
+	AddonDescriptorFileName             string `json:"addonDescriptorFileName,omitempty"`
+	AddonDescriptor                     string `json:"addonDescriptor,omitempty"`
 }
-
 
 type abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment struct {
 	abap struct {
@@ -36,10 +35,10 @@ type abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment struct {
 }
 
 func (p *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct{
+	content := []struct {
 		category string
-		name string
-		value interface{}
+		name     string
+		value    interface{}
 	}{
 		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
@@ -56,7 +55,6 @@ func (p *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) persist(path, re
 		log.Entry().Error("failed to persist Piper environment")
 	}
 }
-
 
 // AbapAddonAssemblyKitCheckCVsCommand This step checks the validity of ABAP Software Component Versions.
 func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
@@ -142,18 +140,18 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
-					GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
-					GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 			}
@@ -187,96 +185,93 @@ func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAd
 func AbapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitCheckCVs",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitCheckCVs",
+			Aliases:     []config.Alias{},
 			Description: "This step checks the validity of ABAP Software Component Versions.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "abapAddonAssemblyKitCredentialsId",Description: "CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system",Type: "jenkins",
-					}, 
-					{Name: "abapAddonAssemblyKitCertificateFileCredentialsId",Description: "Jenkins secret text credential ID containing the base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)",Type: "jenkins",
-					}, 
-					{Name: "abapAddonAssemblyKitCertificatePassCredentialsId",Description: "Jenkins secret text credential ID containing the password to decrypt the certificate file stored in abapAddonAssemblyKitCertificateFileCredentialsId",Type: "jenkins",
-					}, 
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCertificateFileCredentialsId", Description: "Jenkins secret text credential ID containing the base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCertificatePassCredentialsId", Description: "Jenkins secret text credential ID containing the password to decrypt the certificate file stored in abapAddonAssemblyKitCertificateFileCredentialsId", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:      "abapAddonAssemblyKitCertificateFile",
+						Name: "abapAddonAssemblyKitCertificateFile",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"abapAddonAssemblyKitCertificateFileCredentialsId",
+								Name:  "abapAddonAssemblyKitCertificateFileCredentialsId",
 								Param: "abapAddonAssemblyKitCertificateFile",
-								Type: "secret",
+								Type:  "secret",
 							},
-                        },
-						Scope:     []string{"PARAMETERS",},
+						},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_abapAddonAssemblyKitCertificateFile"),
 					},
 					{
-						Name:      "abapAddonAssemblyKitCertificatePass",
+						Name: "abapAddonAssemblyKitCertificatePass",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"abapAddonAssemblyKitCertificatePassCredentialsId",
+								Name:  "abapAddonAssemblyKitCertificatePassCredentialsId",
 								Param: "abapAddonAssemblyKitCertificatePass",
-								Type: "secret",
+								Type:  "secret",
 							},
-                        },
-						Scope:     []string{"PARAMETERS",},
+						},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_abapAddonAssemblyKitCertificatePass"),
 					},
 					{
-						Name:      "abapAddonAssemblyKitEndpoint",
+						Name:        "abapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   `https://apps.support.sap.com`,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
-						Name:      "username",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
-						Name:      "password",
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
-						Name:      "addonDescriptorFileName",
+						Name:        "addonDescriptorFileName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   `addon.yml`,
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     `addon.yml`,
 					},
 					{
-						Name:      "addonDescriptor",
+						Name: "addonDescriptor",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:"commonPipelineEnvironment",
+								Name:  "commonPipelineEnvironment",
 								Param: "abap/addonDescriptor",
 							},
-                        },
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -290,7 +285,7 @@ func AbapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"name": "abap/addonDescriptor",},
+							{"name": "abap/addonDescriptor"},
 						},
 					},
 				},
