@@ -257,6 +257,15 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: generateReportsForEmptyProjects
+        type: bool
+        default: false
+        description:
+          "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: pomPath
         type: string
         description: Path to the pom file which should be installed including all children.
