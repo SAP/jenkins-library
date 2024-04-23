@@ -17,7 +17,7 @@ func main() {
 	var targetDir string
 
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
-	flag.StringVar(&targetDir, "targetDir", "./cmd/...", "The target directory for the generated commands.")
+	flag.StringVar(&targetDir, "targetDir", "./cmd", "The target directory for the generated commands.")
 	flag.Parse()
 
 	fmt.Printf("metadataDir: %v\n, targetDir: %v\n", metadataPath, targetDir)
@@ -33,7 +33,7 @@ func main() {
 	checkError(err)
 
 	fmt.Printf("Running go fmt %v\n", targetDir)
-	cmd := exec.Command("go", "fmt", targetDir)
+	cmd := exec.Command("go", "fmt", fmt.Stringf("%s/...", targetDir))
 	r, _ := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 	done := make(chan struct{})
