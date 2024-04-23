@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.20.x'
+          go-version: '1.21.x'
 
       - name: Install Groovy
         run: sudo apt-get update && sudo apt-get install groovy -y
