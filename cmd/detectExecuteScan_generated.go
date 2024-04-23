@@ -22,49 +22,53 @@ import (
 )
 
 type detectExecuteScanOptions struct {
-	Token                           string   `json:"token,omitempty"`
-	CodeLocation                    string   `json:"codeLocation,omitempty"`
-	ProjectName                     string   `json:"projectName,omitempty"`
-	Scanners                        []string `json:"scanners,omitempty" validate:"possible-values=signature source"`
-	ScanPaths                       []string `json:"scanPaths,omitempty"`
-	DependencyPath                  string   `json:"dependencyPath,omitempty"`
-	Unmap                           bool     `json:"unmap,omitempty"`
-	ScanProperties                  []string `json:"scanProperties,omitempty"`
-	ServerURL                       string   `json:"serverUrl,omitempty"`
-	Groups                          []string `json:"groups,omitempty"`
-	FailOn                          []string `json:"failOn,omitempty" validate:"possible-values=ALL BLOCKER CRITICAL MAJOR MINOR NONE"`
-	VersioningModel                 string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
-	Version                         string   `json:"version,omitempty"`
-	CustomScanVersion               string   `json:"customScanVersion,omitempty"`
-	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
-	M2Path                          string   `json:"m2Path,omitempty"`
-	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
-	BuildMaven                      bool     `json:"buildMaven,omitempty"`
-	GenerateReportsForEmptyProjects bool     `json:"generateReportsForEmptyProjects,omitempty"`
-	PomPath                         string   `json:"pomPath,omitempty"`
-	IncludedPackageManagers         []string `json:"includedPackageManagers,omitempty"`
-	ExcludedPackageManagers         []string `json:"excludedPackageManagers,omitempty"`
-	MavenExcludedScopes             []string `json:"mavenExcludedScopes,omitempty"`
-	DetectTools                     []string `json:"detectTools,omitempty"`
-	ScanOnChanges                   bool     `json:"scanOnChanges,omitempty"`
-	SuccessOnSkip                   bool     `json:"successOnSkip,omitempty"`
-	CustomEnvironmentVariables      []string `json:"customEnvironmentVariables,omitempty"`
-	MinScanInterval                 int      `json:"minScanInterval,omitempty"`
-	GithubToken                     string   `json:"githubToken,omitempty"`
-	CreateResultIssue               bool     `json:"createResultIssue,omitempty"`
-	GithubAPIURL                    string   `json:"githubApiUrl,omitempty"`
-	Owner                           string   `json:"owner,omitempty"`
-	Repository                      string   `json:"repository,omitempty"`
-	Assignees                       []string `json:"assignees,omitempty"`
-	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
-	FailOnSevereVulnerabilities     bool     `json:"failOnSevereVulnerabilities,omitempty"`
-	BuildTool                       string   `json:"buildTool,omitempty"`
-	ExcludedDirectories             []string `json:"excludedDirectories,omitempty"`
-	NpmDependencyTypesExcluded      []string `json:"npmDependencyTypesExcluded,omitempty" validate:"possible-values=NONE DEV PEER"`
-	NpmArguments                    []string `json:"npmArguments,omitempty"`
-	PrivateModules                  string   `json:"privateModules,omitempty"`
-	PrivateModulesGitToken          string   `json:"privateModulesGitToken,omitempty"`
+	Token                       string   `json:"token,omitempty"`
+	CodeLocation                string   `json:"codeLocation,omitempty"`
+	ProjectName                 string   `json:"projectName,omitempty"`
+	Scanners                    []string `json:"scanners,omitempty" validate:"possible-values=signature source"`
+	ScanPaths                   []string `json:"scanPaths,omitempty"`
+	DependencyPath              string   `json:"dependencyPath,omitempty"`
+	Unmap                       bool     `json:"unmap,omitempty"`
+	ScanProperties              []string `json:"scanProperties,omitempty"`
+	ServerURL                   string   `json:"serverUrl,omitempty"`
+	Groups                      []string `json:"groups,omitempty"`
+	FailOn                      []string `json:"failOn,omitempty" validate:"possible-values=ALL BLOCKER CRITICAL MAJOR MINOR NONE"`
+	VersioningModel             string   `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
+	Version                     string   `json:"version,omitempty"`
+	CustomScanVersion           string   `json:"customScanVersion,omitempty"`
+	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	M2Path                      string   `json:"m2Path,omitempty"`
+	InstallArtifacts            bool     `json:"installArtifacts,omitempty"`
+	BuildMaven                  bool     `json:"buildMaven,omitempty"`
+	PomPath                     string   `json:"pomPath,omitempty"`
+	IncludedPackageManagers     []string `json:"includedPackageManagers,omitempty"`
+	ExcludedPackageManagers     []string `json:"excludedPackageManagers,omitempty"`
+	MavenExcludedScopes         []string `json:"mavenExcludedScopes,omitempty"`
+	DetectTools                 []string `json:"detectTools,omitempty"`
+	ScanOnChanges               bool     `json:"scanOnChanges,omitempty"`
+	SuccessOnSkip               bool     `json:"successOnSkip,omitempty"`
+	CustomEnvironmentVariables  []string `json:"customEnvironmentVariables,omitempty"`
+	MinScanInterval             int      `json:"minScanInterval,omitempty"`
+	GithubToken                 string   `json:"githubToken,omitempty"`
+	CreateResultIssue           bool     `json:"createResultIssue,omitempty"`
+	GithubAPIURL                string   `json:"githubApiUrl,omitempty"`
+	Owner                       string   `json:"owner,omitempty"`
+	Repository                  string   `json:"repository,omitempty"`
+	Assignees                   []string `json:"assignees,omitempty"`
+	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
+	FailOnSevereVulnerabilities bool     `json:"failOnSevereVulnerabilities,omitempty"`
+	BuildTool                   string   `json:"buildTool,omitempty"`
+	ExcludedDirectories         []string `json:"excludedDirectories,omitempty"`
+	NpmDependencyTypesExcluded  []string `json:"npmDependencyTypesExcluded,omitempty" validate:"possible-values=NONE DEV PEER"`
+	NpmArguments                []string `json:"npmArguments,omitempty"`
+	PrivateModules              string   `json:"privateModules,omitempty"`
+	PrivateModulesGitToken      string   `json:"privateModulesGitToken,omitempty"`
+	ScanContainerDistro         string   `json:"scanContainerDistro,omitempty" validate:"possible-values=ubuntu centos alpine"`
+	ImageNameTags               []string `json:"imageNameTags,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
+	RegistryURL                 string   `json:"registryUrl,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
+	RepositoryUsername          string   `json:"repositoryUsername,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
+	RepositoryPassword          string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 }
 
 type detectExecuteScanInflux struct {
@@ -257,7 +261,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			detectExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -288,7 +292,6 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running detect. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 	cmd.Flags().BoolVar(&stepConfig.BuildMaven, "buildMaven", false, "Experiment parameter for maven multi-modules projects building")
-	cmd.Flags().BoolVar(&stepConfig.GenerateReportsForEmptyProjects, "generateReportsForEmptyProjects", false, "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius")
 	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
 	cmd.Flags().StringSliceVar(&stepConfig.IncludedPackageManagers, "includedPackageManagers", []string{}, "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-included-advanced)")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludedPackageManagers, "excludedPackageManagers", []string{}, "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-excluded-advanced)")
@@ -312,6 +315,11 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.NpmArguments, "npmArguments", []string{}, "List of additional arguments that Detect will add at then end of the npm ls command line when Detect executes the NPM CLI Detector on an NPM project.")
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
+	cmd.Flags().StringVar(&stepConfig.ScanContainerDistro, "scanContainerDistro", os.Getenv("PIPER_scanContainerDistro"), "To also scan your images in the CPE, choose the distro")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "Images to be scanned (typically filled by CPE)")
+	cmd.Flags().StringVar(&stepConfig.RegistryURL, "registryUrl", os.Getenv("PIPER_registryUrl"), "Used accessing for the images to be scanned (typically filled by CPE)")
+	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
+	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -518,15 +526,6 @@ func detectExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "buildMaven",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "generateReportsForEmptyProjects",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
@@ -784,10 +783,80 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_privateModulesGitToken"),
 					},
+					{
+						Name:        "scanContainerDistro",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scanContainerDistro"),
+					},
+					{
+						Name: "imageNameTags",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "registryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_registryUrl"),
+					},
+					{
+						Name: "repositoryUsername",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_repositoryUsername"),
+					},
+					{
+						Name: "repositoryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_repositoryPassword"),
+					},
 				},
 			},
 			Containers: []config.Container{
 				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+			},
+			Sidecars: []config.Container{
+				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "ubuntu"}}}}},
+				{Name: "inspector-alpine", Image: "blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "alpine"}}}}},
+				{Name: "inspector-centos", Image: "blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "centos"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

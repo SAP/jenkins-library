@@ -153,6 +153,7 @@ func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
 		}
 	}
 	if len(config.TargetGithubRepoURL) > 0 {
+		log.Entry().Infof("Checking target GitHub repo URL: %s", config.TargetGithubRepoURL)
 		if strings.Contains(repoInfo.ServerUrl, "github") {
 			log.Entry().Errorf("TargetGithubRepoURL should not be set as the source repo is on github.")
 			return repoInfo, errors.New("TargetGithubRepoURL should not be set as the source repo is on github.")
@@ -163,6 +164,7 @@ func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
 			return repoInfo, err
 		}
 		if len(config.TargetGithubBranchName) > 0 {
+			log.Entry().Infof("Target GitHub branch name: %s", config.TargetGithubBranchName)
 			repoInfo.Ref = config.TargetGithubBranchName
 			if len(strings.Split(config.TargetGithubBranchName, "/")) < 3 {
 				repoInfo.Ref = "refs/heads/" + config.TargetGithubBranchName
@@ -342,6 +344,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
 
 	if len(config.TargetGithubRepoURL) > 0 {
+		log.Entry().Infof("DB sources for %s will be uploaded to target GitHub repo: %s", config.Repository, repoUrl)
 		hasToken, token := getToken(config)
 		if !hasToken {
 			return reports, errors.New("failed running upload db sources to GitHub as githubToken was not specified")
@@ -362,6 +365,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
 		}
 		repoInfo.CommitId = targetCommitId
+		log.Entry().Info("DB sources were successfully uploaded to target GitHub repo")
 	}
 
 	var scanResults []codeql.CodeqlFindings
@@ -369,6 +373,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	if !config.UploadResults {
 		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
 	} else {
+		log.Entry().Infof("The sarif results will be uploaded to the repository %s", repoUrl)
 		hasToken, token := getToken(config)
 		if !hasToken {
 			return reports, errors.New("failed running upload-results as githubToken was not specified")
