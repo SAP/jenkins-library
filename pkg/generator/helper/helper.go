@@ -525,7 +525,7 @@ import "github.com/SAP/jenkins-library/pkg/config"
 // GetStepMetadata return a map with all the step metadata mapped to their stepName
 func GetAllStepMetadata() map[string]config.StepData {
 	return map[string]config.StepData{
-		{{range $stepName := .Steps }} {{ $stepName | quote }}: {{$stepName}}Metadata(),
+		{{range $step := .Steps }} {{ $step.Name | quote }}: {{if .Package}}{{ .Package }}.{{end}}{{$step.Title}}Metadata(),
 		{{end}}
 	}
 }
@@ -533,11 +533,17 @@ func GetAllStepMetadata() map[string]config.StepData {
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
 func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData) error {
+	type allStepsStep struct {
+		Name    string
+		Package string
+		Title   string
+	}
 
 	allSteps := struct {
-		Steps    []string
+		Steps    []allStepsStep
 		Packages []string
 	}{}
+
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -574,11 +580,12 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
 		checkError(err)
+
+		allSteps.Steps = append(allSteps.Steps, allStepsStep{Name: myStepInfo.StepName, Package: myStepInfo.Package, Title: myStepInfo.StepNameTitle})
+
 		if myStepInfo.Package == "" {
 			myStepInfo.Package = "cmd"
-			allSteps.Steps = append(allSteps.Steps, myStepInfo.StepNameTitle)
 		} else {
-			allSteps.Steps = append(allSteps.Steps, fmt.Sprintf("%s.%s", myStepInfo.Package, myStepInfo.StepNameTitle))
 			if !slices.Contains(allSteps.Packages, myStepInfo.Package) {
 				allSteps.Packages = append(allSteps.Packages, myStepInfo.Package)
 			}
