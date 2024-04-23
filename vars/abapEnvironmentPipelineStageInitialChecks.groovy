@@ -6,8 +6,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
-    'abapAddonAssemblyKitCheckPV',
-    'abapAddonAssemblyKitCheckCVs'
+    'abapAddonAssemblyKitCheck',
+    'abapAddonAssemblyKitReserveNextPackages'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -19,8 +19,7 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        abapAddonAssemblyKitCheckPV script: parameters.script
-        abapAddonAssemblyKitCheckCVs script: parameters.script
+        abapAddonAssemblyKitCheck script: parameters.script
         abapAddonAssemblyKitReserveNextPackages script: parameters.script
     }
 
