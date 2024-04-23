@@ -135,7 +135,8 @@ func TestProcessMetaFiles(t *testing.T) {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
 		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
-		assert.Equal(t, string(expected), string(files[resultFilePath]))
+		//assert.Equal(t, string(expected), string(files[resultFilePath]))
+		assert.Equal(t, strings.Replace(string(expected), "\r\n", "\n", -1), strings.Replace(string(files[resultFilePath]), "\r\n", "\n", -1))
 		//t.Log(string(files[resultFilePath]))
 	})
 
@@ -159,7 +160,8 @@ func TestProcessMetaFiles(t *testing.T) {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
 		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
-		assert.Equal(t, string(expected), string(files[resultFilePath]))
+		//assert.Equal(t, string(expected), string(files[resultFilePath]))
+		assert.Equal(t, strings.Replace(string(expected), "\r\n", "\n", -1), strings.Replace(string(files[resultFilePath]), "\r\n", "\n", -1))
 		//t.Log(string(files[resultFilePath]))
 	})
 }
