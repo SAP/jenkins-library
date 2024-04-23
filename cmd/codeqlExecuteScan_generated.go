@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/piper"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -145,7 +146,7 @@ func (p *codeqlExecuteScanReports) persist(stepConfig codeqlExecuteScanOptions, 
 func CodeqlExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "codeqlExecuteScan"
 
-	metadata := codeqlExecuteScanMetadata()
+	metadata := CodeqlExecuteScanMetadata()
 	var stepConfig codeqlExecuteScanOptions
 	var startTime time.Time
 	var influx codeqlExecuteScanInflux
@@ -153,6 +154,7 @@ func CodeqlExecuteScanCommand() *cobra.Command {
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
+	var GeneralConfig piper.GeneralConfigOptions
 
 	var createCodeqlExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -164,15 +166,17 @@ and Java plus Maven.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
+			var err error
+			GeneralConfig, err = piper.CreateGeneralConfigCopyFromFlags(cmd)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+			//GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = GeneralConfig.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -214,7 +218,7 @@ and Java plus Maven.`,
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.PiperCommitHash = GitCommit
+				stepTelemetryData.PiperCommitHash = GeneralConfig.GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -276,7 +280,7 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 }
 
 // retrieve step metadata
-func codeqlExecuteScanMetadata() config.StepData {
+func CodeqlExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "codeqlExecuteScan",

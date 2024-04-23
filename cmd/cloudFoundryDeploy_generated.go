@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/piper"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -103,13 +104,14 @@ func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
 func CloudFoundryDeployCommand() *cobra.Command {
 	const STEP_NAME = "cloudFoundryDeploy"
 
-	metadata := cloudFoundryDeployMetadata()
+	metadata := CloudFoundryDeployMetadata()
 	var stepConfig cloudFoundryDeployOptions
 	var startTime time.Time
 	var influx cloudFoundryDeployInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
+	var GeneralConfig piper.GeneralConfigOptions
 
 	var createCloudFoundryDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -118,15 +120,17 @@ func CloudFoundryDeployCommand() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
+			var err error
+			GeneralConfig, err = piper.CreateGeneralConfigCopyFromFlags(cmd)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+			//GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = GeneralConfig.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -170,7 +174,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.PiperCommitHash = GitCommit
+				stepTelemetryData.PiperCommitHash = GeneralConfig.GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -241,7 +245,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 }
 
 // retrieve step metadata
-func cloudFoundryDeployMetadata() config.StepData {
+func CloudFoundryDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "cloudFoundryDeploy",

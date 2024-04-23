@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/piper"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -204,7 +205,7 @@ func (p *whitesourceExecuteScanReports) persist(stepConfig whitesourceExecuteSca
 func WhitesourceExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "whitesourceExecuteScan"
 
-	metadata := whitesourceExecuteScanMetadata()
+	metadata := WhitesourceExecuteScanMetadata()
 	var stepConfig whitesourceExecuteScanOptions
 	var startTime time.Time
 	var commonPipelineEnvironment whitesourceExecuteScanCommonPipelineEnvironment
@@ -213,6 +214,7 @@ func WhitesourceExecuteScanCommand() *cobra.Command {
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
+	var GeneralConfig piper.GeneralConfigOptions
 
 	var createWhitesourceExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -230,15 +232,17 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
+			var err error
+			GeneralConfig, err = piper.CreateGeneralConfigCopyFromFlags(cmd)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+			//GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = GeneralConfig.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -287,7 +291,7 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.PiperCommitHash = GitCommit
+				stepTelemetryData.PiperCommitHash = GeneralConfig.GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -386,7 +390,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 }
 
 // retrieve step metadata
-func whitesourceExecuteScanMetadata() config.StepData {
+func WhitesourceExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "whitesourceExecuteScan",

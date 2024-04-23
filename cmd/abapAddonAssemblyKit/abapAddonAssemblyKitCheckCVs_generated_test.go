@@ -1,7 +1,7 @@
 //go:build unit
 // +build unit
 
-package cmd
+package abapAddonAssemblyKit
 
 import (
 	"testing"

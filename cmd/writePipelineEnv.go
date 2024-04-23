@@ -8,10 +8,11 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/config"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/config"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -22,7 +23,7 @@ import (
 func WritePipelineEnv() *cobra.Command {
 	var stepConfig artifactPrepareVersionOptions
 	var encryptedCPE bool
-	metadata := artifactPrepareVersionMetadata()
+	metadata := ArtifactPrepareVersionMetadata()
 
 	writePipelineEnv := &cobra.Command{
 		Use:   "writePipelineEnv",
