@@ -32,6 +32,7 @@ spec:
         description:
         type: "string"
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -39,6 +40,7 @@ spec:
         description: A workload identity pool is an entity that lets you manage external identities.
         type: "string"
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -46,6 +48,7 @@ spec:
         description: A workload identity pool provider is an entity that describes a relationship between Google Cloud and your IdP.
         type: "string"
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -53,6 +56,7 @@ spec:
         description: The pubsub topic to which the message is published.
         type: "string"
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -60,6 +64,7 @@ spec:
         description: The events source as defined by CDEvents.
         type: "string"
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
