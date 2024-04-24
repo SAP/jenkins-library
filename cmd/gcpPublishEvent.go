@@ -31,7 +31,7 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 		return errors.Wrap(err, "failed to create event data")
 	}
 
-	oidcToken, err := getOidcToken(config)
+	oidcToken, err := getOIDCToken(config)
 	if err != nil {
 		return errors.Wrap(err, "failed to get OIDC token")
 	}
@@ -53,30 +53,26 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 	return nil
 }
 
-func getOidcToken(config *gcpPublishEventOptions) (string, error) {
+func getOIDCToken(config *gcpPublishEventOptions) (string, error) {
 	vaultCreds := piperConfig.VaultCredentials{
 		AppRoleID:       GeneralConfig.VaultRoleID,
 		AppRoleSecretID: GeneralConfig.VaultRoleSecretID,
 		VaultToken:      GeneralConfig.VaultToken,
 	}
-	// GeneralConfig VaultServerURL and VaultNamespace are empty swicthing to stepConfig
-	var vaultConfig = map[string]interface{}{
-		"vaultServerUrl": config.VaultServerURL,
+	vaultConfig := map[string]interface{}{
 		"vaultNamespace": config.VaultNamespace,
+		"vaultServerUrl": config.VaultServerURL,
 	}
 
-	stepConfig := piperConfig.StepConfig{
-		Config: vaultConfig,
-	}
-	// Generating vault client
-	vaultClient, err := piperConfig.GetVaultClientFromConfig(stepConfig, vaultCreds)
+	client, err := piperConfig.GetVaultClientFromConfig(vaultConfig, vaultCreds)
 	if err != nil {
 		return "", errors.Wrap(err, "getting vault client failed")
 	}
-	// Getting oidc token and setting it in environment variable
-	token, err := vaultClient.GetOidcTokenByValidation(GeneralConfig.HookConfig.OidcConfig.RoleID)
+	defer client.MustRevokeToken()
+
+	token, err := client.GetOIDCTokenByValidation(GeneralConfig.HookConfig.OIDCConfig.RoleID)
 	if err != nil {
-		return "", errors.Wrap(err, "getting oidc token failed")
+		return "", errors.Wrap(err, "getting OIDC token failed")
 	}
 
 	return token, nil

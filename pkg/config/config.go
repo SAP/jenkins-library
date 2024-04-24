@@ -257,13 +257,11 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// fetch secrets from vault
-		vaultClient, err := GetVaultClientFromConfig(stepConfig, c.vaultCredentials)
+		vaultClient, err := GetVaultClientFromConfig(stepConfig.Config, c.vaultCredentials)
 		if err != nil {
 			return StepConfig{}, err
 		}
 		if vaultClient != nil {
-			roleID := stepConfig.HookConfig["oidc"].(map[string]interface{})["roleID"].(string)
-			vaultClient.GetOidcTokenByValidation(roleID)
 			defer vaultClient.MustRevokeToken()
 			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)

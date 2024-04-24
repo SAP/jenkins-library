@@ -54,7 +54,7 @@ type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
 	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
 	PendoConfig  PendoConfiguration  `json:"pendo,omitempty"`
-	OidcConfig   OidcConfiguration   `json:"oidc,omitempty"`
+	OIDCConfig   OIDCConfiguration   `json:"oidc,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -77,8 +77,8 @@ type PendoConfiguration struct {
 	Token string `json:"token,omitempty"`
 }
 
-// OidcConfiguration defines the configuration options for the OpenID Connect authentication system
-type OidcConfiguration struct {
+// OIDCConfiguration defines the configuration options for the OpenID Connect authentication system
+type OIDCConfiguration struct {
 	RoleID string `json:",roleID,omitempty"`
 }
 

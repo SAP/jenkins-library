@@ -79,7 +79,7 @@ type VaultCredentials struct {
 type vaultClient interface {
 	GetKvSecret(string) (map[string]string, error)
 	MustRevokeToken()
-	GetOidcTokenByValidation(string) (string, error)
+	GetOIDCTokenByValidation(string) (string, error)
 }
 
 func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
@@ -92,8 +92,8 @@ func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...ma
 	}
 }
 
-func GetVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
-	address, addressOk := config.Config["vaultServerUrl"].(string)
+func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredentials) (vaultClient, error) {
+	address, addressOk := config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
 	if !addressOk || creds.VaultToken == "" && (creds.AppRoleID == "" || creds.AppRoleSecretID == "") {
 		log.Entry().Debug("Vault not configured")
@@ -103,8 +103,8 @@ func GetVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 	log.Entry().Debugf("  with URL %s", address)
 	namespace := ""
 	// namespaces are only available in vault enterprise so using them should be optional
-	if config.Config["vaultNamespace"] != nil {
-		namespace = config.Config["vaultNamespace"].(string)
+	if config["vaultNamespace"] != nil {
+		namespace = config["vaultNamespace"].(string)
 		log.Entry().Debugf("  with namespace %s", namespace)
 	}
 	var client vaultClient
