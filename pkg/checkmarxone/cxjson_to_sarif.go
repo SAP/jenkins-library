@@ -20,6 +20,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	sarif.Version = "2.1.0"
 	var checkmarxRun format.Runs
 	checkmarxRun.ColumnKind = "utf16CodeUnits"
+	checkmarxRun.Results = make([]format.Results, 0)
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
 
@@ -226,7 +227,17 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		if r.VulnerabilityDetails.CweId != 0 {
 			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", r.VulnerabilityDetails.CweId))
 		}
-		rulesArray = append(rulesArray, rule)
+
+		match := false
+		for _, r := range rulesArray {
+			if r.ID == rule.ID {
+				match = true
+				break
+			}
+		}
+		if !match {
+			rulesArray = append(rulesArray, rule)
+		}
 	}
 
 	// Handle driver object
@@ -237,7 +248,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 
 	// TODO: a way to fetch/store the version
 	tool.Driver.Version = "1" //strings.Split(cxxml.CheckmarxVersion, "V ")
-	tool.Driver.InformationUri = "https://checkmarx.com/resource/documents/en/34965-68571-viewing-results.html"
+	tool.Driver.InformationUri = "https://checkmarx.com/resource/documents/en/34965-165898-results-details-per-scanner.html"
 	tool.Driver.Rules = rulesArray
 	sarif.Runs[0].Tool = tool
 
