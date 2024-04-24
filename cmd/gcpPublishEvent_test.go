@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type gcpPublishEventMockUtils struct {
@@ -27,11 +28,8 @@ func TestRunGcpPublishEvent(t *testing.T) {
 		// init
 		config := gcpPublishEventOptions{}
 
-		utils := newGcpPublishEventTestsUtils()
-		utils.AddFile("file.txt", []byte("dummy content"))
-
 		// test
-		err := runGcpPublishEvent(&config, nil, utils)
+		err := runGcpPublishEvent(&config, nil)
 
 		// assert
 		assert.NoError(t, err)
@@ -42,10 +40,8 @@ func TestRunGcpPublishEvent(t *testing.T) {
 		// init
 		config := gcpPublishEventOptions{}
 
-		utils := newGcpPublishEventTestsUtils()
-
 		// test
-		err := runGcpPublishEvent(&config, nil, utils)
+		err := runGcpPublishEvent(&config, nil)
 
 		// assert
 		assert.EqualError(t, err, "cannot run without important file")
