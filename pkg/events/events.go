@@ -4,26 +4,48 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
-const eventTypePrefix = "sap.hyperspace"
+// type EventType string
 
-type EventType string
-
-type Event struct {
-	cloudEvent cloudevents.Event
+type EventData struct {
+	URL           string `json:"url"`
+	CommitId      string `json:"commitId"`
+	RepositoryURL string `json:"repositoryUrl"`
 }
 
-func (e Event) Create(eventType string, data any, opts ...Option) Event {
+type Event struct {
+	cloudEvent  cloudevents.Event
+	eventType   string
+	eventSource string
+}
+
+func NewEvent(eventType string, eventSource string) Event {
+	return Event{
+		eventType:   eventType,
+		eventSource: eventSource,
+	}
+}
+
+func (e Event) CreateWithProviderData(provider orchestrator.ConfigProvider, opts ...Option) Event {
+	return e.Create(EventData{
+		URL:           provider.BuildURL(),
+		CommitId:      provider.CommitSHA(),
+		RepositoryURL: provider.RepoURL(),
+	}, opts...)
+}
+
+func (e Event) Create(data any, opts ...Option) Event {
 	e.cloudEvent = cloudevents.NewEvent("1.0")
 	// set default values
 	e.cloudEvent.SetID(uuid.New().String())
-	e.cloudEvent.SetType(eventType)
+	e.cloudEvent.SetType(e.eventType)
 	e.cloudEvent.SetTime(time.Now())
-	e.cloudEvent.SetSource("/default/sap.hyperspace.piper")
+	e.cloudEvent.SetSource(e.eventSource)
 	e.cloudEvent.SetData("application/json", data)
 
 	for _, applyOpt := range opts {

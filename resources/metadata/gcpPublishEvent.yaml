@@ -5,6 +5,22 @@ metadata:
 spec:
   inputs:
     params:
+      - name: vaultNamespace
+        type: "string"
+        description:
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: vaultServerUrl
+        type: "string"
+        description:
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: OIDCToken
         description:
         type: "string"
@@ -40,43 +56,21 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: type
-        description:
+      - name: eventSource
+        description: The events source as defined by CDEvents.
         type: "string"
-        possibleValues:
-          - PipelineRunStarted
-          - PipelineRunFinished
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: vaultNamespace
-        type: "string"
+      - name: eventType
         description:
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: vaultServerUrl
         type: "string"
-        description:
         scope:
-          - GENERAL
           - PARAMETERS
-          - STAGES
-          - STEPS
-      # - name: name
-      #   description:
-      #   type: "string"
-      #   scope:
-      #     - PARAMETERS
-      #     - STAGES
-      #     - STEPS
-      # - name: source
-      #   description:
-      #   type: "string"
-      #   scope:
-      #     - PARAMETERS
-      #     - STAGES
-      #     - STEPS
+      # - name: eventData
+      #   type: string
+      #   description: Data to be merged with the generated data for the cloud event data field (json)
+      #   resourceRef:
+      #     - name: commonPipelineEnvironment
+      #       param: custom/eventData

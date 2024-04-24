@@ -16,14 +16,15 @@ import (
 )
 
 type gcpPublishEventOptions struct {
+	VaultNamespace                  string `json:"vaultNamespace,omitempty"`
+	VaultServerURL                  string `json:"vaultServerUrl,omitempty"`
 	OIDCToken                       string `json:"OIDCToken,omitempty"`
 	GcpProjectNumber                string `json:"gcpProjectNumber,omitempty"`
 	GcpWorkloadIDentityPool         string `json:"gcpWorkloadIdentityPool,omitempty"`
 	GcpWorkloadIDentityPoolProvider string `json:"gcpWorkloadIdentityPoolProvider,omitempty"`
 	Topic                           string `json:"topic,omitempty"`
-	Type                            string `json:"type,omitempty" validate:"possible-values=PipelineRunStarted PipelineRunFinished"`
-	VaultNamespace                  string `json:"vaultNamespace,omitempty"`
-	VaultServerURL                  string `json:"vaultServerUrl,omitempty"`
+	EventSource                     string `json:"eventSource,omitempty"`
+	EventType                       string `json:"eventType,omitempty"`
 }
 
 // GcpPublishEventCommand
@@ -125,14 +126,15 @@ func GcpPublishEventCommand() *cobra.Command {
 }
 
 func addGcpPublishEventFlags(cmd *cobra.Command, stepConfig *gcpPublishEventOptions) {
+	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "")
+	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "")
 	cmd.Flags().StringVar(&stepConfig.OIDCToken, "OIDCToken", os.Getenv("PIPER_OIDCToken"), "")
 	cmd.Flags().StringVar(&stepConfig.GcpProjectNumber, "gcpProjectNumber", os.Getenv("PIPER_gcpProjectNumber"), "")
 	cmd.Flags().StringVar(&stepConfig.GcpWorkloadIDentityPool, "gcpWorkloadIdentityPool", os.Getenv("PIPER_gcpWorkloadIdentityPool"), "A workload identity pool is an entity that lets you manage external identities.")
 	cmd.Flags().StringVar(&stepConfig.GcpWorkloadIDentityPoolProvider, "gcpWorkloadIdentityPoolProvider", os.Getenv("PIPER_gcpWorkloadIdentityPoolProvider"), "A workload identity pool provider is an entity that describes a relationship between Google Cloud and your IdP.")
 	cmd.Flags().StringVar(&stepConfig.Topic, "topic", os.Getenv("PIPER_topic"), "The pubsub topic to which the message is published.")
-	cmd.Flags().StringVar(&stepConfig.Type, "type", os.Getenv("PIPER_type"), "")
-	cmd.Flags().StringVar(&stepConfig.VaultNamespace, "vaultNamespace", os.Getenv("PIPER_vaultNamespace"), "")
-	cmd.Flags().StringVar(&stepConfig.VaultServerURL, "vaultServerUrl", os.Getenv("PIPER_vaultServerUrl"), "")
+	cmd.Flags().StringVar(&stepConfig.EventSource, "eventSource", os.Getenv("PIPER_eventSource"), "The events source as defined by CDEvents.")
+	cmd.Flags().StringVar(&stepConfig.EventType, "eventType", os.Getenv("PIPER_eventType"), "")
 
 }
 
@@ -147,6 +149,24 @@ func gcpPublishEventMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
+					{
+						Name:        "vaultNamespace",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultNamespace"),
+					},
+					{
+						Name:        "vaultServerUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultServerUrl"),
+					},
 					{
 						Name:        "OIDCToken",
 						ResourceRef: []config.ResourceReference{},
@@ -193,31 +213,22 @@ func gcpPublishEventMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_topic"),
 					},
 					{
-						Name:        "type",
+						Name:        "eventSource",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_type"),
+						Default:     os.Getenv("PIPER_eventSource"),
 					},
 					{
-						Name:        "vaultNamespace",
+						Name:        "eventType",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_vaultNamespace"),
-					},
-					{
-						Name:        "vaultServerUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_vaultServerUrl"),
+						Default:     os.Getenv("PIPER_eventType"),
 					},
 				},
 			},

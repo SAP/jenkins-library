@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	piperConfig "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
@@ -27,14 +25,8 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 	var data []byte
 	var err error
 
-	switch config.Type {
-	case string(events.PipelinerunStartedEventType):
-		data, err = events.NewPipelinerunStartedEvent(provider).Create().ToBytes()
-	case string(events.PipelinerunFinishedEventType):
-		data, err = events.NewPipelinerunFinishedEvent(provider).Create().ToBytes()
-	default:
-		return fmt.Errorf("event type %s not supported", config.Type)
-	}
+	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithProviderData(provider).ToBytes()
+
 	if err != nil {
 		return errors.Wrap(err, "failed to create event data")
 	}

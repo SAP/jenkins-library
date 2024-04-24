@@ -11,9 +11,9 @@ func TestEventCreation(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// init
 		// test
-		event := Event{}.Create(mock.Anything, nil)
+		event := NewEvent(mock.Anything, mock.Anything).Create(nil)
 		// asserts
 		assert.Equal(t, mock.Anything, event.cloudEvent.Type())
-		assert.Equal(t, "/default/sap.hyperspace.piper", event.cloudEvent.Source())
+		assert.Equal(t, mock.Anything, event.cloudEvent.Source())
 	})
 }
