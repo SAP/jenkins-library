@@ -127,6 +127,17 @@ spec:
           - STAGES
           - STEPS
         type: string
+      - name: gitBranch
+        description: "Set the GitHub repository branch."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/branch
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
       - name: clientSecret
         type: string
         description: The clientSecret to authenticate using a service account

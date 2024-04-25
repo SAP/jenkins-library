@@ -20,7 +20,7 @@ import (
 type artifactPrepareVersionOptions struct {
 	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
 	AdditionalTargetDescriptors []string `json:"additionalTargetDescriptors,omitempty"`
-	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
+	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn CAP"`
 	CommitUserName              string   `json:"commitUserName,omitempty"`
 	CustomVersionField          string   `json:"customVersionField,omitempty"`
 	CustomVersionSection        string   `json:"customVersionSection,omitempty"`
@@ -28,6 +28,7 @@ type artifactPrepareVersionOptions struct {
 	DockerVersionSource         string   `json:"dockerVersionSource,omitempty"`
 	FetchCoordinates            bool     `json:"fetchCoordinates,omitempty"`
 	FilePath                    string   `json:"filePath,omitempty"`
+	CAPVersioningPreference     string   `json:"CAPVersioningPreference,omitempty" validate:"possible-values=maven npm,required_if=BuildTool CAP"`
 	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
 	IncludeCommitID             bool     `json:"includeCommitId,omitempty"`
 	IsOptimizedAndScheduled     bool     `json:"isOptimizedAndScheduled,omitempty"`
@@ -260,6 +261,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name.")
 	cmd.Flags().BoolVar(&stepConfig.FetchCoordinates, "fetchCoordinates", false, "If set to `true` the step will retreive artifact coordinates and store them in the common pipeline environment.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
+	cmd.Flags().StringVar(&stepConfig.CAPVersioningPreference, "CAPVersioningPreference", `maven`, "For CAP build tool only: Defines which file should be used for versioning.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
 	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
@@ -381,6 +383,15 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_filePath"),
+					},
+					{
+						Name:        "CAPVersioningPreference",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `maven`,
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -533,6 +544,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Image: "maven:3.6-jdk-8", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
+				{Image: "maven:3.6-jdk-8", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "CAP"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
