@@ -312,11 +312,12 @@ type AbapMetadata struct {
 
 // ConnectionDetailsHTTP contains fields for HTTP connections including the XCSRF token
 type ConnectionDetailsHTTP struct {
-	Host       string
-	User       string `json:"user"`
-	Password   string `json:"password"`
-	URL        string `json:"url"`
-	XCsrfToken string `json:"xcsrftoken"`
+	Host             string
+	User             string   `json:"user"`
+	Password         string   `json:"password"`
+	URL              string   `json:"url"`
+	XCsrfToken       string   `json:"xcsrftoken"`
+	CertificateNames []string `json:"-"`
 }
 
 // AbapError contains the error code and the error message for ABAP errors
