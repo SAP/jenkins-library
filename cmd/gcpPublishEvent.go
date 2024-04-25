@@ -7,19 +7,62 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/vault"
 
 	"github.com/pkg/errors"
 )
 
+type gcpPublishEventUtils interface {
+	GetConfig() *gcpPublishEventOptions
+	GetOIDCTokenByValidation(roleID string) (string, error)
+}
+
+type gcpPublishEventUtilsBundle struct {
+	config *gcpPublishEventOptions
+	*vault.Client
+}
+
+func (g gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
+	return g.config
+}
+
 func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
-	err := runGcpPublishEvent(&config, telemetryData)
+	vaultCreds := piperConfig.VaultCredentials{
+		AppRoleID:       GeneralConfig.VaultRoleID,
+		AppRoleSecretID: GeneralConfig.VaultRoleSecretID,
+		VaultToken:      GeneralConfig.VaultToken,
+	}
+	vaultConfig := map[string]interface{}{
+		"vaultNamespace": config.VaultNamespace,
+		"vaultServerUrl": config.VaultServerURL,
+	}
+
+	client, err := piperConfig.GetVaultClientFromConfig(vaultConfig, vaultCreds)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("could not create Vault client")
+	}
+	defer client.MustRevokeToken()
+
+	vaultClient, ok := client.(vault.Client)
+	if !ok {
+		log.Entry().WithError(err).Fatal("could not create Vault client")
+	}
+
+	utils := gcpPublishEventUtilsBundle{
+		config: &config,
+		Client: &vaultClient,
+	}
+
+	err = runGcpPublishEvent(utils)
 	if err != nil {
 		// do not fail the step
 		log.Entry().WithError(err).Warnf("step execution failed")
 	}
 }
 
-func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData) error {
+func runGcpPublishEvent(utils gcpPublishEventUtils) error {
+	config := utils.GetConfig()
+
 	provider, _ := orchestrator.GetOrchestratorConfigProvider(nil)
 
 	var data []byte
@@ -31,7 +74,7 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 		return errors.Wrap(err, "failed to create event data")
 	}
 
-	oidcToken, err := getOIDCToken(config)
+	oidcToken, err := getOIDCToken(utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to get OIDC token")
 	}
@@ -53,24 +96,8 @@ func runGcpPublishEvent(config *gcpPublishEventOptions, _ *telemetry.CustomData)
 	return nil
 }
 
-func getOIDCToken(config *gcpPublishEventOptions) (string, error) {
-	vaultCreds := piperConfig.VaultCredentials{
-		AppRoleID:       GeneralConfig.VaultRoleID,
-		AppRoleSecretID: GeneralConfig.VaultRoleSecretID,
-		VaultToken:      GeneralConfig.VaultToken,
-	}
-	vaultConfig := map[string]interface{}{
-		"vaultNamespace": config.VaultNamespace,
-		"vaultServerUrl": config.VaultServerURL,
-	}
-
-	client, err := piperConfig.GetVaultClientFromConfig(vaultConfig, vaultCreds)
-	if err != nil {
-		return "", errors.Wrap(err, "getting vault client failed")
-	}
-	defer client.MustRevokeToken()
-
-	token, err := client.GetOIDCTokenByValidation(GeneralConfig.HookConfig.OIDCConfig.RoleID)
+func getOIDCToken(utils gcpPublishEventUtils) (string, error) {
+	token, err := utils.GetOIDCTokenByValidation(GeneralConfig.HookConfig.OIDCConfig.RoleID)
 	if err != nil {
 		return "", errors.Wrap(err, "getting OIDC token failed")
 	}
