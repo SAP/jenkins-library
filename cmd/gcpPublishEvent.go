@@ -15,6 +15,8 @@ import (
 type gcpPublishEventUtils interface {
 	GetConfig() *gcpPublishEventOptions
 	GetOIDCTokenByValidation(roleID string) (string, error)
+	GetFederatedToken(projectNumber, pool, provider, token string) (string, error)
+	Publish(projectNumber string, topic string, token string, data []byte) error
 }
 
 type gcpPublishEventUtilsBundle struct {
@@ -24,6 +26,14 @@ type gcpPublishEventUtilsBundle struct {
 
 func (g gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
 	return g.config
+}
+
+func (g gcpPublishEventUtilsBundle) GetFederatedToken(projectNumber, pool, provider, token string) (string, error) {
+	return gcp.GetFederatedToken(projectNumber, pool, provider, token)
+}
+
+func (g gcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, token string, data []byte) error {
+	return gcp.Publish(projectNumber, topic, token, data)
 }
 
 func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
@@ -39,13 +49,13 @@ func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.Cus
 
 	client, err := piperConfig.GetVaultClientFromConfig(vaultConfig, vaultCreds)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("could not create Vault client")
+		log.Entry().WithError(err).Warnf("could not create Vault client")
 	}
 	defer client.MustRevokeToken()
 
 	vaultClient, ok := client.(vault.Client)
 	if !ok {
-		log.Entry().WithError(err).Fatal("could not create Vault client")
+		log.Entry().WithError(err).Warnf("could not create Vault client")
 	}
 
 	utils := gcpPublishEventUtilsBundle{
@@ -69,24 +79,21 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	var err error
 
 	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithProviderData(provider).ToBytes()
-
 	if err != nil {
 		return errors.Wrap(err, "failed to create event data")
 	}
 
-	oidcToken, err := getOIDCToken(utils)
+	oidcToken, err := utils.GetOIDCTokenByValidation(GeneralConfig.HookConfig.OIDCConfig.RoleID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get OIDC token")
 	}
 
-	// get federated token
-	token, err := gcp.GetFederatedToken(config.GcpProjectNumber, config.GcpWorkloadIDentityPool, config.GcpWorkloadIDentityPoolProvider, oidcToken)
+	token, err := utils.GetFederatedToken(config.GcpProjectNumber, config.GcpWorkloadIDentityPool, config.GcpWorkloadIDentityPoolProvider, oidcToken)
 	if err != nil {
 		return errors.Wrap(err, "failed to get federated token")
 	}
 
-	// publish event
-	err = gcp.Publish(config.GcpProjectNumber, config.Topic, token, data)
+	err = utils.Publish(config.GcpProjectNumber, config.Topic, token, data)
 	if err != nil {
 		return errors.Wrap(err, "failed to publish event")
 	}
@@ -94,13 +101,4 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	log.Entry().Info("event published successfully!")
 
 	return nil
-}
-
-func getOIDCToken(utils gcpPublishEventUtils) (string, error) {
-	token, err := utils.GetOIDCTokenByValidation(GeneralConfig.HookConfig.OIDCConfig.RoleID)
-	if err != nil {
-		return "", errors.Wrap(err, "getting OIDC token failed")
-	}
-
-	return token, nil
 }

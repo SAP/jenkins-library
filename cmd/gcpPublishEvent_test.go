@@ -1,26 +1,11 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
-
-// type gcpPublishEventMockUtils struct {
-// 	*mock.ExecMockRunner
-// 	*mock.FilesMock
-// }
-
-// func newGcpPublishEventTestsUtils() gcpPublishEventMockUtils {
-// 	utils := gcpPublishEventMockUtils{
-// 		ExecMockRunner: &mock.ExecMockRunner{},
-// 		FilesMock:      &mock.FilesMock{},
-// 	}
-// 	return utils
-// }
 
 type mockGcpPublishEventUtilsBundle struct {
 	config *gcpPublishEventOptions
@@ -34,13 +19,31 @@ func (g *mockGcpPublishEventUtilsBundle) GetOIDCTokenByValidation(roleID string)
 	return "testOIDCtoken123", nil
 }
 
+func (g *mockGcpPublishEventUtilsBundle) GetFederatedToken(projectNumber, pool, provider, token string) (string, error) {
+	return "testFederatedToken123", nil
+}
+
+func (g *mockGcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, token string, data []byte) error {
+	if topic == "goodTestCase" {
+		return nil
+	} else if topic == "badTestCase" {
+		return errors.New("failed to send request")
+	}
+	return nil
+}
+
 func TestRunGcpPublishEvent(t *testing.T) {
 	t.Parallel()
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 		// init
-		mock := &mockGcpPublishEventUtilsBundle{}
+		mock := &mockGcpPublishEventUtilsBundle{
+			config: &gcpPublishEventOptions{
+				EventType:   "PipelineRunStarted",
+				EventSource: "unittest",
+				Topic:       "goodTestCase",
+			}}
 
 		// test
 		err := runGcpPublishEvent(mock)
@@ -52,12 +55,17 @@ func TestRunGcpPublishEvent(t *testing.T) {
 	t.Run("error path", func(t *testing.T) {
 		t.Parallel()
 		// init
-		mock := &mockGcpPublishEventUtilsBundle{}
+		mock := &mockGcpPublishEventUtilsBundle{
+			config: &gcpPublishEventOptions{
+				EventType:   "PipelineRunStarted",
+				EventSource: "unittest",
+				Topic:       "badTestCase",
+			}}
 
 		// test
 		err := runGcpPublishEvent(mock)
 
 		// assert
-		assert.EqualError(t, err, "cannot run without important file")
+		assert.EqualError(t, err, "failed to publish event: failed to send request")
 	})
 }
