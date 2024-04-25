@@ -1050,6 +1050,7 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.Token = "********"
 	config.GithubToken = "********"
 	config.PrivateModulesGitToken = "********"
+	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
 }
