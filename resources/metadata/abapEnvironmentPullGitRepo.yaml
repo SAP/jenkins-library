@@ -140,6 +140,15 @@ spec:
         scope:
           - PARAMETERS
         default: false
+      - name: certificateNames
+        type: "[]string"
+        description: certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
   containers:
     - name: cf
       image: ppiper/cf-cli:v12
