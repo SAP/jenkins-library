@@ -575,6 +575,46 @@ func TestAppendCodeqlQuery(t *testing.T) {
 		cmd = appendCodeqlQuery(cmd, query)
 		assert.Equal(t, 3, len(cmd))
 	})
+
+	t.Run("security-extended.qls", func(t *testing.T) {
+		cmd := []string{"database", "analyze"}
+		query := "security-extended.qls"
+		cmd = appendCodeqlQuery(cmd, query)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, cmd[2], "security-extended.qls")
+	})
+
+	t.Run("java-security-extended.qls", func(t *testing.T) {
+		cmd := []string{"database", "analyze"}
+		query := "java-security-extended.qls"
+		cmd = appendCodeqlQuery(cmd, query)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, cmd[2], "sap-java-security-extended.qls")
+	})
+
+	t.Run("security-and-quality.qls", func(t *testing.T) {
+		cmd := []string{"database", "analyze"}
+		query := "security-extended.qls"
+		cmd = appendCodeqlQuery(cmd, query)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, cmd[2], "security-extended.qls")
+	})
+
+	t.Run("java-security-and-quality.qls", func(t *testing.T) {
+		cmd := []string{"database", "analyze"}
+		query := "java-security-extended.qls"
+		cmd = appendCodeqlQuery(cmd, query)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, cmd[2], "sap-java-security-extended.qls")
+	})
+
+	t.Run("custom-lang-security-extended.qls", func(t *testing.T) {
+		cmd := []string{"database", "analyze"}
+		query := "custom-lang-security-extended.qls"
+		cmd = appendCodeqlQuery(cmd, query)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, cmd[2], "custom-lang-security-extended.qls")
+	})
 }
 
 func TestGetLangFromBuildTool(t *testing.T) {
