@@ -37,7 +37,7 @@ func (_m *VaultMock) MustRevokeToken() {
 	_m.Called()
 }
 
-func (_m *VaultMock) GetOidcTokenByValidation(token string) (string, error) {
+func (_m *VaultMock) GetOIDCTokenByValidation(token string) (string, error) {
 	_m.Called()
 	return "", nil
 }
