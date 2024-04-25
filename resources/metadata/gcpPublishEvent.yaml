@@ -73,9 +73,9 @@ spec:
         type: "string"
         scope:
           - PARAMETERS
-      # - name: eventData
-      #   type: string
-      #   description: Data to be merged with the generated data for the cloud event data field (json)
-      #   resourceRef:
-      #     - name: commonPipelineEnvironment
-      #       param: custom/eventData
+      - name: eventData
+        type: string
+        description: Data to be merged with the generated data for the cloud event data field (JSON)
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/eventData

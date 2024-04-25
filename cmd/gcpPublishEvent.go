@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	piperConfig "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/vault"
 
@@ -73,12 +74,15 @@ func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.Cus
 func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	config := utils.GetConfig()
 
-	provider, _ := orchestrator.GetOrchestratorConfigProvider(nil)
-
 	var data []byte
 	var err error
 
-	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithProviderData(provider).ToBytes()
+	jsonEventData, err := json.Marshal(config.EventData)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal event data")
+	}
+
+	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(jsonEventData).ToBytes()
 	if err != nil {
 		return errors.Wrap(err, "failed to create event data")
 	}

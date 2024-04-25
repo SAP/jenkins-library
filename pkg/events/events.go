@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -24,19 +23,15 @@ type Event struct {
 	eventSource string
 }
 
-func NewEvent(eventType string, eventSource string) Event {
+func NewEvent(eventType, eventSource string) Event {
 	return Event{
 		eventType:   eventType,
 		eventSource: eventSource,
 	}
 }
 
-func (e Event) CreateWithProviderData(provider orchestrator.ConfigProvider, opts ...Option) Event {
-	return e.Create(EventData{
-		URL:           provider.BuildURL(),
-		CommitId:      provider.CommitSHA(),
-		RepositoryURL: provider.RepoURL(),
-	}, opts...)
+func (e Event) CreateWithJSONData(data []byte, opts ...Option) Event {
+	return e.Create(data, opts...)
 }
 
 func (e Event) Create(data any, opts ...Option) Event {

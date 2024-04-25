@@ -26,11 +26,11 @@ func (v Client) getOIDCToken(roleID string) (string, error) {
 		return "", err
 	}
 
-	PIPER_OIDCIdentityToken := jwt.Data["token"].(string)
-	log.RegisterSecret(PIPER_OIDCIdentityToken)
-	os.Setenv("PIPER_OIDCIdentityToken", PIPER_OIDCIdentityToken)
+	token := jwt.Data["token"].(string)
+	log.RegisterSecret(token)
+	os.Setenv("PIPER_OIDCIdentityToken", token)
 
-	return PIPER_OIDCIdentityToken, nil
+	return token, nil
 }
 
 // getJWTTokenPayload returns the payload of the JWT token using base64 decoding

@@ -25,6 +25,7 @@ type gcpPublishEventOptions struct {
 	Topic                           string `json:"topic,omitempty"`
 	EventSource                     string `json:"eventSource,omitempty"`
 	EventType                       string `json:"eventType,omitempty"`
+	EventData                       string `json:"eventData,omitempty"`
 }
 
 // GcpPublishEventCommand
@@ -135,6 +136,7 @@ func addGcpPublishEventFlags(cmd *cobra.Command, stepConfig *gcpPublishEventOpti
 	cmd.Flags().StringVar(&stepConfig.Topic, "topic", os.Getenv("PIPER_topic"), "The pubsub topic to which the message is published.")
 	cmd.Flags().StringVar(&stepConfig.EventSource, "eventSource", os.Getenv("PIPER_eventSource"), "The events source as defined by CDEvents.")
 	cmd.Flags().StringVar(&stepConfig.EventType, "eventType", os.Getenv("PIPER_eventType"), "")
+	cmd.Flags().StringVar(&stepConfig.EventData, "eventData", os.Getenv("PIPER_eventData"), "Data to be merged with the generated data for the cloud event data field (JSON)")
 
 }
 
@@ -229,6 +231,20 @@ func gcpPublishEventMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_eventType"),
+					},
+					{
+						Name: "eventData",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/eventData",
+							},
+						},
+						Scope:     []string{},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_eventData"),
 					},
 				},
 			},
