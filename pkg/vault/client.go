@@ -34,12 +34,6 @@ type logicalClient interface {
 	Write(string, map[string]interface{}) (*api.Secret, error)
 }
 
-type VaultCredentials struct {
-	AppRoleID       string
-	AppRoleSecretID string
-	VaultToken      string
-}
-
 // NewClient instantiates a Client and sets the specified token
 func NewClient(config *Config, token string) (Client, error) {
 	if config == nil {

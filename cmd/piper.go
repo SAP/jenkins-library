@@ -54,7 +54,6 @@ type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
 	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
 	PendoConfig  PendoConfiguration  `json:"pendo,omitempty"`
-	OIDCConfig   OIDCConfiguration   `json:"oidc,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -77,11 +76,6 @@ type PendoConfiguration struct {
 	Token string `json:"token,omitempty"`
 }
 
-// OIDCConfiguration defines the configuration options for the OpenID Connect authentication system
-type OIDCConfiguration struct {
-	RoleID string `json:",roleID,omitempty"`
-}
-
 var rootCmd = &cobra.Command{
 	Use:   "piper",
 	Short: "Executes CI/CD steps from project 'Piper' ",
@@ -98,7 +92,6 @@ var GeneralConfig GeneralConfigOptions
 func Execute() {
 	log.Entry().Infof("Version %s", GitCommit)
 
-	rootCmd.AddCommand(GcpPublishEventCommand())
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(DefaultsCommand())
