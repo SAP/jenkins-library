@@ -36,3 +36,9 @@ func (_m *VaultMock) GetKvSecret(_a0 string) (map[string]string, error) {
 func (_m *VaultMock) MustRevokeToken() {
 	_m.Called()
 }
+
+// TODO: auto-generate this instead
+func (_m *VaultMock) GetOIDCTokenByValidation(token string) (string, error) {
+	_m.Called()
+	return "", nil
+}
