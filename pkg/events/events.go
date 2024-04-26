@@ -30,7 +30,7 @@ func NewEvent(eventType, eventSource string) Event {
 	}
 }
 
-func (e Event) CreateWithJSONData(data []byte, opts ...Option) Event {
+func (e Event) CreateWithJSONData(data string, opts ...Option) Event {
 	return e.Create(data, opts...)
 }
 

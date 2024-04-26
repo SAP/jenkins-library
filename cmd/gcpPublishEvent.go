@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
-
 	piperConfig "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
@@ -77,12 +75,9 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	var data []byte
 	var err error
 
-	jsonEventData, err := json.Marshal(config.EventData)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal event data")
-	}
+	config.EventData = `{"testData": "testValue"}`
 
-	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(jsonEventData).ToBytes()
+	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(config.EventData).ToBytes()
 	if err != nil {
 		return errors.Wrap(err, "failed to create event data")
 	}
