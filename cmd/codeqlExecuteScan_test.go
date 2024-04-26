@@ -594,10 +594,10 @@ func TestAppendCodeqlQuery(t *testing.T) {
 
 	t.Run("security-and-quality.qls", func(t *testing.T) {
 		cmd := []string{"database", "analyze"}
-		query := "security-extended.qls"
+		query := "security-and-quality.qls"
 		cmd = appendCodeqlQuery(cmd, query)
 		assert.Equal(t, 3, len(cmd))
-		assert.Equal(t, cmd[2], "security-extended.qls")
+		assert.Equal(t, cmd[2], "security-and-quality.qls")
 	})
 
 	t.Run("java-security-and-quality.qls", func(t *testing.T) {
