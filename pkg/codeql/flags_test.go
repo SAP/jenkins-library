@@ -356,9 +356,9 @@ func TestGetCodeqlQuery(t *testing.T) {
 	})
 
 	t.Run("Add prefix to security and quality", func(t *testing.T) {
-		input := "java-security-extended.qls"
+		input := "java-security-and-quality.qls"
 		query := GetCodeqlQuery(input)
-		assert.Equal(t, "sap-java-security-extended.qls", query)
+		assert.Equal(t, "sap-java-security-and-quality.qls", query)
 	})
 
 	t.Run("Lang is not supported, don't add prefix", func(t *testing.T) {
