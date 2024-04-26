@@ -15,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/google/shlex"
 	"github.com/pkg/errors"
 )
 
@@ -138,6 +139,13 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 		return reports, err
 	}
 	reports = append(reports, scanReports...)
+
+	if len(config.CustomCommand) > 0 {
+		err = runCustomCommand(utils, config.CustomCommand)
+		if err != nil {
+			return reports, err
+		}
+	}
 
 	repoInfo, err := codeql.GetRepoInfo(config.Repository, config.AnalyzedRef, config.CommitID,
 		config.TargetGithubRepoURL, config.TargetGithubBranchName)
@@ -391,6 +399,21 @@ func uploadProjectToGitHub(config *codeqlExecuteScanOptions, repoInfo *codeql.Re
 	repoInfo.CommitId = targetCommitId
 	log.Entry().Info("DB sources were successfully uploaded to target GitHub repo")
 
+	return nil
+}
+
+func runCustomCommand(utils codeqlExecuteScanUtils, command string) error {
+	log.Entry().Infof("custom command will be run: %s", command)
+	cmd, err := shlex.Split(command)
+	if err != nil {
+		log.Entry().WithError(err).Errorf("failed to parse custom command %s", command)
+	}
+	err = utils.RunExecutable(cmd[0], cmd[1:]...)
+	if err != nil {
+		log.Entry().WithError(err).Errorf("failed to run command %s", command)
+		return err
+	}
+	log.Entry().Info("Success.")
 	return nil
 }
 
