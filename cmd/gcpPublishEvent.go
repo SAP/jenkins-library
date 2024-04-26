@@ -18,7 +18,6 @@ type gcpPublishEventUtils interface {
 
 type gcpPublishEventUtilsBundle struct {
 	config *gcpPublishEventOptions
-	// *vault.Client
 }
 
 func (g gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
@@ -33,36 +32,14 @@ func (g gcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, 
 	return gcp.Publish(projectNumber, topic, token, data)
 }
 
-// to be implemented through another PR
+// to be implemented through another PR!
 func (g gcpPublishEventUtilsBundle) GetOIDCTokenByValidation(roleID string) (string, error) {
 	return "testToken", nil
 }
 
 func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
-	// vaultCreds := piperConfig.VaultCredentials{
-	// 	AppRoleID:       GeneralConfig.VaultRoleID,
-	// 	AppRoleSecretID: GeneralConfig.VaultRoleSecretID,
-	// 	VaultToken:      GeneralConfig.VaultToken,
-	// }
-	// vaultConfig := map[string]interface{}{
-	// 	"vaultNamespace": config.VaultNamespace,
-	// 	"vaultServerUrl": config.VaultServerURL,
-	// }
-
-	// client, err := piperConfig.GetVaultClientFromConfig(vaultConfig, vaultCreds)
-	// if err != nil {
-	// 	log.Entry().WithError(err).Warnf("could not create Vault client")
-	// }
-	// defer client.MustRevokeToken()
-
-	// vaultClient, ok := client.(vault.Client)
-	// if !ok {
-	// 	log.Entry().WithError(err).Warnf("could not create Vault client")
-	// }
-
 	utils := gcpPublishEventUtilsBundle{
 		config: &config,
-		// Client: &vaultClient,
 	}
 
 	err := runGcpPublishEvent(utils)
@@ -85,7 +62,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		return errors.Wrap(err, "failed to create event data")
 	}
 
-	// this is currently returning a mock token. function will be implemented through another PR
+	// this is currently returning a mock token. function will be implemented through another PR!
 	// roleID will come from GeneralConfig.HookConfig.OIDCConfig.RoleID
 	roleID := "hyperspace-pipelines"
 	oidcToken, err := utils.GetOIDCTokenByValidation(roleID)
