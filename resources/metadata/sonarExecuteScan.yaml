@@ -310,7 +310,7 @@ spec:
                 type: int
   containers:
     - name: sonar
-      image: sonarsource/sonar-scanner-cli:4.8
+      image: sonarsource/sonar-scanner-cli:5.0
       options:
         - name: -u
           value: "0"

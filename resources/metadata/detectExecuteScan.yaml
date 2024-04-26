@@ -257,6 +257,15 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: generateReportsForEmptyProjects
+        type: bool
+        default: false
+        description:
+          "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: pomPath
         type: string
         description: Path to the pom file which should be installed including all children.
@@ -340,15 +349,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      ## --- to remove minScanInterval from parameters list ---
       - name: minScanInterval
         description:
-          "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
+          "[DEPRECATED] This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
           value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan."
         type: int
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+      ## -----------
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
