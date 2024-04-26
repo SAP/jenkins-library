@@ -60,16 +60,6 @@ func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry
 
 func appendCodeqlQuery(cmd []string, codeqlQuery string) []string {
 	if len(codeqlQuery) > 0 {
-		lang := ""
-		if strings.HasSuffix(codeqlQuery, "-security-extended.qls") {
-			lang = strings.TrimSuffix(codeqlQuery, "-security-extended.qls")
-		} else if strings.HasSuffix(codeqlQuery, "-security-and-quality.qls") {
-			lang = strings.TrimSuffix(codeqlQuery, "-security-and-quality.qls")
-		}
-		switch lang {
-		case "cpp", "csharp", "go", "java", "javascript", "python", "ruby", "swift":
-			codeqlQuery = "sap-" + codeqlQuery
-		}
 		cmd = append(cmd, codeqlQuery)
 	}
 
@@ -127,6 +117,8 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	printCodeqlImageVersion()
 
 	var reports []piperutils.Path
+
+	config.QuerySuite = codeql.GetCodeqlQuery(config.QuerySuite)
 
 	dbCreateCustomFlags := codeql.ParseCustomFlags(config.DatabaseCreateFlags)
 	err := runDatabaseCreate(config, dbCreateCustomFlags, utils)

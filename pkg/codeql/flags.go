@@ -126,3 +126,19 @@ func AppendThreadsAndRam(cmd []string, threads, ram string, customFlags map[stri
 	}
 	return cmd
 }
+
+func GetCodeqlQuery(query string) string {
+	if len(query) > 0 {
+		lang := ""
+		if strings.HasSuffix(query, "-security-extended.qls") {
+			lang = strings.TrimSuffix(query, "-security-extended.qls")
+		} else if strings.HasSuffix(query, "-security-and-quality.qls") {
+			lang = strings.TrimSuffix(query, "-security-and-quality.qls")
+		}
+		switch lang {
+		case "cpp", "csharp", "go", "java", "javascript", "python", "ruby", "swift":
+			return "sap-" + query
+		}
+	}
+	return query
+}

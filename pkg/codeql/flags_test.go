@@ -327,3 +327,43 @@ func TestAppendThreadsAndRam(t *testing.T) {
 		assert.Equal(t, "--ram=2000", params[2])
 	})
 }
+
+func TestGetCodeqlQuery(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Empty query", func(t *testing.T) {
+		input := ""
+		query := GetCodeqlQuery(input)
+		assert.Empty(t, query)
+	})
+
+	t.Run("Not empty query", func(t *testing.T) {
+		input := "java-extended.ql"
+		query := GetCodeqlQuery(input)
+		assert.Equal(t, "java-extended.ql", query)
+	})
+
+	t.Run("Don't add prefix", func(t *testing.T) {
+		input := "security-extended.qls"
+		query := GetCodeqlQuery(input)
+		assert.Equal(t, "security-extended.qls", query)
+	})
+
+	t.Run("Add prefix to security extended", func(t *testing.T) {
+		input := "java-security-extended.qls"
+		query := GetCodeqlQuery(input)
+		assert.Equal(t, "sap-java-security-extended.qls", query)
+	})
+
+	t.Run("Add prefix to security and quality", func(t *testing.T) {
+		input := "java-security-extended.qls"
+		query := GetCodeqlQuery(input)
+		assert.Equal(t, "sap-java-security-extended.qls", query)
+	})
+
+	t.Run("Lang is not supported, don't add prefix", func(t *testing.T) {
+		input := "php-security-extended.qls"
+		query := GetCodeqlQuery(input)
+		assert.Equal(t, "php-security-extended.qls", query)
+	})
+}
