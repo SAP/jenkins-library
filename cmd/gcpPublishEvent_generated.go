@@ -28,7 +28,7 @@ type gcpPublishEventOptions struct {
 	EventData                       string `json:"eventData,omitempty"`
 }
 
-// GcpPublishEventCommand
+// GcpPublishEventCommand Publishes an event to GCP using OIDC authentication (beta)
 func GcpPublishEventCommand() *cobra.Command {
 	const STEP_NAME = "gcpPublishEvent"
 
@@ -41,8 +41,9 @@ func GcpPublishEventCommand() *cobra.Command {
 
 	var createGcpPublishEventCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "",
-		Long:  ``,
+		Short: "Publishes an event to GCP using OIDC authentication (beta)",
+		Long: `This step is in beta.
+Authentication to GCP is handled by an OIDC token received from, for example, Vault.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -146,7 +147,7 @@ func gcpPublishEventMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "gcpPublishEvent",
 			Aliases:     []config.Alias{},
-			Description: "",
+			Description: "Publishes an event to GCP using OIDC authentication (beta)",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
