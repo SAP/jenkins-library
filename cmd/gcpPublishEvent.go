@@ -55,8 +55,6 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	var data []byte
 	var err error
 
-	config.EventData = `{"testData": "testValue"}`
-
 	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(config.EventData).ToBytes()
 	if err != nil {
 		return errors.Wrap(err, "failed to create event data")
