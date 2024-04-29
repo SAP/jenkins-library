@@ -102,6 +102,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"nexusUpload":                               nexusUploadMetadata(),
 		"npmExecuteLint":                            npmExecuteLintMetadata(),
 		"npmExecuteScripts":                         npmExecuteScriptsMetadata(),
+		"packBuild":                                 packBuildMetadata(),
 		"pipelineCreateScanSummary":                 pipelineCreateScanSummaryMetadata(),
 		"protecodeExecuteScan":                      protecodeExecuteScanMetadata(),
 		"pythonBuild":                               pythonBuildMetadata(),

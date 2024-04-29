@@ -69,6 +69,10 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
+            if (parameters.agentLabel) {
+                config.agentLabel = parameters.agentLabel
+            }
+
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     writePipelineEnv(script: script, piperGoPath: piperGoPath)
@@ -163,6 +167,14 @@ void dockerWrapper(script, stepName, config, body) {
         Map dockerExecuteParameters = [:].plus(config)
         dockerExecuteParameters.script = script
         dockerExecute(dockerExecuteParameters) {
+            body()
+        }
+    } else if (config.agentLabel) {
+        echo "[INFO] executing pipeline step '${stepName}' with agent label '${config.agentLabel}'"
+        stash name: 'workspace', includes: '**/*'
+
+        node(config.agentLabel) {
+            unstash 'workspace'
             body()
         }
     } else {
