@@ -407,7 +407,10 @@ func runCustomCommand(utils codeqlExecuteScanUtils, command string) error {
 	cmd, err := shlex.Split(command)
 	if err != nil {
 		log.Entry().WithError(err).Errorf("failed to parse custom command %s", command)
+		return err
 	}
+	log.Entry().Infof("Parsed command '%s' with %d arguments: [%s]", cmd[0], len(cmd[1:]), strings.Join(cmd[1:], ", "))
+
 	err = utils.RunExecutable(cmd[0], cmd[1:]...)
 	if err != nil {
 		log.Entry().WithError(err).Errorf("failed to run command %s", command)
