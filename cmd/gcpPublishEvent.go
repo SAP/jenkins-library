@@ -62,7 +62,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 
 	// this is currently returning a mock token. function will be implemented through another PR!
 	// roleID will come from GeneralConfig.HookConfig.OIDCConfig.RoleID
-	roleID := "hyperspace-pipelines"
+	roleID := "test"
 	oidcToken, err := utils.GetOIDCTokenByValidation(roleID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get OIDC token")
