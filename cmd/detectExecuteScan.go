@@ -426,12 +426,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
 	}
 
-	if config.MinScanInterval > 0 {
-		//Unmap doesnt work well with min-scan-interval and should be removed
-		config.Unmap = false
-		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%d'", config.MinScanInterval))
-	}
-
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
 			args = append(args, "--detect.project.codelocation.unmap=true")
@@ -630,7 +624,11 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 		CounterHeader: "Entry#",
 	}
 
-	vulnItems := vulns.Items
+	var vulnItems []bd.Vulnerability
+	if vulns != nil {
+		vulnItems = vulns.Items
+	}
+
 	sort.Slice(vulnItems, func(i, j int) bool {
 		return vulnItems[i].OverallScore > vulnItems[j].OverallScore
 	})
@@ -722,7 +720,12 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	errorsOccured := []string{}
 	vulns, err := getVulnerabilitiesWithComponents(config, influx, sys)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch vulnerabilities")
+		if config.GenerateReportsForEmptyProjects &&
+			strings.Contains(err.Error(), "No Components found for project version") {
+			log.Entry().Debug(err.Error())
+		} else {
+			return errors.Wrap(err, "failed to fetch vulnerabilities")
+		}
 	}
 
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
@@ -1041,6 +1044,7 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.Token = "********"
 	config.GithubToken = "********"
 	config.PrivateModulesGitToken = "********"
+	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
 }

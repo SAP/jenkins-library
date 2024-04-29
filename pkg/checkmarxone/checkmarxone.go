@@ -825,10 +825,11 @@ func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) 
 func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID string, groupIDs []string) (Project, error) {
 	var project Project
 	jsonData := map[string]interface{}{
-		"name":        projectName,
-		"groups":      groupIDs,
-		"origin":      cxOrigin,
-		"criticality": 3, // default
+		"name":           projectName,
+		"groups":         groupIDs,
+		"origin":         cxOrigin,
+		"criticality":    3, // default
+		"applicationIds": []string{applicationID},
 		// multiple additional parameters exist as options
 	}
 
@@ -839,17 +840,7 @@ func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-
-	data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("/projects/application/%v", applicationID), bytes.NewBuffer(jsonValue), header, []int{})
-
-	if err != nil && err.Error()[0:8] == "HTTP 404" { // At some point, the api /projects/applications will be removed and instead the normal /projects API will do the job.
-		jsonData["applicationIds"] = []string{applicationID}
-		jsonValue, err = json.Marshal(data)
-		if err != nil {
-			return project, err
-		}
-		data, err = sendRequest(sys, http.MethodPost, "/projects", bytes.NewReader(jsonValue), header, []int{})
-	}
+	data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewReader(jsonValue), header, []int{})
 
 	if err != nil {
 		return project, errors.Wrapf(err, "failed to create project %v under %v", projectName, applicationID)

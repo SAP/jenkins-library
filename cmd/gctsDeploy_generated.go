@@ -34,7 +34,7 @@ type gctsDeployOptions struct {
 	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
 }
 
-// GctsDeployCommand Deploys a Git Repository to a local Repository and then to an ABAP System
+// GctsDeployCommand Deploys a Git repository to a local repository and then to an ABAP system
 func GctsDeployCommand() *cobra.Command {
 	const STEP_NAME = "gctsDeploy"
 
@@ -47,11 +47,11 @@ func GctsDeployCommand() *cobra.Command {
 
 	var createGctsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Deploys a Git Repository to a local Repository and then to an ABAP System",
+		Short: "Deploys a Git repository to a local repository and then to an ABAP system",
 		Long: `This step deploys a remote Git repository to a local repository on an ABAP system and imports the content in the ABAP database.
 If the repository does not yet exist in the system, this step also creates it.
 If the repository already exists on the ABAP system, this step executes the remaining actions of the step, depending on the parameters provided for the step.
-These actions include, for example, deploy a specific commit to the ABAP system, or deploy the current commit of a specific branch.
+These actions include, for example, deploy a specific commit of the default branch or roll back to the previous commit, if import errors occur .
 You can use this step for gCTS as of SAP S/4HANA 2020.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -150,7 +150,7 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.VSID, "vSID", os.Getenv("PIPER_vSID"), "Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository. For more information, see [Background Information - vSID](https://help.sap.com/docs/ABAP_PLATFORM_NEW/4a368c163b08418890a406d413933ba7/8edc17edfc374908bd8a1615ea5ab7b7.html) on SAP Help Portal.")
 	cmd.Flags().StringVar(&stepConfig.Type, "type", `GIT`, "Type of the used source code management tool")
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Name of a branch, if you want to deploy the content of a specific branch to the ABAP system.")
-	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Scope of objects to be deployed. Possible values are `CRNTCOMMIT` (current commit - Default) and `LASTACTION` (last repository action). The default option deploys all objects that existed in the repository when the commit was created. `LASTACTION` only deploys the object difference of the last action in the repository.")
+	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Scope of objects to be deployed (imported). Only use this parameter for specific use cases, for example, when import errors occurred. Possible values are `CRNTCOMMIT` (current commit of the local repository) and `LASTACTION` (last action that occurred in the local repository). The `CRNTCOMMIT` option deploys the complete list of objects that existed in the local repository at the point in time when the commit was created. Note that this deploy scope doesn't only comprise the changed objects of the commit itself. `LASTACTION` only deploys the object difference between the `From Commit` and the `To Commit` of the last action in the repository.")
 	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "Indication whether you want to roll back to the last working state of the repository, if any of the step actions *switch branch* or *pull commit* fail.")
 
 	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.")
@@ -169,7 +169,7 @@ func gctsDeployMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "gctsDeploy",
 			Aliases:     []config.Alias{},
-			Description: "Deploys a Git Repository to a local Repository and then to an ABAP System",
+			Description: "Deploys a Git repository to a local repository and then to an ABAP system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

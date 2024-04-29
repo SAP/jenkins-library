@@ -106,6 +106,7 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
+        'abapAddonAssemblyKitCheck', //implementing new golang pattern without fields
         'abapAddonAssemblyKitCheckCVs', //implementing new golang pattern without fields
         'abapAddonAssemblyKitCheckPV', //implementing new golang pattern without fields
         'abapAddonAssemblyKitCreateTargetVector', //implementing new golang pattern without fields
@@ -176,6 +177,7 @@ public class CommonStepsTest extends BasePiperTest{
         'gctsExecuteABAPUnitTests', //implementing new golang pattern without fields
         'gctsCloneRepository', //implementing new golang pattern without fields
         'codeqlExecuteScan', //implementing new golang pattern without fields
+        'contrastExecuteScan', //implementing new golang pattern without fields
         'credentialdiggerScan', //implementing new golang pattern without fields
         'fortifyExecuteScan', //implementing new golang pattern without fields
         'gctsDeploy', //implementing new golang pattern without fields

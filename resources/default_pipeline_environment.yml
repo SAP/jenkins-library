@@ -237,7 +237,7 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
-      stashBack: '**/node_modules/**,nohup.out'
+      stashBack: '**/node_modules/**,nohup.out,.git/**'
   dubExecute:
     dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
