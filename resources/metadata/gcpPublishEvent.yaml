@@ -1,7 +1,9 @@
 metadata:
   name: gcpPublishEvent
-  description:
-  longDescription:
+  description: Publishes an event to GCP using OIDC authentication (beta)
+  longDescription: |
+    This step is in beta.
+    Authentication to GCP is handled by an OIDC token received from, for example, Vault.
 spec:
   inputs:
     params:
