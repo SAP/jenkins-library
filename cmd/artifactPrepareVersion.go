@@ -109,20 +109,19 @@ var sshAgentAuth = ssh.NewSSHAgentAuth
 
 func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, utils artifactPrepareVersionUtils, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
 
-	telemetryData.Custom1Label = "buildTool"
-	telemetryData.Custom1 = config.BuildTool
-	telemetryData.Custom2Label = "filePath"
-	telemetryData.Custom2 = config.FilePath
+	telemetryData.BuildTool = config.BuildTool
+	telemetryData.FilePath = config.FilePath
 
 	// Options for artifact
 	artifactOpts := versioning.Options{
-		GlobalSettingsFile:  config.GlobalSettingsFile,
-		M2Path:              config.M2Path,
-		ProjectSettingsFile: config.ProjectSettingsFile,
-		VersionField:        config.CustomVersionField,
-		VersionSection:      config.CustomVersionSection,
-		VersioningScheme:    config.CustomVersioningScheme,
-		VersionSource:       config.DockerVersionSource,
+		GlobalSettingsFile:      config.GlobalSettingsFile,
+		M2Path:                  config.M2Path,
+		ProjectSettingsFile:     config.ProjectSettingsFile,
+		VersionField:            config.CustomVersionField,
+		VersionSection:          config.CustomVersionSection,
+		VersioningScheme:        config.CustomVersioningScheme,
+		VersionSource:           config.DockerVersionSource,
+		CAPVersioningPreference: config.CAPVersioningPreference,
 	}
 
 	var err error
@@ -143,6 +142,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve version")
+	} else if len(version) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("version is empty - please check versioning configuration")
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 

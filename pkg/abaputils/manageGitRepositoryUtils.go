@@ -40,7 +40,13 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 }
 
 func PrintLogs(api SoftwareComponentApiInterface) {
-	// connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
+
+	// Get Execution Logs
+	executionLogs, err := api.GetExecutionLog()
+	if err == nil {
+		printExecutionLogs(executionLogs)
+	}
+
 	results, err := api.GetLogOverview()
 	if err != nil || len(results) == 0 {
 		// return if no logs are available
@@ -61,6 +67,17 @@ func PrintLogs(api SoftwareComponentApiInterface) {
 	AddDefaultDashedLine(1)
 
 	return
+}
+
+func printExecutionLogs(executionLogs ExecutionLog) {
+	log.Entry().Infof("\n")
+	AddDefaultDashedLine(1)
+	log.Entry().Infof("Execution Logs")
+	AddDefaultDashedLine(1)
+	for _, entry := range executionLogs.Value {
+		log.Entry().Infof("%7s - %s", entry.Type, entry.Descr)
+	}
+	AddDefaultDashedLine(1)
 }
 
 func printOverview(results []LogResultsV2) {
@@ -116,7 +133,7 @@ func printLogProtocolEntries(logEntry LogResultsV2, logProtocols []LogProtocol) 
 	sort.SliceStable(logProtocols, func(i, j int) bool {
 		return logProtocols[i].ProtocolLine < logProtocols[j].ProtocolLine
 	})
-	if logEntry.Status != `Success` {
+	if logEntry.Status == `Error` {
 		for _, entry := range logProtocols {
 			log.Entry().Info(entry.Description)
 		}
@@ -202,12 +219,21 @@ func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
 	return logString
 }
 
-func (repo *Repository) GetCloneRequestBody() (body string) {
+func (repo *Repository) GetCloneRequestBodyWithSWC() (body string) {
 	if repo.CommitID != "" && repo.Tag != "" {
 		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
 	}
 	requestBodyString := repo.GetRequestBodyForCommitOrTag()
 	body = `{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
+	return body
+}
+
+func (repo *Repository) GetCloneRequestBody() (body string) {
+	if repo.CommitID != "" && repo.Tag != "" {
+		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
+	}
+	requestBodyString := repo.GetRequestBodyForCommitOrTag()
+	body = `{"branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
 	return body
 }
 

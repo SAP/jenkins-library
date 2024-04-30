@@ -32,7 +32,7 @@ const toolKustomize = "kustomize"
 type iGitopsUpdateDeploymentGitUtils interface {
 	CommitFiles(filePaths []string, commitMessage, author string) (plumbing.Hash, error)
 	PushChangesToRepository(username, password string, force *bool, caCerts []byte) error
-	PlainClone(username, password, serverURL, directory string, caCerts []byte) error
+	PlainClone(username, password, serverURL, branchName, directory string, caCerts []byte) error
 	ChangeBranch(branchName string) error
 }
 
@@ -99,9 +99,9 @@ func (g *gitopsUpdateDeploymentGitUtils) PushChangesToRepository(username, passw
 	return gitUtil.PushChangesToRepository(username, password, force, g.repository, caCerts)
 }
 
-func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverURL, directory string, caCerts []byte) error {
+func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverURL, branchName, directory string, caCerts []byte) error {
 	var err error
-	g.repository, err = gitUtil.PlainClone(username, password, serverURL, directory, caCerts)
+	g.repository, err = gitUtil.PlainClone(username, password, serverURL, branchName, directory, caCerts)
 	if err != nil {
 		return errors.Wrapf(err, "plain clone failed '%s'", serverURL)
 	}
@@ -323,7 +323,7 @@ func logNotRequiredButFilledFieldForKustomize(config *gitopsUpdateDeploymentOpti
 
 func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils, temporaryFolder string, certs []byte) error {
 
-	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder, certs)
+	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, config.BranchName, temporaryFolder, certs)
 	if err != nil {
 		return errors.Wrap(err, "failed to plain clone repository")
 	}

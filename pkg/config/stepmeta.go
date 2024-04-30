@@ -235,9 +235,17 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		contextFilters = append(contextFilters, parameterKeys...)
 	}
 	if len(m.Spec.Sidecars) > 0 {
+		parameterKeysForSideCar := []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}
+		for _, sidecar := range m.Spec.Sidecars {
+			for _, condition := range sidecar.Conditions {
+				for _, dependentParam := range condition.Params {
+					parameterKeysForSideCar = append(parameterKeysForSideCar, dependentParam.Value)
+					parameterKeysForSideCar = append(parameterKeysForSideCar, dependentParam.Name)
+				}
+			}
+		}
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
-		contextFilters = append(contextFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
-		//ToDo: add condition param.Value and param.Name to filter as for Containers
+		contextFilters = append(contextFilters, parameterKeysForSideCar...)
 	}
 
 	contextFilters = addVaultContextParametersFilter(m, contextFilters)
@@ -302,12 +310,43 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
-		if len(m.Spec.Sidecars[0].Command) > 0 {
-			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
-		}
-		m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
-		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
+		// if there one side car do not check conditions and consider the only side care as default . this is default behaviour
+		// if there are more than one side car then check conditions,
+		if len(m.Spec.Sidecars) == 1 {
+			if len(m.Spec.Sidecars[0].Command) > 0 {
+				root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
+			}
+			m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
+			putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
+		} else {
+			for _, sideCar := range m.Spec.Sidecars {
+				key := ""
+				conditionParam := ""
+				if len(sideCar.Conditions) > 0 {
+					key = sideCar.Conditions[0].Params[0].Value
+					conditionParam = sideCar.Conditions[0].Params[0].Name
+				}
+				p := map[string]interface{}{}
+				if key != "" {
+					root[key] = p
+					//add default for condition parameter if available
+					for _, inputParam := range m.Spec.Inputs.Parameters {
+						if inputParam.Name == conditionParam {
+							root[conditionParam] = inputParam.Default
+						}
+					}
+				} else {
+					p = root
+				}
+				if len(sideCar.Command) > 0 {
+					root["sidecarCommand"] = sideCar.Command[0]
+				}
 
+				putStringIfNotEmpty(root, "sidecarReadyCommand", sideCar.ReadyCommand)
+				sideCar.commonConfiguration("sidecar", &p)
+
+			}
+		}
 		// not filled for now since this is not relevant in Kubernetes case
 		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
 	}

@@ -18,10 +18,13 @@ import (
 )
 
 type abapAddonAssemblyKitCreateTargetVectorOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitCertificateFile string `json:"abapAddonAssemblyKitCertificateFile,omitempty"`
+	AbapAddonAssemblyKitCertificatePass string `json:"abapAddonAssemblyKitCertificatePass,omitempty"`
+	AbapAddonAssemblyKitEndpoint        string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	Username                            string `json:"username,omitempty"`
+	Password                            string `json:"password,omitempty"`
+	AddonDescriptor                     string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitOriginHash      string `json:"abapAddonAssemblyKitOriginHash,omitempty"`
 }
 
 type abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment struct {
@@ -71,6 +74,8 @@ func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 With these it creates a Target Vector, which is necessary for executing software lifecylce operations in ABAP Cloud Platform systems.
 The Target Vector describes the software state, which shall be reached in the managed ABAP Cloud Platform system.
 <br />
+For logon you can either provide a credential with basic authorization (username and password) or two secret text credentials containing the technical s-users certificate (see note [2805811](https://me.sap.com/notes/2805811) for download) as base64 encoded string and the password to decrypt the file
+<br />
 For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -88,8 +93,11 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificateFile)
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificatePass)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitOriginHash)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -147,7 +155,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapAddonAssemblyKitCreateTargetVector(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -159,14 +167,15 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 }
 
 func addAbapAddonAssemblyKitCreateTargetVectorFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCreateTargetVectorOptions) {
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitCertificateFile, "abapAddonAssemblyKitCertificateFile", os.Getenv("PIPER_abapAddonAssemblyKitCertificateFile"), "base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitCertificatePass, "abapAddonAssemblyKitCertificatePass", os.Getenv("PIPER_abapAddonAssemblyKitCertificatePass"), "password to decrypt the certificate file")
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitOriginHash, "abapAddonAssemblyKitOriginHash", os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"), "Origin Hash for restricted AAKaaS scenarios")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
-	cmd.MarkFlagRequired("username")
-	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("addonDescriptor")
 }
 
@@ -182,8 +191,40 @@ func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCertificateFileCredentialsId", Description: "Jenkins secret text credential ID containing the base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCertificatePassCredentialsId", Description: "Jenkins secret text credential ID containing the password to decrypt the certificate file stored in abapAddonAssemblyKitCertificateFileCredentialsId", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name: "abapAddonAssemblyKitCertificateFile",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapAddonAssemblyKitCertificateFileCredentialsId",
+								Param: "abapAddonAssemblyKitCertificateFile",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_abapAddonAssemblyKitCertificateFile"),
+					},
+					{
+						Name: "abapAddonAssemblyKitCertificatePass",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapAddonAssemblyKitCertificatePassCredentialsId",
+								Param: "abapAddonAssemblyKitCertificatePass",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_abapAddonAssemblyKitCertificatePass"),
+					},
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
@@ -198,7 +239,7 @@ func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_username"),
 					},
@@ -207,7 +248,7 @@ func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_password"),
 					},
@@ -224,6 +265,15 @@ func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_addonDescriptor"),
+					},
+					{
+						Name:        "abapAddonAssemblyKitOriginHash",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"),
 					},
 				},
 			},
