@@ -624,7 +624,11 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 		CounterHeader: "Entry#",
 	}
 
-	vulnItems := vulns.Items
+	var vulnItems []bd.Vulnerability
+	if vulns != nil {
+		vulnItems = vulns.Items
+	}
+
 	sort.Slice(vulnItems, func(i, j int) bool {
 		return vulnItems[i].OverallScore > vulnItems[j].OverallScore
 	})
@@ -716,7 +720,12 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	errorsOccured := []string{}
 	vulns, err := getVulnerabilitiesWithComponents(config, influx, sys)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch vulnerabilities")
+		if config.GenerateReportsForEmptyProjects &&
+			strings.Contains(err.Error(), "No Components found for project version") {
+			log.Entry().Debug(err.Error())
+		} else {
+			return errors.Wrap(err, "failed to fetch vulnerabilities")
+		}
 	}
 
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
@@ -1035,6 +1044,7 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.Token = "********"
 	config.GithubToken = "********"
 	config.PrivateModulesGitToken = "********"
+	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
 }
