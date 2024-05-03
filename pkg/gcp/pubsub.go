@@ -14,20 +14,22 @@ const api_url = "https://pubsub.googleapis.com/v1/projects/%s/topics/%s:publish"
 
 // https://pkg.go.dev/cloud.google.com/go/pubsub#Message
 type EventMessage struct {
-	Data []byte `json:"data"`
+	Data        []byte `json:"data"`
+	OrderingKey string `json:"orderingKey"`
 }
 
 type Event struct {
 	Messages []EventMessage `json:"messages"`
 }
 
-func Publish(projectNumber string, topic string, token string, data []byte) error {
+func Publish(projectNumber string, topic string, token string, key string, data []byte) error {
 	ctx := context.Background()
 
 	// build event
 	event := Event{
 		Messages: []EventMessage{{
-			Data: data,
+			Data:        data,
+			OrderingKey: key,
 		}},
 	}
 

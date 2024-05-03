@@ -23,7 +23,7 @@ func (g *mockGcpPublishEventUtilsBundle) GetFederatedToken(projectNumber, pool, 
 	return "testFederatedToken123", nil
 }
 
-func (g *mockGcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, token string, data []byte) error {
+func (g *mockGcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, token string, key string, data []byte) error {
 	if topic == "goodTestCase" {
 		return nil
 	} else if topic == "badTestCase" {

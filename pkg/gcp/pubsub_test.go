@@ -38,7 +38,7 @@ func TestPublish(t *testing.T) {
 		)
 
 		// test
-		err := Publish(projectNumber, topic, token, data)
+		err := Publish(projectNumber, topic, token, mock.Anything, data)
 		// asserts
 		assert.NoError(t, err)
 	})
