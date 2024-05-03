@@ -601,6 +601,17 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
+      - name: useDetect9
+        description:
+          "This flag enables the use of the supported version 9 of the Detect Script instead of v8"
+        aliases:
+          - name: detect/useDetect9
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   outputs:
     resources:
       - name: influx
