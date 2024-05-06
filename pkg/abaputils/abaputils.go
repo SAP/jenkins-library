@@ -243,18 +243,6 @@ func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, error
 
 }
 
-// ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp and returns it
-// TODO: move to old sap_com_510
-// func ConvertTime(logTimeStamp string) time.Time {
-// 	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
-// 	n, error := strconv.ParseInt(seconds, 10, 64)
-// 	if error != nil {
-// 		return time.Unix(0, 0).UTC()
-// 	}
-// 	t := time.Unix(n, 0).UTC()
-// 	return t
-// }
-
 // AddDefaultDashedLine adds 25 dashes
 func AddDefaultDashedLine(j int) {
 	for i := 1; i <= j; i++ {

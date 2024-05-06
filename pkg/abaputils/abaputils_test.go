@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package abaputils
 
 import (
@@ -267,27 +270,6 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		assert.EqualError(t, err, "Parsing the service key failed for all supported formats. Service key is empty")
 	})
 }
-
-// func TestTimeConverter(t *testing.T) {
-// 	t.Run("Test example time", func(t *testing.T) {
-// 		inputDate := "/Date(1585576809000+0000)/"
-// 		expectedDate := "2020-03-30 14:00:09 +0000 UTC"
-// 		result := ConvertTime(inputDate)
-// 		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-// 	})
-// 	t.Run("Test Unix time", func(t *testing.T) {
-// 		inputDate := "/Date(0000000000000+0000)/"
-// 		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
-// 		result := ConvertTime(inputDate)
-// 		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-// 	})
-// 	t.Run("Test unexpected format", func(t *testing.T) {
-// 		inputDate := "/Date(0012300000001+0000)/"
-// 		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
-// 		result := ConvertTime(inputDate)
-// 		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-// 	})
-// }
 
 func TestHandleHTTPError(t *testing.T) {
 	t.Run("Test", func(t *testing.T) {
