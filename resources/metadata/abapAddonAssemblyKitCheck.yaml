@@ -1,0 +1,101 @@
+metadata:
+  name: abapAddonAssemblyKitCheck
+  description: This step calls AAKaaS to check the validity of the Addon Product Modelling.
+  longDescription: |
+    This step does the following:<ul>
+      <li>[The Addon Product Modelling](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#add-on-descriptor-file) is read from the <b>addonDescriptorFileName</b> (e.g. addon.yml)</li>
+      <li>A connection to AAKaaS (Addon Assembly Kit as a Service) is established and the Addon Product Modelling is transfered for detailed [checks](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#versioning-rules)</li>
+      <li>The semantic versions are resolved and stored into the piper commonPipelineEnviroment for usage of subsequent pipeline steps</li>
+    </ul>
+    <br />
+    For logon to AAKaaS you can either provide a credential with basic authorization (username and password) or two secret text credentials containing the technical s-users certificate (see note [2805811](https://me.sap.com/notes/2805811) for download) as base64 encoded string and the password to decrypt the file
+    <br />
+    For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
+spec:
+  inputs:
+    secrets:
+      - name: abapAddonAssemblyKitCredentialsId
+        description: CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
+        type: jenkins
+      - name: abapAddonAssemblyKitCertificateFileCredentialsId
+        description: Jenkins secret text credential ID containing the base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)
+        type: jenkins
+      - name: abapAddonAssemblyKitCertificatePassCredentialsId
+        description: Jenkins secret text credential ID containing the password to decrypt the certificate file stored in abapAddonAssemblyKitCertificateFileCredentialsId
+        type: jenkins
+    params:
+      - name: abapAddonAssemblyKitCertificateFile
+        type: string
+        description: base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)
+        scope:
+          - PARAMETERS
+        mandatory: false
+        secret: true
+        resourceRef:
+          - name: abapAddonAssemblyKitCertificateFileCredentialsId
+            type: secret
+            param: abapAddonAssemblyKitCertificateFile
+      - name: abapAddonAssemblyKitCertificatePass
+        type: string
+        description: password to decrypt the certificate file
+        scope:
+          - PARAMETERS
+        mandatory: false
+        secret: true
+        resourceRef:
+          - name: abapAddonAssemblyKitCertificatePassCredentialsId
+            type: secret
+            param: abapAddonAssemblyKitCertificatePass
+      - name: abapAddonAssemblyKitEndpoint
+        type: string
+        description: Base URL to the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        default: https://apps.support.sap.com
+      - name: username
+        type: string
+        description: User for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        secret: true
+      - name: password
+        type: string
+        description: Password for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+        mandatory: false
+        secret: true
+      - name: addonDescriptorFileName
+        type: string
+        description: File name of the YAML file which describes the Product Version and corresponding Software Component Versions
+        mandatory: true
+        default: addon.yml
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: addonDescriptor
+        type: string
+        description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/addonDescriptor

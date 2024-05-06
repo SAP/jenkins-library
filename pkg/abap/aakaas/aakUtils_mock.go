@@ -17,7 +17,8 @@ type AakBundleMock struct {
 	*mock.ExecMockRunner
 	*abaputils.ClientMock
 	*mock.FilesMock
-	maxRuntime time.Duration
+	maxRuntime          time.Duration
+	MockAddonDescriptor abaputils.AddonDescriptor
 }
 
 func NewAakBundleMock() *AakBundleMock {
@@ -98,6 +99,10 @@ func (bundle *AakBundleMock) ReadAddonDescriptor(FileName string) (abaputils.Add
 	case "failing":
 		{
 			err = errors.New("error in ReadAddonDescriptor")
+		}
+	case "addon.yml.mock":
+		{
+			return bundle.MockAddonDescriptor, nil
 		}
 	}
 	return addonDescriptor, err
