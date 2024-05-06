@@ -339,6 +339,7 @@ func (api *SAP_COM_0948) initialRequest() error {
 		CookieJar:          cookieJar,
 		Username:           api.con.User,
 		Password:           api.con.Password,
+		TrustedCerts:       api.con.CertificateNames,
 	})
 
 	// HEAD request to the root is not sufficient, as an unauthorized called is allowed to do so
