@@ -81,13 +81,20 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 }
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
-	if !config.PushLocalDockerImage {
+	if !config.PushLocalDockerImage && !config.UseImageNameTags {
 		if len(config.TargetImages) == 0 {
 			config.TargetImages = mapSourceTargetImages(config.SourceImages)
 		}
 		if len(config.TargetImages) != len(config.SourceImages) {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.New("configuration error: please configure targetImage and sourceImage properly")
+		}
+	}
+
+	if config.UseImageNameTags {
+		if len(config.TargetImageNameTags) > 0 && len(config.TargetImageNameTags) != len(config.SourceImageNameTags) {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.New("configuration error: please configure targetImageNameTags and sourceImageNameTags properly")
 		}
 	}
 
@@ -113,6 +120,13 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 	log.Entry().Debug("Handling source registry credentials")
 	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, utils); err != nil {
 		return errors.Wrap(err, "failed to handle credentials for source registry")
+	}
+
+	if config.UseImageNameTags {
+		if err := pushImageNameTagsToTargetRegistry(config, utils); err != nil {
+			return errors.Wrapf(err, "failed to push imageNameTags to target registry")
+		}
+		return nil
 	}
 
 	if err := copyImages(config, utils); err != nil {
@@ -233,6 +247,37 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 				return nil
 			})
 		}
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func pushImageNameTagsToTargetRegistry(config *imagePushToRegistryOptions, utils imagePushToRegistryUtils) error {
+	g, ctx := errgroup.WithContext(context.Background())
+	g.SetLimit(10)
+
+	for i, sourceImageNameTag := range config.SourceImageNameTags {
+		src := fmt.Sprintf("%s/%s", config.SourceRegistryURL, sourceImageNameTag)
+
+		dst := ""
+		if len(config.TargetImageNameTags) == 0 {
+			dst = fmt.Sprintf("%s/%s", config.TargetRegistryURL, sourceImageNameTag)
+		} else {
+			dst = fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImageNameTags[i])
+		}
+
+		g.Go(func() error {
+			log.Entry().Infof("Copying %s to %s...", src, dst)
+			if err := utils.CopyImage(ctx, src, dst, ""); err != nil {
+				return err
+			}
+			log.Entry().Infof("Copying %s to %s... Done", src, dst)
+			return nil
+		})
 	}
 
 	if err := g.Wait(); err != nil {

@@ -51,13 +51,15 @@ nav:
         - 'Set up a Pipeline-Based ABAP Development and Testing Process Using Git-Enabled Change and Transport System': scenarios/gCTS_Scenario.md
     - Extensibility: extensibility.md
     - 'Library steps':
-        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
-        - abapAddonAssemblyKitCheckPV: steps/abapAddonAssemblyKitCheckPV.md
-        - abapAddonAssemblyKitCreateTargetVector: steps/abapAddonAssemblyKitCreateTargetVector.md
-        - abapAddonAssemblyKitPublishTargetVector: steps/abapAddonAssemblyKitPublishTargetVector.md
-        - abapAddonAssemblyKitRegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
-        - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
-        - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
+        - 'abapAddonAssemblyKit':
+            - Check: steps/abapAddonAssemblyKitCheck.md
+            - CheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
+            - CheckPV: steps/abapAddonAssemblyKitCheckPV.md
+            - CreateTargetVector: steps/abapAddonAssemblyKitCreateTargetVector.md
+            - PublishTargetVector: steps/abapAddonAssemblyKitPublishTargetVector.md
+            - RegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
+            - ReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
+            - ReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
         - abapEnvironmentBuild: steps/abapEnvironmentBuild.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
         - abapEnvironmentAssembleConfirm: steps/abapEnvironmentAssembleConfirm.md
@@ -95,6 +97,7 @@ nav:
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
+        - contrastExecuteScan: steps/contrastExecuteScan.md
         - credentialdiggerScan: steps/credentialdiggerScan.md
         - debugReportArchive: steps/debugReportArchive.md
         - detectExecuteScan: steps/detectExecuteScan.md

@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -208,7 +207,7 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 		if len(config.ScanImages) != 0 && config.ActivateMultipleImagesScan {
 			for _, image := range config.ScanImages {
 				config.ScanImage = image
-				err := downloadDockerImageAsTarNew(config, utils)
+				err := downloadMultipleDockerImageAsTar(config, utils)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download docker image")
 				}
@@ -1093,7 +1092,7 @@ func createToolRecordWhitesource(utils whitesourceUtils, workspace string, confi
 	return record.GetFileName(), nil
 }
 
-func downloadDockerImageAsTarNew(config *ScanOptions, utils whitesourceUtils) error {
+func downloadMultipleDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error {
 
 	imageNameToSave := strings.Replace(config.ScanImage, "/", "-", -1)
 
@@ -1116,7 +1115,7 @@ func downloadDockerImageAsTarNew(config *ScanOptions, utils whitesourceUtils) er
 		}
 		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
 	}
-	// to remove timestamp and artifact version
+	// remove contents after : in the image name
 	if err := renameTarfilePath(tarFilePath); err != nil {
 		return errors.Wrapf(err, "failed to rename image %v", err)
 	}
@@ -1148,19 +1147,18 @@ func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error
 	return nil
 }
 
+// rename tarFilepath to remove all contents after :
 func renameTarfilePath(tarFilepath string) error {
 	if _, err := os.Stat(tarFilepath); os.IsNotExist(err) {
 		return fmt.Errorf("file %s does not exist", tarFilepath)
 	}
-	pattern := `-\d{14}_[a-f0-9]{40}\.tar$` //format is -<timestamp>_<commitHash>.tar
-	regex := regexp.MustCompile(pattern)
-	if regex.MatchString(tarFilepath) {
-		newName := regex.ReplaceAllString(tarFilepath, ".tar")
-		err := os.Rename(tarFilepath, newName)
-		if err != nil {
-			return fmt.Errorf("error renaming file %s to %s: %v", tarFilepath, newName, err)
-		}
-		log.Entry().Infof("Renamed file %s to %s\n", tarFilepath, newName)
+	newFileName := ""
+	if index := strings.Index(tarFilepath, ":"); index != -1 {
+		newFileName = tarFilepath[:index]
+		newFileName += ".tar"
+	}
+	if err := os.Rename(tarFilepath, newFileName); err != nil {
+		return fmt.Errorf("error renaming file %s to %s: %v", tarFilepath, newFileName, err)
 	}
 	return nil
 }

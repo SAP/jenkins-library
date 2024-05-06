@@ -210,7 +210,15 @@ func TestSendRequest(t *testing.T) {
 func TestSetOptions(t *testing.T) {
 	c := Client{}
 	transportProxy, _ := url.Parse("https://proxy.dummy.sap.com")
-	opts := ClientOptions{MaxRetries: -1, TransportTimeout: 10, TransportProxy: transportProxy, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	opts := ClientOptions{MaxRetries: -1,
+		TransportTimeout:   10,
+		TransportProxy:     transportProxy,
+		MaxRequestDuration: 5,
+		Username:           "TestUser",
+		Password:           "TestPassword",
+		Token:              "TestToken",
+		Logger:             log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http"),
+		Certificates:       []tls.Certificate{{}}}
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
@@ -220,6 +228,7 @@ func TestSetOptions(t *testing.T) {
 	assert.Equal(t, opts.Username, c.username)
 	assert.Equal(t, opts.Password, c.password)
 	assert.Equal(t, opts.Token, c.token)
+	assert.Equal(t, opts.Certificates, c.certificates)
 }
 
 func TestApplyDefaults(t *testing.T) {
