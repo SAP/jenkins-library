@@ -510,7 +510,7 @@ func merge(base, overlay map[string]interface{}, metadata StepData) map[string]i
 			for _, v := range metadata.Spec.Inputs.Parameters {
 				tVal := reflect.TypeOf(value).String()
 				if v.Name == key && tVal != v.Type {
-					log.Entry().Warn("config value provided for", v.Name, " is of wrong type", tVal, "should be of type", v.Type)
+					log.Entry().Warn("config value provided for ", v.Name, " is of wrong type ", tVal, " should be of type ", v.Type)
 				}
 			}
 		}
