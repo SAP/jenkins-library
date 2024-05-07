@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	piperConfig "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
@@ -16,7 +18,7 @@ type gcpPublishEventUtils interface {
 	GetConfig() *gcpPublishEventOptions
 	GetOIDCTokenByValidation(roleID string) (string, error)
 	GetFederatedToken(projectNumber, pool, provider, token string) (string, error)
-	Publish(projectNumber string, topic string, token string, key string, data []byte) error
+	Publish(projectNumber string, topic string, token string, key string, data []byte) (gcp.Event, error)
 }
 
 type gcpPublishEventUtilsBundle struct {
@@ -32,7 +34,7 @@ func (g gcpPublishEventUtilsBundle) GetFederatedToken(projectNumber, pool, provi
 	return gcp.GetFederatedToken(projectNumber, pool, provider, token)
 }
 
-func (g gcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, token string, key string, data []byte) error {
+func (g gcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, token string, key string, data []byte) (gcp.Event, error) {
 	return gcp.Publish(projectNumber, topic, token, key, data)
 }
 
@@ -96,12 +98,33 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		return errors.Wrap(err, "failed to get federated token")
 	}
 
-	err = utils.Publish(config.GcpProjectNumber, config.Topic, token, provider.BuildURL(), data)
+	publishedEvent, err := utils.Publish(config.GcpProjectNumber, config.Topic, token, provider.BuildURL(), data)
 	if err != nil {
 		return errors.Wrap(err, "failed to publish event")
 	}
 
+	_ = publishedEvent
+
+	printableEvent := event{
+		Messages: []eventMessage{{
+			Data:        string(publishedEvent.Messages[0].Data),
+			OrderingKey: publishedEvent.Messages[0].OrderingKey,
+		}},
+	}
+
+	s, _ := json.MarshalIndent(printableEvent, "", "\t")
+	log.Entry().Debugf(string(s))
+
 	log.Entry().Info("event published successfully!")
 
 	return nil
+}
+
+type eventMessage struct {
+	Data        string `json:"data"`
+	OrderingKey string `json:"orderingKey"`
+}
+
+type event struct {
+	Messages []eventMessage `json:"messages"`
 }

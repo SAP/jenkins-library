@@ -22,7 +22,7 @@ type Event struct {
 	Messages []EventMessage `json:"messages"`
 }
 
-func Publish(projectNumber string, topic string, token string, key string, data []byte) error {
+func Publish(projectNumber string, topic string, token string, key string, data []byte) (Event, error) {
 	ctx := context.Background()
 
 	// build event
@@ -36,13 +36,13 @@ func Publish(projectNumber string, topic string, token string, key string, data 
 	// marshal event
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal event")
+		return event, errors.Wrap(err, "failed to marshal event")
 	}
 
 	// create request
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf(api_url, projectNumber, topic), bytes.NewReader(eventBytes))
 	if err != nil {
-		return errors.Wrap(err, "failed to create request")
+		return event, errors.Wrap(err, "failed to create request")
 	}
 
 	// add headers
@@ -52,13 +52,13 @@ func Publish(projectNumber string, topic string, token string, key string, data 
 	// send request
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
-		return errors.Wrap(err, "failed to send request")
+		return event, errors.Wrap(err, "failed to send request")
 	}
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("invalid status code: %v", response.StatusCode)
+		return event, fmt.Errorf("invalid status code: %v", response.StatusCode)
 	}
 
 	//TODO: read response & messageIds
 
-	return nil
+	return event, nil
 }
