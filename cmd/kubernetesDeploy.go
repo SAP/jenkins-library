@@ -604,7 +604,7 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 
 func runExtensionScript(script, githubToken string, utils kubernetes.DeployUtils) error {
 	setupScript := script
-	if u, err := url.Parse(script); err != nil && u.Scheme != "" {
+	if u, err := url.Parse(script); err == nil && u.Scheme != "" {
 		if setupScript, err = piperhttp.DownloadExecutable(githubToken, utils, utils, script); err != nil {
 			return fmt.Errorf("failed to download script %v: %w", script, err)
 		}
