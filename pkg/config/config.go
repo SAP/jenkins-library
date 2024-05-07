@@ -257,7 +257,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// fetch secrets from vault
-		vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
+		vaultClient, err := GetVaultClientFromConfig(stepConfig.Config, c.vaultCredentials)
 		if err != nil {
 			return StepConfig{}, err
 		}
@@ -510,7 +510,7 @@ func merge(base, overlay map[string]interface{}, metadata StepData) map[string]i
 			for _, v := range metadata.Spec.Inputs.Parameters {
 				tVal := reflect.TypeOf(value).String()
 				if v.Name == key && tVal != v.Type {
-					log.Entry().Warn("config value provided for", v.Name, " is of wrong type", tVal, "should be of type", v.Type)
+					log.Entry().Warn("config value provided for ", v.Name, " is of wrong type ", tVal, " should be of type ", v.Type)
 				}
 			}
 		}
