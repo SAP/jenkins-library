@@ -52,6 +52,10 @@ func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.retryAllowedErrorCodes = append(api.retryAllowedErrorCodes, "A4C_A2G/501")
 }
 
+func (api *SAP_COM_0510) GetExecutionLog() (execLog ExecutionLog, err error) {
+	return execLog, errors.New("Not implemented")
+}
+
 func (api *SAP_COM_0510) getUUID() string {
 	return api.uuid
 }

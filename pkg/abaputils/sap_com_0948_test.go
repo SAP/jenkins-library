@@ -11,17 +11,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var connection ConnectionDetailsHTTP
-var repository Repository
+var conTest0948 ConnectionDetailsHTTP
+var repoTest0948 Repository
 
 func init() {
 
-	connection.User = "CC_USER"
-	connection.Password = "123abc"
-	connection.URL = "https://example.com"
+	conTest0948.User = "CC_USER"
+	conTest0948.Password = "123abc"
+	conTest0948.URL = "https://example.com"
 
-	repository.Name = "/DMO/REPO"
-	repository.Branch = "main"
+	repoTest0948.Name = "/DMO/REPO"
+	repoTest0948.Branch = "main"
 
 }
 
@@ -503,5 +503,29 @@ func TestTimeConverter0948(t *testing.T) {
 		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
 		result := api.ConvertTime(inputDate)
 		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	}
+}
+
+	
+func TestGetExecutionLog(t *testing.T) {
+	t.Run("Test Get Executionlog Success", func(t *testing.T) {
+
+		client := &ClientMock{
+			BodyList: []string{
+				`{ "value" : [{"index_no":1,"timestamp":"2021-08-23T12:00:00.000Z","type":"Success", "descr":"First log entry"}]}`,
+				``,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+
+		api, _ := apiManager.GetAPI(con, Repository{Name: "/DMO/REPO"})
+
+		results, errAction := api.GetExecutionLog()
+		assert.NoError(t, errAction)
+		assert.NotEmpty(t, results)
+		assert.Equal(t, "First log entry", results.Value[0].Descr)
 	})
 }
