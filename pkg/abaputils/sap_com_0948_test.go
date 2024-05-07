@@ -503,10 +503,9 @@ func TestTimeConverter0948(t *testing.T) {
 		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
 		result := api.ConvertTime(inputDate)
 		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-	}
+	})
 }
 
-	
 func TestGetExecutionLog(t *testing.T) {
 	t.Run("Test Get Executionlog Success", func(t *testing.T) {
 
