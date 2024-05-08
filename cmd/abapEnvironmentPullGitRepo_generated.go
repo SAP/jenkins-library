@@ -151,7 +151,7 @@ func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
 	cmd.Flags().BoolVar(&stepConfig.IgnoreCommit, "ignoreCommit", false, "ingores a commit provided via the repositories file")
-	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
