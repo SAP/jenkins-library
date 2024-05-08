@@ -122,6 +122,7 @@ func (pv *ProductVersionHeader) SyncAddonDescriptorVersionFields(addonDescriptor
 	addonDescriptor.AddonVersion = pv.ProductVersion
 	addonDescriptor.AddonSpsLevel = pv.SpsLevel
 	addonDescriptor.AddonPatchLevel = pv.PatchLevel
+	addonDescriptor.AddonVersionYAML = pv.SemanticProductVersion //In case it had wildCards which got resolved
 
 	//in NewPvh function pvh was build up 1:1 based on addonDescriptor
 	//in checkAndResolve pvh was synced from AAKaaS reply assuming it does not contain more content than before(if it does it is ignored)
@@ -141,6 +142,7 @@ func (pv *ProductVersionHeader) SyncAddonDescriptorVersionFields(addonDescriptor
 		addonDescriptor.Repositories[repo_index].PatchLevel = foundPvc.PatchLevel
 		addonDescriptor.Repositories[repo_index].SpLevel = foundPvc.SpLevel
 		addonDescriptor.Repositories[repo_index].Version = foundPvc.SoftwareComponentVersion
+		addonDescriptor.Repositories[repo_index].VersionYAML = foundPvc.SemanticSoftwareComponentVersion //In case it had wildCards which got resolved
 	}
 
 	return nil
