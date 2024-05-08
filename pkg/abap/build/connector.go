@@ -155,10 +155,11 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 	}
 
 	conn.Client.SetOptions(piperhttp.ClientOptions{
-		Username:     username,
-		Password:     password,
-		CookieJar:    cookieJar,
-		Certificates: tlsCertificates,
+		Username:         username,
+		Password:         password,
+		CookieJar:        cookieJar,
+		Certificates:     tlsCertificates,
+		TransportTimeout: 15 * time.Minute, //Usually ABAP Backend has timeout of 10min, let them interrupt the connection...
 	})
 
 	if tlsCertificates != nil {

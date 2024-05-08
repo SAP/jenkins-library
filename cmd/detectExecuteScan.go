@@ -389,13 +389,16 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	log.Entry().Infof("Downloading Detect Script")
 
-	err := utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
-	if err != nil {
-		time.Sleep(time.Second * 5)
-		err = utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
-		if err != nil {
-			return err
+	downloadScript := func() error {
+		if config.UseDetect9 {
+			return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
 		}
+		return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+	}
+
+	if err := downloadScript(); err != nil {
+		time.Sleep(5 * time.Second)
+		return downloadScript()
 	}
 
 	return nil
@@ -1044,6 +1047,7 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.Token = "********"
 	config.GithubToken = "********"
 	config.PrivateModulesGitToken = "********"
+	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
 }
