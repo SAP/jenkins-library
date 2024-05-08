@@ -88,6 +88,8 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		return errors.Wrap(err, "failed to create event data")
 	}
 
+	log.Entry().Debugf("event data: %s", string(data))
+
 	oidcToken, err := utils.GetOIDCTokenByValidation(GeneralConfig.HookConfig.OIDCConfig.RoleID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get OIDC token")
@@ -102,8 +104,6 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to publish event")
 	}
-
-	_ = publishedEvent
 
 	printableEvent := event{
 		Messages: []eventMessage{{
