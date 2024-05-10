@@ -58,7 +58,7 @@ func PrintLogs(api SoftwareComponentApiInterface) {
 		return results[i].Index < results[j].Index
 	})
 
-	printOverview(results)
+	printOverview(results, api)
 
 	// Print Details
 	for _, logEntryForDetails := range results {
@@ -80,7 +80,7 @@ func printExecutionLogs(executionLogs ExecutionLog) {
 	AddDefaultDashedLine(1)
 }
 
-func printOverview(results []LogResultsV2) {
+func printOverview(results []LogResultsV2, api SoftwareComponentApiInterface) {
 
 	logOutputPhaseLength, logOutputLineLength := calculateLenghts(results)
 
@@ -93,7 +93,7 @@ func printOverview(results []LogResultsV2) {
 	printDashedLine(logOutputLineLength)
 
 	for _, logEntry := range results {
-		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, api.ConvertTime(logEntry.Timestamp))
 	}
 	printDashedLine(logOutputLineLength)
 }
@@ -117,7 +117,7 @@ func printDashedLine(i int) {
 func printLog(logOverviewEntry LogResultsV2, api SoftwareComponentApiInterface) {
 
 	page := 0
-	printHeader(logOverviewEntry)
+	printHeader(logOverviewEntry, api)
 	for {
 		logProtocols, count, err := api.GetLogProtocol(logOverviewEntry, page)
 		printLogProtocolEntries(logOverviewEntry, logProtocols)
@@ -149,16 +149,16 @@ func allLogsHaveBeenPrinted(protocols []LogProtocol, page int, count int, err er
 	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(protocols, []LogProtocol{}))
 }
 
-func printHeader(logEntry LogResultsV2) {
-	if logEntry.Status != `Success` {
+func printHeader(logEntry LogResultsV2, api SoftwareComponentApiInterface) {
+	if logEntry.Status == `Error` {
 		log.Entry().Infof("\n")
 		AddDefaultDashedLine(1)
-		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		log.Entry().Infof("%s (%v)", logEntry.Name, api.ConvertTime(logEntry.Timestamp))
 		AddDefaultDashedLine(1)
 	} else {
 		log.Entry().Debugf("\n")
 		AddDebugDashedLine()
-		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		log.Entry().Debugf("%s (%v)", logEntry.Name, api.ConvertTime(logEntry.Timestamp))
 		AddDebugDashedLine()
 	}
 }

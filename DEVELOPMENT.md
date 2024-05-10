@@ -70,7 +70,7 @@ you need to do the following in addition:
 
 * [Install Groovy](https://groovy-lang.org/install.html)
 * [Install Maven](https://maven.apache.org/install.html)
-* Get a local Jenkins installed: Use for example [cx-server](https://github.com/SAP/devops-docker-cx-server)
+* Get a local Jenkins installed
 
 ### Jenkins pipelines
 
