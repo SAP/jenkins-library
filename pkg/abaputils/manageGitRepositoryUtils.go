@@ -150,7 +150,7 @@ func allLogsHaveBeenPrinted(protocols []LogProtocol, page int, count int, err er
 }
 
 func printHeader(logEntry LogResultsV2) {
-	if logEntry.Status != `Success` {
+	if logEntry.Status == `Error` {
 		log.Entry().Infof("\n")
 		AddDefaultDashedLine(1)
 		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
