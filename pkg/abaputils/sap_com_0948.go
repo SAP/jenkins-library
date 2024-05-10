@@ -407,3 +407,12 @@ func (api *SAP_COM_0948) getLogProtocolQuery(page int) string {
 
 	return fmt.Sprintf("?$skip=%s&$top=%s&$count=true", fmt.Sprint(skip), fmt.Sprint(top))
 }
+
+// ConvertTime formats an ISO 8601 timestamp string from format 2024-05-02T09:25:40Z into a UNIX timestamp and returns it
+func (api *SAP_COM_0948) ConvertTime(logTimeStamp string) time.Time {
+	t, error := time.Parse(time.RFC3339, logTimeStamp)
+	if error != nil {
+		return time.Unix(0, 0).UTC()
+	}
+	return t
+}
