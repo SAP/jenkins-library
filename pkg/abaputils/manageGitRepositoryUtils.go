@@ -149,7 +149,7 @@ func allLogsHaveBeenPrinted(protocols []LogProtocol, page int, count int, err er
 	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(protocols, []LogProtocol{}))
 }
 
-func printHeader(logEntry LogResultsV2) {
+func printHeader(logEntry LogResultsV2, api SoftwareComponentApiInterface) {
 	if logEntry.Status == `Error` {
 		log.Entry().Infof("\n")
 		AddDefaultDashedLine(1)
