@@ -510,7 +510,17 @@ func merge(base, overlay map[string]interface{}, metadata StepData) map[string]i
 			for _, v := range metadata.Spec.Inputs.Parameters {
 				tVal := reflect.TypeOf(value).String()
 				if v.Name == key && tVal != v.Type {
-					log.Entry().Warn("config value provided for ", v.Name, " is of wrong type ", tVal, " should be of type ", v.Type)
+					if tVal == "[]interface {}" && v.Type == "[]string" {
+						//json Unmarshal genertes arrays of interface{} for string arrays
+						for _, interfaceValue := range value.([]interface{}) {
+							arrayValueType := reflect.TypeOf(interfaceValue).String()
+							if arrayValueType != "string" {
+								log.Entry().Warnf("config id %s should only contain strings but contains a %s", v.Name, arrayValueType)
+							}
+						}
+					} else {
+						log.Entry().Warnf("config value provided for %s is of wrong type %s should be of type %s", v.Name, tVal, v.Type)
+					}
 				}
 			}
 		}
