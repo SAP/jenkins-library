@@ -330,6 +330,7 @@ func (api *SAP_COM_0510) initialRequest() error {
 		CookieJar:          cookieJar,
 		Username:           api.con.User,
 		Password:           api.con.Password,
+		TrustedCerts:       api.con.CertificateNames,
 	})
 
 	headConnection := api.con
