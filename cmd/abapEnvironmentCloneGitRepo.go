@@ -52,6 +52,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	if errorGetInfo != nil {
 		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
 	}
+	connectionDetails.CertificateNames = config.CertificateNames
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 	for _, repo := range repositories {
