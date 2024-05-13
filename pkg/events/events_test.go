@@ -16,4 +16,16 @@ func TestEventCreation(t *testing.T) {
 		assert.Equal(t, mock.Anything, event.cloudEvent.Type())
 		assert.Equal(t, mock.Anything, event.cloudEvent.Source())
 	})
+
+	t.Run("AddToCloudEventData", func(t *testing.T) {
+		// init
+		additionalData := `{"additionalKey": "additionalValue"}`
+		// test
+		event := NewEvent(mock.Anything, mock.Anything).CreateWithJSONData([]byte(`{"mockKey": "mockValue"}`), additionalData)
+		// asserts
+		assert.Equal(t, mock.Anything, event.cloudEvent.Type())
+		assert.Equal(t, mock.Anything, event.cloudEvent.Source())
+		assert.Contains(t, string(event.cloudEvent.Data()), `"additionalKey":"additionalValue"`)
+	})
+
 }

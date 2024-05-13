@@ -81,7 +81,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 	}
 
-	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(config.EventData).ToBytes()
+	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData([]byte(config.EventData), config.AdditionalEventData).ToBytes()
 	if err != nil {
 		return errors.Wrap(err, "failed to create event data")
 	}
