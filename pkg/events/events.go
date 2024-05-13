@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -31,13 +30,17 @@ func NewEvent(eventType, eventSource string) Event {
 	}
 }
 
-func (e Event) CreateWithJSONData(data []byte, additionalData string, opts ...Option) Event {
-	event := e.Create(data, opts...)
-	err := event.AddToCloudEventData(additionalData)
-	if err != nil {
-		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
+func (e Event) CreateWithJSONData(data string, opts ...Option) (Event, error) {
+	// passing a string to e.cloudEvent.SetData will result in the string being marshalled, ending up with double escape characters
+	// therefore pass a map instead
+	var dataMap map[string]interface{}
+	if data != "" {
+		err := json.Unmarshal([]byte(data), &dataMap)
+		if err != nil {
+			return e, errors.Wrap(err, "eventData is an invalid JSON")
+		}
 	}
-	return event
+	return e.Create(dataMap, opts...), nil
 }
 
 func (e Event) Create(data any, opts ...Option) Event {
@@ -69,10 +72,14 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 		return nil
 	}
 	var additionalData map[string]interface{}
-	json.Unmarshal([]byte(additionalDataString), &additionalData)
+
+	err := json.Unmarshal([]byte(additionalDataString), &additionalData)
+	if err != nil {
+		errors.Wrap(err, "couldn't add additional data to cloud event")
+	}
 
 	var newEventData map[string]interface{}
-	err := json.Unmarshal(e.cloudEvent.DataEncoded, &newEventData)
+	err = json.Unmarshal(e.cloudEvent.DataEncoded, &newEventData)
 	if err != nil {
 		errors.Wrap(err, "couldn't add additional data to cloud event")
 	}

@@ -81,7 +81,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 	}
 
-	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData([]byte(config.EventData), config.AdditionalEventData).ToBytes()
+	data, err = createNewEvent(config)
 	if err != nil {
 		return errors.Wrap(err, "failed to create event data")
 	}
@@ -104,4 +104,19 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	log.Entry().Info("event published successfully!")
 
 	return nil
+}
+
+func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
+	event, err := events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(config.EventData)
+
+	err = event.AddToCloudEventData(config.AdditionalEventData)
+	if err != nil {
+		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
+	}
+
+	eventBytes, err := event.ToBytes()
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "casting event to bytes failed")
+	}
+	return eventBytes, nil
 }
