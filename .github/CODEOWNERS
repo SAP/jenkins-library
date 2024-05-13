@@ -57,6 +57,7 @@ SonarExecuteScan*                               @CCFenner
 
 abapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
+/cmd/abapAddonAssemblyKit/                      @SAP/jenkins-library-abap
 abapEnvironment*                                @SAP/jenkins-library-abap
 AbapEnvironment*                                @SAP/jenkins-library-abap
 
