@@ -139,7 +139,7 @@ func addGcpPublishEventFlags(cmd *cobra.Command, stepConfig *gcpPublishEventOpti
 	cmd.Flags().StringVar(&stepConfig.EventSource, "eventSource", os.Getenv("PIPER_eventSource"), "The events source as defined by CDEvents.")
 	cmd.Flags().StringVar(&stepConfig.EventType, "eventType", os.Getenv("PIPER_eventType"), "")
 	cmd.Flags().StringVar(&stepConfig.EventData, "eventData", os.Getenv("PIPER_eventData"), "Data to be merged with the generated data for the cloud event data field (JSON)")
-	cmd.Flags().StringVar(&stepConfig.AdditionalEventData, "additionalEventData", os.Getenv("PIPER_additionalEventData"), "Data (as JSON string) to add to eventData (in case eventData comes from the pipeline environment)")
+	cmd.Flags().StringVar(&stepConfig.AdditionalEventData, "additionalEventData", os.Getenv("PIPER_additionalEventData"), "Data (formatted as JSON string) to add to eventData. This can be used to enrich eventData that comes from the pipeline environment.")
 
 }
 
