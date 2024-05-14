@@ -118,5 +118,6 @@ func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "casting event to bytes failed")
 	}
+	log.Entry().Debugf("CloudEvent created: %s", string(eventBytes))
 	return eventBytes, nil
 }
