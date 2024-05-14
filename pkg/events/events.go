@@ -2,8 +2,10 @@ package events
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -55,6 +57,10 @@ func (e Event) Create(data any, opts ...Option) Event {
 	for _, applyOpt := range opts {
 		applyOpt(e.cloudEvent.Context.AsV1())
 	}
+
+	eventPretty, _ := json.MarshalIndent(e.cloudEvent, "", "\t")
+	log.Entry().Info("CloudEvent created:")
+	fmt.Print(string(eventPretty))
 
 	return e
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -38,6 +39,14 @@ func Publish(projectNumber string, topic string, token string, key string, data 
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal event")
 	}
+
+	// print event
+	eventBytesPretty, err := json.MarshalIndent(event, "", "\t")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal event")
+	}
+	log.Entry().Info("full event:")
+	fmt.Print(string(eventBytesPretty))
 
 	// create request
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf(api_url, projectNumber, topic), bytes.NewReader(eventBytes))
