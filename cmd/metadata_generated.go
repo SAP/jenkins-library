@@ -7,6 +7,7 @@ import "github.com/SAP/jenkins-library/pkg/config"
 // GetStepMetadata return a map with all the step metadata mapped to their stepName
 func GetAllStepMetadata() map[string]config.StepData {
 	return map[string]config.StepData{
+		"abapAddonAssemblyKitCheck":                 abapAddonAssemblyKitCheckMetadata(),
 		"abapAddonAssemblyKitCheckCVs":              abapAddonAssemblyKitCheckCVsMetadata(),
 		"abapAddonAssemblyKitCheckPV":               abapAddonAssemblyKitCheckPVMetadata(),
 		"abapAddonAssemblyKitCreateTargetVector":    abapAddonAssemblyKitCreateTargetVectorMetadata(),
@@ -57,6 +58,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"detectExecuteScan":                         detectExecuteScanMetadata(),
 		"fortifyExecuteScan":                        fortifyExecuteScanMetadata(),
 		"gaugeExecuteTests":                         gaugeExecuteTestsMetadata(),
+		"gcpPublishEvent":                           gcpPublishEventMetadata(),
 		"gctsCloneRepository":                       gctsCloneRepositoryMetadata(),
 		"gctsCreateRepository":                      gctsCreateRepositoryMetadata(),
 		"gctsDeploy":                                gctsDeployMetadata(),

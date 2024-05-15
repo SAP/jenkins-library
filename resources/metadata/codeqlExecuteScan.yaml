@@ -209,6 +209,30 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/globalSettingsFile
+      - name: databaseCreateFlags
+        type: string
+        description: "A space-separated string of flags for the 'codeql database create' command."
+        longDescription: |-
+          A space-separated string of flags for the 'codeql database create' command.
+
+          If both long and short forms of the same flag are provided, the long form takes precedence.
+          Example input: "--threads=1 --ram=2000"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: databaseAnalyzeFlags
+        type: string
+        description: "A space-separated string of flags for the 'codeql database analyze' command."
+        longDescription: |-
+            A space-separated string of flags for the 'codeql database analyze' command.
+
+            If both long and short forms of the same flag are provided, the long form takes precedence.
+            Example input: "--threads=1 --ram=2000"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
     - image: ""
   outputs:
