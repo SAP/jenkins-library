@@ -330,6 +330,7 @@ func (api *SAP_COM_0510) initialRequest() error {
 		CookieJar:          cookieJar,
 		Username:           api.con.User,
 		Password:           api.con.Password,
+		TrustedCerts:       api.con.CertificateNames,
 	})
 
 	headConnection := api.con
@@ -386,4 +387,15 @@ func (api *SAP_COM_0510) getLogProtocolQuery(page int) string {
 	top := numberOfEntriesPerPage
 
 	return fmt.Sprintf("?$skip=%s&$top=%s&$inlinecount=allpages", fmt.Sprint(skip), fmt.Sprint(top))
+}
+
+// ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp and returns it
+func (api *SAP_COM_0510) ConvertTime(logTimeStamp string) time.Time {
+	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
+	n, error := strconv.ParseInt(seconds, 10, 64)
+	if error != nil {
+		return time.Unix(0, 0).UTC()
+	}
+	t := time.Unix(n, 0).UTC()
+	return t
 }

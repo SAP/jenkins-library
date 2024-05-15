@@ -13,3 +13,8 @@ packages:
       dir: pkg/influx/mocks
     interfaces:
       WriteAPIBlocking:
+  github.com/SAP/jenkins-library/pkg/config:
+    config:
+      dir: pkg/config/mocks
+    interfaces:
+      VaultClient:

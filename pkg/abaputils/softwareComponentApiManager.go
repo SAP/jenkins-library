@@ -67,6 +67,7 @@ type SoftwareComponentApiInterface interface {
 	CreateTag(tag Tag) error
 	GetLogOverview() ([]LogResultsV2, error)
 	GetLogProtocol(LogResultsV2, int) (result []LogProtocol, count int, err error)
+	ConvertTime(logTimeStamp string) time.Time
 	GetExecutionLog() (ExecutionLog, error)
 }
 
