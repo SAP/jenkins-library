@@ -257,7 +257,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-
       - name: buildMTA
         type: bool
         default: false
@@ -272,7 +271,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-
       - name: mtaPlatform 
         type: string
         description: "The platform of the MTA project"
