@@ -234,9 +234,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 	}
 
-	log.Entry().Infof("!Flag values: %v\n", flagValues)
-	log.Entry().Infof("!Filter params: %v\n", filters.Parameters)
-	log.Entry().Infof("!Vault filter: %v\n", vaultFilter)
+	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName])
+
 	// merge command line flags
 	if flagValues != nil {
 		flagFilter := append(filters.Parameters, vaultFilter...)
@@ -248,8 +247,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	} else if !ok && stepConfig.Config["verbose"] != nil {
 		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
-
-	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName])
 
 	reportingConfig, err := cloneConfig(c)
 	if err != nil {
