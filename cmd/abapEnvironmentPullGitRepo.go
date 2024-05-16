@@ -45,6 +45,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	if err != nil {
 		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
+	connectionDetails.CertificateNames = options.CertificateNames
 
 	var repositories []abaputils.Repository
 	err = checkPullRepositoryConfiguration(*options)
