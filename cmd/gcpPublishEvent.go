@@ -101,7 +101,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		return errors.Wrap(err, "failed to publish event")
 	}
 
-	log.Entry().Infof("Event published successfully! With topic: %s", config.GcpProjectNumber, config.Topic)
+	log.Entry().Infof("Event published successfully! With topic: %s", config.Topic)
 
 	return nil
 }
