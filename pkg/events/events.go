@@ -70,7 +70,7 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 	if additionalDataString == "" {
 		return nil
 	}
-	
+
 	var additionalData map[string]interface{}
 	err := json.Unmarshal([]byte(additionalDataString), &additionalData)
 	if err != nil {
@@ -87,6 +87,6 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 		newEventData[k] = v
 	}
 
-	e.cloudEvent.SetData("application/json", eventData)
+	e.cloudEvent.SetData("application/json", newEventData)
 	return nil
 }
