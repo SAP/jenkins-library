@@ -35,7 +35,7 @@ spec:
           - name: host
           - name: sonarServerUrl
         type: string
-        description: "The URL to the Sonar backend."
+        description: "The URL to the Sonar backend. The serverUrl parameter requires the [`instance`](#instance) parameter to be explicitly set to an empty string, as it will have no effect otherwise."
         scope:
           - PARAMETERS
           - STAGES
