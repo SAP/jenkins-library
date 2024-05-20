@@ -544,7 +544,7 @@ func detectExecuteScanMetadata() config.StepData {
 					{
 						Name:        "buildMTA",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

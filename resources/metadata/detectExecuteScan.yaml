@@ -262,6 +262,10 @@ spec:
         default: false
         description:
           "Experiment parameter for MTA projects building"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: generateReportsForEmptyProjects
         type: bool
         default: false
