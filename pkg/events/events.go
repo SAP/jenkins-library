@@ -30,8 +30,17 @@ func NewEvent(eventType, eventSource string) Event {
 	}
 }
 
-func (e Event) CreateWithJSONData(data string, opts ...Option) Event {
-	return e.Create(data, opts...)
+func (e Event) CreateWithJSONData(data string, opts ...Option) (Event, error) {
+	// passing a string to e.cloudEvent.SetData will result in the string being marshalled, ending up with double escape characters
+	// therefore pass a map instead
+	var dataMap map[string]interface{}
+	if data != "" {
+		err := json.Unmarshal([]byte(data), &dataMap)
+		if err != nil {
+			return e, errors.Wrap(err, "eventData is an invalid JSON")
+		}
+	}
+	return e.Create(dataMap, opts...), nil
 }
 
 func (e Event) Create(data any, opts ...Option) Event {
@@ -46,7 +55,6 @@ func (e Event) Create(data any, opts ...Option) Event {
 	for _, applyOpt := range opts {
 		applyOpt(e.cloudEvent.Context.AsV1())
 	}
-
 	return e
 }
 
@@ -56,4 +64,29 @@ func (e Event) ToBytes() ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to marshal event data")
 	}
 	return data, nil
+}
+
+func (e *Event) AddToCloudEventData(additionalDataString string) error {
+	if additionalDataString == "" {
+		return nil
+	}
+
+	var additionalData map[string]interface{}
+	err := json.Unmarshal([]byte(additionalDataString), &additionalData)
+	if err != nil {
+		errors.Wrap(err, "couldn't add additional data to cloud event")
+	}
+
+	var newEventData map[string]interface{}
+	err = json.Unmarshal(e.cloudEvent.DataEncoded, &newEventData)
+	if err != nil {
+		errors.Wrap(err, "couldn't add additional data to cloud event")
+	}
+
+	for k, v := range additionalData {
+		newEventData[k] = v
+	}
+
+	e.cloudEvent.SetData("application/json", newEventData)
+	return nil
 }
