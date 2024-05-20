@@ -275,7 +275,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-      - name: mtaPlatform 
+      - name: mtaPlatform
         type: string
         description: "The platform of the MTA project"
         default: "CF"
