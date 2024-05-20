@@ -717,4 +717,3 @@ spec:
           params:
             - name: scanContainerDistro
               value: centos
-
