@@ -65,7 +65,7 @@ func TestGenerateSBOM(t *testing.T) {
 	t.Run("error case: no registry", func(t *testing.T) {
 		err := syft.GenerateSBOM("http://test-syft-gh-release.com/syft.tar.gz", "", &execMock, &fileMock, client, "", []string{"image:latest"})
 		assert.Error(t, err)
-		assert.Equal(t, "syft: regisitry url must not be empty", err.Error())
+		assert.Equal(t, "syft: registry url must not be empty", err.Error())
 	})
 
 	t.Run("error case: no images provided", func(t *testing.T) {
