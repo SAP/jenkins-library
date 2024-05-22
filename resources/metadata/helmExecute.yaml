@@ -278,6 +278,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: dependency
         type: string
         description: "manage a chart's dependencies"
