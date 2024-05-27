@@ -126,7 +126,7 @@ spec:
       - name: inferJavaBinaries
         type: bool
         description: "Find the location of generated Java class files in all modules
-          and pass the option `sonar.java.binaries to the sonar tool."
+          and pass the option `sonar.java.binaries` to the sonar tool."
         scope:
           - PARAMETERS
           - STAGES
