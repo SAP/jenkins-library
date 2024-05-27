@@ -528,6 +528,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
 
+	if config.EnableDiagnostics {
+		args = append(args, fmt.Sprintf("\"--detect.diagnostic=true\""))
+		args = append(args, fmt.Sprintf("\"--detect.cleanup=false\""))
+	}
+
 	// to exclude dependency types for npm
 	if len(config.NpmDependencyTypesExcluded) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.dependency.types.excluded") {
 		args = append(args, fmt.Sprintf("--detect.npm.dependency.types.excluded=%v", strings.ToUpper(strings.Join(config.NpmDependencyTypesExcluded, ","))))
@@ -536,11 +541,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	// A space-separated list of additional arguments that Detect will add at then end of the npm ls command line
 	if len(config.NpmArguments) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.arguments") {
 		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.Join(config.NpmArguments, " ")))
-	}
-
-	if config.EnableDiagnostics {
-		args = append(args, fmt.Sprintf("--detect.diagnostic=true"))
-		args = append(args, fmt.Sprintf("--detect.cleanup=false"))
 	}
 
 	// rapid scan on pull request
