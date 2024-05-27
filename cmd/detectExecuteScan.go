@@ -538,6 +538,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.Join(config.NpmArguments, " ")))
 	}
 
+	if config.EnableDiagnostics {
+		args = append(args, fmt.Sprintf("--detect.diagnostic=true"))
+		args = append(args, fmt.Sprintf("--detect.cleanup=false"))
+	}
+
 	// rapid scan on pull request
 	if utils.GetProvider().IsPullRequest() {
 		log.Entry().Debug("pull request detected")
