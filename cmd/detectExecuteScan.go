@@ -528,6 +528,21 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
 
+	if config.EnableDiagnostics {
+		args = append(args, fmt.Sprintf("\"--detect.diagnostic=true\""))
+		args = append(args, fmt.Sprintf("\"--detect.cleanup=false\""))
+
+		err := utils.MkdirAll("./blackduckDiagnostics", 0o755)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create diagnostics directory")
+		}
+
+		log.Entry().Info("Diagnostics enabled, output will be stored in ./blackduckDiagnostics")
+
+		args = append(args, fmt.Sprintf("\"--detect.scan.output.path=./blackduckDiagnostics\""))
+		args = append(args, fmt.Sprintf("\"--detect.output.path=./blackduckDiagnostics\""))
+	}
+
 	// to exclude dependency types for npm
 	if len(config.NpmDependencyTypesExcluded) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.dependency.types.excluded") {
 		args = append(args, fmt.Sprintf("--detect.npm.dependency.types.excluded=%v", strings.ToUpper(strings.Join(config.NpmDependencyTypesExcluded, ","))))

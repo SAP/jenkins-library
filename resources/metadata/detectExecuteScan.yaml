@@ -266,6 +266,15 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: enableDiagnostics
+        type: bool
+        default: false
+        description:
+          "Parameter to enable diagnostics file generation by detect script"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: generateReportsForEmptyProjects
         type: bool
         default: false

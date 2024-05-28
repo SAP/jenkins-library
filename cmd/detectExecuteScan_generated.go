@@ -42,6 +42,7 @@ type detectExecuteScanOptions struct {
 	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
 	BuildMaven                      bool     `json:"buildMaven,omitempty"`
 	BuildMTA                        bool     `json:"buildMTA,omitempty"`
+	EnableDiagnostics               bool     `json:"enableDiagnostics,omitempty"`
 	GenerateReportsForEmptyProjects bool     `json:"generateReportsForEmptyProjects,omitempty"`
 	MtaPlatform                     string   `json:"mtaPlatform,omitempty"`
 	PomPath                         string   `json:"pomPath,omitempty"`
@@ -297,6 +298,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running detect. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 	cmd.Flags().BoolVar(&stepConfig.BuildMaven, "buildMaven", false, "Experiment parameter for maven multi-modules projects building")
 	cmd.Flags().BoolVar(&stepConfig.BuildMTA, "buildMTA", false, "Experiment parameter for MTA projects building")
+	cmd.Flags().BoolVar(&stepConfig.EnableDiagnostics, "enableDiagnostics", false, "Parameter to enable diagnostics file generation by detect script")
 	cmd.Flags().BoolVar(&stepConfig.GenerateReportsForEmptyProjects, "generateReportsForEmptyProjects", false, "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius")
 	cmd.Flags().StringVar(&stepConfig.MtaPlatform, "mtaPlatform", `CF`, "The platform of the MTA project")
 	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
@@ -543,6 +545,15 @@ func detectExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "buildMTA",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "enableDiagnostics",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
