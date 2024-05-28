@@ -532,9 +532,9 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("\"--detect.diagnostic=true\""))
 		args = append(args, fmt.Sprintf("\"--detect.cleanup=false\""))
 
-		err := utils.MkdirAll("./blackduckDiagnostics", 0755)
+		err := utils.MkdirAll("./blackduckDiagnostics", 0o755)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to create diagnostics directory")
 		}
 
 		log.Entry().Info("Diagnostics enabled, output will be stored in ./blackduckDiagnostics")
