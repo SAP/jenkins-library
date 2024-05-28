@@ -48,7 +48,7 @@ func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.Cus
 	}
 
 	client, err := piperConfig.GetVaultClientFromConfig(vaultConfig, vaultCreds)
-	if err != nil {
+	if err != nil || client == nil {
 		log.Entry().WithError(err).Warnf("could not create Vault client: incomplete Vault configuration")
 		return
 	}
