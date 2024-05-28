@@ -482,6 +482,30 @@ func TestSleepTime0948(t *testing.T) {
 	})
 }
 
+func TestTimeConverter0948(t *testing.T) {
+
+	api := SAP_COM_0948{}
+
+	t.Run("Test example time", func(t *testing.T) {
+		inputDate := "2024-05-02T09:25:40Z"
+		expectedDate := "2024-05-02 09:25:40 +0000 UTC"
+		result := api.ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+	t.Run("Test Unix time", func(t *testing.T) {
+		inputDate := "2023-12-24T16:19:29.000Z"
+		expectedDate := "2023-12-24 16:19:29 +0000 UTC"
+		result := api.ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+	t.Run("Test unexpected format", func(t *testing.T) {
+		inputDate := "2024-05-02T09:254:40Z"
+		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
+		result := api.ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+}
+
 func TestGetExecutionLog(t *testing.T) {
 	t.Run("Test Get Executionlog Success", func(t *testing.T) {
 
