@@ -81,3 +81,8 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/eventData
+      - name: additionalEventData
+        description: Data (formatted as JSON string) to add to eventData. This can be used to enrich eventData that comes from the pipeline environment.
+        type: string
+        scope:
+          - PARAMETERS

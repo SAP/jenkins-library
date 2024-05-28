@@ -41,7 +41,9 @@ type detectExecuteScanOptions struct {
 	M2Path                          string   `json:"m2Path,omitempty"`
 	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
 	BuildMaven                      bool     `json:"buildMaven,omitempty"`
+	BuildMTA                        bool     `json:"buildMTA,omitempty"`
 	GenerateReportsForEmptyProjects bool     `json:"generateReportsForEmptyProjects,omitempty"`
+	MtaPlatform                     string   `json:"mtaPlatform,omitempty"`
 	PomPath                         string   `json:"pomPath,omitempty"`
 	IncludedPackageManagers         []string `json:"includedPackageManagers,omitempty"`
 	ExcludedPackageManagers         []string `json:"excludedPackageManagers,omitempty"`
@@ -294,7 +296,9 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running detect. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 	cmd.Flags().BoolVar(&stepConfig.BuildMaven, "buildMaven", false, "Experiment parameter for maven multi-modules projects building")
+	cmd.Flags().BoolVar(&stepConfig.BuildMTA, "buildMTA", false, "Experiment parameter for MTA projects building")
 	cmd.Flags().BoolVar(&stepConfig.GenerateReportsForEmptyProjects, "generateReportsForEmptyProjects", false, "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius")
+	cmd.Flags().StringVar(&stepConfig.MtaPlatform, "mtaPlatform", `CF`, "The platform of the MTA project")
 	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
 	cmd.Flags().StringSliceVar(&stepConfig.IncludedPackageManagers, "includedPackageManagers", []string{}, "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-included-advanced)")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludedPackageManagers, "excludedPackageManagers", []string{}, "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-excluded-advanced)")
@@ -538,6 +542,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "buildMTA",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
 						Name:        "generateReportsForEmptyProjects",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
@@ -545,6 +558,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "mtaPlatform",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `CF`,
 					},
 					{
 						Name:        "pomPath",
