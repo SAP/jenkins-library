@@ -213,6 +213,18 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		}
 	}
 
+	// for MTA
+	if config.BuildMTA {
+		log.Entry().Infof("running MTA Build")
+		mtaConfig := setMTAConfig(config)
+		mtaUtils := newMtaBuildUtilsBundle()
+
+		err := runMtaBuild(mtaConfig, &mtaBuildCommonPipelineEnvironment{}, mtaUtils)
+		if err != nil {
+			return err
+		}
+	}
+
 	blackduckSystem := newBlackduckSystem(config)
 
 	args := []string{"./detect.sh"}
@@ -389,13 +401,16 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	log.Entry().Infof("Downloading Detect Script")
 
-	err := utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
-	if err != nil {
-		time.Sleep(time.Second * 5)
-		err = utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
-		if err != nil {
-			return err
+	downloadScript := func() error {
+		if config.UseDetect9 {
+			return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
 		}
+		return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+	}
+
+	if err := downloadScript(); err != nil {
+		time.Sleep(5 * time.Second)
+		return downloadScript()
 	}
 
 	return nil
@@ -511,6 +526,21 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if len(config.DetectTools) > 0 {
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
+	}
+
+	if config.EnableDiagnostics {
+		args = append(args, fmt.Sprintf("\"--detect.diagnostic=true\""))
+		args = append(args, fmt.Sprintf("\"--detect.cleanup=false\""))
+
+		err := utils.MkdirAll("./blackduckDiagnostics", 0o755)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create diagnostics directory")
+		}
+
+		log.Entry().Info("Diagnostics enabled, output will be stored in ./blackduckDiagnostics")
+
+		args = append(args, fmt.Sprintf("\"--detect.scan.output.path=./blackduckDiagnostics\""))
+		args = append(args, fmt.Sprintf("\"--detect.output.path=./blackduckDiagnostics\""))
 	}
 
 	// to exclude dependency types for npm
@@ -1037,13 +1067,40 @@ func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 		Publish:                     false,
 	}
 
+	// Print the mavenBuildOptions configuration in verbose mode
+	log.Entry().Debugf("Maven configuration: %v", mavenConfig)
+
 	return mavenConfig
+}
+
+func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
+
+	if config.M2Path == "" {
+		config.M2Path = ".m2"
+	}
+
+	mtaConfig := mtaBuildOptions{
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		Platform:            config.MtaPlatform,
+		InstallArtifacts:    true,
+		CreateBOM:           false,
+	}
+
+	// Print the mtaBuildOptions configuration in verbose mode
+
+	log.Entry().Debugf("MTA configuration: %v", mtaConfig)
+
+	return mtaConfig
+
 }
 
 func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.Token = "********"
 	config.GithubToken = "********"
 	config.PrivateModulesGitToken = "********"
+	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
 }
