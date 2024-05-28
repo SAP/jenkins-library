@@ -233,6 +233,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: customCommand
+        type: string
+        description: "A custom user-defined command to run between codeql analysis and results upload."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
     - image: ""
   outputs:
