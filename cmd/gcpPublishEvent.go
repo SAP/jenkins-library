@@ -69,7 +69,6 @@ func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.Cus
 	if err != nil {
 		// do not fail the step
 		log.Entry().WithError(err).Warnf("step execution failed")
-		return
 	}
 }
 
