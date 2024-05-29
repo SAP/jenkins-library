@@ -528,7 +528,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "github/branch",
+								Param: "git/branch",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

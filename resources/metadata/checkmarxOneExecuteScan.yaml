@@ -131,7 +131,7 @@ spec:
         description: "Set the GitHub repository branch."
         resourceRef:
           - name: commonPipelineEnvironment
-            param: github/branch
+            param: git/branch
         scope:
           - GENERAL
           - PARAMETERS
