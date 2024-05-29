@@ -35,7 +35,8 @@ spec:
           - name: host
           - name: sonarServerUrl
         type: string
-        description: "The URL to the Sonar backend."
+        description: "The URL to the Sonar backend.
+          Jenkins only: The serverUrl parameter requires the [`instance`](#instance) parameter to be explicitly set to an empty string, as it will have no effect otherwise."
         scope:
           - PARAMETERS
           - STAGES
@@ -310,7 +311,7 @@ spec:
                 type: int
   containers:
     - name: sonar
-      image: sonarsource/sonar-scanner-cli:4.8
+      image: sonarsource/sonar-scanner-cli:5.0
       options:
         - name: -u
           value: "0"

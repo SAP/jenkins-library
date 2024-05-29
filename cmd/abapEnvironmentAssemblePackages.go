@@ -50,7 +50,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]")
 	}
 
-	builds, err := executeBuilds(addonDescriptor.Repositories, *connBuild, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollIntervalsInMilliseconds)*time.Millisecond)
+	builds, err := executeBuilds(addonDescriptor, *connBuild, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollIntervalsInMilliseconds)*time.Millisecond)
 	if err != nil {
 		return errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
 	}
@@ -84,10 +84,10 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	return nil
 }
 
-func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollInterval time.Duration) ([]buildWithRepository, error) {
+func executeBuilds(addonDescriptor *abaputils.AddonDescriptor, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollInterval time.Duration) ([]buildWithRepository, error) {
 	var builds []buildWithRepository
 
-	for _, repo := range repos {
+	for _, repo := range addonDescriptor.Repositories {
 
 		buildRepo := buildWithRepository{
 			build: abapbuild.Build{
@@ -98,7 +98,7 @@ func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRu
 
 		if repo.Status == "P" {
 			buildRepo.repo.InBuildScope = true
-			err := buildRepo.start()
+			err := buildRepo.start(addonDescriptor)
 			if err != nil {
 				buildRepo.build.RunState = abapbuild.Failed
 				log.Entry().Error(err)
@@ -140,7 +140,7 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 	}
 }
 
-func (br *buildWithRepository) start() error {
+func (br *buildWithRepository) start(addonDescriptor *abaputils.AddonDescriptor) error {
 	if br.repo.Name == "" || br.repo.Version == "" || br.repo.SpLevel == "" || br.repo.PackageType == "" || br.repo.PackageName == "" {
 		return errors.New("Parameters missing. Please provide software component name, version, sp-level, packagetype and packagename")
 	}
@@ -155,12 +155,20 @@ func (br *buildWithRepository) start() error {
 				Value:   br.repo.Name + "." + br.repo.Version + "." + br.repo.SpLevel,
 			},
 			{
+				ValueID: "SEMANTIC_VERSION",
+				Value:   br.repo.VersionYAML,
+			},
+			{
 				ValueID: "PACKAGE_TYPE",
 				Value:   br.repo.PackageType,
 			},
 			{
 				ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
 				Value:   br.repo.PackageName,
+			},
+			{
+				ValueID: "addonDescriptor",
+				Value:   addonDescriptor.AsReducedJson(),
 			},
 		},
 	}
@@ -180,11 +188,6 @@ func (br *buildWithRepository) start() error {
 				Value: br.repo.PredecessorCommitID})
 	}
 	if br.repo.CommitID != "" {
-		// old value to be used until 2302 [can be deleted earliest with 2311]
-		valuesInput.Values = append(valuesInput.Values,
-			abapbuild.Value{ValueID: "ACTUAL_DELIVERY_COMMIT",
-				Value: br.repo.CommitID})
-		// new value used as of 2302
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "CURRENT_DELIVERY_COMMIT",
 				Value: br.repo.CommitID})

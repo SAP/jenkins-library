@@ -1,0 +1,20 @@
+quiet: false
+mockname: "{{.InterfaceName}}"
+filename: "{{.InterfaceName}}.go"
+outpkg: mocks
+packages:
+  github.com/influxdata/influxdb-client-go/v2:
+    config:
+      dir: pkg/influx/mocks
+    interfaces:
+      Client:
+  github.com/influxdata/influxdb-client-go/v2/api:
+    config:
+      dir: pkg/influx/mocks
+    interfaces:
+      WriteAPIBlocking:
+  github.com/SAP/jenkins-library/pkg/config:
+    config:
+      dir: pkg/config/mocks
+    interfaces:
+      VaultClient:

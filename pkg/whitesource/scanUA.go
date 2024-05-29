@@ -98,8 +98,10 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	// ToDo: Check if Download of Docker/container image should be done here instead of in cmd/whitesourceExecuteScan.go
 
 	// ToDo: check if this is required
-	if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
-		return err
+	if !config.SkipParentProjectResolution {
+		if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
+			return err
+		}
 	}
 
 	configPath, err := config.RewriteUAConfigurationFile(utils, s.AggregateProjectName)

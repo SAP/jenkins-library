@@ -50,12 +50,12 @@ func TestRunKanikoExecute(t *testing.T) {
 
 	// required due to config resolution during build settings retrieval
 	// ToDo: proper mocking
-	openFileBak := configOptions.openFile
+	openFileBak := configOptions.OpenFile
 	defer func() {
-		configOptions.openFile = openFileBak
+		configOptions.OpenFile = openFileBak
 	}()
 
-	configOptions.openFile = configOpenFileMock
+	configOptions.OpenFile = configOpenFileMock
 
 	t.Run("success case", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
@@ -360,7 +360,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)
 
 		assert.Equal(t, "/tmp/syfttest/syft", execRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"packages", "registry:index.docker.io/myImage:tag", "-o", "cyclonedx-xml", "--file", "bom-docker-0.xml", "-q"}, execRunner.Calls[2].Params)
+		assert.Equal(t, []string{"scan", "registry:index.docker.io/myImage:tag", "-o", "cyclonedx-xml=bom-docker-0.xml", "-q"}, execRunner.Calls[2].Params)
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
@@ -509,16 +509,16 @@ func TestRunKanikoExecute(t *testing.T) {
 			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage:myTag"},
 			{"--dockerfile", filepath.Join("sub1", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub1:myTag"},
 			{"--dockerfile", filepath.Join("sub2", "Dockerfile"), "--context", "dir://" + cwd, "--destination", "my.registry.com:50000/myImage-sub2:myTag"},
-			{"packages", "registry:my.registry.com:50000/myImage:myTag", "-o", "cyclonedx-xml", "--file"},
-			{"packages", "registry:my.registry.com:50000/myImage-sub1:myTag", "-o", "cyclonedx-xml", "--file"},
-			{"packages", "registry:my.registry.com:50000/myImage-sub2:myTag", "-o", "cyclonedx-xml", "--file"},
+			{"scan", "registry:my.registry.com:50000/myImage:myTag", "-o"},
+			{"scan", "registry:my.registry.com:50000/myImage-sub1:myTag", "-o"},
+			{"scan", "registry:my.registry.com:50000/myImage-sub2:myTag", "-o"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for index, call := range execRunner.Calls {
 			found := false
 			for _, expected := range expectedParams {
-				if expected[0] == "packages" {
-					expected = append(expected, fmt.Sprintf("bom-docker-%d.xml", index-3), "-q")
+				if expected[0] == "scan" {
+					expected = append(expected, fmt.Sprintf("cyclonedx-xml=bom-docker-%d.xml", index-3), "-q")
 				}
 				if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
 					found = true
@@ -662,15 +662,15 @@ func TestRunKanikoExecute(t *testing.T) {
 		expectedParams := [][]string{
 			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--context-sub-path", "/test1", "--destination", "my.registry.com:50000/myImageOne:myTag"},
 			{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--context-sub-path", "/test2", "--destination", "my.registry.com:50000/myImageTwo:myTagTwo"},
-			{"packages", "registry:my.registry.com:50000/myImageOne:myTag", "-o", "cyclonedx-xml", "--file"},
-			{"packages", "registry:my.registry.com:50000/myImageTwo:myTagTwo", "-o", "cyclonedx-xml", "--file"},
+			{"scan", "registry:my.registry.com:50000/myImageOne:myTag", "-o"},
+			{"scan", "registry:my.registry.com:50000/myImageTwo:myTagTwo", "-o"},
 		}
 		// need to go this way since we cannot count on the correct order
 		for index, call := range execRunner.Calls {
 			found := false
 			for _, expected := range expectedParams {
-				if expected[0] == "packages" {
-					expected = append(expected, fmt.Sprintf("bom-docker-%d.xml", index-2), "-q")
+				if expected[0] == "scan" {
+					expected = append(expected, fmt.Sprintf("cyclonedx-xml=bom-docker-%d.xml", index-2), "-q")
 				}
 				if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
 					found = true

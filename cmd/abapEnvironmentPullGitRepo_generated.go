@@ -29,6 +29,7 @@ type abapEnvironmentPullGitRepoOptions struct {
 	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
 	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
 	IgnoreCommit      bool     `json:"ignoreCommit,omitempty"`
+	CertificateNames  []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP BTP ABAP Environment system
@@ -75,7 +76,7 @@ Please provide either of the following options:
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -125,7 +126,7 @@ Please provide either of the following options:
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapEnvironmentPullGitRepo(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -150,6 +151,7 @@ func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
 	cmd.Flags().BoolVar(&stepConfig.IgnoreCommit, "ignoreCommit", false, "ingores a commit provided via the repositories file")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -297,6 +299,15 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "certificateNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

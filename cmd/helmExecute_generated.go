@@ -99,8 +99,8 @@ func HelmExecuteCommand() *cobra.Command {
 Executes helm functionality as the package manager for Kubernetes.
 
 * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
-* [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
-* [Helm Charts] (https://artifacthub.io/)
+* [Helm documentation](https://helm.sh/docs/intro/using_helm/) and [best practices](https://helm.sh/docs/chart_best_practices/conventions/)
+* [Helm Charts](https://artifacthub.io/)
 ` + "`" + `` + "`" + `` + "`" + `
 Available Commands:
 ` + "`" + `upgrade` + "`" + `, ` + "`" + `lint` + "`" + `, ` + "`" + `install` + "`" + `, ` + "`" + `test` + "`" + `, ` + "`" + `uninstall` + "`" + `, ` + "`" + `dependency` + "`" + `, ` + "`" + `publish` + "`" + `
@@ -110,8 +110,8 @@ Available Commands:
   install       install a chart
   test          run tests for a release
   uninstall     uninstall a release
-  dependency     package a chart directory into a chart archive
-  publish       package and puslish a release
+  dependency    package a chart directory into a chart archive
+  publish       package and publish a release
 
 ` + "`" + `` + "`" + `` + "`" + `
 
@@ -144,7 +144,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -195,7 +195,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			helmExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -255,7 +255,8 @@ func helmExecuteMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "kubeConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).", Type: "jenkins", Aliases: []config.Alias{{Name: "kubeCredentialsId", Deprecated: true}}},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
-					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication", Type: "jenkins"},
+					{Name: "sourceRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (source repo)", Type: "jenkins"},
+					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (target repo)", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},

@@ -5,7 +5,7 @@
 
 #Project Setup
 general:
-  collectTelemetryData: true
+  collectTelemetryData: false
   logFormat: 'plain'
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
@@ -237,7 +237,7 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
-      stashBack: '**/node_modules/**,nohup.out'
+      stashBack: '**/node_modules/**,nohup.out,.git/**'
   dubExecute:
     dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
@@ -481,6 +481,7 @@ steps:
       active: false
     jmeter:
       pattern: '**/*.jtl'
+      filterRegex: ''
       errorFailedThreshold: 20
       errorUnstableThreshold: 10
       errorUnstableResponseTimeThreshold: ''

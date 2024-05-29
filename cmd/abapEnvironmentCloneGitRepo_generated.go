@@ -16,17 +16,18 @@ import (
 )
 
 type abapEnvironmentCloneGitRepoOptions struct {
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	Repositories      string `json:"repositories,omitempty"`
-	RepositoryName    string `json:"repositoryName,omitempty"`
-	BranchName        string `json:"branchName,omitempty"`
-	Host              string `json:"host,omitempty"`
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
+	Username          string   `json:"username,omitempty"`
+	Password          string   `json:"password,omitempty"`
+	Repositories      string   `json:"repositories,omitempty"`
+	RepositoryName    string   `json:"repositoryName,omitempty"`
+	BranchName        string   `json:"branchName,omitempty"`
+	Host              string   `json:"host,omitempty"`
+	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg             string   `json:"cfOrg,omitempty"`
+	CfSpace           string   `json:"cfSpace,omitempty"`
+	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
+	CertificateNames  []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentCloneGitRepoCommand Clones a git repository to a SAP BTP ABAP Environment system
@@ -73,7 +74,7 @@ Please provide either of the following options:
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -123,7 +124,7 @@ Please provide either of the following options:
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapEnvironmentCloneGitRepo(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -146,6 +147,7 @@ func addAbapEnvironmentCloneGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -275,6 +277,15 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 						Default:     os.Getenv("PIPER_cfServiceKeyName"),
+					},
+					{
+						Name:        "certificateNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

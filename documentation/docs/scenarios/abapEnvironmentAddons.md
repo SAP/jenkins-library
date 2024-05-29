@@ -107,7 +107,7 @@ There are several prerequisites  to run the pipeline for building an ABAP Enviro
 
 #### Jenkins Server
 
-The pipeline responsible for building ABAP add-ons has been created specifically for [Jenkins](https://www.jenkins.io). Therefore, a Jenkins Server is required. The [piper project](https://sap.github.io/jenkins-library/guidedtour/) provides with [Cx Server](https://www.project-piper.io/infrastructure/overview/#cx-server-recommended) a life-cycle management tool to bootstrap a pre-configured Jenkins instance, which already includes the necessary configuration. Of course, it is also possible to [configure an existing server](https://sap.github.io/jenkins-library/infrastructure/customjenkins/).
+The pipeline responsible for building ABAP add-ons has been created specifically for [Jenkins](https://www.jenkins.io). Therefore, a Jenkins Server is required. Please follow these instructions to [configure an existing server](https://sap.github.io/jenkins-library/infrastructure/customjenkins/).
 
 #### Git Repository
 
