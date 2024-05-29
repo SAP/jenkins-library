@@ -74,13 +74,13 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 	var additionalData map[string]interface{}
 	err := json.Unmarshal([]byte(additionalDataString), &additionalData)
 	if err != nil {
-		errors.Wrap(err, "couldn't add additional data to cloud event")
+		return errors.Wrap(err, "couldn't add additional data to cloud event")
 	}
 
 	var newEventData map[string]interface{}
 	err = json.Unmarshal(e.cloudEvent.DataEncoded, &newEventData)
 	if err != nil {
-		errors.Wrap(err, "couldn't add additional data to cloud event")
+		return errors.Wrap(err, "couldn't add additional data to cloud event")
 	}
 
 	for k, v := range additionalData {
