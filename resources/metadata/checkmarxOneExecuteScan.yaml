@@ -202,6 +202,22 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: projectTags
+        type: string
+        description: Used to tag a project with a JSON string, e.g., {"key":"value", "keywithoutvalue":""}
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scanTags
+        type: string
+        description: Used to tag a scan with a JSON string, e.g., {"key":"value", "keywithoutvalue":""}
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: branch
         type: string
         description: Used to supply the branch scanned in the repository, or a friendly-name set by the user
