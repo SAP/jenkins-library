@@ -80,7 +80,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to get project: %s", err)
 	}
 
-	if (len(config.GroupName) > 0) {
+	if len(config.GroupName) > 0 {
 		cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
 		if err != nil {
 			log.Entry().WithError(err).Warnf("failed to get group")
@@ -311,7 +311,7 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 }
 
 func (c *checkmarxOneExecuteScanHelper) UpdateProjectTags() error {
-	if (len(c.config.ProjectTags) > 0 ) {
+	if len(c.config.ProjectTags) > 0 {
 		tags := make(map[string]string, 0)
 		err := json.Unmarshal([]byte(c.config.ProjectTags), &tags)
 		if err != nil {
