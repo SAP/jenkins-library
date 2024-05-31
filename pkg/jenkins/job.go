@@ -7,7 +7,6 @@ import (
 )
 
 // Task is an interface to abstract gojenkins.Task.
-// mock generated with: mockery --name Job --dir pkg/jenkins --output pkg/jenkins/mocks
 type Job interface {
 	Poll(context.Context) (int, error)
 	InvokeSimple(ctx context.Context, params map[string]string) (int64, error)

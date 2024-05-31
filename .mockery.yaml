@@ -23,3 +23,12 @@ packages:
       dir: cmd/mocks
     interfaces:
       GithubRepoClient:
+  github.com/SAP/jenkins-library/pkg/jenkins:
+    config:
+      dir: pkg/jenkins/mocks
+    interfaces:
+      Artifact:
+      Build:
+      Jenkins:
+      Job:
+      Task:
