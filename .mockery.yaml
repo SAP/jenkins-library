@@ -18,3 +18,8 @@ packages:
       dir: pkg/config/mocks
     interfaces:
       VaultClient:
+  github.com/SAP/jenkins-library/cmd:
+    config:
+      dir: cmd/mocks
+    interfaces:
+      GithubRepoClient:
