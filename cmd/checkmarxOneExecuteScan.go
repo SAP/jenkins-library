@@ -80,9 +80,11 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to get project: %s", err)
 	}
 
-	cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
-	if err != nil {
-		log.Entry().WithError(err).Warnf("failed to get group")
+	if (len(config.GroupName) > 0) {
+		cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to get group")
+		}
 	}
 
 	if cx1sh.Project == nil {
@@ -318,7 +320,7 @@ func (c *checkmarxOneExecuteScanHelper) UpdateProjectTags() error {
 		}
 		// merge new tags to the existing ones
 		maps.Copy(c.Project.Tags, tags)
-	
+
 		return c.sys.UpdateProject(c.Project)
 	}
 
@@ -464,7 +466,7 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	if len(c.config.ScanTags) > 0 {
 		err := json.Unmarshal([]byte(c.config.ScanTags), &tags)
 		if err != nil {
-			log.Entry().Infof("Failed to parse the scan tags: %v", c.config.ScanTags)
+			log.Entry().WithError(err).Warnf("Failed to parse the scan tags: %v", c.config.ScanTags)
 		}
 	}
 
