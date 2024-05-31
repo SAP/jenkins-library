@@ -309,16 +309,20 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 }
 
 func (c *checkmarxOneExecuteScanHelper) UpdateProjectTags() error {
-	tags := make(map[string]string, 0)
-	err := json.Unmarshal([]byte(c.config.ProjectTags), &tags)
-	if err != nil {
-		log.Entry().Infof("Failed to parse the project tags: %v", c.config.ProjectTags)
-		return err
+	if (len(c.config.ProjectTags) > 0 ) {
+		tags := make(map[string]string, 0)
+		err := json.Unmarshal([]byte(c.config.ProjectTags), &tags)
+		if err != nil {
+			log.Entry().Infof("Failed to parse the project tags: %v", c.config.ProjectTags)
+			return err
+		}
+		// merge new tags to the existing ones
+		maps.Copy(c.Project.Tags, tags)
+	
+		return c.sys.UpdateProject(c.Project)
 	}
-	// merge new tags to the existing ones
-	maps.Copy(c.Project.Tags, tags)
 
-	return c.sys.UpdateProject(c.Project)
+	return nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
