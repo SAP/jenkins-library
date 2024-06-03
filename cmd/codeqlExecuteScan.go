@@ -69,7 +69,7 @@ func appendCodeqlQuerySuite(utils codeqlExecuteScanUtils, cmd []string, querySui
 			defer utils.Stderr(log.Writer())
 
 			transformCmd := []string{"-c", fmt.Sprintf("echo %s | sed -E \"%s\"", querySuite, transformString)}
-			if err := utils.RunExecutable("sh", transformCmd...); err != nil {
+			if err := utils.RunExecutable("bash", transformCmd...); err != nil {
 				log.Entry().WithError(err).Error("failed to transform querySuite")
 				e := bufferErr.String()
 				log.Entry().Error(e)
