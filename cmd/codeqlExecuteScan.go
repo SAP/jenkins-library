@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
@@ -62,19 +63,20 @@ func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry
 func appendCodeqlQuerySuite(utils codeqlExecuteScanUtils, cmd []string, querySuite, transformString string) []string {
 	if len(querySuite) > 0 {
 		if len(transformString) > 0 {
-			var bufferOut, bufferErr bytes.Buffer
-			utils.Stdout(&bufferOut)
-			defer utils.Stdout(log.Writer())
-			utils.Stderr(&bufferErr)
-			defer utils.Stderr(log.Writer())
-
-			transformCmd := []string{"-c", fmt.Sprintf("echo %s | sed -E \"%s\"", querySuite, transformString)}
-			if err := utils.RunExecutable("bash", transformCmd...); err != nil {
-				log.Entry().WithError(err).Error("failed to transform querySuite")
-				e := bufferErr.String()
-				log.Entry().Error(e)
-			} else {
-				querySuite = strings.TrimSpace(bufferOut.String())
+			switch runtime.GOOS {
+			case "linux", "darwin":
+				var bufferOut, bufferErr bytes.Buffer
+				utils.Stdout(&bufferOut)
+				defer utils.Stdout(log.Writer())
+				utils.Stderr(&bufferErr)
+				defer utils.Stderr(log.Writer())
+				if err := utils.RunExecutable("sh", []string{"-c", fmt.Sprintf("echo %s | sed -E \"%s\"", querySuite, transformString)}...); err != nil {
+					log.Entry().WithError(err).Error("failed to transform querySuite")
+					e := bufferErr.String()
+					log.Entry().Error(e)
+				} else {
+					querySuite = strings.TrimSpace(bufferOut.String())
+				}
 			}
 		}
 		cmd = append(cmd, querySuite)
