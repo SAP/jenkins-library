@@ -266,6 +266,32 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: installNPM
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for downloading npm dependencies"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: defaultNpmRegistry
+        type: string
+        description: "URL of the npm registry to use. Defaults to https://registry.npmjs.org/"
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        aliases:
+          - name: npm/defaultNpmRegistry
+      - name: buildDescriptorList
+        type: "[]string"
+        description: List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors. **If set, buildDescriptorExcludeList will be ignored.**
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: enableDiagnostics
         type: bool
         default: false
