@@ -216,6 +216,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 
 	// Install NPM dependencies
 	if config.InstallNPM {
+		log.Entry().Infof("running npm install")
 		npmExecutor := npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
 
 		buildDescriptorList := config.BuildDescriptorList
