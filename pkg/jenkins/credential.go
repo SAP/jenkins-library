@@ -22,7 +22,6 @@ type SSHCredentials = gojenkins.SSHCredentials
 type DockerServerCredentials = gojenkins.DockerServerCredentials
 
 // CredentialsManager is utility to control credential plugin
-// mock generated with: mockery --name CredentialsManager --dir pkg/jenkins --output pkg/jenkins/mocks
 type CredentialsManager interface {
 	Update(context.Context, string, string, interface{}) error
 }
