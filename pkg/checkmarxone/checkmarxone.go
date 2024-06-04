@@ -309,9 +309,10 @@ type System interface {
 	GetLastScans(projectID string, limit int) ([]Scan, error)
 	GetLastScansByStatus(projectID string, limit int, status []string) ([]Scan, error)
 
-	ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration) (Scan, error)
-	ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration) (Scan, error)
-	ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration) (Scan, error)
+	ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration, tags map[string]string) (Scan, error)
+	ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error)
+	ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error)
+	UpdateProject(project *Project) error
 
 	UploadProjectSourceCode(projectID string, zipFile string) (string, error)
 	CreateProject(projectName string, groupIDs []string) (Project, error)
@@ -651,6 +652,22 @@ func (sys *SystemInstance) UpdateApplication(app *Application) error {
 	return nil
 }
 
+func (sys *SystemInstance) UpdateProject(project *Project) error {
+	sys.logger.Debugf("Updating project: %v", project.Name)
+	jsonBody, err := json.Marshal(*project)
+	if err != nil {
+		return err
+	}
+
+	_, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/projects/%v", project.ProjectID), bytes.NewReader(jsonBody), nil, []int{})
+	if err != nil {
+		sys.logger.Errorf("Error while updating project: %s", err)
+		return err
+	}
+
+	return nil
+}
+
 // Updated for Cx1
 func (sys *SystemInstance) GetGroups() ([]Group, error) {
 	sys.logger.Debug("Getting Groups...")
@@ -936,7 +953,7 @@ func (sys *SystemInstance) scanProject(scanConfig map[string]interface{}) (Scan,
 	return scan, err
 }
 
-func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration) (Scan, error) {
+func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error) {
 	jsonBody := map[string]interface{}{
 		"project": map[string]interface{}{"id": projectID},
 		"type":    "upload",
@@ -945,6 +962,7 @@ func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, s
 			"branch":    branch,
 		},
 		"config": settings,
+		"tags":   tags,
 	}
 
 	scan, err := sys.scanProject(jsonBody)
@@ -954,7 +972,7 @@ func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, s
 	return scan, err
 }
 
-func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration) (Scan, error) {
+func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error) {
 	jsonBody := map[string]interface{}{
 		"project": map[string]interface{}{"id": projectID},
 		"type":    "git",
@@ -963,6 +981,7 @@ func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, set
 			"branch":  branch,
 		},
 		"config": settings,
+		"tags":   tags,
 	}
 
 	scan, err := sys.scanProject(jsonBody)
@@ -972,11 +991,11 @@ func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, set
 	return scan, err
 }
 
-func (sys *SystemInstance) ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration) (Scan, error) {
+func (sys *SystemInstance) ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration, tags map[string]string) (Scan, error) {
 	if scanType == "upload" {
-		return sys.ScanProjectZip(projectID, sourceUrl, branch, settings)
+		return sys.ScanProjectZip(projectID, sourceUrl, branch, settings, tags)
 	} else if scanType == "git" {
-		return sys.ScanProjectGit(projectID, sourceUrl, branch, settings)
+		return sys.ScanProjectGit(projectID, sourceUrl, branch, settings, tags)
 	}
 
 	return Scan{}, errors.New("Invalid scanType provided, must be 'upload' or 'git'")
