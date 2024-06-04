@@ -303,7 +303,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().BoolVar(&stepConfig.BuildMTA, "buildMTA", false, "Experiment parameter for MTA projects building")
 	cmd.Flags().BoolVar(&stepConfig.InstallNPM, "installNPM", false, "Experiment parameter for downloading npm dependencies")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
-	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorList, "buildDescriptorList", []string{}, "List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors. **If set, buildDescriptorExcludeList will be ignored.**")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorList, "buildDescriptorList", []string{}, "List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors.")
 	cmd.Flags().BoolVar(&stepConfig.EnableDiagnostics, "enableDiagnostics", false, "Parameter to enable diagnostics file generation by detect script")
 	cmd.Flags().BoolVar(&stepConfig.GenerateReportsForEmptyProjects, "generateReportsForEmptyProjects", false, "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius")
 	cmd.Flags().StringVar(&stepConfig.MtaPlatform, "mtaPlatform", `CF`, "The platform of the MTA project")
