@@ -691,7 +691,12 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		cfDeployParams = append(cfDeployParams, deployParams...)
 	}
 
-	extFileParams, extFiles := handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)
+	var extFileParams []string
+	var extFiles []string
+	if len(config.MtaExtensionDescriptors) > 0 {
+		extFileParams, extFiles = handleMtaExtensionDescriptorsAsList(config.MtaExtensionDescriptors)
+	}
+	extFileParams, extFiles = handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)
 
 	for _, extFile := range extFiles {
 		_, err := fileUtils.Copy(extFile, extFile+".original")
@@ -812,10 +817,10 @@ func toMap(keyValue []string, separator string) (map[string]string, error) {
 	return result, nil
 }
 
-func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []string) {
+func handleMtaExtensionDescriptorsAsList(mtaExtensionDescriptors []string) ([]string, []string) {
 	var result = []string{}
 	var extFiles = []string{}
-	for _, part := range strings.Fields(strings.Trim(mtaExtensionDescriptor, " ")) {
+	for _, part := range mtaExtensionDescriptors {
 		if part == "-e" || part == "" {
 			continue
 		}
@@ -827,6 +832,10 @@ func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []s
 		result = append(result, strings.Join(extFiles, ","))
 	}
 	return result, extFiles
+}
+
+func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []string) {
+	return handleMtaExtensionDescriptorsAsList(strings.Fields(strings.Trim(mtaExtensionDescriptor, " ")))
 }
 
 func cfDeploy(

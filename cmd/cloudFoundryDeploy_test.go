@@ -1295,6 +1295,14 @@ func TestExtensionDescriptorsWithMinusE(t *testing.T) {
 		extDesc, _ := handleMtaExtensionDescriptors("")
 		assert.Equal(t, []string{}, extDesc)
 	})
+
+	t.Run("ExtensionDescriptorsDefinedAsList", func(t *testing.T) {
+		extDesc, _ := handleMtaExtensionDescriptorsAsList([]string{"1.yaml", "2.yaml"})
+		assert.Equal(t, []string{
+			"-e",
+			"1.yaml,2.yaml",
+		}, extDesc)
+	})
 }
 
 func TestAppNameChecks(t *testing.T) {
