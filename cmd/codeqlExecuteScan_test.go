@@ -589,16 +589,16 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 		utils := codeqlExecuteScanMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
 				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-					stdout.Write([]byte("sap-java-security-extended.qls"))
+					stdout.Write([]byte("test-java-security-extended.qls"))
 					return nil
 				},
 			},
 		}
 		cmd := []string{"database", "analyze"}
 		querySuite := "java-security-extended.qls"
-		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/sap-\1-\2/`)
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/test-\1-\2/`)
 		assert.Equal(t, 3, len(cmd))
-		assert.Equal(t, "sap-java-security-extended.qls", cmd[2])
+		assert.Equal(t, "test-java-security-extended.qls", cmd[2])
 	})
 
 	t.Run("Don't add prefix to querySuite", func(t *testing.T) {
@@ -611,7 +611,7 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 		}
 		cmd := []string{"database", "analyze"}
 		querySuite := "php-security-extended.qls"
-		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/sap-\1-\2/`)
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/test-\1-\2/`)
 		assert.Equal(t, 3, len(cmd))
 		assert.Equal(t, "php-security-extended.qls", cmd[2])
 	})
