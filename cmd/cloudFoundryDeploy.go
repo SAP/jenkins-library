@@ -695,8 +695,9 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	var extFiles []string
 	if len(config.MtaExtensionDescriptors) > 0 {
 		extFileParams, extFiles = handleMtaExtensionDescriptorsAsList(config.MtaExtensionDescriptors)
+	} else {
+		extFileParams, extFiles = handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)
 	}
-	extFileParams, extFiles = handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)
 
 	for _, extFile := range extFiles {
 		_, err := fileUtils.Copy(extFile, extFile+".original")
