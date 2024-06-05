@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -278,6 +279,7 @@ func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownload
 
 func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils SettingsDownloadUtils, overwrite bool) (string, error) {
 	result := settingsFileOption
+	var absoluteFilePath string
 	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
 		err := downloadSettingsFromURL(settingsFileOption, settingsFile, utils, overwrite)
 		if err != nil {
@@ -285,7 +287,17 @@ func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils Settin
 		}
 		result = settingsFile
 	}
-	return result, nil
+	//Added support for sub-mobules in maven build by providing absolute path
+	if filepath.IsAbs(result) {
+		absoluteFilePath = result
+	} else {
+		dir, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("failed to get current working directory: %w", err)
+		}
+		absoluteFilePath = path.Join(dir, result)
+	}
+	return absoluteFilePath, nil
 }
 
 func downloadSettingsFromURL(url, filename string, utils SettingsDownloadUtils, overwrite bool) error {
