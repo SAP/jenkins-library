@@ -10,7 +10,6 @@ import (
 )
 
 // Build is an interface to abstract gojenkins.Build.
-// mock generated with: mockery --name Build --dir pkg/jenkins --output pkg/jenkins/mocks
 type Build interface {
 	GetArtifacts() []gojenkins.Artifact
 	IsRunning(ctx context.Context) bool
