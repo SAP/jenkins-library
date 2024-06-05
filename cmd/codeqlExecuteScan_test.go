@@ -4,6 +4,8 @@
 package cmd
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -21,7 +23,11 @@ type codeqlExecuteScanMockUtils struct {
 
 func newCodeqlExecuteScanTestsUtils() codeqlExecuteScanMockUtils {
 	utils := codeqlExecuteScanMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
+		ExecMockRunner: &mock.ExecMockRunner{
+			Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+				return nil
+			},
+		},
 		FilesMock:      &mock.FilesMock{},
 		HttpClientMock: &mock.HttpClientMock{},
 	}
@@ -562,9 +568,9 @@ func TestPrepareCmdForUploadResults(t *testing.T) {
 
 func TestAppendCodeqlQuerySuite(t *testing.T) {
 	t.Parallel()
-	utils := newCodeqlExecuteScanUtils()
 
 	t.Run("Empty query", func(t *testing.T) {
+		utils := newCodeqlExecuteScanTestsUtils()
 		cmd := []string{"database", "analyze"}
 		querySuite := ""
 		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, "")
@@ -572,6 +578,7 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 	})
 
 	t.Run("Not empty query", func(t *testing.T) {
+		utils := newCodeqlExecuteScanTestsUtils()
 		cmd := []string{"database", "analyze"}
 		querySuite := "java-extended.ql"
 		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, "")
@@ -579,6 +586,14 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 	})
 
 	t.Run("Add prefix to querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte("sap-java-security-extended.qls"))
+					return nil
+				},
+			},
+		}
 		cmd := []string{"database", "analyze"}
 		querySuite := "java-security-extended.qls"
 		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/sap-\1-\2/`)
@@ -587,6 +602,13 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 	})
 
 	t.Run("Don't add prefix to querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					return fmt.Errorf("error")
+				},
+			},
+		}
 		cmd := []string{"database", "analyze"}
 		querySuite := "php-security-extended.qls"
 		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/sap-\1-\2/`)
