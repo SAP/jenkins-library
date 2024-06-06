@@ -213,6 +213,18 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		}
 	}
 
+	// for MTA
+	if config.BuildMTA {
+		log.Entry().Infof("running MTA Build")
+		mtaConfig := setMTAConfig(config)
+		mtaUtils := newMtaBuildUtilsBundle()
+
+		err := runMtaBuild(mtaConfig, &mtaBuildCommonPipelineEnvironment{}, mtaUtils)
+		if err != nil {
+			return err
+		}
+	}
+
 	blackduckSystem := newBlackduckSystem(config)
 
 	args := []string{"./detect.sh"}
@@ -514,6 +526,21 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if len(config.DetectTools) > 0 {
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
+	}
+
+	if config.EnableDiagnostics {
+		args = append(args, fmt.Sprintf("\"--detect.diagnostic=true\""))
+		args = append(args, fmt.Sprintf("\"--detect.cleanup=false\""))
+
+		err := utils.MkdirAll(".pipeline/blackduckDiagnostics", 0o755)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create diagnostics directory")
+		}
+
+		log.Entry().Info("Diagnostics enabled, output will be stored in .pipeline/blackduckDiagnostics")
+
+		args = append(args, fmt.Sprintf("\"--detect.scan.output.path=.pipeline/blackduckDiagnostics\""))
+		args = append(args, fmt.Sprintf("\"--detect.output.path=.pipeline/blackduckDiagnostics\""))
 	}
 
 	// to exclude dependency types for npm
@@ -1040,7 +1067,33 @@ func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 		Publish:                     false,
 	}
 
+	// Print the mavenBuildOptions configuration in verbose mode
+	log.Entry().Debugf("Maven configuration: %v", mavenConfig)
+
 	return mavenConfig
+}
+
+func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
+
+	if config.M2Path == "" {
+		config.M2Path = ".m2"
+	}
+
+	mtaConfig := mtaBuildOptions{
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		Platform:            config.MtaPlatform,
+		InstallArtifacts:    true,
+		CreateBOM:           false,
+	}
+
+	// Print the mtaBuildOptions configuration in verbose mode
+
+	log.Entry().Debugf("MTA configuration: %v", mtaConfig)
+
+	return mtaConfig
+
 }
 
 func logConfigInVerboseMode(config detectExecuteScanOptions) {

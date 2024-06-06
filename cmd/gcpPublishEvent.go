@@ -48,14 +48,16 @@ func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.Cus
 	}
 
 	client, err := piperConfig.GetVaultClientFromConfig(vaultConfig, vaultCreds)
-	if err != nil {
-		log.Entry().WithError(err).Warnf("could not create Vault client")
+	if err != nil || client == nil {
+		log.Entry().WithError(err).Warnf("could not create Vault client: incomplete Vault configuration")
+		return
 	}
 	defer client.MustRevokeToken()
 
 	vaultClient, ok := client.(vault.Client)
 	if !ok {
 		log.Entry().WithError(err).Warnf("could not create Vault client")
+		return
 	}
 
 	utils := gcpPublishEventUtilsBundle{
@@ -81,7 +83,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 	}
 
-	data, err = events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(config.EventData).ToBytes()
+	data, err = createNewEvent(config)
 	if err != nil {
 		return errors.Wrap(err, "failed to create event data")
 	}
@@ -101,7 +103,26 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		return errors.Wrap(err, "failed to publish event")
 	}
 
-	log.Entry().Info("event published successfully!")
+	log.Entry().Infof("Event published successfully! With topic: %s", config.Topic)
 
 	return nil
+}
+
+func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
+	event, err := events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(config.EventData)
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "failed to create new event")
+	}
+
+	err = event.AddToCloudEventData(config.AdditionalEventData)
+	if err != nil {
+		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
+	}
+
+	eventBytes, err := event.ToBytes()
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "casting event to bytes failed")
+	}
+	log.Entry().Debugf("CloudEvent created: %s", string(eventBytes))
+	return eventBytes, nil
 }
