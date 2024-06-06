@@ -404,6 +404,7 @@ func (v *Client) getKvInfo(path string) (string, int, error) {
 
 func (v *Client) lookupSecretID(secretID, appRolePath string) (map[string]interface{}, error) {
 	reqPath := sanitizePath(path.Join(appRolePath, "/secret-id/lookup"))
+	log.Entry().Infof("req path: %s", reqPath)
 	secret, err := v.lClient.Write(reqPath, map[string]interface{}{
 		"secret_id": secretID,
 	})
@@ -418,7 +419,7 @@ func (v *Client) lookupSecretID(secretID, appRolePath string) (map[string]interf
 
 	secretJson, err := json.Marshal(secret)
 	if err != nil {
-		log.Entry().Infof("error while marshalling secret: ", err)
+		log.Entry().Infof("error while marshalling secret: %s", err)
 	} else {
 		log.Entry().Infof(string(secretJson))
 	}
