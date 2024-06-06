@@ -3,6 +3,7 @@ package vault
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -407,6 +408,26 @@ func (v *Client) lookupSecretID(secretID, appRolePath string) (map[string]interf
 		"secret_id": secretID,
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if secret == nil {
+		log.Entry().Info("secret is nil")
+		return nil, errors.New("Secret is nil")
+	}
+
+	secretJson, err := json.Marshal(secret)
+	if err != nil {
+		log.Entry().Infof("error while marshalling secret: ", err)
+	} else {
+		log.Entry().Infof(string(secretJson))
+	}
+
+	if secret.Warnings != nil {
+		log.Entry().Infof("Warning(s) while looking up Vault secret ID: %s", secret.Warnings)
+	}
+	if secret.Data == nil {
+		err = errors.New("No data field present for secret ID")
 		return nil, err
 	}
 
