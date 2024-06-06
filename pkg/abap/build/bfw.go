@@ -26,21 +26,19 @@ const (
 	warning    resultState = "WARNING"
 	erroneous  resultState = "ERRONEOUS"
 	aborted    resultState = "ABORTED"
-	// Initializing : Build Framework prepared
-	Initializing RunState = "INITIALIZING"
-	// Accepted : Build Framework triggered
-	Accepted RunState = "ACCEPTED"
-	// Running : Build Framework performs build
-	Running RunState = "RUNNING"
-	// Finished : Build Framework ended successful
-	Finished RunState = "FINISHED"
-	// Failed : Build Framework endded with error
-	Failed          RunState = "FAILED"
-	loginfo         msgty    = "I"
-	logwarning      msgty    = "W"
-	logerror        msgty    = "E"
-	logaborted      msgty    = "A"
-	dummyResultName string   = "Dummy"
+
+	Initializing RunState = "INITIALIZING" // Initializing : Build Framework prepared
+	Accepted     RunState = "ACCEPTED"     // Accepted : Build Framework triggered
+	Running      RunState = "RUNNING"      // Running : Build Framework performs build
+	Finished     RunState = "FINISHED"     // Finished : Build Framework ended successful
+	Failed       RunState = "FAILED"       // Failed : Build Framework endded with error
+
+	loginfo    msgty = "I"
+	logwarning msgty = "W"
+	logerror   msgty = "E"
+	logaborted msgty = "A"
+
+	dummyResultName string = "Dummy"
 )
 
 // ******** structs needed for json convertion ********
@@ -314,6 +312,33 @@ func (b *Build) PrintLogs() error {
 		}
 	}
 	return nil
+}
+
+func (b *Build) DetermineFailureCause() (string, error) {
+	if err := b.getTasks(); err != nil {
+		return "", err
+	}
+	//The errors of the last executed task should contain some hints about the cause of the failure
+	lastTaskIndex := len(b.Tasks) - 1
+	if lastTaskIndex < 0 {
+		return "", errors.New("No Tasks to evaluate")
+	}
+	failedTask := b.Tasks[lastTaskIndex]
+	if err := failedTask.getLogs(); err != nil {
+		return "", err
+	}
+	return failedTask.determineFailureCause(), nil
+}
+
+func (t *task) determineFailureCause() string {
+	var cause strings.Builder
+	for _, logLine := range t.Logs {
+		if logLine.Msgty == logaborted || logLine.Msgty == logerror {
+			cause.WriteString(logLine.Logline + "\n")
+		}
+	}
+	causeString := cause.String()
+	return causeString
 }
 
 // GetResults : Gets all Build results
