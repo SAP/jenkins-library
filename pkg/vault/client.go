@@ -3,6 +3,7 @@ package vault
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -408,6 +409,10 @@ func (v *Client) lookupSecretID(secretID, appRolePath string) (map[string]interf
 	})
 	if err != nil {
 		return nil, err
+	}
+	// when the request returns 204 or EOF, no error is thrown, but the secret will be nil
+	if secret == nil {
+		return nil, errors.New("Secret ID couldn't be looked up. Run Piper in verbose mode in order to check if a 204 or EOF response is received.")
 	}
 
 	return secret.Data, nil
