@@ -341,7 +341,7 @@ func prepareCmdForDatabaseAnalyze(utils codeqlExecuteScanUtils, customFlags map[
 	cmd := []string{"database", "analyze", "--format=" + format, "--output=" + reportName, config.Database}
 	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
 	cmd = codeql.AppendCustomFlags(cmd, customFlags)
-	cmd = appendCodeqlQuerySuite(utils, cmd, config.QuerySuite, config.TransformString)
+	cmd = appendCodeqlQuerySuite(utils, cmd, config.QuerySuite, config.TransformQuerySuite)
 	return cmd, nil
 }
 
