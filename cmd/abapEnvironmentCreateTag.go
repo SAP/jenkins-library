@@ -40,6 +40,7 @@ func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, com ab
 	if errorGetInfo != nil {
 		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
 	}
+	connectionDetails.CertificateNames = config.CertificateNames
 
 	backlog, errorPrepare := prepareBacklog(config)
 	if errorPrepare != nil {
