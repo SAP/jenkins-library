@@ -6,15 +6,16 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/nexus"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/nexus"
+	"github.com/stretchr/testify/assert"
 )
 
 type mockUtilsBundle struct {
@@ -679,9 +680,11 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.NoError(t, err, "expected Maven upload to work")
 
 		assert.Equal(t, 1, len(utils.Calls))
+		dir, _ := os.Getwd()
+		absoluteSettingsPath := filepath.Join(dir, settingsPath)
 		expectedParameters1 := []string{
 			"--settings",
-			settingsPath,
+			absoluteSettingsPath,
 			"-Durl=http://localhost:8081/repository/maven-releases/",
 			"-DgroupId=com.mycompany.app",
 			"-Dversion=1.0",
