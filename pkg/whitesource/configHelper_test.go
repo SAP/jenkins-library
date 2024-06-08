@@ -236,7 +236,7 @@ func TestAddBuildToolDefaults(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, "global-settings.xml")
 		projectSettingsPath := filepath.Join(dir, "project-settings.xml")
-		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings " + globalSettingsPath + ", --settings " + projectSettingsPath + " --projects !unit-tests", Append: true})
+		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings " + globalSettingsPath + " --settings " + projectSettingsPath + " --projects !unit-tests", Append: true})
 	})
 
 	t.Run("Docker - default", func(t *testing.T) {

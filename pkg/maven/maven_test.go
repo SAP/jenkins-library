@@ -218,10 +218,10 @@ func TestMavenInstall(t *testing.T) {
 
 		options := EvaluateOptions{}
 		options.ProjectSettingsFile = "settings.xml"
-		utils.StdoutReturn = map[string]string{"mvn --settings settings.xml --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
-		err := doInstallMavenArtifacts(&options, &utils)
 		dir, _ := os.Getwd()
 		projectSettingsPath := filepath.Join(dir, "settings.xml")
+		utils.StdoutReturn = map[string]string{"mvn --settings " + projectSettingsPath + " --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
+		err := doInstallMavenArtifacts(&options, &utils)
 		assert.NoError(t, err)
 		if assert.Equal(t, 5, len(utils.Calls)) {
 			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", projectSettingsPath, "-Dflatten.mode=resolveCiFriendliesOnly", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "flatten:flatten"}}, utils.Calls[0])
