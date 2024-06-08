@@ -315,7 +315,7 @@ func TestRunDetect(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'"
+		expectedScript := "./detect.sh --detect.excluded.directories=pipeline/* --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'"
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
@@ -323,7 +323,7 @@ func TestRunDetect(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 		utilsMock := newDetectTestUtilsBundle(false)
-		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'": fmt.Errorf("")}
+		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --detect.excluded.directories=pipeline/* --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'": fmt.Errorf("")}
 		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(ctx, detectExecuteScanOptions{FailOnSevereVulnerabilities: true}, utilsMock, &detectExecuteScanInflux{})
@@ -403,7 +403,7 @@ func TestAddDetectArgs(t *testing.T) {
 				"--testProp1=1",
 				"--detect.detector.search.depth=100",
 				"--detect.detector.search.continue=true",
-				"--detect.excluded.directories=dir1,dir2",
+				"--detect.excluded.directories=dir1,dir2,pipeline/*",
 				"--scan1=1",
 				"--scan2=2",
 				"--blackduck.url=https://server.url",
@@ -432,6 +432,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -460,6 +461,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -489,6 +491,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -519,6 +522,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
@@ -554,45 +558,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
-				"--detect.project.codelocation.unmap=true",
-				"--blackduck.url=https://server.url",
-				"--blackduck.api.token=apiToken",
-				"\"--detect.project.name=testName\"",
-				"\"--detect.project.version.name=1.0\"",
-				"\"--detect.project.user.groups=testGroup,testGroup2\"",
-				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
-				"\"--detect.code.location.name=testLocation\"",
-				"\"--detect.force.success.on.skip=true\"",
-				"--detect.blackduck.signature.scanner.paths=path1,path2",
-				"--detect.source.path=pathx",
-				"--detect.included.detector.types=MAVEN,GRADLE",
-				"--detect.excluded.detector.types=NPM,NUGET",
-				"--detect.maven.excluded.scopes=test,compile",
-				"--detect.tools=DETECTOR",
-			},
-		},
-		{
-			args: []string{"--testProp1=1"},
-			options: detectExecuteScanOptions{
-				ServerURL:               "https://server.url",
-				Token:                   "apiToken",
-				ProjectName:             "testName",
-				CodeLocation:            "testLocation",
-				FailOn:                  []string{"BLOCKER", "MAJOR"},
-				Scanners:                []string{"source"},
-				ScanPaths:               []string{"path1", "path2"},
-				Groups:                  []string{"testGroup", "testGroup2"},
-				Version:                 "1.0",
-				VersioningModel:         "major-minor",
-				DependencyPath:          "pathx",
-				Unmap:                   true,
-				IncludedPackageManagers: []string{"maven", "GRADLE"},
-				ExcludedPackageManagers: []string{"npm", "NUGET"},
-				MavenExcludedScopes:     []string{"TEST", "compile"},
-				DetectTools:             []string{"DETECTOR"},
-			},
-			expected: []string{
-				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
@@ -632,6 +598,47 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
+				"--detect.project.codelocation.unmap=true",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"\"--detect.project.name=testName\"",
+				"\"--detect.project.version.name=1.0\"",
+				"\"--detect.project.user.groups=testGroup,testGroup2\"",
+				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
+				"\"--detect.code.location.name=testLocation\"",
+				"\"--detect.force.success.on.skip=true\"",
+				"--detect.blackduck.signature.scanner.paths=path1,path2",
+				"--detect.source.path=pathx",
+				"--detect.included.detector.types=MAVEN,GRADLE",
+				"--detect.excluded.detector.types=NPM,NUGET",
+				"--detect.maven.excluded.scopes=test,compile",
+				"--detect.tools=DETECTOR",
+			},
+		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:               "https://server.url",
+				Token:                   "apiToken",
+				ProjectName:             "testName",
+				CodeLocation:            "testLocation",
+				FailOn:                  []string{"BLOCKER", "MAJOR"},
+				Scanners:                []string{"source"},
+				ScanPaths:               []string{"path1", "path2"},
+				Groups:                  []string{"testGroup", "testGroup2"},
+				Version:                 "1.0",
+				VersioningModel:         "major-minor",
+				DependencyPath:          "pathx",
+				Unmap:                   true,
+				IncludedPackageManagers: []string{"maven", "GRADLE"},
+				ExcludedPackageManagers: []string{"npm", "NUGET"},
+				MavenExcludedScopes:     []string{"TEST", "compile"},
+				DetectTools:             []string{"DETECTOR"},
+			},
+			expected: []string{
+				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
@@ -672,6 +679,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--scan=1",
 				"--detect.project.codelocation.unmap=true",
 				"--blackduck.url=https://server.url",
@@ -703,6 +711,7 @@ func TestAddDetectArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=testName\"",
@@ -728,6 +737,7 @@ func TestAddDetectArgs(t *testing.T) {
 			isPullRequest: true,
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=Rapid_scan_on_PRs\"",
@@ -766,7 +776,7 @@ func TestAddDetectArgs(t *testing.T) {
 				"--testProp1=1",
 				"--detect.detector.search.depth=5",
 				"--detect.detector.search.continue=false",
-				"--detect.excluded.directories=dir1,dir2",
+				"--detect.excluded.directories=dir1,dir2,pipeline/*",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name=Rapid_scan_on_PRs\"",
@@ -801,6 +811,7 @@ func TestAddDetectArgs(t *testing.T) {
 			isPullRequest: true,
 			expected: []string{
 				"--testProp1=1",
+				"--detect.excluded.directories=pipeline/*",
 				"--detect.maven.build.command=",
 				"--settings",
 				".pipeline/settings.xml",
