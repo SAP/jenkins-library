@@ -45,7 +45,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Error - reading service Key", func(t *testing.T) {
 		//given
