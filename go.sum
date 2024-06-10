@@ -838,6 +838,8 @@ github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de h1:9TO3cAIGXtEhn
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de/go.mod h1:zAbeS9B/r2mtpb6U+EI2rYA5OAXxsYw6wTamcNW+zcE=
 github.com/magiconair/properties v1.8.6 h1:5ibWZ6iY0NctNGWo87LalDlEZ6R41TqbbDamhfG/Qzo=
 github.com/magiconair/properties v1.8.6/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=
+github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
+github.com/magiconair/properties v1.8.7/go.mod h1:Dhd985XPs7jluiymwWYZ0G4Z61jb3vdS329zhj2hYo0=
 github.com/magicsong/color-glog v0.0.1 h1:oNcPsLimp32VzXxzaAz9XJwaKozMZlH/ey+SeFnMQ78=
 github.com/magicsong/color-glog v0.0.1/go.mod h1:deWCmaVwA0vkOmXxEmQKwSEDo5toQkmboS07mAjQ4mE=
 github.com/magicsong/sonargo v0.0.1 h1:BLEUJZP2gDoVcf6dxp6aX7J63q7iSdoWc64TWhYqsy4=
