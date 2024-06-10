@@ -4,6 +4,8 @@
 package cmd
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -21,7 +23,11 @@ type codeqlExecuteScanMockUtils struct {
 
 func newCodeqlExecuteScanTestsUtils() codeqlExecuteScanMockUtils {
 	utils := codeqlExecuteScanMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
+		ExecMockRunner: &mock.ExecMockRunner{
+			Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+				return nil
+			},
+		},
 		FilesMock:      &mock.FilesMock{},
 		HttpClientMock: &mock.HttpClientMock{},
 	}
@@ -406,12 +412,13 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 
 func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 	t.Parallel()
+	utils := codeqlExecuteScanMockUtils{}
 
 	t.Run("No additional flags, no querySuite, sarif format", func(t *testing.T) {
 		config := &codeqlExecuteScanOptions{
 			Database: "codeqlDB",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 5, len(cmd))
@@ -422,7 +429,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		config := &codeqlExecuteScanOptions{
 			Database: "codeqlDB",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "csv", "target/codeqlReport.csv")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "csv", "target/codeqlReport.csv")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 5, len(cmd))
@@ -434,7 +441,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 			Database:   "codeqlDB",
 			QuerySuite: "security.ql",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 6, len(cmd))
@@ -448,7 +455,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 			Threads:    "1",
 			Ram:        "2000",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -465,7 +472,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"--threads": "--threads=2",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -482,7 +489,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"-j": "-j=2",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -499,7 +506,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"--no-download": "--no-download",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 9, len(cmd))
@@ -559,21 +566,54 @@ func TestPrepareCmdForUploadResults(t *testing.T) {
 	})
 }
 
-func TestAppendCodeqlQuery(t *testing.T) {
+func TestAppendCodeqlQuerySuite(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Empty query", func(t *testing.T) {
+		utils := newCodeqlExecuteScanTestsUtils()
 		cmd := []string{"database", "analyze"}
-		query := ""
-		cmd = appendCodeqlQuery(cmd, query)
+		querySuite := ""
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, "")
 		assert.Equal(t, 2, len(cmd))
 	})
 
 	t.Run("Not empty query", func(t *testing.T) {
+		utils := newCodeqlExecuteScanTestsUtils()
 		cmd := []string{"database", "analyze"}
-		query := "java-extended.ql"
-		cmd = appendCodeqlQuery(cmd, query)
+		querySuite := "java-extended.ql"
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, "")
 		assert.Equal(t, 3, len(cmd))
+	})
+
+	t.Run("Add prefix to querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte("test-java-security-extended.qls"))
+					return nil
+				},
+			},
+		}
+		cmd := []string{"database", "analyze"}
+		querySuite := "java-security-extended.qls"
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/test-\1-\2/`)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, "test-java-security-extended.qls", cmd[2])
+	})
+
+	t.Run("Don't add prefix to querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					return fmt.Errorf("error")
+				},
+			},
+		}
+		cmd := []string{"database", "analyze"}
+		querySuite := "php-security-extended.qls"
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/test-\1-\2/`)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, "php-security-extended.qls", cmd[2])
 	})
 }
 

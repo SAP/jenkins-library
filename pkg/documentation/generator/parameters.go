@@ -337,6 +337,9 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 
 func addVaultResourceDetails(resource config.ResourceReference, resourceDetails string) string {
 	if resource.Type == "vaultSecret" || resource.Type == "vaultSecretFile" {
+		resourceDetails += "<br/>Vault resource:<br />"
+		resourceDetails += fmt.Sprintf("&nbsp;&nbsp;name: `%v`<br />", resource.Name)
+		resourceDetails += fmt.Sprintf("&nbsp;&nbsp;default value: `%v`<br />", resource.Default)
 		resourceDetails += "<br/>Vault paths: <br />"
 		resourceDetails += "<ul>"
 		for _, rootPath := range config.VaultRootPaths {

@@ -346,7 +346,15 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	buildSummary.Print()
 
 	if config.CreateBOM {
-		err = syft.GenerateSBOM(config.SyftDownloadURL, filepath.Dir(config.DockerConfigJSON), utils, utils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		log.Entry().Debugf("Creating sbom for %d images\n", len(commonPipelineEnvironment.container.imageNameTags))
+		syftScanner, err := syft.CreateSyftScanner(config.SyftDownloadURL, utils, httpClient)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return errors.Wrap(err, "failed to create syft scanner file")
+		}
+		// images produces with cnb have sboms
+		syftScanner.AddArgument("--override-default-catalogers=sbom-cataloger")
+		err = syftScanner.ScanImages(filepath.Dir(config.DockerConfigJSON), utils, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
 			return errors.Wrap(err, "failed to create BOM file")

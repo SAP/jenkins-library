@@ -26,6 +26,7 @@ type gcpPublishEventOptions struct {
 	EventSource                     string `json:"eventSource,omitempty"`
 	EventType                       string `json:"eventType,omitempty"`
 	EventData                       string `json:"eventData,omitempty"`
+	AdditionalEventData             string `json:"additionalEventData,omitempty"`
 }
 
 // GcpPublishEventCommand Publishes an event to GCP using OIDC authentication (beta)
@@ -138,6 +139,7 @@ func addGcpPublishEventFlags(cmd *cobra.Command, stepConfig *gcpPublishEventOpti
 	cmd.Flags().StringVar(&stepConfig.EventSource, "eventSource", os.Getenv("PIPER_eventSource"), "The events source as defined by CDEvents.")
 	cmd.Flags().StringVar(&stepConfig.EventType, "eventType", os.Getenv("PIPER_eventType"), "")
 	cmd.Flags().StringVar(&stepConfig.EventData, "eventData", os.Getenv("PIPER_eventData"), "Data to be merged with the generated data for the cloud event data field (JSON)")
+	cmd.Flags().StringVar(&stepConfig.AdditionalEventData, "additionalEventData", os.Getenv("PIPER_additionalEventData"), "Data (formatted as JSON string) to add to eventData. This can be used to enrich eventData that comes from the pipeline environment.")
 
 }
 
@@ -246,6 +248,15 @@ func gcpPublishEventMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_eventData"),
+					},
+					{
+						Name:        "additionalEventData",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_additionalEventData"),
 					},
 				},
 			},
