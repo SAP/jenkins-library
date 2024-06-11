@@ -163,7 +163,7 @@ func printHeader(logEntry LogResultsV2, api SoftwareComponentApiInterface) {
 	}
 }
 
-// GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
+// GetRepositories for parsing one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
 func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
 	if reflect.DeepEqual(RepositoriesConfig{}, config) {
@@ -210,6 +210,19 @@ func (repo *Repository) GetRequestBodyForCommitOrTag() (requestBodyString string
 	return requestBodyString
 }
 
+func (repo *Repository) GetRequestBodyForBYOGCredentials() (byogBodyString string) {
+	if repo.ByogAuthMethod != "" {
+		byogBodyString += `, "auth_method":"` + repo.ByogAuthMethod + `"`
+	}
+	if repo.ByogUsername != "" {
+		byogBodyString += `, "username":"` + repo.ByogUsername + `"`
+	}
+	if repo.ByogPassword != "" {
+		byogBodyString += `, "password":"` + repo.ByogPassword + `"`
+	}
+	return byogBodyString
+}
+
 func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
 	if repo.CommitID != "" {
 		logString = ", commit '" + repo.CommitID + "'"
@@ -233,7 +246,8 @@ func (repo *Repository) GetCloneRequestBody() (body string) {
 		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
 	}
 	requestBodyString := repo.GetRequestBodyForCommitOrTag()
-	body = `{"branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
+	byogBodyString := repo.GetRequestBodyForBYOGCredentials()
+	body = `{"branch_name":"` + repo.Branch + `"` + requestBodyString + byogBodyString + `}`
 	return body
 }
 

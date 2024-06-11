@@ -285,6 +285,9 @@ type AbapEnvironmentRunATCCheckOptions struct {
 type AbapEnvironmentOptions struct {
 	Username          string `json:"username,omitempty"`
 	Password          string `json:"password,omitempty"`
+	ByogUsername      string `json:"byogUsername,omitempty"`
+	ByogPassword      string `json:"byogPassword,omitempty"`
+	ByogAuthMethod    string `json:"byogAuthMethod,omitempty"`
 	Host              string `json:"host,omitempty"`
 	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string `json:"cfOrg,omitempty"`

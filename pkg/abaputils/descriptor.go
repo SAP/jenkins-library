@@ -41,6 +41,9 @@ type Repository struct {
 	Tag                 string `json:"tag,omitempty"`
 	Branch              string `json:"branch,omitempty"`
 	CommitID            string `json:"commitID,omitempty"`
+	ByogUsername        string `json:"byogUsername"`
+	ByogPassword        string `json:"byogPassword"`
+	ByogAuthMethod      string `json:"byogAuthMethod"`
 	VersionYAML         string `json:"version,omitempty"`
 	Version             string `json:"versionAAK"`
 	AdditionalPiecelist string `json:"additionalPiecelist,omitempty"`

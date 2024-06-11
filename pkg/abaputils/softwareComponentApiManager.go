@@ -201,6 +201,9 @@ type RepositoriesConfig struct {
 	BranchName      string
 	CommitID        string
 	RepositoryName  string
+	ByogUsername    string
+	ByogPassword    string
+	ByogAuthMethod  string
 	RepositoryNames []string
 	Repositories    string
 }

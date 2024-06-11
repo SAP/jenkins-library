@@ -18,6 +18,12 @@ spec:
         aliases:
           - name: cfCredentialsId
           - name: credentialsId
+      - name: byogCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the for a Software Component which is used in a BYOG szenario
+        type: jenkins
+        aliases:
+          - name: cfCredentialsId
+          - name: credentialsId
     params:
       - name: username
         type: string
@@ -45,6 +51,42 @@ spec:
           - name: abapCredentialsId
             type: secret
             param: password
+      - name: byogPassword
+        type: string
+        description: Password for bring your own git (BYOG) authentication
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: byogCredentialsId
+            type: secret
+            param: byogPassword
+      - name: byogUsername
+        type: string
+        description: Username for bring your own git (BYOG) authentication
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: byogCredentialsId
+            type: secret
+            param: byogUsername
+      - name: byogAuthMethod
+        type: string
+        description: Specifies which authentication method is used for bring your own git (BYOG) repositories
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: repositories
         type: string
         description: Specifies a YAML file containing the repositories configuration
