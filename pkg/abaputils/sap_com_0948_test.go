@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package abaputils
 
 import (
@@ -256,6 +253,43 @@ func TestClone0948(t *testing.T) {
 		assert.NoError(t, errClone)
 		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
 	})
+
+	t.Run("Test Clone Body Success", func(t *testing.T) {
+
+		cloneBody := []byte(repoTest0948.GetCloneRequestBody())
+		assert.Equal(t, "{\"branch_name\":\"main\"}", string(cloneBody), "Clone body is not correct")
+	})
+
+	t.Run("Test Clone Body Failure", func(t *testing.T) {
+
+		repoTest0948.Branch = "wrongBranch"
+
+		cloneBody := []byte(repoTest0948.GetCloneRequestBody())
+		assert.NotEqual(t, "{\"branch_name\":\"main\"}", string(cloneBody), "Clone body should not match")
+
+		repoTest0948.Branch = "main"
+	})
+
+	t.Run("Test Clone Body BYOG Success", func(t *testing.T) {
+
+		repoTest0948.ByogAuthMethod = "token"
+		repoTest0948.ByogUsername = "byogUser"
+		repoTest0948.ByogPassword = "byogToken"
+
+		cloneBody := []byte(repoTest0948.GetCloneRequestBody())
+		assert.Equal(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string(cloneBody), "Clone body for byog parameter is not correct")
+	})
+
+	t.Run("Test Clone Body BYOG Failure", func(t *testing.T) {
+
+		repoTest0948.ByogAuthMethod = "token"
+		repoTest0948.ByogUsername = "byogUser"
+		repoTest0948.ByogPassword = "wrongToken"
+
+		cloneBody := []byte(repoTest0948.GetCloneRequestBody())
+		assert.NotEqual(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string(cloneBody), "Clone body for byog parameter should not match")
+	})
+
 }
 
 func TestPull0948(t *testing.T) {
