@@ -1,6 +1,6 @@
 # Clone Repositories
 
-This stage creates pulls/clones the specified software components (repositories) to the SAP BTP, ABAP environment system. As a prerequisite, the Communication Arrangement [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) (SAP BTP, ABAP Environment - Software Component Test Integration) is created using the step `cloudFoundryCreateServiceKey`. With the creation of the Communication Arrangement, a User and Password is created on the SAP BTP, ABAP environment system for the APIs that are used in this stage, as well as in the ATC stage.
+This stage creates pulls/clones the specified software components (repositories) to the SAP BTP, ABAP environment system. As a prerequisite, the Communication Arrangement [SAP_COM_0948](https://help.sap.com/docs/ABAP_ENVIRONMENT/250515df61b74848810389e964f8c367/61f4d47af1394b1c8ad684b71d3ad6a0.html?locale=en-US) (Software Component Management Integration) is created using the step `cloudFoundryCreateServiceKey`. With the creation of the Communication Arrangement, a User and Password is created on the SAP BTP, ABAP environment system for the APIs that are used in this stage, as well as in the ATC stage.
 
 ## Steps
 
