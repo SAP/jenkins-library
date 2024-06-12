@@ -142,6 +142,8 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 	return &sys
 }
 
+const configPath = ".pipeline/*"
+
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 
@@ -455,8 +457,8 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	if index := findItemInStringSlice(config.ScanProperties, "detect.excluded.directories"); index != -1 {
-		if !strings.Contains(config.ScanProperties[index], "pipeline/*") {
-			config.ScanProperties[index] = config.ScanProperties[index] + ",pipeline/*"
+		if !strings.Contains(config.ScanProperties[index], configPath) {
+			config.ScanProperties[index] = config.ScanProperties[index] + "," + configPath
 		}
 	} else {
 		config.ExcludedDirectories = excludeConfigDirectory(config.ExcludedDirectories)
@@ -1128,7 +1130,7 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 }
 
 func excludeConfigDirectory(directories []string) []string {
-	configDirectory := "pipeline/*"
+	configDirectory := configPath
 	for i := range directories {
 		if directories[i] == configDirectory {
 			return directories
