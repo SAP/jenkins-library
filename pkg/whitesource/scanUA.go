@@ -29,7 +29,7 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return s.ExecuteUAScanForMTA(config, utils)
 	case "npm":
 		if config.DisableNpmSubmodulesAggregation {
-			return s.ExecuteUAScanForNPM(config, utils)
+			return s.ExecuteUAScanForMultiModuleNPM(config, utils)
 		} else {
 			return s.ExecuteUAScanInPath(config, utils, config.ScanPath)
 		}
@@ -58,11 +58,11 @@ func (s *Scan) ExecuteUAScanForMTA(config *ScanOptions, utils Utils) error {
 	}
 
 	log.Entry().Infof("Executing WhiteSource UA scan for NPM part")
-	return s.ExecuteUAScanForNPM(config, utils)
+	return s.ExecuteUAScanForMultiModuleNPM(config, utils)
 }
 
-func (s *Scan) ExecuteUAScanForNPM(config *ScanOptions, utils Utils) error {
-	log.Entry().Infof("Executing WhiteSource UA scan for NPM project(s)")
+func (s *Scan) ExecuteUAScanForMultiModuleNPM(config *ScanOptions, utils Utils) error {
+	log.Entry().Infof("Executing WhiteSource UA scan for multi-module NPM projects")
 
 	packageJSONFiles, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
