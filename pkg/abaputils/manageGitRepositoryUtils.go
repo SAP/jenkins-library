@@ -186,6 +186,7 @@ func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Reposit
 			return repositories, fmt.Errorf("Error in config file %v, %w", config.Repositories, err)
 		}
 		repositories = descriptor.Repositories
+		// LOOP
 	}
 	if config.RepositoryName != "" && config.BranchName != "" {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, Branch: config.BranchName})
@@ -193,15 +194,15 @@ func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Reposit
 	if config.RepositoryName != "" && !branchRequired {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, CommitID: config.CommitID})
 	}
-	if config.ByogAuthMethod != "" {
-		repositories[0].ByogAuthMethod = config.ByogAuthMethod
-	}
-	if config.ByogUsername != "" {
-		repositories[0].ByogUsername = config.ByogPassword
-	}
-	if config.ByogPassword != "" {
-		repositories[0].ByogPassword = config.ByogPassword
-	}
+	// if config.ByogAuthMethod != "" {
+	// 	repositories[0].ByogAuthMethod = config.ByogAuthMethod
+	// }
+	// if config.ByogUsername != "" {
+	// 	repositories[0].ByogUsername = config.ByogUsername
+	// }
+	// if config.ByogPassword != "" {
+	// 	repositories[0].ByogPassword = config.ByogPassword
+	// }
 	if len(config.RepositoryNames) > 0 {
 		for _, repository := range config.RepositoryNames {
 			repositories = append(repositories, Repository{Name: repository})

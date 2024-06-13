@@ -365,7 +365,7 @@ func TestGetRepo(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
 
-		cloned, activeBranch, errAction := api.GetRepository()
+		cloned, activeBranch, errAction, _ := api.GetRepository()
 		assert.True(t, cloned)
 		assert.Equal(t, "testBranch1", activeBranch)
 		assert.NoError(t, errAction)

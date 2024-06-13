@@ -85,12 +85,15 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 	log.Entry().Info("Start cloning " + logString)
 	abaputils.AddDefaultDashedLine(1)
 
-	alreadyCloned, activeBranch, errCheckCloned := api.GetRepository()
+	alreadyCloned, activeBranch, errCheckCloned, isByog := api.GetRepository()
 	if errCheckCloned != nil {
 		return errors.Wrapf(errCheckCloned, errorString)
 	}
 
 	if !alreadyCloned {
+		if isByog {
+			api.UpdateRepoWithBYOGCredentials(config.ByogAuthMethod, config.ByogUsername, config.ByogPassword)
+		}
 		errClone := api.Clone()
 		if errClone != nil {
 			return errors.Wrapf(errClone, errorString)
