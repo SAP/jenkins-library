@@ -61,10 +61,9 @@ func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry
 
 func appendCodeqlQuerySuite(utils codeqlExecuteScanUtils, cmd []string, querySuite, transformString string) []string {
 	if len(querySuite) > 0 {
-		var err error
 		if len(transformString) > 0 {
-			querySuite, err = transformQuerySuite(utils, querySuite, transformString)
-			if err != nil || len(querySuite) == 0 {
+			querySuite = transformQuerySuite(utils, querySuite, transformString)
+			if len(querySuite) == 0 {
 				return cmd
 			}
 		}
@@ -74,7 +73,7 @@ func appendCodeqlQuerySuite(utils codeqlExecuteScanUtils, cmd []string, querySui
 	return cmd
 }
 
-func transformQuerySuite(utils codeqlExecuteScanUtils, querySuite, transformString string) (string, error) {
+func transformQuerySuite(utils codeqlExecuteScanUtils, querySuite, transformString string) string {
 	var bufferOut, bufferErr bytes.Buffer
 	utils.Stdout(&bufferOut)
 	defer utils.Stdout(log.Writer())
@@ -84,9 +83,9 @@ func transformQuerySuite(utils codeqlExecuteScanUtils, querySuite, transformStri
 		log.Entry().WithError(err).Error("failed to transform querySuite")
 		e := bufferErr.String()
 		log.Entry().Error(e)
-		return "", fmt.Errorf("%s: %s", err.Error(), e)
+		return querySuite
 	}
-	return strings.TrimSpace(bufferOut.String()), nil
+	return strings.TrimSpace(bufferOut.String())
 }
 
 func execute(utils codeqlExecuteScanUtils, cmd []string, isVerbose bool) error {

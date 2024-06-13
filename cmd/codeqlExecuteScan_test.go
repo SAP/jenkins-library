@@ -628,7 +628,8 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 		cmd := []string{"database", "analyze"}
 		querySuite := "php-security-extended.qls"
 		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)`)
-		assert.Equal(t, 2, len(cmd))
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, "php-security-extended.qls", cmd[2])
 	})
 
 	t.Run("Empty transformed querySuite", func(t *testing.T) {
@@ -660,8 +661,7 @@ func TestTransformQuerySuite(t *testing.T) {
 		input := "java-security-extended.qls"
 		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)/test-\1-\2/`
 		expect := "test-java-security-extended.qls"
-		result, err := transformQuerySuite(utils, input, transformString)
-		assert.NoError(t, err)
+		result := transformQuerySuite(utils, input, transformString)
 		assert.Equal(t, expect, result)
 	})
 
@@ -677,8 +677,7 @@ func TestTransformQuerySuite(t *testing.T) {
 		input := "php-security-extended.qls"
 		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)/test-\1-\2/`
 		expected := "php-security-extended.qls"
-		result, err := transformQuerySuite(utils, input, transformString)
-		assert.NoError(t, err)
+		result := transformQuerySuite(utils, input, transformString)
 		assert.Equal(t, expected, result)
 
 	})
@@ -693,8 +692,8 @@ func TestTransformQuerySuite(t *testing.T) {
 		}
 		input := "php-security-extended.qls"
 		transformString := `s//test-\1-\2/`
-		_, err := transformQuerySuite(utils, input, transformString)
-		assert.Error(t, err)
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, input, result)
 	})
 
 	t.Run("Transform querySuite to empty string", func(t *testing.T) {
@@ -709,8 +708,7 @@ func TestTransformQuerySuite(t *testing.T) {
 		input := "java-security-extended.qls"
 		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)//`
 		expect := ""
-		result, err := transformQuerySuite(utils, input, transformString)
-		assert.NoError(t, err)
+		result := transformQuerySuite(utils, input, transformString)
 		assert.Equal(t, expect, result)
 	})
 }
