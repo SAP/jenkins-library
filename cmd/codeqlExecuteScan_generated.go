@@ -43,6 +43,10 @@ type codeqlExecuteScanOptions struct {
 	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
 	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
+	DatabaseCreateFlags         string `json:"databaseCreateFlags,omitempty"`
+	DatabaseAnalyzeFlags        string `json:"databaseAnalyzeFlags,omitempty"`
+	CustomCommand               string `json:"customCommand,omitempty"`
+	TransformQuerySuite         string `json:"transformQuerySuite,omitempty"`
 }
 
 type codeqlExecuteScanInflux struct {
@@ -267,6 +271,10 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability threadholds. Example - If total vulnerabilites are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
+	cmd.Flags().StringVar(&stepConfig.DatabaseCreateFlags, "databaseCreateFlags", os.Getenv("PIPER_databaseCreateFlags"), "A space-separated string of flags for the 'codeql database create' command.")
+	cmd.Flags().StringVar(&stepConfig.DatabaseAnalyzeFlags, "databaseAnalyzeFlags", os.Getenv("PIPER_databaseAnalyzeFlags"), "A space-separated string of flags for the 'codeql database analyze' command.")
+	cmd.Flags().StringVar(&stepConfig.CustomCommand, "customCommand", os.Getenv("PIPER_customCommand"), "A custom user-defined command to run between codeql analysis and results upload.")
+	cmd.Flags().StringVar(&stepConfig.TransformQuerySuite, "transformQuerySuite", os.Getenv("PIPER_transformQuerySuite"), "A transform string that will be applied to the querySuite using the sed command.")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -504,6 +512,42 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 						Default:     os.Getenv("PIPER_globalSettingsFile"),
+					},
+					{
+						Name:        "databaseCreateFlags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_databaseCreateFlags"),
+					},
+					{
+						Name:        "databaseAnalyzeFlags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_databaseAnalyzeFlags"),
+					},
+					{
+						Name:        "customCommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customCommand"),
+					},
+					{
+						Name:        "transformQuerySuite",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_transformQuerySuite"),
 					},
 				},
 			},

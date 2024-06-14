@@ -257,6 +257,67 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: buildMTA
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for MTA projects building"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: installNPM
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for downloading npm dependencies"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: defaultNpmRegistry
+        type: string
+        description: "URL of the npm registry to use. Defaults to https://registry.npmjs.org/"
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        aliases:
+          - name: npm/defaultNpmRegistry
+      - name: buildDescriptorList
+        type: "[]string"
+        description: List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: enableDiagnostics
+        type: bool
+        default: false
+        description:
+          "Parameter to enable diagnostics file generation by detect script"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: generateReportsForEmptyProjects
+        type: bool
+        default: false
+        description:
+          "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: mtaPlatform
+        type: string
+        description: "The platform of the MTA project"
+        default: "CF"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: pomPath
         type: string
         description: Path to the pom file which should be installed including all children.
@@ -340,15 +401,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      ## --- to remove minScanInterval from parameters list ---
       - name: minScanInterval
         description:
-          "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
+          "[DEPRECATED] This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
           value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan."
         type: int
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+      ## -----------
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -590,6 +653,17 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
+      - name: useDetect9
+        description:
+          "This flag enables the use of the supported version 9 of the Detect Script instead of v8"
+        aliases:
+          - name: detect/useDetect9
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   outputs:
     resources:
       - name: influx

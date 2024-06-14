@@ -3,8 +3,10 @@ package cmd
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"os"
 	"path/filepath"
@@ -78,9 +80,11 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to get project: %s", err)
 	}
 
-	cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
-	if err != nil {
-		log.Entry().WithError(err).Warnf("failed to get group")
+	if len(config.GroupName) > 0 {
+		cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to get group")
+		}
 	}
 
 	if cx1sh.Project == nil {
@@ -110,6 +114,14 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	err = cx1sh.SetProjectPreset()
 	if err != nil {
 		return fmt.Errorf("failed to set preset: %s", err)
+	}
+
+	// update project's tags
+	if (len(config.ProjectTags)) > 0 {
+		err = cx1sh.UpdateProjectTags()
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to tags the project: %s", err)
+		}
 	}
 
 	scans, err := cx1sh.GetLastScans(10)
@@ -298,6 +310,23 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	return &project, nil
 }
 
+func (c *checkmarxOneExecuteScanHelper) UpdateProjectTags() error {
+	if len(c.config.ProjectTags) > 0 {
+		tags := make(map[string]string, 0)
+		err := json.Unmarshal([]byte(c.config.ProjectTags), &tags)
+		if err != nil {
+			log.Entry().Infof("Failed to parse the project tags: %v", c.config.ProjectTags)
+			return err
+		}
+		// merge new tags to the existing ones
+		maps.Copy(c.Project.Tags, tags)
+
+		return c.sys.UpdateProject(c.Project)
+	}
+
+	return nil
+}
+
 func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	projectConf, err := c.sys.GetProjectConfiguration(c.Project.ProjectID)
 
@@ -419,6 +448,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	}
 
 	branch := c.config.Branch
+	if len(branch) == 0 && len(c.config.GitBranch) > 0 {
+		branch = c.config.GitBranch
+	}
 	if len(c.config.PullRequestName) > 0 {
 		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
 	}
@@ -428,9 +460,18 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	log.Entry().Infof("Will run a scan with the following configuration: %v", sastConfigString)
 
 	configs := []checkmarxOne.ScanConfiguration{sastConfig}
-	// add more engines
 
-	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs)
+	// add scan's tags
+	tags := make(map[string]string, 0)
+	if len(c.config.ScanTags) > 0 {
+		err := json.Unmarshal([]byte(c.config.ScanTags), &tags)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to parse the scan tags: %v", c.config.ScanTags)
+		}
+	}
+
+	// add more engines
+	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs, tags)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to run scan on project %v: %s", c.Project.Name, err)

@@ -59,6 +59,36 @@ func (api *SAP_COM_0948) getUUID() string {
 	return api.uuid
 }
 
+// reads the execution log from the ABAP system
+func (api *SAP_COM_0948) GetExecutionLog() (execLog ExecutionLog, err error) {
+
+	connectionDetails := api.con
+	connectionDetails.URL = api.con.URL + api.path + api.actionsEntity + "/" + api.getUUID() + "/_Execution_log"
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		return execLog, err
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	bodyText, _ := io.ReadAll(resp.Body)
+
+	marshallError := json.Unmarshal(bodyText, &execLog)
+	if marshallError != nil {
+		return execLog, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+	}
+
+	if reflect.DeepEqual(ExecutionLog{}, execLog) {
+		log.Entry().WithField("StatusCode", resp.Status).Error(api.failureMessage)
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		var err = errors.New("Request to ABAP System not successful")
+		return execLog, err
+	}
+	return execLog, nil
+}
+
 func (api *SAP_COM_0948) CreateTag(tag Tag) error {
 
 	if reflect.DeepEqual(Tag{}, tag) {
@@ -309,6 +339,7 @@ func (api *SAP_COM_0948) initialRequest() error {
 		CookieJar:          cookieJar,
 		Username:           api.con.User,
 		Password:           api.con.Password,
+		TrustedCerts:       api.con.CertificateNames,
 	})
 
 	// HEAD request to the root is not sufficient, as an unauthorized called is allowed to do so
@@ -375,4 +406,13 @@ func (api *SAP_COM_0948) getLogProtocolQuery(page int) string {
 	top := numberOfEntriesPerPage
 
 	return fmt.Sprintf("?$skip=%s&$top=%s&$count=true", fmt.Sprint(skip), fmt.Sprint(top))
+}
+
+// ConvertTime formats an ISO 8601 timestamp string from format 2024-05-02T09:25:40Z into a UNIX timestamp and returns it
+func (api *SAP_COM_0948) ConvertTime(logTimeStamp string) time.Time {
+	t, error := time.Parse(time.RFC3339, logTimeStamp)
+	if error != nil {
+		return time.Unix(0, 0).UTC()
+	}
+	return t
 }

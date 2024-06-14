@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.20.x'
+          go-version: '1.21.x'
       - name: Perform update
         run: |
           git checkout -B gh-action-update-golang-dependencies

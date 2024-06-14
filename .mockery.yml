@@ -1,0 +1,35 @@
+mockname: "{{.InterfaceName}}"
+filename: "{{.InterfaceName}}.go"
+dir: "{{.InterfaceDir}}/mocks"
+outpkg: mocks
+quiet: false
+packages:
+  github.com/SAP/jenkins-library/cmd:
+    interfaces:
+      GithubRepoClient:
+      HadolintPiperFileUtils:
+      HadolintClient:
+  github.com/SAP/jenkins-library/pkg/config:
+    interfaces:
+      VaultClient:
+  github.com/SAP/jenkins-library/pkg/jenkins:
+    interfaces:
+      Artifact:
+      Build:
+      CredentialsManager:
+      Jenkins:
+      Job:
+      Task:
+  github.com/SAP/jenkins-library/pkg/kubernetes:
+    interfaces:
+      HelmExecutor:
+  github.com/influxdata/influxdb-client-go/v2:
+    config:
+      dir: pkg/influx/mocks
+    interfaces:
+      Client:
+  github.com/influxdata/influxdb-client-go/v2/api:
+    config:
+      dir: pkg/influx/mocks
+    interfaces:
+      WriteAPIBlocking:
