@@ -102,6 +102,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		bodyList := []string{responseReserveNextPackageCreationTriggered, responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
 		bundle.SetMaxRuntime(time.Duration(1 * time.Microsecond))
+		bundle.ClientMock.ErrorInsteadOfDump = true
 		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
