@@ -19,11 +19,8 @@ spec:
           - name: cfCredentialsId
           - name: credentialsId
       - name: byogCredentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the for a Software Component which is used in a BYOG szenario
+        description: Jenkins credentials ID containing boygUsername and byogPassword to authenticate to the for a Software Component which is used in a BYOG szenario
         type: jenkins
-        aliases:
-          - name: cfCredentialsId
-          - name: credentialsId
     params:
       - name: username
         type: string
