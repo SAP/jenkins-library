@@ -38,6 +38,10 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	// Mapping for options
 	subOptions := convertCloneConfig(config)
 
+	log.Entry().Info("Envs:")
+	log.Entry().Info(os.Getenv("PIPER_byogPassword"))
+	log.Entry().Info(os.Getenv("PIPER_byogUsername"))
+
 	errConfig := checkConfiguration(config)
 	if errConfig != nil {
 		return errors.Wrap(errConfig, "The provided configuration is not allowed")
@@ -91,15 +95,8 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		return errors.Wrapf(errCheckCloned, errorString)
 	}
 
-	log.Entry().Info("Value of isByog: %t", isByog)
-
-	log.Entry().Info("Envs:")
-	log.Entry().Info(os.Getenv("PIPER_byogPassword"))
-	log.Entry().Info(os.Getenv("PIPER_byogUsername"))
-
 	if !alreadyCloned {
 		if isByog {
-			log.Entry().Info("Is byog Repo")
 			api.UpdateRepoWithBYOGCredentials(config.ByogAuthMethod, config.ByogUsername, config.ByogPassword)
 		}
 		errClone := api.Clone()
