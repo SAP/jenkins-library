@@ -638,18 +638,18 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_scanTags"),
 					},
 					{
-						Name:        "branch",
+						Name: "branch",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "github/branch",
 							},
 						},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_branch"),
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_branch"),
 					},
 					{
 						Name:        "pullRequestName",
