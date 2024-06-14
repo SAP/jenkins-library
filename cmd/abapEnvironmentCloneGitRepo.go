@@ -91,15 +91,15 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		return errors.Wrapf(errCheckCloned, errorString)
 	}
 
-	log.Entry().Infof("Value of isByog: %t", isByog)
+	log.Entry().Info("Value of isByog: %t", isByog)
 
-	log.Entry().Infof("Envs:")
-	log.Entry().Infof(os.Getenv("PIPER_byogPassword"))
-	log.Entry().Infof(os.Getenv("PIPER_byogUsername"))
+	log.Entry().Info("Envs:")
+	log.Entry().Info(os.Getenv("PIPER_byogPassword"))
+	log.Entry().Info(os.Getenv("PIPER_byogUsername"))
 
 	if !alreadyCloned {
 		if isByog {
-			log.Entry().Infof("Is byog Repo")
+			log.Entry().Info("Is byog Repo")
 			api.UpdateRepoWithBYOGCredentials(config.ByogAuthMethod, config.ByogUsername, config.ByogPassword)
 		}
 		errClone := api.Clone()
