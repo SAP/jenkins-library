@@ -38,11 +38,9 @@ func TestGCSIntegrationClient(t *testing.T) {
 			ExposedPorts:    []string{"4443/tcp"},
 			WaitingFor:      wait.ForListeningPort("4443/tcp"),
 			Cmd:             []string{"-scheme", "https", "-public-host", "localhost"},
-			// BindMounts: map[string]string{
-			// 	testdataPath: "/data",
-			// },
-			Mounts: testcontainers.Mounts(
-				testcontainers.BindMount(testdataPath, "/data")),
+			BindMounts: map[string]string{
+				testdataPath: "/data",
+			},
 		},
 		Started: true,
 	}

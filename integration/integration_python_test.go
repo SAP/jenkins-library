@@ -41,14 +41,10 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	reqNode := testcontainers.ContainerRequest{
 		Image: "python:3.9",
 		Cmd:   []string{"tail", "-f"},
-		// BindMounts: map[string]string{
-		// 	pwd:     "/piperbin",
-		// 	tempDir: "/test",
-		// },
-		Mounts: testcontainers.Mounts(
-			testcontainers.BindMount(pwd, "/piperbin"),
-			testcontainers.BindMount(tempDir, "/test"),
-		),
+		BindMounts: map[string]string{
+			pwd:     "/piperbin",
+			tempDir: "/test",
+		},
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -56,7 +52,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 		Started:          true,
 	})
 
-	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
@@ -77,7 +73,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 		ls -l . dist build >files-list.txt 2>&1`)
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
-	code, _, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 

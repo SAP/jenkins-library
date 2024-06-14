@@ -25,12 +25,9 @@ func TestDummyIntegration(t *testing.T) {
 	dir = filepath.Dir(dir)
 
 	req := testcontainers.ContainerRequest{
-		Image: "node:lts-buster",
-		Cmd:   []string{"tail", "-f"},
-		//BindMounts: map[string]string{dir: "/data"},
-		Mounts: testcontainers.Mounts(
-			testcontainers.BindMount(dir, "/data")),
-
+		Image:      "node:lts-buster",
+		Cmd:        []string{"tail", "-f"},
+		BindMounts: map[string]string{dir: "/data"},
 		//ToDo: we may set up a tmp directory and mount it in addition, e.g. for runtime artifacts ...
 	}
 
@@ -48,7 +45,7 @@ func TestDummyIntegration(t *testing.T) {
 		"--noTelemetry",
 	}
 
-	code, _, err := testContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
+	code, err := testContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 }
