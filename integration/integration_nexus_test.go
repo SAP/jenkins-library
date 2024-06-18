@@ -1,4 +1,3 @@
-// go:build integration
 //go:build integration
 // +build integration
 
