@@ -8,10 +8,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -43,9 +45,11 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "node:12-slim",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{
+				fmt.Sprintf("%s:/piperbin", pwd),
+				fmt.Sprintf("%s:/test", tempDir),
+			}
 		},
 	}
 
@@ -54,7 +58,7 @@ cd /test
 		Started:          true,
 	})
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
@@ -94,9 +98,11 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "node:12-slim",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{
+				fmt.Sprintf("%s:/piperbin", pwd),
+				fmt.Sprintf("%s:/test", tempDir),
+			}
 		},
 	}
 
@@ -105,7 +111,7 @@ cd /test
 		Started:          true,
 	})
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
@@ -144,9 +150,11 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "node:12-slim",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{
+				fmt.Sprintf("%s:/piperbin", pwd),
+				fmt.Sprintf("%s:/test", tempDir),
+			}
 		},
 	}
 
@@ -155,7 +163,7 @@ cd /test
 		Started:          true,
 	})
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
@@ -194,9 +202,11 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "node:12-slim",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{
+				fmt.Sprintf("%s:/piperbin", pwd),
+				fmt.Sprintf("%s:/test", tempDir),
+			}
 		},
 	}
 
@@ -205,7 +215,7 @@ cd /test
 		Started:          true,
 	})
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
