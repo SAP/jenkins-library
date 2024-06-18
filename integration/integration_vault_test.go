@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//
+//
 
 // can be executed with
 // go test -v -tags integration -run TestVaultIntegration ./integration/...
@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/vault"
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
@@ -46,6 +47,7 @@ func TestVaultIntegrationGetSecret(t *testing.T) {
 	assert.NoError(t, err)
 	port, err := vaultContainer.MappedPort(ctx, "8200")
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
+	log.Entry().Info("host: ", host)
 	config := &vault.Config{Config: &api.Config{Address: host}}
 	// setup vault for testing
 	secretData := SecretData{
