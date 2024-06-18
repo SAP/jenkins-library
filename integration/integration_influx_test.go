@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -43,7 +44,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 				"DOCKER_INFLUXDB_INIT_BUCKET":      bucket,
 				"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN": authToken,
 			},
-			WaitingFor: wait.ForListeningPort("8086/tcp"),
+			WaitingFor: wait.ForListeningPort("8086/tcp").WithStartupTimeout(30 * time.Second),
 		},
 		Started: true,
 	}
@@ -54,7 +55,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 
 	ip, err := influxContainer.Host(ctx)
 	assert.NoError(t, err)
-	port, err := influxContainer.MappedPort(ctx, "8086/tcp")
+	port, err := influxContainer.MappedPort(ctx, "8086")
 	assert.NoError(t, err)
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
 	log.Entry().Info("host", host)
