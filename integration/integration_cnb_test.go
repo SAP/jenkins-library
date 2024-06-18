@@ -1,5 +1,5 @@
-//go:build integrationn
-// +build integrationn
+//go:build integration
+// +build integration
 
 // can be executed with
 // go test -v -tags integration -run TestCNBIntegration ./integration/...

@@ -28,7 +28,7 @@ import (
 func TestGCSIntegrationClient(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	_, err := filepath.Abs("testdata/TestGCSIntegration")
+	testdataPath, err := filepath.Abs("testdata/TestGCSIntegration")
 	assert.NoError(t, err)
 
 	req := testcontainers.GenericContainerRequest{
@@ -38,9 +38,9 @@ func TestGCSIntegrationClient(t *testing.T) {
 			ExposedPorts:    []string{"4443/tcp"},
 			WaitingFor:      wait.ForListeningPort("4443/tcp"),
 			Cmd:             []string{"-scheme", "https", "-public-host", "localhost"},
-			// BindMounts: map[string]string{
-			// 	testdataPath: "/data",
-			// },
+			Mounts: testcontainers.Mounts(
+				testcontainers.BindMount(testdataPath, "/data"),
+			),
 		},
 		Started: true,
 	}

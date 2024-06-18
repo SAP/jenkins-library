@@ -27,7 +27,9 @@ func TestDummyIntegration(t *testing.T) {
 	req := testcontainers.ContainerRequest{
 		Image: "node:lts-buster",
 		Cmd:   []string{"tail", "-f"},
-		// BindMounts: map[string]string{dir: "/data"},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(dir, "/data"),
+		),
 		//ToDo: we may set up a tmp directory and mount it in addition, e.g. for runtime artifacts ...
 	}
 

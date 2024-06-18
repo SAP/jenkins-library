@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -45,21 +44,17 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "adoptopenjdk/openjdk11:jdk-11.0.11_9-alpine",
 		Cmd:   []string{"tail", "-f"},
-		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{
-				fmt.Sprintf("%s:/piperbin", pwd),
-				fmt.Sprintf("%s:/test", tempDir),
-			}
-		},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(pwd, "/piperbin"),
+			testcontainers.BindMount(tempDir, "/test"),
+		),
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
-	if err != nil {
-		t.Fatal("Could not start container", err)
-	}
+	assert.NoError(t, err)
 
 	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
@@ -122,21 +117,17 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "gradle:6-jdk11-alpine",
 		Cmd:   []string{"tail", "-f"},
-		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{
-				fmt.Sprintf("%s:/piperbin", pwd),
-				fmt.Sprintf("%s:/test", tempDir),
-			}
-		},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(pwd, "/piperbin"),
+			testcontainers.BindMount(tempDir, "/test"),
+		),
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
-	if err != nil {
-		t.Fatal("Could not start container", err)
-	}
+	assert.NoError(t, err)
 
 	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)

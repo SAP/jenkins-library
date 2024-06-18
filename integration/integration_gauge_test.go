@@ -48,10 +48,10 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "getgauge/gocd-jdk-mvn-node",
 		Cmd:   []string{"tail", "-f"},
-		// BindMounts: map[string]string{
-		// 	pwd:     "/piperbin",
-		// 	tempDir: "/test",
-		// },
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(pwd, "/piperbin"),
+			testcontainers.BindMount(tempDir, "/test"),
+		),
 	}
 
 	if languageRunner == "js" {
@@ -62,6 +62,7 @@ cd /test
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
+	assert.NoError(t, err)
 
 	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
