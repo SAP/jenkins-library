@@ -1,5 +1,5 @@
-//
-//
+//go:build integration
+// +build integration
 
 // can be executed with
 // go test -v -tags integration -run TestInfluxIntegration ./integration/...
@@ -11,12 +11,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/influx"
-	"github.com/SAP/jenkins-library/pkg/log"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/SAP/jenkins-library/pkg/influx"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 func TestInfluxIntegrationWriteMetrics(t *testing.T) {
