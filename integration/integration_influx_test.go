@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//
+//
 
 // can be executed with
 // go test -v -tags integration -run TestInfluxIntegration ./integration/...
@@ -54,7 +54,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 
 	ip, err := influxContainer.Host(ctx)
 	assert.NoError(t, err)
-	port, err := influxContainer.MappedPort(ctx, "8086")
+	port, err := influxContainer.MappedPort(ctx, "8086/tcp")
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
 	log.Entry().Info("host", host)
 	dataMap := map[string]map[string]interface{}{
