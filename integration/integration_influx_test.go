@@ -82,7 +82,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 		"series_2": {"tag_c": "c", "tag_d": "d"},
 	}
 
-	time.Sleep(time.Minute)
+	time.Sleep(15 * time.Second)
 
 	influxClient := influxdb2.NewClient(host, authToken)
 	defer influxClient.Close()
