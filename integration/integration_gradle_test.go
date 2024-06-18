@@ -126,6 +126,9 @@ cd /test
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
+	if err != nil {
+		t.Fatal("Could not start container", err)
+	}
 
 	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
