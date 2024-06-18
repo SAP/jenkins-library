@@ -97,7 +97,7 @@ cd /test
 	//}
 	//code, err := nodeContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 }

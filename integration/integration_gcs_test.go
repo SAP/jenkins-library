@@ -28,7 +28,7 @@ import (
 func TestGCSIntegrationClient(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	testdataPath, err := filepath.Abs("testdata/TestGCSIntegration")
+	_, err := filepath.Abs("testdata/TestGCSIntegration")
 	assert.NoError(t, err)
 
 	req := testcontainers.GenericContainerRequest{

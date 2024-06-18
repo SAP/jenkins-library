@@ -52,7 +52,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 		Started:          true,
 	})
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
@@ -73,7 +73,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 		ls -l . dist build >files-list.txt 2>&1`)
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
-	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 

@@ -45,7 +45,7 @@ func TestDummyIntegration(t *testing.T) {
 		"--noTelemetry",
 	}
 
-	code, err := testContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
+	code, _, err := testContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 }

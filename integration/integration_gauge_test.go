@@ -63,14 +63,14 @@ cd /test
 		Started:          true,
 	})
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
 	t.Cleanup(func() {
 		// Remove files that are created by the container. t.TempDir() will
 		// fail to remove them since it does not have the root permission
-		_, err := nodeContainer.Exec(ctx, []string{"sh", "-c", "find /test -name . -o -prune -exec rm -rf -- {} +"})
+		_, _, err := nodeContainer.Exec(ctx, []string{"sh", "-c", "find /test -name . -o -prune -exec rm -rf -- {} +"})
 		assert.NoError(t, err)
 
 		assert.NoError(t, nodeContainer.Terminate(ctx))
