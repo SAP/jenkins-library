@@ -48,10 +48,10 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "node:lts-buster",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
+		// BindMounts: map[string]string{
+		// 	pwd:     "/piperbin",
+		// 	tempDir: "/test",
+		// },
 		Networks:       []string{networkName},
 		NetworkAliases: map[string][]string{networkName: {"karma"}},
 	}

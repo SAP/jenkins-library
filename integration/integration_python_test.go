@@ -41,10 +41,10 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	reqNode := testcontainers.ContainerRequest{
 		Image: "python:3.9",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
+		// BindMounts: map[string]string{
+		// 	pwd:     "/piperbin",
+		// 	tempDir: "/test",
+		// },
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

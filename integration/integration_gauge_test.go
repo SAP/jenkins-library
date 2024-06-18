@@ -48,10 +48,10 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "getgauge/gocd-jdk-mvn-node",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
+		// BindMounts: map[string]string{
+		// 	pwd:     "/piperbin",
+		// 	tempDir: "/test",
+		// },
 	}
 
 	if languageRunner == "js" {
