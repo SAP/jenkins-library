@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/vault"
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/SAP/jenkins-library/pkg/vault"
 )
 
 type SecretData = map[string]interface{}
@@ -47,7 +47,6 @@ func TestVaultIntegrationGetSecret(t *testing.T) {
 	assert.NoError(t, err)
 	port, err := vaultContainer.MappedPort(ctx, "8200")
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
-	log.Entry().Info("host: ", host)
 	config := &vault.Config{Config: &api.Config{Address: host}}
 	// setup vault for testing
 	secretData := SecretData{
