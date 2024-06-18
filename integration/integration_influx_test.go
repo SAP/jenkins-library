@@ -15,6 +15,7 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/SAP/jenkins-library/pkg/influx"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -43,7 +44,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 				"DOCKER_INFLUXDB_INIT_BUCKET":      bucket,
 				"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN": authToken,
 			},
-			// WaitingFor: wait.,
+			WaitingFor: wait.ForHealthCheck(),
 		},
 		Started: true,
 	}
