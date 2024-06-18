@@ -55,6 +55,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 	ip, err := influxContainer.Host(ctx)
 	assert.NoError(t, err)
 	port, err := influxContainer.MappedPort(ctx, "8086/tcp")
+	assert.NoError(t, err)
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
 	log.Entry().Info("host", host)
 	dataMap := map[string]map[string]interface{}{
