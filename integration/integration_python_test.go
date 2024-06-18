@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -51,7 +52,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)

@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -54,7 +55,7 @@ cd /test
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
@@ -127,7 +128,7 @@ cd /test
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)

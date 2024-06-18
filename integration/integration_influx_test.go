@@ -1,5 +1,5 @@
-//
-//
+//go:build integration
+// +build integration
 
 // can be executed with
 // go test -v -tags integration -run TestInfluxIntegration ./integration/...
@@ -14,15 +14,14 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/SAP/jenkins-library/pkg/influx"
-	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 func TestInfluxIntegrationWriteMetrics(t *testing.T) {
-
 	t.Parallel()
 	ctx := context.Background()
 	const authToken = "influx-token"
@@ -50,29 +49,14 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 	}
 
 	influxContainer, err := testcontainers.GenericContainer(ctx, req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer influxContainer.Terminate(ctx)
 
-	// containerID, err := influxContainer.ContainerIP(ctx)
-	// assert.NoError(t, err)
-	// log.Entry().Info("containerID: ", containerID)
-
-	// endpoint, err := influxContainer.Endpoint(ctx, "")
-	// assert.NoError(t, err)
-	// log.Entry().Info("endpoint: ", endpoint)
-
-	// host2, err := influxContainer.Host(ctx)
-	// assert.NoError(t, err)
-	// log.Entry().Info("host: ", host2)
-
-	// log.Entry().Info("isRunning: ", influxContainer.IsRunning())
-
 	ip, err := influxContainer.Host(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	port, err := influxContainer.MappedPort(ctx, "8086")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
-	log.Entry().Info("host", host)
 	dataMap := map[string]map[string]interface{}{
 		"series_1": {"field_a": 11, "field_b": 12},
 		"series_2": {"field_c": 21, "field_d": 22},
