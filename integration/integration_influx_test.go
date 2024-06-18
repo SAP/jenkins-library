@@ -10,18 +10,18 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/SAP/jenkins-library/pkg/influx"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 func TestInfluxIntegrationWriteMetrics(t *testing.T) {
-	// t.Skip()
+
 	t.Parallel()
 	ctx := context.Background()
 	const authToken = "influx-token"
@@ -43,7 +43,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 				"DOCKER_INFLUXDB_INIT_BUCKET":      bucket,
 				"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN": authToken,
 			},
-			WaitingFor: wait.ForListeningPort("8086/tcp"),
+			// WaitingFor: wait.,
 		},
 		Started: true,
 	}
@@ -66,6 +66,9 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 		"series_1": {"tag_a": "a", "tag_b": "b"},
 		"series_2": {"tag_c": "c", "tag_d": "d"},
 	}
+
+	time.Sleep(time.Second * 10)
+
 	influxClient := influxdb2.NewClient(host, authToken)
 	defer influxClient.Close()
 	client := influx.NewClient(influxClient, organization, bucket)
