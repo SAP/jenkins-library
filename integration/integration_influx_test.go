@@ -53,19 +53,19 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 	assert.NoError(t, err)
 	defer influxContainer.Terminate(ctx)
 
-	containerID, err := influxContainer.ContainerIP(ctx)
-	assert.NoError(t, err)
-	log.Entry().Info("containerID: ", containerID)
+	// containerID, err := influxContainer.ContainerIP(ctx)
+	// assert.NoError(t, err)
+	// log.Entry().Info("containerID: ", containerID)
 
-	endpoint, err := influxContainer.Endpoint(ctx, "")
-	assert.NoError(t, err)
-	log.Entry().Info("endpoint: ", endpoint)
+	// endpoint, err := influxContainer.Endpoint(ctx, "")
+	// assert.NoError(t, err)
+	// log.Entry().Info("endpoint: ", endpoint)
 
-	host2, err := influxContainer.Host(ctx)
-	assert.NoError(t, err)
-	log.Entry().Info("host: ", host2)
+	// host2, err := influxContainer.Host(ctx)
+	// assert.NoError(t, err)
+	// log.Entry().Info("host: ", host2)
 
-	log.Entry().Info("isRunning: ", influxContainer.IsRunning())
+	// log.Entry().Info("isRunning: ", influxContainer.IsRunning())
 
 	ip, err := influxContainer.Host(ctx)
 	assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 		"series_2": {"tag_c": "c", "tag_d": "d"},
 	}
 
-	time.Sleep(15 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	influxClient := influxdb2.NewClient(host, authToken)
 	defer influxClient.Close()
