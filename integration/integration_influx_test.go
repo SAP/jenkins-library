@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/influx"
+	"github.com/SAP/jenkins-library/pkg/log"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/influxdata/influxdb-client-go/v2/internal/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -54,7 +54,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 	assert.NoError(t, err)
 	port, err := influxContainer.MappedPort(ctx, "8086")
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
-	log.Info("host", host)
+	log.Entry().Info("host", host)
 	dataMap := map[string]map[string]interface{}{
 		"series_1": {"field_a": 11, "field_b": 12},
 		"series_2": {"field_c": 21, "field_d": 22},
