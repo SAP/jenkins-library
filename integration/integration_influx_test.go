@@ -44,7 +44,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 				"DOCKER_INFLUXDB_INIT_BUCKET":      bucket,
 				"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN": authToken,
 			},
-			WaitingFor: wait.ForHealthCheck(),
+			WaitingFor: wait.ForHealthCheck().WithStartupTimeout(2 * time.Minute),
 		},
 		Started: true,
 	}
