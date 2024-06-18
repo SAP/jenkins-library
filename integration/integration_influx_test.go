@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -43,7 +44,7 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 				"DOCKER_INFLUXDB_INIT_BUCKET":      bucket,
 				"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN": authToken,
 			},
-			WaitingFor: wait.ForLog("Welcome to InfluxDB"),
+			WaitingFor: wait.ForExposedPort().WithStartupTimeout(4 * time.Minute),
 		},
 		Started: true,
 	}
