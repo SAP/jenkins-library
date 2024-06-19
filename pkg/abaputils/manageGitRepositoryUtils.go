@@ -186,7 +186,6 @@ func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Reposit
 			return repositories, fmt.Errorf("Error in config file %v, %w", config.Repositories, err)
 		}
 		repositories = descriptor.Repositories
-		// LOOP
 	}
 	if config.RepositoryName != "" && config.BranchName != "" {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, Branch: config.BranchName})
