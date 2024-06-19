@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -22,6 +23,8 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 		Exec: &c,
 	}
 
+	log.Entry().Infof("Test log Statement")
+
 	apiManager := abaputils.SoftwareComponentApiManager{
 		Client:        &piperhttp.Client{},
 		PollIntervall: 5 * time.Second,
@@ -36,6 +39,10 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) error {
 	// Mapping for options
 	subOptions := convertCloneConfig(config)
+
+	log.Entry().Info("Envs:")
+	log.Entry().Info(os.Getenv("PIPER_byogPassword"))
+	log.Entry().Info(os.Getenv("PIPER_byogUsername"))
 
 	errConfig := checkConfiguration(config)
 	if errConfig != nil {
