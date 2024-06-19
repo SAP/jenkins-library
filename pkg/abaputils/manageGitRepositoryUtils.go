@@ -194,15 +194,7 @@ func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Reposit
 	if config.RepositoryName != "" && !branchRequired {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, CommitID: config.CommitID})
 	}
-	// if config.ByogAuthMethod != "" {
-	// 	repositories[0].ByogAuthMethod = config.ByogAuthMethod
-	// }
-	// if config.ByogUsername != "" {
-	// 	repositories[0].ByogUsername = config.ByogUsername
-	// }
-	// if config.ByogPassword != "" {
-	// 	repositories[0].ByogPassword = config.ByogPassword
-	// }
+
 	if len(config.RepositoryNames) > 0 {
 		for _, repository := range config.RepositoryNames {
 			repositories = append(repositories, Repository{Name: repository})
