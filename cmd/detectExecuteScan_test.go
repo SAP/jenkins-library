@@ -348,8 +348,10 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
-
-		expectedParam := "\"--detect.maven.build.command=--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "\""
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, "global-settings.xml")
+		projectSettingsPath := filepath.Join(dir, "project-settings.xml")
+		expectedParam := "\"--detect.maven.build.command=--global-settings " + globalSettingsPath + " --settings " + projectSettingsPath + " -Dmaven.repo.local=" + absoluteLocalPath + "\""
 		assert.Contains(t, utilsMock.Calls[0], expectedParam)
 	})
 
