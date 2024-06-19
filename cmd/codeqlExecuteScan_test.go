@@ -656,7 +656,8 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 		utils := codeqlExecuteScanMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
 				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-					return fmt.Errorf("error")
+					stdout.Write([]byte("php-security-extended.qls"))
+					return nil
 				},
 			},
 		}
@@ -665,6 +666,101 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/test-\1-\2/`)
 		assert.Equal(t, 3, len(cmd))
 		assert.Equal(t, "php-security-extended.qls", cmd[2])
+	})
+
+	t.Run("Error while transforming querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					return fmt.Errorf("error")
+				},
+			},
+		}
+		cmd := []string{"database", "analyze"}
+		querySuite := "php-security-extended.qls"
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)`)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, "php-security-extended.qls", cmd[2])
+	})
+
+	t.Run("Empty transformed querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte(""))
+					return nil
+				},
+			},
+		}
+		cmd := []string{"database", "analyze"}
+		querySuite := "python-security-extended.qls"
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)//`)
+		assert.Equal(t, 2, len(cmd))
+	})
+}
+
+func TestTransformQuerySuite(t *testing.T) {
+	t.Run("Add prefix to querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte("test-java-security-extended.qls"))
+					return nil
+				},
+			},
+		}
+		input := "java-security-extended.qls"
+		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)/test-\1-\2/`
+		expect := "test-java-security-extended.qls"
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, expect, result)
+	})
+
+	t.Run("Don't add prefix to querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte("php-security-extended.qls"))
+					return nil
+				},
+			},
+		}
+		input := "php-security-extended.qls"
+		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)/test-\1-\2/`
+		expected := "php-security-extended.qls"
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, expected, result)
+
+	})
+
+	t.Run("Failed running transform cmd", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					return fmt.Errorf("error")
+				},
+			},
+		}
+		input := "php-security-extended.qls"
+		transformString := `s//test-\1-\2/`
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, input, result)
+	})
+
+	t.Run("Transform querySuite to empty string", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte(""))
+					return nil
+				},
+			},
+		}
+		input := "java-security-extended.qls"
+		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)//`
+		expect := ""
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, expect, result)
 	})
 }
 
