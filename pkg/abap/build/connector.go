@@ -66,7 +66,7 @@ func (conn *Connector) GetToken(appendum string) error {
 		}
 		defer response.Body.Close()
 		errorbody, _ := io.ReadAll(response.Body)
-		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", string(errorbody))
+		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", extractErrorStackFromJsonData(errorbody))
 
 	}
 	defer response.Body.Close()
@@ -85,7 +85,7 @@ func (conn Connector) Get(appendum string) ([]byte, error) {
 		}
 		defer response.Body.Close()
 		errorbody, _ := io.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Get failed: %v", string(errorbody))
+		return errorbody, errors.Wrapf(err, "Get failed: %v", extractErrorStackFromJsonData(errorbody))
 
 	}
 	defer response.Body.Close()
@@ -109,7 +109,7 @@ func (conn Connector) Post(appendum string, importBody string) ([]byte, error) {
 		}
 		defer response.Body.Close()
 		errorbody, _ := io.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
+		return errorbody, errors.Wrapf(err, "Post failed: %v", extractErrorStackFromJsonData(errorbody))
 
 	}
 	defer response.Body.Close()
@@ -268,7 +268,7 @@ func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 	if err != nil {
 		defer response.Body.Close()
 		errorbody, _ := io.ReadAll(response.Body)
-		return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
+		return errors.Wrapf(err, "Upload of SAR file failed: %v", extractErrorStackFromJsonData(errorbody))
 	}
 	defer response.Body.Close()
 	return nil
@@ -304,7 +304,7 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 			if response != nil && response.Body != nil {
 				errorbody, _ := io.ReadAll(response.Body)
 				response.Body.Close()
-				return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
+				return errors.Wrapf(err, "Upload of SAR file failed: %v", extractErrorStackFromJsonData(errorbody))
 			} else {
 				return err
 			}
