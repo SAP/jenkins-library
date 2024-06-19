@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -53,7 +54,10 @@ func TestGetMavenSettings(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ProjectSettingsFile: "test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --settings=test.xml", params)
+		dir, _ := os.Getwd()
+		projectSettingsPath := filepath.Join(dir, "test.xml")
+		expectedCommand := fmt.Sprintf(" --settings=%s", projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("Skip Project Settings file in case already used", func(t *testing.T) {
@@ -67,84 +71,127 @@ func TestGetMavenSettings(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "global.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=global.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, "global.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s", globalSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("Project and Global Settings file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ProjectSettingsFile: "test.xml", GlobalSettingsFile: "global.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=global.xml --settings=test.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, "global.xml")
+		projectSettingsPath := filepath.Join(dir, "test.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("ProjectSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ProjectSettingsFile: "https://jenkins-sap-test.com/test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --settings=.pipeline/mavenProjectSettings.xml", params)
+		dir, _ := os.Getwd()
+		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
+		expectedCommand := fmt.Sprintf(" --settings=%s", projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("ProjectSettingsFile http url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --settings=.pipeline/mavenProjectSettings.xml", params)
+		dir, _ := os.Getwd()
+		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
+		expectedCommand := fmt.Sprintf(" --settings=%s", projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("GlobalSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s", globalSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("GlobalSettingsFile http url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s", globalSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("ProjectSettingsFile and GlobalSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
+		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("ProjectSettingsFile and GlobalSettingsFile http url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
+		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("ProjectSettingsFile file and GlobalSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "https://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=test.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
+		projectSettingsPath := filepath.Join(dir, "test.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("ProjectSettingsFile file and GlobalSettingsFile https url", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "http://jenkins-sap-test.com/test.xml", ProjectSettingsFile: "test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=.pipeline/mavenGlobalSettings.xml --settings=test.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
+		projectSettingsPath := filepath.Join(dir, "test.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("ProjectSettingsFile https url and GlobalSettingsFile file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "global.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=global.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, "global.xml")
+		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 
 	t.Run("ProjectSettingsFile http url and GlobalSettingsFile file", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "maven", GlobalSettingsFile: "global.xml", ProjectSettingsFile: "http://jenkins-sap-test.com/test.xml"}
 		buildCmd := "mvn clean install"
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, " --global-settings=global.xml --settings=.pipeline/mavenProjectSettings.xml", params)
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, "global.xml")
+		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
+		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		assert.Equal(t, expectedCommand, params)
 	})
 }
 
@@ -196,7 +243,11 @@ func TestUpdateCmdFlag(t *testing.T) {
 			"--command": "mvn clean install",
 		}
 		updateCmdFlag(&config, customFlags, newCodeqlExecuteScanTestsUtils())
-		assert.Equal(t, "mvn clean install --global-settings=global.xml --settings=test.xml", customFlags["--command"])
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, "global.xml")
+		projectSettingsPath := filepath.Join(dir, "test.xml")
+		expectedCommand := fmt.Sprintf("mvn clean install --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		assert.Equal(t, expectedCommand, customFlags["--command"])
 		assert.Equal(t, "", customFlags["-c"])
 	})
 
@@ -605,7 +656,8 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 		utils := codeqlExecuteScanMockUtils{
 			ExecMockRunner: &mock.ExecMockRunner{
 				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-					return fmt.Errorf("error")
+					stdout.Write([]byte("php-security-extended.qls"))
+					return nil
 				},
 			},
 		}
@@ -614,6 +666,101 @@ func TestAppendCodeqlQuerySuite(t *testing.T) {
 		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)/test-\1-\2/`)
 		assert.Equal(t, 3, len(cmd))
 		assert.Equal(t, "php-security-extended.qls", cmd[2])
+	})
+
+	t.Run("Error while transforming querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					return fmt.Errorf("error")
+				},
+			},
+		}
+		cmd := []string{"database", "analyze"}
+		querySuite := "php-security-extended.qls"
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)`)
+		assert.Equal(t, 3, len(cmd))
+		assert.Equal(t, "php-security-extended.qls", cmd[2])
+	})
+
+	t.Run("Empty transformed querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte(""))
+					return nil
+				},
+			},
+		}
+		cmd := []string{"database", "analyze"}
+		querySuite := "python-security-extended.qls"
+		cmd = appendCodeqlQuerySuite(utils, cmd, querySuite, `s/^(java|python)-(security-extended\.qls|security-and-quality\.qls)//`)
+		assert.Equal(t, 2, len(cmd))
+	})
+}
+
+func TestTransformQuerySuite(t *testing.T) {
+	t.Run("Add prefix to querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte("test-java-security-extended.qls"))
+					return nil
+				},
+			},
+		}
+		input := "java-security-extended.qls"
+		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)/test-\1-\2/`
+		expect := "test-java-security-extended.qls"
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, expect, result)
+	})
+
+	t.Run("Don't add prefix to querySuite", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte("php-security-extended.qls"))
+					return nil
+				},
+			},
+		}
+		input := "php-security-extended.qls"
+		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)/test-\1-\2/`
+		expected := "php-security-extended.qls"
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, expected, result)
+
+	})
+
+	t.Run("Failed running transform cmd", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					return fmt.Errorf("error")
+				},
+			},
+		}
+		input := "php-security-extended.qls"
+		transformString := `s//test-\1-\2/`
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, input, result)
+	})
+
+	t.Run("Transform querySuite to empty string", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+					stdout.Write([]byte(""))
+					return nil
+				},
+			},
+		}
+		input := "java-security-extended.qls"
+		transformString := `s/^(java|python)-(security-extended.qls|security-and-quality.qls)//`
+		expect := ""
+		result := transformQuerySuite(utils, input, transformString)
+		assert.Equal(t, expect, result)
 	})
 }
 
