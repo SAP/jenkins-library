@@ -13,11 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/vault"
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/SAP/jenkins-library/pkg/vault"
 )
 
 type SecretData = map[string]interface{}
