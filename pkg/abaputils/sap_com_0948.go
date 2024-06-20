@@ -295,9 +295,12 @@ func (api *SAP_COM_0948) Clone() error {
 
 	cloneConnectionDetails := api.con
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.softwareComponentEntity + api.getRepoNameForPath() + api.cloneAction
-	body := []byte(api.repository.GetCloneRequestBody())
+	body, err := api.repository.GetCloneRequestBody()
+	if err != nil {
+		return errors.Wrap(err, "Failed to clone repository: ")
+	}
 
-	return api.triggerRequest(cloneConnectionDetails, body)
+	return api.triggerRequest(cloneConnectionDetails, []byte(body))
 
 }
 

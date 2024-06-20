@@ -211,17 +211,23 @@ func (repo *Repository) GetRequestBodyForCommitOrTag() (requestBodyString string
 	return requestBodyString
 }
 
-func (repo *Repository) GetRequestBodyForBYOGCredentials() (byogBodyString string) {
+func (repo *Repository) GetRequestBodyForBYOGCredentials() (string, error) {
+	var byogBodyString string
+
 	if repo.ByogAuthMethod != "" {
 		byogBodyString += `, "auth_method":"` + repo.ByogAuthMethod + `"`
 	}
 	if repo.ByogUsername != "" {
 		byogBodyString += `, "username":"` + repo.ByogUsername + `"`
+	} else {
+		return "", fmt.Errorf("Failed to get BYOG credentials: %w", errors.New("Username for BYOG is missing, please provide git username to authenticate"))
 	}
 	if repo.ByogPassword != "" {
 		byogBodyString += `, "password":"` + repo.ByogPassword + `"`
+	} else {
+		return "", fmt.Errorf("Failed to get BYOG credentials: %w", errors.New("Password/Token for BYOG is missing, please provide git password or token to authenticate"))
 	}
-	return byogBodyString
+	return byogBodyString, nil
 }
 
 func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
@@ -242,14 +248,18 @@ func (repo *Repository) GetCloneRequestBodyWithSWC() (body string) {
 	return body
 }
 
-func (repo *Repository) GetCloneRequestBody() (body string) {
+func (repo *Repository) GetCloneRequestBody() (body string, err error) {
 	if repo.CommitID != "" && repo.Tag != "" {
 		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
 	}
 	requestBodyString := repo.GetRequestBodyForCommitOrTag()
-	byogBodyString := repo.GetRequestBodyForBYOGCredentials()
+	byogBodyString, err := repo.GetRequestBodyForBYOGCredentials()
+	if err != nil {
+		return "", err
+	}
+
 	body = `{"branch_name":"` + repo.Branch + `"` + requestBodyString + byogBodyString + `}`
-	return body
+	return body, nil
 }
 
 func (repo *Repository) GetCloneLogString() (logString string) {
