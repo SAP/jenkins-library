@@ -45,7 +45,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		})
 		bodyList := []string{responseReserveNextPackageReleased, responseReserveNextPackagePlanned, responseReserveNextPackagePostReleased, "myToken", responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
@@ -71,7 +71,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		})
 		bodyList := []string{responseReserveNextPackageReleased, responseReserveNextPackagePlanned, responseReserveNextPackagePostReleased, "myToken", responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
@@ -87,7 +87,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 				},
 			},
 		})
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
 	t.Run("step error - timeout", func(t *testing.T) {
@@ -102,7 +102,8 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		bodyList := []string{responseReserveNextPackageCreationTriggered, responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
 		bundle.SetMaxRuntime(time.Duration(1 * time.Microsecond))
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		bundle.ClientMock.ErrorInsteadOfDump = true
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
 }
