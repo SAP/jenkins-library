@@ -94,7 +94,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		if isByog {
 			api.UpdateRepoWithBYOGCredentials(config.ByogAuthMethod, config.ByogUsername, config.ByogPassword)
 		}
-		errClone := api.Clone()
+		errClone := api.Clone(isByog)
 		if errClone != nil {
 			return errors.Wrapf(errClone, errorString)
 		}

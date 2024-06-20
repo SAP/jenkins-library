@@ -203,7 +203,7 @@ func TestClone0948(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
-		errClone := api.Clone()
+		errClone := api.Clone(false)
 		assert.NoError(t, errClone)
 		assert.Equal(t, "GUID", api.getUUID(), "API does not contain correct UUID")
 	})
@@ -227,7 +227,7 @@ func TestClone0948(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
-		errClone := api.Clone()
+		errClone := api.Clone(false)
 		assert.ErrorContains(t, errClone, "Request to ABAP System not successful")
 		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 	})
@@ -256,23 +256,23 @@ func TestClone0948(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
-		errClone := api.Clone()
+		errClone := api.Clone(false)
 		assert.NoError(t, errClone)
 		assert.Equal(t, "GUID", api.getUUID(), "API does not contain correct UUID")
 	})
 
 	t.Run("Test Clone Body Success", func(t *testing.T) {
 
-		cloneBody := []byte(repoTest0948.GetCloneRequestBody())
-		assert.Equal(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string(cloneBody), "Clone body is not correct")
+		cloneBody, _ := repoTest0948.GetCloneRequestBody(false)
+		assert.Equal(t, "{\"branch_name\":\"main\"}", string([]byte(cloneBody)), "Clone body is not correct")
 	})
 
 	t.Run("Test Clone Body Failure", func(t *testing.T) {
 
 		repoTest0948.Branch = "wrongBranch"
 
-		cloneBody := []byte(repoTest0948.GetCloneRequestBody())
-		assert.NotEqual(t, "{\"branch_name\":\"main\"}", string(cloneBody), "Clone body should not match")
+		cloneBody, _ := repoTest0948.GetCloneRequestBody(false)
+		assert.NotEqual(t, "{\"branch_name\":\"main\"}", string([]byte(cloneBody)), "Clone body should not match")
 
 		repoTest0948.Branch = "main"
 
@@ -280,8 +280,8 @@ func TestClone0948(t *testing.T) {
 
 	t.Run("Test Clone Body BYOG Success", func(t *testing.T) {
 
-		cloneBody := []byte(repoTest0948.GetCloneRequestBody())
-		assert.Equal(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string(cloneBody), "Clone body for byog parameter is not correct")
+		cloneBody, _ := repoTest0948.GetCloneRequestBody(true)
+		assert.Equal(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string([]byte(cloneBody)), "Clone body for byog parameter is not correct")
 
 	})
 
@@ -289,8 +289,8 @@ func TestClone0948(t *testing.T) {
 
 		repoTest0948.ByogPassword = "wrongToken"
 
-		cloneBody := []byte(repoTest0948.GetCloneRequestBody())
-		assert.NotEqual(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string(cloneBody), "Clone body for byog parameter should not match")
+		cloneBody, _ := repoTest0948.GetCloneRequestBody(true)
+		assert.NotEqual(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string([]byte(cloneBody)), "Clone body for byog parameter should not match")
 
 		repoTest0948.ByogPassword = "byogToken"
 	})

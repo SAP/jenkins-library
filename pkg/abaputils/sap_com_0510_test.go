@@ -199,7 +199,7 @@ func TestClone(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
 
-		errClone := api.Clone()
+		errClone := api.Clone(false)
 		assert.NoError(t, errClone)
 		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
 	})
@@ -223,7 +223,7 @@ func TestClone(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
 
-		errClone := api.Clone()
+		errClone := api.Clone(false)
 		assert.ErrorContains(t, errClone, "Request to ABAP System not successful")
 		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
 	})
@@ -252,7 +252,7 @@ func TestClone(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
 
-		errClone := api.Clone()
+		errClone := api.Clone(false)
 		assert.NoError(t, errClone)
 		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
 	})
