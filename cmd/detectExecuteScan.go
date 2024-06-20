@@ -193,6 +193,8 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	}
 
 	if config.InstallArtifacts {
+
+		log.Entry().Infof("#### installArtifacts - start")
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -201,10 +203,11 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### installArtifacts - end")
 	}
 
 	if config.BuildMaven {
-		log.Entry().Infof("running Maven Build")
+		log.Entry().Infof("#### BuildMaven - start")
 		mavenConfig := setMavenConfig(config)
 		mavenUtils := maven.NewUtilsBundle()
 
@@ -212,11 +215,12 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### BuildMaven - end")
 	}
 
 	// Install NPM dependencies
 	if config.InstallNPM {
-		log.Entry().Debugf("running npm install")
+		log.Entry().Infof("#### InstallNPM - start")
 		npmExecutor := npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
 
 		buildDescriptorList := config.BuildDescriptorList
@@ -228,11 +232,12 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### InstallNPM - end")
 	}
 
 	// for MTA
 	if config.BuildMTA {
-		log.Entry().Infof("running MTA Build")
+		log.Entry().Infof("#### BuildMTA - start")
 		mtaConfig := setMTAConfig(config)
 		mtaUtils := newMtaBuildUtilsBundle()
 
@@ -240,6 +245,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### BuildMTA - end")
 	}
 
 	blackduckSystem := newBlackduckSystem(config)
