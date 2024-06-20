@@ -175,7 +175,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the BTP ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}, {Name: "credentialsId", Deprecated: false}}},
-					{Name: "byogCredentialsId", Description: "Jenkins credentials ID containing boygUsername and byogPassword to authenticate to the for a Software Component which is used in a BYOG szenario", Type: "jenkins"},
+					{Name: "byogCredentialsId", Description: "Jenkins credentials ID containing ByogUsername and ByogPassword to authenticate to a software component which is used in a BYOG scenario. (https://help.sap.com/docs/btp/sap-business-technology-platform/cloning-software-components-to-abap-environment-system-383ce2f9e2eb40f1b8ad538ddf79e656)", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
