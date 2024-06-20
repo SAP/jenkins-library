@@ -1,4 +1,4 @@
-package abapAddonAssemblyKit
+package cmd
 
 import (
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"

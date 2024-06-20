@@ -1,7 +1,7 @@
 //go:build unit
 // +build unit
 
-package abapAddonAssemblyKit
+package cmd
 
 import (
 	"encoding/json"
