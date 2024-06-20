@@ -40,6 +40,8 @@ type checkmarxOneExecuteScanOptions struct {
 	LanguageMode                         string   `json:"languageMode,omitempty"`
 	ProjectCriticality                   string   `json:"projectCriticality,omitempty"`
 	ProjectName                          string   `json:"projectName,omitempty"`
+	ProjectTags                          string   `json:"projectTags,omitempty"`
+	ScanTags                             string   `json:"scanTags,omitempty"`
 	Branch                               string   `json:"branch,omitempty"`
 	PullRequestName                      string   `json:"pullRequestName,omitempty"`
 	Repository                           string   `json:"repository,omitempty"`
@@ -368,6 +370,8 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
 	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", `3`, "The criticality of the checkmarxOne project, used during project creation")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the checkmarxOne project to scan into")
+	cmd.Flags().StringVar(&stepConfig.ProjectTags, "projectTags", os.Getenv("PIPER_projectTags"), "Used to tag a project with a JSON string, e.g., {\"key\":\"value\", \"keywithoutvalue\":\"\"}")
+	cmd.Flags().StringVar(&stepConfig.ScanTags, "scanTags", os.Getenv("PIPER_scanTags"), "Used to tag a scan with a JSON string, e.g., {\"key\":\"value\", \"keywithoutvalue\":\"\"}")
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Used to supply the branch scanned in the repository, or a friendly-name set by the user")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios. This is supplied by the orchestrator.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
@@ -532,7 +536,7 @@ func CheckmarxOneExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "github/branch",
+								Param: "git/branch",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -618,6 +622,24 @@ func CheckmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_projectName"),
+					},
+					{
+						Name:        "projectTags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_projectTags"),
+					},
+					{
+						Name:        "scanTags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scanTags"),
 					},
 					{
 						Name:        "branch",

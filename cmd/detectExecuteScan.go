@@ -20,6 +20,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -208,6 +209,22 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		mavenUtils := maven.NewUtilsBundle()
 
 		err := runMavenBuild(&mavenConfig, nil, mavenUtils, &mavenBuildCommonPipelineEnvironment{})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Install NPM dependencies
+	if config.InstallNPM {
+		log.Entry().Debugf("running npm install")
+		npmExecutor := npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
+
+		buildDescriptorList := config.BuildDescriptorList
+		if len(buildDescriptorList) == 0 {
+			buildDescriptorList = []string{"package.json"}
+		}
+
+		err := npmExecutor.InstallAllDependencies(buildDescriptorList)
 		if err != nil {
 			return err
 		}
@@ -532,15 +549,15 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("\"--detect.diagnostic=true\""))
 		args = append(args, fmt.Sprintf("\"--detect.cleanup=false\""))
 
-		err := utils.MkdirAll("./blackduckDiagnostics", 0o755)
+		err := utils.MkdirAll(".pipeline/blackduckDiagnostics", 0o755)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create diagnostics directory")
 		}
 
-		log.Entry().Info("Diagnostics enabled, output will be stored in ./blackduckDiagnostics")
+		log.Entry().Info("Diagnostics enabled, output will be stored in .pipeline/blackduckDiagnostics")
 
-		args = append(args, fmt.Sprintf("\"--detect.scan.output.path=./blackduckDiagnostics\""))
-		args = append(args, fmt.Sprintf("\"--detect.output.path=./blackduckDiagnostics\""))
+		args = append(args, fmt.Sprintf("\"--detect.scan.output.path=.pipeline/blackduckDiagnostics\""))
+		args = append(args, fmt.Sprintf("\"--detect.output.path=.pipeline/blackduckDiagnostics\""))
 	}
 
 	// to exclude dependency types for npm

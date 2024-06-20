@@ -131,7 +131,7 @@ spec:
         description: "Set the GitHub repository branch."
         resourceRef:
           - name: commonPipelineEnvironment
-            param: github/branch
+            param: git/branch
         scope:
           - GENERAL
           - PARAMETERS
@@ -198,6 +198,22 @@ spec:
         type: string
         description: The name of the checkmarxOne project to scan into
         mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: projectTags
+        type: string
+        description: Used to tag a project with a JSON string, e.g., {"key":"value", "keywithoutvalue":""}
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scanTags
+        type: string
+        description: Used to tag a scan with a JSON string, e.g., {"key":"value", "keywithoutvalue":""}
+        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
