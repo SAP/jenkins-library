@@ -23,11 +23,26 @@ const projectRegEx = `Project name: ([^,]*), URL: (.*)`
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
 func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	s.AgentName = "WhiteSource Unified Agent"
-	if config.BuildTool != "mta" {
+
+	switch config.BuildTool {
+	case "mta":
+		return s.ExecuteUAScanForMTA(config, utils)
+	case "npm":
+		if config.DisableNpmSubmodulesAggregation {
+			return s.ExecuteUAScanForMultiModuleNPM(config, utils)
+		} else {
+			return s.ExecuteUAScanInPath(config, utils, config.ScanPath)
+		}
+	default:
 		return s.ExecuteUAScanInPath(config, utils, config.ScanPath)
 	}
 
+}
+
+func (s *Scan) ExecuteUAScanForMTA(config *ScanOptions, utils Utils) error {
 	log.Entry().Infof("Executing WhiteSource UA scan for MTA project")
+
+	log.Entry().Infof("Executing WhiteSource UA scan for Maven part")
 	pomExists, _ := utils.FileExists("pom.xml")
 	if pomExists {
 		mavenConfig := *config
@@ -41,6 +56,13 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 			return fmt.Errorf("mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
 		}
 	}
+
+	log.Entry().Infof("Executing WhiteSource UA scan for NPM part")
+	return s.ExecuteUAScanForMultiModuleNPM(config, utils)
+}
+
+func (s *Scan) ExecuteUAScanForMultiModuleNPM(config *ScanOptions, utils Utils) error {
+	log.Entry().Infof("Executing WhiteSource UA scan for multi-module NPM projects")
 
 	packageJSONFiles, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
