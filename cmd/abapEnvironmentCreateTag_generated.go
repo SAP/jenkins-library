@@ -17,21 +17,22 @@ import (
 )
 
 type abapEnvironmentCreateTagOptions struct {
-	Username                            string `json:"username,omitempty"`
-	Password                            string `json:"password,omitempty"`
-	Repositories                        string `json:"repositories,omitempty"`
-	RepositoryName                      string `json:"repositoryName,omitempty"`
-	CommitID                            string `json:"commitID,omitempty"`
-	TagName                             string `json:"tagName,omitempty"`
-	TagDescription                      string `json:"tagDescription,omitempty"`
-	GenerateTagForAddonProductVersion   bool   `json:"generateTagForAddonProductVersion,omitempty"`
-	GenerateTagForAddonComponentVersion bool   `json:"generateTagForAddonComponentVersion,omitempty"`
-	Host                                string `json:"host,omitempty"`
-	CfAPIEndpoint                       string `json:"cfApiEndpoint,omitempty"`
-	CfOrg                               string `json:"cfOrg,omitempty"`
-	CfSpace                             string `json:"cfSpace,omitempty"`
-	CfServiceInstance                   string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName                    string `json:"cfServiceKeyName,omitempty"`
+	Username                            string   `json:"username,omitempty"`
+	Password                            string   `json:"password,omitempty"`
+	Repositories                        string   `json:"repositories,omitempty"`
+	RepositoryName                      string   `json:"repositoryName,omitempty"`
+	CommitID                            string   `json:"commitID,omitempty"`
+	TagName                             string   `json:"tagName,omitempty"`
+	TagDescription                      string   `json:"tagDescription,omitempty"`
+	GenerateTagForAddonProductVersion   bool     `json:"generateTagForAddonProductVersion,omitempty"`
+	GenerateTagForAddonComponentVersion bool     `json:"generateTagForAddonComponentVersion,omitempty"`
+	Host                                string   `json:"host,omitempty"`
+	CfAPIEndpoint                       string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg                               string   `json:"cfOrg,omitempty"`
+	CfSpace                             string   `json:"cfSpace,omitempty"`
+	CfServiceInstance                   string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName                    string   `json:"cfServiceKeyName,omitempty"`
+	CertificateNames                    []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentCreateTagCommand Creates a tag for a git repository to a SAP BTP ABAP Environment system
@@ -158,6 +159,7 @@ func addAbapEnvironmentCreateTagFlags(cmd *cobra.Command, stepConfig *abapEnviro
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -323,6 +325,15 @@ func AbapEnvironmentCreateTagMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 						Default:     os.Getenv("PIPER_cfServiceKeyName"),
+					},
+					{
+						Name:        "certificateNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

@@ -261,6 +261,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
+	taxonomy.Taxa = make([]format.Taxa, 0)
 	for key := range cweIdsForTaxonomies {
 		taxa := *new(format.Taxa)
 		taxa.Id = fmt.Sprintf("%d", key)
