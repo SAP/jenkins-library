@@ -100,7 +100,7 @@ abapEnvironmentCloneGitRepo (
 
 ## Example: Cloning a Bring Your Own Git (BYOG) repository
 
-Since a BYOG repository is an external repository, you must be authenticated to clone it.
+Since a ByoG repository is an external repository, you must be authenticated to clone it.
 For this, the corresponding credentials must be stored in Jenkins as a username and password/token.
 
 <strong> Store the credentials: </strong> <br>
