@@ -115,7 +115,7 @@ The config.yaml should look like this:
 steps:
   abapEnvironmentCloneGitRepo:
     repositories: 'repos.yaml'
-    byogCredentialsId: 'byog'
+    byogCredentialsId: 'byogCredentialsId'
     abapCredentialsId: 'abapCredentialsId'
     host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 ```
