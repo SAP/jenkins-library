@@ -106,7 +106,7 @@ For this, the corresponding credentials must be stored in Jenkins as a username 
 <strong> Store the credentials: </strong> <br>
 A new credential with the type username and password must be stored.<br>
 `Jenkins Dashboard > Manage Jenkins > Credentials` <br>
- These credentials are used to clone the byog repository.
+ These credentials are used to clone the ByoG repository.
 More information on configuring the credentials can be found [here](https://www.jenkins.io/doc/book/using/using-credentials/).
 
 The config.yaml should look like this:
