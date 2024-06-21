@@ -266,7 +266,7 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error, bool) {
 
 }
 
-func (api *SAP_COM_0510) Clone(isByog bool) error {
+func (api *SAP_COM_0510) Clone() error {
 
 	// Trigger the Clone of a Repository
 	if api.repository.Name == "" {

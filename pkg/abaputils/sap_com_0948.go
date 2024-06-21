@@ -284,9 +284,10 @@ func (api *SAP_COM_0948) UpdateRepoWithBYOGCredentials(byogAuthMethod string, by
 	api.repository.ByogAuthMethod = byogAuthMethod
 	api.repository.ByogUsername = byogUsername
 	api.repository.ByogPassword = byogPassword
+	api.repository.IsByog = true
 }
 
-func (api *SAP_COM_0948) Clone(isByog bool) error {
+func (api *SAP_COM_0948) Clone() error {
 
 	// Trigger the Clone of a Repository
 	if api.repository.Name == "" {
@@ -295,7 +296,7 @@ func (api *SAP_COM_0948) Clone(isByog bool) error {
 
 	cloneConnectionDetails := api.con
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.softwareComponentEntity + api.getRepoNameForPath() + api.cloneAction
-	body, err := api.repository.GetCloneRequestBody(isByog)
+	body, err := api.repository.GetCloneRequestBody()
 	if err != nil {
 		return errors.Wrap(err, "Failed to clone repository")
 	}

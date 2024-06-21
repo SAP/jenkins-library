@@ -265,7 +265,7 @@ func TestCreateRequestBodies(t *testing.T) {
 			CommitID: "1234567",
 			Tag:      "myTag",
 		}
-		body, _ := repo.GetCloneRequestBody(false)
+		body, _ := repo.GetCloneRequestBody()
 		assert.Equal(t, `{"branch_name":"main", "commit_id":"1234567"}`, body, "Expected different body")
 	})
 	t.Run("Clone Body Tag", func(t *testing.T) {

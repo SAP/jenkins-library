@@ -60,7 +60,7 @@ type SoftwareComponentApiInterface interface {
 	getSleepTime(n int) (time.Duration, error)
 	getUUID() string
 	GetRepository() (bool, string, error, bool)
-	Clone(isByog bool) error
+	Clone() error
 	Pull() error
 	CheckoutBranch() error
 	GetAction() (string, error)

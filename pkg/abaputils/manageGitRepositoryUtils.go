@@ -248,13 +248,13 @@ func (repo *Repository) GetCloneRequestBodyWithSWC() (body string) {
 	return body
 }
 
-func (repo *Repository) GetCloneRequestBody(isByog bool) (body string, err error) {
+func (repo *Repository) GetCloneRequestBody() (body string, err error) {
 	if repo.CommitID != "" && repo.Tag != "" {
 		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
 	}
 	requestBodyString := repo.GetRequestBodyForCommitOrTag()
 	var byogBodyString = ""
-	if isByog {
+	if repo.IsByog {
 		byogBodyString, err = repo.GetRequestBodyForBYOGCredentials()
 		if err != nil {
 			return "", err

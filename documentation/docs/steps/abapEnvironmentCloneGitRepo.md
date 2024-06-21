@@ -97,3 +97,24 @@ abapEnvironmentCloneGitRepo (
   cfServiceKeyName: 'cfServiceKeyName'
 )
 ```
+
+## Example: Cloning a Bring Your Own Git (BYOG) repository
+
+Since a BYOG repository is an external repository, you must be authenticated to clone it.
+For this, the corresponding credentials must be stored in Jenkins as a username and password/token.
+
+<strong> Store the credentials: </strong> <br>
+A new credential with the type username and password must be stored.<br>
+`Jenkins Dashboard > Manage Jenkins > Credentials` <br>
+ These credentials are used to clone the byog repository.
+More information on configuring the credentials can be found [here](https://www.jenkins.io/doc/book/using/using-credentials/).
+
+After that, the byog repository that is to be cloned must be specified in the yaml:
+
+```yaml
+repositories:
+  - name: '/DMO/REPO_BYOG'
+    branch: 'main'
+```
+
+After the pipeline has run through, the repository has been cloned.
