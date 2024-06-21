@@ -109,7 +109,20 @@ A new credential with the type username and password must be stored.<br>
  These credentials are used to clone the byog repository.
 More information on configuring the credentials can be found [here](https://www.jenkins.io/doc/book/using/using-credentials/).
 
-After that, the byog repository that is to be cloned must be specified in the yaml:
+The config.yaml should look like this:
+
+```yaml
+steps:
+  abapEnvironmentCloneGitRepo:
+    repositories: 'repos.yaml'
+    byogCredentialsId: 'byog'
+    abapCredentialsId: 'abapCredentialsId'
+    host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
+```
+
+`byogCredentialsId: 'byog'` is the reference to the defined credential in Jenkins. So take care that this matches with your setup.
+
+After that, the byog repository that is to be cloned must be specified in the repos.yaml:
 
 ```yaml
 repositories:
