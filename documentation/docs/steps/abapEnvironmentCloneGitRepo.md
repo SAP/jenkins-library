@@ -122,7 +122,7 @@ steps:
 
 `byogCredentialsId: 'byogCredentialsId'` is the reference to the defined credential in Jenkins. So take care that this matches with your setup.
 
-After that, the byog repository that is to be cloned must be specified in the repos.yaml:
+After that, the ByoG repository that is to be cloned must be specified in the repos.yaml:
 
 ```yaml
 repositories:
