@@ -120,7 +120,7 @@ steps:
     host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 ```
 
-`byogCredentialsId: 'byog'` is the reference to the defined credential in Jenkins. So take care that this matches with your setup.
+`byogCredentialsId: 'byogCredentialsId'` is the reference to the defined credential in Jenkins. So take care that this matches with your setup.
 
 After that, the byog repository that is to be cloned must be specified in the repos.yaml:
 
