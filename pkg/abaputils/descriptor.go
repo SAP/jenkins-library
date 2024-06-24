@@ -32,6 +32,7 @@ type AddonDescriptor struct {
 	AddonPatchLevel  string
 	TargetVectorID   string       `json:",omitempty"`
 	Repositories     []Repository `json:"repositories"`
+	ErrorText        string       `json:",omitempty"`
 }
 
 // Repository contains fields for the repository/component version
@@ -54,6 +55,7 @@ type Repository struct {
 	SarXMLFilePath      string   `json:",omitempty"`
 	Languages           []string `json:"languages,omitempty"`
 	InBuildScope        bool     `json:",omitempty"`
+	ErrorText           string   `json:",omitempty"`
 }
 
 // ReadAddonDescriptorType is the type for ReadAddonDescriptor for mocking

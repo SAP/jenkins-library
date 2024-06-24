@@ -240,6 +240,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: transformQuerySuite
+        type: string
+        description: "A transform string that will be applied to the querySuite using the sed command."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
     - image: ""
   outputs:
