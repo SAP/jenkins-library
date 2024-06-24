@@ -95,7 +95,7 @@ func TestStep(t *testing.T) {
 			PollIntervalsInMilliseconds: 1,
 		}
 
-		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &mock.FilesMock{}, &client, cpe)
+		err := runAbapEnvironmentAssemblePackages(config, autils, &mock.FilesMock{}, &client, cpe)
 		assert.NoError(t, err)
 		assert.NotContains(t, cpe.abap.addonDescriptor, `"InBuildScope"`)
 	})
@@ -106,7 +106,7 @@ func TestStep(t *testing.T) {
 			PollIntervalsInMilliseconds: 1,
 		}
 
-		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &mock.FilesMock{}, &client, cpe)
+		err := runAbapEnvironmentAssemblePackages(config, autils, &mock.FilesMock{}, &client, cpe)
 		assert.NoError(t, err)
 		assert.Contains(t, cpe.abap.addonDescriptor, `SAPK-001AAINITAPC1.SAR`)
 		assert.Contains(t, cpe.abap.addonDescriptor, `"InBuildScope":true`)

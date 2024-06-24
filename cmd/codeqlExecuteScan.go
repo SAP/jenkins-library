@@ -59,12 +59,33 @@ func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry
 	influx.step_data.fields.codeql = true
 }
 
-func appendCodeqlQuery(cmd []string, codeqlQuery string) []string {
-	if len(codeqlQuery) > 0 {
-		cmd = append(cmd, codeqlQuery)
+func appendCodeqlQuerySuite(utils codeqlExecuteScanUtils, cmd []string, querySuite, transformString string) []string {
+	if len(querySuite) > 0 {
+		if len(transformString) > 0 {
+			querySuite = transformQuerySuite(utils, querySuite, transformString)
+			if len(querySuite) == 0 {
+				return cmd
+			}
+		}
+		cmd = append(cmd, querySuite)
 	}
 
 	return cmd
+}
+
+func transformQuerySuite(utils codeqlExecuteScanUtils, querySuite, transformString string) string {
+	var bufferOut, bufferErr bytes.Buffer
+	utils.Stdout(&bufferOut)
+	defer utils.Stdout(log.Writer())
+	utils.Stderr(&bufferErr)
+	defer utils.Stderr(log.Writer())
+	if err := utils.RunExecutable("sh", []string{"-c", fmt.Sprintf("echo %s | sed -E \"%s\"", querySuite, transformString)}...); err != nil {
+		log.Entry().WithError(err).Error("failed to transform querySuite")
+		e := bufferErr.String()
+		log.Entry().Error(e)
+		return querySuite
+	}
+	return strings.TrimSpace(bufferOut.String())
 }
 
 func execute(utils codeqlExecuteScanUtils, cmd []string, isVerbose bool) error {
@@ -271,7 +292,7 @@ func runGithubUploadResults(config *codeqlExecuteScanOptions, repoInfo *codeql.R
 func executeAnalysis(format, reportName string, customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
 	moduleTargetPath := filepath.Join(config.ModulePath, "target")
 	report := filepath.Join(moduleTargetPath, reportName)
-	cmd, err := prepareCmdForDatabaseAnalyze(customFlags, config, format, report)
+	cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, format, report)
 	if err != nil {
 		log.Entry().Errorf("failed to prepare command for codeql database analyze (format=%s)", format)
 		return nil, err
@@ -323,11 +344,11 @@ func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlEx
 	return cmd, nil
 }
 
-func prepareCmdForDatabaseAnalyze(customFlags map[string]string, config *codeqlExecuteScanOptions, format, reportName string) ([]string, error) {
+func prepareCmdForDatabaseAnalyze(utils codeqlExecuteScanUtils, customFlags map[string]string, config *codeqlExecuteScanOptions, format, reportName string) ([]string, error) {
 	cmd := []string{"database", "analyze", "--format=" + format, "--output=" + reportName, config.Database}
 	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
 	cmd = codeql.AppendCustomFlags(cmd, customFlags)
-	cmd = appendCodeqlQuery(cmd, config.QuerySuite)
+	cmd = appendCodeqlQuerySuite(utils, cmd, config.QuerySuite, config.TransformQuerySuite)
 	return cmd, nil
 }
 
