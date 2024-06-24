@@ -37,7 +37,7 @@ func TestRunAbapAddonAssemblyKitCheck(t *testing.T) {
 			},
 		}
 
-		err := runAbapAddonAssemblyKitCheck(&config, nil, utils, &cpe)
+		err := runAbapAddonAssemblyKitCheck(&config, utils, &cpe)
 
 		assert.NoError(t, err)
 	})
@@ -53,7 +53,7 @@ func TestRunAbapAddonAssemblyKitCheck(t *testing.T) {
 			},
 		}
 
-		err := runAbapAddonAssemblyKitCheck(&config, nil, utils, &cpe)
+		err := runAbapAddonAssemblyKitCheck(&config, utils, &cpe)
 
 		assert.EqualError(t, err, "addonDescriptor must contain at least one software component repository")
 	})

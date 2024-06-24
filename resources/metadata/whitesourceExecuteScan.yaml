@@ -389,8 +389,7 @@ spec:
           - STEPS
       - name: skipParentProjectResolution
         type: bool
-        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose
-        Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
+        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose. Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
         scope:
           - PARAMETERS
           - STAGES
@@ -543,6 +542,15 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
+      - name: disableNpmSubmodulesAggregation
+        type: bool
+        description: "The default Mend behavior is to aggregate all submodules of NPM project into one project in Mend. This parameter disables this behavior, thus for each submodule a separate project is created."
+        default: false
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
