@@ -246,7 +246,7 @@ class UtilsTest extends BasePiperTest {
         // some colliding files in conjunction with file permissions) we emit a log message
         // and continue silently instead of failing. In that case we get an empty array back
         // instead an array containing the name of the unstashed stash.
-        assertThat(logMessages, hasItem('Unstash failed: a ()'))
+        assertThat(logMessages, hasItem('Unstash failed: a (null)'))
         assert(stashResult == [])
     }
 
