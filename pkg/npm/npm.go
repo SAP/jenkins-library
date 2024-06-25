@@ -112,6 +112,8 @@ func (exec *Execute) SetNpmRegistries() error {
 		if err != nil {
 			return err
 		}
+	} eles {
+		log.Entry().Info("some message")
 	}
 
 	return nil
