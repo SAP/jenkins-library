@@ -88,7 +88,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        default: 16
+        default: 90
       - name: pollingIntervalInSeconds
         type: int
         description: Wait time in seconds between polling calls
