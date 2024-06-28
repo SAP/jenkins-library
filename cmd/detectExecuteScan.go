@@ -456,14 +456,8 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	}
 
-	if index := findItemInStringSlice(config.ScanProperties, "detect.excluded.directories"); index != -1 {
-		if !strings.Contains(config.ScanProperties[index], configPath) {
-			config.ScanProperties[index] = config.ScanProperties[index] + "," + configPath
-		}
-	} else {
-		config.ExcludedDirectories = excludeConfigDirectory(config.ExcludedDirectories)
-		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
-	}
+	// Handle excluded directories
+	handleExcludedDirectories(&args, &config)
 
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
@@ -1127,6 +1121,16 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
+}
+
+func handleExcludedDirectories(args *[]string, config *detectExecuteScanOptions) {
+	index := findItemInStringSlice(config.ScanProperties, "detect.excluded.directories")
+	if index != -1 && !strings.Contains(config.ScanProperties[index], configPath) {
+		config.ScanProperties[index] += "," + configPath
+	} else {
+		config.ExcludedDirectories = excludeConfigDirectory(config.ExcludedDirectories)
+		*args = append(*args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
 }
 
 func excludeConfigDirectory(directories []string) []string {
