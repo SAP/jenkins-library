@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -240,20 +241,24 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 	javaPath := "java"
 	if err != nil {
 		log.Entry().Infof("No Java installation found, downloading JVM from %v", config.JreDownloadURL)
-		err = utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
-		if err != nil {
-			// we check if the copy error occurs and retry the download
-			// if the copy error did not happen, we rerun the whole download mechanism once
-			if strings.Contains(err.Error(), "unable to copy content from url to file") {
-				// retry the download once again
-				log.Entry().Warnf("Previous Download failed due to %v", err)
-				err = nil
-				err = utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
+		const maxRetries = 3
+		retries := 0
+		for retries < maxRetries {
+			err = utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
+			if err == nil {
+				break
 			}
+			log.Entry().Warnf("Attempt %d: Download failed due to %v", retries+1, err)
+			retries++
+			if retries >= maxRetries {
+				log.Entry().Errorf("Download failed after %d attempts", retries)
+				return "", errors.Wrapf(err, "failed to download jre from URL '%s'", config.JreDownloadURL)
+			}
+			time.Sleep(1 * time.Second)
 		}
 
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to download jre from URL '%s'", config.JreDownloadURL)
+			return "", errors.Wrapf(err, "Even after retry failed to download jre from URL '%s'", config.JreDownloadURL)
 		}
 
 		// ToDo: replace tar call with go library call

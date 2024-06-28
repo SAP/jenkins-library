@@ -412,11 +412,12 @@ func TestCfDeployment(t *testing.T) {
 		}
 	})
 
-	t.Run("deploy cf native without app name", func(t *testing.T) {
+	t.Run("cf native deploy fail when deployTool is blue-green", func(t *testing.T) {
 
 		defer cleanup()
 
 		config.DeployTool = "cf_native"
+		config.DeployType = "blue-green"
 		config.Manifest = "test-manifest.yml"
 
 		// Here we don't provide an application name from the mock. To make that
@@ -440,12 +441,11 @@ func TestCfDeployment(t *testing.T) {
 		}
 	})
 
-	t.Run("fail cf native deploy with blue-green deployType ", func(t *testing.T) {
+	t.Run("deploy cf native without app name", func(t *testing.T) {
 
 		defer cleanup()
 
 		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
 		config.Manifest = "test-manifest.yml"
 
 		// Here we don't provide an application name from the mock. To make that
