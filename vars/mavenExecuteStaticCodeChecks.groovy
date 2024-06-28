@@ -35,7 +35,7 @@ private showIssues(Script script) {
                 aggregatingResults: false,
                 tool: spotBugs(pattern: '**/target/spotbugsXml.xml'))
         } catch (e) {
-            echo "recordIssues has failed. Possibly due to an outdated version of the warnings plugin."
+            echo "recordIssues has failed. Possibly due to an outdated version of the warnings-ng plugin."
             e.printStackTrace()
         }
         ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
@@ -47,7 +47,7 @@ private showIssues(Script script) {
                 aggregatingResults: false,
                 tool: pmdParser(pattern: '**/target/pmd.xml'))
         } catch (e) {
-            echo "recordIssues has failed. Possibly due to an outdated version of the warnings plugin."
+            echo "recordIssues has failed. Possibly due to an outdated version of the warnings-ng plugin."
             e.printStackTrace()
         }
         ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)

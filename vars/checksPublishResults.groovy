@@ -137,7 +137,7 @@ def report(tool, settings, doArchive){
         // publish
         recordIssues(options)
     } catch (e) {
-        echo "recordIssues has failed. Possibly due to an outdated version of the warnings plugin."
+        echo "recordIssues has failed. Possibly due to an outdated version of the warnings-ng plugin."
         e.printStackTrace()
     }
     // archive check results
