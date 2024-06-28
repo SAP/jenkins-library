@@ -427,6 +427,35 @@ func TestCfDeployment(t *testing.T) {
 
 		err := runCloudFoundryDeploy(&config, nil, nil, &s)
 
+		if assert.EqualError(t, err, "Blue-green deployment type is deprecated for cf native builds."+
+			"Instead set parameter `cfNativeDeployParameters: '--strategy rolling'`. "+
+			"Please refer to the Cloud Foundry documentation for further information: "+
+			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html."+
+			"Or alternatively, switch to mta build tool. Please refer to mta build tool"+
+			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.") {
+
+			t.Run("check shell calls", func(t *testing.T) {
+				noopCfAPICalls(t, s)
+			})
+		}
+	})
+
+	t.Run("fail cf native deploy with blue-green deployType ", func(t *testing.T) {
+
+		defer cleanup()
+
+		config.DeployTool = "cf_native"
+		config.DeployType = "blue-green"
+		config.Manifest = "test-manifest.yml"
+
+		// Here we don't provide an application name from the mock. To make that
+		// more explicit we provide the empty string default explicitly.
+		defer prepareDefaultManifestMocking("test-manifest.yml", []string{""})()
+
+		s := mock.ExecMockRunner{}
+
+		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+
 		if assert.EqualError(t, err, "appName from manifest 'test-manifest.yml' is empty") {
 
 			t.Run("check shell calls", func(t *testing.T) {

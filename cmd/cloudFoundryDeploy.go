@@ -230,6 +230,14 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 	var deployOptions []string
 
 	// deploy command will be provided by the prepare functions below
+	if config.DeployType == "blue-green" {
+		return fmt.Errorf("Blue-green deployment type is deprecated for cf native builds." +
+			"Instead set parameter `cfNativeDeployParameters: '--strategy rolling'`. " +
+			"Please refer to the Cloud Foundry documentation for further information: " +
+			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html." +
+			"Or alternatively, switch to mta build tool. Please refer to mta build tool" +
+			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.")
+	}
 
 	deployCommand, deployOptions, err := prepareCfPushCfNativeDeploy(config)
 	if err != nil {
