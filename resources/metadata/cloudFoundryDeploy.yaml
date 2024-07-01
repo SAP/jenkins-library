@@ -138,7 +138,8 @@ spec:
         description:
           "Defines the type of deployment, for example, `standard` deployment which results in a system
           downtime, `blue-green` deployment which results in zero downtime for mta deploy tool.
-          To eliminate system downtime, an alternative is to pass '--strategy rolling' to the parameter `cfNativeDeployParameters` for cf native deploy tool."
+           - For mta build tool, possible values are `standard`, `blue-green` or `bg-deploy`.
+           - For cf native build tools, possible value is `standard`. To eliminate system downtime, an alternative is to pass '--strategy rolling' to the parameter `cfNativeDeployParameters`."
         scope:
           - PARAMETERS
           - STAGES

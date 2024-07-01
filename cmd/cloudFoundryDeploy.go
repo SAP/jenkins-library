@@ -237,6 +237,13 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html." +
 			"Or alternatively, switch to mta build tool. Please refer to mta build tool" +
 			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.")
+	} else if deployType == "standard" {
+		deployCommand, deployOptions, smokeTestScript, err = prepareCfPushCfNativeDeploy(config)
+		if err != nil {
+			return errors.Wrapf(err, "Cannot prepare cf push native deployment. DeployType '%s'", deployType)
+		}
+	} else {
+		return fmt.Errorf("Invalid deploy type received: '%s'. Supported values: %v", deployType, string{"standard"})
 	}
 
 	deployCommand, deployOptions, err := prepareCfPushCfNativeDeploy(config)
