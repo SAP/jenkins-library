@@ -48,7 +48,7 @@ require (
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31
-	github.com/package-url/packageurl-go v0.1.1
+	github.com/package-url/packageurl-go v0.1.3
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
