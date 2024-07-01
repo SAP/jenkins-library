@@ -233,6 +233,7 @@ public class CommonStepsTest extends BasePiperTest{
         'tmsUpload',
         'tmsExport',
         'imagePushToRegistry',
+        'gcpPublishEvent'
     ]
 
     @Test

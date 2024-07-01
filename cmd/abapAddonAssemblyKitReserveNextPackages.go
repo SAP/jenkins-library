@@ -15,13 +15,15 @@ import (
 
 func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &utils, cpe); err != nil {
+	telemetryData.BuildTool = "AAKaaS"
+
+	if err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, cpe); err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils,
+func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, utils *aakaas.AakUtils,
 	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) error {
 
 	log.Entry().Info("╔═════════════════════════════════════════╗")

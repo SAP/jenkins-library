@@ -238,10 +238,10 @@ func (api *SAP_COM_0948) GetAction() (string, error) {
 	return abapStatusCode, nil
 }
 
-func (api *SAP_COM_0948) GetRepository() (bool, string, error) {
+func (api *SAP_COM_0948) GetRepository() (bool, string, error, bool) {
 
 	if api.repository.Name == "" {
-		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'")
+		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'"), false
 	}
 
 	swcConnectionDetails := api.con
@@ -249,30 +249,42 @@ func (api *SAP_COM_0948) GetRepository() (bool, string, error) {
 	resp, err := GetHTTPResponse("GET", swcConnectionDetails, nil, api.client)
 	if err != nil {
 		_, errRepo := HandleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
-		return false, "", errRepo
+		return false, "", errRepo, false
 	}
 	defer resp.Body.Close()
 
 	var body RepositoryEntity
 	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
-		return false, "", err
+		return false, "", err, false
 	}
 
 	if err := json.Unmarshal(bodyText, &body); err != nil {
-		return false, "", err
+		return false, "", err, false
 	}
 	if reflect.DeepEqual(RepositoryEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Error("Could not Clone the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
-		return false, "", err
+		return false, "", err, false
 	}
 
 	if body.AvailOnInst {
-		return true, body.ActiveBranch, nil
+		return true, body.ActiveBranch, nil, false
 	}
-	return false, "", err
 
+	if body.ByogUrl != "" {
+		return false, "", err, true
+	}
+
+	return false, "", err, false
+
+}
+
+func (api *SAP_COM_0948) UpdateRepoWithBYOGCredentials(byogAuthMethod string, byogUsername string, byogPassword string) {
+	api.repository.ByogAuthMethod = byogAuthMethod
+	api.repository.ByogUsername = byogUsername
+	api.repository.ByogPassword = byogPassword
+	api.repository.IsByog = true
 }
 
 func (api *SAP_COM_0948) Clone() error {
@@ -284,9 +296,12 @@ func (api *SAP_COM_0948) Clone() error {
 
 	cloneConnectionDetails := api.con
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.softwareComponentEntity + api.getRepoNameForPath() + api.cloneAction
-	body := []byte(api.repository.GetCloneRequestBody())
+	body, err := api.repository.GetCloneRequestBody()
+	if err != nil {
+		return errors.Wrap(err, "Failed to clone repository")
+	}
 
-	return api.triggerRequest(cloneConnectionDetails, body)
+	return api.triggerRequest(cloneConnectionDetails, []byte(body))
 
 }
 
@@ -339,6 +354,7 @@ func (api *SAP_COM_0948) initialRequest() error {
 		CookieJar:          cookieJar,
 		Username:           api.con.User,
 		Password:           api.con.Password,
+		TrustedCerts:       api.con.CertificateNames,
 	})
 
 	// HEAD request to the root is not sufficient, as an unauthorized called is allowed to do so
@@ -405,4 +421,13 @@ func (api *SAP_COM_0948) getLogProtocolQuery(page int) string {
 	top := numberOfEntriesPerPage
 
 	return fmt.Sprintf("?$skip=%s&$top=%s&$count=true", fmt.Sprint(skip), fmt.Sprint(top))
+}
+
+// ConvertTime formats an ISO 8601 timestamp string from format 2024-05-02T09:25:40Z into a UNIX timestamp and returns it
+func (api *SAP_COM_0948) ConvertTime(logTimeStamp string) time.Time {
+	t, error := time.Parse(time.RFC3339, logTimeStamp)
+	if error != nil {
+		return time.Unix(0, 0).UTC()
+	}
+	return t
 }

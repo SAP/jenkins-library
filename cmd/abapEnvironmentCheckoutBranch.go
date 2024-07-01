@@ -47,6 +47,7 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	if errorGetInfo != nil {
 		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
 	}
+	connectionDetails.CertificateNames = options.CertificateNames
 
 	repositories := []abaputils.Repository{}
 	err = checkCheckoutBranchRepositoryConfiguration(*options)

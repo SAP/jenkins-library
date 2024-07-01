@@ -50,7 +50,7 @@ Copy the sources of the application into your own Git repository. While we will 
 
 1. Save your changes to your remote repository.
 
-1. To set up a Jenkins job for your repository, open the Jenkins UI under `http://<jenkins-server-address>:<http-port>` and choose **New Item**. Per default, the `cx-server` starts Jenkins on HTTP port `80`. For more information, see the [Jenkins User Documentation][jenkins-io-documentation].
+1. To set up a Jenkins job for your repository, open the Jenkins UI under `http://<jenkins-server-address>:<http-port>` and choose **New Item**. For more information, see the [Jenkins User Documentation][jenkins-io-documentation].
 
     ![Clicke New Item](images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
 
