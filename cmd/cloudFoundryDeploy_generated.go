@@ -38,6 +38,7 @@ type cloudFoundryDeployOptions struct {
 	ManifestVariablesFiles   []string               `json:"manifestVariablesFiles,omitempty"`
 	MtaDeployParameters      string                 `json:"mtaDeployParameters,omitempty"`
 	MtaExtensionDescriptor   string                 `json:"mtaExtensionDescriptor,omitempty"`
+	MtaExtensionDescriptors  []string               `json:"mtaExtensionDescriptors,omitempty"`
 	MtaExtensionCredentials  map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
 	MtaPath                  string                 `json:"mtaPath,omitempty"`
 	Org                      string                 `json:"org,omitempty"`
@@ -223,7 +224,8 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariables, "manifestVariables", []string{}, "Defines a list of variables in the form `key=value` which are used for variable substitution within the file given by manifest.")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariablesFiles, "manifestVariablesFiles", []string{`manifest-variables.yml`}, "path(s) of the Yaml file(s) containing the variable values to use as a replacement in the manifest file. The order of the files is relevant in case there are conflicting variable names and values within variable files. In such a case, the values of the last file win.")
 	cmd.Flags().StringVar(&stepConfig.MtaDeployParameters, "mtaDeployParameters", `-f`, "Additional parameters passed to mta deployment command")
-	cmd.Flags().StringVar(&stepConfig.MtaExtensionDescriptor, "mtaExtensionDescriptor", os.Getenv("PIPER_mtaExtensionDescriptor"), "Defines additional extension descriptor file for deployment with the mtaDeployPlugin")
+	cmd.Flags().StringVar(&stepConfig.MtaExtensionDescriptor, "mtaExtensionDescriptor", os.Getenv("PIPER_mtaExtensionDescriptor"), "Defines additional extension descriptor file for deployment with the mtaDeployPlugin. Multiple files can be provided as a space separated string.")
+	cmd.Flags().StringSliceVar(&stepConfig.MtaExtensionDescriptors, "mtaExtensionDescriptors", []string{}, "Defines additional extension descriptor file(s) for deployment with the mtaDeployPlugin provided as a list.")
 
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the path to *.mtar for deployment with the mtaDeployPlugin")
 	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "Cloud Foundry target organization.")
@@ -461,6 +463,15 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionDescriptor", Deprecated: true}},
 						Default:     os.Getenv("PIPER_mtaExtensionDescriptor"),
+					},
+					{
+						Name:        "mtaExtensionDescriptors",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "mtaExtensionCredentials",
