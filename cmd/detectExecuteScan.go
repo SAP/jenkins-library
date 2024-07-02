@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -605,16 +606,24 @@ func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils d
 	args = append(args, "--detect.docker.passthrough.imageinspector.service.start=false")
 	args = append(args, "--detect.docker.passthrough.output.include.squashedimage=false")
 
+	port := ""
 	switch config.ScanContainerDistro {
 	case "ubuntu":
-		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8082")
+		port = "8082"
 	case "centos":
-		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8081")
+		port = "8081"
 	case "alpine":
-		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8080")
+		port = "8080"
 	default:
 		return nil, fmt.Errorf("unknown container distro %q", config.ScanContainerDistro)
 	}
+
+	host := fmt.Sprintf("inspector-%s", config.ScanContainerDistro)
+	// if we run in a Kubernetes environment, we can reach the sidecar using "localhost"
+	if os.Getenv("ON_K8S") == "true" {
+		host = "localhost"
+	}
+	args = append(args, fmt.Sprintf("--detect.docker.passthrough.imageinspector.service.url=http://%s:%s", host, port))
 
 	return args, nil
 }
