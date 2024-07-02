@@ -228,6 +228,7 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 
 	var deployCommand string
 	var deployOptions []string
+	var err error
 
 	// deploy command will be provided by the prepare functions below
 	if config.DeployType == "blue-green" {
@@ -237,18 +238,13 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html." +
 			"Or alternatively, switch to mta build tool. Please refer to mta build tool" +
 			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.")
-	} else if deployType == "standard" {
-		deployCommand, deployOptions, smokeTestScript, err = prepareCfPushCfNativeDeploy(config)
+	} else if config.DeployType == "standard" {
+		deployCommand, deployOptions, err = prepareCfPushCfNativeDeploy(config)
 		if err != nil {
-			return errors.Wrapf(err, "Cannot prepare cf push native deployment. DeployType '%s'", deployType)
+			return errors.Wrapf(err, "Cannot prepare cf push native deployment. DeployType '%s'", config.DeployType)
 		}
 	} else {
-		return fmt.Errorf("Invalid deploy type received: '%s'. Supported values: %v", deployType, string{"standard"})
-	}
-
-	deployCommand, deployOptions, err := prepareCfPushCfNativeDeploy(config)
-	if err != nil {
-		return errors.Wrapf(err, "Cannot prepare cf push native deployment. DeployType '%s'", config.DeployType)
+		return fmt.Errorf("Invalid deploy type received: '%s'. Supported value: standard", config.DeployType)
 	}
 
 	appName, err := getAppName(config)
