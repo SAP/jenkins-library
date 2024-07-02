@@ -1,4 +1,4 @@
-//go:build unit
+// go:build unit
 // +build unit
 
 package cmd
@@ -76,7 +76,7 @@ func TestCfDeployment(t *testing.T) {
 		Username:            "me",
 		Password:            "******",
 		APIEndpoint:         "https://examples.sap.com/cf",
-		Manifest:            "manifest.yml", //default
+		Manifest:            "manifest.yml", // default
 		MtaDeployParameters: "-f",           // default
 		DeployType:          "standard",     // default
 	}
@@ -334,7 +334,7 @@ func TestCfDeployment(t *testing.T) {
 			})
 
 			t.Run("check environment variables", func(t *testing.T) {
-				//REVISIT: in the corresponding groovy test we checked for "${'********'}"
+				// REVISIT: in the corresponding groovy test we checked for "${'********'}"
 				// I don't understand why, but we should discuss ...
 				assert.Contains(t, s.Env, "CF_DOCKER_PASSWORD=********")
 			})
@@ -385,8 +385,8 @@ func TestCfDeployment(t *testing.T) {
 		config.Manifest = ""
 		config.AppName = ""
 
-		//app name does not need to be set if it can be found in the manifest.yml
-		//manifest name does not need to be set- the default manifest.yml will be used if not set
+		// app name does not need to be set if it can be found in the manifest.yml
+		// manifest name does not need to be set- the default manifest.yml will be used if not set
 		defer prepareDefaultManifestMocking("manifest.yml", []string{"newAppName"})()
 
 		s := mock.ExecMockRunner{}
@@ -412,17 +412,18 @@ func TestCfDeployment(t *testing.T) {
 		}
 	})
 
-	t.Run("cf native deploy fail when deployTool is blue-green", func(t *testing.T) {
+	t.Run("cf native deploy fail when deployType is blue-green", func(t *testing.T) {
 
 		defer cleanup()
 
 		config.DeployTool = "cf_native"
 		config.DeployType = "blue-green"
-		config.Manifest = "test-manifest.yml"
+		config.Manifest = ""
+		config.AppName = ""
 
-		// Here we don't provide an application name from the mock. To make that
-		// more explicit we provide the empty string default explicitly.
-		defer prepareDefaultManifestMocking("test-manifest.yml", []string{""})()
+		// app name does not need to be set if it can be found in the manifest.yml
+		// manifest name does not need to be set- the default manifest.yml will be used if not set
+		defer prepareDefaultManifestMocking("manifest.yml", []string{"newAppName"})()
 
 		s := mock.ExecMockRunner{}
 
@@ -446,35 +447,6 @@ func TestCfDeployment(t *testing.T) {
 		defer cleanup()
 
 		config.DeployTool = "cf_native"
-		config.Manifest = "test-manifest.yml"
-
-		// Here we don't provide an application name from the mock. To make that
-		// more explicit we provide the empty string default explicitly.
-		defer prepareDefaultManifestMocking("test-manifest.yml", []string{""})()
-
-		s := mock.ExecMockRunner{}
-
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
-
-		if assert.EqualError(t, err, "Blue-green deployment type is deprecated for cf native builds."+
-			"Instead set parameter `cfNativeDeployParameters: '--strategy rolling'`. "+
-			"Please refer to the Cloud Foundry documentation for further information: "+
-			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html."+
-			"Or alternatively, switch to mta build tool. Please refer to mta build tool"+
-			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.") {
-
-			t.Run("check shell calls", func(t *testing.T) {
-				noopCfAPICalls(t, s)
-			})
-		}
-	})
-
-	t.Run("fail cf native deploy with blue-green deployType ", func(t *testing.T) {
-
-		defer cleanup()
-
-		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
 		config.Manifest = "test-manifest.yml"
 
 		// Here we don't provide an application name from the mock. To make that
