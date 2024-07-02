@@ -142,6 +142,8 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 	return &sys
 }
 
+const configPath = ".pipeline/*"
+
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 
@@ -454,9 +456,8 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	}
 
-	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
-		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
-	}
+	// Handle excluded directories
+	handleExcludedDirectories(&args, &config)
 
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
@@ -1120,4 +1121,34 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
+}
+
+func handleExcludedDirectories(args *[]string, config *detectExecuteScanOptions) {
+	index := findItemInStringSlice(config.ScanProperties, "detect.excluded.directories")
+	if index != -1 && !strings.Contains(config.ScanProperties[index], configPath) {
+		config.ScanProperties[index] += "," + configPath
+	} else {
+		config.ExcludedDirectories = excludeConfigDirectory(config.ExcludedDirectories)
+		*args = append(*args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
+}
+
+func excludeConfigDirectory(directories []string) []string {
+	configDirectory := configPath
+	for i := range directories {
+		if directories[i] == configDirectory {
+			return directories
+		}
+	}
+	directories = append(directories, configDirectory)
+	return directories
+}
+
+func findItemInStringSlice(slice []string, item string) int {
+	for i := range slice {
+		if strings.Contains(slice[i], item) {
+			return i
+		}
+	}
+	return -1
 }
