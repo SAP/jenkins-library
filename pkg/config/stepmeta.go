@@ -27,6 +27,7 @@ type StepMetadata struct {
 	Aliases         []Alias `json:"aliases,omitempty"`
 	Description     string  `json:"description"`
 	LongDescription string  `json:"longDescription,omitempty"`
+	Package         string  `json:"package,omitempty"`
 }
 
 // StepSpec defines the spec details for a step, like step inputs, containers, sidecars, ...

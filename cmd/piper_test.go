@@ -7,11 +7,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
@@ -19,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/SAP/jenkins-library/cmd/piper"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -165,13 +167,13 @@ func TestPrepareConfig(t *testing.T) {
 func TestRetrieveHookConfig(t *testing.T) {
 	tt := []struct {
 		hookJSON           []byte
-		expectedHookConfig HookConfiguration
+		expectedHookConfig piper.HookConfiguration
 	}{
-		{hookJSON: []byte(""), expectedHookConfig: HookConfiguration{}},
-		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
+		{hookJSON: []byte(""), expectedHookConfig: piper.HookConfiguration{}},
+		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: piper.HookConfiguration{SentryConfig: piper.SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
 		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}, "splunk":{"dsn":"https://my.splunk.dsn", "token": "mytoken", "index": "myindex", "sendLogs": true}}`),
-			expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"},
-				SplunkConfig: SplunkConfiguration{
+			expectedHookConfig: piper.HookConfiguration{SentryConfig: piper.SentryConfiguration{Dsn: "https://my.sentry.dsn"},
+				SplunkConfig: piper.SplunkConfiguration{
 					Dsn:      "https://my.splunk.dsn",
 					Token:    "mytoken",
 					Index:    "myindex",
@@ -182,7 +184,7 @@ func TestRetrieveHookConfig(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		var target HookConfiguration
+		var target piper.HookConfiguration
 		var hookJSONinterface map[string]interface{}
 		if len(test.hookJSON) > 0 {
 			err := json.Unmarshal(test.hookJSON, &hookJSONinterface)

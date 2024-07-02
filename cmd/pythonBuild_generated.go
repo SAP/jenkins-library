@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/piper"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -61,13 +62,14 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 func PythonBuildCommand() *cobra.Command {
 	const STEP_NAME = "pythonBuild"
 
-	metadata := pythonBuildMetadata()
+	metadata := PythonBuildMetadata()
 	var stepConfig pythonBuildOptions
 	var startTime time.Time
 	var commonPipelineEnvironment pythonBuildCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
+	var GeneralConfig piper.GeneralConfigOptions
 
 	var createPythonBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -86,15 +88,17 @@ and are exposed are environment variables that must be present in the environmen
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
+			var err error
+			GeneralConfig, err = piper.CreateGeneralConfigCopyFromFlags(cmd)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+			//GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = GeneralConfig.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -136,7 +140,7 @@ and are exposed are environment variables that must be present in the environmen
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.PiperCommitHash = GitCommit
+				stepTelemetryData.PiperCommitHash = GeneralConfig.GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -183,7 +187,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 }
 
 // retrieve step metadata
-func pythonBuildMetadata() config.StepData {
+func PythonBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "pythonBuild",

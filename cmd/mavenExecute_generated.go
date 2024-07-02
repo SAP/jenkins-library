@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/piper"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -31,12 +32,13 @@ type mavenExecuteOptions struct {
 func MavenExecuteCommand() *cobra.Command {
 	const STEP_NAME = "mavenExecute"
 
-	metadata := mavenExecuteMetadata()
+	metadata := MavenExecuteMetadata()
 	var stepConfig mavenExecuteOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
+	var GeneralConfig piper.GeneralConfigOptions
 
 	var createMavenExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -45,15 +47,17 @@ func MavenExecuteCommand() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
+			var err error
+			GeneralConfig, err = piper.CreateGeneralConfigCopyFromFlags(cmd)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+			//GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = GeneralConfig.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -92,7 +96,7 @@ func MavenExecuteCommand() *cobra.Command {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.PiperCommitHash = GitCommit
+				stepTelemetryData.PiperCommitHash = GeneralConfig.GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -140,7 +144,7 @@ func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
 }
 
 // retrieve step metadata
-func mavenExecuteMetadata() config.StepData {
+func MavenExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "mavenExecute",

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SAP/jenkins-library/cmd/piper"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -61,13 +62,14 @@ func (p *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) persi
 func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitReserveNextPackages"
 
-	metadata := abapAddonAssemblyKitReserveNextPackagesMetadata()
+	metadata := AbapAddonAssemblyKitReserveNextPackagesMetadata()
 	var stepConfig abapAddonAssemblyKitReserveNextPackagesOptions
 	var startTime time.Time
 	var commonPipelineEnvironment abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
+	var GeneralConfig piper.GeneralConfigOptions
 
 	var createAbapAddonAssemblyKitReserveNextPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -85,15 +87,17 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
+			var err error
+			GeneralConfig, err = piper.CreateGeneralConfigCopyFromFlags(cmd)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+			//GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = GeneralConfig.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -138,7 +142,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.PiperCommitHash = GitCommit
+				stepTelemetryData.PiperCommitHash = GeneralConfig.GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.Send()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
@@ -187,7 +191,7 @@ func addAbapAddonAssemblyKitReserveNextPackagesFlags(cmd *cobra.Command, stepCon
 }
 
 // retrieve step metadata
-func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
+func AbapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "abapAddonAssemblyKitReserveNextPackages",

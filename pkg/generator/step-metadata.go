@@ -9,6 +9,7 @@ import (
 	"os/exec"
 
 	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 func main() {
@@ -27,11 +28,12 @@ func main() {
 		OpenFile:     openMetaFile,
 		WriteFile:    fileWriter,
 		ExportPrefix: "",
+		FileUtils:    piperutils.Files{},
 	})
 	checkError(err)
 
 	fmt.Printf("Running go fmt %v\n", targetDir)
-	cmd := exec.Command("go", "fmt", targetDir)
+	cmd := exec.Command("go", "fmt", fmt.Sprintf("%s/...", targetDir))
 	r, _ := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 	done := make(chan struct{})

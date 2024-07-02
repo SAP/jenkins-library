@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/SAP/jenkins-library/cmd/abapAddonAssemblyKit"
+	"github.com/SAP/jenkins-library/cmd/piper"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -17,70 +19,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
-
-// GeneralConfigOptions contains all global configuration options for piper binary
-type GeneralConfigOptions struct {
-	GitHubAccessTokens   map[string]string // map of tokens with url as key in order to maintain url-specific tokens
-	CorrelationID        string
-	CustomConfig         string
-	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
-	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	IgnoreCustomDefaults bool
-	ParametersJSON       string
-	EnvRootPath          string
-	NoTelemetry          bool
-	StageName            string
-	StepConfigJSON       string
-	StepMetadata         string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	StepName             string
-	Verbose              bool
-	LogFormat            string
-	VaultRoleID          string
-	VaultRoleSecretID    string
-	VaultToken           string
-	VaultServerURL       string
-	VaultNamespace       string
-	VaultPath            string
-	HookConfig           HookConfiguration
-	MetaDataResolver     func() map[string]config.StepData
-	GCPJsonKeyFilePath   string
-	GCSFolderPath        string
-	GCSBucketId          string
-	GCSSubFolder         string
-}
-
-// HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
-type HookConfiguration struct {
-	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
-	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
-	PendoConfig  PendoConfiguration  `json:"pendo,omitempty"`
-	OIDCConfig   OIDCConfiguration   `json:"oidc,omitempty"`
-}
-
-// SentryConfiguration defines the configuration options for the Sentry logging system
-type SentryConfiguration struct {
-	Dsn string `json:"dsn,omitempty"`
-}
-
-// SplunkConfiguration defines the configuration options for the Splunk logging system
-type SplunkConfiguration struct {
-	Dsn               string `json:"dsn,omitempty"`
-	Token             string `json:"token,omitempty"`
-	Index             string `json:"index,omitempty"`
-	SendLogs          bool   `json:"sendLogs"`
-	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
-	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
-	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
-}
-
-type PendoConfiguration struct {
-	Token string `json:"token,omitempty"`
-}
-
-// OIDCConfiguration defines the configuration options for the OpenID Connect authentication system
-type OIDCConfiguration struct {
-	RoleID string `json:",roleID,omitempty"`
-}
 
 var rootCmd = &cobra.Command{
 	Use:   "piper",
@@ -92,7 +30,7 @@ It contains many steps which can be used within CI/CD systems as well as directl
 }
 
 // GeneralConfig contains global configuration flags for piper binary
-var GeneralConfig GeneralConfigOptions
+var GeneralConfig piper.GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
@@ -159,7 +97,7 @@ func Execute() {
 	rootCmd.AddCommand(CnbBuildCommand())
 	rootCmd.AddCommand(AbapEnvironmentBuildCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
-	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
+	rootCmd.AddCommand(abapAddonAssemblyKit.AbapAddonAssemblyKitCheckCVsCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
@@ -252,9 +190,10 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
-
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GitCommit, "gitCommit", GitCommit, "Do not use, workaround")
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 // ResolveAccessTokens reads a list of tokens in format host:token passed via command line
 // and transfers this into a map as a more consumable format.
 func ResolveAccessTokens(tokenList []string) map[string]string {
@@ -284,6 +223,7 @@ func AccessTokensFromEnvJSON(env string) []string {
 	return accessTokens
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 // initStageName initializes GeneralConfig.StageName from either GeneralConfig.ParametersJSON
 // or the environment variable (orchestrator specific), unless it has been provided as command line option.
 // Log output needs to be suppressed via outputToLog by the getConfig step.
@@ -334,6 +274,7 @@ func initStageName(outputToLog bool) {
 	}
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
 func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
 
@@ -443,7 +384,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration) {
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
+func retrieveHookConfig(source map[string]interface{}, target *piper.HookConfiguration) {
 	if source != nil {
 		log.Entry().Debug("Retrieving hook configuration")
 		b, err := json.Marshal(source)
@@ -459,6 +401,7 @@ func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration
 
 var errIncompatibleTypes = fmt.Errorf("incompatible types")
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 func checkTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
 	optionsType := getStepOptionsStructType(options)
 
@@ -504,6 +447,7 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 	return config
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 func convertValueFromString(config map[string]interface{}, optionsField *reflect.StructField, paramName, paramValue string) error {
 	switch optionsField.Type.Kind() {
 	case reflect.Slice, reflect.Array:
@@ -526,6 +470,7 @@ func convertValueFromString(config map[string]interface{}, optionsField *reflect
 	return errIncompatibleTypes
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
 	switch optionsField.Type.Kind() {
 	case reflect.String:
@@ -564,6 +509,7 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 	return errIncompatibleTypes
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 func convertValueFromInt(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue int64) error {
 	switch optionsField.Type.Kind() {
 	case reflect.String:
@@ -580,6 +526,7 @@ func convertValueFromInt(config map[string]interface{}, optionsField *reflect.St
 	return errIncompatibleTypes
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {
 	for i := 0; i < optionsType.NumField(); i++ {
 		field := optionsType.Field(i)
@@ -591,6 +538,7 @@ func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect
 	return nil
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
 	typedOptions := reflect.ValueOf(stepOptions)
 	if typedOptions.Kind() == reflect.Ptr {
@@ -599,6 +547,7 @@ func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
 	return typedOptions.Type()
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 func getProjectConfigFile(name string) string {
 
 	var altName string
@@ -618,6 +567,7 @@ func getProjectConfigFile(name string) string {
 	return name
 }
 
+// TO BE DELETED -> Moved to /cmd/piper/GeneralConfig.go
 func mergeResourceParameters(resParams ...map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for _, m := range resParams {
