@@ -136,10 +136,10 @@ spec:
       - name: deployType
         type: string
         description:
-          "Defines the type of deployment, either `standard` deployment which results in a system
-          downtime or a zero-downtime `blue-green` deployment. If 'cf_native' as deployTool and 'blue-green'
-          as deployType is used in combination, your manifest.yaml may only contain one application.
-          If this application has the option 'no-route' active the deployType will be changed to 'standard'."
+          "Defines the type of deployment, for example, `standard` deployment which results in a system
+          downtime, `blue-green` deployment which results in zero downtime for mta deploy tool.
+           - For mta build tool, possible values are `standard`, `blue-green` or `bg-deploy`.
+           - For cf native build tools, possible value is `standard`. To eliminate system downtime, an alternative is to pass '--strategy rolling' to the parameter `cfNativeDeployParameters`."
         scope:
           - PARAMETERS
           - STAGES
@@ -180,7 +180,6 @@ spec:
       - name: keepOldInstance
         type: bool
         description:
-          "In case of a `blue-green` deployment the old instance will be deleted by default.
           If this option is set to true the old instance will remain stopped in the Cloud Foundry space."
         scope:
           - PARAMETERS
@@ -339,31 +338,6 @@ spec:
           - type: vaultSecret
             default: cloudfoundry-$(org)-$(space)
             name: cloudfoundryVaultSecretName
-      - name: smokeTestScript
-        type: string
-        description:
-          "Allows to specify a script which performs a check during blue-green deployment.
-          The script gets the FQDN as parameter and returns `exit code 0` in case check returned
-          `smokeTestStatusCode`.
-          More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use).
-          Currently this option is only considered for deployTool `cf_native`."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-          - GENERAL
-        mandatory: false
-        default: "blueGreenCheckScript.sh"
-      - name: smokeTestStatusCode
-        type: int
-        description: "Expected status code returned by the check."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-          - GENERAL
-        mandatory: false
-        default: 200
       - name: space
         type: string
         description: "Cloud Foundry target space"
