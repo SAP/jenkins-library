@@ -29,18 +29,27 @@ private showIssues(Script script) {
     Map configuration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
     // Every check is executed by default. Only if configured with `false` the check won't be executed
     if (!(configuration.spotBugs == false)) {
-        recordIssues(blameDisabled: true,
-            enabledForFailure: true,
-            aggregatingResults: false,
-            tool: spotBugs(pattern: '**/target/spotbugsXml.xml'))
-
+        try {
+            recordIssues(skipBlames: true,
+                enabledForFailure: true,
+                aggregatingResults: false,
+                tool: spotBugs(pattern: '**/target/spotbugsXml.xml'))
+        } catch (e) {
+            echo "recordIssues has failed. Possibly due to an outdated version of the warnings-ng plugin."
+            e.printStackTrace()
+        }
         ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
     }
     if (!(configuration.pmd == false)) {
-        recordIssues(blameDisabled: true,
-            enabledForFailure: true,
-            aggregatingResults: false,
-            tool: pmdParser(pattern: '**/target/pmd.xml'))
+        try {
+            recordIssues(skipBlames: true,
+                enabledForFailure: true,
+                aggregatingResults: false,
+                tool: pmdParser(pattern: '**/target/pmd.xml'))
+        } catch (e) {
+            echo "recordIssues has failed. Possibly due to an outdated version of the warnings-ng plugin."
+            e.printStackTrace()
+        }
         ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
     }
 }

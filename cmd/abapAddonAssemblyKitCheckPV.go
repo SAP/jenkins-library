@@ -11,12 +11,13 @@ import (
 
 func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundle()
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runAbapAddonAssemblyKitCheckPV(&config, telemetryData, utils, cpe); err != nil {
+	telemetryData.BuildTool = "AAKaaS"
+	if err := runAbapAddonAssemblyKitCheckPV(&config, utils, cpe); err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
-func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, utils aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, utils aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) error {
 
 	log.Entry().Info("╔═════════════════════════════╗")
 	log.Entry().Info("║ abapAddonAssemblyKitCheckPV ║")

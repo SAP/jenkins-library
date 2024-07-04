@@ -47,7 +47,8 @@ type ScanOptions struct {
 
 	InstallCommand string
 
-	SkipParentProjectResolution bool
+	SkipParentProjectResolution     bool
+	DisableNpmSubmodulesAggregation bool
 
 	Verbose bool
 }
