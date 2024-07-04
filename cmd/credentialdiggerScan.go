@@ -49,12 +49,15 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 	}
 	if config.Repository == "" {
 		// Get current repository from orchestrator
-		repoUrlOrchestrator := provider.RepoURL()
+		log.Entry().Debug("Repository URL not defined in step configuration. Try get it from orchestrators")
+		repoUrlOrchestrator := provider.GetRepoURL()
 		if repoUrlOrchestrator == "n/a" {
 			// Jenkins configuration error
-			log.Entry().WithError(errors.New(
-				fmt.Sprintf("Unknown repository URL %s", repoUrlOrchestrator))).Error(
+			configError := errors.New(fmt.Sprintf("Unknown repository URL %s", repoUrlOrchestrator))
+			log.Entry().WithError(configError).Error(
 				"Repository URL n/a. Please verify git plugin is installed.")
+			// The repository to scan was not identified. Return an error
+			return configError
 		}
 		config.Repository = repoUrlOrchestrator
 		log.Entry().Debug("Use current repository: ", repoUrlOrchestrator)
@@ -66,13 +69,13 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 	}
 
 	// 1: Add rules
-	log.Entry().Info("Load rules")
+	log.Entry().Info("credentialdiggerScan: Load rules")
 	err := credentialdiggerAddRules(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().Error("credentialdiggerScan: Failed running credentialdigger add_rules")
 		return err
 	}
-	log.Entry().Info("Rules added")
+	log.Entry().Info("credentialdiggerScan: Rules added")
 
 	// 2: Scan the repository
 	// Choose between scan-pr, scan-snapshot, and full-scan (with this priority
@@ -93,17 +96,21 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 	}
 	// err is an error exit number when there are findings
 	if err == nil {
-		log.Entry().Info("No discoveries found in this repo")
-		// If there are no findings, there is no need to export an empty report
-		return nil
+		log.Entry().Info("credentialdiggerScan: No leaks found in this repo with scan")
+		// Even if there are no leaks, the user may still want to export all
+		// the discoveries (param exportAll set to true)
 	}
 
 	// 3: Get discoveries
 	err = credentialdiggerGetDiscoveries(&config, telemetryData, utils)
 	if err != nil {
-		// The exit number is the number of discoveries
+		// The exit number is the number of discoveries exported
 		// Therefore, this error is not relevant, if raised
-		log.Entry().Warn("There are findings to review")
+		log.Entry().Warn("credentialdiggerScan: There are findings to review")
+	} else {
+		// There are no discoveries exported, so no need to generate the
+		// artifact
+		return nil
 	}
 
 	// 4: Export report in workspace
@@ -144,15 +151,16 @@ func credentialdiggerAddRules(config *credentialdiggerScanOptions, telemetryData
 		dlClient := piperhttp.Client{}
 		ruleFile := filepath.Join(cdHome, "backend", "custom-rules.yml")
 		dlClient.DownloadFile(config.RulesDownloadURL, ruleFile, nil, nil)
-		log.Entry().Info("Download and use remote rules")
+		log.Entry().Info("credentialdiggerScan: Download and use remote rules")
 	} else {
 		log.Entry().Debug("Use a local ruleset")
 		// Use rules defined in stashed file
 		if hasRulesFile(config.RulesFile, service) {
-			log.Entry().WithField("file", config.RulesFile).Info("Use stashed rules file from repository")
+			log.Entry().WithField("file", config.RulesFile).Info(
+				"credentialdiggerScan: Use stashed rules file from repository")
 			ruleFile = config.RulesFile
 		} else {
-			log.Entry().Info("Use standard pre-defined rules")
+			log.Entry().Info("credentialdiggerScan: Use standard pre-defined rules")
 		}
 
 	}
@@ -167,14 +175,15 @@ func credentialdiggerGetDiscoveries(config *credentialdiggerScanOptions, telemet
 	// Export all the discoveries or export only new ones
 	if !config.ExportAll {
 		cmd_list = append(cmd_list, "--state", "new")
+	} else {
+		log.Entry().Info("credentialdiggerScan: Export all discoveries")
 	}
 	err := executeCredentialDiggerProcess(service, cmd_list)
 	if err != nil {
-		log.Entry().Error("credentialdiggerScan: Failed running credentialdigger get_discoveries")
-		log.Entry().Error(err)
+		log.Entry().Warn("credentialdiggerScan: Report generated")
 		return err
 	}
-	log.Entry().Info("Scan complete")
+	log.Entry().Info("credentialdiggerScan: Scan complete with no potential leaks")
 	return nil
 }
 
@@ -189,12 +198,12 @@ func credentialdiggerBuildCommonArgs(config *credentialdiggerScanOptions) []stri
 	scan_args = append(scan_args, "--git_token", config.Token)
 	//debug
 	if config.Debug {
-		log.Entry().Debug("Run the scan in debug mode")
+		log.Entry().Debug("credentialdiggerScan: Run the scan in debug mode")
 		scan_args = append(scan_args, "--debug")
 	}
 	//models
 	if len(config.Models) > 0 {
-		log.Entry().Debugf("Enable models %v", config.Models)
+		log.Entry().Debugf("credentialdiggerScan: Enable models %v", config.Models)
 		scan_args = append(scan_args, "--models")
 		scan_args = append(scan_args, config.Models...)
 	}
@@ -203,47 +212,49 @@ func credentialdiggerBuildCommonArgs(config *credentialdiggerScanOptions) []stri
 }
 
 func credentialdiggerScanSnapshot(config *credentialdiggerScanOptions, telemetryData *telemetry.CustomData, service credentialdiggerUtils) error {
-	log.Entry().Infof("Scan Snapshot %v from repo %v", config.Snapshot, config.Repository)
+	log.Entry().Infof(
+		"credentialdiggerScan: Scan Snapshot %v from repo %v", config.Snapshot, config.Repository)
 	cmd_list := []string{"scan_snapshot",
 		"--snapshot", config.Snapshot}
 	cmd_list = append(cmd_list, credentialdiggerBuildCommonArgs(config)...)
 	leaks := executeCredentialDiggerProcess(service, cmd_list)
 	if leaks != nil {
-		log.Entry().Warn("The scan found potential leaks in this Snapshot")
+		log.Entry().Warn("credentialdiggerScan: The scan found potential leaks in this Snapshot")
 		return leaks
 	} else {
-		log.Entry().Info("No leaks found")
+		log.Entry().Info("credentialdiggerScan: No leaks found")
 		return nil
 	}
 }
 
 func credentialdiggerScanPR(config *credentialdiggerScanOptions, telemetryData *telemetry.CustomData, service credentialdiggerUtils) error {
-	log.Entry().Infof("Scan PR %v from repo %v", config.PrNumber, config.Repository)
+	log.Entry().Infof(
+		"credentialdiggerScan: Scan PR %v from repo %v", config.PrNumber, config.Repository)
 	cmd_list := []string{"scan_pr",
 		"--pr", strconv.Itoa(config.PrNumber),
 		"--api_endpoint", config.APIURL}
 	cmd_list = append(cmd_list, credentialdiggerBuildCommonArgs(config)...)
 	leaks := executeCredentialDiggerProcess(service, cmd_list)
 	if leaks != nil {
-		log.Entry().Warn("The scan found potential leaks in this PR")
+		log.Entry().Warn("credentialdiggerScan: The scan found potential leaks in this PR")
 		return leaks
 	} else {
-		log.Entry().Info("No leaks found")
+		log.Entry().Info("credentialdiggerScan: No leaks found")
 		return nil
 	}
 }
 
 func credentialdiggerFullScan(config *credentialdiggerScanOptions, telemetryData *telemetry.CustomData, service credentialdiggerUtils) error {
-	log.Entry().Infof("Full scan of repository %v", config.Repository)
+	log.Entry().Infof("credentialdiggerScan: Full scan of repository %v", config.Repository)
 	cmd_list := []string{"scan"}
 	cmd_list = append(cmd_list, credentialdiggerBuildCommonArgs(config)...)
 	leaks := executeCredentialDiggerProcess(service, cmd_list)
 	if leaks != nil {
-		log.Entry().Warn("The scan found potential leaks")
-		log.Entry().Warnf("%v potential leaks found", leaks)
+		log.Entry().Warn("credentialdiggerScan: The scan found potential leaks")
+		log.Entry().Warnf("credentialdiggerScan: %v potential leaks found", leaks)
 		return leaks
 	} else {
-		log.Entry().Info("No leaks found")
+		log.Entry().Info("credentialdiggerScan: No leaks found")
 		return nil
 	}
 }
