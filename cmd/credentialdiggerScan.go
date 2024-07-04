@@ -50,7 +50,7 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 	if config.Repository == "" {
 		// Get current repository from orchestrator
 		log.Entry().Debug("Repository URL not defined in step configuration. Try get it from orchestrators")
-		repoUrlOrchestrator := provider.GetRepoURL()
+		repoUrlOrchestrator := provider.RepoURL()
 		if repoUrlOrchestrator == "n/a" {
 			// Jenkins configuration error
 			configError := errors.New(fmt.Sprintf("Unknown repository URL %s", repoUrlOrchestrator))
