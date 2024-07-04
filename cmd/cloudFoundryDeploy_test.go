@@ -1,4 +1,4 @@
-// go:build unit
+//go:build unit
 // +build unit
 
 package cmd
@@ -435,6 +435,31 @@ func TestCfDeployment(t *testing.T) {
 			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html."+
 			"Or alternatively, switch to mta build tool. Please refer to mta build tool"+
 			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.") {
+
+			t.Run("check shell calls", func(t *testing.T) {
+				noopCfAPICalls(t, s)
+			})
+		}
+	})
+
+	t.Run("cf native deploy fail when unknown deployType is set", func(t *testing.T) {
+
+		defer cleanup()
+
+		config.DeployTool = "cf_native"
+		config.DeployType = "blue"
+		config.Manifest = ""
+		config.AppName = ""
+
+		// app name does not need to be set if it can be found in the manifest.yml
+		// manifest name does not need to be set- the default manifest.yml will be used if not set
+		defer prepareDefaultManifestMocking("manifest.yml", []string{"newAppName"})()
+
+		s := mock.ExecMockRunner{}
+
+		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+
+		if assert.EqualError(t, err, "Invalid deploy type received: 'blue'. Supported value: standard") {
 
 			t.Run("check shell calls", func(t *testing.T) {
 				noopCfAPICalls(t, s)
