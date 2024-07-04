@@ -264,7 +264,7 @@ func credentialdiggerScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "saposs/credentialdigger:4.12.0"},
+				{Image: "saposs/credentialdigger:4.14.0"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
