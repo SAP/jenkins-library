@@ -3,8 +3,10 @@ package cmd
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"os"
 	"path/filepath"
@@ -78,9 +80,11 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to get project: %s", err)
 	}
 
-	cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
-	if err != nil {
-		log.Entry().WithError(err).Warnf("failed to get group")
+	if len(config.GroupName) > 0 {
+		cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to get group")
+		}
 	}
 
 	if cx1sh.Project == nil {
@@ -112,6 +116,14 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to set preset: %s", err)
 	}
 
+	// update project's tags
+	if (len(config.ProjectTags)) > 0 {
+		err = cx1sh.UpdateProjectTags()
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to tags the project: %s", err)
+		}
+	}
+
 	scans, err := cx1sh.GetLastScans(10)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to get last 10 scans")
@@ -139,6 +151,10 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	incremental, err := cx1sh.IncrementalOrFull(scans) // requires: scan list
 	if err != nil {
 		return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
+	}
+
+	if config.Incremental {
+		log.Entry().Warnf("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
 	}
 
 	zipFile, err := cx1sh.ZipFiles()
@@ -294,6 +310,23 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	return &project, nil
 }
 
+func (c *checkmarxOneExecuteScanHelper) UpdateProjectTags() error {
+	if len(c.config.ProjectTags) > 0 {
+		tags := make(map[string]string, 0)
+		err := json.Unmarshal([]byte(c.config.ProjectTags), &tags)
+		if err != nil {
+			log.Entry().Infof("Failed to parse the project tags: %v", c.config.ProjectTags)
+			return err
+		}
+		// merge new tags to the existing ones
+		maps.Copy(c.Project.Tags, tags)
+
+		return c.sys.UpdateProject(c.Project)
+	}
+
+	return nil
+}
+
 func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	projectConf, err := c.sys.GetProjectConfiguration(c.Project.ProjectID)
 
@@ -302,10 +335,31 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	}
 
 	currentPreset := ""
+	currentLanguageMode := "multi" // piper default
 	for _, conf := range projectConf {
 		if conf.Key == "scan.config.sast.presetName" {
 			currentPreset = conf.Value
-			break
+		}
+		if conf.Key == "scan.config.sast.languageMode" {
+			currentLanguageMode = conf.Value
+		}
+	}
+
+	if c.config.LanguageMode == "" || strings.EqualFold(c.config.LanguageMode, "multi") { // default multi if blank
+		if currentLanguageMode != "multi" {
+			log.Entry().Info("Pipeline yaml requests multi-language scan - updating project configuration")
+			c.sys.SetProjectLanguageMode(c.Project.ProjectID, "multi", true)
+
+			if c.config.Incremental {
+				log.Entry().Warn("Pipeline yaml requests incremental scan, but switching from 'primary' to 'multi' language mode requires a full scan - switching from incremental to full")
+				c.config.Incremental = false
+			}
+		}
+	} else { // primary language mode
+		if currentLanguageMode != "primary" {
+			log.Entry().Info("Pipeline yaml requests primary-language scan - updating project configuration")
+			c.sys.SetProjectLanguageMode(c.Project.ProjectID, "primary", true)
+			// no need to switch incremental to full here (multi-language scan includes single-language scan coverage)
 		}
 	}
 
@@ -319,6 +373,11 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	} else if currentPreset != c.config.Preset {
 		log.Entry().Infof("Project configured preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentPreset, c.config.Preset)
 		c.sys.SetProjectPreset(c.Project.ProjectID, c.config.Preset, true)
+
+		if c.config.Incremental {
+			log.Entry().Warn("Changing project settings requires a full scan to take effect - switching from incremental to full")
+			c.config.Incremental = false
+		}
 	} else {
 		log.Entry().Infof("Project is already configured to use pipeline preset %v", currentPreset)
 	}
@@ -389,6 +448,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	}
 
 	branch := c.config.Branch
+	if len(branch) == 0 && len(c.config.GitBranch) > 0 {
+		branch = c.config.GitBranch
+	}
 	if len(c.config.PullRequestName) > 0 {
 		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
 	}
@@ -398,9 +460,18 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	log.Entry().Infof("Will run a scan with the following configuration: %v", sastConfigString)
 
 	configs := []checkmarxOne.ScanConfiguration{sastConfig}
-	// add more engines
 
-	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs)
+	// add scan's tags
+	tags := make(map[string]string, 0)
+	if len(c.config.ScanTags) > 0 {
+		err := json.Unmarshal([]byte(c.config.ScanTags), &tags)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to parse the scan tags: %v", c.config.ScanTags)
+		}
+	}
+
+	// add more engines
+	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs, tags)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to run scan on project %v: %s", c.Project.Name, err)
@@ -717,7 +788,13 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 
 	resultMap["LinesOfCodeScanned"] = scanmeta.LOC
 	resultMap["FilesScanned"] = scanmeta.FileCount
-	resultMap["ToolVersion"] = "Cx1 Gap: No API for this"
+
+	version, err := c.sys.GetVersion()
+	if err != nil {
+		resultMap["ToolVersion"] = "Error fetching current version"
+	} else {
+		resultMap["ToolVersion"] = fmt.Sprintf("CxOne: %v, SAST: %v, KICS: %v", version.CxOne, version.SAST, version.KICS)
+	}
 
 	if scanmeta.IsIncremental {
 		resultMap["ScanType"] = "Incremental"

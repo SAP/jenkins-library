@@ -178,7 +178,7 @@ spec:
           - STEPS
       - name: cvssSeverityLimit
         type: string
-        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build."
+        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build. A negative value (like the default of -1) means that the build won't fail."
         scope:
           - PARAMETERS
           - STAGES
@@ -377,6 +377,32 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: scanImages
+        type: "[]string"
+        description: "For `buildTool: docker`: Allowing to scan multiple docker images. In case parent project will not contain any dependecies, use skipParentProjectResolution parameter"
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: skipParentProjectResolution
+        type: bool
+        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose. Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: activateMultipleImagesScan
+        type: bool
+        description: "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
@@ -497,8 +523,9 @@ spec:
       - name: installArtifacts
         type: bool
         description:
-          "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource.
-          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+          "If enabled, all artifacts will be installed to the local Maven repository to ensure availability before running WhiteSource.
+          Currently, this parameter is not honored in whitesourceExecuteScan step, as it is internally managed by UA with the 'runPreStep'.
+          In the future, this parameter will be honored based on the individual build tool."
         scope:
           - GENERAL
           - STEPS
@@ -515,6 +542,15 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
+      - name: disableNpmSubmodulesAggregation
+        type: bool
+        description: "The default Mend behavior is to aggregate all submodules of NPM project into one project in Mend. This parameter disables this behavior, thus for each submodule a separate project is created."
+        default: false
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -626,6 +662,15 @@ spec:
           - type: vaultSecret
             name: golangPrivateModulesGitTokenVaultSecret
             default: golang
+      - name: SkipProjectsWithEmptyTokens
+        description: Skips projects with empty tokens after scanning. This is for testing purposes only and should not be used until we roll out the new parameter
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        default: false
     resources:
       - name: buildDescriptor
         type: stash

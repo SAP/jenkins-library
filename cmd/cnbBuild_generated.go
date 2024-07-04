@@ -30,6 +30,7 @@ type cnbBuildOptions struct {
 	PreBuildpacks             []string                 `json:"preBuildpacks,omitempty"`
 	PostBuildpacks            []string                 `json:"postBuildpacks,omitempty"`
 	BuildEnvVars              map[string]interface{}   `json:"buildEnvVars,omitempty"`
+	ExpandBuildEnvVars        bool                     `json:"expandBuildEnvVars,omitempty"`
 	Path                      string                   `json:"path,omitempty"`
 	ProjectDescriptor         string                   `json:"projectDescriptor,omitempty"`
 	DockerConfigJSON          string                   `json:"dockerConfigJSON,omitempty"`
@@ -218,7 +219,7 @@ func CnbBuildCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			cnbBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -238,6 +239,7 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.PreBuildpacks, "preBuildpacks", []string{}, "Buildpacks to prepend to the groups in the builder's order.")
 	cmd.Flags().StringSliceVar(&stepConfig.PostBuildpacks, "postBuildpacks", []string{}, "Buildpacks to append to the groups in the builder's order.")
 
+	cmd.Flags().BoolVar(&stepConfig.ExpandBuildEnvVars, "expandBuildEnvVars", false, "Expand environment variables used in `buildEnvVars`.\nExample:\n```yaml\nexpandBuildEnvVars: true\nbuildEnvVars:\n  foo: ${BAR}\n```\n")
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Glob that should either point to a directory with your sources or one artifact in zip format.\nThis property determines the input to the buildpack.\n")
 	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Relative path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.\nEnvironment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.\n\n*Note*: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.\n\n*Note*: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
@@ -248,7 +250,7 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.PreserveFiles, "preserveFiles", []string{}, "List of globs, for keeping build results in the Jenkins workspace.\n\n*Note*: globs will be calculated relative to the [path](#path) property.\n")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
-	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
+	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.4.1/syft_1.4.1_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
 	cmd.Flags().StringVar(&stepConfig.RunImage, "runImage", os.Getenv("PIPER_runImage"), "Base image from which application images are built. Will be defaulted to the image provided by the builder.")
 	cmd.Flags().StringVar(&stepConfig.DefaultProcess, "defaultProcess", os.Getenv("PIPER_defaultProcess"), "Process that should be started by default. See https://buildpacks.io/docs/app-developer-guide/run-an-app/")
 
@@ -370,6 +372,15 @@ func cnbBuildMetadata() config.StepData {
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "expandBuildEnvVars",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "path",
@@ -496,7 +507,7 @@ func cnbBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`,
+						Default:     `https://github.com/anchore/syft/releases/download/v1.4.1/syft_1.4.1_linux_amd64.tar.gz`,
 					},
 					{
 						Name:        "runImage",

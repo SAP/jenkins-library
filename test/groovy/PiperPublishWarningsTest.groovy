@@ -85,7 +85,7 @@ class PiperPublishWarningsTest extends BasePiperTest {
         assertThat(warningsParserSettings, hasKey('script'))
         assertThat(warningsPluginOptions, allOf(
             hasEntry('enabledForFailure', true),
-            hasEntry('blameDisabled', true)
+            hasEntry('skipBlames', true)
         ))
         assertThat(warningsPluginOptions, hasKey('tools'))
 

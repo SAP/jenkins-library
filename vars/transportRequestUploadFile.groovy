@@ -201,14 +201,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('failOnWarning', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'changeManagementType',
-            stepParam1: configuration.changeManagement.type,
-            stepParamKey2: 'scriptMissing',
-            stepParam2: parameters?.script == null
-        ], configuration)
-
         def changeDocumentId = null
 
         if(backendType == BackendType.SOLMAN) {

@@ -5,7 +5,7 @@
 
 #Project Setup
 general:
-  collectTelemetryData: true
+  collectTelemetryData: false
   logFormat: 'plain'
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
@@ -237,7 +237,7 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
-      stashBack: '**/node_modules/**,nohup.out'
+      stashBack: '**/node_modules/**,nohup.out,.git/**'
   dubExecute:
     dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
@@ -415,7 +415,7 @@ steps:
     parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'
     parserScript: 'return builder.guessSeverity(matcher.group(1)).setMessage(matcher.group(2)).setModuleName(matcher.group(3)).setType(matcher.group(4)).buildOptional()'
     recordIssuesSettings:
-      blameDisabled: true
+      skipBlames: true
       enabledForFailure: true
   seleniumExecuteTests:
     buildTool: 'npm'

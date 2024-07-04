@@ -42,7 +42,7 @@ func newCDUtils() credentialdiggerUtils {
 func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *telemetry.CustomData) error {
 	utils := newCDUtils()
 	// 0: Get attributes from orchestrator
-	provider, prov_err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, prov_err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if prov_err != nil {
 		log.Entry().WithError(prov_err).Error(
 			"credentialdiggerScan: unable to load orchestrator specific configuration.")
@@ -64,7 +64,7 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 	}
 	if provider.IsPullRequest() {
 		// set the pr number
-		config.PrNumber, _ = strconv.Atoi(provider.GetPullRequestConfig().Key)
+		config.PrNumber, _ = strconv.Atoi(provider.PullRequestConfig().Key)
 		log.Entry().Debug("Scan the current pull request: number ", config.PrNumber)
 	}
 

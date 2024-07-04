@@ -204,7 +204,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.PendoConfig.Token)
 			{{.StepName}}(stepConfig, &stepTelemetryData{{ range $notused, $oRes := .OutputResources}}{{ if ne (index $oRes "type") "reports" }}, &{{ index $oRes "name" }}{{ end }}{{ end }})
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -424,7 +424,7 @@ func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.Custo
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := run{{.StepName | title}}(&config, telemetryData, utils{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
+	err := run{{.StepName | title}}(&config, telemetryData, utils{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }}{{ end }})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}

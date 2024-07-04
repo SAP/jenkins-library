@@ -151,6 +151,7 @@ spec:
           - pip
           - sbt
           - yarn
+          - CAP
       - name: commitUserName
         aliases:
           - name: gitUserName
@@ -209,6 +210,25 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: CAPVersioningPreference
+        type: string
+        description: "For CAP build tool only: Defines which file should be used for versioning."
+        longDescription: |
+          If `maven` is chosen (default value), then the step expects a pom.xml file in the project's root folder. Alternatively, you can specify the path to the file using the `filePath` parameter.
+          If `npm` is chosen, then the step expects a package.json file in the project's root folder. Alternatively, you can specify the path to the file using the `filePath` parameter.
+
+          In case you want to propagate version to addition file(s), it can be done via `additionalTargetTools` and `additionalTargetDescriptors` parameters.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: maven
+        possibleValues:
+          - maven
+          - npm
+        mandatoryIf:
+          - name: buildTool
+            value: CAP
       - name: globalSettingsFile
         aliases:
           - name: maven/globalSettingsFile
@@ -372,3 +392,9 @@ spec:
           params:
             - name: buildTool
               value: maven
+    - image: maven:3.6-jdk-8
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: CAP

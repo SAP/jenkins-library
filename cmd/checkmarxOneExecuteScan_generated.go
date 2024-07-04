@@ -32,12 +32,15 @@ type checkmarxOneExecuteScanOptions struct {
 	GithubToken                          string   `json:"githubToken,omitempty"`
 	Incremental                          bool     `json:"incremental,omitempty"`
 	Owner                                string   `json:"owner,omitempty"`
+	GitBranch                            string   `json:"gitBranch,omitempty"`
 	ClientSecret                         string   `json:"clientSecret,omitempty"`
 	APIKey                               string   `json:"APIKey,omitempty"`
 	Preset                               string   `json:"preset,omitempty"`
 	LanguageMode                         string   `json:"languageMode,omitempty"`
 	ProjectCriticality                   string   `json:"projectCriticality,omitempty"`
 	ProjectName                          string   `json:"projectName,omitempty"`
+	ProjectTags                          string   `json:"projectTags,omitempty"`
+	ScanTags                             string   `json:"scanTags,omitempty"`
 	Branch                               string   `json:"branch,omitempty"`
 	PullRequestName                      string   `json:"pullRequestName,omitempty"`
 	Repository                           string   `json:"repository,omitempty"`
@@ -334,7 +337,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			checkmarxOneExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -356,12 +359,15 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
+	cmd.Flags().StringVar(&stepConfig.GitBranch, "gitBranch", os.Getenv("PIPER_gitBranch"), "Set the GitHub repository branch.")
 	cmd.Flags().StringVar(&stepConfig.ClientSecret, "clientSecret", os.Getenv("PIPER_clientSecret"), "The clientSecret to authenticate using a service account")
 	cmd.Flags().StringVar(&stepConfig.APIKey, "APIKey", os.Getenv("PIPER_APIKey"), "The APIKey to authenticate")
 	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
 	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", `3`, "The criticality of the checkmarxOne project, used during project creation")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the checkmarxOne project to scan into")
+	cmd.Flags().StringVar(&stepConfig.ProjectTags, "projectTags", os.Getenv("PIPER_projectTags"), "Used to tag a project with a JSON string, e.g., {\"key\":\"value\", \"keywithoutvalue\":\"\"}")
+	cmd.Flags().StringVar(&stepConfig.ScanTags, "scanTags", os.Getenv("PIPER_scanTags"), "Used to tag a scan with a JSON string, e.g., {\"key\":\"value\", \"keywithoutvalue\":\"\"}")
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Used to supply the branch scanned in the repository, or a friendly-name set by the user")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios. This is supplied by the orchestrator.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
@@ -522,6 +528,20 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
+						Name: "gitBranch",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "git/branch",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_gitBranch"),
+					},
+					{
 						Name: "clientSecret",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -598,6 +618,24 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_projectName"),
+					},
+					{
+						Name:        "projectTags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_projectTags"),
+					},
+					{
+						Name:        "scanTags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scanTags"),
 					},
 					{
 						Name:        "branch",

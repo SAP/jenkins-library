@@ -22,6 +22,8 @@ type ConfigOption struct {
 	Append        bool
 }
 
+const configFileName = "wss-unified-agent.config"
+
 // ConfigOptions contains a list of config options (ConfigOption)
 type ConfigOptions []ConfigOption
 
@@ -46,6 +48,7 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 	newConfig := properties.LoadMap(newConfigMap)
 
 	now := time.Now().Format("20060102150405")
+
 	newConfigFilePath := fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
 
 	var configContent bytes.Buffer
@@ -181,7 +184,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "gradle.resolveDependencies", Value: true, Force: true},
 			{Name: "gradle.ignoreSourceFiles", Value: true, Force: true},
-			{Name: "gradle.aggregateModules", Value: false, Force: true},
+			{Name: "gradle.aggregateModules", Value: false, Force: false},
 			{Name: "gradle.runAssembleCommand", Value: true},
 			{Name: "gradle.runPreStep", Value: true},
 			{Name: "gradle.preferredEnvironment", Value: "wrapper"},
@@ -262,6 +265,19 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			*c = append(*c, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Append: true})
 		}
 
+	}
+	if config.BuildTool == "npm" {
+		if len(config.BuildDescriptorExcludeList) > 0 {
+			var excludePaths []string
+			for _, buildDescriptor := range config.BuildDescriptorExcludeList {
+				if strings.HasSuffix(buildDescriptor, "pom.xml") {
+					continue
+				}
+				modulePath, _ := filepath.Split(buildDescriptor)
+				excludePaths = append(excludePaths, modulePath)
+			}
+			*c = append(*c, ConfigOption{Name: "npm.ignoreDirectoryPatterns", Value: strings.Join(excludePaths, ",")})
+		}
 	}
 
 	if config.BuildTool == "docker" {
