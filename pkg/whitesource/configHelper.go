@@ -278,6 +278,8 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			}
 			*c = append(*c, ConfigOption{Name: "npm.ignoreDirectoryPatterns", Value: strings.Join(excludePaths, ",")})
 		}
+
+		*c = append(*c, ConfigOption{Name: "npm.includeDevDependencies", Value: config.NpmIncludeDevDependencies, Force: false})
 	}
 
 	if config.BuildTool == "docker" {
