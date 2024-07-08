@@ -1175,5 +1175,5 @@ func logConfigInVerboseModeForWhitesource(config ScanOptions) {
 	config.GithubToken = "********"
 	config.PrivateModulesGitToken = "********"
 	debugLog, _ := json.Marshal(config)
-	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
+	log.Entry().Debugf("Whitesource configuration: %v", string(debugLog))
 }
