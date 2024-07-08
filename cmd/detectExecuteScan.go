@@ -1124,7 +1124,7 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 }
 
 func handleExcludedDirectories(args *[]string, config *detectExecuteScanOptions) {
-	index := findItemInStringSlice(config.ScanProperties, "detect.excluded.directories")
+	index := findItemInStringSlice(config.ScanProperties, "--detect.excluded.directories=")
 	if index != -1 && !strings.Contains(config.ScanProperties[index], configPath) {
 		config.ScanProperties[index] += "," + configPath
 	} else {
