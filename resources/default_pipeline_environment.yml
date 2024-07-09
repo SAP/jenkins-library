@@ -374,7 +374,7 @@ steps:
     stepMessage: 'Do you want to restart?'
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/**'
+      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, **/dist/**'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
       checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
