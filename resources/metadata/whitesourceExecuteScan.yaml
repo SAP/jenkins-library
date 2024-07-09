@@ -542,6 +542,17 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
+      - name: npmIncludeDevDependencies
+        type: bool
+        description: "Enable this if you wish to include NPM DEV dependencies in the scan report"
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: false
+        aliases:
+          - name: npm/includeDevDependencies
       - name: disableNpmSubmodulesAggregation
         type: bool
         description: "The default Mend behavior is to aggregate all submodules of NPM project into one project in Mend. This parameter disables this behavior, thus for each submodule a separate project is created."
