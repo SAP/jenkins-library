@@ -27,9 +27,12 @@ const configFileName = "wss-unified-agent.config"
 // ConfigOptions contains a list of config options (ConfigOption)
 type ConfigOptions []ConfigOption
 
+// Needed parameters from UAConfiguration to print in verbose=true
+var parametersForLog = []string{"excludeBaseImage", "dockerfilePath"}
+
 // RewriteUAConfigurationFile updates the user's Unified Agent configuration with configuration which should be enforced or just eases the overall configuration
 // It then returns the path to the file containing the updated configuration
-func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string) (string, error) {
+func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string, verbose bool) (string, error) {
 
 	uaContent, err := utils.FileRead(s.ConfigFilePath)
 	uaConfig, propErr := properties.Load(uaContent, properties.UTF8)
@@ -46,6 +49,18 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 
 	newConfigMap := cOptions.updateConfig(&uaConfigMap)
 	newConfig := properties.LoadMap(newConfigMap)
+
+	if verbose {
+		var printLog string
+		for _, p := range parametersForLog {
+			if val, ok := newConfigMap[p]; ok {
+				printLog += fmt.Sprintf("%s:%s ", p, val)
+			}
+		}
+		if len(printLog) > 0 {
+			log.Entry().Debug("ScanUA configuration %s", printLog)
+		}
+	}
 
 	now := time.Now().Format("20060102150405")
 
