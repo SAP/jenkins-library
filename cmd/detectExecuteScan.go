@@ -782,6 +782,8 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 		}
 	}
 
+	log.Entry().Infof("Reporting: Found %v vulnerabilities", len(vulns.Items))
+
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 		log.Entry().Debugf("Creating result issues for %v alert(s)", len(vulns.Items))
 		issueDetails := make([]reporting.IssueDetail, len(vulns.Items))
