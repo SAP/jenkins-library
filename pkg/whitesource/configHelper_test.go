@@ -23,7 +23,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile(config.ConfigFilePath, []byte("test = dummy"))
 
-		path, err := config.RewriteUAConfigurationFile(utilsMock, "")
+		path, err := config.RewriteUAConfigurationFile(utilsMock, "", false)
 		assert.NoError(t, err)
 		newUAConfig, err := utilsMock.FileRead(path)
 		assert.NoError(t, err)
@@ -38,7 +38,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		}
 		utilsMock := NewScanUtilsMock()
 
-		path, err := config.RewriteUAConfigurationFile(utilsMock, "")
+		path, err := config.RewriteUAConfigurationFile(utilsMock, "", false)
 		assert.NoError(t, err)
 
 		newUAConfig, err := utilsMock.FileRead(path)
@@ -54,7 +54,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
 
-		_, err := config.RewriteUAConfigurationFile(utilsMock, "")
+		_, err := config.RewriteUAConfigurationFile(utilsMock, "", false)
 		assert.Contains(t, fmt.Sprint(err), "failed to write file")
 	})
 }

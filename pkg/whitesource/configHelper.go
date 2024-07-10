@@ -58,7 +58,7 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 			}
 		}
 		if len(printLog) > 0 {
-			log.Entry().Debug("ScanUA configuration %s", printLog)
+			log.Entry().Debugf("ScanUA configuration: %s", printLog)
 		}
 	}
 
