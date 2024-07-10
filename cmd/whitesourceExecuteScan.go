@@ -149,6 +149,7 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 	if log.IsVerbose() {
+		logConfigInVerboseModeForWhitesource(config)
 		logWorkspaceContent()
 	}
 	utils := newWhitesourceUtils(&config, client)
@@ -1163,4 +1164,17 @@ func renameTarfilePath(tarFilepath string) error {
 		return fmt.Errorf("error renaming file %s to %s: %v", tarFilepath, newFileName, err)
 	}
 	return nil
+}
+
+// log config parameters
+func logConfigInVerboseModeForWhitesource(config ScanOptions) {
+	config.ContainerRegistryPassword = "********"
+	config.ContainerRegistryUser = "********"
+	config.DockerConfigJSON = "********"
+	config.OrgToken = "********"
+	config.UserToken = "********"
+	config.GithubToken = "********"
+	config.PrivateModulesGitToken = "********"
+	debugLog, _ := json.Marshal(config)
+	log.Entry().Debugf("Whitesource configuration: %v", string(debugLog))
 }
