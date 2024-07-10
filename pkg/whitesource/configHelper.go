@@ -28,7 +28,7 @@ const configFileName = "wss-unified-agent.config"
 type ConfigOptions []ConfigOption
 
 // Needed parameters from UAConfiguration to print in verbose=true
-var parametersForLog = []string{"excludeBaseImage", "dockerfilePath"}
+var parametersForLog = []string{"docker.excludeBaseImage", "docker.dockerfilePath"}
 
 // RewriteUAConfigurationFile updates the user's Unified Agent configuration with configuration which should be enforced or just eases the overall configuration
 // It then returns the path to the file containing the updated configuration
