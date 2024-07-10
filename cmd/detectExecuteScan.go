@@ -853,6 +853,17 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 
 func getVulnerabilitiesWithComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, error) {
 	detectVersionName := getVersionName(config)
+
+	status, err := sys.Client.GetBOMStatus(config.ProjectName, detectVersionName)
+	if err != nil {
+		return nil, err
+	}
+
+	if status.Status == "PROCESSING" {
+		time.Sleep(60 * time.Second)
+		log.Entry().Info("Waiting for BOM processing to complete. Sleep for 1 minute.")
+	}
+
 	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
 	if err != nil {
 		return nil, err
