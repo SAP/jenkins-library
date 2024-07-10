@@ -55,11 +55,11 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 		for _, p := range parametersForLog {
 			if val, ok := newConfigMap[p]; ok {
 				printLog += fmt.Sprintf("%s:%s ", p, val)
-			} else {
-				printLog += fmt.Sprintf("%s:null ", p)
 			}
 		}
-		log.Entry().Debugf("ScanUA configuration: %s", printLog)
+		if len(printLog) > 0 {
+			log.Entry().Debugf("ScanUA configuration: %s", printLog)
+		}
 	}
 
 	now := time.Now().Format("20060102150405")
