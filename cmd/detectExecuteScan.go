@@ -861,7 +861,7 @@ func getVulnerabilitiesWithComponents(config detectExecuteScanOptions, influx *d
 		return nil, err
 	}
 
-	if status.Status == "PROCESSING" {
+	if status.Status == "PROCESSING" || status.Status == "PROCESSING_WITH_ERRORS" {
 		time.Sleep(60 * time.Second)
 		log.Entry().Info("Waiting for BOM processing to complete. Sleep for 1 minute.")
 	}
