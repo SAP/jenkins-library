@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -77,7 +76,10 @@ func (j *jenkinsConfigProvider) fetchAPIInformation() {
 // BuildStatus returns build status of the current job
 func (j *jenkinsConfigProvider) BuildStatus() string {
 	j.fetchAPIInformation()
-	fmt.Print(j.apiInformation)
+	apiJSON, err := json.Marshal(j.apiInformation)
+	if err != nil {
+		log.Entry().Infof(string(apiJSON))
+	}
 	if val, ok := j.apiInformation["result"]; ok {
 		// cases in ADO: succeeded, failed, canceled, none, partiallySucceeded
 		switch result := val; result {
