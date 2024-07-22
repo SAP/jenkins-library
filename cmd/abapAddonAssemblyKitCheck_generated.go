@@ -71,9 +71,9 @@ func AbapAddonAssemblyKitCheckCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "This step calls AAKaaS to check the validity of the Addon Product Modelling.",
 		Long: `This step does the following:<ul>
-  <li>[The Addon Product Modelling](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#add-on-descriptor-file) is read from the <b>addonDescriptorFileName</b> (e.g. addon.yml)</li>
-  <li>A connection to AAKaaS (Addon Assembly Kit as a Service) is established and the Addon Product Modelling is transfered for detailed [checks](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#versioning-rules)</li>
-  <li>The semantic versions are resolved and stored into the piper commonPipelineEnviroment for usage of subsequent pipeline steps</li>
+  [The Addon Product Modelling](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#add-on-descriptor-file) is read from the <b>addonDescriptorFileName</b> (e.g. addon.yml)
+  A connection to AAKaaS (Addon Assembly Kit as a Service) is established and the Addon Product Modelling is transfered for detailed [checks](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#versioning-rules)
+  The semantic versions are resolved and stored into the piper commonPipelineEnviroment for usage of subsequent pipeline steps
 </ul>
 <br />
 For logon to AAKaaS you can either provide a credential with basic authorization (username and password) or two secret text credentials containing the technical s-users certificate (see note [2805811](https://me.sap.com/notes/2805811) for download) as base64 encoded string and the password to decrypt the file
