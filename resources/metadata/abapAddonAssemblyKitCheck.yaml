@@ -2,7 +2,7 @@ metadata:
   name: abapAddonAssemblyKitCheck
   description: This step calls AAKaaS to check the validity of the Addon Product Modelling.
   longDescription: |
-    [The Addon Product Modelling](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#add-on-descriptor-file) is read from the <b>addonDescriptorFileName</b> (e.g. addon.yml). 
+    [The Addon Product Modelling](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#add-on-descriptor-file) is read from the <b>addonDescriptorFileName</b> (e.g. addon.yml).
     A connection to AAKaaS (Addon Assembly Kit as a Service) is established and the Addon Product Modelling is transfered for detailed [checks](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#versioning-rules).
     The semantic versions are resolved and stored into the piper commonPipelineEnviroment for usage in subsequent pipeline steps.
     <br />
