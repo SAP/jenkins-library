@@ -236,6 +236,13 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
+      - name: enableSetTimestamp
+        type: bool
+        description: Enables setting the timestamp in the `mta.yaml` when it contains `${timestamp}`. Disable this when you want the MTA Deploy Service to do this instead.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
