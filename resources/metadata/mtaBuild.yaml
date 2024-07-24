@@ -243,6 +243,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+        default: true
   outputs:
     resources:
       - name: commonPipelineEnvironment
