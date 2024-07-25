@@ -36,7 +36,7 @@ func newCodeqlExecuteScanTestsUtils() codeqlExecuteScanMockUtils {
 }
 
 func TestGetMavenSettings(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 	t.Run("No maven", func(t *testing.T) {
 		config := codeqlExecuteScanOptions{BuildTool: "npm"}
 		buildCmd := "mvn clean install"
