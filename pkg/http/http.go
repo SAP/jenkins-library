@@ -401,12 +401,13 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
 	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
-	if t.doLogRequestBodyOnDebug && req.Body != nil {
+	if t.doLogRequestBodyOnDebug && req.Header.Get("Content-Type") == "application/octet-stream" {
+		// skip logging byte content as it's useless
+	} else if t.doLogRequestBodyOnDebug && req.Body != nil {
 		var buf bytes.Buffer
 		tee := io.TeeReader(req.Body, &buf)
 		log.Entry().Debugf("body: %v", transformBody(tee))
 		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
-		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
 }
