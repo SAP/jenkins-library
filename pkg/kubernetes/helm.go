@@ -296,6 +296,9 @@ func (h *HelmExecute) RunHelmUninstall() error {
 	if len(h.config.Namespace) <= 0 {
 		return fmt.Errorf("namespace has not been set, please configure namespace parameter")
 	}
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	if h.config.HelmDeployWaitSeconds > 0 {
 		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
