@@ -180,8 +180,10 @@ func runMtaBuild(config mtaBuildOptions,
 		log.Entry().Infof("\"%s\" file found in project sources", mtaYamlFile)
 	}
 
-	if err = setTimeStamp(mtaYamlFile, utils); err != nil {
-		return err
+	if config.EnableSetTimestamp {
+		if err = setTimeStamp(mtaYamlFile, utils); err != nil {
+			return err
+		}
 	}
 
 	mtarName, isMtarNativelySuffixed, err := getMtarName(config, mtaYamlFile, utils)

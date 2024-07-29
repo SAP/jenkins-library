@@ -43,6 +43,7 @@ type mtaBuildOptions struct {
 	Profiles                        []string `json:"profiles,omitempty"`
 	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
 	CreateBOM                       bool     `json:"createBOM,omitempty"`
+	EnableSetTimestamp              bool     `json:"enableSetTimestamp,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
@@ -245,6 +246,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build . This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
+	cmd.Flags().BoolVar(&stepConfig.EnableSetTimestamp, "enableSetTimestamp", true, "Enables setting the timestamp in the `mta.yaml` when it contains `${timestamp}`. Disable this when you want the MTA Deploy Service to do this instead.")
 
 }
 
@@ -498,6 +500,15 @@ func mtaBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "enableSetTimestamp",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 				},
 			},
