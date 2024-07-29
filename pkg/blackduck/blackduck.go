@@ -61,6 +61,10 @@ type ProjectVersion struct {
 	Metadata `json:"_meta,omitempty"`
 }
 
+type BOMStatus struct {
+	Status string `json:"status,omitempty"`
+}
+
 type Components struct {
 	TotalCount int         `json:"totalCount,omitempty"`
 	Items      []Component `json:"items,omitempty"`
@@ -446,6 +450,38 @@ func (b *Client) GetVulnerabilities(projectName, versionName string) (*Vulnerabi
 	}
 
 	return &vulnerabilities, nil
+}
+
+func (b *Client) GetBOMStatus(projectName, versionName string) (BOMStatus, error) {
+	projectVersion, err := b.GetProjectVersion(projectName, versionName)
+	if err != nil {
+		return BOMStatus{}, err
+	}
+
+	headers := http.Header{}
+	headers.Add("Accept", HEADER_BOM_V6)
+
+	var bomStatusPath string
+	for _, link := range projectVersion.Links {
+		if link.Rel == "bom-status" {
+			bomStatusPath = urlPath(link.Href)
+			break
+		}
+	}
+
+	respBody, err := b.sendRequest("GET", bomStatusPath, map[string]string{}, nil, headers)
+	if err != nil {
+		return BOMStatus{}, errors.Wrapf(err, "Failed to get BOM status for project version '%v:%v'", projectName, versionName)
+	}
+
+	bomStatus := BOMStatus{}
+	err = json.Unmarshal(respBody, &bomStatus)
+	if err != nil {
+		return BOMStatus{}, errors.Wrapf(err, "failed to retrieve BOM status for project version '%v:%v'", projectName, versionName)
+	}
+
+	return bomStatus, nil
+
 }
 
 func (b *Client) GetPolicyStatus(projectName, versionName string) (*PolicyStatus, error) {

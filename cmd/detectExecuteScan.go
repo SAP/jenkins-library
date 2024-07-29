@@ -782,6 +782,8 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 		}
 	}
 
+	log.Entry().Infof("Reporting: Found %v vulnerabilities", len(vulns.Items))
+
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
 		log.Entry().Debugf("Creating result issues for %v alert(s)", len(vulns.Items))
 		issueDetails := make([]reporting.IssueDetail, len(vulns.Items))
@@ -853,6 +855,17 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 
 func getVulnerabilitiesWithComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, error) {
 	detectVersionName := getVersionName(config)
+
+	status, err := sys.Client.GetBOMStatus(config.ProjectName, detectVersionName)
+	if err != nil {
+		return nil, err
+	}
+
+	if status.Status == "PROCESSING" || status.Status == "PROCESSING_WITH_ERRORS" {
+		time.Sleep(60 * time.Second)
+		log.Entry().Info("Waiting for BOM processing to complete. Sleep for 1 minute.")
+	}
+
 	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
 	if err != nil {
 		return nil, err
