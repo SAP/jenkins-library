@@ -2,8 +2,7 @@ name: Check and make Release
 
 on:
   release:
-    types:
-      - published
+    types: [published]
 
 
 jobs:
