@@ -72,7 +72,7 @@ jobs:
           curl --fail-with-body -L -X PATCH
           -H "Accept: application/vnd.github+json"
           -H "Authorization: Bearer ${{ github.token }}"
-          ${{ github.api_url }}/repos/${{ github.repository }}/releases/${{ steps.release_id.outputss.release_id }}
+          ${{ github.api_url }}/repos/${{ github.repository }}/releases/${{ steps.release_id.outputs.release_id }}
           -d '{"prerelease": false, "make_latest": true}'
 
       # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
