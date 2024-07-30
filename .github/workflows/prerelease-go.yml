@@ -9,6 +9,7 @@ on:
 
 jobs:
   build:
+    permissions: write-all
     name: Publish
     runs-on: ubuntu-latest
     steps:
