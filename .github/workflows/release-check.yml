@@ -3,11 +3,12 @@ name: Check and make Release
 on:
   release:
     types:
-      - prereleased
+      - published
 
 
 jobs:
-  build:
+  check_and_release:
+    if: github.event.release.prerelease
     name: Check and Release
     runs-on: ubuntu-latest
     steps:
