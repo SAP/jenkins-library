@@ -20,7 +20,7 @@ jobs:
       - name: Test binary (check output for 'commit:' substring)
         run: |
           chmod +x piper
-          if ./piper version | grep -Fq "cosasdmmit:"; then
+          if ./piper version | grep -Fq "commit:"; then
               echo "piper binary test is successful"
           else
               echo "piper binary test failed"
