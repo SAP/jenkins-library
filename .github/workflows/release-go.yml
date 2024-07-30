@@ -53,8 +53,9 @@ jobs:
       - name: Download Piper binary from recently published prerelease
         uses: robinraju/release-downloader@v1
         with:
-          releaseId: ${{ steps.release_id.output.release_id }}
+          tag: ${{ env.PIPER_version }}
           fileName: 'piper'
+
       - name: Test binary (check output for 'commit:' substring)
         run: |
           chmod +x piper
@@ -65,6 +66,7 @@ jobs:
               ./piper version
               exit 1
           fi
+
       - name: Convert prereleae to Release
         run: >
           curl -L -X PATCH
