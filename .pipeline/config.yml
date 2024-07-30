@@ -9,12 +9,12 @@ steps:
       - 'question'
       - 'wontfix'
       - 'stale'
-    owner: 'Googlom'
+    owner: 'SAP'
     repository: 'jenkins-library'
     releaseBodyHeader: ''
   githubCreatePullRequest:
     base: master
-    owner: 'Googlom'
+    owner: 'SAP'
     repository: 'jenkins-library'
     labels:
       - 'REVIEW'
