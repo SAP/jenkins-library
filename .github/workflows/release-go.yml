@@ -40,16 +40,6 @@ jobs:
             --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-darwin.x86_64
             --assetPathList ./piper-darwin.arm64 --assetPathList ./piper_master-darwin.arm64
 
-      - name: Get recently published prerelease id
-        id: release_id
-        run: >
-          curl -L -s -o resp.json
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
-          -H "Accept: application/vnd.github.raw+json"
-          ${{ github.api_url }}/repos/${{ github.repository }}/releases
-
-          echo "release_id=$(jq 'first(.[] | select(.tag_name == "${{ env.PIPER_version }}")).id' resp.json)" >> "$GITHUB_OUTPUT"
-
       - name: Download Piper binary from recently published prerelease
         uses: robinraju/release-downloader@v1
         with:
@@ -67,12 +57,22 @@ jobs:
               exit 1
           fi
 
+      - name: Get recently published prerelease id
+        id: release_id
+        run: >
+          curl -L -s -o resp.json
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
+          -H "Accept: application/vnd.github.raw+json"
+          ${{ github.api_url }}/repos/${{ github.repository }}/releases
+
+          echo "release_id=$(jq 'first(.[] | select(.tag_name == "${{ env.PIPER_version }}")).id' resp.json)" >> "$GITHUB_OUTPUT"
+
       - name: Convert prereleae to Release
         run: >
           curl -L -X PATCH
           -H "Accept: application/vnd.github+json"
           -H "Authorization: Bearer ${{ github.token }}"
-          ${{ github.api_url }}/repos/${{ github.repository }}/releases/${{ steps.release_id.output.release_id }}
+          ${{ github.api_url }}/repos/${{ github.repository }}/releases/${{ steps.release_id.outputs.release_id }}
           -d '{"prerelease": false, "make_latest": true}'
 
       # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
