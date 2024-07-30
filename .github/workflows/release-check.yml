@@ -1,0 +1,35 @@
+name: Check and make Release
+
+on:
+  release:
+    types:
+      - prereleased
+
+
+jobs:
+  build:
+    name: Check and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Piper binary from latest release
+        uses: robinraju/release-downloader@v1
+        with:
+          releaseId: ${{ github.event.release.id }}
+          fileName: 'piper'
+      - name: Test binary (check output for 'commit:' substring)
+        run: |
+          chmod +x piper
+          if ./piper version | grep -Fq "cosasdmmit:"; then
+              echo "piper binary test is successful"
+          else
+              echo "piper binary test failed"
+              ./piper version
+              exit 1
+          fi
+      - name: Convert Prereleae to Release
+        run: >
+          curl -L -X PATCH
+          -H "Accept: application/vnd.github+json"
+          -H "Authorization: Bearer ${{ github.token }}"
+          ${{ github.api_url }}/repos/${{ github.repository }}/releases/${{ github.event.release.id }}
+          -d '{"prerelease": false, "make_latest": true}'
