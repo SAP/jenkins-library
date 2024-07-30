@@ -48,7 +48,7 @@ jobs:
           -H "Accept: application/vnd.github.raw+json"
           ${{ github.api_url }}/repos/${{ github.repository }}/releases
 
-          echo "release_id=$(jq 'first(.[] | select(.prerelease == true)).id' resp.json)" >> "$GITHUB_OUTPUT"
+          echo "release_id=$(jq 'first(.[] | select(.tag_name == "${{ env.PIPER_version }}")).id' resp.json)" >> "$GITHUB_OUTPUT"
 
       - name: Download Piper binary from recently published prerelease
         uses: robinraju/release-downloader@v1
