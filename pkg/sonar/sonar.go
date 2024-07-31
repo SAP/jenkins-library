@@ -2,6 +2,7 @@ package sonar
 
 import (
 	"path/filepath"
+	"os"
 
 	"github.com/magiconair/properties"
 	"github.com/pkg/errors"
@@ -25,8 +26,22 @@ func ReadTaskReport(workspace string) (result TaskReportData, err error) {
 	// read file content
 	reportContent, err := properties.LoadFile(reportFile, properties.UTF8)
 	if err != nil {
-		return
+		// Check all direct subfolders, in case sonar.projectBaseDir was set
+		subdirs, _ := os.ReadDir(workspace)
+		for _, dir := range subdirs {
+			if dir.IsDir() {
+				reportFile = filepath.Join(workspace, dir.Name(), ".scannerwork", "report-task.txt")
+				reportContent, err = properties.LoadFile(reportFile, properties.UTF8)
+				if err == nil {
+					break
+				}
+			}
+		}
+		if err != nil {
+			return
+		}
 	}
+
 	// read content into struct
 	err = reportContent.Decode(&result)
 	if err != nil {
