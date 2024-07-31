@@ -30,7 +30,7 @@ func ReadTaskReport(workspace string) (result TaskReportData, err error) {
 		subdirs, _ := os.ReadDir(workspace)
 		for _, dir := range subdirs {
 			if dir.IsDir() {
-				reportFile = filepath.Join(workspace, dir.Name(), ".scannerwork", "report-task.txt")
+				reportFile = filepath.Join(workspace, dir.Name(), "report-task.txt")
 				reportContent, err = properties.LoadFile(reportFile, properties.UTF8)
 				if err == nil {
 					break
