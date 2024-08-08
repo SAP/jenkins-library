@@ -208,6 +208,10 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		if config.VersioningType == "cloud" {
 			certs, err := certutils.CertificateDownload(config.CustomTLSCertificateLinks, utils)
+			if err != nil {
+				return err
+			}
+
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now, certs)
 			if err != nil {
