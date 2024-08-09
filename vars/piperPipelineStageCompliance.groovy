@@ -25,7 +25,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @GenerateStageDocumentation(defaultStageName = 'Compliance')
 void call(Map parameters = [:]) {
 
-    info '[MH] Entering piperPipelineStageCompliance'
+    echo '[MH] Entering piperPipelineStageCompliance'
 
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
