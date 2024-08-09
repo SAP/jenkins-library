@@ -272,7 +272,11 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     }
 
     if (!gitBranch.contains("PR")) {
-        script.commonPipelineEnvironment.setGitRef("refs/heads/" + gitBranch)
+        if (gitBranch.startsWith("refs/") ){
+            script.commonPipelineEnvironment.setGitRef(gitBranch)
+        } else {
+            script.commonPipelineEnvironment.setGitRef("refs/heads/" + gitBranch)
+        }
         script.commonPipelineEnvironment.setGitRemoteCommitId(gitCommit)
         return
     }
