@@ -70,6 +70,8 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             }
 
             dockerWrapper(script, stepName, config) {
+                def configAsJson = writeJSON json: config, returnText: true
+                echo "[MH] entering docker wrapper with config: ${configAsJson}"
                 handleErrorDetails(stepName) {
                     writePipelineEnv(script: script, piperGoPath: piperGoPath)
                     utils.unstash('pipelineStepReports')

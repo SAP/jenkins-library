@@ -264,7 +264,7 @@ void call(Map parameters = [:], body) {
     }
 }
 
-def getOptions(config) {
+def getOptions(config, script) {
     def namespace = config.jenkinsKubernetes.namespace
     def options = [
         name : 'dynamic-agent-' + config.uniqueId,
@@ -285,6 +285,7 @@ def getOptions(config) {
         options.inheritFrom = config.jenkinsKubernetes.inheritFrom
         options.yamlMergeStrategy  = merge()
     }
+    script.echo("[MH options: ${options}]")
     return options
 }
 
@@ -307,7 +308,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
             stashContent = [stashWorkspace(config, utils, 'workspace')]
             defaultStashCreated = true
         }
-        podTemplate(getOptions(config)) {
+        podTemplate(getOptions(config, script)) {
             node(config.uniqueId) {
                 if (config.sidecarReadyCommand) {
                     sidecarUtils.waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand)
