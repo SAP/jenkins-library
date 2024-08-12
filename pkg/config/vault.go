@@ -466,6 +466,8 @@ func lookupPath(client VaultClient, path string, param *StepParameters) *string 
 		log.RegisterSecret(field)
 		return &field
 	}
+	log.Entry().Debugf("This is the secret >%v< and the param.Name >%v<", secret, param.Name)
+	// Error if the value is not a string
 	log.Entry().Debugf("Secret did not contain a field name '%s'", param.Name)
 	// try parameter aliases
 	for _, alias := range param.Aliases {

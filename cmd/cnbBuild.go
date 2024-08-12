@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"archive/zip"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path"
@@ -332,6 +333,9 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	if err != nil {
 		return errors.Wrap(err, "failed to process config")
 	}
+
+	data, _ := utils.ReadFile(config.DockerConfigJSON)
+	log.Entry().Warnf("content of docker config: %v", base64.StdEncoding.EncodeToString(data))
 
 	buildSummary := cnbutils.NewBuildSummary(dockerImage, utils)
 	for _, c := range mergedConfigs {
