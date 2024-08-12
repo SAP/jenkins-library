@@ -85,6 +85,7 @@ func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
 		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
 	}
+	utils.Client.SetOptions(piperhttp.ClientOptions{MaxRetries: 3})
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
