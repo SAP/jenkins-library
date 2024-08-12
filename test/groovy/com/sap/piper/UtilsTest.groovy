@@ -227,6 +227,29 @@ class UtilsTest extends BasePiperTest {
         assert(stashResult == [])
     }
 
+    @Test
+    void testUnstashFailsNoExceptionMessage() {
+        def logMessages = []
+        def examinee = newExaminee(
+            unstashClosure:  {
+                def stashName -> throw new RuntimeException()
+            },
+            echoClosure: {
+                    // coerce to java.lang.String, we might have GStrings.
+                    // comparism with java.lang.String might fail.
+                message -> logMessages << message.toString()
+            }
+        )
+        def stashResult = examinee.unstash('a')
+
+        // in case unstash fails (maybe the stash does not exist, or we cannot unstash due to
+        // some colliding files in conjunction with file permissions) we emit a log message
+        // and continue silently instead of failing. In that case we get an empty array back
+        // instead an array containing the name of the unstashed stash.
+        assertThat(logMessages, hasItem('Unstash failed: a (null)'))
+        assert(stashResult == [])
+    }
+
     private Utils newExaminee(Map parameters) {
         def examinee = new Utils()
         examinee.steps = [
@@ -301,7 +324,7 @@ class UtilsTest extends BasePiperTest {
 
         examinee.stash('test')
         assertEquals(expected, stashProperties)
-        
+
         examinee.stash(name: 'test')
         assertEquals(expected, stashProperties)
     }
@@ -310,10 +333,10 @@ class UtilsTest extends BasePiperTest {
     void testStash_simpleSignature2Params() {
         final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
         Map expected = [name: 'test', includes: 'includesX', excludes: '']
-        
+
         examinee.stash('test', 'includesX')
         assertEquals(expected, stashProperties)
-        
+
         examinee.stash(name: 'test', includes: 'includesX')
         assertEquals(expected, stashProperties)
     }
@@ -322,10 +345,10 @@ class UtilsTest extends BasePiperTest {
     void testStash_simpleSignature3Params() {
         final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
         Map expected = [name: 'test', includes: 'includesX', excludes: 'excludesX']
-        
+
         examinee.stash('test', 'includesX', 'excludesX')
         assertEquals(expected, stashProperties)
-        
+
         examinee.stash(name: 'test', includes: 'includesX', excludes: 'excludesX')
         assertEquals(expected, stashProperties)
     }
@@ -334,10 +357,10 @@ class UtilsTest extends BasePiperTest {
     void testStash_simpleSignature4Params() {
         final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
         Map expected = [name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: false]
-        
+
         examinee.stash('test', 'includesX', 'excludesX', false)
         assertEquals(expected, stashProperties)
-        
+
         examinee.stash(name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: false)
         assertEquals(expected, stashProperties)
     }
@@ -346,10 +369,10 @@ class UtilsTest extends BasePiperTest {
     void testStash_simpleSignature5Params() {
         final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
         Map expected = [name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: false, allowEmpty: true]
-        
+
         examinee.stash('test', 'includesX', 'excludesX', false, true)
         assertEquals(expected, stashProperties)
-        
+
         examinee.stash(name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: false, allowEmpty: true)
         assertEquals(expected, stashProperties)
     }
@@ -358,10 +381,10 @@ class UtilsTest extends BasePiperTest {
     void testStash_explicitDefaults() {
         final def (Utils examinee, Map stashProperties) = newExamineeRememberingLastStashProperties()
         Map expected = [name: 'test', includes: 'includesX', excludes: 'excludesX']
-       
+
         examinee.stash('test', 'includesX', 'excludesX', true, false)
         assertEquals(expected, stashProperties)
-        
+
         examinee.stash(name: 'test', includes: 'includesX', excludes: 'excludesX', useDefaultExcludes: true, allowEmpty: false)
         assertEquals(expected, stashProperties)
     }

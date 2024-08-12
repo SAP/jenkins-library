@@ -133,8 +133,13 @@ void call(Map parameters = [:]) {
 def report(tool, settings, doArchive){
     def options = createOptions(settings).plus([tools: [tool]])
     echo "recordIssues OPTIONS: ${options}"
-    // publish
-    recordIssues(options)
+    try {
+        // publish
+        recordIssues(options)
+    } catch (e) {
+        echo "recordIssues has failed. Possibly due to an outdated version of the warnings-ng plugin."
+        e.printStackTrace()
+    }
     // archive check results
     archiveResults(doArchive && settings.get('archive'), settings.get('pattern'), true)
 }
@@ -149,7 +154,7 @@ def archiveResults(archive, pattern, allowEmpty){
 @NonCPS
 def createOptions(settings){
     Map result = [:]
-    result.put('blameDisabled', true)
+    result.put('skipBlames', true)
     result.put('enabledForFailure', true)
     result.put('aggregatingResults', false)
 

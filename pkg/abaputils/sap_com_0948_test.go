@@ -23,6 +23,11 @@ func init() {
 	repoTest0948.Name = "/DMO/REPO"
 	repoTest0948.Branch = "main"
 
+	repoTest0948.IsByog = false
+	repoTest0948.ByogAuthMethod = "token"
+	repoTest0948.ByogUsername = "byogUser"
+	repoTest0948.ByogPassword = "byogToken"
+
 }
 
 func TestRetry0948(t *testing.T) {
@@ -52,7 +57,7 @@ func TestRetry0948(t *testing.T) {
 
 		errAction := api.(*SAP_COM_0948).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
 		assert.NoError(t, errAction)
-		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
+		assert.Equal(t, "GUID", api.getUUID(), "API does not contain correct UUID")
 
 	})
 
@@ -82,7 +87,7 @@ func TestRetry0948(t *testing.T) {
 
 		errAction := api.(*SAP_COM_0948).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
 		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/224 - Error Text")
-		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 
 	})
 
@@ -128,7 +133,7 @@ func TestRetry0948(t *testing.T) {
 
 		errAction := api.(*SAP_COM_0948).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
 		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/228 - Error Text")
-		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 
 		assert.Equal(t, 6, len(client.BodyList), "Expected maxSleepTime to limit requests")
 	})
@@ -175,7 +180,7 @@ func TestRetry0948(t *testing.T) {
 
 		errAction := api.(*SAP_COM_0948).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
 		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/228 - Error Text")
-		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 
 		assert.Equal(t, 5, len(client.BodyList), "Expected maxRetries to limit requests")
 	})
@@ -201,7 +206,7 @@ func TestClone0948(t *testing.T) {
 
 		errClone := api.Clone()
 		assert.NoError(t, errClone)
-		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
+		assert.Equal(t, "GUID", api.getUUID(), "API does not contain correct UUID")
 	})
 
 	t.Run("Test Clone Failure", func(t *testing.T) {
@@ -225,7 +230,7 @@ func TestClone0948(t *testing.T) {
 
 		errClone := api.Clone()
 		assert.ErrorContains(t, errClone, "Request to ABAP System not successful")
-		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 	})
 
 	t.Run("Test Clone Retry", func(t *testing.T) {
@@ -254,8 +259,48 @@ func TestClone0948(t *testing.T) {
 
 		errClone := api.Clone()
 		assert.NoError(t, errClone)
-		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
+		assert.Equal(t, "GUID", api.getUUID(), "API does not contain correct UUID")
 	})
+
+	t.Run("Test Clone Body Success", func(t *testing.T) {
+
+		cloneBody, _ := repoTest0948.GetCloneRequestBody()
+		assert.Equal(t, "{\"branch_name\":\"main\"}", string([]byte(cloneBody)), "Clone body is not correct")
+	})
+
+	t.Run("Test Clone Body Failure", func(t *testing.T) {
+
+		repoTest0948.Branch = "wrongBranch"
+
+		cloneBody, _ := repoTest0948.GetCloneRequestBody()
+		assert.NotEqual(t, "{\"branch_name\":\"main\"}", string([]byte(cloneBody)), "Clone body should not match")
+
+		repoTest0948.Branch = "main"
+
+	})
+
+	t.Run("Test Clone Body BYOG Success", func(t *testing.T) {
+
+		repoTest0948.IsByog = true
+
+		cloneBody, _ := repoTest0948.GetCloneRequestBody()
+		assert.Equal(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string([]byte(cloneBody)), "Clone body for byog parameter is not correct")
+
+		repoTest0948.IsByog = false
+	})
+
+	t.Run("Test Clone Body BYOG Failure", func(t *testing.T) {
+
+		repoTest0948.ByogPassword = "wrongToken"
+		repoTest0948.IsByog = true
+
+		cloneBody, _ := repoTest0948.GetCloneRequestBody()
+		assert.NotEqual(t, "{\"branch_name\":\"main\", \"auth_method\":\"token\", \"username\":\"byogUser\", \"password\":\"byogToken\"}", string([]byte(cloneBody)), "Clone body for byog parameter should not match")
+
+		repoTest0948.ByogPassword = "byogToken"
+		repoTest0948.IsByog = false
+	})
+
 }
 
 func TestPull0948(t *testing.T) {
@@ -278,7 +323,7 @@ func TestPull0948(t *testing.T) {
 
 		errPull := api.Pull()
 		assert.NoError(t, errPull)
-		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
+		assert.Equal(t, "GUID", api.getUUID(), "API does not contain correct UUID")
 	})
 
 	t.Run("Test Pull Failure", func(t *testing.T) {
@@ -300,7 +345,7 @@ func TestPull0948(t *testing.T) {
 
 		errPull := api.Pull()
 		assert.ErrorContains(t, errPull, "Request to ABAP System not successful")
-		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 	})
 }
 
@@ -324,7 +369,7 @@ func TestCheckout0948(t *testing.T) {
 
 		errCheckout := api.CheckoutBranch()
 		assert.NoError(t, errCheckout)
-		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
+		assert.Equal(t, "GUID", api.getUUID(), "API does not contain correct UUID")
 	})
 
 	t.Run("Test Checkout Failure", func(t *testing.T) {
@@ -346,7 +391,7 @@ func TestCheckout0948(t *testing.T) {
 
 		errCheckoput := api.CheckoutBranch()
 		assert.ErrorContains(t, errCheckoput, "Request to ABAP System not successful")
-		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 	})
 }
 
@@ -368,7 +413,7 @@ func TestGetRepo0948(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
-		cloned, activeBranch, errAction := api.GetRepository()
+		cloned, activeBranch, errAction, _ := api.GetRepository()
 		assert.True(t, cloned)
 		assert.Equal(t, "testBranch1", activeBranch)
 		assert.NoError(t, errAction)
@@ -395,7 +440,7 @@ func TestCreateTag0948(t *testing.T) {
 
 		errCreateTag := api.CreateTag(Tag{TagName: "myTag", TagDescription: "descr"})
 		assert.NoError(t, errCreateTag)
-		assert.Equal(t, "GUID", api.getUUID(), "API does not cotain correct UUID")
+		assert.Equal(t, "GUID", api.getUUID(), "API does not contain correct UUID")
 	})
 
 	t.Run("Test Tag Failure", func(t *testing.T) {
@@ -417,7 +462,7 @@ func TestCreateTag0948(t *testing.T) {
 
 		errCreateTag := api.CreateTag(Tag{TagName: "myTag", TagDescription: "descr"})
 		assert.ErrorContains(t, errCreateTag, "Request to ABAP System not successful")
-		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 	})
 
 	t.Run("Test Tag Empty", func(t *testing.T) {
@@ -439,7 +484,7 @@ func TestCreateTag0948(t *testing.T) {
 
 		errCreateTag := api.CreateTag(Tag{})
 		assert.ErrorContains(t, errCreateTag, "No Tag provided")
-		assert.Empty(t, api.getUUID(), "API does not cotain correct UUID")
+		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 	})
 }
 

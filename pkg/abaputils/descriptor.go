@@ -32,6 +32,7 @@ type AddonDescriptor struct {
 	AddonPatchLevel  string
 	TargetVectorID   string       `json:",omitempty"`
 	Repositories     []Repository `json:"repositories"`
+	ErrorText        string       `json:",omitempty"`
 }
 
 // Repository contains fields for the repository/component version
@@ -41,6 +42,10 @@ type Repository struct {
 	Tag                 string `json:"tag,omitempty"`
 	Branch              string `json:"branch,omitempty"`
 	CommitID            string `json:"commitID,omitempty"`
+	ByogUsername        string `json:"byogUsername"`
+	ByogPassword        string `json:"byogPassword"`
+	ByogAuthMethod      string `json:"byogAuthMethod"`
+	IsByog              bool   `json:",omitempty"`
 	VersionYAML         string `json:"version,omitempty"`
 	Version             string `json:"versionAAK"`
 	AdditionalPiecelist string `json:"additionalPiecelist,omitempty"`
@@ -54,6 +59,7 @@ type Repository struct {
 	SarXMLFilePath      string   `json:",omitempty"`
 	Languages           []string `json:"languages,omitempty"`
 	InBuildScope        bool     `json:",omitempty"`
+	ErrorText           string   `json:",omitempty"`
 }
 
 // ReadAddonDescriptorType is the type for ReadAddonDescriptor for mocking

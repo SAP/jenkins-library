@@ -59,7 +59,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		connectionDetails.Password = options.Password
 	} else {
 		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.CfServiceInstance == "" || options.CfServiceKeyName == "" {
-			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return connectionDetails, err
 		}
@@ -285,6 +285,9 @@ type AbapEnvironmentRunATCCheckOptions struct {
 type AbapEnvironmentOptions struct {
 	Username          string `json:"username,omitempty"`
 	Password          string `json:"password,omitempty"`
+	ByogUsername      string `json:"byogUsername,omitempty"`
+	ByogPassword      string `json:"byogPassword,omitempty"`
+	ByogAuthMethod    string `json:"byogAuthMethod,omitempty"`
 	Host              string `json:"host,omitempty"`
 	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string `json:"cfOrg,omitempty"`
