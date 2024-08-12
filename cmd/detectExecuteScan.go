@@ -142,6 +142,8 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 	return &sys
 }
 
+const configPath = ".pipeline/*"
+
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 
@@ -193,6 +195,8 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	}
 
 	if config.InstallArtifacts {
+
+		log.Entry().Infof("#### installArtifacts - start")
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -201,10 +205,11 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### installArtifacts - end")
 	}
 
 	if config.BuildMaven {
-		log.Entry().Infof("running Maven Build")
+		log.Entry().Infof("#### BuildMaven - start")
 		mavenConfig := setMavenConfig(config)
 		mavenUtils := maven.NewUtilsBundle()
 
@@ -212,11 +217,12 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### BuildMaven - end")
 	}
 
 	// Install NPM dependencies
 	if config.InstallNPM {
-		log.Entry().Debugf("running npm install")
+		log.Entry().Infof("#### InstallNPM - start")
 		npmExecutor := npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
 
 		buildDescriptorList := config.BuildDescriptorList
@@ -228,11 +234,12 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### InstallNPM - end")
 	}
 
 	// for MTA
 	if config.BuildMTA {
-		log.Entry().Infof("running MTA Build")
+		log.Entry().Infof("#### BuildMTA - start")
 		mtaConfig := setMTAConfig(config)
 		mtaUtils := newMtaBuildUtilsBundle()
 
@@ -240,6 +247,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### BuildMTA - end")
 	}
 
 	blackduckSystem := newBlackduckSystem(config)
@@ -454,9 +462,8 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	}
 
-	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
-		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
-	}
+	// Handle excluded directories
+	handleExcludedDirectories(&args, &config)
 
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
@@ -1120,4 +1127,34 @@ func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
+}
+
+func handleExcludedDirectories(args *[]string, config *detectExecuteScanOptions) {
+	index := findItemInStringSlice(config.ScanProperties, "--detect.excluded.directories=")
+	if index != -1 && !strings.Contains(config.ScanProperties[index], configPath) {
+		config.ScanProperties[index] += "," + configPath
+	} else {
+		config.ExcludedDirectories = excludeConfigDirectory(config.ExcludedDirectories)
+		*args = append(*args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
+}
+
+func excludeConfigDirectory(directories []string) []string {
+	configDirectory := configPath
+	for i := range directories {
+		if directories[i] == configDirectory {
+			return directories
+		}
+	}
+	directories = append(directories, configDirectory)
+	return directories
+}
+
+func findItemInStringSlice(slice []string, item string) int {
+	for i := range slice {
+		if strings.Contains(slice[i], item) {
+			return i
+		}
+	}
+	return -1
 }

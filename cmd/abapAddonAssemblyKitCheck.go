@@ -11,14 +11,16 @@ import (
 
 func abapAddonAssemblyKitCheck(config abapAddonAssemblyKitCheckOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *abapAddonAssemblyKitCheckCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundle()
+	telemetryData.BuildTool = "AAKaaS"
 
-	err := runAbapAddonAssemblyKitCheck(&config, telemetryData, utils, commonPipelineEnvironment)
+	err := runAbapAddonAssemblyKitCheck(&config, utils, commonPipelineEnvironment)
 	if err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, telemetryData *telemetry.CustomData, utils aakaas.AakUtils, commonPipelineEnvironment *abapAddonAssemblyKitCheckCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCheck(config *abapAddonAssemblyKitCheckOptions, utils aakaas.AakUtils, commonPipelineEnvironment *abapAddonAssemblyKitCheckCommonPipelineEnvironment) error {
 
 	log.Entry().Info("╔═══════════════════════════╗")
 	log.Entry().Info("║ abapAddonAssemblyKitCheck ║")

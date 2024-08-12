@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -77,8 +76,7 @@ func TestCfDeployment(t *testing.T) {
 		Username:            "me",
 		Password:            "******",
 		APIEndpoint:         "https://examples.sap.com/cf",
-		SmokeTestStatusCode: 200,            // default
-		Manifest:            "manifest.yml", //default
+		Manifest:            "manifest.yml", // default
 		MtaDeployParameters: "-f",           // default
 		DeployType:          "standard",     // default
 	}
@@ -167,73 +165,6 @@ func TestCfDeployment(t *testing.T) {
 		assert.EqualError(t, err, "Your application name 'a_z' contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement(s). For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
 	})
 
-	t.Run("Manifest substitution", func(t *testing.T) {
-
-		defer func() {
-			cleanup()
-			_replaceVariables = func(manifest string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
-				return false, nil
-			}
-		}()
-
-		s := mock.ExecMockRunner{}
-
-		var manifestForSubstitution string
-		var replacements map[string]interface{}
-		var replacementFiles []string
-
-		defer prepareDefaultManifestMocking("substitute-manifest.yml", []string{"testAppName"})()
-		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
-		config.AppName = "myApp"
-		config.Manifest = "substitute-manifest.yml"
-
-		_replaceVariables = func(manifest string, _replacements map[string]interface{}, _replacementsFiles []string) (bool, error) {
-			manifestForSubstitution = manifest
-			replacements = _replacements
-			replacementFiles = _replacementsFiles
-			return false, nil
-		}
-
-		t.Run("straight forward", func(t *testing.T) {
-
-			defer func() {
-				config.ManifestVariables = []string{}
-				config.ManifestVariablesFiles = []string{}
-			}()
-
-			config.ManifestVariables = []string{"k1=v1"}
-			config.ManifestVariablesFiles = []string{"myVars.yml"}
-
-			err := runCloudFoundryDeploy(&config, nil, nil, &s)
-
-			if assert.NoError(t, err) {
-				assert.Equal(t, "substitute-manifest.yml", manifestForSubstitution)
-				assert.Equal(t, map[string]interface{}{"k1": "v1"}, replacements)
-				assert.Equal(t, []string{"myVars.yml"}, replacementFiles)
-			}
-		})
-
-		t.Run("empty", func(t *testing.T) {
-
-			defer func() {
-				config.ManifestVariables = []string{}
-				config.ManifestVariablesFiles = []string{}
-			}()
-
-			config.ManifestVariables = []string{}
-			config.ManifestVariablesFiles = []string{}
-
-			err := runCloudFoundryDeploy(&config, nil, nil, &s)
-
-			if assert.NoError(t, err) {
-				assert.Equal(t, "substitute-manifest.yml", manifestForSubstitution)
-				assert.Equal(t, map[string]interface{}{}, replacements)
-				assert.Equal(t, []string{}, replacementFiles)
-			}
-		})
-	})
-
 	t.Run("Invalid deploytool", func(t *testing.T) {
 
 		defer cleanup()
@@ -279,7 +210,6 @@ func TestCfDeployment(t *testing.T) {
 			t.Run("check environment variables", func(t *testing.T) {
 				assert.Contains(t, s.Env, "CF_HOME=/home/me1")
 				assert.Contains(t, s.Env, "CF_PLUGIN_HOME=/home/me2")
-				assert.Contains(t, s.Env, "STATUS_CODE=200")
 			})
 		}
 	})
@@ -404,55 +334,7 @@ func TestCfDeployment(t *testing.T) {
 			})
 
 			t.Run("check environment variables", func(t *testing.T) {
-				//REVISIT: in the corresponding groovy test we checked for "${'********'}"
-				// I don't understand why, but we should discuss ...
-				assert.Contains(t, s.Env, "CF_DOCKER_PASSWORD=********")
-			})
-		}
-	})
-
-	t.Run("deploy cf native blue green with manifest and docker credentials", func(t *testing.T) {
-
-		defer cleanup()
-
-		// Blue Green Deploy cf cli plugin does not support --docker-username and --docker-image parameters
-		// docker username and docker image have to be set in the manifest file
-		// if a private docker repository is used the CF_DOCKER_PASSWORD env variable must be set
-
-		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
-		config.DockerUsername = "test_cf_docker"
-		config.DockerPassword = "********"
-		config.AppName = "testAppName"
-
-		defer prepareDefaultManifestMocking("manifest.yml", []string{"testAppName"})()
-
-		s := mock.ExecMockRunner{}
-
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
-
-		if assert.NoError(t, err) {
-
-			t.Run("check shell calls", func(t *testing.T) {
-
-				withLoginAndLogout(t, func(t *testing.T) {
-
-					assert.Equal(t, []mock.ExecCall{
-						{Exec: "cf", Params: []string{"version"}},
-						{Exec: "cf", Params: []string{"plugins"}},
-						{Exec: "cf", Params: []string{
-							"blue-green-deploy",
-							"testAppName",
-							"--delete-old-apps",
-							"-f",
-							"manifest.yml",
-						}},
-					}, s.Calls)
-				})
-			})
-
-			t.Run("check environment variables", func(t *testing.T) {
-				//REVISIT: in the corresponding groovy test we checked for "${'********'}"
+				// REVISIT: in the corresponding groovy test we checked for "${'********'}"
 				// I don't understand why, but we should discuss ...
 				assert.Contains(t, s.Env, "CF_DOCKER_PASSWORD=********")
 			})
@@ -503,8 +385,8 @@ func TestCfDeployment(t *testing.T) {
 		config.Manifest = ""
 		config.AppName = ""
 
-		//app name does not need to be set if it can be found in the manifest.yml
-		//manifest name does not need to be set- the default manifest.yml will be used if not set
+		// app name does not need to be set if it can be found in the manifest.yml
+		// manifest name does not need to be set- the default manifest.yml will be used if not set
 		defer prepareDefaultManifestMocking("manifest.yml", []string{"newAppName"})()
 
 		s := mock.ExecMockRunner{}
@@ -526,6 +408,61 @@ func TestCfDeployment(t *testing.T) {
 					}, s.Calls)
 
 				})
+			})
+		}
+	})
+
+	t.Run("cf native deploy fail when deployType is blue-green", func(t *testing.T) {
+
+		defer cleanup()
+
+		config.DeployTool = "cf_native"
+		config.DeployType = "blue-green"
+		config.Manifest = ""
+		config.AppName = ""
+
+		// app name does not need to be set if it can be found in the manifest.yml
+		// manifest name does not need to be set- the default manifest.yml will be used if not set
+		defer prepareDefaultManifestMocking("manifest.yml", []string{"newAppName"})()
+
+		s := mock.ExecMockRunner{}
+
+		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+
+		if assert.EqualError(t, err, "Blue-green deployment type is deprecated for cf native builds."+
+			"Instead set parameter `cfNativeDeployParameters: '--strategy rolling'`. "+
+			"Please refer to the Cloud Foundry documentation for further information: "+
+			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html."+
+			"Or alternatively, switch to mta build tool. Please refer to mta build tool"+
+			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.") {
+
+			t.Run("check shell calls", func(t *testing.T) {
+				noopCfAPICalls(t, s)
+			})
+		}
+	})
+
+	t.Run("cf native deploy fail when unknown deployType is set", func(t *testing.T) {
+
+		defer cleanup()
+
+		config.DeployTool = "cf_native"
+		config.DeployType = "blue"
+		config.Manifest = ""
+		config.AppName = ""
+
+		// app name does not need to be set if it can be found in the manifest.yml
+		// manifest name does not need to be set- the default manifest.yml will be used if not set
+		defer prepareDefaultManifestMocking("manifest.yml", []string{"newAppName"})()
+
+		s := mock.ExecMockRunner{}
+
+		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+
+		if assert.EqualError(t, err, "Invalid deploy type received: 'blue'. Supported value: standard") {
+
+			t.Run("check shell calls", func(t *testing.T) {
+				noopCfAPICalls(t, s)
 			})
 		}
 	})
@@ -553,131 +490,12 @@ func TestCfDeployment(t *testing.T) {
 		}
 	})
 
-	// tests from groovy checking for keep old instances are already contained above. Search for '--delete-old-apps'
-
-	t.Run("deploy cf native blue green keep old instance", func(t *testing.T) {
-
-		defer cleanup()
-
-		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
-		config.Manifest = "test-manifest.yml"
-		config.AppName = "myTestApp"
-		config.KeepOldInstance = true
-
-		s := mock.ExecMockRunner{}
-
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
-
-		if assert.NoError(t, err) {
-
-			t.Run("check shell calls", func(t *testing.T) {
-
-				withLoginAndLogout(t, func(t *testing.T) {
-
-					assert.Equal(t, []mock.ExecCall{
-						{Exec: "cf", Params: []string{"version"}},
-						{Exec: "cf", Params: []string{"plugins"}},
-						{Exec: "cf", Params: []string{
-							"blue-green-deploy",
-							"myTestApp",
-							"-f",
-							"test-manifest.yml",
-						}},
-						{Exec: "cf", Params: []string{
-							"stop",
-							"myTestApp-old",
-							// MIGRATE FFROM GROOVY: in contrast to groovy there is not redirect of everything &> to a file since we
-							// read the stream directly now.
-						}},
-					}, s.Calls)
-				})
-			})
-		}
-	})
-
-	t.Run("cf deploy blue green multiple applications", func(t *testing.T) {
-
-		defer cleanup()
-
-		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
-		config.Manifest = "test-manifest.yml"
-		config.AppName = "myTestApp"
-
-		defer prepareDefaultManifestMocking("test-manifest.yml", []string{"app1", "app2"})()
-
-		s := mock.ExecMockRunner{}
-
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
-
-		if assert.EqualError(t, err, "Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application") {
-			t.Run("check shell calls", func(t *testing.T) {
-				noopCfAPICalls(t, s)
-			})
-		}
-	})
-
-	t.Run("cf native deploy blue green with no route", func(t *testing.T) {
-
-		defer cleanup()
-
-		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
-		config.Manifest = "test-manifest.yml"
-		config.AppName = "myTestApp"
-
-		defer func() {
-			_ = filesMock.FileRemove("test-manifest.yml")
-			_getManifest = getManifest
-		}()
-
-		filesMock.AddFile("test-manifest.yml", []byte("Content does not matter"))
-
-		_getManifest = func(name string) (cloudfoundry.Manifest, error) {
-			return manifestMock{
-					manifestFileName: "test-manifest.yml",
-					apps: []map[string]interface{}{
-						{
-							"name":     "app1",
-							"no-route": true,
-						},
-					},
-				},
-				nil
-		}
-
-		s := mock.ExecMockRunner{}
-
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
-
-		if assert.NoError(t, err) {
-
-			t.Run("check shell calls", func(t *testing.T) {
-
-				withLoginAndLogout(t, func(t *testing.T) {
-
-					assert.Equal(t, []mock.ExecCall{
-						{Exec: "cf", Params: []string{"version"}},
-						{Exec: "cf", Params: []string{"plugins"}},
-						{Exec: "cf", Params: []string{
-							"push",
-							"myTestApp",
-							"-f",
-							"test-manifest.yml",
-						}},
-					}, s.Calls)
-				})
-			})
-		}
-	})
-
 	t.Run("cf native deployment failure", func(t *testing.T) {
 
 		defer cleanup()
 
 		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
+		config.DeployType = "standard"
 		config.Manifest = "test-manifest.yml"
 		config.AppName = "myTestApp"
 
@@ -685,7 +503,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		s.ShouldFailOnCommand = map[string]error{"cf.*deploy.*": fmt.Errorf("cf deploy failed")}
+		s.ShouldFailOnCommand = map[string]error{"cf.*push.*": fmt.Errorf("cf deploy failed")}
 		err := runCloudFoundryDeploy(&config, nil, nil, &s)
 
 		if assert.EqualError(t, err, "cf deploy failed") {
@@ -702,7 +520,7 @@ func TestCfDeployment(t *testing.T) {
 		defer cleanup()
 
 		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
+		config.DeployType = "standard"
 		config.Manifest = "test-manifest.yml"
 		config.AppName = "myTestApp"
 
@@ -738,8 +556,6 @@ func TestCfDeployment(t *testing.T) {
 			})
 		}
 	})
-
-	// TODO testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError
 
 	t.Run("cf native deploy standard should not stop instance", func(t *testing.T) {
 
@@ -779,45 +595,6 @@ func TestCfDeployment(t *testing.T) {
 
 					}, s.Calls)
 				})
-			})
-		}
-	})
-
-	t.Run("testCfNativeWithoutAppNameBlueGreen", func(t *testing.T) {
-
-		defer cleanup()
-
-		config.DeployTool = "cf_native"
-		config.DeployType = "blue-green"
-		config.Manifest = "test-manifest.yml"
-
-		defer func() {
-			_ = filesMock.FileRemove("test-manifest.yml")
-			_getManifest = getManifest
-		}()
-
-		filesMock.AddFile("test-manifest.yml", []byte("The content does not matter"))
-
-		_getManifest = func(name string) (cloudfoundry.Manifest, error) {
-			return manifestMock{
-					manifestFileName: "test-manifest.yml",
-					apps: []map[string]interface{}{
-						{
-							"there-is": "no-app-name",
-						},
-					},
-				},
-				nil
-		}
-
-		s := mock.ExecMockRunner{}
-
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
-
-		if assert.EqualError(t, err, "Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)") {
-
-			t.Run("check shell calls", func(t *testing.T) {
-				noopCfAPICalls(t, s)
 			})
 		}
 	})
@@ -1019,10 +796,6 @@ func TestCfDeployment(t *testing.T) {
 
 	// TODO: testCfPushDeploymentWithoutVariableSubstitution is already handled above (?)
 
-	// TODO: testCfBlueGreenDeploymentWithVariableSubstitution variable substitution is not handled at the moment (pr pending).
-	// but anyway we should not test the full cycle here, but only that the variables substitution tool is called in the appropriate way.
-	// variable substitution should be tested at the variables substitution tool itself (yaml util)
-
 	t.Run("deploytool mtaDeployPlugin", func(t *testing.T) {
 
 		defer cleanup()
@@ -1141,135 +914,6 @@ func TestMtarLookup(t *testing.T) {
 
 		_, err := findMtar()
 		assert.EqualError(t, err, "Found multiple mtar files matching pattern '**/*.mtar' (x.mtar,y.mtar), please specify file via parameter 'mtarPath'")
-	})
-}
-
-func TestSmokeTestScriptHandling(t *testing.T) {
-
-	filesMock := mock.FilesMock{}
-	filesMock.AddDir("/home/me")
-	err := filesMock.Chdir("/home/me")
-	assert.NoError(t, err)
-	filesMock.AddFileWithMode("mySmokeTestScript.sh", []byte("Content does not matter"), 0644)
-	fileUtils = &filesMock
-
-	var canExec os.FileMode = 0755
-
-	t.Run("non default existing smoke test file", func(t *testing.T) {
-
-		parts, err := handleSmokeTestScript("mySmokeTestScript.sh")
-		if assert.NoError(t, err) {
-			// when the none-default file name is provided the file must already exist
-			// in the project sources.
-			assert.False(t, filesMock.HasWrittenFile("mySmokeTestScript.sh"))
-			info, e := filesMock.Stat("mySmokeTestScript.sh")
-			if assert.NoError(t, e) {
-				assert.Equal(t, canExec, info.Mode())
-			}
-
-			assert.Equal(t, []string{
-				"--smoke-test",
-				filepath.FromSlash("/home/me/mySmokeTestScript.sh"),
-			}, parts)
-		}
-	})
-
-	t.Run("non default not existing smoke test file", func(t *testing.T) {
-
-		parts, err := handleSmokeTestScript("notExistingSmokeTestScript.sh")
-		if assert.EqualError(t, err, "failed to make smoke-test script executable: chmod: notExistingSmokeTestScript.sh: No such file or directory") {
-			assert.False(t, filesMock.HasWrittenFile("notExistingSmokeTestScript.sh"))
-			assert.Equal(t, []string{}, parts)
-		}
-	})
-
-	t.Run("default smoke test file", func(t *testing.T) {
-
-		parts, err := handleSmokeTestScript("blueGreenCheckScript.sh")
-
-		if assert.NoError(t, err) {
-
-			info, e := filesMock.Stat("blueGreenCheckScript.sh")
-			if assert.NoError(t, e) {
-				assert.Equal(t, canExec, info.Mode())
-			}
-
-			// in this case we provide the file. We overwrite in case there is already such a file ...
-			assert.True(t, filesMock.HasWrittenFile("blueGreenCheckScript.sh"))
-
-			content, e := filesMock.FileRead("blueGreenCheckScript.sh")
-
-			if assert.NoError(t, e) {
-				assert.Equal(t, "#!/usr/bin/env bash\n# this is simply testing if the application root returns HTTP STATUS_CODE\ncurl -so /dev/null -w '%{response_code}' https://$1 | grep $STATUS_CODE", string(content))
-			}
-
-			assert.Equal(t, []string{
-				"--smoke-test",
-				filepath.FromSlash("/home/me/blueGreenCheckScript.sh"),
-			}, parts)
-		}
-	})
-}
-
-func TestDefaultManifestVariableFilesHandling(t *testing.T) {
-
-	filesMock := mock.FilesMock{}
-	filesMock.AddDir("/home/me")
-	err := filesMock.Chdir("/home/me")
-	assert.NoError(t, err)
-	fileUtils = &filesMock
-
-	t.Run("default manifest variable file is the only one and exists", func(t *testing.T) {
-		defer func() {
-			_ = filesMock.FileRemove("manifest-variables.yml")
-		}()
-		filesMock.AddFile("manifest-variables.yml", []byte("Content does not matter"))
-
-		manifestFiles, err := validateManifestVariablesFiles(
-			[]string{
-				"manifest-variables.yml",
-			},
-		)
-
-		if assert.NoError(t, err) {
-			assert.Equal(t,
-				[]string{
-					"manifest-variables.yml",
-				}, manifestFiles)
-		}
-	})
-
-	t.Run("default manifest variable file is the only one and does not exist", func(t *testing.T) {
-
-		manifestFiles, err := validateManifestVariablesFiles(
-			[]string{
-				"manifest-variables.yml",
-			},
-		)
-
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{}, manifestFiles)
-		}
-	})
-
-	t.Run("default manifest variable file among others remains if it does not exist", func(t *testing.T) {
-
-		// in this case we might fail later.
-
-		manifestFiles, err := validateManifestVariablesFiles(
-			[]string{
-				"manifest-variables.yml",
-				"a-second-file.yml",
-			},
-		)
-
-		if assert.NoError(t, err) {
-			// the order in which the files are returned is significant.
-			assert.Equal(t, []string{
-				"manifest-variables.yml",
-				"a-second-file.yml",
-			}, manifestFiles)
-		}
 	})
 }
 

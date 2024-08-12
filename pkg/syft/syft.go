@@ -20,6 +20,8 @@ type SyftScanner struct {
 	additionalArgs []string
 }
 
+const cyclonedxFormatForSyft = "@1.4"
+
 func GenerateSBOM(syftDownloadURL, dockerConfigDir string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender, registryURL string, images []string) error {
 	scanner, err := CreateSyftScanner(syftDownloadURL, fileUtils, httpClient)
 	if err != nil {
@@ -64,7 +66,7 @@ func (s *SyftScanner) ScanImages(dockerConfigDir string, execRunner command.Exec
 			return errors.New("syft: image name must not be empty")
 		}
 		// TrimPrefix needed as syft needs containerRegistry name only
-		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml=bom-docker-%v.xml", index), "-q"}
+		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml%s=bom-docker-%v.xml", cyclonedxFormatForSyft, index), "-q"}
 		args = append(args, s.additionalArgs...)
 		err := execRunner.RunExecutable(s.syftFile, args...)
 		if err != nil {

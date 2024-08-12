@@ -42,7 +42,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		return errors.Wrap(errConfig, "The provided configuration is not allowed")
 	}
 
-	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories}, false)
+	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories, ByogUsername: config.ByogUsername, ByogPassword: config.ByogPassword, ByogAuthMethod: config.ByogAuthMethod}, false)
 	if errGetRepos != nil {
 		return errors.Wrap(errGetRepos, "Could not read repositories")
 	}
@@ -85,12 +85,15 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 	log.Entry().Info("Start cloning " + logString)
 	abaputils.AddDefaultDashedLine(1)
 
-	alreadyCloned, activeBranch, errCheckCloned := api.GetRepository()
+	alreadyCloned, activeBranch, errCheckCloned, isByog := api.GetRepository()
 	if errCheckCloned != nil {
 		return errors.Wrapf(errCheckCloned, errorString)
 	}
 
 	if !alreadyCloned {
+		if isByog {
+			api.UpdateRepoWithBYOGCredentials(config.ByogAuthMethod, config.ByogUsername, config.ByogPassword)
+		}
 		errClone := api.Clone()
 		if errClone != nil {
 			return errors.Wrapf(errClone, errorString)
@@ -186,5 +189,8 @@ func convertCloneConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.Ab
 	subOptions.Host = config.Host
 	subOptions.Password = config.Password
 	subOptions.Username = config.Username
+	subOptions.ByogUsername = config.ByogUsername
+	subOptions.ByogPassword = config.ByogPassword
+	subOptions.ByogAuthMethod = config.ByogAuthMethod
 	return subOptions
 }

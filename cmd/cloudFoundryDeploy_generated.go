@@ -43,8 +43,6 @@ type cloudFoundryDeployOptions struct {
 	MtaPath                  string                 `json:"mtaPath,omitempty"`
 	Org                      string                 `json:"org,omitempty"`
 	Password                 string                 `json:"password,omitempty"`
-	SmokeTestScript          string                 `json:"smokeTestScript,omitempty"`
-	SmokeTestStatusCode      int                    `json:"smokeTestStatusCode,omitempty"`
 	Space                    string                 `json:"space,omitempty"`
 	Username                 string                 `json:"username,omitempty"`
 }
@@ -215,10 +213,10 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.DeployDockerImage, "deployDockerImage", os.Getenv("PIPER_deployDockerImage"), "Docker image deployments are supported (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker]. If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html] for details. Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", os.Getenv("PIPER_deployTool"), "Defines the tool which should be used for deployment.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact. If provided, `deployTool` is automatically derived from it. For MTA projects, `deployTool` defaults to `mtaDeployPlugin`. For other projects `cf_native` will be used.")
-	cmd.Flags().StringVar(&stepConfig.DeployType, "deployType", `standard`, "Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment. If 'cf_native' as deployTool and 'blue-green' as deployType is used in combination, your manifest.yaml may only contain one application. If this application has the option 'no-route' active the deployType will be changed to 'standard'.")
+	cmd.Flags().StringVar(&stepConfig.DeployType, "deployType", `standard`, "Defines the type of deployment, for example, `standard` deployment which results in a system downtime, `blue-green` deployment which results in zero downtime for mta deploy tool. - For mta build tool, possible values are `standard`, `blue-green` or `bg-deploy`. - For cf native build tools, possible value is `standard`. To eliminate system downtime, an alternative is to pass '--strategy rolling' to the parameter `cfNativeDeployParameters`.")
 	cmd.Flags().StringVar(&stepConfig.DockerPassword, "dockerPassword", os.Getenv("PIPER_dockerPassword"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the password to be used.")
 	cmd.Flags().StringVar(&stepConfig.DockerUsername, "dockerUsername", os.Getenv("PIPER_dockerUsername"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the username to be used.")
-	cmd.Flags().BoolVar(&stepConfig.KeepOldInstance, "keepOldInstance", false, "In case of a `blue-green` deployment the old instance will be deleted by default. If this option is set to true the old instance will remain stopped in the Cloud Foundry space.")
+	cmd.Flags().BoolVar(&stepConfig.KeepOldInstance, "keepOldInstance", false, "If this option is set to true the old instance will remain stopped in the Cloud Foundry space.\"")
 	cmd.Flags().StringVar(&stepConfig.LoginParameters, "loginParameters", os.Getenv("PIPER_loginParameters"), "Addition command line options for cf login command. No escaping/quoting is performed. Not recommended for productive environments.")
 	cmd.Flags().StringVar(&stepConfig.Manifest, "manifest", os.Getenv("PIPER_manifest"), "Defines the manifest to be used for deployment to Cloud Foundry.")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariables, "manifestVariables", []string{}, "Defines a list of variables in the form `key=value` which are used for variable substitution within the file given by manifest.")
@@ -230,8 +228,6 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the path to *.mtar for deployment with the mtaDeployPlugin")
 	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "Cloud Foundry target organization.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
-	cmd.Flags().StringVar(&stepConfig.SmokeTestScript, "smokeTestScript", `blueGreenCheckScript.sh`, "Allows to specify a script which performs a check during blue-green deployment. The script gets the FQDN as parameter and returns `exit code 0` in case check returned `smokeTestStatusCode`. More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use). Currently this option is only considered for deployTool `cf_native`.")
-	cmd.Flags().IntVar(&stepConfig.SmokeTestStatusCode, "smokeTestStatusCode", 200, "Expected status code returned by the check.")
 	cmd.Flags().StringVar(&stepConfig.Space, "space", os.Getenv("PIPER_space"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name used for deployment")
 
@@ -524,24 +520,6 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_password"),
-					},
-					{
-						Name:        "smokeTestScript",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `blueGreenCheckScript.sh`,
-					},
-					{
-						Name:        "smokeTestStatusCode",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     200,
 					},
 					{
 						Name:        "space",
