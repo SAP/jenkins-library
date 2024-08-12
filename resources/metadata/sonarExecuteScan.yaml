@@ -53,6 +53,8 @@ spec:
             default: sonar
           - name: sonarTokenCredentialsId
             type: secret
+          - name: sonar-token
+            type: trustEngine
         aliases:
           - name: sonarToken
       - name: organization
