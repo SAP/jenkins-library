@@ -176,25 +176,49 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				artifact, err := versioning.GetArtifact("maven", match, &options, utils)
 				if err != nil {
 					log.Entry().Warnf("unable to get artifact metdata : %v", err)
+					return nil
 				} else {
 					coordinate, err := artifact.GetCoordinates()
 					if err != nil {
 						log.Entry().Warnf("unable to get artifact coordinates : %v", err)
+						return nil
 					} else {
 						coordinate.BuildPath = filepath.Dir(match)
 						coordinate.URL = config.AltDeploymentRepositoryURL
-
 						buildCoordinates = append(buildCoordinates, coordinate)
 					}
 				}
 			}
-			buildArtifacts := build.BuildArtifacts{
-				Coordinates: buildCoordinates,
+
+			if len(buildCoordinates) == 0 {
+				log.Entry().Warnf("unable to identify artifact coordinates for the maven packages published")
+				return nil
 			}
 
-			jsonResult, _ := json.Marshal(buildArtifacts)
+			var buildArtifacts build.BuildArtifacts
 
-			commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
+			if config.BuildArtifacts == nil {
+				buildArtifacts.Coordinates = buildCoordinates
+				jsonResult, _ := json.Marshal(buildArtifacts)
+				commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
+			} else {
+				jsonStrBuildArtifacts, err := json.Marshal(config.BuildArtifacts)
+				if err != nil {
+					log.Entry().Warnf("unable to marshal buildArtifacts CPE : %v", err)
+					return nil
+				}
+				if err := json.Unmarshal([]byte(jsonStrBuildArtifacts), &buildArtifacts); err != nil {
+					log.Entry().Warnf("unable to unmarshal buildArtifacts CPE : %v", err)
+					return nil
+				}
+				for _, coordinate := range buildCoordinates {
+					buildArtifacts.Coordinates = append(buildArtifacts.Coordinates, coordinate)
+				}
+				jsonResult, _ := json.Marshal(buildArtifacts)
+				commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
+
+			}
+
 			return nil
 		} else {
 			log.Entry().Infof("publish not detected, ignoring maven deploy")

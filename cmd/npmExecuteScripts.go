@@ -111,15 +111,31 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 	if len(buildCoordinates) == 0 {
 		log.Entry().Warnf("unable to identify artifact coordinates for the npm packages published")
+		return nil
 	}
 
-	buildArtifacts := build.BuildArtifacts{
-		Coordinates: buildCoordinates,
+	var buildArtifacts build.BuildArtifacts
+
+	if config.BuildArtifacts == nil {
+		buildArtifacts.Coordinates = buildCoordinates
+		jsonResult, _ := json.Marshal(buildArtifacts)
+		commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
+	} else {
+		jsonStrBuildArtifacts, err := json.Marshal(config.BuildArtifacts)
+		if err != nil {
+			log.Entry().Warnf("unable to marshal buildArtifacts CPE : %v", err)
+			return nil
+		}
+		if err := json.Unmarshal([]byte(jsonStrBuildArtifacts), &buildArtifacts); err != nil {
+			log.Entry().Warnf("unable to unmarshal buildArtifacts CPE : %v", err)
+			return nil
+		}
+		for _, coordinate := range buildCoordinates {
+			buildArtifacts.Coordinates = append(buildArtifacts.Coordinates, coordinate)
+		}
+		jsonResult, _ := json.Marshal(buildArtifacts)
+		commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
 	}
-
-	jsonResult, _ := json.Marshal(buildArtifacts)
-
-	commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
 
 	return nil
 }
