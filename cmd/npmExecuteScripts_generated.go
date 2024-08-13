@@ -42,6 +42,7 @@ type npmExecuteScriptsOptions struct {
 type npmExecuteScriptsCommonPipelineEnvironment struct {
 	custom struct {
 		buildSettingsInfo string
+		artifacts         string
 	}
 }
 
@@ -52,6 +53,7 @@ func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName 
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "artifacts", value: p.custom.artifacts},
 	}
 
 	errCount := 0
@@ -440,6 +442,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/artifacts"},
 						},
 					},
 					{

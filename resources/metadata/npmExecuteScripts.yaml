@@ -163,12 +163,24 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: buildArtifacts
+        type: "map[string]interface{}"
+        description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+                resourceRef:
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildArtifacts
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/buildArtifacts
       - name: reports
         type: reports
         params:
