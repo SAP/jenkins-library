@@ -60,7 +60,6 @@ class commonPipelineEnvironment implements Serializable {
 
     String abapAddonDescriptor
 
-    String buildArtifacts
 
     private Map valueMap = [:]
 
@@ -110,7 +109,6 @@ class commonPipelineEnvironment implements Serializable {
         githubRepo = null
 
         mtarFilePath = null
-        buildArtifacts = null
         valueMap = [:]
 
         changeDocumentId = null
@@ -223,7 +221,6 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
-        [filename: '.pipeline/commonPipelineEnvironment/custom/buildArtifacts', property: 'buildArtifacts'],
     ]
 
     Map getCPEMap(script) {
