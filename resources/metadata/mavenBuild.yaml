@@ -242,6 +242,16 @@ spec:
           - -Dmaven.main.skip=true
           - -Dmaven.test.skip=true
           - -Dmaven.install.skip=true
+      - name: buildArtifacts
+        type: "map[string]interface{}"
+        description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildArtifacts
     resources:
       - type: stash
   outputs:
@@ -250,6 +260,7 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/buildArtifacts
       - name: reports
         type: reports
         params:

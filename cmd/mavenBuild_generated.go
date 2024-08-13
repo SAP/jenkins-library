@@ -22,29 +22,31 @@ import (
 )
 
 type mavenBuildOptions struct {
-	PomPath                         string   `json:"pomPath,omitempty"`
-	Profiles                        []string `json:"profiles,omitempty"`
-	Flatten                         bool     `json:"flatten,omitempty"`
-	Verify                          bool     `json:"verify,omitempty"`
-	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
-	M2Path                          string   `json:"m2Path,omitempty"`
-	LogSuccessfulMavenTransfers     bool     `json:"logSuccessfulMavenTransfers,omitempty"`
-	CreateBOM                       bool     `json:"createBOM,omitempty"`
-	AltDeploymentRepositoryPassword string   `json:"altDeploymentRepositoryPassword,omitempty"`
-	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty"`
-	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty"`
-	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty"`
-	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
-	Publish                         bool     `json:"publish,omitempty"`
-	JavaCaCertFilePath              string   `json:"javaCaCertFilePath,omitempty"`
-	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
-	DeployFlags                     []string `json:"deployFlags,omitempty"`
+	PomPath                         string                 `json:"pomPath,omitempty"`
+	Profiles                        []string               `json:"profiles,omitempty"`
+	Flatten                         bool                   `json:"flatten,omitempty"`
+	Verify                          bool                   `json:"verify,omitempty"`
+	ProjectSettingsFile             string                 `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile              string                 `json:"globalSettingsFile,omitempty"`
+	M2Path                          string                 `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers     bool                   `json:"logSuccessfulMavenTransfers,omitempty"`
+	CreateBOM                       bool                   `json:"createBOM,omitempty"`
+	AltDeploymentRepositoryPassword string                 `json:"altDeploymentRepositoryPassword,omitempty"`
+	AltDeploymentRepositoryUser     string                 `json:"altDeploymentRepositoryUser,omitempty"`
+	AltDeploymentRepositoryURL      string                 `json:"altDeploymentRepositoryUrl,omitempty"`
+	AltDeploymentRepositoryID       string                 `json:"altDeploymentRepositoryID,omitempty"`
+	CustomTLSCertificateLinks       []string               `json:"customTlsCertificateLinks,omitempty"`
+	Publish                         bool                   `json:"publish,omitempty"`
+	JavaCaCertFilePath              string                 `json:"javaCaCertFilePath,omitempty"`
+	BuildSettingsInfo               string                 `json:"buildSettingsInfo,omitempty"`
+	DeployFlags                     []string               `json:"deployFlags,omitempty"`
+	BuildArtifacts                  map[string]interface{} `json:"buildArtifacts,omitempty"`
 }
 
 type mavenBuildCommonPipelineEnvironment struct {
 	custom struct {
 		buildSettingsInfo string
+		buildArtifacts    string
 	}
 }
 
@@ -55,6 +57,7 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "buildArtifacts", value: p.custom.buildArtifacts},
 	}
 
 	errCount := 0
@@ -507,6 +510,19 @@ func mavenBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{`-Dmaven.main.skip=true`, `-Dmaven.test.skip=true`, `-Dmaven.install.skip=true`},
 					},
+					{
+						Name: "buildArtifacts",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildArtifacts",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "map[string]interface{}",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -519,6 +535,7 @@ func mavenBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/buildArtifacts"},
 						},
 					},
 					{
