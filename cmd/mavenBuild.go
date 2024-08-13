@@ -170,7 +170,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			options := versioning.Options{}
 			var utils versioning.Utils
 
-			matches, err := utils.Glob("**/pom.xml")
+			matches, err := fileUtils.Glob("**/pom.xml")
 			for _, match := range matches {
 
 				artifact, err := versioning.GetArtifact("maven", match, &options, utils)
