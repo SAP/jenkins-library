@@ -169,9 +169,19 @@ func (v Client) GetKvSecret(path string) (map[string]string, error) {
 
 	secretData := make(map[string]string, len(data))
 	for k, v := range data {
-		valueStr, ok := v.(string)
-		if ok {
-			secretData[k] = valueStr
+		switch t := v.(type) {
+		case string:
+			secretData[k] = t
+		case int:
+			secretData[k] = fmt.Sprintf("%d", t)
+		default:
+			jsonBytes, err := json.Marshal(t)
+			if err != nil {
+				log.Entry().Warnf("failed to parse Vault secret key %q, error: %s", k, err.Error())
+				continue
+			}
+
+			secretData[k] = string(jsonBytes)
 		}
 	}
 	return secretData, nil
