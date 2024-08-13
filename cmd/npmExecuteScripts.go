@@ -116,26 +116,9 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 	var buildArtifacts build.BuildArtifacts
 
-	if config.BuildArtifacts != nil && len(config.BuildArtifacts) > 0 {
-		jsonStrBuildArtifacts, err := json.Marshal(config.BuildArtifacts)
-		if err != nil {
-			log.Entry().Warnf("unable to marshal buildArtifacts CPE : %v", err)
-			return nil
-		}
-		if err := json.Unmarshal([]byte(jsonStrBuildArtifacts), &buildArtifacts); err != nil {
-			log.Entry().Warnf("unable to unmarshal buildArtifacts CPE : %v", err)
-			return nil
-		}
-		for _, coordinate := range buildCoordinates {
-			buildArtifacts.Coordinates = append(buildArtifacts.Coordinates, coordinate)
-		}
-		jsonResult, _ := json.Marshal(buildArtifacts)
-		commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
-	} else {
-		buildArtifacts.Coordinates = buildCoordinates
-		jsonResult, _ := json.Marshal(buildArtifacts)
-		commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
-	}
+	buildArtifacts.Coordinates = buildCoordinates
+	jsonResult, _ := json.Marshal(buildArtifacts)
+	commonPipelineEnvironment.custom.npmBuildArtifacts = string(jsonResult)
 
 	return nil
 }
