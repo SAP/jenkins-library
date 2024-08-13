@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
@@ -111,9 +113,13 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		log.Entry().Warnf("unable to identify artifact coordinates for the npm packages published")
 	}
 
-	// jsonResult, _ := json.Marshal(artifacts)
+	buildArtifacts := build.BuildArtifacts{
+		Coordinates: buildCoordinates,
+	}
 
-	// commonPipelineEnvironment.custom.artifacts = string(jsonResult)
+	jsonResult, _ := json.Marshal(buildArtifacts)
+
+	commonPipelineEnvironment.custom.buildArtifacts = string(jsonResult)
 
 	return nil
 }

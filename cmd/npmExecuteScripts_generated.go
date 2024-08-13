@@ -22,27 +22,28 @@ import (
 )
 
 type npmExecuteScriptsOptions struct {
-	Install                    bool     `json:"install,omitempty"`
-	RunScripts                 []string `json:"runScripts,omitempty"`
-	DefaultNpmRegistry         string   `json:"defaultNpmRegistry,omitempty"`
-	VirtualFrameBuffer         bool     `json:"virtualFrameBuffer,omitempty"`
-	ScriptOptions              []string `json:"scriptOptions,omitempty"`
-	BuildDescriptorExcludeList []string `json:"buildDescriptorExcludeList,omitempty"`
-	BuildDescriptorList        []string `json:"buildDescriptorList,omitempty"`
-	CreateBOM                  bool     `json:"createBOM,omitempty"`
-	Publish                    bool     `json:"publish,omitempty"`
-	RepositoryURL              string   `json:"repositoryUrl,omitempty"`
-	RepositoryPassword         string   `json:"repositoryPassword,omitempty"`
-	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
-	BuildSettingsInfo          string   `json:"buildSettingsInfo,omitempty"`
-	PackBeforePublish          bool     `json:"packBeforePublish,omitempty"`
-	Production                 bool     `json:"production,omitempty"`
+	Install                    bool                   `json:"install,omitempty"`
+	RunScripts                 []string               `json:"runScripts,omitempty"`
+	DefaultNpmRegistry         string                 `json:"defaultNpmRegistry,omitempty"`
+	VirtualFrameBuffer         bool                   `json:"virtualFrameBuffer,omitempty"`
+	ScriptOptions              []string               `json:"scriptOptions,omitempty"`
+	BuildDescriptorExcludeList []string               `json:"buildDescriptorExcludeList,omitempty"`
+	BuildDescriptorList        []string               `json:"buildDescriptorList,omitempty"`
+	CreateBOM                  bool                   `json:"createBOM,omitempty"`
+	Publish                    bool                   `json:"publish,omitempty"`
+	RepositoryURL              string                 `json:"repositoryUrl,omitempty"`
+	RepositoryPassword         string                 `json:"repositoryPassword,omitempty"`
+	RepositoryUsername         string                 `json:"repositoryUsername,omitempty"`
+	BuildSettingsInfo          string                 `json:"buildSettingsInfo,omitempty"`
+	PackBeforePublish          bool                   `json:"packBeforePublish,omitempty"`
+	Production                 bool                   `json:"production,omitempty"`
+	BuildArtifacts             map[string]interface{} `json:"buildArtifacts,omitempty"`
 }
 
 type npmExecuteScriptsCommonPipelineEnvironment struct {
 	custom struct {
 		buildSettingsInfo string
-		artifacts         string
+		buildArtifacts    string
 	}
 }
 
@@ -53,7 +54,7 @@ func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName 
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
-		{category: "custom", name: "artifacts", value: p.custom.artifacts},
+		{category: "custom", name: "buildArtifacts", value: p.custom.buildArtifacts},
 	}
 
 	errCount := 0
@@ -430,6 +431,19 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     false,
 					},
+					{
+						Name: "buildArtifacts",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildArtifacts",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "map[string]interface{}",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -442,7 +456,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
-							{"name": "custom/artifacts"},
+							{"name": "custom/buildArtifacts"},
 						},
 					},
 					{
