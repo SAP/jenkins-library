@@ -60,6 +60,8 @@ class commonPipelineEnvironment implements Serializable {
 
     String abapAddonDescriptor
 
+    String buildArtifacts
+
     private Map valueMap = [:]
 
     void setValue(String property, value) {
@@ -108,6 +110,7 @@ class commonPipelineEnvironment implements Serializable {
         githubRepo = null
 
         mtarFilePath = null
+        buildArtifacts = null
         valueMap = [:]
 
         changeDocumentId = null
