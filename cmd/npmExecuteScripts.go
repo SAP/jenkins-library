@@ -109,16 +109,18 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
-	if len(buildCoordinates) == 0 {
-		log.Entry().Warnf("unable to identify artifact coordinates for the npm packages published")
-		return nil
+	if config.CreateBuildArtifactsMetadata {
+		if len(buildCoordinates) == 0 {
+			log.Entry().Warnf("unable to identify artifact coordinates for the npm packages published")
+			return nil
+		}
+
+		var buildArtifacts build.BuildArtifacts
+
+		buildArtifacts.Coordinates = buildCoordinates
+		jsonResult, _ := json.Marshal(buildArtifacts)
+		commonPipelineEnvironment.custom.npmBuildArtifacts = string(jsonResult)
 	}
-
-	var buildArtifacts build.BuildArtifacts
-
-	buildArtifacts.Coordinates = buildCoordinates
-	jsonResult, _ := json.Marshal(buildArtifacts)
-	commonPipelineEnvironment.custom.npmBuildArtifacts = string(jsonResult)
 
 	return nil
 }

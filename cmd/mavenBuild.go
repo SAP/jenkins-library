@@ -165,41 +165,42 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			if err != nil {
 				return err
 			}
+			if config.CreateBuildArtifactsMetadata {
+				buildCoordinates := []versioning.Coordinates{}
+				options := versioning.Options{}
+				var utils versioning.Utils
 
-			buildCoordinates := []versioning.Coordinates{}
-			options := versioning.Options{}
-			var utils versioning.Utils
+				matches, _ := fileUtils.Glob("**/pom.xml")
+				for _, match := range matches {
 
-			matches, err := fileUtils.Glob("**/pom.xml")
-			for _, match := range matches {
-
-				artifact, err := versioning.GetArtifact("maven", match, &options, utils)
-				if err != nil {
-					log.Entry().Warnf("unable to get artifact metdata : %v", err)
-					return nil
-				} else {
-					coordinate, err := artifact.GetCoordinates()
+					artifact, err := versioning.GetArtifact("maven", match, &options, utils)
 					if err != nil {
-						log.Entry().Warnf("unable to get artifact coordinates : %v", err)
+						log.Entry().Warnf("unable to get artifact metdata : %v", err)
 						return nil
 					} else {
-						coordinate.BuildPath = filepath.Dir(match)
-						coordinate.URL = config.AltDeploymentRepositoryURL
-						buildCoordinates = append(buildCoordinates, coordinate)
+						coordinate, err := artifact.GetCoordinates()
+						if err != nil {
+							log.Entry().Warnf("unable to get artifact coordinates : %v", err)
+							return nil
+						} else {
+							coordinate.BuildPath = filepath.Dir(match)
+							coordinate.URL = config.AltDeploymentRepositoryURL
+							buildCoordinates = append(buildCoordinates, coordinate)
+						}
 					}
 				}
+
+				if len(buildCoordinates) == 0 {
+					log.Entry().Warnf("unable to identify artifact coordinates for the maven packages published")
+					return nil
+				}
+
+				var buildArtifacts build.BuildArtifacts
+
+				buildArtifacts.Coordinates = buildCoordinates
+				jsonResult, _ := json.Marshal(buildArtifacts)
+				commonPipelineEnvironment.custom.mavenBuildArtifacts = string(jsonResult)
 			}
-
-			if len(buildCoordinates) == 0 {
-				log.Entry().Warnf("unable to identify artifact coordinates for the maven packages published")
-				return nil
-			}
-
-			var buildArtifacts build.BuildArtifacts
-
-			buildArtifacts.Coordinates = buildCoordinates
-			jsonResult, _ := json.Marshal(buildArtifacts)
-			commonPipelineEnvironment.custom.mavenBuildArtifacts = string(jsonResult)
 
 			return nil
 		} else {
