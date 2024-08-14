@@ -53,7 +53,7 @@ func (dk *DockerKeychain) AuthExistsForImage(image string) bool {
 	var empty types.AuthConfig
 	conf, err := dk.dockerConfig.GetAuthConfig(registry.ConvertToHostname(image))
 	if err != nil {
-		log.Entry().Errorf("failed to get auth config for the image %s, error: %s", image, err.Error())
+		log.Entry().Errorf("failed to get auth config for the image %q, error: %s", image, err.Error())
 	}
 
 	return conf != empty
