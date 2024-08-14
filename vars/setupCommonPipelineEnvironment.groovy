@@ -270,6 +270,7 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
             gitBranch = gitBranchSplit[1..-1].join("/")
         }
     }
+    gitBranch = "refs/tags/"+gitBranch
 
     if (!gitBranch.contains("PR")) {
         if (gitBranch.startsWith("refs/") ){
