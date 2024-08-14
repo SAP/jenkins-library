@@ -6,13 +6,12 @@ package orchestrator
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
-
-	"net/http"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"
@@ -35,6 +34,26 @@ func TestJenkins(t *testing.T) {
 		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.BuildURL())
 		assert.Equal(t, "main", p.Branch())
 		assert.Equal(t, "refs/heads/main", p.GitReference())
+		assert.Equal(t, "abcdef42713", p.CommitSHA())
+		assert.Equal(t, "github.com/foo/bar", p.RepoURL())
+		assert.Equal(t, "Jenkins", p.OrchestratorType())
+	})
+
+	t.Run("TagBuild", func(t *testing.T) {
+		defer resetEnv(os.Environ())
+		os.Clearenv()
+		os.Setenv("JENKINS_URL", "FOO BAR BAZ")
+		os.Setenv("BUILD_URL", "https://jaas.url/job/foo/job/bar/job/main/1234/")
+		os.Setenv("BRANCH_NAME", "refs/tags/rel-1.0.0")
+		os.Setenv("GIT_COMMIT", "abcdef42713")
+		os.Setenv("GIT_URL", "github.com/foo/bar")
+
+		p := &jenkinsConfigProvider{}
+
+		assert.False(t, p.IsPullRequest())
+		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.BuildURL())
+		assert.Equal(t, "refs/tags/rel-1.0.0", p.Branch())
+		assert.Equal(t, "refs/tags/rel-1.0.0", p.GitReference())
 		assert.Equal(t, "abcdef42713", p.CommitSHA())
 		assert.Equal(t, "github.com/foo/bar", p.RepoURL())
 		assert.Equal(t, "Jenkins", p.OrchestratorType())

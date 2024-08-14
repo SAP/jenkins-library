@@ -375,6 +375,25 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
+        void "Set scmInfo parameter sets git reference for tag"() {
+
+            def GitUtils gitUtils = new GitUtils() {
+                boolean isMergeCommit(){
+                    return false
+                }
+            }
+
+            helper.registerAllowedMethod("fileExists", [String], { String path ->
+                return path.endsWith('.pipeline/config.yml')
+            })
+
+            def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_BRANCH: 'refs/tags/tag-1.0.0']
+
+            stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: utilsMock, scmInfo: dummyScmInfo, gitUtils: gitUtils)
+            assertThat(nullScript.commonPipelineEnvironment.gitRef, is('refs/tags/tag-1.0.0'))
+        }
+
+    @Test
     void "sets gitReference and gitRemoteCommit for pull request, head strategy"() {
 
         def GitUtils gitUtils = new GitUtils() {
