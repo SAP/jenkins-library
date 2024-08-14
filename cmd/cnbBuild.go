@@ -590,7 +590,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
 	if !dockerKeychain.AuthExistsForImage(containerImage) {
-		log.Entry().Warnf("provided dockerConfigJSON does not contain credentials for the target image %q, anonymous auth will be used", config.RunImage)
+		log.Entry().Warnf("provided dockerConfigJSON does not contain credentials for the target image %q, anonymous auth will be used", containerImage)
 	}
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
