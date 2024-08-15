@@ -22,6 +22,7 @@ require (
 	github.com/buildpacks/lifecycle v0.18.4
 	github.com/cloudevents/sdk-go/v2 v2.10.1
 	github.com/docker/cli v24.0.6+incompatible
+	github.com/docker/docker v24.0.7+incompatible
 	github.com/evanphx/json-patch v5.7.0+incompatible
 	github.com/getsentry/sentry-go v0.26.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -159,7 +160,6 @@ require (
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
