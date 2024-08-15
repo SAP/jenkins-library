@@ -148,7 +148,7 @@ func validateAppName(appName string) error {
 	}
 	message = append(message, fmt.Sprintf("Please change the name to fit this requirement(s). For more details please visit %s.", docuLink))
 	if fail {
-		return fmt.Errorf(strings.Join(message, " "))
+		return errors.New(strings.Join(message, " "))
 	}
 	return nil
 }
