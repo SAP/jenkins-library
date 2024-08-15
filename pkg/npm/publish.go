@@ -216,6 +216,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		} else {
 			coordinate.BuildPath = filepath.Dir(packageJSON)
 			coordinate.URL = registry
+			coordinate.Packaging = "tgz"
 
 			*buildCoordinates = append(*buildCoordinates, coordinate)
 		}

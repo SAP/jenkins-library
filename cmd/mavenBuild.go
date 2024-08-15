@@ -176,12 +176,10 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 					artifact, err := versioning.GetArtifact("maven", match, &options, utils)
 					if err != nil {
 						log.Entry().Warnf("unable to get artifact metdata : %v", err)
-						return nil
 					} else {
 						coordinate, err := artifact.GetCoordinates()
 						if err != nil {
 							log.Entry().Warnf("unable to get artifact coordinates : %v", err)
-							return nil
 						} else {
 							coordinate.BuildPath = filepath.Dir(match)
 							coordinate.URL = config.AltDeploymentRepositoryURL
