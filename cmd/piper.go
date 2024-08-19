@@ -20,42 +20,43 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
-	GitHubAccessTokens   map[string]string // map of tokens with url as key in order to maintain url-specific tokens
-	CorrelationID        string
-	CustomConfig         string
-	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
-	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	IgnoreCustomDefaults bool
-	ParametersJSON       string
-	EnvRootPath          string
-	NoTelemetry          bool
-	StageName            string
-	StepConfigJSON       string
-	StepMetadata         string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	StepName             string
-	Verbose              bool
-	LogFormat            string
-	VaultRoleID          string
-	VaultRoleSecretID    string
-	VaultToken           string
-	VaultServerURL       string
-	VaultNamespace       string
-	VaultPath            string
-	HookConfig           HookConfiguration
-	MetaDataResolver     func() map[string]config.StepData
-	GCPJsonKeyFilePath   string
-	GCSFolderPath        string
-	GCSBucketId          string
-	GCSSubFolder         string
+	GitHubAccessTokens    map[string]string // map of tokens with url as key in order to maintain url-specific tokens
+	CorrelationID         string
+	CustomConfig          string
+	GitHubTokens          []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
+	DefaultConfig         []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	IgnoreCustomDefaults  bool
+	ParametersJSON        string
+	EnvRootPath           string
+	NoTelemetry           bool
+	StageName             string
+	StepConfigJSON        string
+	StepMetadata          string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepName              string
+	Verbose               bool
+	LogFormat             string
+	VaultRoleID           string
+	VaultRoleSecretID     string
+	VaultToken            string
+	VaultTrustEngineToken string
+	VaultServerURL        string
+	VaultNamespace        string
+	VaultPath             string
+	HookConfig            HookConfiguration
+	MetaDataResolver      func() map[string]config.StepData
+	GCPJsonKeyFilePath    string
+	GCSFolderPath         string
+	GCSBucketId           string
+	GCSSubFolder          string
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
-	SentryConfig      SentryConfiguration    `json:"sentry,omitempty"`
-	SplunkConfig      SplunkConfiguration    `json:"splunk,omitempty"`
-	PendoConfig       PendoConfiguration     `json:"pendo,omitempty"`
-	OIDCConfig        OIDCConfiguration      `json:"oidc,omitempty"`
-	TrustEngineConfig TrustEngineConfigution `json:"trustEngine,omitempty"`
+	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
+	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
+	PendoConfig       PendoConfiguration       `json:"pendo,omitempty"`
+	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
+	TrustEngineConfig TrustEngineConfiguration `json:"trustEngine,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -83,7 +84,7 @@ type OIDCConfiguration struct {
 	RoleID string `json:",roleID,omitempty"`
 }
 
-type TrustEngineConfigution struct {
+type TrustEngineConfiguration struct {
 	BaseURL string `json:",baseURL,omitempty"`
 }
 
@@ -371,6 +372,9 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	}
 	if GeneralConfig.VaultToken == "" {
 		GeneralConfig.VaultToken = os.Getenv("PIPER_vaultToken")
+	}
+	if GeneralConfig.VaultTrustEngineToken == "" {
+		GeneralConfig.VaultTrustEngineToken = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
 	}
 	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
 

@@ -1,6 +1,12 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/SAP/jenkins-library/cmd"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -128,23 +134,60 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 }
 
 func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []StepParameters) {
+	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
 	for _, param := range params {
+		if paramValue, _ := config.Config[param.Name].(string); vaultDisableOverwrite && paramValue != "" {
+			log.Entry().Debugf("Not fetching '%s' from Vault since it has already been set", param.Name)
+			return
+		}
+		resolved := false
 		if ref := param.GetReference("vaultSecret"); ref != nil {
-			resolveVaultReference(ref, config, client, param)
+			resolved = resolveVaultReference(ref, config, client, param)
 		}
 		if ref := param.GetReference("vaultSecretFile"); ref != nil {
-			resolveVaultReference(ref, config, client, param)
+			resolved = resolveVaultReference(ref, config, client, param)
+		}
+		// check if secret has been set through Jenkins secret?
+		if ref := param.GetReference("trustEngine"); ref != nil {
+			if !resolved {
+				resolveVaultTrustEngineReference(ref, config, param)
+			}
 		}
 	}
 }
 
-func resolveVaultReference(ref *ResourceReference, config *StepConfig, client VaultClient, param StepParameters) {
-	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
-	if paramValue, _ := config.Config[param.Name].(string); vaultDisableOverwrite && paramValue != "" {
-		log.Entry().Debugf("Not fetching '%s' from Vault since it has already been set", param.Name)
+// resolveVaultTrustEngineReference retrieves a secret from Vault trust engine
+func resolveVaultTrustEngineReference(ref *ResourceReference, config *StepConfig, param StepParameters) {
+	baseURL, err := url.Parse(cmd.GeneralConfig.HookConfig.TrustEngineConfig.BaseURL) // does this throw an error when the baseURL isn't set?
+	if err != nil {
+		log.Entry().Infof("trust engine base URL incorrect not set")
 		return
 	}
 
+	jwt := cmd.GeneralConfig.VaultTrustEngineToken
+	fullURL := path.Join(baseURL.Path, ref.Name)
+
+	client := piperhttp.Client{}
+	var header http.Header = map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", jwt)}}
+	response, err := client.SendRequest("GET", fullURL, nil, header, nil)
+	if err != nil {
+		log.Entry().Infof(fmt.Sprintf("couldn't get secret from trust engine: %s", err))
+		return
+	}
+	defer response.Body.Close()
+
+	var j interface{} // assign type here
+	err = json.NewDecoder(response.Body).Decode(&j)
+	if err != nil {
+		log.Entry().Infof(fmt.Sprintf("couldn't parse response from trust engine: %s", err))
+		return
+	}
+
+	// log.RegisterSecret(field)
+}
+
+// resolveVaultReference attempts retrieving a secret from Vault and returns a boolean that indicates its success
+func resolveVaultReference(ref *ResourceReference, config *StepConfig, client VaultClient, param StepParameters) bool {
 	log.Entry().Infof("Resolving '%s'", param.Name)
 
 	var secretValue *string
@@ -164,28 +207,15 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 				filePath, err := createTemporarySecretFile(param.Name, *secretValue)
 				if err != nil {
 					log.Entry().WithError(err).Warnf("Couldn't create temporary secret file for '%s'", param.Name)
-					return
+					return false
 				}
 				config.Config[param.Name] = filePath
 			}
-			break
+			return true
 		}
 	}
-	if secretValue == nil {
-		log.Entry().Warn("  failed")
-		// here we first should check if the jenkins secret is found ??
-		// config.Config[param.Name] should not be set . which will prove that jenkins has not set the value
-		if ref.Type == "trustEngine" {
-			// config.
-			// cmd.GeneralConfig.HookConfig.TrustEngineURL = "dummy" + ref.name
-			// GeneralConfig.HookConfig.TrustEngineURL can come from a custom default
-			// TRUST_ENGINE_TOKEN=$(curl --url https://api.trust-dev.tools.sap/auth --header "X-Trust-Authorization-Orchestrator: $PIPER_ORCHESTRATOR_JWT" --header "X-Trust-Authorization-Runtime: $PIPER_RUNNER_JWT" | jq -r '.["trust-engine-auth-token"]' | base64 -d)
-			// TRUST_ENGINE_TOKEN is used to make the call for the parameter secret
-		}
-		log.Entry().Info("trying to fetch secret from secret engine")
-		// config.FetchSecretFromTrustEngine()
-		// hook to fetch from secret engine
-	}
+	log.Entry().Warn("  failed")
+	return false
 }
 
 func resolveVaultTestCredentialsWrapper(config *StepConfig, client VaultClient) {
