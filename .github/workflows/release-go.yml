@@ -61,8 +61,8 @@ jobs:
         id: release_id
         run: >
           curl -L -s -o resp.json
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
           -H "Accept: application/vnd.github.raw+json"
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
           ${{ github.api_url }}/repos/${{ github.repository }}/releases
 
           echo "release_id=$(jq 'first(.[] | select(.tag_name == "${{ env.PIPER_version }}")).id' resp.json)" >> "$GITHUB_OUTPUT"
