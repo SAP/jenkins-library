@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -67,7 +68,7 @@ func (api *SAP_COM_0948) GetExecutionLog() (execLog ExecutionLog, err error) {
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		_, err = handleHTTPError(resp, err, api.failureMessage, connectionDetails)
 		return execLog, err
 	}
 	defer resp.Body.Close()
@@ -161,7 +162,7 @@ func (api *SAP_COM_0948) GetLogProtocol(logOverviewEntry LogResultsV2, page int)
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		_, err = handleHTTPError(resp, err, api.failureMessage, connectionDetails)
 		return nil, 0, err
 	}
 	defer resp.Body.Close()
@@ -185,7 +186,7 @@ func (api *SAP_COM_0948) GetLogOverview() (result []LogResultsV2, err error) {
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		_, err = handleHTTPError(resp, err, api.failureMessage, connectionDetails)
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -220,7 +221,7 @@ func (api *SAP_COM_0948) GetAction() (string, error) {
 	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		_, err = HandleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		_, err = handleHTTPError(resp, err, api.failureMessage, connectionDetails)
 		return "E", err
 	}
 	defer resp.Body.Close()
@@ -248,7 +249,7 @@ func (api *SAP_COM_0948) GetRepository() (bool, string, error, bool) {
 	swcConnectionDetails.URL = api.con.URL + api.path + api.softwareComponentEntity + api.getRepoNameForPath()
 	resp, err := GetHTTPResponse("GET", swcConnectionDetails, nil, api.client)
 	if err != nil {
-		_, errRepo := HandleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
+		_, errRepo := handleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
 		return false, "", errRepo, false
 	}
 	defer resp.Body.Close()
@@ -323,7 +324,7 @@ func (api *SAP_COM_0948) triggerRequest(cloneConnectionDetails ConnectionDetails
 		}
 		resp, err = GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, api.client)
 		if err != nil {
-			errorCode, err = HandleHTTPError(resp, err, "Triggering the action failed", api.con)
+			errorCode, err = handleHTTPError(resp, err, "Triggering the action failed", api.con)
 			if slices.Contains(api.retryAllowedErrorCodes, errorCode) {
 				// Error Code allows for retry
 				continue
@@ -366,7 +367,7 @@ func (api *SAP_COM_0948) initialRequest() error {
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := GetHTTPResponse("GET", headConnection, nil, api.client)
 	if err != nil {
-		_, err = HandleHTTPError(resp, err, "Authentication on the ABAP system failed", api.con)
+		_, err = handleHTTPError(resp, err, "Authentication on the ABAP system failed", api.con)
 		return err
 	}
 	defer resp.Body.Close()
@@ -430,4 +431,63 @@ func (api *SAP_COM_0948) ConvertTime(logTimeStamp string) time.Time {
 		return time.Unix(0, 0).UTC()
 	}
 	return t
+}
+
+func handleHTTPError(resp *http.Response, err error, message string, connectionDetails ConnectionDetailsHTTP) (string, error) {
+
+	var errorText string
+	var errorCode string
+	var parsingError error
+	if resp == nil {
+		// Response is nil in case of a timeout
+		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
+
+		match, _ := regexp.MatchString(".*EOF$", err.Error())
+		if match {
+			AddDefaultDashedLine(1)
+			log.Entry().Infof("%s", "A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)")
+			AddDefaultDashedLine(1)
+		}
+
+		log.Entry().Infof("Error message: %s,", err.Error())
+	} else {
+
+		defer resp.Body.Close()
+
+		log.Entry().WithField("StatusCode", resp.Status).WithField("User", connectionDetails.User).WithField("URL", connectionDetails.URL).Error(message)
+
+		errorText, errorCode, parsingError = getErrorDetailsFromResponse(resp)
+		if parsingError != nil {
+			return "", err
+		}
+		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
+		err = errors.Wrap(abapError, err.Error())
+
+	}
+	return errorCode, err
+}
+
+func getErrorDetailsFromResponse(resp *http.Response) (errorString string, errorCode string, err error) {
+
+	// Include the error message of the ABAP Environment system, if available
+	var abapErrorResponse AbapErrorODataV4
+	bodyText, readError := io.ReadAll(resp.Body)
+	if readError != nil {
+		return "", "", readError
+	}
+	var abapResp map[string]*json.RawMessage
+	errUnmarshal := json.Unmarshal(bodyText, &abapResp)
+	if errUnmarshal != nil {
+		return "", "", errUnmarshal
+	}
+	if _, ok := abapResp["error"]; ok {
+		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
+		if (AbapErrorODataV4{}) != abapErrorResponse {
+			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Debug(abapErrorResponse.Message)
+			return abapErrorResponse.Message, abapErrorResponse.Code, nil
+		}
+	}
+
+	return "", "", errors.New("Could not parse the JSON error response")
+
 }
