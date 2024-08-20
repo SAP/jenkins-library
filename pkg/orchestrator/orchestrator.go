@@ -1,10 +1,12 @@
 package orchestrator
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 const (
@@ -60,10 +62,10 @@ type (
 
 	// Options used to set orchestrator specific settings.
 	Options struct {
-		JenkinsUser  string
-		JenkinsToken string
-		AzureToken   string
-		GitHubToken  string
+		JenkinsUsername string
+		JenkinsToken    string
+		AzureToken      string
+		GitHubToken     string
 	}
 
 	PullRequestConfig struct {
