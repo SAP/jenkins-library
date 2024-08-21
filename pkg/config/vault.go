@@ -1,11 +1,9 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/cmd"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -150,40 +148,29 @@ func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []
 		// check if secret has been set through Jenkins secret?
 		if ref := param.GetReference("trustEngine"); ref != nil {
 			if !resolved {
-				resolveVaultTrustEngineReference(ref, config, param)
+				resolveVaultTrustEngineReference(ref, config, &piperhttp.Client{}, param)
 			}
 		}
 	}
 }
 
 // resolveVaultTrustEngineReference retrieves a secret from Vault trust engine
-func resolveVaultTrustEngineReference(ref *ResourceReference, config *StepConfig, param StepParameters) {
+func resolveVaultTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters) {
 	baseURL, err := url.Parse(cmd.GeneralConfig.HookConfig.TrustEngineConfig.BaseURL) // does this throw an error when the baseURL isn't set?
 	if err != nil {
 		log.Entry().Infof("trust engine base URL incorrect not set")
 		return
 	}
-
 	jwt := cmd.GeneralConfig.VaultTrustEngineToken
-	fullURL := path.Join(baseURL.Path, ref.Name)
-
-	client := piperhttp.Client{}
-	var header http.Header = map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", jwt)}}
-	response, err := client.SendRequest("GET", fullURL, nil, header, nil)
+	response, err := vault.GetTrustEngineSecret(baseURL, ref.Name, jwt, client)
 	if err != nil {
 		log.Entry().Infof(fmt.Sprintf("couldn't get secret from trust engine: %s", err))
 		return
 	}
-	defer response.Body.Close()
+	secretValue := response.Token
+	log.RegisterSecret(secretValue)
 
-	var j interface{} // assign type here
-	err = json.NewDecoder(response.Body).Decode(&j)
-	if err != nil {
-		log.Entry().Infof(fmt.Sprintf("couldn't parse response from trust engine: %s", err))
-		return
-	}
-
-	// log.RegisterSecret(field)
+	config.Config[param.Name] = secretValue
 }
 
 // resolveVaultReference attempts retrieving a secret from Vault and returns a boolean that indicates its success
