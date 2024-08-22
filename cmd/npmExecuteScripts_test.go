@@ -194,4 +194,16 @@ func TestNpmExecuteScripts(t *testing.T) {
 		v := os.Getenv("NODE_ENV")
 		assert.Equal(t, "production", v)
 	})
+
+	t.Run("Test case: build artifact coordinates are empty", func(t *testing.T) {
+		cfg := npmExecuteScriptsOptions{CreateBuildArtifactsMetadata: true}
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"myApp\"}"))
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{DefaultNpmRegistry: cfg.DefaultNpmRegistry}}
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
+		assert.NoError(t, err)
+		assert.Contains(t, log.Entry().String(), "unable to identify artifact coordinates for the npm packages published")
+		assert.Empty(t, cpe.custom.npmBuildArtifacts)
+	})
+
 }
