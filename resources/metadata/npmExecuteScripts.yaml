@@ -170,7 +170,7 @@ spec:
         scope:
           - STEPS
           - STAGES
-          - PARAMETERS 
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment

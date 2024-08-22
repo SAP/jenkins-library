@@ -249,7 +249,7 @@ spec:
         scope:
           - STEPS
           - STAGES
-          - PARAMETERS   
+          - PARAMETERS
     resources:
       - type: stash
   outputs:
