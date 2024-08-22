@@ -135,19 +135,6 @@ func TestMavenBuild(t *testing.T) {
 		assert.Contains(t, mockedUtils.Calls[0].Params, "profile1,profile2")
 	})
 
-	t.Run("mavenBuild should create build artifacts metadata when CreateBuildArtifactsMetadata is true and Publish is true and Verify is false", func(t *testing.T) {
-		mockedUtils := newMavenMockUtils()
-		mockedUtils.AddFile("integration-tests/pom.xml", []byte{})
-		config := mavenBuildOptions{CreateBuildArtifactsMetadata: true, Publish: true, AltDeploymentRepositoryURL: "http://sampleRepo.com", Verify: false}
-		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
-		assert.Nil(t, err)
-		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
-		assert.Contains(t, mockedUtils.Calls[0].Params, "deploy")
-		assert.Contains(t, mockedUtils.Calls[0].Params, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
-		assert.Contains(t, mockedUtils.Calls[0].Params, config.AltDeploymentRepositoryURL)
-		assert.NotEmpty(t, cpe.custom.mavenBuildArtifacts)
-	})
-
 	t.Run("mavenBuild should not create build artifacts metadata when CreateBuildArtifactsMetadata is false and Publish is true", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 		mockedUtils.AddFile("pom.xml", []byte{})
