@@ -308,7 +308,7 @@ func checkAndReportScanResults(ctx context.Context, config *ScanOptions, scan *w
 	}
 
 	if len(checkErrors) > 0 {
-		return reportPaths, fmt.Errorf(strings.Join(checkErrors, ": "))
+		return reportPaths, errors.New(strings.Join(checkErrors, ": "))
 	}
 	return reportPaths, nil
 }
@@ -674,7 +674,7 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		log.Entry().Debugf("Aggregated %v alerts for scanned projects", len(allAlerts))
 	}
 
-	reportPaths, errors := reportGitHubIssuesAndCreateReports(
+	reportPaths, e := reportGitHubIssuesAndCreateReports(
 		ctx,
 		config,
 		utils,
@@ -686,13 +686,13 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		vulnerabilitiesCount,
 	)
 
-	allOccurredErrors = append(allOccurredErrors, errors...)
+	allOccurredErrors = append(allOccurredErrors, e...)
 
 	if len(allOccurredErrors) > 0 {
 		if vulnerabilitiesCount > 0 {
 			log.SetErrorCategory(log.ErrorCompliance)
 		}
-		return reportPaths, fmt.Errorf(strings.Join(allOccurredErrors, ": "))
+		return reportPaths, errors.New(strings.Join(allOccurredErrors, ": "))
 	}
 
 	return reportPaths, nil
