@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: perform-release
+  schedule:
+    - cron: '0 9 * * 1'
 
 jobs:
   build:
