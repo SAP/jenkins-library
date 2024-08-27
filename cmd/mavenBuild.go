@@ -1,18 +1,21 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -159,7 +162,45 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			mavenOptions.Goals = []string{"deploy"}
 			mavenOptions.Defines = []string{}
 			_, err := maven.Execute(&mavenOptions, utils)
-			return err
+			if err != nil {
+				return err
+			}
+			if config.CreateBuildArtifactsMetadata {
+				buildCoordinates := []versioning.Coordinates{}
+				options := versioning.Options{}
+				var utils versioning.Utils
+
+				matches, _ := fileUtils.Glob("**/pom.xml")
+				for _, match := range matches {
+
+					artifact, err := versioning.GetArtifact("maven", match, &options, utils)
+					if err != nil {
+						log.Entry().Warnf("unable to get artifact metdata : %v", err)
+					} else {
+						coordinate, err := artifact.GetCoordinates()
+						if err != nil {
+							log.Entry().Warnf("unable to get artifact coordinates : %v", err)
+						} else {
+							coordinate.BuildPath = filepath.Dir(match)
+							coordinate.URL = config.AltDeploymentRepositoryURL
+							buildCoordinates = append(buildCoordinates, coordinate)
+						}
+					}
+				}
+
+				if len(buildCoordinates) == 0 {
+					log.Entry().Warnf("unable to identify artifact coordinates for the maven packages published")
+					return nil
+				}
+
+				var buildArtifacts build.BuildArtifacts
+
+				buildArtifacts.Coordinates = buildCoordinates
+				jsonResult, _ := json.Marshal(buildArtifacts)
+				commonPipelineEnvironment.custom.mavenBuildArtifacts = string(jsonResult)
+			}
+
+			return nil
 		} else {
 			log.Entry().Infof("publish not detected, ignoring maven deploy")
 		}
