@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/vault"
 	"io"
 	"net/http"
 	"net/url"
@@ -21,16 +22,17 @@ import (
 
 // Config defines the structure of the config files
 type Config struct {
-	CustomDefaults   []string                          `json:"customDefaults,omitempty"`
-	General          map[string]interface{}            `json:"general"`
-	Stages           map[string]map[string]interface{} `json:"stages"`
-	Steps            map[string]map[string]interface{} `json:"steps"`
-	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
-	defaults         PipelineDefaults
-	initialized      bool
-	accessTokens     map[string]string
-	openFile         func(s string, t map[string]string) (io.ReadCloser, error)
-	vaultCredentials VaultCredentials
+	CustomDefaults           []string                          `json:"customDefaults,omitempty"`
+	General                  map[string]interface{}            `json:"general"`
+	Stages                   map[string]map[string]interface{} `json:"stages"`
+	Steps                    map[string]map[string]interface{} `json:"steps"`
+	Hooks                    map[string]interface{}            `json:"hooks,omitempty"`
+	defaults                 PipelineDefaults
+	initialized              bool
+	accessTokens             map[string]string
+	openFile                 func(s string, t map[string]string) (io.ReadCloser, error)
+	vaultCredentials         VaultCredentials
+	trustEngineConfiguration vault.TrustEngineConfiguration
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -264,7 +266,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 		if vaultClient != nil {
 			defer vaultClient.MustRevokeToken()
-			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
+			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration)
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
 			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
 		}
@@ -301,6 +303,14 @@ func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultTok
 		AppRoleID:       appRoleID,
 		AppRoleSecretID: appRoleSecretID,
 		VaultToken:      vaultToken,
+	}
+}
+
+// SetTrustEngineConfiguration sets the server URL and token
+func (c *Config) SetTrustEngineConfiguration(serverURL, token string) {
+	c.trustEngineConfiguration = vault.TrustEngineConfiguration{
+		ServerURL: serverURL,
+		Token:     token,
 	}
 }
 

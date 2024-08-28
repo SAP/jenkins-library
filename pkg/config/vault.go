@@ -2,9 +2,7 @@ package config
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/cmd"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -131,7 +129,7 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 	return client, nil
 }
 
-func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []StepParameters) {
+func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []StepParameters, trustEngineConfiguration vault.TrustEngineConfiguration) {
 	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
 	for _, param := range params {
 		if paramValue, _ := config.Config[param.Name].(string); vaultDisableOverwrite && paramValue != "" {
@@ -148,21 +146,15 @@ func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []
 		// check if secret has been set through Jenkins secret?
 		if ref := param.GetReference("trustEngine"); ref != nil {
 			if !resolved {
-				resolveVaultTrustEngineReference(ref, config, &piperhttp.Client{}, param)
+				resolveVaultTrustEngineReference(ref, config, &piperhttp.Client{}, param, trustEngineConfiguration)
 			}
 		}
 	}
 }
 
 // resolveVaultTrustEngineReference retrieves a secret from Vault trust engine
-func resolveVaultTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters) {
-	baseURL, err := url.Parse(cmd.GeneralConfig.HookConfig.TrustEngineConfig.BaseURL) // does this throw an error when the baseURL isn't set?
-	if err != nil {
-		log.Entry().Infof("trust engine base URL incorrect not set")
-		return
-	}
-	jwt := cmd.GeneralConfig.VaultTrustEngineToken
-	token, err := vault.GetTrustEngineSecret(baseURL, ref.Name, jwt, client)
+func resolveVaultTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters, trustEngineConfiguration vault.TrustEngineConfiguration) {
+	token, err := vault.GetTrustEngineSecret(ref.Name, client, trustEngineConfiguration)
 	if err != nil {
 		log.Entry().Infof(fmt.Sprintf("couldn't get secret from trust engine: %s", err))
 		return

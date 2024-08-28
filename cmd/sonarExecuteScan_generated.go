@@ -333,7 +333,7 @@ func sonarExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name: "sonar-token",
+								Name: "sonar",
 								Type: "trustEngine",
 							},
 						},

@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"net/http"
-	"net/url"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+	"net/http"
 )
 
 type trustEngineUtils interface {
@@ -19,8 +17,13 @@ type TrustEngineSecret struct {
 	Token string `json:"sonar,omitempty"`
 }
 
-func GetTrustEngineSecret(baseURL *url.URL, refName, jwt string, client *piperhttp.Client) (string, error) {
-	secret, err := GetTrustEngineResponse(baseURL, refName, jwt, client)
+type TrustEngineConfiguration struct {
+	ServerURL string
+	Token     string
+}
+
+func GetTrustEngineSecret(refName string, client *piperhttp.Client, trustEngineConfiguration TrustEngineConfiguration) (string, error) {
+	secret, err := GetTrustEngineResponse(refName, client, trustEngineConfiguration)
 	if err != nil {
 		return "", err
 	}
@@ -32,12 +35,12 @@ func GetTrustEngineSecret(baseURL *url.URL, refName, jwt string, client *piperht
 	return token, nil
 }
 
-func GetTrustEngineResponse(baseURL *url.URL, refName, jwt string, client *piperhttp.Client) (TrustEngineSecret, error) {
+func GetTrustEngineResponse(refName string, client *piperhttp.Client, trustEngineConfiguration TrustEngineConfiguration) (TrustEngineSecret, error) {
 	var trust TrustEngineSecret
-	fullURL := baseURL.String() + fmt.Sprintf("?systems=%s", refName)
+	fullURL := trustEngineConfiguration.ServerURL + fmt.Sprintf("?systems=%s", refName)
 
 	log.Entry().Debugf("getting token from %s", fullURL)
-	var header http.Header = map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", jwt)}}
+	var header http.Header = map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token)}}
 	response, err := client.SendRequest("GET", fullURL, nil, header, nil)
 	if err != nil {
 		// is the full error message that the API returns being logged?
