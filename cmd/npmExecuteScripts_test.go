@@ -194,4 +194,5 @@ func TestNpmExecuteScripts(t *testing.T) {
 		v := os.Getenv("NODE_ENV")
 		assert.Equal(t, "production", v)
 	})
+
 }

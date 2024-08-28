@@ -50,7 +50,7 @@ func TestRetry0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
@@ -66,7 +66,7 @@ func TestRetry0948(t *testing.T) {
 		client := &ClientMock{
 			BodyList: []string{
 				`{ "status" : "R", "UUID" : "GUID" }`,
-				`{"error" : { "code" : "A4C_A2G/224", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/224", "message" : "Error Text" } }`,
 				`{ }`,
 			},
 			Token:      "myToken",
@@ -80,8 +80,8 @@ func TestRetry0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
-		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
+		api.setSleepTimeConfig(time.Nanosecond, 20*time.Nanosecond)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -95,15 +95,15 @@ func TestRetry0948(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
 				`{ }`,
 			},
 			Token:      "myToken",
@@ -124,12 +124,12 @@ func TestRetry0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		api.setSleepTimeConfig(time.Nanosecond, 20*time.Nanosecond)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
-		api.(*SAP_COM_0948).maxRetries = 20
+		api.(*SAP_COM_0948).maxRetries = 5
 
 		errAction := api.(*SAP_COM_0948).triggerRequest(ConnectionDetailsHTTP{User: "CC_USER", Password: "abc123", URL: "https://example.com/path"}, []byte("{}"))
 		assert.ErrorContains(t, errAction, "HTTP 400: A4C_A2G/228 - Error Text")
@@ -142,15 +142,15 @@ func TestRetry0948(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
-				`{"error" : { "code" : "A4C_A2G/228", "message" : { "lang" : "de", "value" : "Error Text"} } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
+				`{"error" : { "code" : "A4C_A2G/228", "message" : "Error Text" } }`,
 				`{ }`,
 			},
 			Token:      "myToken",
@@ -171,7 +171,7 @@ func TestRetry0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		api.setSleepTimeConfig(time.Nanosecond, 999*time.Nanosecond)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
@@ -200,7 +200,7 @@ func TestClone0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -223,7 +223,7 @@ func TestClone0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
@@ -252,7 +252,7 @@ func TestClone0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		api.setSleepTimeConfig(time.Nanosecond, 120*time.Nanosecond)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
@@ -317,7 +317,7 @@ func TestPull0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -339,7 +339,7 @@ func TestPull0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -363,7 +363,7 @@ func TestCheckout0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -385,7 +385,7 @@ func TestCheckout0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -409,7 +409,7 @@ func TestGetRepo0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -434,7 +434,7 @@ func TestCreateTag0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -456,7 +456,7 @@ func TestCreateTag0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -478,7 +478,7 @@ func TestCreateTag0948(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, err := apiManager.GetAPI(con, repo)
+		api, err := apiManager.GetAPI(conTest0948, repoTest0948)
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948), "API has wrong type")
 
@@ -565,7 +565,7 @@ func TestGetExecutionLog(t *testing.T) {
 
 		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
 
-		api, _ := apiManager.GetAPI(con, Repository{Name: "/DMO/REPO"})
+		api, _ := apiManager.GetAPI(conTest0948, Repository{Name: "/DMO/REPO"})
 
 		results, errAction := api.GetExecutionLog()
 		assert.NoError(t, errAction)
