@@ -162,15 +162,14 @@ func resolveVaultTrustEngineReference(ref *ResourceReference, config *StepConfig
 		return
 	}
 	jwt := cmd.GeneralConfig.VaultTrustEngineToken
-	response, err := vault.GetTrustEngineSecret(baseURL, ref.Name, jwt, client)
+	token, err := vault.GetTrustEngineSecret(baseURL, ref.Name, jwt, client)
 	if err != nil {
 		log.Entry().Infof(fmt.Sprintf("couldn't get secret from trust engine: %s", err))
 		return
 	}
-	secretValue := response.Token
-	log.RegisterSecret(secretValue)
-
-	config.Config[param.Name] = secretValue
+	log.RegisterSecret(token)
+	config.Config[param.Name] = token
+	log.Entry().Infof("retrieving %s token from trust engine succeeded", ref.Name)
 }
 
 // resolveVaultReference attempts retrieving a secret from Vault and returns a boolean that indicates its success
