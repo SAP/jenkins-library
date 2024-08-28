@@ -84,6 +84,10 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+        possibleValues:
+          - TOKEN
+          - BASIC
+        default: TOKEN
       - name: repositories
         type: string
         description: Specifies a YAML file containing the repositories configuration
