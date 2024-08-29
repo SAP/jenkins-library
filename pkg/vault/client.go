@@ -290,13 +290,14 @@ func (v Client) MustRevokeToken() {
 
 	// only service tokens should be revoked and not batch tokens, the below will lookup the token and depends on the token prefix hvs. for service token
 	lookupPath := "auth/token/lookup-self"
-	secret, err := v.GetSecret("auth/token/lookup-self")
+	const serviceTokenPrefix string = "hvs."
+	secret, err := v.GetSecret(lookupPath)
 
 	if err != nil {
 		log.Entry().Warnf("Could not lookup token at %s, not continuing to revoke", lookupPath)
 	} else {
 		if id, ok := secret.Data["id"]; ok {
-			if strings.HasPrefix(id.(string), "hvs.") {
+			if strings.HasPrefix(id.(string), serviceTokenPrefix) {
 				if err := v.RevokeToken(); err != nil {
 					log.Entry().WithError(err).Fatal("Could not revoke token")
 				}
