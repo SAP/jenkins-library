@@ -301,8 +301,9 @@ func (v Client) MustRevokeToken() {
 				if err := v.RevokeToken(); err != nil {
 					log.Entry().WithError(err).Fatal("Could not revoke token")
 				}
+			} else {
+				log.Entry().Warnf("Service token not identified at %s, not continuing to revoke", lookupPath)
 			}
-			log.Entry().Warnf("Could not lookup token.Data at %s, not continuing to revoke", lookupPath)
 		} else {
 			log.Entry().Warnf("Could not lookup token.Data.id at %s, not continuing to revoke", lookupPath)
 		}
