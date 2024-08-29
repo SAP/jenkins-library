@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -43,11 +44,15 @@ func GetTrustEngineResponse(refName string, client *piperhttp.Client, trustEngin
 	log.Entry().Debugf("getting token from %s", fullURL)
 	var header http.Header = map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token)}}
 	response, err := client.SendRequest("GET", fullURL, nil, header, nil)
+	defer response.Body.Close()
 	if err != nil {
-		// is the full error message that the API returns being logged?
+		// the body contains full error message which we want to log
+		bodyBytes, err := io.ReadAll(response.Body)
+		if err == nil {
+			log.Entry().Info(string(bodyBytes))
+		}
 		return trust, err
 	}
-	defer response.Body.Close()
 
 	err = json.NewDecoder(response.Body).Decode(&trust)
 	if err != nil {
