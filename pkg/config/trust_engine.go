@@ -5,10 +5,10 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/vault"
+	"github.com/SAP/jenkins-library/pkg/trustengine"
 )
 
-func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration vault.TrustEngineConfiguration) {
+func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.TrustEngineConfiguration) {
 	for _, param := range params {
 		if ref := param.GetReference("trustEngine"); ref != nil {
 			if config.Config[param.Name] == "" {
@@ -19,8 +19,8 @@ func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 }
 
 // resolveTrustEngineReference retrieves a secret from Vault trust engine
-func resolveTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters, trustEngineConfiguration vault.TrustEngineConfiguration) {
-	token, err := vault.GetTrustEngineSecret(ref.Name, client, trustEngineConfiguration)
+func resolveTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters, trustEngineConfiguration trustengine.TrustEngineConfiguration) {
+	token, err := trustengine.GetTrustEngineSecret(ref.Name, client, trustEngineConfiguration)
 	if err != nil {
 		log.Entry().Infof(fmt.Sprintf("couldn't get secret from trust engine: %s", err))
 		return

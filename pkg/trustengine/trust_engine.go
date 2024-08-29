@@ -1,12 +1,13 @@
-package vault
+package trustengine
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"net/http"
 )
 
 type trustEngineUtils interface {

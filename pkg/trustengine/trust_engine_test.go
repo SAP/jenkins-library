@@ -1,12 +1,10 @@
-package vault
+package trustengine
 
 import (
+	"net/url"
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/jarcoal/httpmock"
-	"net/http"
-	"net/url"
 )
 
 const testBaseURL = "https://www.project-piper.io/"
@@ -16,10 +14,6 @@ func TestTrustEngine(t *testing.T) {
 
 	t.Run("Test getting Sonar token", func(t *testing.T) {
 		t.Parallel()
-
-		httpmock.Activate()
-		defer httpmock.DeactivateAndReset()
-		httpmock.RegisterResponder(http.MethodGet, testFullURL, httpmock.NewStringResponder(200, `OK`))
 
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})

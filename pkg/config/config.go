@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/vault"
+	"github.com/SAP/jenkins-library/pkg/trustengine"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -33,7 +33,7 @@ type Config struct {
 	accessTokens             map[string]string
 	openFile                 func(s string, t map[string]string) (io.ReadCloser, error)
 	vaultCredentials         VaultCredentials
-	trustEngineConfiguration vault.TrustEngineConfiguration
+	trustEngineConfiguration trustengine.TrustEngineConfiguration
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -312,7 +312,7 @@ func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultTok
 
 // SetTrustEngineConfiguration sets the server URL and token
 func (c *Config) SetTrustEngineConfiguration(hookConfig map[string]interface{}) {
-	c.trustEngineConfiguration = vault.TrustEngineConfiguration{}
+	c.trustEngineConfiguration = trustengine.TrustEngineConfiguration{}
 	c.trustEngineConfiguration.Token = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
 
 	trustEngineHook, ok := hookConfig["trustEngine"].(map[string]interface{})
