@@ -6,7 +6,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/hadolint/mocks"
+	"github.com/SAP/jenkins-library/cmd/mocks"
 	piperMocks "github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
