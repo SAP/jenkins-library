@@ -167,6 +167,10 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 
 	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
+
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
@@ -238,6 +242,10 @@ func (h *HelmExecute) RunHelmInstall() error {
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
 
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
+
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
@@ -287,6 +295,9 @@ func (h *HelmExecute) RunHelmUninstall() error {
 	}
 	if len(h.config.Namespace) <= 0 {
 		return fmt.Errorf("namespace has not been set, please configure namespace parameter")
+	}
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
 	}
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	if h.config.HelmDeployWaitSeconds > 0 {

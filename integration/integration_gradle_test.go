@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -44,18 +45,19 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "adoptopenjdk/openjdk11:jdk-11.0.11_9-alpine",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(pwd, "/piperbin"),
+			testcontainers.BindMount(tempDir, "/test"),
+		),
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
+	require.NoError(t, err)
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
@@ -77,7 +79,7 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 `)
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
-	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
@@ -116,18 +118,19 @@ cd /test
 	reqNode := testcontainers.ContainerRequest{
 		Image: "gradle:6-jdk11-alpine",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(pwd, "/piperbin"),
+			testcontainers.BindMount(tempDir, "/test"),
+		),
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
+	require.NoError(t, err)
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
@@ -149,7 +152,7 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 `)
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
-	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 

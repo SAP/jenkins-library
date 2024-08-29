@@ -70,6 +70,8 @@ type whitesourceExecuteScanOptions struct {
 	M2Path                               string   `json:"m2Path,omitempty"`
 	InstallArtifacts                     bool     `json:"installArtifacts,omitempty"`
 	DefaultNpmRegistry                   string   `json:"defaultNpmRegistry,omitempty"`
+	NpmIncludeDevDependencies            bool     `json:"npmIncludeDevDependencies,omitempty"`
+	DisableNpmSubmodulesAggregation      bool     `json:"disableNpmSubmodulesAggregation,omitempty"`
 	GithubToken                          string   `json:"githubToken,omitempty"`
 	CreateResultIssue                    bool     `json:"createResultIssue,omitempty"`
 	GithubAPIURL                         string   `json:"githubApiUrl,omitempty"`
@@ -354,7 +356,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "For `buildTool: docker`: Defines the docker image which should be scanned.")
 	cmd.Flags().StringSliceVar(&stepConfig.ScanImages, "scanImages", []string{}, "For `buildTool: docker`: Allowing to scan multiple docker images. In case parent project will not contain any dependecies, use skipParentProjectResolution parameter")
-	cmd.Flags().BoolVar(&stepConfig.SkipParentProjectResolution, "skipParentProjectResolution", false, "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies.")
+	cmd.Flags().BoolVar(&stepConfig.SkipParentProjectResolution, "skipParentProjectResolution", false, "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose. Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies.")
 	cmd.Flags().BoolVar(&stepConfig.ActivateMultipleImagesScan, "activateMultipleImagesScan", false, "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters")
 	cmd.Flags().StringVar(&stepConfig.ScanImageRegistryURL, "scanImageRegistryUrl", os.Getenv("PIPER_scanImageRegistryUrl"), "For `buildTool: docker`: Defines the registry where the scanImage is located.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
@@ -369,6 +371,8 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, all artifacts will be installed to the local Maven repository to ensure availability before running WhiteSource. Currently, this parameter is not honored in whitesourceExecuteScan step, as it is internally managed by UA with the 'runPreStep'. In the future, this parameter will be honored based on the individual build tool.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
+	cmd.Flags().BoolVar(&stepConfig.NpmIncludeDevDependencies, "npmIncludeDevDependencies", false, "Enable this if you wish to include NPM DEV dependencies in the scan report")
+	cmd.Flags().BoolVar(&stepConfig.DisableNpmSubmodulesAggregation, "disableNpmSubmodulesAggregation", false, "The default Mend behavior is to aggregate all submodules of NPM project into one project in Mend. This parameter disables this behavior, thus for each submodule a separate project is created.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
@@ -923,6 +927,24 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
+					},
+					{
+						Name:        "npmIncludeDevDependencies",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/includeDevDependencies"}},
+						Default:     false,
+					},
+					{
+						Name:        "disableNpmSubmodulesAggregation",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "githubToken",
