@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"os"
 	"path"
 	"regexp"
@@ -129,43 +127,24 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 	return client, nil
 }
 
-func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []StepParameters, trustEngineConfiguration vault.TrustEngineConfiguration) {
-	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
+func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []StepParameters) {
 	for _, param := range params {
-		if paramValue, _ := config.Config[param.Name].(string); vaultDisableOverwrite && paramValue != "" {
-			log.Entry().Debugf("Not fetching '%s' from Vault since it has already been set", param.Name)
-			return
-		}
-		resolved := false
 		if ref := param.GetReference("vaultSecret"); ref != nil {
-			resolved = resolveVaultReference(ref, config, client, param)
+			resolveVaultReference(ref, config, client, param)
 		}
 		if ref := param.GetReference("vaultSecretFile"); ref != nil {
-			resolved = resolveVaultReference(ref, config, client, param)
-		}
-		// check if secret has been set through Jenkins secret?
-		if ref := param.GetReference("trustEngine"); ref != nil {
-			if !resolved {
-				resolveVaultTrustEngineReference(ref, config, &piperhttp.Client{}, param, trustEngineConfiguration)
-			}
+			resolveVaultReference(ref, config, client, param)
 		}
 	}
 }
 
-// resolveVaultTrustEngineReference retrieves a secret from Vault trust engine
-func resolveVaultTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters, trustEngineConfiguration vault.TrustEngineConfiguration) {
-	token, err := vault.GetTrustEngineSecret(ref.Name, client, trustEngineConfiguration)
-	if err != nil {
-		log.Entry().Infof(fmt.Sprintf("couldn't get secret from trust engine: %s", err))
+func resolveVaultReference(ref *ResourceReference, config *StepConfig, client VaultClient, param StepParameters) {
+	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
+	if paramValue, _ := config.Config[param.Name].(string); vaultDisableOverwrite && paramValue != "" {
+		log.Entry().Debugf("Not fetching '%s' from Vault since it has already been set", param.Name)
 		return
 	}
-	log.RegisterSecret(token)
-	config.Config[param.Name] = token
-	log.Entry().Infof("retrieving %s token from trust engine succeeded", ref.Name)
-}
 
-// resolveVaultReference attempts retrieving a secret from Vault and returns a boolean that indicates its success
-func resolveVaultReference(ref *ResourceReference, config *StepConfig, client VaultClient, param StepParameters) bool {
 	log.Entry().Infof("Resolving '%s'", param.Name)
 
 	var secretValue *string
@@ -185,15 +164,16 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 				filePath, err := createTemporarySecretFile(param.Name, *secretValue)
 				if err != nil {
 					log.Entry().WithError(err).Warnf("Couldn't create temporary secret file for '%s'", param.Name)
-					return false
+					return
 				}
 				config.Config[param.Name] = filePath
 			}
-			return true
+			break
 		}
 	}
-	log.Entry().Warn("  failed")
-	return false
+	if secretValue == nil {
+		log.Entry().Warn("  failed")
+	}
 }
 
 func resolveVaultTestCredentialsWrapper(config *StepConfig, client VaultClient) {

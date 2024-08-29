@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/vault"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,6 +10,8 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/vault"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -266,11 +267,14 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 		if vaultClient != nil {
 			defer vaultClient.MustRevokeToken()
-			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration)
+			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
 			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
 		}
 	}
+
+	c.SetTrustEngineConfiguration(stepConfig.HookConfig)
+	ResolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration)
 
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
@@ -307,10 +311,19 @@ func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultTok
 }
 
 // SetTrustEngineConfiguration sets the server URL and token
-func (c *Config) SetTrustEngineConfiguration(serverURL, token string) {
-	c.trustEngineConfiguration = vault.TrustEngineConfiguration{
-		ServerURL: serverURL,
-		Token:     token,
+func (c *Config) SetTrustEngineConfiguration(hookConfig map[string]interface{}) {
+	c.trustEngineConfiguration = vault.TrustEngineConfiguration{}
+	c.trustEngineConfiguration.Token = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
+
+	trustEngineHook, ok := hookConfig["trustEngine"].(map[string]interface{})
+	if !ok {
+		log.Entry().Debug("no trust engine hook configuration found")
+	}
+	serverURL, ok := trustEngineHook["serverURL"].(string)
+	if ok {
+		c.trustEngineConfiguration.ServerURL = serverURL
+	} else {
+		log.Entry().Debug("no server URL found in trust engine hook configuration")
 	}
 }
 

@@ -373,9 +373,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	if GeneralConfig.VaultToken == "" {
 		GeneralConfig.VaultToken = os.Getenv("PIPER_vaultToken")
 	}
-	if GeneralConfig.TrustEngineToken == "" {
-		GeneralConfig.TrustEngineToken = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
-	}
 	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
@@ -441,7 +438,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
-	myConfig.SetTrustEngineConfiguration(GeneralConfig.HookConfig.TrustEngineConfig.ServerURL, GeneralConfig.TrustEngineToken)
 
 	if GeneralConfig.GCPJsonKeyFilePath == "" {
 		GeneralConfig.GCPJsonKeyFilePath, _ = stepConfig.Config["gcpJsonKeyFilePath"].(string)
