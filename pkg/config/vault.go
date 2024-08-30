@@ -119,8 +119,6 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 	}
 	if err != nil {
 		log.Entry().Info("  failed")
-		// if app role fails then try the trust engine , since it does not depend of vault
-		// but here the token will come trust engine
 		return nil, err
 	}
 	log.Entry().Info("  succeeded")
