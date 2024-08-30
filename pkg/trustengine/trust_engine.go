@@ -6,57 +6,78 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type trustEngineUtils interface {
-	*piperhttp.Client
+type Secret struct {
+	Token  string `json:"sonar,omitempty"`
+	System string `json:"system,omitempty"`
 }
 
-type TrustEngineSecret struct {
-	Token string `json:"sonar,omitempty"`
+type Response struct {
+	Secrets []Secret
 }
 
-type TrustEngineConfiguration struct {
+type Configuration struct {
 	ServerURL string
 	Token     string
 }
 
-func GetTrustEngineSecret(refName string, client *piperhttp.Client, trustEngineConfiguration TrustEngineConfiguration) (string, error) {
-	secret, err := GetTrustEngineResponse(refName, client, trustEngineConfiguration)
+func GetToken(refName string, client *piperhttp.Client, trustEngineConfiguration Configuration) (string, error) {
+	secrets, err := GetSecrets([]string{refName}, client, trustEngineConfiguration)
 	if err != nil {
 		return "", err
 	}
-
-	token := secret.Token
-	if token == "" {
-		return "", errors.New("no token found in trust engine response")
+	for _, s := range secrets {
+		if s.System == refName {
+			return s.Token, nil
+		}
 	}
-	return token, nil
+	return "", errors.New("could not find token in trust engine response")
 }
 
-func GetTrustEngineResponse(refName string, client *piperhttp.Client, trustEngineConfiguration TrustEngineConfiguration) (TrustEngineSecret, error) {
-	var trust TrustEngineSecret
-	fullURL := trustEngineConfiguration.ServerURL + fmt.Sprintf("?systems=%s", refName)
+func GetSecrets(refNames []string, client *piperhttp.Client, trustEngineConfiguration Configuration) ([]Secret, error) {
+	var secrets []Secret
+	response, err := GetResponse(refNames, client, trustEngineConfiguration)
+	if err != nil {
+		return secrets, err
+	}
+	for k, v := range response {
+		secrets = append(secrets, Secret{
+			System: k,
+			Token:  v})
+	}
+
+	return secrets, nil
+}
+
+func GetResponse(refNames []string, client *piperhttp.Client, trustEngineConfiguration Configuration) (map[string]string, error) {
+	var secrets map[string]string
+	query := fmt.Sprintf("?systems=%s", strings.Join(refNames, ","))
+	fullURL := trustEngineConfiguration.ServerURL + query
 
 	log.Entry().Debugf("getting token from %s", fullURL)
 	var header http.Header = map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token)}}
 	response, err := client.SendRequest("GET", fullURL, nil, header, nil)
-	defer response.Body.Close()
-	if err != nil {
+	if err != nil && response != nil {
 		// the body contains full error message which we want to log
-		bodyBytes, err := io.ReadAll(response.Body)
-		if err == nil {
+		bodyBytes, bodyErr := io.ReadAll(response.Body)
+		if bodyErr == nil {
 			log.Entry().Info(string(bodyBytes))
 		}
-		return trust, err
+	}
+	if err != nil {
+		return secrets, err
+	}
+	defer response.Body.Close()
+
+	err = json.NewDecoder(response.Body).Decode(&secrets)
+	if err != nil {
+		return secrets, err
 	}
 
-	err = json.NewDecoder(response.Body).Decode(&trust)
-	if err != nil {
-		return trust, err
-	}
-	return trust, nil
+	return secrets, nil
 }

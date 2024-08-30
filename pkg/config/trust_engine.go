@@ -8,10 +8,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/trustengine"
 )
 
-func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.TrustEngineConfiguration) {
+func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.Configuration) {
 	for _, param := range params {
 		if ref := param.GetReference("trustEngine"); ref != nil {
-			if config.Config[param.Name] == "" {
+			if config.Config[param.Name] == "" { // what if Jenkins set the secret?
 				resolveTrustEngineReference(ref, config, &piperhttp.Client{}, param, trustEngineConfiguration)
 			}
 		}
@@ -19,8 +19,8 @@ func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 }
 
 // resolveTrustEngineReference retrieves a secret from Vault trust engine
-func resolveTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters, trustEngineConfiguration trustengine.TrustEngineConfiguration) {
-	token, err := trustengine.GetTrustEngineSecret(ref.Name, client, trustEngineConfiguration)
+func resolveTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters, trustEngineConfiguration trustengine.Configuration) {
+	token, err := trustengine.GetToken(ref.Name, client, trustEngineConfiguration)
 	if err != nil {
 		log.Entry().Infof(fmt.Sprintf("couldn't get secret from trust engine: %s", err))
 		return
