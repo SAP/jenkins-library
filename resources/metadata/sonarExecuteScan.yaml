@@ -54,7 +54,7 @@ spec:
           - name: sonarTokenCredentialsId
             type: secret
           - name: sonar
-            type: trustEngine
+            type: trustengineSecret
         aliases:
           - name: sonarToken
       - name: organization

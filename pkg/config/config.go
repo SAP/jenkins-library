@@ -310,23 +310,6 @@ func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultTok
 	}
 }
 
-// SetTrustEngineConfiguration sets the server URL and token
-func (c *Config) SetTrustEngineConfiguration(hookConfig map[string]interface{}) {
-	c.trustEngineConfiguration = trustengine.Configuration{}
-	c.trustEngineConfiguration.Token = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
-
-	trustEngineHook, ok := hookConfig["trustEngine"].(map[string]interface{})
-	if !ok {
-		log.Entry().Debug("no trust engine hook configuration found")
-	}
-	serverURL, ok := trustEngineHook["serverURL"].(string)
-	if ok {
-		c.trustEngineConfiguration.ServerURL = serverURL
-	} else {
-		log.Entry().Debug("no server URL found in trust engine hook configuration")
-	}
-}
-
 // GetStepConfigWithJSON provides merged step configuration using a provided stepConfigJSON with additional flags provided
 func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON string, filters StepFilters) StepConfig {
 	var stepConfig StepConfig

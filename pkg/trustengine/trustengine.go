@@ -61,7 +61,7 @@ func GetResponse(refNames []string, client *piperhttp.Client, trustEngineConfigu
 
 	log.Entry().Debugf("getting token from %s", fullURL)
 	var header http.Header = map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token)}}
-	response, err := client.SendRequest("GET", fullURL, nil, header, nil)
+	response, err := client.SendRequest(http.MethodGet, fullURL, nil, header, nil)
 	if err != nil && response != nil {
 		// the body contains full error message which we want to log
 		bodyBytes, bodyErr := io.ReadAll(response.Body)
