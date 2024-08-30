@@ -334,7 +334,7 @@ func sonarExecuteScanMetadata() config.StepData {
 
 							{
 								Name: "sonar",
-								Type: "trustengine",
+								Type: "trustengineSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
