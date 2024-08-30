@@ -749,7 +749,6 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 				"--detect.source.path='.'",
 				"--detect.blackduck.scan.mode='RAPID'",
-				"--detect.blackduck.rapid.compare.mode='BOM_COMPARE_STRICT'",
 				"--detect.cleanup=false",
 				"--detect.output.path='report'",
 			},
