@@ -1,0 +1,98 @@
+metadata:
+  name: npmExecuteEndToEndTests
+  description: Executes end-to-end tests using npm
+  longDescription: |
+    This step executes end-to-end tests in a Docker environment using npm.
+
+    The step spins up a Docker container based on the specified `dockerImage` and executes the `runScript` from `package.json`.
+
+    The application URLs and credentials can be specified in `appUrls` and `credentialsId` respectively. If `wdi5` is set to `true`, the step uses `wdi5_username` and `wdi5_password` for authentication.
+
+    The tests can be restricted to run only on the productive branch by setting `onlyRunInProductiveBranch` to `true`.
+
+spec:
+  inputs:
+    params:
+      - name: dockerImage
+        type: string
+        description: Docker image on which end-to-end tests should be executed.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: runScript
+        type: string
+        description: Script to be executed from package.json. Defaults to `ci-e2e`.
+        default: ci-e2e
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: appUrls
+        type: "[]map[string]interface{}"
+        description: |
+          The URLs under which the app is available after deployment.
+          Each element of appUrls must be a map containing a property url, an optional property credentialId, and an optional property parameters.
+          The optional property parameters can be used to pass additional parameters to the end-to-end test deployment reachable via the given application URL.
+          These parameters must be a list of strings, where each string corresponds to one element of the parameters.
+          These parameters are appended to the npm command during execution.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: onlyRunInProductiveBranch
+        type: bool
+        description: Boolean to indicate whether the step should only be executed in the productive branch or not.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: productiveBranch
+        type: string
+        description: The branch used as productive branch, defaults to master.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: baseUrl
+        type: string
+        description: Base URL of the application to be tested.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: wdi5
+        type: bool
+        description: Distinguish if these are wdi5 tests.
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: credentialsId
+        type: string
+        description: Credentials to access the application to be tested.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/e2e-results.xml"
+            type: e2e
+  containers:
+    - name: e2e-tests
+      image: ${{params.dockerImage}}
+      env:
+        - name: BASE_URL
+          value: ${{params.baseUrl}}
+        - name: CREDENTIALS_ID
+          value: ${{params.credentialsId}}
+      workingDir: /app
+  sidecars: []
