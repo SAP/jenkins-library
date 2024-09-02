@@ -273,8 +273,12 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 	}
 
-	c.SetTrustEngineConfiguration(stepConfig.HookConfig)
-	ResolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration)
+	err = c.SetTrustEngineConfiguration(stepConfig.HookConfig)
+	if err != nil {
+		ResolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, &piperhttp.Client{})
+	} else {
+		log.Entry().WithError(err).Warn("Trust Engine lookup skipped")
+	}
 
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {

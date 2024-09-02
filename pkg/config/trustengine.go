@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -9,41 +9,43 @@ import (
 	"github.com/SAP/jenkins-library/pkg/trustengine"
 )
 
-func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.Configuration) {
+// ResolveAllTrustEngineReferences retrieves all the step's secrets from the trust engine
+func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.Configuration, client *piperhttp.Client) {
 	for _, param := range params {
 		if ref := param.GetReference("trustengineSecret"); ref != nil {
 			if config.Config[param.Name] == "" { // what if Jenkins set the secret?
-				resolveTrustEngineReference(ref, config, &piperhttp.Client{}, param, trustEngineConfiguration)
+				log.Entry().Infof("Getting %s from Trust Engine", ref.Name)
+				token, err := trustengine.GetToken(ref.Name, client, trustEngineConfiguration)
+				if err != nil {
+					log.Entry().Info(" failed")
+					log.Entry().WithError(err).Warnf("Couldn't get %s secret from Trust Engine", param.Name)
+					continue
+				}
+				log.RegisterSecret(token)
+				config.Config[param.Name] = token
+				log.Entry().Info(" succeeded")
 			}
 		}
 	}
 }
 
-// resolveTrustEngineReference retrieves a secret from Vault trust engine
-func resolveTrustEngineReference(ref *ResourceReference, config *StepConfig, client *piperhttp.Client, param StepParameters, trustEngineConfiguration trustengine.Configuration) {
-	token, err := trustengine.GetToken(ref.Name, client, trustEngineConfiguration)
-	if err != nil {
-		log.Entry().Infof(fmt.Sprintf("couldn't get secret from trust engine: %s", err))
-		return
-	}
-	log.RegisterSecret(token)
-	config.Config[param.Name] = token
-	log.Entry().Infof("retrieving %s token from trust engine succeeded", ref.Name)
-}
-
 // SetTrustEngineConfiguration sets the server URL and token
-func (c *Config) SetTrustEngineConfiguration(hookConfig map[string]interface{}) {
+func (c *Config) SetTrustEngineConfiguration(hookConfig map[string]interface{}) error {
 	c.trustEngineConfiguration = trustengine.Configuration{}
 	c.trustEngineConfiguration.Token = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
+	if len(c.trustEngineConfiguration.Token) == 0 {
+		log.Entry().Warn("No Trust Engine token environment variable set or is empty string")
+	}
 
-	trustEngineHook, ok := hookConfig["trustEngine"].(map[string]interface{})
+	trustEngineHook, ok := hookConfig["trustengine"].(map[string]interface{})
 	if !ok {
-		log.Entry().Debug("no trust engine hook configuration found")
+		return errors.New("no trust engine hook configuration found")
 	}
 	serverURL, ok := trustEngineHook["serverURL"].(string)
 	if ok {
 		c.trustEngineConfiguration.ServerURL = serverURL
 	} else {
-		log.Entry().Debug("no server URL found in trust engine hook configuration")
+		return errors.New("no server URL found in trust engine hook configuration")
 	}
+	return nil
 }
