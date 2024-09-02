@@ -62,9 +62,6 @@ func GetResponse(refNames []string, client *piperhttp.Client, trustEngineConfigu
 	query := fmt.Sprintf("?systems=%s", strings.Join(refNames, ","))
 	fullURL := trustEngineConfiguration.ServerURL + query
 
-	client.SetOptions(piperhttp.ClientOptions{
-		Token: fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token),
-	})
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 
@@ -88,4 +85,12 @@ func GetResponse(refNames []string, client *piperhttp.Client, trustEngineConfigu
 	}
 
 	return secrets, nil
+}
+
+func PrepareClient(trustEngineConfiguration Configuration) *piperhttp.Client {
+	client := piperhttp.Client{}
+	client.SetOptions(piperhttp.ClientOptions{
+		Token: fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token),
+	})
+	return &client
 }

@@ -275,7 +275,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	err = c.SetTrustEngineConfiguration(stepConfig.HookConfig)
 	if err != nil {
-		ResolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, &piperhttp.Client{})
+		trustengineClient := trustengine.PrepareClient(c.trustEngineConfiguration)
+		ResolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, trustengineClient)
 	} else {
 		log.Entry().WithError(err).Warn("Trust Engine lookup skipped")
 	}
