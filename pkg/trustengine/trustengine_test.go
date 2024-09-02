@@ -23,10 +23,10 @@ var trustEngineConfiguration = Configuration{
 }
 
 func TestTrustEngine(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
 
 	t.Run("Get Sonar token - happy path", func(t *testing.T) {
-		httpmock.Activate()
-		defer httpmock.DeactivateAndReset()
 		httpmock.RegisterResponder(http.MethodGet, testBaseURL+"?systems=sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
 
 		client := &piperhttp.Client{}
@@ -38,8 +38,6 @@ func TestTrustEngine(t *testing.T) {
 	})
 
 	t.Run("Get multiple tokens - happy path", func(t *testing.T) {
-		httpmock.Activate()
-		defer httpmock.DeactivateAndReset()
 		httpmock.RegisterResponder(http.MethodGet, testBaseURL+"?systems=sonar,cumulus", httpmock.NewStringResponder(200, mockTwoTokensResponse))
 
 		client := &piperhttp.Client{}
@@ -62,8 +60,6 @@ func TestTrustEngine(t *testing.T) {
 	})
 
 	t.Run("Get Sonar token - 403 error", func(t *testing.T) {
-		httpmock.Activate()
-		defer httpmock.DeactivateAndReset()
 		httpmock.RegisterResponder(http.MethodGet, testBaseURL+"?systems=sonar", httpmock.NewStringResponder(403, errorMsg403))
 
 		client := &piperhttp.Client{}
