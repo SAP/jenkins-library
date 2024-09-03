@@ -56,7 +56,7 @@ type HookConfiguration struct {
 	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
 	PendoConfig       PendoConfiguration       `json:"pendo,omitempty"`
 	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
-	TrustEngineConfig TrustEngineConfiguration `json:"trustEngine,omitempty"`
+	TrustEngineConfig TrustEngineConfiguration `json:"trustengine,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -85,7 +85,7 @@ type OIDCConfiguration struct {
 }
 
 type TrustEngineConfiguration struct {
-	ServerURL string `json:",baseURL,omitempty"`
+	ServerURL string `json:"baseURL,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
@@ -374,6 +374,11 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		GeneralConfig.VaultToken = os.Getenv("PIPER_vaultToken")
 	}
 	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
+
+	if GeneralConfig.TrustEngineToken == "" {
+		GeneralConfig.TrustEngineToken = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
+	}
+	myConfig.SetTrustEngineToken(GeneralConfig.TrustEngineToken)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON

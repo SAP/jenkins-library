@@ -2,8 +2,6 @@ package config
 
 import (
 	"errors"
-	"os"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/trustengine"
@@ -14,7 +12,7 @@ func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 	for _, param := range params {
 		if ref := param.GetReference(trustengine.RefTypeSecret); ref != nil {
 			if config.Config[param.Name] == "" { // what if Jenkins set the secret?
-				log.Entry().Infof("Getting %s from Trust Engine", ref.Name)
+				log.Entry().Infof("Getting '%s' from Trust Engine", param.Name)
 				token, err := trustengine.GetToken(ref.Name, client, trustEngineConfiguration)
 				if err != nil {
 					log.Entry().Info(" failed")
@@ -24,19 +22,15 @@ func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 				log.RegisterSecret(token)
 				config.Config[param.Name] = token
 				log.Entry().Info(" succeeded")
+			} else {
+				log.Entry().Infof("Skipping getting '%s' from Trust Engine: parameter already set", param.Name)
 			}
 		}
 	}
 }
 
-// setTrustEngineConfiguration sets the server URL and token
-func (c *Config) setTrustEngineConfiguration(hookConfig map[string]interface{}) error {
-	c.trustEngineConfiguration = trustengine.Configuration{}
-	c.trustEngineConfiguration.Token = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
-	if len(c.trustEngineConfiguration.Token) == 0 {
-		log.Entry().Warn("No Trust Engine token environment variable set or is empty string")
-	}
-
+// setTrustEngineServer sets the server URL for the Trust Engine
+func (c *Config) setTrustEngineServer(hookConfig map[string]interface{}) error {
 	trustEngineHook, ok := hookConfig["trustengine"].(map[string]interface{})
 	if !ok {
 		return errors.New("no trust engine hook configuration found")
@@ -47,4 +41,12 @@ func (c *Config) setTrustEngineConfiguration(hookConfig map[string]interface{}) 
 		return errors.New("no server URL found in trust engine hook configuration")
 	}
 	return nil
+}
+
+// SetTrustEngineToken sets the token for the Trust Engine
+func (c *Config) SetTrustEngineToken(token string) {
+	c.trustEngineConfiguration.Token = token
+	if len(c.trustEngineConfiguration.Token) == 0 {
+		log.Entry().Warn("Trust Engine token is not configured or empty string")
+	}
 }
