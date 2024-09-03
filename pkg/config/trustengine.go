@@ -7,7 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/trustengine"
 )
 
-// resolveAllTrustEngineReferences retrieves all the step's secrets from the trust engine
+// resolveAllTrustEngineReferences retrieves all the step's secrets from the Trust Engine
 func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.Configuration, client *piperhttp.Client) {
 	for _, param := range params {
 		if ref := param.GetReference(trustengine.RefTypeSecret); ref != nil {
@@ -29,7 +29,7 @@ func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 	}
 }
 
-// setTrustEngineServer sets the server URL for the Trust Engine
+// setTrustEngineServer sets the server URL for the Trust Engine by taking it from the hooks
 func (c *Config) setTrustEngineServer(hookConfig map[string]interface{}) error {
 	trustEngineHook, ok := hookConfig["trustengine"].(map[string]interface{})
 	if !ok {
