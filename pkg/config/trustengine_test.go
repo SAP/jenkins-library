@@ -23,7 +23,7 @@ func TestTrustEngineConfig(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterResponder(http.MethodGet, testBaseURL+"?systems=sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
 
-	stepParams := []StepParameters{stepParam(secretName, "trustengineSecret", secretNameInTrustEngine, secretName)}
+	stepParams := []StepParameters{createStepParam(secretName, trustengine.RefTypeSecret, secretNameInTrustEngine, secretName)}
 
 	trustEngineConfiguration := trustengine.Configuration{
 		Token:     "mockToken",
@@ -37,7 +37,7 @@ func TestTrustEngineConfig(t *testing.T) {
 			secretName: "",
 		}}
 
-		ResolveAllTrustEngineReferences(stepConfig, stepParams, trustEngineConfiguration, client)
+		resolveAllTrustEngineReferences(stepConfig, stepParams, trustEngineConfiguration, client)
 		assert.Equal(t, mockSonarToken, stepConfig.Config[secretName])
 	})
 
@@ -46,12 +46,12 @@ func TestTrustEngineConfig(t *testing.T) {
 			secretName: "aMockTokenFromVault",
 		}}
 
-		ResolveAllTrustEngineReferences(stepConfig, stepParams, trustEngineConfiguration, client)
+		resolveAllTrustEngineReferences(stepConfig, stepParams, trustEngineConfiguration, client)
 		assert.NotEqual(t, mockSonarToken, stepConfig.Config[secretName])
 	})
 }
 
-func stepParam(name, refType, vaultSecretNameProperty, defaultSecretNameName string) StepParameters {
+func createStepParam(name, refType, vaultSecretNameProperty, defaultSecretNameName string) StepParameters {
 	return StepParameters{
 		Name:    name,
 		Aliases: []Alias{},

@@ -9,10 +9,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/trustengine"
 )
 
-// ResolveAllTrustEngineReferences retrieves all the step's secrets from the trust engine
-func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.Configuration, client *piperhttp.Client) {
+// resolveAllTrustEngineReferences retrieves all the step's secrets from the trust engine
+func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.Configuration, client *piperhttp.Client) {
 	for _, param := range params {
-		if ref := param.GetReference("trustengineSecret"); ref != nil {
+		if ref := param.GetReference(trustengine.RefTypeSecret); ref != nil {
 			if config.Config[param.Name] == "" { // what if Jenkins set the secret?
 				log.Entry().Infof("Getting %s from Trust Engine", ref.Name)
 				token, err := trustengine.GetToken(ref.Name, client, trustEngineConfiguration)
@@ -29,8 +29,8 @@ func ResolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 	}
 }
 
-// SetTrustEngineConfiguration sets the server URL and token
-func (c *Config) SetTrustEngineConfiguration(hookConfig map[string]interface{}) error {
+// setTrustEngineConfiguration sets the server URL and token
+func (c *Config) setTrustEngineConfiguration(hookConfig map[string]interface{}) error {
 	c.trustEngineConfiguration = trustengine.Configuration{}
 	c.trustEngineConfiguration.Token = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
 	if len(c.trustEngineConfiguration.Token) == 0 {
@@ -41,8 +41,7 @@ func (c *Config) SetTrustEngineConfiguration(hookConfig map[string]interface{}) 
 	if !ok {
 		return errors.New("no trust engine hook configuration found")
 	}
-	serverURL, ok := trustEngineHook["serverURL"].(string)
-	if ok {
+	if serverURL, ok := trustEngineHook["serverURL"].(string); ok {
 		c.trustEngineConfiguration.ServerURL = serverURL
 	} else {
 		return errors.New("no server URL found in trust engine hook configuration")
