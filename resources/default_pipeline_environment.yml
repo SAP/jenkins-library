@@ -374,7 +374,7 @@ steps:
     stepMessage: 'Do you want to restart?'
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/**'
+      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, **/dist/**'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
       checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
@@ -415,7 +415,7 @@ steps:
     parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'
     parserScript: 'return builder.guessSeverity(matcher.group(1)).setMessage(matcher.group(2)).setModuleName(matcher.group(3)).setType(matcher.group(4)).buildOptional()'
     recordIssuesSettings:
-      blameDisabled: true
+      skipBlames: true
       enabledForFailure: true
   seleniumExecuteTests:
     buildTool: 'npm'

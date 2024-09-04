@@ -225,10 +225,10 @@ func (api *SAP_COM_0510) GetAction() (string, error) {
 	return abapStatusCode, nil
 }
 
-func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
+func (api *SAP_COM_0510) GetRepository() (bool, string, error, bool) {
 
 	if api.repository.Name == "" {
-		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'")
+		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'"), false
 	}
 
 	swcConnectionDetails := api.con
@@ -236,7 +236,7 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 	resp, err := GetHTTPResponse("GET", swcConnectionDetails, nil, api.client)
 	if err != nil {
 		_, errRepo := HandleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
-		return false, "", errRepo
+		return false, "", errRepo, false
 	}
 	defer resp.Body.Close()
 
@@ -244,25 +244,25 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 	var abapResp map[string]*json.RawMessage
 	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
-		return false, "", err
+		return false, "", err, false
 	}
 
 	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return false, "", err
+		return false, "", err, false
 	}
 	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return false, "", err
+		return false, "", err, false
 	}
 	if reflect.DeepEqual(RepositoryEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Error("Could not Clone the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
-		return false, "", err
+		return false, "", err, false
 	}
 
 	if body.AvailOnInst {
-		return true, body.ActiveBranch, nil
+		return true, body.ActiveBranch, nil, false
 	}
-	return false, "", err
+	return false, "", err, false
 
 }
 
@@ -398,4 +398,9 @@ func (api *SAP_COM_0510) ConvertTime(logTimeStamp string) time.Time {
 	}
 	t := time.Unix(n, 0).UTC()
 	return t
+}
+
+// Dummy implementation of the "optional" method UpdateRepoWithBYOGCredentials (only used in SAP_COM_0948)
+func (api *SAP_COM_0510) UpdateRepoWithBYOGCredentials(byogAuthMethod string, byogUsername string, byogPassword string) {
+	panic("UpdateRepoWithBYOGCredentials cannot be used in SAP_COM_0510")
 }

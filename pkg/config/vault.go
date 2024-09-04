@@ -138,7 +138,7 @@ func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []
 
 func resolveVaultReference(ref *ResourceReference, config *StepConfig, client VaultClient, param StepParameters) {
 	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
-	if _, ok := config.Config[param.Name].(string); vaultDisableOverwrite && ok {
+	if paramValue, _ := config.Config[param.Name].(string); vaultDisableOverwrite && paramValue != "" {
 		log.Entry().Debugf("Not fetching '%s' from Vault since it has already been set", param.Name)
 		return
 	}
