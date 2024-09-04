@@ -360,7 +360,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)
 
 		assert.Equal(t, "/tmp/syfttest/syft", execRunner.Calls[2].Exec)
-		assert.Equal(t, []string{"scan", "registry:index.docker.io/myImage:tag", "-o", "cyclonedx-xml=bom-docker-0.xml", "-q"}, execRunner.Calls[2].Params)
+		assert.Equal(t, []string{"scan", "registry:index.docker.io/myImage:tag", "-o", "cyclonedx-xml@1.4=bom-docker-0.xml", "-q"}, execRunner.Calls[2].Params)
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
@@ -518,7 +518,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			found := false
 			for _, expected := range expectedParams {
 				if expected[0] == "scan" {
-					expected = append(expected, fmt.Sprintf("cyclonedx-xml=bom-docker-%d.xml", index-3), "-q")
+					expected = append(expected, fmt.Sprintf("cyclonedx-xml@1.4=bom-docker-%d.xml", index-3), "-q")
 				}
 				if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
 					found = true
@@ -670,7 +670,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			found := false
 			for _, expected := range expectedParams {
 				if expected[0] == "scan" {
-					expected = append(expected, fmt.Sprintf("cyclonedx-xml=bom-docker-%d.xml", index-2), "-q")
+					expected = append(expected, fmt.Sprintf("cyclonedx-xml@1.4=bom-docker-%d.xml", index-2), "-q")
 				}
 				if strings.Join(call.Params, " ") == strings.Join(expected, " ") {
 					found = true

@@ -60,6 +60,7 @@ class commonPipelineEnvironment implements Serializable {
 
     String abapAddonDescriptor
 
+
     private Map valueMap = [:]
 
     void setValue(String property, value) {

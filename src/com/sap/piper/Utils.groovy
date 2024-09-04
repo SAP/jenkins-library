@@ -90,7 +90,6 @@ boolean isInsidePod(Script script) {
 }
 
 def unstash(name, msg = "Unstash failed:") {
-
     def unstashedContent = []
     try {
         echo "Unstash content: ${name}"
@@ -98,7 +97,7 @@ def unstash(name, msg = "Unstash failed:") {
         unstashedContent += name
     } catch (e) {
         echo "$msg $name (${e.getMessage()})"
-        if (e.getMessage().contains("JNLP4-connect")) {
+        if (e.getMessage() != null && e.getMessage().contains("JNLP4-connect")) {
             sleep(3) // Wait 3 seconds in case it has been a network hiccup
             try {
                 echo "[Retry JNLP4-connect issue] Unstashing content: ${name}"
