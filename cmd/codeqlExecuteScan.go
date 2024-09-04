@@ -497,6 +497,5 @@ func updateCmdFlag(config *codeqlExecuteScanOptions, customFlags map[string]stri
 	}
 	buildCmd += getMavenSettings(buildCmd, config, utils)
 	customFlags["--command"] = buildCmd
-	log.Entry().Infof("customFlags[--command]: %s", customFlags["--command"])
 	delete(customFlags, "-c")
 }
