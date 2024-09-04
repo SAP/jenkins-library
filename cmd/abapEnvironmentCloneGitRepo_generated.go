@@ -18,6 +18,9 @@ import (
 type abapEnvironmentCloneGitRepoOptions struct {
 	Username          string   `json:"username,omitempty"`
 	Password          string   `json:"password,omitempty"`
+	ByogUsername      string   `json:"byogUsername,omitempty"`
+	ByogPassword      string   `json:"byogPassword,omitempty"`
+	ByogAuthMethod    string   `json:"byogAuthMethod,omitempty" validate:"possible-values=TOKEN BASIC"`
 	Repositories      string   `json:"repositories,omitempty"`
 	RepositoryName    string   `json:"repositoryName,omitempty"`
 	BranchName        string   `json:"branchName,omitempty"`
@@ -68,6 +71,8 @@ Please provide either of the following options:
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.ByogUsername)
+			log.RegisterSecret(stepConfig.ByogPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -138,6 +143,9 @@ Please provide either of the following options:
 func addAbapEnvironmentCloneGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvironmentCloneGitRepoOptions) {
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0948")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0948")
+	cmd.Flags().StringVar(&stepConfig.ByogUsername, "byogUsername", os.Getenv("PIPER_byogUsername"), "Username for bring your own git (BYOG) authentication")
+	cmd.Flags().StringVar(&stepConfig.ByogPassword, "byogPassword", os.Getenv("PIPER_byogPassword"), "Password for bring your own git (BYOG) authentication")
+	cmd.Flags().StringVar(&stepConfig.ByogAuthMethod, "byogAuthMethod", `TOKEN`, "Specifies which authentication method is used for bring your own git (BYOG) repositories")
 	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
 	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies a repository (Software Components) on the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Specifies a branch of a repository (Software Components) on the SAP BTP ABAP Environment system")
@@ -151,6 +159,8 @@ func addAbapEnvironmentCloneGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnv
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("byogUsername")
+	cmd.MarkFlagRequired("byogPassword")
 }
 
 // retrieve step metadata
@@ -165,6 +175,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the BTP ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}, {Name: "credentialsId", Deprecated: false}}},
+					{Name: "byogCredentialsId", Description: "Jenkins credentials ID containing ByogUsername and ByogPassword to authenticate to a software component which is used in a BYOG scenario. (https://help.sap.com/docs/btp/sap-business-technology-platform/cloning-software-components-to-abap-environment-system-383ce2f9e2eb40f1b8ad538ddf79e656)", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -196,6 +207,45 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_password"),
+					},
+					{
+						Name: "byogUsername",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "byogCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_byogUsername"),
+					},
+					{
+						Name: "byogPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "byogCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_byogPassword"),
+					},
+					{
+						Name:        "byogAuthMethod",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `TOKEN`,
 					},
 					{
 						Name:        "repositories",

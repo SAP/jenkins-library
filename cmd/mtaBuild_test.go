@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -98,7 +95,7 @@ func TestMtaBuild(t *testing.T) {
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
-		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName", Source: "./", Target: "./"}
+		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName", Source: "./", Target: "./", EnableSetTimestamp: true}
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
@@ -149,7 +146,7 @@ func TestMtaBuild(t *testing.T) {
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
-		options := mtaBuildOptions{ApplicationName: "myApp"}
+		options := mtaBuildOptions{ApplicationName: "myApp", EnableSetTimestamp: true}
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 		utilsMock.AddFile("mta.yaml", []byte("already there with-${timestamp}"))

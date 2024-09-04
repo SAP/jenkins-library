@@ -70,6 +70,7 @@ type whitesourceExecuteScanOptions struct {
 	M2Path                               string   `json:"m2Path,omitempty"`
 	InstallArtifacts                     bool     `json:"installArtifacts,omitempty"`
 	DefaultNpmRegistry                   string   `json:"defaultNpmRegistry,omitempty"`
+	NpmIncludeDevDependencies            bool     `json:"npmIncludeDevDependencies,omitempty"`
 	DisableNpmSubmodulesAggregation      bool     `json:"disableNpmSubmodulesAggregation,omitempty"`
 	GithubToken                          string   `json:"githubToken,omitempty"`
 	CreateResultIssue                    bool     `json:"createResultIssue,omitempty"`
@@ -370,6 +371,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, all artifacts will be installed to the local Maven repository to ensure availability before running WhiteSource. Currently, this parameter is not honored in whitesourceExecuteScan step, as it is internally managed by UA with the 'runPreStep'. In the future, this parameter will be honored based on the individual build tool.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
+	cmd.Flags().BoolVar(&stepConfig.NpmIncludeDevDependencies, "npmIncludeDevDependencies", false, "Enable this if you wish to include NPM DEV dependencies in the scan report")
 	cmd.Flags().BoolVar(&stepConfig.DisableNpmSubmodulesAggregation, "disableNpmSubmodulesAggregation", false, "The default Mend behavior is to aggregate all submodules of NPM project into one project in Mend. This parameter disables this behavior, thus for each submodule a separate project is created.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of a result issue in GitHub.")
@@ -925,6 +927,15 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
+					},
+					{
+						Name:        "npmIncludeDevDependencies",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/includeDevDependencies"}},
+						Default:     false,
 					},
 					{
 						Name:        "disableNpmSubmodulesAggregation",
