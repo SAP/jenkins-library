@@ -334,12 +334,15 @@ func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlEx
 		buildCmd := config.BuildCommand
 		buildCmd = buildCmd + getMavenSettings(buildCmd, config, utils)
 		cmd = append(cmd, "--command="+buildCmd)
+		log.Entry().Infof("cmd after appending mvn settings: %v", cmd)
 	}
 
 	if codeql.IsFlagSetByUser(customFlags, []string{"--command", "-c"}) {
 		updateCmdFlag(config, customFlags, utils)
 	}
 	cmd = codeql.AppendCustomFlags(cmd, customFlags)
+
+	log.Entry().Infof("cmd after appending custom flags: %v", cmd)
 
 	return cmd, nil
 }
@@ -481,8 +484,10 @@ func getMavenSettings(buildCmd string, config *codeqlExecuteScanOptions, utils c
 			log.Entry().Error("failed to download and get maven parameters: ", err)
 			return params
 		}
+		log.Entry().Infof("params: %s, mvnParams: %v", params, mvnParams)
 		for i := 1; i < len(mvnParams); i += 2 {
-			params = fmt.Sprintf("%s %s=\"%s\"", params, mvnParams[i-1], mvnParams[i])
+			params = fmt.Sprintf("%s %s=%s", params, mvnParams[i-1], mvnParams[i])
+			log.Entry().Infof("params: %s", params)
 		}
 	}
 	return params
@@ -497,5 +502,6 @@ func updateCmdFlag(config *codeqlExecuteScanOptions, customFlags map[string]stri
 	}
 	buildCmd += getMavenSettings(buildCmd, config, utils)
 	customFlags["--command"] = buildCmd
+	log.Entry().Infof("customFlags[--command]: %s", customFlags["--command"])
 	delete(customFlags, "-c")
 }
