@@ -4,16 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"strings"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
 )
-
-// const RefTypeFile = "trustengineSecretFile"
-const RefTypeSecret = "trustengineSecret"
 
 type Secret struct {
 	Token  string
@@ -25,8 +22,9 @@ type Response struct {
 }
 
 type Configuration struct {
-	ServerURL string
-	Token     string
+	ServerURL     string
+	TokenEndPoint string
+	Token         string
 }
 
 // GetToken requests a single token
@@ -46,7 +44,9 @@ func GetToken(refName string, client *piperhttp.Client, trustEngineConfiguration
 // GetSecrets transforms the trust engine JSON response into trust engine secrets, and can be used to request multiple tokens
 func GetSecrets(refNames []string, client *piperhttp.Client, trustEngineConfiguration Configuration) ([]Secret, error) {
 	var secrets []Secret
-	response, err := getResponse(refNames, client, trustEngineConfiguration)
+	endpoint := trustEngineConfiguration.TokenEndPoint
+	queryValues := strings.Join(refNames, ",")
+	response, err := getResponse(endpoint, queryValues, trustEngineConfiguration, client)
 	if err != nil {
 		return secrets, errors.Join(err, errors.New("getting secrets from trust engine failed"))
 	}
@@ -60,10 +60,13 @@ func GetSecrets(refNames []string, client *piperhttp.Client, trustEngineConfigur
 }
 
 // getResponse returns a map of the JSON response that the trust engine puts out
-func getResponse(refNames []string, client *piperhttp.Client, trustEngineConfiguration Configuration) (map[string]string, error) {
+func getResponse(endpoint, queryValues string, trustEngineConfiguration Configuration, client *piperhttp.Client) (map[string]string, error) {
 	var secrets map[string]string
-	query := fmt.Sprintf("?systems=%s", strings.Join(refNames, ","))
-	fullURL := trustEngineConfiguration.ServerURL + query
+	fullURL, err := url.JoinPath(trustEngineConfiguration.ServerURL, endpoint)
+	if err != nil {
+		return secrets, errors.Join(err, errors.New("could not parse URL"))
+	}
+	fullURL = fullURL + queryValues
 
 	header := make(http.Header)
 	header.Add("Accept", "application/json")

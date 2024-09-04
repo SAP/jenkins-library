@@ -85,7 +85,8 @@ type OIDCConfiguration struct {
 }
 
 type TrustEngineConfiguration struct {
-	ServerURL string `json:"baseURL,omitempty"`
+	ServerURL     string `json:"baseURL,omitempty"`
+	TokenEndPoint string `json:"tokenEndPoint,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
@@ -375,9 +376,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	}
 	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
 
-	if GeneralConfig.TrustEngineToken == "" {
-		GeneralConfig.TrustEngineToken = os.Getenv("PIPER_TRUST_ENGINE_TOKEN")
-	}
+	GeneralConfig.TrustEngineToken = os.Getenv("PIPER_trustEngineToken")
 	myConfig.SetTrustEngineToken(GeneralConfig.TrustEngineToken)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
