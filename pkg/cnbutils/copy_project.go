@@ -1,6 +1,8 @@
 package cnbutils
 
 import (
+	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,9 +13,15 @@ import (
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
-func CopyProject(source, target string, include, exclude *ignore.GitIgnore, utils BuildUtils) error {
+func CopyProject(source, target string, include, exclude *ignore.GitIgnore, utils BuildUtils, follow bool) error {
 	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
+	knownSymlinks := []string{}
+
 	for _, sourceFile := range sourceFiles {
+		if !shouldProcess(sourceFile, knownSymlinks) {
+			continue
+		}
+
 		relPath, err := filepath.Rel(source, sourceFile)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
@@ -21,13 +29,36 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 		}
 		if !isIgnored(relPath, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
-			dir, err := utils.DirExists(sourceFile)
+			isDir, err := utils.DirExists(sourceFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return errors.Wrapf(err, "Checking file info '%s' failed", target)
 			}
+			isSymlink, err := symlinkExists(sourceFile, utils)
+			if err != nil {
+				return err
+			}
 
-			if dir {
+			if isSymlink && !isDir {
+				linkTarget, err := utils.Readlink(sourceFile)
+				if err != nil {
+					return err
+				}
+				err = utils.Symlink(linkTarget, target)
+				if err != nil {
+					return err
+				}
+			} else if isSymlink && !follow {
+				linkTarget, err := utils.Readlink(sourceFile)
+				if err != nil {
+					return err
+				}
+				err = utils.Symlink(linkTarget, target)
+				if err != nil {
+					return err
+				}
+				knownSymlinks = append(knownSymlinks, sourceFile)
+			} else if isDir {
 				err = utils.MkdirAll(target, os.ModePerm)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
@@ -35,7 +66,7 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 				}
 			} else {
 				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
-				err = copyFile(sourceFile, target, utils)
+				err = copyFile(sourceFile, target, utils, follow)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
 					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
@@ -47,8 +78,38 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 	return nil
 }
 
-func copyFile(source, target string, utils BuildUtils) error {
+func shouldProcess(path string, knownSymlinks []string) bool {
+	for _, link := range knownSymlinks {
+		if strings.HasPrefix(path, link) {
+			return false
+		}
+	}
+	return true
+}
+
+func symlinkExists(path string, utils BuildUtils) (bool, error) {
+	lstat, err := utils.Lstat(path)
+	return lstat.Mode().Type() == fs.ModeSymlink, err
+}
+
+func copyFile(source, target string, utils BuildUtils, follow bool) error {
 	targetDir := filepath.Dir(target)
+
+	if !follow {
+		lstat, err := utils.Lstat(source)
+		if err != nil {
+			return err
+		}
+		if lstat.Mode().Type() == fs.ModeSymlink {
+			linkTarget, err := utils.Readlink(source)
+			if err != nil {
+				return err
+			}
+			log.Entry().Debugf("Creating directory %s", targetDir)
+			fmt.Printf("Source: %s target: %s\n", source, linkTarget)
+			return utils.Symlink(source, target)
+		}
+	}
 
 	exists, err := utils.DirExists(targetDir)
 	if err != nil {

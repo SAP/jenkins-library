@@ -493,7 +493,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	if pathType != buildpacks.PathEnumArchive {
-		err = cnbutils.CopyProject(source, target, include, exclude, utils)
+		err = cnbutils.CopyProject(source, target, include, exclude, utils, false)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
@@ -619,7 +619,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != buildpacks.PathEnumArchive {
-			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils)
+			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils, true)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)
