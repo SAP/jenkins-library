@@ -11,9 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const secretName = "token"
-const secretNameInTrustEngine = "sonar"
-const testBaseURL = "https://www.project-piper.io/tokens"
+const secretName = "sonar"
+const secretNameInTrustEngine = "sonarTrustengineSecretName"
+const testServerURL = "https://www.project-piper.io"
+const testTokenEndPoint = "/tokens%3Fsystems="
 const mockSonarToken = "mockSonarToken"
 
 var mockSingleTokenResponse = fmt.Sprintf("{\"sonar\": \"%s\"}", mockSonarToken)
@@ -21,13 +22,14 @@ var mockSingleTokenResponse = fmt.Sprintf("{\"sonar\": \"%s\"}", mockSonarToken)
 func TestTrustEngineConfig(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterResponder(http.MethodGet, testBaseURL+"?systems=sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
+	httpmock.RegisterResponder(http.MethodGet, testServerURL+testTokenEndPoint+"sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
 
-	stepParams := []StepParameters{createStepParam(secretName, trustengine.RefTypeSecret, secretNameInTrustEngine, secretName)}
+	stepParams := []StepParameters{createStepParam(secretName, RefTypeTrustengineSecret, secretNameInTrustEngine, secretName)}
 
-	trustEngineConfiguration := trustengine.Configuration{
-		Token:     "mockToken",
-		ServerURL: testBaseURL,
+	var trustEngineConfiguration = trustengine.Configuration{
+		Token:         "testToken",
+		ServerURL:     testServerURL,
+		TokenEndPoint: testTokenEndPoint,
 	}
 	client := &piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
@@ -51,14 +53,14 @@ func TestTrustEngineConfig(t *testing.T) {
 	})
 }
 
-func createStepParam(name, refType, vaultSecretNameProperty, defaultSecretNameName string) StepParameters {
+func createStepParam(name, refType, trustengineSecretNameProperty, defaultSecretNameName string) StepParameters {
 	return StepParameters{
 		Name:    name,
 		Aliases: []Alias{},
 		ResourceRef: []ResourceReference{
 			{
 				Type:    refType,
-				Name:    vaultSecretNameProperty,
+				Name:    trustengineSecretNameProperty,
 				Default: defaultSecretNameName,
 			},
 		},

@@ -16,7 +16,7 @@ func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 		if ref := param.GetReference(RefTypeTrustengineSecret); ref != nil {
 			if config.Config[param.Name] == "" { // what if Jenkins set the secret?
 				log.Entry().Infof("Getting '%s' from Trust Engine", param.Name)
-				token, err := trustengine.GetToken(ref.Name, client, trustEngineConfiguration)
+				token, err := trustengine.GetToken(ref.Default, client, trustEngineConfiguration)
 				if err != nil {
 					log.Entry().Info(" failed")
 					log.Entry().WithError(err).Warnf("Couldn't get %s secret from Trust Engine", param.Name)
