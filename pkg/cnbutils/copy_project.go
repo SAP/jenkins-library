@@ -40,27 +40,22 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 				return err
 			}
 
-			if isSymlink && !isDir {
+			if isSymlink {
 				linkTarget, err := utils.Readlink(sourceFile)
 				if err != nil {
 					return err
 				}
-				log.Entry().Debugf("Creating symlink from %s to %s", linkTarget, target)
-				err = utils.Symlink(linkTarget, target)
-				if err != nil {
-					return err
+				if !isDir || !follow {
+					log.Entry().Debugf("Creating symlink from %s to %s", linkTarget, target)
+					err = utils.Symlink(linkTarget, target)
+					if err != nil {
+						return err
+					}
 				}
-			} else if isSymlink && !follow {
-				linkTarget, err := utils.Readlink(sourceFile)
-				if err != nil {
-					return err
+				if !follow {
+					log.Entry().Debugf("Adding %s to list of known symlinks", sourceFile)
+					knownSymlinks = append(knownSymlinks, sourceFile)
 				}
-				log.Entry().Debugf("Creating symlink from %s to %s", linkTarget, target)
-				err = utils.Symlink(linkTarget, target)
-				if err != nil {
-					return err
-				}
-				knownSymlinks = append(knownSymlinks, sourceFile)
 			} else if isDir {
 				log.Entry().Debugf("Creating directory %s", target)
 				err = utils.MkdirAll(target, os.ModePerm)
