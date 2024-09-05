@@ -13,26 +13,28 @@ import (
 )
 
 func CopyProject(source, target string, include, exclude *ignore.GitIgnore, utils BuildUtils, follow bool) error {
-	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
+	sourceFiles, err := utils.Glob(path.Join(source, "**"))
+	if err != nil {
+		return err
+	}
+
 	knownSymlinks := []string{}
 
 	for _, sourceFile := range sourceFiles {
-		if !shouldProcess(sourceFile, knownSymlinks) {
-			continue
+		skipFile, err := isIgnored(source, sourceFile, include, exclude, knownSymlinks)
+		if err != nil {
+			return err
 		}
 
-		relPath, err := filepath.Rel(source, sourceFile)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
-		}
-		if !isIgnored(relPath, include, exclude) {
+		if !skipFile {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
+
 			isDir, err := utils.DirExists(sourceFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return errors.Wrapf(err, "Checking file info '%s' failed", target)
 			}
+
 			isSymlink, err := symlinkExists(sourceFile, utils)
 			if err != nil {
 				return err
@@ -74,19 +76,9 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
 				}
 			}
-
 		}
 	}
 	return nil
-}
-
-func shouldProcess(path string, knownSymlinks []string) bool {
-	for _, link := range knownSymlinks {
-		if strings.HasPrefix(path, link) {
-			return false
-		}
-	}
-	return true
 }
 
 func symlinkExists(path string, utils BuildUtils) (bool, error) {
@@ -115,13 +107,25 @@ func copyFile(source, target string, utils BuildUtils) error {
 	return err
 }
 
-func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
+func isIgnored(source, sourceFile string, include, exclude *ignore.GitIgnore, knownSymlinks []string) (bool, error) {
+	find, err := filepath.Rel(source, sourceFile)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return false, errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
+	}
+
+	for _, link := range knownSymlinks {
+		if strings.HasPrefix(find, link) {
+			return true, nil
+		}
+	}
+
 	if exclude != nil {
 		filtered := exclude.MatchesPath(find)
 
 		if filtered {
 			log.Entry().Debugf("%s matches exclude pattern, ignoring", find)
-			return true
+			return true, nil
 		}
 	}
 
@@ -130,12 +134,12 @@ func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
 
 		if filtered {
 			log.Entry().Debugf("%s doesn't match include pattern, ignoring", find)
-			return true
+			return true, nil
 		} else {
 			log.Entry().Debugf("%s matches include pattern", find)
-			return false
+			return false, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
