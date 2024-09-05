@@ -13,7 +13,7 @@ import (
 )
 
 const wildCardNext string = "NEXT"
-const wildCardMax string = "MAX"
+const wildCardMax string = "MAXX"
 const statusFilterCV string = "DeliveryStatus eq 'R'"
 const statusFilterPV string = "DeliveryStatus eq 'T' or DeliveryStatus eq 'P'"
 
@@ -52,6 +52,16 @@ func (v *versionable) constructVersionable(name string, dottedVersionString stri
 	return nil
 }
 
+func (v *versionable) resolveWildCards(statusFilter string) error {
+	if err := v.resolveNext(statusFilter); err != nil {
+		return err
+	}
+	if err := v.resolveMax(statusFilter); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (v *versionable) resolveNext(statusFilter string) error {
 
 	switch strings.Count(v.Version, wildCardNext) {
@@ -62,11 +72,11 @@ func (v *versionable) resolveNext(statusFilter string) error {
 		var err error
 		switch wildCardNext {
 		case v.TechRelease:
-			err = v.resolveRelease(statusFilter)
+			err = v.resolveRelease(statusFilter, 1)
 		case v.TechSpLevel:
-			err = v.resolveSpLevel(statusFilter)
+			err = v.resolveSpLevel(statusFilter, 1)
 		case v.TechPatchLevel:
-			err = v.resolvePatchLevel(statusFilter)
+			err = v.resolvePatchLevel(statusFilter, 1)
 		}
 		if err != nil {
 			return err
@@ -81,7 +91,26 @@ func (v *versionable) resolveNext(statusFilter string) error {
 	return nil
 }
 
-func (v *versionable) resolveRelease(statusFilter string) error {
+func (v *versionable) resolveMax(statusFilter string) error {
+	if v.TechRelease == wildCardMax {
+		if err := v.resolveRelease(statusFilter, 0); err != nil {
+			return err
+		}
+	}
+	if v.TechSpLevel == wildCardMax {
+		if err := v.resolveSpLevel(statusFilter, 0); err != nil {
+			return err
+		}
+	}
+	if v.TechPatchLevel == wildCardMax {
+		if err := v.resolvePatchLevel(statusFilter, 0); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *versionable) resolveRelease(statusFilter string, increment int) error {
 	filter := "Name eq '" + v.Name + "' and TechSpLevel eq '0000' and TechPatchLevel eq '0000' and ( " + statusFilter + " )"
 	orderBy := "TechRelease desc"
 
@@ -91,13 +120,13 @@ func (v *versionable) resolveRelease(statusFilter string) error {
 		if newRelease, err := strconv.Atoi(queryResuult.TechRelease); err != nil {
 			return err
 		} else {
-			v.TechRelease = strconv.Itoa(newRelease + 1)
+			v.TechRelease = strconv.Itoa(newRelease + increment)
 			return nil
 		}
 	}
 }
 
-func (v *versionable) resolveSpLevel(statusFilter string) error {
+func (v *versionable) resolveSpLevel(statusFilter string, increment int) error {
 	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechPatchLevel eq '0000'  and ( " + statusFilter + " )"
 	orderBy := "TechSpLevel desc"
 
@@ -107,13 +136,13 @@ func (v *versionable) resolveSpLevel(statusFilter string) error {
 		if newSpLevel, err := strconv.Atoi(queryResuult.TechSpLevel); err != nil {
 			return err
 		} else {
-			v.TechSpLevel = fmt.Sprintf("%04d", newSpLevel+1)
+			v.TechSpLevel = fmt.Sprintf("%04d", newSpLevel+increment)
 			return nil
 		}
 	}
 }
 
-func (v *versionable) resolvePatchLevel(statusFilter string) error {
+func (v *versionable) resolvePatchLevel(statusFilter string, increment int) error {
 	filter := "Name eq '" + v.Name + "' and TechRelease eq '" + v.TechRelease + "' and TechSpLevel eq '" + v.TechSpLevel + "' and ( " + statusFilter + " )"
 	orderBy := "TechPatchLevel desc"
 
@@ -123,7 +152,7 @@ func (v *versionable) resolvePatchLevel(statusFilter string) error {
 		if newPatchLevel, err := strconv.Atoi(queryResuult.TechPatchLevel); err != nil {
 			return err
 		} else {
-			v.TechPatchLevel = fmt.Sprintf("%04d", newPatchLevel+1)
+			v.TechPatchLevel = fmt.Sprintf("%04d", newPatchLevel+increment)
 			return nil
 		}
 	}
