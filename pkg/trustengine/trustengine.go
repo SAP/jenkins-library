@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type Secret struct {
@@ -22,9 +23,10 @@ type Response struct {
 }
 
 type Configuration struct {
-	ServerURL     string
-	TokenEndPoint string
-	Token         string
+	ServerURL           string
+	TokenEndPoint       string
+	TokenQueryParamName string
+	Token               string
 }
 
 // GetToken requests a single token
@@ -44,9 +46,12 @@ func GetToken(refName string, client *piperhttp.Client, trustEngineConfiguration
 // GetSecrets transforms the trust engine JSON response into trust engine secrets, and can be used to request multiple tokens
 func GetSecrets(refNames []string, client *piperhttp.Client, trustEngineConfiguration Configuration) ([]Secret, error) {
 	var secrets []Secret
-	endpoint := trustEngineConfiguration.TokenEndPoint
-	queryValues := strings.Join(refNames, ",")
-	response, err := getResponse(endpoint, queryValues, trustEngineConfiguration, client)
+	query := url.Values{
+		trustEngineConfiguration.TokenQueryParamName: {
+			strings.Join(refNames, ","),
+		},
+	}
+	response, err := getResponse(trustEngineConfiguration.ServerURL, trustEngineConfiguration.TokenEndPoint, query, client)
 	if err != nil {
 		return secrets, errors.Join(err, errors.New("getting secrets from trust engine failed"))
 	}
@@ -60,19 +65,18 @@ func GetSecrets(refNames []string, client *piperhttp.Client, trustEngineConfigur
 }
 
 // getResponse returns a map of the JSON response that the trust engine puts out
-func getResponse(endpoint, queryValues string, trustEngineConfiguration Configuration, client *piperhttp.Client) (map[string]string, error) {
+func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp.Client) (map[string]string, error) {
 	var secrets map[string]string
-	fullURL, err := url.JoinPath(trustEngineConfiguration.ServerURL, endpoint)
-	if err != nil {
-		return secrets, errors.Join(err, errors.New("could not parse URL"))
-	}
-	fullURL = fullURL + queryValues
 
+	rawURL, err := parseURL(serverURL, endpoint, query)
+	if err != nil {
+		return secrets, errors.Join(err, errors.New("parsing trust engine url failed"))
+	}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 
-	log.Entry().Debugf("with URL %s", fullURL)
-	response, err := client.SendRequest(http.MethodGet, fullURL, nil, header, nil)
+	log.Entry().Debugf("with URL %s", rawURL)
+	response, err := client.SendRequest(http.MethodGet, rawURL, nil, header, nil)
 	if err != nil {
 		if response != nil {
 			// the body contains full error message which we want to log
@@ -92,6 +96,25 @@ func getResponse(endpoint, queryValues string, trustEngineConfiguration Configur
 	}
 
 	return secrets, nil
+}
+
+// parseURL creates the full URL for a Trust Engine GET request
+func parseURL(serverURL, endpoint string, query url.Values) (string, error) {
+	rawFullEndpoint, err := url.JoinPath(serverURL, endpoint)
+	if err != nil {
+		return "", errors.New("error parsing trust engine URL")
+	}
+	fullURL, err := url.Parse(rawFullEndpoint)
+	if err != nil {
+		return "", errors.New("error parsing trust engine URL")
+	}
+	// commas and spaces shouldn't be escaped since the Trust Engine won't accept it
+	unescaped, err := url.QueryUnescape(query.Encode())
+	if err != nil {
+		return "", errors.New("error parsing trust engine URL")
+	}
+	fullURL.RawQuery = unescaped
+	return fullURL.String(), nil
 }
 
 // PrepareClient adds the Trust Engine authentication token to the client

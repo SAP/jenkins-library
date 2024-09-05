@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/trustengine"
@@ -47,6 +48,11 @@ func (c *Config) setTrustEngineConfiguration(hookConfig map[string]interface{}) 
 		c.trustEngineConfiguration.TokenEndPoint = tokenEndPoint
 	} else {
 		return errors.New("no token end point found in Trust Engine hook configuration")
+	}
+	if tokenQueryParamName, ok := trustEngineHook["tokenQueryParamName"].(string); ok {
+		c.trustEngineConfiguration.TokenQueryParamName = tokenQueryParamName
+	} else {
+		return errors.New("no token query parameter name found in Trust Engine hook configuration")
 	}
 
 	if len(c.trustEngineConfiguration.Token) == 0 {

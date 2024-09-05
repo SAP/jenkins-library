@@ -14,22 +14,25 @@ import (
 const secretName = "sonar"
 const secretNameInTrustEngine = "sonarTrustengineSecretName"
 const testServerURL = "https://www.project-piper.io"
-const testTokenEndPoint = "/tokens%3Fsystems="
+const testTokenEndPoint = "tokens"
+const testTokenQueryParamName = "systems"
 const mockSonarToken = "mockSonarToken"
 
+var testFullURL = fmt.Sprintf("%s/%s?%s=", testServerURL, testTokenEndPoint, testTokenQueryParamName)
 var mockSingleTokenResponse = fmt.Sprintf("{\"sonar\": \"%s\"}", mockSonarToken)
 
 func TestTrustEngineConfig(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterResponder(http.MethodGet, testServerURL+testTokenEndPoint+"sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
+	httpmock.RegisterResponder(http.MethodGet, testFullURL+"sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
 
 	stepParams := []StepParameters{createStepParam(secretName, RefTypeTrustengineSecret, secretNameInTrustEngine, secretName)}
 
 	var trustEngineConfiguration = trustengine.Configuration{
-		Token:         "testToken",
-		ServerURL:     testServerURL,
-		TokenEndPoint: testTokenEndPoint,
+		Token:               "testToken",
+		ServerURL:           testServerURL,
+		TokenEndPoint:       testTokenEndPoint,
+		TokenQueryParamName: testTokenQueryParamName,
 	}
 	client := &piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})

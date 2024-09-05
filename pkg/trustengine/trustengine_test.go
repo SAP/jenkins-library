@@ -11,17 +11,20 @@ import (
 )
 
 const testServerURL = "https://www.project-piper.io"
-const testTokenEndPoint = "/tokens%3Fsystems="
+const testTokenEndPoint = "tokens"
+const testTokenQueryParamName = "systems"
 const mockSonarToken = "mockSonarToken"
 const mockblackduckToken = "mockblackduckToken"
 const errorMsg403 = "unauthorized to request token"
 
+var testFullURL = fmt.Sprintf("%s/%s?%s=", testServerURL, testTokenEndPoint, testTokenQueryParamName)
 var mockSingleTokenResponse = fmt.Sprintf("{\"sonar\": \"%s\"}", mockSonarToken)
 var mockTwoTokensResponse = fmt.Sprintf("{\"sonar\": \"%s\", \"blackduck\": \"%s\"}", mockSonarToken, mockblackduckToken)
 var trustEngineConfiguration = Configuration{
-	Token:         "testToken",
-	ServerURL:     testServerURL,
-	TokenEndPoint: testTokenEndPoint,
+	Token:               "testToken",
+	ServerURL:           testServerURL,
+	TokenEndPoint:       testTokenEndPoint,
+	TokenQueryParamName: testTokenQueryParamName,
 }
 
 func TestTrustEngine(t *testing.T) {
@@ -29,7 +32,7 @@ func TestTrustEngine(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 
 	t.Run("Get Sonar token - happy path", func(t *testing.T) {
-		httpmock.RegisterResponder(http.MethodGet, testServerURL+testTokenEndPoint+"sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
+		httpmock.RegisterResponder(http.MethodGet, testFullURL+"sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
 
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
@@ -40,7 +43,7 @@ func TestTrustEngine(t *testing.T) {
 	})
 
 	t.Run("Get multiple tokens - happy path", func(t *testing.T) {
-		httpmock.RegisterResponder(http.MethodGet, testServerURL+testTokenEndPoint+"sonar,blackduck", httpmock.NewStringResponder(200, mockTwoTokensResponse))
+		httpmock.RegisterResponder(http.MethodGet, testFullURL+"sonar,blackduck", httpmock.NewStringResponder(200, mockTwoTokensResponse))
 
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
@@ -62,7 +65,7 @@ func TestTrustEngine(t *testing.T) {
 	})
 
 	t.Run("Get Sonar token - 403 error", func(t *testing.T) {
-		httpmock.RegisterResponder(http.MethodGet, testServerURL+testTokenEndPoint+"sonar", httpmock.NewStringResponder(403, errorMsg403))
+		httpmock.RegisterResponder(http.MethodGet, testFullURL+"sonar", httpmock.NewStringResponder(403, errorMsg403))
 
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})

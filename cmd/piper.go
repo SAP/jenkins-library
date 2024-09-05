@@ -85,8 +85,9 @@ type OIDCConfiguration struct {
 }
 
 type TrustEngineConfiguration struct {
-	ServerURL     string `json:"baseURL,omitempty"`
-	TokenEndPoint string `json:"tokenEndPoint,omitempty"`
+	ServerURL           string `json:"baseURL,omitempty"`
+	TokenEndPoint       string `json:"tokenEndPoint,omitempty"`
+	TokenQueryParamName string `json:"tokenQueryParamName,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
