@@ -1,6 +1,7 @@
 package cnbutils
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -12,30 +13,71 @@ import (
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
+func isFiltered(path string, knownSymlinks []string) bool {
+	for _, sym := range knownSymlinks {
+		if strings.HasPrefix(path, sym) {
+			return true
+		}
+	}
+	return false
+}
+
+func filterSourceFiles(sourceFiles []string, utils BuildUtils) ([]string, error) {
+	filteredFiles := []string{}
+	knownSymlinks := []string{}
+
+	for _, soureFile := range sourceFiles {
+		stat, _ := utils.Stat(soureFile)
+		lstat, _ := utils.Lstat(soureFile)
+
+		if isFiltered(soureFile, knownSymlinks) {
+			continue
+		}
+
+		if lstat.Mode().Type() == fs.ModeSymlink {
+			if stat.Mode().Type() == fs.ModeDir {
+				fmt.Println("Filtering out", soureFile)
+				knownSymlinks = append(knownSymlinks, soureFile)
+			}
+			filteredFiles = append(filteredFiles, soureFile)
+		} else {
+			if !isFiltered(soureFile, knownSymlinks) {
+				filteredFiles = append(filteredFiles, soureFile)
+			}
+		}
+	}
+	return filteredFiles, nil
+}
+
 func CopyProject(source, target string, include, exclude *ignore.GitIgnore, utils BuildUtils, follow bool) error {
 	sourceFiles, err := utils.Glob(path.Join(source, "**"))
 	if err != nil {
 		return err
 	}
 
-	knownSymlinks := []string{}
-
-	for _, sourceFile := range sourceFiles {
-		skipFile, err := isIgnored(source, sourceFile, include, exclude, knownSymlinks)
+	if !follow {
+		sourceFiles, err = filterSourceFiles(sourceFiles, utils)
 		if err != nil {
 			return err
 		}
+	}
 
-		if !skipFile {
+	for _, sourceFile := range sourceFiles {
+		relPath, err := filepath.Rel(source, sourceFile)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
+		}
+
+		if !isIgnored(relPath, include, exclude) {
 			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
 
-			isDir, err := utils.DirExists(sourceFile)
+			isSymlink, err := symlinkExists(sourceFile, utils)
 			if err != nil {
-				log.SetErrorCategory(log.ErrorBuild)
-				return errors.Wrapf(err, "Checking file info '%s' failed", target)
+				return err
 			}
 
-			isSymlink, err := symlinkExists(sourceFile, utils)
+			isDir, err := utils.DirExists(sourceFile)
 			if err != nil {
 				return err
 			}
@@ -45,19 +87,13 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 				if err != nil {
 					return err
 				}
-				if !isDir || !follow {
-					log.Entry().Debugf("Creating symlink from %s to %s", linkTarget, target)
-					err = utils.Symlink(linkTarget, target)
-					if err != nil {
-						return err
-					}
+				log.Entry().Debugf("Creating symlink from %s to %s", linkTarget, target)
+				err = utils.Symlink(linkTarget, target)
+				if err != nil {
+					return err
 				}
-				if !follow {
-					log.Entry().Debugf("Adding %s to list of known symlinks", sourceFile)
-					knownSymlinks = append(knownSymlinks, sourceFile)
-				}
+
 			} else if isDir {
-				log.Entry().Debugf("Creating directory %s", target)
 				err = utils.MkdirAll(target, os.ModePerm)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
@@ -102,25 +138,13 @@ func copyFile(source, target string, utils BuildUtils) error {
 	return err
 }
 
-func isIgnored(source, sourceFile string, include, exclude *ignore.GitIgnore, knownSymlinks []string) (bool, error) {
-	find, err := filepath.Rel(source, sourceFile)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorBuild)
-		return false, errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
-	}
-
-	for _, link := range knownSymlinks {
-		if strings.HasPrefix(sourceFile, link) {
-			return true, nil
-		}
-	}
-
+func isIgnored(find string, include, exclude *ignore.GitIgnore) bool {
 	if exclude != nil {
 		filtered := exclude.MatchesPath(find)
 
 		if filtered {
 			log.Entry().Debugf("%s matches exclude pattern, ignoring", find)
-			return true, nil
+			return true
 		}
 	}
 
@@ -129,12 +153,12 @@ func isIgnored(source, sourceFile string, include, exclude *ignore.GitIgnore, kn
 
 		if filtered {
 			log.Entry().Debugf("%s doesn't match include pattern, ignoring", find)
-			return true, nil
+			return true
 		} else {
 			log.Entry().Debugf("%s matches include pattern", find)
-			return false, nil
+			return false
 		}
 	}
 
-	return false, nil
+	return false
 }

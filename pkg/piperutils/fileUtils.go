@@ -44,6 +44,7 @@ type FileUtils interface {
 	Open(name string) (io.ReadWriteCloser, error)
 	Create(name string) (io.ReadWriteCloser, error)
 	Readlink(name string) (string, error)
+	Stat(path string) (os.FileInfo, error)
 	Lstat(path string) (os.FileInfo, error)
 }
 
