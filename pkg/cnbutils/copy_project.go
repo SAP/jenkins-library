@@ -1,7 +1,6 @@
 package cnbutils
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -44,6 +43,7 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 				if err != nil {
 					return err
 				}
+				log.Entry().Debugf("Creating symlink from %s to %s", linkTarget, target)
 				err = utils.Symlink(linkTarget, target)
 				if err != nil {
 					return err
@@ -53,12 +53,14 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 				if err != nil {
 					return err
 				}
+				log.Entry().Debugf("Creating symlink from %s to %s", linkTarget, target)
 				err = utils.Symlink(linkTarget, target)
 				if err != nil {
 					return err
 				}
 				knownSymlinks = append(knownSymlinks, sourceFile)
 			} else if isDir {
+				log.Entry().Debugf("Creating directory %s", target)
 				err = utils.MkdirAll(target, os.ModePerm)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
@@ -66,7 +68,7 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 				}
 			} else {
 				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
-				err = copyFile(sourceFile, target, utils, follow)
+				err = copyFile(sourceFile, target, utils)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
 					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
@@ -92,24 +94,8 @@ func symlinkExists(path string, utils BuildUtils) (bool, error) {
 	return lstat.Mode().Type() == fs.ModeSymlink, err
 }
 
-func copyFile(source, target string, utils BuildUtils, follow bool) error {
+func copyFile(source, target string, utils BuildUtils) error {
 	targetDir := filepath.Dir(target)
-
-	if !follow {
-		lstat, err := utils.Lstat(source)
-		if err != nil {
-			return err
-		}
-		if lstat.Mode().Type() == fs.ModeSymlink {
-			linkTarget, err := utils.Readlink(source)
-			if err != nil {
-				return err
-			}
-			log.Entry().Debugf("Creating directory %s", targetDir)
-			fmt.Printf("Source: %s target: %s\n", source, linkTarget)
-			return utils.Symlink(source, target)
-		}
-	}
 
 	exists, err := utils.DirExists(targetDir)
 	if err != nil {
@@ -124,6 +110,7 @@ func copyFile(source, target string, utils BuildUtils, follow bool) error {
 		}
 	}
 
+	log.Entry().Debugf("Copying %s to %s", source, target)
 	_, err = utils.Copy(source, target)
 	return err
 }
