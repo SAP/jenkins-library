@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -49,7 +48,7 @@ var (
 	fileUtilsUnzip  = piperutils.Unzip
 	osRename        = os.Rename
 	osStat          = os.Stat
-	doublestarGlob  = doublestar.Glob
+	doublestarGlob  = piperutils.GlobFunc
 )
 
 const (

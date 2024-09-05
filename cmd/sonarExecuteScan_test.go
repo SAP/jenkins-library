@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bmatcuk/doublestar"
 	"github.com/jarcoal/httpmock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -236,7 +235,7 @@ func TestRunSonar(t *testing.T) {
 
 		defer func() {
 			fileUtilsExists = piperutils.FileExists
-			doublestarGlob = doublestar.Glob
+			doublestarGlob = piperutils.GlobFunc
 			osStat = os.Stat
 		}()
 		options := sonarExecuteScanOptions{
@@ -275,7 +274,7 @@ func TestRunSonar(t *testing.T) {
 
 		defer func() {
 			fileUtilsExists = piperutils.FileExists
-			doublestarGlob = doublestar.Glob
+			doublestarGlob = piperutils.GlobFunc
 			osStat = os.Stat
 		}()
 		options := sonarExecuteScanOptions{

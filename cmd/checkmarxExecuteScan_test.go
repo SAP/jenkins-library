@@ -16,9 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bmatcuk/doublestar"
-
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/google/go-github/v45/github"

@@ -71,7 +71,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	{{ if $reportsOutputExists -}}
-	"github.com/bmatcuk/doublestar"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	{{ end -}}
 	{{ if or $influxOutputExists $piperEnvironmentOutputExists -}}

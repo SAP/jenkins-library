@@ -17,8 +17,6 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 
-	"github.com/bmatcuk/doublestar"
-
 	"github.com/google/go-github/v45/github"
 	"github.com/google/uuid"
 
@@ -870,7 +868,7 @@ func readAllClasspathFiles(file string) string {
 	if filepath.IsAbs(file) {
 		paths = []string{file}
 	} else {
-		paths, _ = doublestar.Glob(filepath.Join("**", file))
+		paths, _ = piperutils.GlobFunc(filepath.Join("**", file))
 		log.Entry().Debugf("Concatenating the class paths from %v", paths)
 	}
 	var contents string

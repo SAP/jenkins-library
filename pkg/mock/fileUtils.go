@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 var dirContent []byte

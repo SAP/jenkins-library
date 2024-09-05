@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 // FileUtils ...
@@ -43,6 +43,10 @@ type FileUtils interface {
 	CurrentTime(format string) string
 	Open(name string) (io.ReadWriteCloser, error)
 	Create(name string) (io.ReadWriteCloser, error)
+}
+
+func GlobFunc(pattern string) (matches []string, err error) {
+	return doublestar.Glob(os.DirFS("/"), pattern)
 }
 
 // Files ...
@@ -421,7 +425,7 @@ func (f Files) RemoveAll(path string) error {
 
 // Glob is a wrapper for doublestar.Glob().
 func (f Files) Glob(pattern string) (matches []string, err error) {
-	return doublestar.Glob(pattern)
+	return doublestar.Glob(os.DirFS("/"), pattern)
 }
 
 // ExcludeFiles returns a slice of files, which contains only the sub-set of files that matched none
