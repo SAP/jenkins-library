@@ -111,9 +111,13 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 			}
 			if param.Secret {
 				secretInfo := "[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#) pass via ENV or Jenkins credentials"
-				if param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil {
-					secretInfo = " [![Vault](https://img.shields.io/badge/-Vault-lightgrey)](#) [![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](/) pass via ENV, Vault or Jenkins credentials"
 
+				if param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil {
+					if param.GetReference("trustengineSecret") != nil { // config.RefTypeTrustengineSecret
+						secretInfo = " [![Vault](https://img.shields.io/badge/-Vault-lightgrey)](#) [![Trust Engine](https://img.shields.io/badge/-Trust Engine-lightblue)](#) [![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](/) pass via ENV, Vault, Trust Engine or Jenkins credentials"
+					} else {
+						secretInfo = " [![Vault](https://img.shields.io/badge/-Vault-lightgrey)](#) [![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](/) pass via ENV, Vault or Jenkins credentials"
+					}
 				}
 				for _, res := range param.ResourceRef {
 					if res.Type == "secret" {
@@ -329,24 +333,38 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 			continue
 		}
 
-		resourceDetails = addVaultResourceDetails(resource, resourceDetails)
+		if resource.Type == "vaultSecret" || resource.Type == "vaultSecretFile" {
+			resourceDetails = addVaultResourceDetails(resource, resourceDetails)
+			continue
+		}
+		if resource.Type == "trustengineSecret" { // config.RefTypeTrustengineSecret
+			resourceDetails = addTrustEngineResourceDetails(resource, resourceDetails)
+		}
 	}
 
 	return resourceDetails
 }
 
 func addVaultResourceDetails(resource config.ResourceReference, resourceDetails string) string {
-	if resource.Type == "vaultSecret" || resource.Type == "vaultSecretFile" {
-		resourceDetails += "<br/>Vault resource:<br />"
-		resourceDetails += fmt.Sprintf("&nbsp;&nbsp;name: `%v`<br />", resource.Name)
-		resourceDetails += fmt.Sprintf("&nbsp;&nbsp;default value: `%v`<br />", resource.Default)
-		resourceDetails += "<br/>Vault paths: <br />"
-		resourceDetails += "<ul>"
-		for _, rootPath := range config.VaultRootPaths {
-			resourceDetails += fmt.Sprintf("<li>`%s`</li>", path.Join(rootPath, resource.Default))
-		}
-		resourceDetails += "</ul>"
+	resourceDetails += "<br/>Vault resource:<br />"
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;name: `%v`<br />", resource.Name)
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;default value: `%v`<br />", resource.Default)
+	resourceDetails += "<br/>Vault paths: <br />"
+	resourceDetails += "<ul>"
+	for _, rootPath := range config.VaultRootPaths {
+		resourceDetails += fmt.Sprintf("<li>`%s`</li>", path.Join(rootPath, resource.Default))
 	}
+	resourceDetails += "</ul>"
+
+	return resourceDetails
+}
+
+func addTrustEngineResourceDetails(resource config.ResourceReference, resourceDetails string) string {
+	resourceDetails += "<br/>Trust Engine resource:<br />"
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;name: `%v`<br />", resource.Name)
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;default value: `%v`<br />", resource.Default)
+	resourceDetails += "</ul>"
+
 	return resourceDetails
 }
 
