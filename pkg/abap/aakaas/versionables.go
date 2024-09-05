@@ -12,7 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-const wildCard string = "NEXT"
+const wildCardNext string = "NEXT"
+const wildCardMax string = "MAX"
 const statusFilterCV string = "DeliveryStatus eq 'R'"
 const statusFilterPV string = "DeliveryStatus eq 'T' or DeliveryStatus eq 'P'"
 
@@ -53,13 +54,13 @@ func (v *versionable) constructVersionable(name string, dottedVersionString stri
 
 func (v *versionable) resolveNext(statusFilter string) error {
 
-	switch strings.Count(v.Version, wildCard) {
+	switch strings.Count(v.Version, wildCardNext) {
 	case 0:
 		return nil
 	case 1:
 		log.Entry().Info("Wildcard detected in dotted-version-string. Looking up highest existing package in AAKaaS...")
 		var err error
-		switch wildCard {
+		switch wildCardNext {
 		case v.TechRelease:
 			err = v.resolveRelease(statusFilter)
 		case v.TechSpLevel:
@@ -74,7 +75,7 @@ func (v *versionable) resolveNext(statusFilter string) error {
 			return err
 		}
 	default:
-		return errors.New("The dotted-version-string must contain only one wildcard " + wildCard)
+		return errors.New("The dotted-version-string must contain only one wildcard " + wildCardNext)
 	}
 
 	return nil
