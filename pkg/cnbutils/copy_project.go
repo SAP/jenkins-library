@@ -115,7 +115,7 @@ func isIgnored(source, sourceFile string, include, exclude *ignore.GitIgnore, kn
 	}
 
 	for _, link := range knownSymlinks {
-		if strings.HasPrefix(find, link) {
+		if strings.HasPrefix(sourceFile, link) {
 			return true, nil
 		}
 	}
