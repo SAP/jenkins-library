@@ -1,7 +1,6 @@
 package cnbutils
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -14,8 +13,8 @@ import (
 )
 
 func isFiltered(path string, knownSymlinks []string) bool {
-	for _, sym := range knownSymlinks {
-		if strings.HasPrefix(path, sym) {
+	for _, symlink := range knownSymlinks {
+		if strings.HasPrefix(path, symlink) {
 			return true
 		}
 	}
@@ -26,23 +25,30 @@ func filterSourceFiles(sourceFiles []string, utils BuildUtils) ([]string, error)
 	filteredFiles := []string{}
 	knownSymlinks := []string{}
 
-	for _, soureFile := range sourceFiles {
-		stat, _ := utils.Stat(soureFile)
-		lstat, _ := utils.Lstat(soureFile)
-
-		if isFiltered(soureFile, knownSymlinks) {
+	for _, sourceFile := range sourceFiles {
+		if isFiltered(sourceFile, knownSymlinks) {
 			continue
 		}
 
-		if lstat.Mode().Type() == fs.ModeSymlink {
-			if stat.Mode().Type() == fs.ModeDir {
-				fmt.Println("Filtering out", soureFile)
-				knownSymlinks = append(knownSymlinks, soureFile)
+		isSymlink, err := symlinkExists(sourceFile, utils)
+		if err != nil {
+			return nil, err
+		}
+
+		isDir, err := utils.DirExists(sourceFile)
+		if err != nil {
+			return nil, err
+		}
+
+		if isSymlink {
+			if isDir {
+				log.Entry().Debugf("Ignoring any path below %s", sourceFile)
+				knownSymlinks = append(knownSymlinks, sourceFile)
 			}
-			filteredFiles = append(filteredFiles, soureFile)
+			filteredFiles = append(filteredFiles, sourceFile)
 		} else {
-			if !isFiltered(soureFile, knownSymlinks) {
-				filteredFiles = append(filteredFiles, soureFile)
+			if !isFiltered(sourceFile, knownSymlinks) {
+				filteredFiles = append(filteredFiles, sourceFile)
 			}
 		}
 	}
