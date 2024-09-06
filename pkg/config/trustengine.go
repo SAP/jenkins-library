@@ -20,7 +20,7 @@ func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 				token, err := trustengine.GetToken(ref.Default, client, trustEngineConfiguration)
 				if err != nil {
 					log.Entry().Info(" failed")
-					log.Entry().WithError(err).Warnf("Couldn't get %s secret from Trust Engine", param.Name)
+					log.Entry().WithError(err).Debugf("Couldn't get '%s' secret from Trust Engine", param.Name)
 					continue
 				}
 				log.RegisterSecret(token)

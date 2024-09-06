@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -75,7 +77,7 @@ func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 
-	log.Entry().Debugf("with URL %s", rawURL)
+	log.Entry().Debugf("  with URL %s", rawURL)
 	response, err := client.SendRequest(http.MethodGet, rawURL, nil, header, nil)
 	if err != nil {
 		if response != nil {
@@ -109,18 +111,25 @@ func parseURL(serverURL, endpoint string, query url.Values) (string, error) {
 		return "", errors.New("error parsing trust engine URL")
 	}
 	// commas and spaces shouldn't be escaped since the Trust Engine won't accept it
-	unescaped, err := url.QueryUnescape(query.Encode())
+	unescapedRawQuery, err := url.QueryUnescape(query.Encode())
 	if err != nil {
 		return "", errors.New("error parsing trust engine URL")
 	}
-	fullURL.RawQuery = unescaped
+	fullURL.RawQuery = unescapedRawQuery
 	return fullURL.String(), nil
 }
 
 // PrepareClient adds the Trust Engine authentication token to the client
 func PrepareClient(client *piperhttp.Client, trustEngineConfiguration Configuration) *piperhttp.Client {
+	var logEntry *logrus.Entry
+	if logrus.GetLevel() < logrus.DebugLevel {
+		logger := logrus.New()
+		logger.SetOutput(io.Discard)
+		logEntry = logrus.NewEntry(logger)
+	}
 	client.SetOptions(piperhttp.ClientOptions{
-		Token: fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token),
+		Token:  fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token),
+		Logger: logEntry,
 	})
 	return client
 }
