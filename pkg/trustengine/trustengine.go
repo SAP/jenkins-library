@@ -2,13 +2,13 @@ package trustengine
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -35,7 +35,7 @@ type Configuration struct {
 func GetToken(refName string, client *piperhttp.Client, trustEngineConfiguration Configuration) (string, error) {
 	secrets, err := GetSecrets([]string{refName}, client, trustEngineConfiguration)
 	if err != nil {
-		return "", errors.Join(err, errors.New("couldn't get token from trust engine"))
+		return "", errors.Wrap(err, "couldn't get token from trust engine")
 	}
 	for _, s := range secrets {
 		if s.System == refName {
@@ -55,7 +55,7 @@ func GetSecrets(refNames []string, client *piperhttp.Client, trustEngineConfigur
 	}
 	response, err := getResponse(trustEngineConfiguration.ServerURL, trustEngineConfiguration.TokenEndPoint, query, client)
 	if err != nil {
-		return secrets, errors.Join(err, errors.New("getting secrets from trust engine failed"))
+		return secrets, errors.Wrap(err, "getting secrets from trust engine failed")
 	}
 	for k, v := range response {
 		secrets = append(secrets, Secret{
@@ -72,7 +72,7 @@ func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp
 
 	rawURL, err := parseURL(serverURL, endpoint, query)
 	if err != nil {
-		return secrets, errors.Join(err, errors.New("parsing trust engine url failed"))
+		return secrets, errors.Wrap(err, "parsing trust engine url failed")
 	}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
@@ -85,16 +85,16 @@ func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp
 			defer response.Body.Close()
 			bodyBytes, bodyErr := io.ReadAll(response.Body)
 			if bodyErr == nil {
-				err = errors.Join(err, errors.New(string(bodyBytes)))
+				err = errors.Wrap(err, string(bodyBytes))
 			}
 		}
-		return secrets, errors.Join(err, errors.New("getting response from trust engine failed"))
+		return secrets, errors.Wrap(err, "getting response from trust engine failed")
 	}
 	defer response.Body.Close()
 
 	err = json.NewDecoder(response.Body).Decode(&secrets)
 	if err != nil {
-		return secrets, errors.Join(err, errors.New("getting response from trust engine failed"))
+		return secrets, errors.Wrap(err, "getting response from trust engine failed")
 	}
 
 	return secrets, nil
