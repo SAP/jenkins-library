@@ -12,7 +12,7 @@ import (
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
-func isFiltered(path string, knownSymlinks []string) bool {
+func isPartOfSymlink(path string, knownSymlinks []string) bool {
 	for _, symlink := range knownSymlinks {
 		if strings.HasPrefix(path, symlink) {
 			return true
@@ -21,12 +21,12 @@ func isFiltered(path string, knownSymlinks []string) bool {
 	return false
 }
 
-func filterSourceFiles(sourceFiles []string, utils BuildUtils) ([]string, error) {
+func filterSymlinks(sourceFiles []string, utils BuildUtils) ([]string, error) {
 	filteredFiles := []string{}
 	knownSymlinks := []string{}
 
 	for _, sourceFile := range sourceFiles {
-		if isFiltered(sourceFile, knownSymlinks) {
+		if isPartOfSymlink(sourceFile, knownSymlinks) {
 			continue
 		}
 
@@ -35,21 +35,13 @@ func filterSourceFiles(sourceFiles []string, utils BuildUtils) ([]string, error)
 			return nil, err
 		}
 
-		isDir, err := utils.DirExists(sourceFile)
-		if err != nil {
-			return nil, err
+		if isSymlink {
+			log.Entry().Debugf("Ignoring path %q", sourceFile)
+			knownSymlinks = append(knownSymlinks, sourceFile)
 		}
 
-		if isSymlink {
-			if isDir {
-				log.Entry().Debugf("Ignoring any path below %s", sourceFile)
-				knownSymlinks = append(knownSymlinks, sourceFile)
-			}
+		if isPartOfSymlink(sourceFile, knownSymlinks) {
 			filteredFiles = append(filteredFiles, sourceFile)
-		} else {
-			if !isFiltered(sourceFile, knownSymlinks) {
-				filteredFiles = append(filteredFiles, sourceFile)
-			}
 		}
 	}
 	return filteredFiles, nil
@@ -62,7 +54,7 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 	}
 
 	if !follow {
-		sourceFiles, err = filterSourceFiles(sourceFiles, utils)
+		sourceFiles, err = filterSymlinks(sourceFiles, utils)
 		if err != nil {
 			return err
 		}
