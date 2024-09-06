@@ -121,7 +121,7 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 				secretInfo := fmt.Sprintf("[!%s](#) pass via ENV or Jenkins credentials", secretBadge)
 
 				isVaultSecret := param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil
-				isTrustengineSecret := param.GetReference("trustengineSecret") != nil // config.RefTypeTrustengineSecret
+				isTrustengineSecret := param.GetReference(config.RefTypeTrustengineSecret) != nil
 				if isVaultSecret && isTrustengineSecret {
 					secretInfo = fmt.Sprintf(" [!%s](#) [!%s](#) [!%s](/) pass via ENV, Vault, Trust Engine or Jenkins credentials", vaultBadge, trustengineBadge, secretBadge)
 				} else if isVaultSecret {
@@ -346,7 +346,7 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 			resourceDetails = addVaultResourceDetails(resource, resourceDetails)
 			continue
 		}
-		if resource.Type == "trustengineSecret" { // config.RefTypeTrustengineSecret
+		if resource.Type == config.RefTypeTrustengineSecret {
 			resourceDetails = addTrustEngineResourceDetails(resource, resourceDetails)
 		}
 	}
