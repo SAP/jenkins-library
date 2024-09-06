@@ -371,7 +371,7 @@ func addVaultResourceDetails(resource config.ResourceReference, resourceDetails 
 func addTrustEngineResourceDetails(resource config.ResourceReference, resourceDetails string) string {
 	resourceDetails += "<br/>Trust Engine resource:<br />"
 	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;name: `%v`<br />", resource.Name)
-	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;default value: `%v`<br />", resource.Default)
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;value: `%v`<br />", resource.Default)
 
 	return resourceDetails
 }
