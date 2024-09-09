@@ -13,14 +13,6 @@ metadata:
 spec:
   inputs:
     params:
-      - name: dockerImage
-        type: string
-        description: Docker image on which end-to-end tests should be executed.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
       - name: runScript
         type: string
         description: Script to be executed from package.json. Defaults to `ci-e2e`.
