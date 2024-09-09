@@ -16,7 +16,6 @@ spec:
       - name: runScript
         type: string
         description: Script to be executed from package.json. Defaults to `ci-e2e`.
-        default: ci-e2e
         scope:
           - PARAMETERS
           - STAGES
