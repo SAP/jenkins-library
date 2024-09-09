@@ -38,7 +38,7 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 	}
 	if len(config.AppURLs) > 0 {
 		for _, appUrl := range config.AppURLs {
-			url := appUrl["URL"].(string)
+			url := appUrl["url"].(string)
 			parameters := appUrl["parameters"].([]string)
 			runEndToEndTestForUrl(url, parameters, config, c)
 		}
