@@ -42,7 +42,7 @@ spec:
           - STEPS
       - name: productiveBranch
         type: string
-        description: The branch used as productive branch, defaults to master.
+        description: The branch used as productive branch.
         scope:
           - GENERAL
           - PARAMETERS
