@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -17,7 +16,12 @@ func npmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, _ *telemetry
 }
 
 func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command.ExecRunner) {
-	env := os.Getenv("BRANCH_NAME")
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
+		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+		return
+	}
+	env := provider.Branch()
 	if config.OnlyRunInProductiveBranch && config.ProductiveBranch != env {
 		log.Entry().Info("Skipping execution because it is configured to run only in the productive branch.")
 		return
