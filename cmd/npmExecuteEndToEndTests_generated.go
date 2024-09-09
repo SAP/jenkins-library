@@ -20,7 +20,6 @@ import (
 )
 
 type npmExecuteEndToEndTestsOptions struct {
-	DockerImage               string                   `json:"dockerImage,omitempty"`
 	RunScript                 string                   `json:"runScript,omitempty"`
 	AppURLs                   []map[string]interface{} `json:"appUrls,omitempty"`
 	OnlyRunInProductiveBranch bool                     `json:"onlyRunInProductiveBranch,omitempty"`
@@ -173,8 +172,7 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 }
 
 func addNpmExecuteEndToEndTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteEndToEndTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.DockerImage, "dockerImage", os.Getenv("PIPER_dockerImage"), "Docker image on which end-to-end tests should be executed.")
-	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `ci-e2e`, "Script to be executed from package.json. Defaults to `ci-e2e`.")
+	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", os.Getenv("PIPER_runScript"), "Script to be executed from package.json. Defaults to `ci-e2e`.")
 
 	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean to indicate whether the step should only be executed in the productive branch or not.")
 	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", os.Getenv("PIPER_productiveBranch"), "The branch used as productive branch, defaults to master.")
@@ -182,7 +180,6 @@ func addNpmExecuteEndToEndTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteE
 	cmd.Flags().BoolVar(&stepConfig.Wdi5, "wdi5", false, "Distinguish if these are wdi5 tests.")
 	cmd.Flags().StringVar(&stepConfig.CredentialsID, "credentialsId", os.Getenv("PIPER_credentialsId"), "Credentials to access the application to be tested.")
 
-	cmd.MarkFlagRequired("dockerImage")
 	cmd.MarkFlagRequired("runScript")
 }
 
@@ -198,22 +195,13 @@ func npmExecuteEndToEndTestsMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "dockerImage",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_dockerImage"),
-					},
-					{
 						Name:        "runScript",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     `ci-e2e`,
+						Default:     os.Getenv("PIPER_runScript"),
 					},
 					{
 						Name:        "appUrls",

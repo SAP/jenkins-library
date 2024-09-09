@@ -101,6 +101,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"mtaBuild":                                  mtaBuildMetadata(),
 		"newmanExecute":                             newmanExecuteMetadata(),
 		"nexusUpload":                               nexusUploadMetadata(),
+		"npmExecuteEndToEndTests":                   npmExecuteEndToEndTestsMetadata(),
 		"npmExecuteLint":                            npmExecuteLintMetadata(),
 		"npmExecuteScripts":                         npmExecuteScriptsMetadata(),
 		"pipelineCreateScanSummary":                 pipelineCreateScanSummaryMetadata(),
