@@ -119,6 +119,8 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 	}
 	if err != nil {
 		log.Entry().Info("  failed")
+		// if app role fails then try the trust engine , since it does not depend of vault
+		// but here the token will come trust engine
 		return nil, err
 	}
 	log.Entry().Info("  succeeded")
@@ -171,6 +173,18 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 	}
 	if secretValue == nil {
 		log.Entry().Warn("  failed")
+		// here we first should check if the jenkins secret is found ??
+		// config.Config[param.Name] should not be set . which will prove that jenkins has not set the value
+		if ref.Type == "trustEngine" {
+			// config.
+			// cmd.GeneralConfig.HookConfig.TrustEngineURL = "dummy" + ref.name
+			// GeneralConfig.HookConfig.TrustEngineURL can come from a custom default
+			// TRUST_ENGINE_TOKEN=$(curl --url https://api.trust-dev.tools.sap/auth --header "X-Trust-Authorization-Orchestrator: $PIPER_ORCHESTRATOR_JWT" --header "X-Trust-Authorization-Runtime: $PIPER_RUNNER_JWT" | jq -r '.["trust-engine-auth-token"]' | base64 -d)
+			// TRUST_ENGINE_TOKEN is used to make the call for the parameter secret
+		}
+		log.Entry().Info("trying to fetch secret from secret engine")
+		// config.FetchSecretFromTrustEngine()
+		// hook to fetch from secret engine
 	}
 }
 
