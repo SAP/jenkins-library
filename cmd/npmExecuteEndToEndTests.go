@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -19,7 +18,7 @@ func npmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, _ *telemetry
 
 func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command.ExecRunner) {
 
-	log.Entry().Info("url value is %v", config.AppURLs[0])
+	log.Entry().Info("url value is %v", config.AppURLs)
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
