@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"k8s.io/utils/strings/slices"
 )
@@ -35,6 +37,7 @@ type SAP_COM_0948 struct {
 	retryBaseSleepUnit      time.Duration
 	retryMaxSleepTime       time.Duration
 	retryAllowedErrorCodes  []string
+	logOutput               string
 }
 
 func (api *SAP_COM_0948) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
@@ -58,6 +61,10 @@ func (api *SAP_COM_0948) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 
 func (api *SAP_COM_0948) getUUID() string {
 	return api.uuid
+}
+
+func (api *SAP_COM_0948) getLogOutput() string {
+	return api.logOutput
 }
 
 // reads the execution log from the ABAP system
@@ -281,6 +288,10 @@ func (api *SAP_COM_0948) GetRepository() (bool, string, error, bool) {
 
 }
 
+func (api *SAP_COM_0948) SetLogOutput(logOutput string) {
+	api.logOutput = logOutput
+}
+
 func (api *SAP_COM_0948) UpdateRepoWithBYOGCredentials(byogAuthMethod string, byogUsername string, byogPassword string) {
 	api.repository.ByogAuthMethod = byogAuthMethod
 	api.repository.ByogUsername = byogUsername
@@ -304,6 +315,40 @@ func (api *SAP_COM_0948) Clone() error {
 
 	return api.triggerRequest(cloneConnectionDetails, []byte(body))
 
+}
+
+func (api *SAP_COM_0948) LogArchive() {
+
+	fileUtils := piperutils.Files{}
+	fileName := "LogArchive-" + api.getUUID() + "__" + time.Now().Format("20060102-150405") + ".zip"
+
+	connectionDetails := api.con
+	connectionDetails.URL = api.con.URL + api.path + "/LogArchive/" + api.getUUID() + "/download"
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		_, err = handleHTTPError(resp, err, api.failureMessage, connectionDetails)
+		// return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("Error: HTTP Status", resp.StatusCode)
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+
+	err = os.WriteFile(fileName, body, 0o644)
+
+	if err == nil {
+		log.Entry().Infof("Writing %s file was successful", fileName)
+		var reports []piperutils.Path
+		reports = append(reports, piperutils.Path{Target: fileName, Name: "Log Archive", Mandatory: true})
+
+		piperutils.PersistReportsAndLinks("", "", fileUtils, reports, nil)
+	}
 }
 
 func (api *SAP_COM_0948) triggerRequest(cloneConnectionDetails ConnectionDetailsHTTP, jsonBody []byte) error {

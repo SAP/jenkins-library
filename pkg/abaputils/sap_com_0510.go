@@ -33,6 +33,7 @@ type SAP_COM_0510 struct {
 	retryBaseSleepUnit     time.Duration
 	retryMaxSleepTime      time.Duration
 	retryAllowedErrorCodes []string
+	logOutput              string
 }
 
 func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
@@ -58,6 +59,10 @@ func (api *SAP_COM_0510) GetExecutionLog() (execLog ExecutionLog, err error) {
 
 func (api *SAP_COM_0510) getUUID() string {
 	return api.uuid
+}
+
+func (api *SAP_COM_0510) getLogOutput() string {
+	return api.logOutput
 }
 
 func (api *SAP_COM_0510) CreateTag(tag Tag) error {
@@ -403,4 +408,13 @@ func (api *SAP_COM_0510) ConvertTime(logTimeStamp string) time.Time {
 // Dummy implementation of the "optional" method UpdateRepoWithBYOGCredentials (only used in SAP_COM_0948)
 func (api *SAP_COM_0510) UpdateRepoWithBYOGCredentials(byogAuthMethod string, byogUsername string, byogPassword string) {
 	panic("UpdateRepoWithBYOGCredentials cannot be used in SAP_COM_0510")
+}
+
+// Dummy implementation of the "optional" method LogArchive (only used in SAP_COM_0948)
+func (api *SAP_COM_0510) LogArchive() {
+	panic("LogArchive cannot be used in SAP_COM_0510")
+}
+
+func (api *SAP_COM_0510) SetLogOutput(logOutput string) {
+	api.logOutput = logOutput
 }
