@@ -18,13 +18,9 @@ func npmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, _ *telemetry
 }
 
 func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command.ExecRunner) {
-	if len(config.AppURLs) > 0 {
-		var value map[string]interface{}
 
-		json.Unmarshal(config.AppURLs, &value)
+	log.Entry().Info("url value is %v", config.AppURLs[0])
 
-		log.Entry().Info("url value is %s", value[0].url)
-	}
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
