@@ -39,14 +39,14 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 			return
 		}
 	}
-	if len(config.AppURLs) > 0 {
-		for _, appUrl := range config.AppURLs {
-			url := appUrl["url"].(string)
-			parameters := appUrl["parameters"].([]string)
-			runEndToEndTestForUrl(url, parameters, config, c)
-		}
-		return
-	}
+	// if len(config.AppURLs) > 0 {
+	// 	for _, appUrl := range config.AppURLs {
+	// 		url := appUrl["url"].(string)
+	// 		parameters := appUrl["parameters"].([]string)
+	// 		runEndToEndTestForUrl(url, parameters, config, c)
+	// 	}
+	// 	return
+	// }
 	runEndToEndTestForUrl(config.BaseURL, []string{}, config, c)
 }
 
@@ -54,9 +54,9 @@ func runEndToEndTestForUrl(url string, params []string, config npmExecuteEndToEn
 	log.Entry().Infof("Running end to end tests for URL: %s", url)
 
 	urlParam := "--baseUrl="
-	if len(config.AppURLs) > 0 {
-		urlParam = "--launchUrl="
-	}
+	// if len(config.AppURLs) > 0 {
+	// 	urlParam = "--launchUrl="
+	// }
 
 	// Prepare script options
 	scriptOptions := []string{urlParam + config.BaseURL}
