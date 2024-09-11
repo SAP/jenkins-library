@@ -43,6 +43,9 @@ type FileUtils interface {
 	CurrentTime(format string) string
 	Open(name string) (io.ReadWriteCloser, error)
 	Create(name string) (io.ReadWriteCloser, error)
+	Readlink(name string) (string, error)
+	Stat(path string) (os.FileInfo, error)
+	Lstat(path string) (os.FileInfo, error)
 }
 
 // Files ...
@@ -512,4 +515,14 @@ func (f Files) Open(name string) (io.ReadWriteCloser, error) {
 // Create is a wrapper for os.Create
 func (f Files) Create(name string) (io.ReadWriteCloser, error) {
 	return os.Create(name)
+}
+
+// Readlink wraps os.Readlink
+func (f Files) Readlink(name string) (string, error) {
+	return os.Readlink(name)
+}
+
+// Readlink wraps os.Readlink
+func (f Files) Lstat(path string) (os.FileInfo, error) {
+	return os.Lstat(path)
 }
