@@ -18,7 +18,7 @@ func npmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, _ *telemetry
 }
 
 func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command.ExecRunner) {
-	if config.AppURLs {
+	if len(config.AppURLs) > 0 {
 		var value map[string]interface{}
 
 		json.Unmarshal(config.AppURLs, &value)
