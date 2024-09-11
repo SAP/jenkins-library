@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -16,7 +18,21 @@ func npmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, _ *telemetry
 }
 
 func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command.ExecRunner) {
-	log.Entry().Infof("url value is %v", config.AppURLs)
+	// unmarshal string to map
+	type AppURL struct {
+		URL      string `json:"url"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	var appURLs []AppURL
+
+	err := json.Unmarshal([]byte(config.AppURLs), &appURLs)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to unmarshal appURLs")
+		return
+	}
+
+	log.Entry().Infof("url value is %v, len is %d", appURLs, len(appURLs))
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
