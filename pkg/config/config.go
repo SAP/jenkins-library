@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/trustengine"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
@@ -21,16 +23,17 @@ import (
 
 // Config defines the structure of the config files
 type Config struct {
-	CustomDefaults   []string                          `json:"customDefaults,omitempty"`
-	General          map[string]interface{}            `json:"general"`
-	Stages           map[string]map[string]interface{} `json:"stages"`
-	Steps            map[string]map[string]interface{} `json:"steps"`
-	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
-	defaults         PipelineDefaults
-	initialized      bool
-	accessTokens     map[string]string
-	openFile         func(s string, t map[string]string) (io.ReadCloser, error)
-	vaultCredentials VaultCredentials
+	CustomDefaults           []string                          `json:"customDefaults,omitempty"`
+	General                  map[string]interface{}            `json:"general"`
+	Stages                   map[string]map[string]interface{} `json:"stages"`
+	Steps                    map[string]map[string]interface{} `json:"steps"`
+	Hooks                    map[string]interface{}            `json:"hooks,omitempty"`
+	defaults                 PipelineDefaults
+	initialized              bool
+	accessTokens             map[string]string
+	openFile                 func(s string, t map[string]string) (io.ReadCloser, error)
+	vaultCredentials         VaultCredentials
+	trustEngineConfiguration trustengine.Configuration
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -268,6 +271,15 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
 			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
 		}
+	}
+
+	// hooks need to have been loaded from the defaults before the server URL is known
+	err = c.setTrustEngineConfiguration(stepConfig.HookConfig)
+	if err != nil {
+		log.Entry().WithError(err).Debug("Trust Engine lookup skipped due to missing or incorrect configuration")
+	} else {
+		trustengineClient := trustengine.PrepareClient(&piperhttp.Client{}, c.trustEngineConfiguration)
+		resolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, trustengineClient)
 	}
 
 	// finally do the condition evaluation post processing
