@@ -109,10 +109,6 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 			return errors.New("Clone of " + logString + " failed on the ABAP System")
 		}
 		log.Entry().Info("The " + logString + " was cloned successfully")
-		// TODO: calling log archive endpoint. (utils method? so that other actions can also call the method to get the logs?)
-		// where do I get the action uuid?
-		// where is the atc example of saving file?
-		// saveLogArchive(uuid)
 	} else {
 		abaputils.AddDefaultDashedLine(2)
 		log.Entry().Infof("%s", "The repository / software component has already been cloned on the ABAP Environment system ")
