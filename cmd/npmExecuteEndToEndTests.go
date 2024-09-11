@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -16,6 +18,13 @@ func npmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, _ *telemetry
 }
 
 func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command.ExecRunner) {
+	if config.AppURLs {
+		var value map[string]interface{}
+
+		json.Unmarshal(config.AppURLs, &value)
+
+		log.Entry().Info("url value is %s", value[0].url)
+	}
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")

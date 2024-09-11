@@ -175,7 +175,7 @@ func addNpmExecuteEndToEndTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteE
 	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", os.Getenv("PIPER_runScript"), "Script to be executed from package.json. Defaults to `ci-e2e`.")
 
 	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean to indicate whether the step should only be executed in the productive branch or not.")
-	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", os.Getenv("PIPER_productiveBranch"), "The branch used as productive branch, defaults to master.")
+	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", os.Getenv("PIPER_productiveBranch"), "The branch used as productive branch.")
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", os.Getenv("PIPER_baseUrl"), "Base URL of the application to be tested.")
 	cmd.Flags().BoolVar(&stepConfig.Wdi5, "wdi5", false, "Distinguish if these are wdi5 tests.")
 	cmd.Flags().StringVar(&stepConfig.CredentialsID, "credentialsId", os.Getenv("PIPER_credentialsId"), "Credentials to access the application to be tested.")
@@ -204,12 +204,18 @@ func npmExecuteEndToEndTestsMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_runScript"),
 					},
 					{
-						Name:        "appUrls",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]map[string]interface{}",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "appUrls",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "appMetadataVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "appMetadata",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]map[string]interface{}",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "onlyRunInProductiveBranch",
@@ -259,7 +265,7 @@ func npmExecuteEndToEndTestsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "e2e-tests", Image: "${{params.dockerImage}}", EnvVars: []config.EnvVar{{Name: "BASE_URL", Value: "${{params.baseUrl}}"}, {Name: "CREDENTIALS_ID", Value: "${{params.credentialsId}}"}}, WorkingDir: "/app"},
+				{Name: "node", Image: "node:lts-buster"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

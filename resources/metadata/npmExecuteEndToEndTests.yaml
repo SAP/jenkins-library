@@ -33,6 +33,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - type: vaultSecret
+            default: appMetadata
+            name: appMetadataVaultSecretName
       - name: onlyRunInProductiveBranch
         type: bool
         description: Boolean to indicate whether the step should only be executed in the productive branch or not.
@@ -78,12 +82,14 @@ spec:
           - filePattern: "**/e2e-results.xml"
             type: e2e
   containers:
-    - name: e2e-tests
-      image: ${{params.dockerImage}}
-      env:
-        - name: BASE_URL
-          value: ${{params.baseUrl}}
-        - name: CREDENTIALS_ID
-          value: ${{params.credentialsId}}
-      workingDir: /app
-  sidecars: []
+    # - name: e2e-tests
+    #   image: ${{params.dockerImage}}
+    #   env:
+    #     - name: BASE_URL
+    #       value: ${{params.baseUrl}}
+    #     - name: CREDENTIALS_ID
+    #       value: ${{params.credentialsId}}
+    #   workingDir: /app
+    - name: node
+      image: node:lts-buster
+  # sidecars: []
