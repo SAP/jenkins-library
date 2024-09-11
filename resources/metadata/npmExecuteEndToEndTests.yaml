@@ -22,7 +22,7 @@ spec:
           - STEPS
         mandatory: true
       - name: appUrls
-        type: "[]map[string]interface{}"
+        type: string
         description: |
           The URLs under which the app is available after deployment.
           Each element of appUrls must be a map containing a property url, an optional property credentialId, and an optional property parameters.
