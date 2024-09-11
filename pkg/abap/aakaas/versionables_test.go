@@ -109,6 +109,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "0001", vers.TechPatchLevel)
 		assert.Equal(t, "1.3.1", vers.Version)
 	})
+
 	t.Run("Product Version NEXT Release Existing", func(t *testing.T) {
 		mc.AddData(testDataAakaasPVGetReleaseExisting)
 		err := vers.constructVersionable("DummyProd", wildCardNext+".0.0", *conn, pvQueryURL)
@@ -120,7 +121,7 @@ func TestCvResolve(t *testing.T) {
 		assert.Equal(t, "0000", vers.TechPatchLevel)
 		assert.Equal(t, "2.0.0", vers.Version)
 	})
-	
+
 	t.Run("Product Version NEXT Release Non Existing", func(t *testing.T) {
 		mc.AddData(testDataAakaasPVGetReleaseNonExisting)
 		err := vers.constructVersionable("DummyProd", wildCardNext+".0.0", *conn, pvQueryURL)
