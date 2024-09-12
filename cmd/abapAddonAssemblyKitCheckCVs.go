@@ -11,19 +11,22 @@ import (
 
 func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundle()
-	if err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &utils, cpe); err != nil {
+	telemetryData.BuildTool = "AAKaaS"
+	if err := runAbapAddonAssemblyKitCheckCVs(&config, &utils, cpe); err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, utils *aakaas.AakUtils, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
 
 	log.Entry().Info("╔══════════════════════════════╗")
 	log.Entry().Info("║ abapAddonAssemblyKitCheckCVs ║")
 	log.Entry().Info("╚══════════════════════════════╝")
 
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
+
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils, "", config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 

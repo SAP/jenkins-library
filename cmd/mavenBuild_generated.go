@@ -39,11 +39,14 @@ type mavenBuildOptions struct {
 	Publish                         bool     `json:"publish,omitempty"`
 	JavaCaCertFilePath              string   `json:"javaCaCertFilePath,omitempty"`
 	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
+	DeployFlags                     []string `json:"deployFlags,omitempty"`
+	CreateBuildArtifactsMetadata    bool     `json:"createBuildArtifactsMetadata,omitempty"`
 }
 
 type mavenBuildCommonPipelineEnvironment struct {
 	custom struct {
-		buildSettingsInfo string
+		buildSettingsInfo   string
+		mavenBuildArtifacts string
 	}
 }
 
@@ -54,6 +57,7 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "mavenBuildArtifacts", value: p.custom.mavenBuildArtifacts},
 	}
 
 	errCount := 0
@@ -186,7 +190,7 @@ general:
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -238,7 +242,7 @@ general:
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			mavenBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -267,6 +271,8 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures maven to run the deploy plugin to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.JavaCaCertFilePath, "javaCaCertFilePath", os.Getenv("PIPER_javaCaCertFilePath"), "path to the cacerts file used by Java. When maven publish is set to True and customTlsCertificateLinks (to deploy the artifact to a repository with a self signed cert) are provided to trust the self signed certs, Piper will extend the existing Java cacerts to include the new self signed certs. if not provided Piper will search for the cacerts in $JAVA_HOME/jre/lib/security/cacerts")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
+	cmd.Flags().StringSliceVar(&stepConfig.DeployFlags, "deployFlags", []string{`-Dmaven.main.skip=true`, `-Dmaven.test.skip=true`, `-Dmaven.install.skip=true`}, "maven deploy flags that will be used when publish is detected.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
 
 }
 
@@ -282,6 +288,9 @@ func mavenBuildMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "altDeploymentRepositoryPasswordId", Description: "Jenkins credentials ID containing the artifact deployment repository password.", Type: "jenkins"},
+				},
+				Resources: []config.StepResources{
+					{Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -493,6 +502,24 @@ func mavenBuildMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
+					{
+						Name:        "deployFlags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{`-Dmaven.main.skip=true`, `-Dmaven.test.skip=true`, `-Dmaven.install.skip=true`},
+					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -505,6 +532,7 @@ func mavenBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/mavenBuildArtifacts"},
 						},
 					},
 					{

@@ -114,7 +114,7 @@ func AbapEnvironmentBuildCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -165,7 +165,7 @@ func AbapEnvironmentBuildCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapEnvironmentBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -197,7 +197,7 @@ func addAbapEnvironmentBuildFlags(cmd *cobra.Command, stepConfig *abapEnvironmen
 	cmd.Flags().BoolVar(&stepConfig.TreatWarningsAsError, "treatWarningsAsError", false, "If a warrning occures, the step will be set to unstable")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollingIntervalInSeconds, "pollingIntervalInSeconds", 60, "wait time in seconds till next status request in the backend system")
-	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 	cmd.Flags().StringVar(&stepConfig.CpeValues, "cpeValues", os.Getenv("PIPER_cpeValues"), "Values taken from the previous step, if a value was also specified in the config file, the value from cpe will be discarded")
 	cmd.Flags().StringVar(&stepConfig.UseFieldsOfAddonDescriptor, "useFieldsOfAddonDescriptor", os.Getenv("PIPER_useFieldsOfAddonDescriptor"), "use fields of the addonDescriptor in the cpe as input values. Please enter in the format '[{\"use\":\"Name\",\"renameTo\":\"SWC\"}]'")
 	cmd.Flags().StringVar(&stepConfig.ConditionOnAddonDescriptor, "conditionOnAddonDescriptor", os.Getenv("PIPER_conditionOnAddonDescriptor"), "normally if useFieldsOfAddonDescriptor is not initial, a build is triggered for each repository in the addonDescriptor. This can be changed by posing conditions. Please enter in the format '[{\"field\":\"Status\",\"operator\":\"==\",\"value\":\"P\"}]'")

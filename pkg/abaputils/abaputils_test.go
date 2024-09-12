@@ -45,7 +45,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Error - reading service Key", func(t *testing.T) {
 		//given
@@ -271,27 +271,6 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 	})
 }
 
-func TestTimeConverter(t *testing.T) {
-	t.Run("Test example time", func(t *testing.T) {
-		inputDate := "/Date(1585576809000+0000)/"
-		expectedDate := "2020-03-30 14:00:09 +0000 UTC"
-		result := ConvertTime(inputDate)
-		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-	})
-	t.Run("Test Unix time", func(t *testing.T) {
-		inputDate := "/Date(0000000000000+0000)/"
-		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
-		result := ConvertTime(inputDate)
-		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-	})
-	t.Run("Test unexpected format", func(t *testing.T) {
-		inputDate := "/Date(0012300000001+0000)/"
-		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
-		result := ConvertTime(inputDate)
-		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-	})
-}
-
 func TestHandleHTTPError(t *testing.T) {
 	t.Run("Test", func(t *testing.T) {
 
@@ -309,7 +288,7 @@ func TestHandleHTTPError(t *testing.T) {
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s: %s - %s", receivedErr.Error(), abapErrorCode, abapErrorMessage))
 		log.Entry().Info(err.Error())
 	})
@@ -328,7 +307,7 @@ func TestHandleHTTPError(t *testing.T) {
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
@@ -347,7 +326,7 @@ func TestHandleHTTPError(t *testing.T) {
 		receivedErr := errors.New(errorValue)
 		message := "Custom Error Message"
 
-		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
@@ -361,7 +340,7 @@ func TestHandleHTTPError(t *testing.T) {
 		_, hook := test.NewNullLogger()
 		log.RegisterHook(hook)
 
-		err := HandleHTTPError(nil, receivedErr, message, ConnectionDetailsHTTP{})
+		_, err := HandleHTTPError(nil, receivedErr, message, ConnectionDetailsHTTP{})
 
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		assert.Equal(t, 5, len(hook.Entries), "Expected a different number of entries")

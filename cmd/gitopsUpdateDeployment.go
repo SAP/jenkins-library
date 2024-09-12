@@ -3,9 +3,19 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	gitUtil "github.com/SAP/jenkins-library/pkg/git"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -13,12 +23,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/pkg/errors"
-	"io"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"time"
 )
 
 const toolKubectl = "kubectl"
@@ -27,8 +31,8 @@ const toolKustomize = "kustomize"
 
 type iGitopsUpdateDeploymentGitUtils interface {
 	CommitFiles(filePaths []string, commitMessage, author string) (plumbing.Hash, error)
-	PushChangesToRepository(username, password string, force *bool) error
-	PlainClone(username, password, serverURL, directory string) error
+	PushChangesToRepository(username, password string, force *bool, caCerts []byte) error
+	PlainClone(username, password, serverURL, branchName, directory string, caCerts []byte) error
 	ChangeBranch(branchName string) error
 }
 
@@ -36,6 +40,7 @@ type gitopsUpdateDeploymentFileUtils interface {
 	TempDir(dir, pattern string) (name string, err error)
 	RemoveAll(path string) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
 	Glob(pattern string) ([]string, error)
 }
 
@@ -49,6 +54,25 @@ type gitopsUpdateDeploymentExecRunner interface {
 type gitopsUpdateDeploymentGitUtils struct {
 	worktree   *git.Worktree
 	repository *git.Repository
+}
+
+type gitopsUpdateDeploymentUtilsBundle struct {
+	*piperhttp.Client
+}
+
+type gitopsUpdateDeploymentUtils interface {
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+}
+
+func newGitopsUpdateDeploymentUtilsBundle() gitopsUpdateDeploymentUtils {
+	utils := gitopsUpdateDeploymentUtilsBundle{
+		Client: &piperhttp.Client{},
+	}
+	return &utils
+}
+
+func (g *gitopsUpdateDeploymentUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return g.Client.DownloadFile(url, filename, header, cookies)
 }
 
 func (g *gitopsUpdateDeploymentGitUtils) CommitFiles(filePaths []string, commitMessage, author string) (plumbing.Hash, error) {
@@ -71,13 +95,13 @@ func (g *gitopsUpdateDeploymentGitUtils) CommitFiles(filePaths []string, commitM
 	return commit, nil
 }
 
-func (g *gitopsUpdateDeploymentGitUtils) PushChangesToRepository(username, password string, force *bool) error {
-	return gitUtil.PushChangesToRepository(username, password, force, g.repository)
+func (g *gitopsUpdateDeploymentGitUtils) PushChangesToRepository(username, password string, force *bool, caCerts []byte) error {
+	return gitUtil.PushChangesToRepository(username, password, force, g.repository, caCerts)
 }
 
-func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverURL, directory string) error {
+func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverURL, branchName, directory string, caCerts []byte) error {
 	var err error
-	g.repository, err = gitUtil.PlainClone(username, password, serverURL, directory)
+	g.repository, err = gitUtil.PlainClone(username, password, serverURL, branchName, directory, caCerts)
 	if err != nil {
 		return errors.Wrapf(err, "plain clone failed '%s'", serverURL)
 	}
@@ -126,7 +150,12 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		}
 	}()
 
-	err = cloneRepositoryAndChangeBranch(config, gitUtils, temporaryFolder)
+	certs, err := downloadCACertbunde(config.CustomTLSCertificateLinks, gitUtils, fileUtils)
+	if err != nil {
+		return err
+	}
+
+	err = cloneRepositoryAndChangeBranch(config, gitUtils, fileUtils, temporaryFolder, certs)
 	if err != nil {
 		return errors.Wrap(err, "repository could not get prepared")
 	}
@@ -190,7 +219,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		}
 	}
 
-	commit, err := commitAndPushChanges(config, gitUtils, allFiles)
+	commit, err := commitAndPushChanges(config, gitUtils, allFiles, certs)
 	if err != nil {
 		return errors.Wrap(err, "failed to commit and push changes")
 	}
@@ -292,8 +321,9 @@ func logNotRequiredButFilledFieldForKustomize(config *gitopsUpdateDeploymentOpti
 	}
 }
 
-func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, temporaryFolder string) error {
-	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
+func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils, temporaryFolder string, certs []byte) error {
+
+	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, config.BranchName, temporaryFolder, certs)
 	if err != nil {
 		return errors.Wrap(err, "failed to plain clone repository")
 	}
@@ -303,6 +333,30 @@ func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUt
 		return errors.Wrap(err, "failed to change branch")
 	}
 	return nil
+}
+
+func downloadCACertbunde(customTlsCertificateLinks []string, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) ([]byte, error) {
+	certs := []byte{}
+	utils := newGitopsUpdateDeploymentUtilsBundle()
+	if len(customTlsCertificateLinks) > 0 {
+		for _, customTlsCertificateLink := range customTlsCertificateLinks {
+			log.Entry().Infof("Downloading CA certs %s into file '%s'", customTlsCertificateLink, path.Base(customTlsCertificateLink))
+			err := utils.DownloadFile(customTlsCertificateLink, path.Base(customTlsCertificateLink), nil, nil)
+			if err != nil {
+				return certs, nil
+			}
+
+			content, err := fileUtils.FileRead(path.Base(customTlsCertificateLink))
+			if err != nil {
+				return certs, nil
+			}
+			log.Entry().Infof("CA certs added successfully to cert pool")
+
+			certs = append(certs, content...)
+		}
+	}
+
+	return certs, nil
 }
 
 func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, filePath string) ([]byte, error) {
@@ -444,7 +498,7 @@ func buildRegistryPlusImageAndTagSeparately(config *gitopsUpdateDeploymentOption
 
 }
 
-func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, filePaths []string) (plumbing.Hash, error) {
+func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, filePaths []string, certs []byte) (plumbing.Hash, error) {
 	commitMessage := config.CommitMessage
 
 	if commitMessage == "" {
@@ -456,7 +510,7 @@ func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitop
 		return [20]byte{}, errors.Wrap(err, "committing changes failed")
 	}
 
-	err = gitUtils.PushChangesToRepository(config.Username, config.Password, &config.ForcePush)
+	err = gitUtils.PushChangesToRepository(config.Username, config.Password, &config.ForcePush, certs)
 	if err != nil {
 		return [20]byte{}, errors.Wrap(err, "pushing changes failed")
 	}

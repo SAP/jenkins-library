@@ -115,7 +115,7 @@ public class TmsUploadTest extends BasePiperTest {
         // contains assertion does not work apparently when comparing a list of lists against an expected list
         boolean found = false
         credInfo.each { entry ->
-            if (entry == [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]) {
+            if (entry == [type: 'token', id: 'credentialsId', env: ['PIPER_serviceKey']]) {
                 found = true
             }
         }

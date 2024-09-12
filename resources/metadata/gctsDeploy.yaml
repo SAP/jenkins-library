@@ -1,11 +1,11 @@
 metadata:
   name: gctsDeploy
-  description: Deploys a Git Repository to a local Repository and then to an ABAP System
+  description: Deploys a Git repository to a local repository and then to an ABAP system
   longDescription: |
     This step deploys a remote Git repository to a local repository on an ABAP system and imports the content in the ABAP database.
     If the repository does not yet exist in the system, this step also creates it.
     If the repository already exists on the ABAP system, this step executes the remaining actions of the step, depending on the parameters provided for the step.
-    These actions include, for example, deploy a specific commit to the ABAP system, or deploy the current commit of a specific branch.
+    These actions include, for example, deploy a specific commit of the default branch or roll back to the previous commit, if import errors occur .
     You can use this step for gCTS as of SAP S/4HANA 2020.
 
 spec:
@@ -119,7 +119,7 @@ spec:
           - STEPS
       - name: scope
         type: string
-        description: Scope of objects to be deployed. Possible values are `CRNTCOMMIT` (current commit - Default) and `LASTACTION` (last repository action). The default option deploys all objects that existed in the repository when the commit was created. `LASTACTION` only deploys the object difference of the last action in the repository.
+        description: Scope of objects to be deployed (imported). Only use this parameter for specific use cases, for example, when import errors occurred. Possible values are `CRNTCOMMIT` (current commit of the local repository) and `LASTACTION` (last action that occurred in the local repository). The `CRNTCOMMIT` option deploys the complete list of objects that existed in the local repository at the point in time when the commit was created. Note that this deploy scope doesn't only comprise the changed objects of the commit itself. `LASTACTION` only deploys the object difference between the `From Commit` and the `To Commit` of the last action in the repository.
         scope:
           - PARAMETERS
           - STAGES

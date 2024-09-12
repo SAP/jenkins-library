@@ -181,7 +181,7 @@ func TestStepCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -234,7 +234,7 @@ func TestStepCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME, piperOsCmd.GeneralConfig.HookConfig.PendoConfig.Token)
 			testStep(stepConfig, &stepTelemetryData, &commonPipelineEnvironment, &influxTest)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

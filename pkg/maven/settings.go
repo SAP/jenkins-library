@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -28,7 +29,7 @@ type SettingsDownloadUtils interface {
 func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, utils SettingsDownloadUtils) ([]string, error) {
 	mavenArgs := []string{}
 	if len(globalSettingsFile) > 0 {
-		globalSettingsFileName, err := downloadSettingsIfURL(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils, false)
+		globalSettingsFileName, err := getSettingsFilePath(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils, false)
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +40,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 	}
 
 	if len(projectSettingsFile) > 0 {
-		projectSettingsFileName, err := downloadSettingsIfURL(projectSettingsFile, ".pipeline/mavenProjectSettings.xml", utils, false)
+		projectSettingsFileName, err := getSettingsFilePath(projectSettingsFile, ".pipeline/mavenProjectSettings.xml", utils, false)
 		if err != nil {
 			return nil, err
 		}
@@ -169,11 +170,16 @@ func CreateNewProjectSettingsXML(altDeploymentRepositoryID string, altDeployment
 
 func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) (string, error) {
 	projectSettingsFileDestination := ".pipeline/mavenProjectSettings"
+	var err error
 	if exists, _ := utils.FileExists(projectSettingsFile); exists {
 		projectSettingsFileDestination = projectSettingsFile
-		addServerTagtoProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+		err = addServerTagtoProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
 	} else {
-		addServerTagtoProjectSettingsXML(".pipeline/mavenProjectSettings", altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+		err = addServerTagtoProjectSettingsXML(".pipeline/mavenProjectSettings", altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal settings xml file '%v': %w", projectSettingsFile, err)
 	}
 	return projectSettingsFileDestination, nil
 
@@ -271,8 +277,9 @@ func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownload
 	return nil
 }
 
-func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils SettingsDownloadUtils, overwrite bool) (string, error) {
+func getSettingsFilePath(settingsFileOption, settingsFile string, utils SettingsDownloadUtils, overwrite bool) (string, error) {
 	result := settingsFileOption
+	var absoluteFilePath string
 	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
 		err := downloadSettingsFromURL(settingsFileOption, settingsFile, utils, overwrite)
 		if err != nil {
@@ -280,7 +287,17 @@ func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils Settin
 		}
 		result = settingsFile
 	}
-	return result, nil
+	//Added support for sub-mobules in maven build by providing absolute path
+	if filepath.IsAbs(result) {
+		absoluteFilePath = result
+	} else {
+		dir, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("failed to get current working directory: %w", err)
+		}
+		absoluteFilePath = path.Join(dir, result)
+	}
+	return absoluteFilePath, nil
 }
 
 func downloadSettingsFromURL(url, filename string, utils SettingsDownloadUtils, overwrite bool) error {

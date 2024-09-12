@@ -101,7 +101,7 @@ func TestMavenBuild(t *testing.T) {
 	t.Run("mavenBuild with deploy must skip build, install and test", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
-		config := mavenBuildOptions{Publish: true, Verify: false}
+		config := mavenBuildOptions{Publish: true, Verify: false, DeployFlags: []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}}
 
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
@@ -133,6 +133,27 @@ func TestMavenBuild(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Contains(t, mockedUtils.Calls[0].Params, "--activate-profiles")
 		assert.Contains(t, mockedUtils.Calls[0].Params, "profile1,profile2")
+	})
+
+	t.Run("mavenBuild should not create build artifacts metadata when CreateBuildArtifactsMetadata is false and Publish is true", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+		mockedUtils.AddFile("pom.xml", []byte{})
+		config := mavenBuildOptions{CreateBuildArtifactsMetadata: false, Publish: true}
+		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
+		assert.Nil(t, err)
+		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "install")
+		assert.Empty(t, cpe.custom.mavenBuildArtifacts)
+	})
+
+	t.Run("mavenBuild should not create build artifacts metadata when CreateBuildArtifactsMetadata is true and Publish is false", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+		mockedUtils.AddFile("pom.xml", []byte{})
+		config := mavenBuildOptions{CreateBuildArtifactsMetadata: true, Publish: false}
+		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
+		assert.Nil(t, err)
+		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
+		assert.Empty(t, cpe.custom.mavenBuildArtifacts)
 	})
 
 }

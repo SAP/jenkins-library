@@ -15,13 +15,15 @@ import (
 
 func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &utils, cpe); err != nil {
+	telemetryData.BuildTool = "AAKaaS"
+
+	if err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, cpe); err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils,
+func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, utils *aakaas.AakUtils,
 	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) error {
 
 	log.Entry().Info("╔═════════════════════════════════════════╗")
@@ -30,7 +32,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 
 	log.Entry().Infof("... initializing connection to AAKaaS @ %v", config.AbapAddonAssemblyKitEndpoint)
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils, config.AbapAddonAssemblyKitOriginHash, config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 
@@ -100,37 +102,53 @@ func checkCommitID(pckgWR []aakaas.PackageWithRepository, i int, checkFailure er
 }
 
 func checkCommitIDSameAsGiven(pckgWR []aakaas.PackageWithRepository, i int, checkFailure error) error {
-	//Ensure for Packages with Status R that CommitID of package = the one from addon.yml, beware of short commitID in addon.yml
-	addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
-	if len(pckgWR[i].Package.CommitID) < addonYAMLcommitIDLength {
-		checkFailure = errors.New("Provided CommitIDs have wrong length: " + pckgWR[i].Repo.CommitID + "(addon.yml) longer than the one from AAKaaS " + pckgWR[i].Package.CommitID)
-		log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
+	//Ensure for Packages with Status R that CommitID of package = the one from addon.yml, beware of short commitID in addon.yml (and AAKaaS had due to a bug some time also short commid IDs)
+	AAKaaSCommitId := pckgWR[i].Package.CommitID
+	AddonYAMLCommitId := pckgWR[i].Repo.CommitID
+
+	var commitIdLength int
+	//determine shortes commitID length
+	if len(AAKaaSCommitId) >= len(AddonYAMLCommitId) {
+		commitIdLength = len(AddonYAMLCommitId)
 	} else {
-		packageCommitIDsubsting := pckgWR[i].Package.CommitID[0:addonYAMLcommitIDLength]
-		if pckgWR[i].Repo.CommitID != packageCommitIDsubsting {
-			log.Entry().Error("package " + pckgWR[i].Package.PackageName + " was already build but with commit " + pckgWR[i].Package.CommitID + ", not with " + pckgWR[i].Repo.CommitID)
-			log.Entry().Error("If you want to build a new package make sure to increase the dotted-version-string in addon.yml - current value: " + pckgWR[i].Package.VersionYAML)
-			log.Entry().Error("If you do NOT want to build a new package enter the commitID " + pckgWR[i].Package.CommitID + " for software component " + pckgWR[i].Repo.Name + " in addon.yml")
-			checkFailure = errors.New("commit of already released package does not match with addon.yml")
-			log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
-		}
+		commitIdLength = len(AAKaaSCommitId)
+	}
+
+	//shorten both to common length
+	AAKaaSCommitId = AAKaaSCommitId[0:commitIdLength]
+	AddonYAMLCommitId = AddonYAMLCommitId[0:commitIdLength]
+
+	if AddonYAMLCommitId != AAKaaSCommitId {
+		log.Entry().Error("package " + pckgWR[i].Package.PackageName + " was already build but with commit " + pckgWR[i].Package.CommitID + ", not with " + pckgWR[i].Repo.CommitID)
+		log.Entry().Error("If you want to build a new package make sure to increase the dotted-version-string in addon.yml - current value: " + pckgWR[i].Package.VersionYAML)
+		log.Entry().Error("If you do NOT want to build a new package enter the commitID " + pckgWR[i].Package.CommitID + " for software component " + pckgWR[i].Repo.Name + " in addon.yml")
+		checkFailure = errors.New("commit of already released package does not match with addon.yml")
+		log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
 	}
 	return checkFailure
 }
 
 func checkCommitIDNotSameAsPrevious(pckgWR []aakaas.PackageWithRepository, i int, checkFailure error) error {
 	//Check for newly reserved packages which are to be build that CommitID from addon.yml != PreviousCommitID [this will result in an error as no delta can be calculated]
-	addonYAMLcommitIDLength := len(pckgWR[i].Repo.CommitID)
-	if len(pckgWR[i].Package.PredecessorCommitID) < addonYAMLcommitIDLength {
-		checkFailure = errors.New("Provided CommitIDs have wrong length: " + pckgWR[i].Repo.CommitID + "(addon.yml) longer than the one from AAKaaS " + pckgWR[i].Package.CommitID)
-		log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
+	AAKaaSPreviousCommitId := pckgWR[i].Package.PredecessorCommitID
+	AddonYAMLCommitId := pckgWR[i].Repo.CommitID
+
+	var commitIdLength int
+	//determine shortes commitID length
+	if len(AAKaaSPreviousCommitId) >= len(AddonYAMLCommitId) {
+		commitIdLength = len(AddonYAMLCommitId)
 	} else {
-		packagePredecessorCommitIDsubsting := pckgWR[i].Package.PredecessorCommitID[0:addonYAMLcommitIDLength]
-		if pckgWR[i].Repo.CommitID == packagePredecessorCommitIDsubsting {
-			checkFailure = errors.New("CommitID of package " + pckgWR[i].Package.PackageName + " is the same as the one of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")
-			log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
-		}
+		commitIdLength = len(AAKaaSPreviousCommitId)
 	}
+
+	AAKaaSPreviousCommitId = AAKaaSPreviousCommitId[0:commitIdLength]
+	AddonYAMLCommitId = AddonYAMLCommitId[0:commitIdLength]
+
+	if AddonYAMLCommitId == AAKaaSPreviousCommitId {
+		checkFailure = errors.New("CommitID of package " + pckgWR[i].Package.PackageName + " is the same as the one of the predecessor package. Make sure to change both the dotted-version-string AND the commitID in addon.yml")
+		log.Entry().WithError(checkFailure).Error(" => Check failure: to be corrected in addon.yml prior next execution")
+	}
+
 	return checkFailure
 }
 
