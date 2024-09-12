@@ -26,13 +26,14 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 	}
 	var appURLs []AppURL
 
-	err := json.Unmarshal([]byte(config.AppURLs), &appURLs)
+	err := json.Unmarshal([]byte(config.AppURLsVault), &appURLs)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to unmarshal appURLs")
+		log.Entry().WithError(err).Fatal("Failed to unmarshal appURLsVault")
 		return
 	}
 
-	log.Entry().Infof("url value is %v, len is %d", appURLs, len(appURLs))
+	log.Entry().Infof("vault value is %v, len is %d", appURLs, len(appURLs))
+	log.Entry().Infof("jenkins value is %v, len is %d", config.AppURLs, len(config.AppURLs))
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {

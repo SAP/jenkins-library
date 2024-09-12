@@ -20,13 +20,14 @@ import (
 )
 
 type npmExecuteEndToEndTestsOptions struct {
-	RunScript                 string `json:"runScript,omitempty"`
-	AppURLs                   string `json:"appUrls,omitempty"`
-	OnlyRunInProductiveBranch bool   `json:"onlyRunInProductiveBranch,omitempty"`
-	ProductiveBranch          string `json:"productiveBranch,omitempty"`
-	BaseURL                   string `json:"baseUrl,omitempty"`
-	Wdi5                      bool   `json:"wdi5,omitempty"`
-	CredentialsID             string `json:"credentialsId,omitempty"`
+	RunScript                 string                   `json:"runScript,omitempty"`
+	AppURLs                   []map[string]interface{} `json:"appUrls,omitempty"`
+	AppURLsVault              string                   `json:"appUrlsVault,omitempty"`
+	OnlyRunInProductiveBranch bool                     `json:"onlyRunInProductiveBranch,omitempty"`
+	ProductiveBranch          string                   `json:"productiveBranch,omitempty"`
+	BaseURL                   string                   `json:"baseUrl,omitempty"`
+	Wdi5                      bool                     `json:"wdi5,omitempty"`
+	CredentialsID             string                   `json:"credentialsId,omitempty"`
 }
 
 type npmExecuteEndToEndTestsReports struct {
@@ -173,7 +174,8 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 
 func addNpmExecuteEndToEndTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteEndToEndTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", os.Getenv("PIPER_runScript"), "Script to be executed from package.json. Defaults to `ci-e2e`.")
-	cmd.Flags().StringVar(&stepConfig.AppURLs, "appUrls", os.Getenv("PIPER_appUrls"), "The URLs under which the app is available after deployment.\nEach element of appUrls must be a map containing a property url, an optional property credentialId, and an optional property parameters.\nThe optional property parameters can be used to pass additional parameters to the end-to-end test deployment reachable via the given application URL.\nThese parameters must be a list of strings, where each string corresponds to one element of the parameters.\nThese parameters are appended to the npm command during execution.\n")
+
+	cmd.Flags().StringVar(&stepConfig.AppURLsVault, "appUrlsVault", os.Getenv("PIPER_appUrlsVault"), "TODO")
 	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean to indicate whether the step should only be executed in the productive branch or not.")
 	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", os.Getenv("PIPER_productiveBranch"), "The branch used as productive branch.")
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", os.Getenv("PIPER_baseUrl"), "Base URL of the application to be tested.")
@@ -204,7 +206,15 @@ func npmExecuteEndToEndTestsMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_runScript"),
 					},
 					{
-						Name: "appUrls",
+						Name:        "appUrls",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name: "appUrlsVault",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -216,7 +226,7 @@ func npmExecuteEndToEndTestsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_appUrls"),
+						Default:   os.Getenv("PIPER_appUrlsVault"),
 					},
 					{
 						Name:        "onlyRunInProductiveBranch",

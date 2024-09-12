@@ -22,13 +22,20 @@ spec:
           - STEPS
         mandatory: true
       - name: appUrls
-        type: string
+        type: "[]map[string]interface{}"
         description: |
           The URLs under which the app is available after deployment.
           Each element of appUrls must be a map containing a property url, an optional property credentialId, and an optional property parameters.
           The optional property parameters can be used to pass additional parameters to the end-to-end test deployment reachable via the given application URL.
           These parameters must be a list of strings, where each string corresponds to one element of the parameters.
           These parameters are appended to the npm command during execution.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: appUrlsVault
+        type: string
+        description: TODO
         scope:
           - PARAMETERS
           - STAGES
