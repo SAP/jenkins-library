@@ -88,6 +88,7 @@ jobs:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./target/jenkins-library.jar
+
   post:
     name: Post Action
     runs-on: ubuntu-latest
@@ -106,15 +107,14 @@ jobs:
       # }
       - name: Decode SMTP secrets and set them in GITHUB_ENV
         id: smtp_secrets
-        if: steps.check.outputs.status == 'failure' ||  steps.check.outputs.status == 'cancelled'
+        if: steps.check.outputs.status == 'failure' || steps.check.outputs.status == 'cancelled'
         run: >
-          echo "${{ secrets.SMTP_CONFIG }}" | 
-          base64 --decode | 
-          jq -r 'to_entries[] | "\(.key)=\(.value)"' | 
-          while read line; do 
+          echo "${{ secrets.SMTP_CONFIG }}" |
+          base64 --decode |
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' |
+          while read line; do
             echo "$line" >> $GITHUB_ENV; echo "::add-mask::${line#*=}";
           done
-
       - name: Notify Piper team on failure or cancelled
         if: steps.smtp_secrets.conclusion == 'success'
         uses: dawidd6/action-send-mail@v3
