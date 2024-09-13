@@ -316,9 +316,7 @@ func (c *Client) initializeHttpClient() *http.Client {
 
 	if c.maxRetries > 0 {
 		retryClient := retryablehttp.NewClient()
-		localLogger := log.Entry()
-		localLogger.Level = logrus.DebugLevel
-		retryClient.Logger = localLogger
+		retryClient.Logger = c.logger
 		retryClient.HTTPClient.Timeout = c.maxRequestDuration
 		retryClient.HTTPClient.Jar = c.cookieJar
 		retryClient.RetryMax = c.maxRetries
