@@ -28,7 +28,6 @@ const (
 )
 
 func TestGetKV2Secret(t *testing.T) {
-
 	t.Run("Test missing secret", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		client := Client{vaultMock, &Config{}}
@@ -47,21 +46,13 @@ func TestGetKV2Secret(t *testing.T) {
 			vaultMock := &mocks.VaultMock{}
 			setupMockKvV2(vaultMock)
 			client := Client{vaultMock, &Config{}}
-			vaultMock.On("Read", secretAPIPath).Return(kv2Secret(SecretData{"key1": "value1"}), nil)
+			vaultMock.On("Read", secretAPIPath).Return(kv2Secret(SecretData{"key1": "value1", "key2": map[string]any{"subkey1": "subvalue2"}, "key3": 3, "key4": []string{"foo", "bar"}}), nil)
 			secret, err := client.GetKvSecret(secretName)
 			assert.NoError(t, err, "Expect GetKvSecret to succeed")
 			assert.Equal(t, "value1", secret["key1"])
-
-		})
-
-		t.Run("field ignored when 'data' field can't be parsed", func(t *testing.T) {
-			vaultMock := &mocks.VaultMock{}
-			setupMockKvV2(vaultMock)
-			client := Client{vaultMock, &Config{}}
-			vaultMock.On("Read", secretAPIPath).Return(kv2Secret(SecretData{"key1": "value1", "key2": 5}), nil)
-			secret, err := client.GetKvSecret(secretName)
-			assert.NoError(t, err)
-			assert.Empty(t, secret["key2"])
+			assert.Equal(t, `{"subkey1":"subvalue2"}`, secret["key2"])
+			assert.Equal(t, "3", secret["key3"])
+			assert.Equal(t, `["foo","bar"]`, secret["key4"])
 		})
 
 		t.Run("error is thrown when data field is missing", func(t *testing.T) {
@@ -96,22 +87,11 @@ func TestGetKV1Secret(t *testing.T) {
 		setupMockKvV1(vaultMock)
 		client := Client{vaultMock, &Config{}}
 
-		vaultMock.On("Read", secretName).Return(kv1Secret(SecretData{"key1": "value1"}), nil)
+		vaultMock.On("Read", secretName).Return(kv1Secret(SecretData{"key1": "value1", "key2": 5}), nil)
 		secret, err := client.GetKvSecret(secretName)
 		assert.NoError(t, err)
 		assert.Equal(t, "value1", secret["key1"])
-	})
-
-	t.Run("Test parsing KV1 secrets", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
-		setupMockKvV1(vaultMock)
-		vaultMock.On("Read", secretName).Return(kv1Secret(SecretData{"key1": 5}), nil)
-		client := Client{vaultMock, &Config{}}
-
-		secret, err := client.GetKvSecret(secretName)
-		assert.NoError(t, err)
-		assert.Empty(t, secret["key1"])
-
+		assert.Equal(t, "5", secret["key2"])
 	})
 }
 
