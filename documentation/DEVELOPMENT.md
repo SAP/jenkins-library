@@ -11,6 +11,7 @@
 1. [Release](#release)
 1. [Pipeline Configuration](#pipeline-configuration)
 1. [Security Setup](#security-setup)
+1. [Best practices for writing groovy](#best-practices-for-writing-groovy)
 
 ## Getting started
 
@@ -19,6 +20,8 @@
 1. Create [a GitHub account](https://github.com/join)
 1. Setup [GitHub access via SSH](https://help.github.com/articles/connecting-to-github-with-ssh/)
 1. [Create and checkout a repo fork](#checkout-your-fork)
+1. [Editorconfig](#editorconfig)
+1. [Commit message style](#commit-message-style)
 1. Optional: [Get Jenkins related environment](#jenkins-environment)
 1. Optional: [Get familiar with Jenkins Pipelines as Code](#jenkins-pipelines)
 
@@ -58,6 +61,16 @@ cd jenkins-library
 git remote add upstream git@github.com:sap/jenkins-library.git
 git remote set-url --push upstream no_push
 ```
+
+### EditorConfig
+
+To ensure a common file format, there is a `.editorConfig` file [in place](../.editorconfig). To respect this file, [check](http://editorconfig.org/#download) if your editor does support it natively or you need to download a plugin.
+
+### Commit Message Style
+
+Write [meaningful commit messages](http://who-t.blogspot.de/2009/12/on-commit-messages.html) and [adhere to standard formatting](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
+
+Good commit messages speed up the review process and help to keep this project maintainable in the long term.
 
 ### Jenkins environment
 
@@ -258,7 +271,7 @@ httpClient.SetOptions(clientOptions)
 1. [Global function pointers](#global-function-pointers)
 1. [Test Parallelization](#test-parallelization)
 
-Unit tests are done using basic `golang` means.
+Unit tests are done using basic `golang` means. As the test files are tagged add the corresponding tag to the run command, as for example `go test -run ^TestRunAbapAddonAssemblyKitCheck$ github.com/SAP/jenkins-library/cmd -tags=unit`. In VSCode this can be done by adding the flag `"-tags=unit"` to the list of `"go.testFlags"` in the `settings.json` of the go extension.
 
 Additionally, we encourage you to use [github.com/stretchr/testify/assert](https://github.com/stretchr/testify/assert)
 in order to have slimmer assertions if you like. A good pattern to follow is this:
@@ -694,3 +707,169 @@ All parts that are not relevant for signing were removed.
 ```
 
 Add the three to four lines to you git config and this will do the necessary such that all your commits will be signed.
+
+## Best practices for writing groovy
+
+New steps should be written in go.
+
+### Coding pattern
+
+Pipeline steps must not make use of return values. The pattern for sharing parameters between pipeline steps or between a pipeline step and a pipeline script is sharing values via the [`commonPipelineEnvironment`](../vars/commonPipelineEnvironment.groovy). Since there is no return value from a pipeline step the return value of a pipeline step is already `void` rather than `def`.
+
+### Jenkins credential handling
+
+References to Jenkins credentials should have meaningful names.
+
+We are using the following approach for naming Jenkins credentials:
+
+For username/password credentials:
+`<tool>CredentialsId` like e.g. `neoCredentialsId`
+
+For other cases we add further information to the name like:
+
+* `gitSshCredentialsId` for ssh credentials
+* `githubTokenCredentialsId`for token/string credentials
+* `gcpFileCredentialsId` for file credentials
+
+### Code Style
+
+Generally, the code should follow any stylistic and architectural guidelines prescribed by the project. In the absence of guidelines, mimic the styles and patterns in the existing code-base.
+
+The intention of this section is to describe the code style for this project. As reference document, the [Groovy's style guide](http://groovy-lang.org/style-guide.html) was taken. For further reading about Groovy's syntax and examples, please refer to this guide.
+
+This project is intended to run in Jenkins [[2]](https://jenkins.io/doc/book/getting-started/) as part of a Jenkins Pipeline [[3]](https://jenkins.io/doc/book/pipeline/). It is composed by Jenkins Pipeline's syntax, Groovy's syntax and Java's syntax.
+
+Some Groovy's syntax is not yet supported by Jenkins. It is also the intention of this section to remark which Groovy's syntax is not yet supported by Jenkins.
+
+As Groovy supports 99% of Java’s syntax [[1]](http://groovy-lang.org/style-guide.html), many Java developers tend to write Groovy code using Java's syntax. Such a developer should also consider the following code style for this project.
+
+#### General remarks
+
+Variables, methods, types and so on shall have meaningful self describing names. Doing so makes understanding code easier and requires less commenting. It helps people who did not write the code to understand it better.
+
+Code shall contain comments to explain the intention of the code when it is unclear what the intention of the author was. In such cases, comments should describe the "why" and not the "what" (that is in the code already).
+
+#### Omit semicolons
+
+#### Use the return keyword
+
+In Groovy it is optional to use the *return* keyword. Use explicitly the *return* keyword for better readability.
+
+#### Use def
+
+When using *def* in Groovy, the type is Object. Using *def* simplifies the code, for example imports are not needed, and therefore the development is faster.
+
+#### Do not use a visibility modifier for public classes and methods
+
+By default, classes and methods are public, the use of the public modifier is not needed.
+
+#### Do not omit parentheses for Groovy methods
+
+In Groovy is possible to omit parentheses for top-level expressions, but [Jenkins Pipeline's syntax](https://jenkins.io/doc/book/pipeline/syntax/) use a block, specifically `pipeline { }` as top-level expression [[4]](https://jenkins.io/doc/book/pipeline/syntax/). Do not omit parenthesis for Groovy methods because Jenkins will interpret the method as a Pipeline Step. Conversely, do omit parenthesis for Jenkins Pipeline's Steps.
+
+#### Omit the .class suffix
+
+In Groovy, the .class suffix is not needed. Omit the .class suffix for simplicity and better readability.
+
+e.g. `new ExpectedException().expect(AbortException.class)`
+
+-->  `new ExpectedException().expect(AbortException)`
+
+#### Omit getters and setters
+
+When declaring a field without modifier inside a Groovy bean, the Groovy compiler generates a private field and a getter and setter.
+
+#### Do not initialize beans with named parameters
+
+Do not initialize beans with named parameters, because it is not supported by Jenkins:
+
+e.g. `Version javaVersion = new Version( major: 1, minor: 8)`
+
+Initialize beans using Java syntax:
+
+e.g. `Version javaVersion = new Version(1, 8)`
+
+Use named parameters for Jenkins Pipeline Steps:
+
+e.g. `sh returnStdout: true, script: command`
+
+#### Do not use *with()* operator
+
+The *with* operator is not yet supported by Jenkins, and it must not be used or encapsulated in a @NonCPS method.
+
+#### Use *==* operator
+
+Use Groovy’s `==` instead of Java `equals()` to avoid NullPointerExceptions. To compare the references of objects, instead of `==`, you should use `a.is(b)` [[1]](http://groovy-lang.org/style-guide.html).
+
+#### Use GStrings
+
+In Groovy, single quotes create Java Strings, and double quotes can create Java Strings or GStrings, depending if there is or not interpolation of variables [[1]](http://groovy-lang.org/style-guide.html). Using GStrings variable and string concatenation is more simple.
+
+#### Do not use curly braces {} for variables or variable.property
+
+For variables, or variable.property, drop the curly braces:
+
+e.g. `echo "[INFO] ${name} version ${version.version} is installed."`
+
+-->  `echo "[INFO] $name version $version.version is installed."`
+
+#### Use 'single quotes' for Strings and constants
+
+#### Use "double quotes" for GStrings
+
+#### Use '''triple single quotes''' for multiline Strings
+
+#### Use """triple double quotes""" for multiline GStrings
+
+#### Use /slash/ for regular expressions
+
+This notation avoids to double escape backslashes, making easier working with regex.
+
+#### Use native syntax for data structures
+
+Use the native syntax for data structures provided by Groovy like lists, maps, regex, or ranges of values.
+
+#### Use aditional Groovy methods
+
+Use the additional methods provided by Groovy to manipulate String, Files, Streams, Collections, and other classes.
+For a complete description of all available methods, please read the GDK API [[5]](http://groovy-lang.org/groovy-dev-kit.html).
+
+#### Use Groovy's switch
+
+Groovy’s switch accepts any kind of type, thereby is more powerful. In this case, the use of *def* instead of a type is necessary.
+
+#### Use alias for import
+
+In Groovy, it is possible to assign an alias to imported packages. Use alias for imported packages to avoid the use of fully-qualified names and increase readability.
+
+#### Use Groovy syntax to check objects
+
+In Groovy a null, void, equal to zero, or empty object evaluates to false, and if not, evaluates to true. Instead of writing null and size checks e.g. `if (name != null && name.length > 0) {}`, use just the object `if (name) {}`.
+
+#### Use *?.* operator
+
+Use the safe dereference operator  *?.*, to simplify the code for accessing objects and object members safely. Using this operator, the Groovy compiler checks null objects and null object members, and returns *null* if the object or the object member is null and never throws a NullPointerException.
+
+#### Use *?:* operator
+
+Use Elvis operator *?:* to simplify default value validations.
+
+#### Use *any* keyword
+
+If the type of the exception thrown inside a try block is not important, catch any exception using the *any* keyword.
+
+#### Use *assert*
+
+To check parameters, return values, and more, use the assert statement.
+
+### References
+
+[1] Groovy's syntax: [http://groovy-lang.org/style-guide.html](http://groovy-lang.org/style-guide.html)
+
+[2] Jenkins: [https://jenkins.io/doc/book/getting-started/](https://jenkins.io/doc/book/getting-started/)
+
+[3] Jenkins Pipeline: [https://jenkins.io/doc/book/pipeline/](https://jenkins.io/doc/book/pipeline/)
+
+[4] Jenkins Pipeline's syntax: [https://jenkins.io/doc/book/pipeline/syntax/](https://jenkins.io/doc/book/pipeline/syntax/)
+
+[5] GDK: Groovy Development Kit: [http://groovy-lang.org/groovy-dev-kit.html](http://groovy-lang.org/groovy-dev-kit.html)
