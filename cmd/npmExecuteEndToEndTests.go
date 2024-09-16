@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -18,7 +19,6 @@ func npmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, _ *telemetry
 }
 
 func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command.ExecRunner) {
-	// unmarshal string to map
 	type AppURL struct {
 		URL      string `json:"url"`
 		Username string `json:"username"`
@@ -33,7 +33,8 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 	}
 
 	log.Entry().Infof("vault value is %v, len is %d", appURLs, len(appURLs))
-	log.Entry().Infof("jenkins value is %v, len is %d", config.AppURLs, len(config.AppURLs))
+
+	// TODO: handle config.AppURLs
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
@@ -55,30 +56,26 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 			return
 		}
 	}
-	// if len(config.AppURLs) > 0 {
-	// 	for _, appUrl := range config.AppURLs {
-	// 		url := appUrl["url"].(string)
-	// 		parameters := appUrl["parameters"].([]string)
-	// 		runEndToEndTestForUrl(url, parameters, config, c)
-	// 	}
-	// 	return
-	// }
-	runEndToEndTestForUrl(config.BaseURL, []string{}, config, c)
+	if len(appURLs) > 0 {
+		for _, appUrl := range appURLs {
+			credentialsToEnv(appUrl.Username, appUrl.Password, config.Wdi5)
+			runEndToEndTestForUrl(appUrl.URL, config, c)
+		}
+		return
+	}
+	runEndToEndTestForUrl(config.BaseURL, config, c)
 }
 
-func runEndToEndTestForUrl(url string, params []string, config npmExecuteEndToEndTestsOptions, command command.ExecRunner) {
+func runEndToEndTestForUrl(url string, config npmExecuteEndToEndTestsOptions, command command.ExecRunner) {
 	log.Entry().Infof("Running end to end tests for URL: %s", url)
 
-	urlParam := "--baseUrl="
-	// if len(config.AppURLs) > 0 {
-	// 	urlParam = "--launchUrl="
-	// }
-
 	// Prepare script options
-	scriptOptions := []string{urlParam + config.BaseURL}
-	if len(params) > 0 {
-		scriptOptions = append(scriptOptions, params...)
+	urlParam := "--baseUrl="
+	if len(config.AppURLs) > 0 {
+		urlParam = "--launchUrl="
 	}
+	scriptOptions := []string{urlParam + url}
+
 	if config.Wdi5 {
 		if err := command.RunExecutable("npm", "run", "wdi5"); err != nil {
 			log.Entry().WithError(err).Fatal("Failed to execute wdi5")
@@ -91,4 +88,13 @@ func runEndToEndTestForUrl(url string, params []string, config npmExecuteEndToEn
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute end to end tests")
 	}
+}
+
+func credentialsToEnv(username, password string, wdi5 bool) {
+	prefix := "e2e"
+	if wdi5 {
+		prefix = "wdi5"
+	}
+	os.Setenv(prefix+"_username", username)
+	os.Setenv(prefix+"_password", password)
 }
