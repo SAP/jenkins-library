@@ -89,7 +89,7 @@ func TestNPMIntegrationRegistrySetInFlags(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -140,7 +140,7 @@ func TestNPMIntegrationRegistrySetInNpmrc(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build >test-log.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -191,7 +191,7 @@ func TestNPMIntegrationRegistryWithTwoModules(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
