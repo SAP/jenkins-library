@@ -347,7 +347,7 @@ func (api *SAP_COM_0948) LogArchive() {
 		var reports []piperutils.Path
 		reports = append(reports, piperutils.Path{Target: fileName, Name: "Log Archive", Mandatory: true})
 
-		piperutils.PersistReportsAndLinks("", "", fileUtils, reports, nil)
+		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, reports, nil)
 	}
 }
 
