@@ -75,7 +75,6 @@ void call(Map parameters = [:]) {
             }
         }
     }
-    final script = checkScript(this, parameters) ?: this
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
 
