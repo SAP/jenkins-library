@@ -158,8 +158,8 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 		}
 
 		if len(packagesWithScript) == 0 {
-			log.Entry().Warnf("could not find any package.json file with script " + script)
-			continue
+			return fmt.Errorf("could not find any package.json file with script : %s ", script)
+
 		}
 
 		for _, packageJSON := range packagesWithScript {
