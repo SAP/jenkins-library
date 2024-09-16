@@ -6,6 +6,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 type SoftwareComponentApiManagerInterface interface {
@@ -71,7 +72,7 @@ type SoftwareComponentApiInterface interface {
 	ConvertTime(logTimeStamp string) time.Time
 	GetExecutionLog() (ExecutionLog, error)
 	LogArchive()
-	SetLogOutput(string)
+	SetLogOutput(logOutput string, piperStep string, stepReports []piperutils.Path)
 	UpdateRepoWithBYOGCredentials(string, string, string)
 }
 

@@ -37,7 +37,10 @@ type SAP_COM_0948 struct {
 	retryBaseSleepUnit      time.Duration
 	retryMaxSleepTime       time.Duration
 	retryAllowedErrorCodes  []string
-	logOutput               string
+
+	logOutput   string
+	piperStep   string
+	stepReports []piperutils.Path
 }
 
 func (api *SAP_COM_0948) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
@@ -288,8 +291,10 @@ func (api *SAP_COM_0948) GetRepository() (bool, string, error, bool) {
 
 }
 
-func (api *SAP_COM_0948) SetLogOutput(logOutput string) {
+func (api *SAP_COM_0948) SetLogOutput(logOutput string, piperStep string, stepReports []piperutils.Path) {
 	api.logOutput = logOutput
+	api.piperStep = piperStep
+	api.stepReports = stepReports
 }
 
 func (api *SAP_COM_0948) UpdateRepoWithBYOGCredentials(byogAuthMethod string, byogUsername string, byogPassword string) {
@@ -344,10 +349,8 @@ func (api *SAP_COM_0948) LogArchive() {
 
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", fileName)
-		var reports []piperutils.Path
-		reports = append(reports, piperutils.Path{Target: fileName, Name: "Log Archive", Mandatory: true})
-
-		piperutils.PersistReportsAndLinks("STEP_"+fileName, "", fileUtils, reports, nil)
+		api.stepReports = append(api.stepReports, piperutils.Path{Target: fileName, Name: "Log Archive", Mandatory: true})
+		piperutils.PersistReportsAndLinks(api.piperStep, "", fileUtils, api.stepReports, nil)
 	}
 }
 

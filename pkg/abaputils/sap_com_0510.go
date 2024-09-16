@@ -13,6 +13,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"k8s.io/utils/strings/slices"
 )
@@ -415,6 +416,6 @@ func (api *SAP_COM_0510) LogArchive() {
 	panic("LogArchive cannot be used in SAP_COM_0510")
 }
 
-func (api *SAP_COM_0510) SetLogOutput(logOutput string) {
+func (api *SAP_COM_0510) SetLogOutput(logOutput string, piperStep string, stepReports []piperutils.Path) {
 	api.logOutput = logOutput
 }

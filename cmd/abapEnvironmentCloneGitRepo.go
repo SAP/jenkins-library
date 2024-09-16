@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -55,9 +56,10 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	connectionDetails.CertificateNames = config.CertificateNames
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
+	var reports []piperutils.Path
 	for _, repo := range repositories {
 
-		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com)
+		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, reports)
 		if cloneError != nil {
 			return cloneError
 		}
@@ -67,7 +69,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	return nil
 }
 
-func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication) error {
+func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, reports []piperutils.Path) error {
 
 	// New API instance for each request
 	// Triggering the Clone of the repository into the ABAP Environment system
@@ -99,7 +101,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 			return errors.Wrapf(errClone, errorString)
 		}
 
-		api.SetLogOutput(config.LogOutput)
+		api.SetLogOutput(config.LogOutput, "abapEnvironmentCloneGitRepo", reports)
 
 		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
 		if errorPollEntity != nil {
