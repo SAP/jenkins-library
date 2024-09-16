@@ -61,17 +61,17 @@ void call(Map parameters = [:]) {
                 error "[${STEP_NAME}] No url property was defined for the following element in appUrls: ${appUrl}"
             }
             if (appUrl.credentialId) {
-                credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+                credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username', resolveCredentialsId: true))
                 if (config.wdi5) {
-                    credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username'))
+                    credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username', resolveCredentialsId: true))
                 }
             }
         }
     } else{
         if (config.credentialsId) {
-            credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+            credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username', resolveCredentialsId: true))
             if (config.wdi5) {
-                credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username'))
+                credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username', resolveCredentialsId: true))
             }
         }
     }
