@@ -36,6 +36,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
 
 void call(Map parameters = [:]) {
+    def script = checkScript(this, parameters) ?: this
     String stageName = parameters.stageName ?: env.STAGE_NAME
     Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
