@@ -346,11 +346,12 @@ func (api *SAP_COM_0948) LogArchive() {
 	body, err := io.ReadAll(resp.Body)
 
 	err = os.WriteFile(fileName, body, 0o644)
+	err = os.WriteFile("Second_"+fileName, body, 0o644)
 
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", fileName)
 		api.stepReports = append(api.stepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
-		api.stepReports = append(api.stepReports, piperutils.Path{Target: fileName + "_test", Name: "Log_Archive_" + api.getUUID() + "_test", Mandatory: true})
+		api.stepReports = append(api.stepReports, piperutils.Path{Target: "Second_" + fileName, Name: "Second_Log_Archive_" + api.getUUID(), Mandatory: true})
 
 		piperutils.PersistReportsAndLinks(api.piperStep, "", fileUtils, api.stepReports, nil)
 	}
