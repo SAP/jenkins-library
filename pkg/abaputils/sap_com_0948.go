@@ -350,6 +350,7 @@ func (api *SAP_COM_0948) LogArchive() {
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", fileName)
 		api.stepReports = append(api.stepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
+		api.stepReports = append(api.stepReports, piperutils.Path{Target: fileName + "_test", Name: "Log_Archive_" + api.getUUID() + "_test", Mandatory: true})
 
 		piperutils.PersistReportsAndLinks(api.piperStep, "", fileUtils, api.stepReports, nil)
 	}
