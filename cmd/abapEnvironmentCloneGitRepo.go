@@ -60,7 +60,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	fileUtils := piperutils.Files{}
 	for _, repo := range repositories {
 
-		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, reports)
+		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, &reports)
 		if cloneError != nil {
 			return cloneError
 		}
@@ -73,7 +73,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	return nil
 }
 
-func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, reports []piperutils.Path) error {
+func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, reports *[]piperutils.Path) error {
 
 	// New API instance for each request
 	// Triggering the Clone of the repository into the ABAP Environment system
@@ -105,7 +105,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 			return errors.Wrapf(errClone, errorString)
 		}
 
-		api.SetLogOutput(config.LogOutput, "abapEnvironmentCloneGitRepo", &reports)
+		api.SetLogOutput(config.LogOutput, "abapEnvironmentCloneGitRepo", reports)
 
 		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
 		if errorPollEntity != nil {
