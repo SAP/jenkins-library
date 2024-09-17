@@ -324,7 +324,7 @@ func (api *SAP_COM_0948) Clone() error {
 
 func (api *SAP_COM_0948) LogArchive() {
 
-	fileUtils := piperutils.Files{}
+	// fileUtils := piperutils.Files{}
 	fileName := "LogArchive-" + api.getUUID() + "__" + time.Now().Format("2006-01-02T15:04:05 -070000") + ".zip"
 
 	connectionDetails := api.con
@@ -353,7 +353,7 @@ func (api *SAP_COM_0948) LogArchive() {
 		api.stepReports = append(api.stepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
 		api.stepReports = append(api.stepReports, piperutils.Path{Target: "Second_" + fileName, Name: "Second_Log_Archive_" + api.getUUID(), Mandatory: true})
 
-		piperutils.PersistReportsAndLinks(api.piperStep, "", fileUtils, api.stepReports, nil)
+		// piperutils.PersistReportsAndLinks(api.piperStep, "", fileUtils, api.stepReports, nil)
 	}
 }
 

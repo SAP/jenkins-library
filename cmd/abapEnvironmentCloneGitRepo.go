@@ -57,6 +57,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 	var reports []piperutils.Path
+	fileUtils := piperutils.Files{}
 	for _, repo := range repositories {
 
 		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, reports)
@@ -64,6 +65,9 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 			return cloneError
 		}
 	}
+
+	piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, reports, nil)
+
 	abaputils.AddDefaultDashedLine(1)
 	log.Entry().Info("All repositories were cloned successfully")
 	return nil
