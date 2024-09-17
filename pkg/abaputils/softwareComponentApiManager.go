@@ -72,7 +72,7 @@ type SoftwareComponentApiInterface interface {
 	ConvertTime(logTimeStamp string) time.Time
 	GetExecutionLog() (ExecutionLog, error)
 	LogArchive()
-	SetLogOutput(logOutput string, piperStep string, stepReports []piperutils.Path)
+	SetLogOutput(logOutput string, piperStep string, stepReports *[]piperutils.Path)
 	UpdateRepoWithBYOGCredentials(string, string, string)
 }
 

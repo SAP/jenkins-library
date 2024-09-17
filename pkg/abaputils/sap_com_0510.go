@@ -416,6 +416,6 @@ func (api *SAP_COM_0510) LogArchive() {
 	panic("LogArchive cannot be used in SAP_COM_0510")
 }
 
-func (api *SAP_COM_0510) SetLogOutput(logOutput string, piperStep string, stepReports []piperutils.Path) {
+func (api *SAP_COM_0510) SetLogOutput(logOutput string, piperStep string, stepReports *[]piperutils.Path) {
 	api.logOutput = logOutput
 }

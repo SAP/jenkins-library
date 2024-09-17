@@ -40,7 +40,7 @@ type SAP_COM_0948 struct {
 
 	logOutput   string
 	piperStep   string
-	stepReports []piperutils.Path
+	stepReports *[]piperutils.Path
 }
 
 func (api *SAP_COM_0948) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
@@ -291,7 +291,7 @@ func (api *SAP_COM_0948) GetRepository() (bool, string, error, bool) {
 
 }
 
-func (api *SAP_COM_0948) SetLogOutput(logOutput string, piperStep string, stepReports []piperutils.Path) {
+func (api *SAP_COM_0948) SetLogOutput(logOutput string, piperStep string, stepReports *[]piperutils.Path) {
 	api.logOutput = logOutput
 	api.piperStep = piperStep
 	api.stepReports = stepReports
@@ -350,8 +350,8 @@ func (api *SAP_COM_0948) LogArchive() {
 
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", fileName)
-		api.stepReports = append(api.stepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
-		api.stepReports = append(api.stepReports, piperutils.Path{Target: "Second_" + fileName, Name: "Second_Log_Archive_" + api.getUUID(), Mandatory: true})
+		*api.stepReports = append(*api.stepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
+		*api.stepReports = append(*api.stepReports, piperutils.Path{Target: "Second_" + fileName, Name: "Second_Log_Archive_" + api.getUUID(), Mandatory: true})
 
 		// piperutils.PersistReportsAndLinks(api.piperStep, "", fileUtils, api.stepReports, nil)
 	}
