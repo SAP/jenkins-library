@@ -46,8 +46,6 @@ func PersistReportsAndLinks(stepName, workspace string, files fileWriter, report
 		log.Entry().Errorln("Failed to marshall reports.json data for archiving")
 	}
 
-	log.Entry().Info("Marker: ", filepath.Join(workspace, fmt.Sprintf("%v_reports.json", stepName)))
-
 	if err := files.WriteFile(filepath.Join(workspace, fmt.Sprintf("%v_reports.json", stepName)), reportList, 0666); err != nil {
 		return fmt.Errorf("failed to write reports.json: %w", err)
 	}
