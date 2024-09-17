@@ -280,7 +280,7 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{}
 		runScripts := []string{"ci-lint", "ci-build"}
-		buildDescriptorList := []string{filepath.Join("src", "package.json")}
+		buildDescriptorList := []string{filepath.Join("src", "package.json"), "package.json"}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -289,8 +289,8 @@ func TestNpm(t *testing.T) {
 		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, buildDescriptorList)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[1])
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint"}}, utils.execRunner.Calls[1])
 			}
 		}
 	})
