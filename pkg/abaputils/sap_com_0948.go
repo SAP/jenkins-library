@@ -324,7 +324,7 @@ func (api *SAP_COM_0948) Clone() error {
 
 func (api *SAP_COM_0948) LogArchive() {
 
-	fileName := "LogArchive-" + api.cloneAction + "-" + api.getUUID() + "__" + time.Now().Format("2006-01-02T15:04:05 -070000") + ".zip"
+	fileName := "LogArchive-" + api.piperStep + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05 -070000") + ".zip"
 
 	connectionDetails := api.con
 	connectionDetails.URL = api.con.URL + api.path + "/LogArchive/" + api.getUUID() + "/download"
