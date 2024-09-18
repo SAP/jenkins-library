@@ -324,8 +324,7 @@ func (api *SAP_COM_0948) Clone() error {
 
 func (api *SAP_COM_0948) LogArchive() {
 
-	// fileUtils := piperutils.Files{}
-	fileName := "LogArchive-" + api.getUUID() + "__" + time.Now().Format("2006-01-02T15:04:05 -070000") + ".zip"
+	fileName := "LogArchive-" + api.cloneAction + "-" + api.getUUID() + "__" + time.Now().Format("2006-01-02T15:04:05 -070000") + ".zip"
 
 	connectionDetails := api.con
 	connectionDetails.URL = api.con.URL + api.path + "/LogArchive/" + api.getUUID() + "/download"
@@ -333,7 +332,6 @@ func (api *SAP_COM_0948) LogArchive() {
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		_, err = handleHTTPError(resp, err, api.failureMessage, connectionDetails)
-		// return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -346,14 +344,10 @@ func (api *SAP_COM_0948) LogArchive() {
 	body, err := io.ReadAll(resp.Body)
 
 	err = os.WriteFile(fileName, body, 0o644)
-	err = os.WriteFile("Second_"+fileName, body, 0o644)
 
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", fileName)
 		*api.stepReports = append(*api.stepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
-		*api.stepReports = append(*api.stepReports, piperutils.Path{Target: "Second_" + fileName, Name: "Second_Log_Archive_" + api.getUUID(), Mandatory: true})
-
-		// piperutils.PersistReportsAndLinks(api.piperStep, "", fileUtils, api.stepReports, nil)
 	}
 }
 

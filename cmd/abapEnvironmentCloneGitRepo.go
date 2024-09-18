@@ -105,7 +105,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 			return errors.Wrapf(errClone, errorString)
 		}
 
-		api.SetLogOutput(config.LogOutput, "abapEnvironmentCloneGitRepo", reports)
+		api.SetLogOutput(config.LogOutput, "clone", reports)
 
 		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
 		if errorPollEntity != nil {
