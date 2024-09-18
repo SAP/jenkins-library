@@ -66,6 +66,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		}
 	}
 
+	// Persiste possible artefacts for abapEnvironmentCloneGitRepo step
 	piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, reports, nil)
 
 	abaputils.AddDefaultDashedLine(1)
