@@ -2,12 +2,14 @@ package abaputils
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
@@ -15,8 +17,15 @@ const numberOfEntriesPerPage = 100000
 const logOutputStatusLength = 10
 const logOutputTimestampLength = 29
 
+// Specifies which output option is used for logs
+type ArchiveOutputLogs struct {
+	LogOutput   string
+	PiperStep   string
+	StepReports *[]piperutils.Path
+}
+
 // PollEntity periodically polls the action entity to get the status. Check if the import is still running
-func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) (string, error) {
+func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, archiveOutput ArchiveOutputLogs) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var statusCode string = "R"
@@ -33,7 +42,7 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 
 		if statusCode != "R" && statusCode != "Q" {
 
-			PrintLogs(api)
+			PrintLogs(api, archiveOutput)
 			break
 		}
 		time.Sleep(pollIntervall)
@@ -41,11 +50,22 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 	return statusCode, nil
 }
 
-func PrintLogs(api SoftwareComponentApiInterface) {
+func PrintLogs(api SoftwareComponentApiInterface, archiveOutput ArchiveOutputLogs) {
 
-	if api.getLogOutput() == "ZIP" {
-		// Saving logs in zip file
-		api.LogArchive()
+	if archiveOutput.LogOutput == "ZIP" {
+		// get zip file as byte array
+		zipfile, err := api.GetLogArchive()
+		// Saving logs in file and adding to piperutils to archive file
+		if err == nil {
+			fileName := "LogArchive-" + archiveOutput.PiperStep + "-" + api.getRepositoryName() + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05 -070000") + ".zip"
+
+			err = os.WriteFile(fileName, zipfile, 0o644)
+
+			if err == nil {
+				log.Entry().Infof("Writing %s file was successful", fileName)
+				*archiveOutput.StepReports = append(*archiveOutput.StepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
+			}
+		}
 	} else {
 		// Get Execution Logs
 		executionLogs, err := api.GetExecutionLog()

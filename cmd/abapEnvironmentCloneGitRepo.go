@@ -58,9 +58,16 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 	var reports []piperutils.Path
 	fileUtils := piperutils.Files{}
+
+	archiveOutput := abaputils.ArchiveOutputLogs{
+		LogOutput:   config.LogOutput,
+		PiperStep:   "clone",
+		StepReports: &reports,
+	}
+
 	for _, repo := range repositories {
 
-		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, &reports)
+		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, archiveOutput)
 		if cloneError != nil {
 			return cloneError
 		}
@@ -74,7 +81,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	return nil
 }
 
-func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, reports *[]piperutils.Path) error {
+func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, archiveOutput abaputils.ArchiveOutputLogs) error {
 
 	// New API instance for each request
 	// Triggering the Clone of the repository into the ABAP Environment system
@@ -106,9 +113,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 			return errors.Wrapf(errClone, errorString)
 		}
 
-		api.SetLogOutput(config.LogOutput, "clone", reports)
-
-		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
+		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
 		if errorPollEntity != nil {
 			return errors.Wrapf(errorPollEntity, errorString)
 		}
@@ -163,6 +168,7 @@ func getPullOptions(config *abapEnvironmentCloneGitRepoOptions, repo abaputils.R
 		CfServiceInstance: config.CfServiceInstance,
 		CfServiceKeyName:  config.CfServiceKeyName,
 		CfSpace:           config.CfSpace,
+		LogOutput:         config.LogOutput,
 	}
 	return &pullOptions
 }

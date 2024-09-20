@@ -56,13 +56,19 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	var reports []piperutils.Path
 	fileUtils := piperutils.Files{}
 
+	archiveOutput := abaputils.ArchiveOutputLogs{
+		LogOutput:   options.LogOutput,
+		PiperStep:   "pull",
+		StepReports: &reports,
+	}
+
 	repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories, RepositoryName: options.RepositoryName, CommitID: options.CommitID}, false)
 	handleIgnoreCommit(repositories, options.IgnoreCommit)
 	if err != nil {
 		return err
 	}
 
-	err = pullRepositories(repositories, connectionDetails, apiManager, options, &reports)
+	err = pullRepositories(repositories, connectionDetails, apiManager, archiveOutput)
 
 	// Persiste possible artefacts for abapEnvironmentPullGitRepo step
 	piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, reports, nil)
@@ -70,10 +76,10 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 
 }
 
-func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, options *abapEnvironmentPullGitRepoOptions, reports *[]piperutils.Path) (err error) {
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, archiveOutput abaputils.ArchiveOutputLogs) (err error) {
 	log.Entry().Infof("Start pulling %v repositories", len(repositories))
 	for _, repo := range repositories {
-		err = handlePull(repo, pullConnectionDetails, apiManager, options, reports)
+		err = handlePull(repo, pullConnectionDetails, apiManager, archiveOutput)
 		if err != nil {
 			break
 		}
@@ -84,7 +90,7 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 	return err
 }
 
-func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, options *abapEnvironmentPullGitRepoOptions, reports *[]piperutils.Path) (err error) {
+func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, archiveOutput abaputils.ArchiveOutputLogs) (err error) {
 
 	logString := repo.GetPullLogString()
 	errorString := "Pull of the " + logString + " failed on the ABAP system"
@@ -103,10 +109,8 @@ func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, 
 		return errors.Wrapf(err, errorString)
 	}
 
-	api.SetLogOutput(options.LogOutput, "pull", reports)
-
 	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
 	if errorPollEntity != nil {
 		return errors.Wrapf(errorPollEntity, errorString)
 	}

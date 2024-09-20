@@ -97,7 +97,13 @@ func createSingleTag(item abaputils.CreateTagBacklog, index int, con abaputils.C
 		return errors.Wrapf(err, "Creation of Tag failed on the ABAP system")
 	}
 
-	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
+	archiveOutput := abaputils.ArchiveOutputLogs{
+		LogOutput:   "STANDARD",
+		PiperStep:   "createTag",
+		StepReports: nil,
+	}
+
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
 
 	if errorPollEntity == nil && status == "S" {
 		log.Entry().Info("Created tag " + item.Tags[index].TagName + " for repository " + item.RepositoryName + " with commitID " + item.CommitID)

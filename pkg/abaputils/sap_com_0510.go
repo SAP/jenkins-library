@@ -13,7 +13,6 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"k8s.io/utils/strings/slices"
 )
@@ -34,7 +33,6 @@ type SAP_COM_0510 struct {
 	retryBaseSleepUnit     time.Duration
 	retryMaxSleepTime      time.Duration
 	retryAllowedErrorCodes []string
-	logOutput              string
 }
 
 func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender, repo Repository) {
@@ -60,10 +58,6 @@ func (api *SAP_COM_0510) GetExecutionLog() (execLog ExecutionLog, err error) {
 
 func (api *SAP_COM_0510) getUUID() string {
 	return api.uuid
-}
-
-func (api *SAP_COM_0510) getLogOutput() string {
-	return api.logOutput
 }
 
 func (api *SAP_COM_0510) CreateTag(tag Tag) error {
@@ -229,6 +223,10 @@ func (api *SAP_COM_0510) GetAction() (string, error) {
 	abapStatusCode := body.Status
 	log.Entry().Info("Status: " + abapStatusCode + " - " + body.StatusDescription)
 	return abapStatusCode, nil
+}
+
+func (api *SAP_COM_0510) getRepositoryName() string {
+	return api.repository.Name
 }
 
 func (api *SAP_COM_0510) GetRepository() (bool, string, error, bool) {
@@ -412,10 +410,6 @@ func (api *SAP_COM_0510) UpdateRepoWithBYOGCredentials(byogAuthMethod string, by
 }
 
 // Dummy implementation of the "optional" method LogArchive (only used in SAP_COM_0948)
-func (api *SAP_COM_0510) LogArchive() {
-	panic("LogArchive cannot be used in SAP_COM_0510")
-}
-
-func (api *SAP_COM_0510) SetLogOutput(logOutput string, piperStep string, stepReports *[]piperutils.Path) {
-	api.logOutput = logOutput
+func (api *SAP_COM_0510) GetLogArchive() (result []byte, err error) {
+	panic("GetLogArchive cannot be used in SAP_COM_0510")
 }
