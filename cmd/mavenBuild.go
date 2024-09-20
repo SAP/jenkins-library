@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"encoding/json"
+	"encoding/xml"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -171,6 +173,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				var utils versioning.Utils
 
 				matches, _ := fileUtils.Glob("**/pom.xml")
+				bomMatches, _ := fileUtils.Glob("**/" + mvnBomFilename + ".xml")
+
 				for _, match := range matches {
 
 					artifact, err := versioning.GetArtifact("maven", match, &options, utils)
@@ -183,6 +187,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 						} else {
 							coordinate.BuildPath = filepath.Dir(match)
 							coordinate.URL = config.AltDeploymentRepositoryURL
+							coordinate.PURL = getPurlForThePom(match, bomMatches)
 							buildCoordinates = append(buildCoordinates, coordinate)
 						}
 					}
@@ -207,6 +212,51 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	return err
+}
+
+type Bom struct {
+	Metadata Metadata `xml:"metadata"`
+}
+
+type Metadata struct {
+	Component BomComponent `xml:"component"`
+}
+
+type BomComponent struct {
+	Purl string `xml:"purl"`
+}
+
+func getPurlForThePom(pomFilePath string, bomFilePaths []string) string {
+	bomPath := getBomForThePom(pomFilePath, bomFilePaths)
+	if bomPath != "" {
+		xmlFile, err := os.Open(bomPath)
+		if err != nil {
+			log.Entry().Debugf("failed to open bom file %s", bomPath)
+			return ""
+		}
+		defer xmlFile.Close()
+		byteValue, _ := io.ReadAll(xmlFile)
+		var bom Bom
+		err = xml.Unmarshal(byteValue, &bom)
+		if err != nil {
+			log.Entry().Debugf("failed to unmarshal bom file %s", bomPath)
+			return ""
+		}
+		log.Entry().Debugf("Found purl: %s for the bomPath: %s", bom.Metadata.Component.Purl, bomPath)
+		return bom.Metadata.Component.Purl
+	}
+	return ""
+}
+
+func getBomForThePom(pomFilePath string, bomFilePaths []string) string {
+	expectedBomFilePath := filepath.Dir(pomFilePath) + "/target/" + mvnBomFilename + ".xml"
+	for _, bomFilePath := range bomFilePaths {
+		if strings.EqualFold(expectedBomFilePath, bomFilePath) {
+			log.Entry().Debugf("BOM file: %s found for the pom file %s", bomFilePath, pomFilePath)
+			return bomFilePath
+		}
+	}
+	return ""
 }
 
 func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils maven.Utils) (string, error) {
