@@ -250,6 +250,9 @@ func getPurlForThePom(pomFilePath string, bomFilePaths []string) string {
 
 func getBomForThePom(pomFilePath string, bomFilePaths []string) string {
 	expectedBomFilePath := filepath.Dir(pomFilePath) + "/target/" + mvnBomFilename + ".xml"
+	log.Entry().Debugf("bom file paths: %v", bomFilePaths)
+	log.Entry().Debugf("expected bom file path: %s", expectedBomFilePath)
+	log.Entry().Debugf("pom file path: %s", pomFilePath)
 	for _, bomFilePath := range bomFilePaths {
 		if strings.EqualFold(expectedBomFilePath, bomFilePath) {
 			log.Entry().Debugf("BOM file: %s found for the pom file %s", bomFilePath, pomFilePath)
