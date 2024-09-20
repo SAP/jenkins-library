@@ -10,11 +10,11 @@ import (
 )
 
 const (
-	vaultBadge       = "[Vault](https://img.shields.io/badge/-Vault-lightgrey)"
-	jenkinsOnlyBadge = "[Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)"
-	secretBadge      = "[Secret](https://img.shields.io/badge/-Secret-yellowgreen)"
-	trustengineBadge = "[Trust Engine](https://img.shields.io/badge/-Trust Engine-lightblue)"
-	deprecatedBadge  = "[deprecated](https://img.shields.io/badge/-deprecated-red)"
+	vaultBadge       = "![Vault](https://img.shields.io/badge/-Vault-lightgrey)"
+	jenkinsOnlyBadge = "![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)"
+	secretBadge      = "![Secret](https://img.shields.io/badge/-Secret-yellowgreen)"
+	trustengineBadge = "![Trust Engine](https://img.shields.io/badge/-Trust%20Engine-lightblue)"
+	deprecatedBadge  = "![deprecated](https://img.shields.io/badge/-deprecated-red)"
 )
 
 // Replaces the Parameters placeholder with the content from the yaml
@@ -93,7 +93,7 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 	}
 
 	if paramName == "script" {
-		return checkParameterInfo(fmt.Sprintf("[!%s](#) reference to Jenkins main pipeline script", jenkinsOnlyBadge), true, executionEnvironment)
+		return checkParameterInfo(fmt.Sprintf("%s reference to Jenkins main pipeline script", jenkinsOnlyBadge), true, executionEnvironment)
 	}
 
 	// handle non-step parameters (e.g. Jenkins-specific parameters as well as execution environment parameters)
@@ -101,11 +101,11 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 	if !contains(stepParameterNames, paramName) {
 		for _, secret := range stepData.Spec.Inputs.Secrets {
 			if paramName == secret.Name && secret.Type == "jenkins" {
-				return checkParameterInfo(fmt.Sprintf("[!%s](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))", jenkinsOnlyBadge), true, executionEnvironment)
+				return checkParameterInfo(fmt.Sprintf("%s id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))", jenkinsOnlyBadge), true, executionEnvironment)
 			}
 		}
 		if contains(jenkinsParams, paramName) {
-			return checkParameterInfo(fmt.Sprintf("[!%s](#)", jenkinsOnlyBadge), false, executionEnvironment)
+			return checkParameterInfo(fmt.Sprintf("%s", jenkinsOnlyBadge), false, executionEnvironment)
 		}
 		return checkParameterInfo("", false, executionEnvironment)
 	}
@@ -115,17 +115,17 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 		if paramName == param.Name {
 			furtherInfo := ""
 			if param.DeprecationMessage != "" {
-				furtherInfo += fmt.Sprintf("!%s", deprecatedBadge)
+				furtherInfo += fmt.Sprintf("%s", deprecatedBadge)
 			}
 			if param.Secret {
-				secretInfo := fmt.Sprintf("[!%s](#) pass via ENV or Jenkins credentials", secretBadge)
+				secretInfo := fmt.Sprintf("%s pass via ENV or Jenkins credentials", secretBadge)
 
 				isVaultSecret := param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil
 				isTrustengineSecret := param.GetReference(config.RefTypeTrustengineSecret) != nil
 				if isVaultSecret && isTrustengineSecret {
-					secretInfo = fmt.Sprintf(" [!%s](#) [!%s](#) [!%s](/) pass via ENV, Vault, Trust Engine or Jenkins credentials", vaultBadge, trustengineBadge, secretBadge)
+					secretInfo = fmt.Sprintf(" %s %s %s pass via ENV, Vault, Trust Engine or Jenkins credentials", vaultBadge, trustengineBadge, secretBadge)
 				} else if isVaultSecret {
-					secretInfo = fmt.Sprintf(" [!%s](#) [!%s](/) pass via ENV, Vault or Jenkins credentials", vaultBadge, secretBadge)
+					secretInfo = fmt.Sprintf(" %s %s pass via ENV, Vault or Jenkins credentials", vaultBadge, secretBadge)
 				}
 
 				for _, res := range param.ResourceRef {
