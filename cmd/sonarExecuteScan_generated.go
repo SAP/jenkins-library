@@ -19,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel"
 )
 
 type sonarExecuteScanOptions struct {
@@ -201,7 +202,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -219,7 +220,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(cmd.Context(), GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -227,7 +228,13 @@ func SonarExecuteScanCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			sonarExecuteScan(stepConfig, &stepTelemetryData, &influx)
+
+			tracer := otel.Tracer("com.sap.piper.generated")
+			ctx, span := tracer.Start(cmd.Context(), STEP_NAME)
+			defer span.End()
+
+
+			sonarExecuteScan(ctx, stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},

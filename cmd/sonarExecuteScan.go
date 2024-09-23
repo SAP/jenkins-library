@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -60,7 +62,7 @@ const (
 	pomXMLPattern      = "**/pom.xml"
 )
 
-func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
+func sonarExecuteScan(ctx context.Context, config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
@@ -116,7 +118,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 
 	influx.step_data.fields.sonar = false
 	fileUtils := piperutils.Files{}
-	if err := runSonar(config, downloadClient, &runner, apiClient, &fileUtils, influx); err != nil {
+	if err := runSonar(ctx, config, downloadClient, &runner, apiClient, &fileUtils, influx); err != nil {
 		if log.GetErrorCategory() == log.ErrorUndefined && runner.GetExitCode() == 2 {
 			// see https://github.com/SonarSource/sonar-scanner-cli/blob/adb67d645c3bcb9b46f29dea06ba082ebec9ba7a/src/main/java/org/sonarsource/scanner/cli/Exit.java#L25
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -126,7 +128,11 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	influx.step_data.fields.sonar = true
 }
 
-func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, utils piperutils.FileUtils, influx *sonarExecuteScanInflux) error {
+func runSonar(ctx context.Context, config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, utils piperutils.FileUtils, influx *sonarExecuteScanInflux) error {
+	tracer := otel.Tracer("com.sap.piper")
+	prepareCtx, prepareSpan := tracer.Start(ctx, "prepare")
+	defer prepareSpan.End()
+
 	// Set config based on orchestrator-specific environment variables
 	detectParametersFromCI(&config)
 
@@ -179,10 +185,15 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
 	}
+
+	_, downloadSpan := tracer.Start(prepareCtx, "download")
+	defer downloadSpan.End()
 	if err := loadSonarScanner(config.SonarScannerDownloadURL, client); err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return err
 	}
+	downloadSpan.End()
+
 	if err := loadCertificates(config.CustomTLSCertificateLinks, client, runner); err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return err
@@ -201,10 +212,18 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		Debug("Executing sonar scan command")
 	// execute scan
 	runner.SetEnv(sonar.environment)
+
+	prepareSpan.End()
+	_, toolrunSpan := tracer.Start(ctx, "tool-run")
+	defer toolrunSpan.End()
+
 	err := runner.RunExecutable(sonar.binary, sonar.options...)
 	if err != nil {
 		return err
 	}
+	toolrunSpan.End()
+	_, reportSpan := tracer.Start(ctx, "report")
+	defer reportSpan.End()
 
 	// as PRs are handled locally for legacy SonarQube systems, no measurements will be fetched.
 	if len(config.ChangeID) > 0 && config.LegacyPRHandling {
@@ -385,34 +404,34 @@ func handlePullRequest(config sonarExecuteScanOptions) error {
 }
 
 func loadSonarScanner(url string, client piperhttp.Downloader) error {
-	if scannerPath, err := execLookPath(sonar.binary); err == nil {
-		// using existing sonar-scanner
-		log.Entry().WithField("path", scannerPath).Debug("Using local sonar-scanner")
-	} else if len(url) != 0 {
-		// download sonar-scanner-cli into TEMP folder
-		log.Entry().WithField("url", url).Debug("Downloading sonar-scanner")
-		tmpFolder := getTempDir()
-		defer os.RemoveAll(tmpFolder) // clean up
-		archive := filepath.Join(tmpFolder, path.Base(url))
-		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
-			return errors.Wrap(err, "Download of sonar-scanner failed")
-		}
-		// unzip sonar-scanner-cli
-		log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
-		if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
-			return errors.Wrap(err, "Extraction of sonar-scanner failed")
-		}
-		// move sonar-scanner-cli to .sonar-scanner/
-		toolPath := ".sonar-scanner"
-		foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
-		log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
-		if err := osRename(foldername, toolPath); err != nil {
-			return errors.Wrap(err, "Moving of sonar-scanner failed")
-		}
-		// update binary path
-		sonar.binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.binary)
-		log.Entry().Debug("Download completed")
+	// if scannerPath, err := execLookPath(sonar.binary); err == nil {
+	// 	// using existing sonar-scanner
+	// 	log.Entry().WithField("path", scannerPath).Debug("Using local sonar-scanner")
+	// } else if len(url) != 0 {
+	// download sonar-scanner-cli into TEMP folder
+	log.Entry().WithField("url", url).Debug("Downloading sonar-scanner")
+	tmpFolder := getTempDir()
+	defer os.RemoveAll(tmpFolder) // clean up
+	archive := filepath.Join(tmpFolder, path.Base(url))
+	if err := client.DownloadFile(url, archive, nil, nil); err != nil {
+		return errors.Wrap(err, "Download of sonar-scanner failed")
 	}
+	// unzip sonar-scanner-cli
+	log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
+	if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
+		return errors.Wrap(err, "Extraction of sonar-scanner failed")
+	}
+	// move sonar-scanner-cli to .sonar-scanner/
+	toolPath := ".sonar-scanner"
+	foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
+	log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
+	if err := osRename(foldername, toolPath); err != nil {
+		return errors.Wrap(err, "Moving of sonar-scanner failed")
+	}
+	// update binary path
+	sonar.binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.binary)
+	log.Entry().Debug("Download completed")
+	// }
 	return nil
 }
 
