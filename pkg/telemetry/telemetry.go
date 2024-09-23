@@ -27,25 +27,26 @@ const actionName = "Piper Library OS"
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
 
-// LibraryRepository that is passed into with -ldflags
+// Environment ....
 var Environment string = "development"
 
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
-	baseData              BaseData
-	baseMetaData          BaseMetaData
-	data                  Data
-	provider              orchestrator.OrchestratorSpecificConfigProviding
-	disabled              bool
-	client                *piperhttp.Client
-	CustomReportingDsn    string
-	CustomReportingToken  string
-	customClient          *piperhttp.Client
-	BaseURL               string
-	Endpoint              string
-	SiteID                string
-	ctx                   context.Context
-	shutdownOpenTelemetry func(context.Context) error
+	baseData                     BaseData
+	baseMetaData                 BaseMetaData
+	data                         Data
+	provider                     orchestrator.OrchestratorSpecificConfigProviding
+	disabled                     bool
+	client                       *piperhttp.Client
+	CustomReportingDsn           string
+	CustomReportingToken         string
+	customClient                 *piperhttp.Client
+	BaseURL                      string
+	Endpoint                     string
+	SiteID                       string
+	ctx                          context.Context
+	shutdownOpenTelemetry        func(context.Context) error
+	shutdownOpenTelemetryTracing func(context.Context) error
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
@@ -94,16 +95,23 @@ func (t *Telemetry) Initialize(ctx context.Context, telemetryDisabled bool, step
 		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
 	}
 	t.baseMetaData = baseMetaData
-	// OpenTelemetry
-	t.shutdownOpenTelemetry, err = InitMeter(t.ctx, []attribute.KeyValue{
+
+	res := []attribute.KeyValue{
 		//TODO: use global parameter to distinguish between envs
 		attribute.String("environment", Environment),
 		attribute.String("piper.orchestrator", t.baseData.Orchestrator),
 		attribute.String("piper.correlationID", t.provider.GetBuildURL()),
 		attribute.String("piper.step.name", t.baseData.StepName),
-	})
+	}
+	// OpenTelemetry
+	t.shutdownOpenTelemetry, err = InitMeter(t.ctx, res)
 	if err != nil {
 		log.Entry().WithError(err).Error("failed to initialize telemetry")
+	}
+
+	t.shutdownOpenTelemetryTracing, err = InitTracer(t.ctx, res)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to initialize telemetry (tracing)")
 	}
 }
 
@@ -143,6 +151,9 @@ func (t *Telemetry) Send() {
 	defer func() {
 		if t.shutdownOpenTelemetry != nil {
 			t.shutdownOpenTelemetry(t.ctx)
+		}
+		if t.shutdownOpenTelemetryTracing != nil {
+			t.shutdownOpenTelemetryTracing(t.ctx)
 		}
 	}()
 	// always log step telemetry data to logfile used for internal use-case
