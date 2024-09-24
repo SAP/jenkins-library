@@ -29,15 +29,21 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *te
 		Client:        &piperhttp.Client{},
 		PollIntervall: 5 * time.Second,
 	}
+	var reports []piperutils.Path
+	archiveOutput := abaputils.ArchiveOutputLogs{
+		LogOutput:   options.LogOutput,
+		PiperStep:   "pull",
+		StepReports: &reports,
+	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager)
+	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager, archiveOutput)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, archiveOutput abaputils.ArchiveOutputLogs) (err error) {
 
 	subOptions := convertPullConfig(options)
 
@@ -53,14 +59,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	if err != nil {
 		return err
 	}
-	var reports []piperutils.Path
 	fileUtils := piperutils.Files{}
-
-	archiveOutput := abaputils.ArchiveOutputLogs{
-		LogOutput:   options.LogOutput,
-		PiperStep:   "pull",
-		StepReports: &reports,
-	}
 
 	repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories, RepositoryName: options.RepositoryName, CommitID: options.CommitID}, false)
 	handleIgnoreCommit(repositories, options.IgnoreCommit)
@@ -71,7 +70,12 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	err = pullRepositories(repositories, connectionDetails, apiManager, archiveOutput)
 
 	// Persiste possible artefacts for abapEnvironmentPullGitRepo step
-	piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, reports, nil)
+	if archiveOutput.PiperStep == "clone" {
+		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
+	} else if archiveOutput.PiperStep == "pull" {
+		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
+	}
+
 	return err
 
 }
