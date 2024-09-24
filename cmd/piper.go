@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -82,6 +84,13 @@ var GeneralConfig GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
+	log.Entry().Info("STARTING")
+	ctx := telemetry.InitOpenTelemetry(context.Background())
+
+	tracer := telemetry.GetTracer(ctx)
+
+	ctx, span := tracer.Start(ctx, "cobra-build")
+	defer span.End()
 
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
@@ -200,7 +209,7 @@ func Execute() {
 
 	addRootFlags(rootCmd)
 
-	if err := rootCmd.Execute(); err != nil {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		log.Entry().WithError(err).Fatal("configuration error")
 	}

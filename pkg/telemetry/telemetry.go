@@ -10,12 +10,12 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/global"
+	// "go.opentelemetry.io/otel/metric/global"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	// "go.opentelemetry.io/otel/metric/global"
 )
 
 // eventType
@@ -96,23 +96,24 @@ func (t *Telemetry) Initialize(ctx context.Context, telemetryDisabled bool, step
 	}
 	t.baseMetaData = baseMetaData
 
-	res := []attribute.KeyValue{
-		//TODO: use global parameter to distinguish between envs
-		attribute.String("environment", Environment),
-		attribute.String("piper.orchestrator", t.baseData.Orchestrator),
-		attribute.String("piper.correlationID", t.provider.GetBuildURL()),
-		attribute.String("piper.step.name", t.baseData.StepName),
-	}
-	// OpenTelemetry
-	t.shutdownOpenTelemetry, err = InitMeter(t.ctx, res)
-	if err != nil {
-		log.Entry().WithError(err).Error("failed to initialize telemetry")
-	}
+	// res := []attribute.KeyValue{
+	// 	//TODO: use global parameter to distinguish between envs
+	// 	attribute.String("environment", Environment),
+	// 	attribute.String("piper.orchestrator", t.baseData.Orchestrator),
+	// 	attribute.String("piper.correlationID", t.provider.GetBuildURL()),
+	// 	attribute.String("piper.step.name", t.baseData.StepName),
+	// }
+	// // OpenTelemetry
+	// InitOpenTelemetry(t.ctx, )
+	// t.shutdownOpenTelemetry, err = InitMeter(t.ctx, res)
+	// if err != nil {
+	// 	log.Entry().WithError(err).Error("failed to initialize telemetry")
+	// }
 
-	t.shutdownOpenTelemetryTracing, err = InitTracer(t.ctx, res)
-	if err != nil {
-		log.Entry().WithError(err).Error("failed to initialize telemetry (tracing)")
-	}
+	// t.shutdownOpenTelemetryTracing, err = InitTracer(t.ctx, res)
+	// if err != nil {
+	// 	log.Entry().WithError(err).Error("failed to initialize telemetry (tracing)")
+	// }
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
@@ -164,9 +165,9 @@ func (t *Telemetry) Send() {
 		return
 	}
 	// sent telemetry data using OpenTelemetry
-	meter := global.Meter("piper-go")
-	counter, _ := meter.Int64Counter("piper.step.execution")
-	counter.Add(t.ctx, 1)
+	// meter := global.Meter("piper-go")
+	// counter, _ := meter.Int64Counter("piper.step.execution")
+	// counter.Add(t.ctx, 1)
 
 	request, _ := url.Parse(t.BaseURL)
 	request.Path = t.Endpoint
