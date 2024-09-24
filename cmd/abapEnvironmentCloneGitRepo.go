@@ -65,14 +65,6 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 
-	fileUtils := piperutils.Files{}
-
-	// archiveOutput := abaputils.ArchiveOutputLogs{
-	// 	LogOutput:   config.LogOutput,
-	// 	PiperStep:   "clone",
-	// 	StepReports: &reports,
-	// }
-
 	for _, repo := range repositories {
 
 		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, archiveOutput)
@@ -81,12 +73,8 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		}
 	}
 
-	// Persiste possible artefacts for abapEnvironmentCloneGitRepo step
-	if archiveOutput.PiperStep == "clone" {
-		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
-	} else if archiveOutput.PiperStep == "pull" {
-		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
-	}
+	// Persist log Archive
+	abaputils.PersistArchiveLogsForPiperStep(archiveOutput)
 
 	abaputils.AddDefaultDashedLine(1)
 	log.Entry().Info("All repositories were cloned successfully")

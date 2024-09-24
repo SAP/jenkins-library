@@ -24,6 +24,20 @@ type ArchiveOutputLogs struct {
 	StepReports *[]piperutils.Path
 }
 
+func PersistArchiveLogsForPiperStep(archiveOutput ArchiveOutputLogs) {
+	fileUtils := piperutils.Files{}
+	switch archiveOutput.PiperStep {
+	case "clone":
+		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
+	case "pull":
+		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
+	case "checkoutBranche":
+		piperutils.PersistReportsAndLinks("abapEnvironmentCheckoutBranch", "", fileUtils, *archiveOutput.StepReports, nil)
+	default:
+		log.Entry().Info("Cannot save log archive because no piper step was defined.")
+	}
+}
+
 // PollEntity periodically polls the action entity to get the status. Check if the import is still running
 func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, archiveOutput ArchiveOutputLogs) (string, error) {
 

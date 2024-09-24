@@ -59,7 +59,6 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	if err != nil {
 		return err
 	}
-	fileUtils := piperutils.Files{}
 
 	repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories, RepositoryName: options.RepositoryName, CommitID: options.CommitID}, false)
 	handleIgnoreCommit(repositories, options.IgnoreCommit)
@@ -69,12 +68,8 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 
 	err = pullRepositories(repositories, connectionDetails, apiManager, archiveOutput)
 
-	// Persiste possible artefacts for abapEnvironmentPullGitRepo step
-	if archiveOutput.PiperStep == "clone" {
-		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
-	} else if archiveOutput.PiperStep == "pull" {
-		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
-	}
+	// Persist log Archive
+	abaputils.PersistArchiveLogsForPiperStep(archiveOutput)
 
 	return err
 
