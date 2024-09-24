@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"go.opentelemetry.io/otel"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -207,7 +208,7 @@ general:
 
 			return nil
 		},
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -225,7 +226,7 @@ general:
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(cmd.Context(), GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -233,7 +234,16 @@ general:
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
+
+			tracer := otel.Tracer("com.sap.piper.generated")
+			ctx, span := tracer.Start(cmd.Context(), STEP_NAME)
+			defer span.End()
+
 			mavenBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+
+			_, prepareSpan := tracer.Start(ctx, "build-completed")
+			defer prepareSpan.End()
+
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
