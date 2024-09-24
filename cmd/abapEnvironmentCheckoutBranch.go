@@ -31,14 +31,22 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 		PollIntervall: 5 * time.Second,
 	}
 
+	var reports []piperutils.Path
+
+	archiveOutput := abaputils.ArchiveOutputLogs{
+		LogOutput:   options.LogOutput,
+		PiperStep:   "checkoutBranche",
+		StepReports: &reports,
+	}
+
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCheckoutBranch(&options, &autils, &apiManager)
+	err := runAbapEnvironmentCheckoutBranch(&options, &autils, &apiManager, archiveOutput)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
+func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, archiveOutput abaputils.ArchiveOutputLogs) (err error) {
 
 	// Mapping for options
 	subOptions := convertCheckoutConfig(options)
@@ -59,22 +67,14 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	if err != nil {
 		return errors.Wrap(err, "Could not read repositories")
 	}
-	var reports []piperutils.Path
-	fileUtils := piperutils.Files{}
-
-	archiveOutput := abaputils.ArchiveOutputLogs{
-		LogOutput:   options.LogOutput,
-		PiperStep:   "checkoutBranche",
-		StepReports: &reports,
-	}
 
 	err = checkoutBranches(repositories, connectionDetails, apiManager, archiveOutput)
 	if err != nil {
 		return fmt.Errorf("Something failed during the checkout: %w", err)
 	}
 
-	// Persiste possible artefacts for abapEnvironmentCheckoutBranch step
-	piperutils.PersistReportsAndLinks("abapEnvironmentCheckoutBranch", "", fileUtils, reports, nil)
+	// Persist log archive
+	abaputils.PersistArchiveLogsForPiperStep(archiveOutput)
 
 	log.Entry().Infof("-------------------------")
 	log.Entry().Info("All branches were checked out successfully")

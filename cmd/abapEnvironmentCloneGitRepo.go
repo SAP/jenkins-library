@@ -73,7 +73,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		}
 	}
 
-	// Persist log Archive
+	// Persist log archive
 	abaputils.PersistArchiveLogsForPiperStep(archiveOutput)
 
 	abaputils.AddDefaultDashedLine(1)
@@ -128,7 +128,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		abaputils.AddDefaultDashedLine(2)
 		var returnedError error
 		if repo.Branch != "" && !(activeBranch == repo.Branch) {
-			returnedError = runAbapEnvironmentCheckoutBranch(getCheckoutOptions(config, repo), com, apiManager)
+			returnedError = runAbapEnvironmentCheckoutBranch(getCheckoutOptions(config, repo), com, apiManager, archiveOutput)
 			abaputils.AddDefaultDashedLine(2)
 			if returnedError != nil {
 				return returnedError

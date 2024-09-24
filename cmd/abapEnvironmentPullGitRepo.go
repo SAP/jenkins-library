@@ -68,7 +68,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 
 	err = pullRepositories(repositories, connectionDetails, apiManager, archiveOutput)
 
-	// Persist log Archive
+	// Persist log archive
 	abaputils.PersistArchiveLogsForPiperStep(archiveOutput)
 
 	return err
