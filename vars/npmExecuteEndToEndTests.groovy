@@ -62,7 +62,7 @@ void call(Map parameters = [:]) {
             }
             if (appUrl.credentialId) {
                 credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username', resolveCredentialsId: false))
-                i: falsef (config.wdi5) {
+                if (config.wdi5) {
                     credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username', resolveCredentialsId: false))
                 }
             }
