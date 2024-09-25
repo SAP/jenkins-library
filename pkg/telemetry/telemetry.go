@@ -6,16 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
-	"time"
-
-	// "go.opentelemetry.io/otel/metric/global"
-
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
-	// "go.opentelemetry.io/otel/metric/global"
 	"os"
 	"strconv"
 	"time"
@@ -23,6 +13,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	// "go.opentelemetry.io/otel/metric/global"
 )
 
 const (
