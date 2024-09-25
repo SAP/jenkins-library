@@ -39,5 +39,6 @@ func InitOpenTelemetry(ctx context.Context) (context.Context, func()) {
 }
 
 func GetTracer(ctx context.Context) trace.Tracer {
+	//TODO: handle missing tracer
 	return ctx.Value(tracerKey).(trace.Tracer)
 }

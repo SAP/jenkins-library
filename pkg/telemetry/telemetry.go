@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"context"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -32,27 +31,27 @@ var Environment string = "development"
 
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
-	baseData                     BaseData
-	baseMetaData                 BaseMetaData
-	data                         Data
-	provider                     orchestrator.OrchestratorSpecificConfigProviding
-	disabled                     bool
-	client                       *piperhttp.Client
-	CustomReportingDsn           string
-	CustomReportingToken         string
-	customClient                 *piperhttp.Client
-	BaseURL                      string
-	Endpoint                     string
-	SiteID                       string
-	ctx                          context.Context
-	shutdownOpenTelemetry        func(context.Context) error
-	shutdownOpenTelemetryTracing func(context.Context) error
+	baseData             BaseData
+	baseMetaData         BaseMetaData
+	data                 Data
+	provider             orchestrator.OrchestratorSpecificConfigProviding
+	disabled             bool
+	client               *piperhttp.Client
+	CustomReportingDsn   string
+	CustomReportingToken string
+	customClient         *piperhttp.Client
+	BaseURL              string
+	Endpoint             string
+	SiteID               string
+	// ctx                          context.Context
+	// shutdownOpenTelemetry        func(context.Context) error
+	// shutdownOpenTelemetryTracing func(context.Context) error
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
-func (t *Telemetry) Initialize(ctx context.Context, telemetryDisabled bool, stepName string) {
+func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	t.disabled = telemetryDisabled
-	t.ctx = ctx
+	// t.ctx = ctx
 
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil || provider == nil {
@@ -149,14 +148,14 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
-	defer func() {
-		if t.shutdownOpenTelemetry != nil {
-			t.shutdownOpenTelemetry(t.ctx)
-		}
-		if t.shutdownOpenTelemetryTracing != nil {
-			t.shutdownOpenTelemetryTracing(t.ctx)
-		}
-	}()
+	// defer func() {
+	// 	if t.shutdownOpenTelemetry != nil {
+	// 		t.shutdownOpenTelemetry(t.ctx)
+	// 	}
+	// 	if t.shutdownOpenTelemetryTracing != nil {
+	// 		t.shutdownOpenTelemetryTracing(t.ctx)
+	// 	}
+	// }()
 	// always log step telemetry data to logfile used for internal use-case
 	t.logStepTelemetryData()
 
