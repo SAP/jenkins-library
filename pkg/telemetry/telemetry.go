@@ -103,7 +103,6 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
 		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
-	t.baseMetaData = baseMetaData
 
 	// res := []attribute.KeyValue{
 	// 	//TODO: use global parameter to distinguish between envs
