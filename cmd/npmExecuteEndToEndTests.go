@@ -84,7 +84,7 @@ func runEndToEndTestForUrl(url string, config npmExecuteEndToEndTestsOptions, co
 	}
 
 	// Execute the npm script
-	err := command.RunExecutable("npm", append([]string{config.RunScript}, scriptOptions...)...)
+	err := command.RunExecutable("npm", append([]string{"run", config.RunScript}, scriptOptions...)...)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute end to end tests")
 	}
