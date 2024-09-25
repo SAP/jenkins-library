@@ -5,7 +5,6 @@ package abaputils
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -41,6 +40,9 @@ func TestAddonDescriptorNew(t *testing.T) {
 		assert.Equal(t, "/DMO/REPO_B", repos[0].Name)
 	})
 
+	t.Run("AsReducedJson", func(t *testing.T) {
+		assert.NotContains(t, "commitID", addonDescriptor.AsReducedJson())
+	})
 }
 
 var TestAddonDescriptorYAML = `---
@@ -137,7 +139,7 @@ func TestReadAddonDescriptor(t *testing.T) {
       - repo: 'testRepo'
       - repo: 'testRepo2'`
 
-		err := ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
 		assert.NoError(t, err)
 
 		addonDescriptor, err := ReadAddonDescriptor("repositories.yml")

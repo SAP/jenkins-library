@@ -17,7 +17,7 @@ import (
 
 const (
 	registryURL = "localhost:5000"
-	baseBuilder = "paketobuildpacks/builder:0.3.26-base"
+	baseBuilder = "paketobuildpacks/builder-jammy-base:0.4.252"
 )
 
 func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Container {
@@ -43,7 +43,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
@@ -53,7 +53,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 
 	container2 := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
@@ -65,7 +65,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	assert.NoError(t, err)
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
-	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
+	container.assertHasOutput(t, "Paketo Buildpack for NPM Start")
 	container.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
 	container.assertHasOutput(t, "Setting default process type 'greeter'")
 	container.assertHasOutput(t, "*** Images (sha256:")
@@ -77,7 +77,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 	assert.NoError(t, err)
 	container2.assertHasOutput(t, "running command: /cnb/lifecycle/creator")
 	container2.assertHasOutput(t, "Selected Node Engine version (using BP_NODE_VERSION): 16")
-	container2.assertHasOutput(t, "Paketo NPM Start Buildpack")
+	container2.assertHasOutput(t, "Paketo Buildpack for NPM Start")
 	container2.assertHasOutput(t, fmt.Sprintf("Saving %s/node:0.0.1", registryURL))
 	container2.assertHasOutput(t, "*** Images (sha256:")
 	container2.assertHasOutput(t, "SUCCESS")
@@ -93,7 +93,7 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -108,11 +108,35 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 		"Downloading buildpack",
 		"Setting custom environment variables: 'map[BP_NODE_VERSION:16 TMPDIR:/tmp/cnbBuild-",
 		"Selected Node Engine version (using BP_NODE_VERSION): 16",
-		"Paketo NPM Start Buildpack",
+		"Paketo Buildpack for NPM Start",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
 	)
+	container.terminate(t)
+}
+func TestCNBIntegrationBuildSummary(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	registryContainer := setupDockerRegistry(t, ctx)
+	defer registryContainer.Terminate(ctx)
+
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   baseBuilder,
+		User:    "0",
+		TestDir: []string{"testdata", "TestCnbIntegration", "project"},
+		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+	})
+
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	assert.NoError(t, err)
+
+	container.assertHasOutput(t, "*** Build Summary ***",
+		"  Builder: \"paketobuildpacks/builder:base\"",
+		"  Lifecycle: \"0.16.4+683e1b46\"",
+		"  Image: \"localhost:5000/not-found@sha256:",
+		"    Project descriptor: \"/project/project.toml\"",
+		"    Env: \"TMPDIR, BP_NODE_VERSION\"")
 	container.terminate(t)
 }
 
@@ -124,7 +148,7 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -135,11 +159,11 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 	container.assertHasOutput(t,
 		"running command: /cnb/lifecycle/creator",
 		"Installing Go",
-		"Paketo Go Build Buildpack",
+		"Paketo Buildpack for Go Build",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
-		"syft packages registry:localhost:5000/not-found:0.0.1 -o cyclonedx-xml --file bom-docker-0.xml -q",
+		"syft scan registry:localhost:5000/not-found:0.0.1 -o cyclonedx-xml@1.4=bom-docker-0.xml -q",
 	)
 	container.assertHasFiles(t, "/project/bom-docker-0.xml")
 	container.terminate(t)
@@ -153,7 +177,7 @@ func TestCNBIntegrationNonZipPath(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -173,19 +197,19 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
-		"Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.19.0]'",
-		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.19.0' to /tmp/buildpacks_cache/sha256:",
+		"Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:2.0.0]'",
+		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
 		"running command: /cnb/lifecycle/creator",
-		"Paketo NPM Start Buildpack",
+		"Paketo Buildpack for NPM Start",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
@@ -200,19 +224,19 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 	defer registryContainer.Terminate(ctx)
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:buildpackless-full",
-		User:    "cnb",
+		Image:   "paketobuildpacks/builder-jammy-buildpackless-full",
+		User:    "0",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:0.19.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
 
-	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:0.19.0]'",
-		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:0.19.0' to /tmp/buildpacks_cache/sha256:",
+	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:2.0.0]'",
+		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
 		"running command: /cnb/lifecycle/creator",
-		"Paketo NPM Start Buildpack",
+		"Paketo Buildpack for NPM Start",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
@@ -242,7 +266,7 @@ func TestCNBIntegrationBindings(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 		Environment: map[string]string{
@@ -270,7 +294,7 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -279,15 +303,15 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
-		"Previous image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found",
+		"Image with name \"localhost:5000/io-buildpacks-my-app:latest\" not found",
 		"Saving localhost:5000/io-buildpacks-my-app:latest...",
-		"Previous image with name \"localhost:5000/go-app:v1.0.0\" not found",
+		"Image with name \"localhost:5000/go-app:v1.0.0\" not found",
 		"Saving localhost:5000/go-app:v1.0.0...",
 		"Using cached buildpack",
 		"Saving localhost:5000/my-app2:latest...",
-		"syft packages registry:localhost:5000/io-buildpacks-my-app:latest -o cyclonedx-xml --file bom-docker-0.xml -q",
-		"syft packages registry:localhost:5000/go-app:v1.0.0 -o cyclonedx-xml --file bom-docker-1.xml -q",
-		"syft packages registry:localhost:5000/my-app2:latest -o cyclonedx-xml --file bom-docker-2.xml -q",
+		"syft scan registry:localhost:5000/io-buildpacks-my-app:latest -o cyclonedx-xml@1.4=bom-docker-0.xml -q",
+		"syft scan registry:localhost:5000/go-app:v1.0.0 -o cyclonedx-xml@1.4=bom-docker-1.xml -q",
+		"syft scan registry:localhost:5000/my-app2:latest -o cyclonedx-xml@1.4=bom-docker-2.xml -q",
 	)
 
 	container.assertHasFiles(t, "/project/bom-docker-0.xml")
@@ -304,7 +328,7 @@ func TestCNBIntegrationPreserveFiles(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -324,7 +348,7 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   baseBuilder,
-		User:    "cnb",
+		User:    "0",
 		TestDir: []string{"testdata", "TestCnbIntegration"},
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
@@ -332,5 +356,29 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--customConfig", "config_preserve_files.yml", "--path", "zip/go.zip", "--containerImageName", "go-zip")
 	assert.NoError(t, err)
 	container.assertHasOutput(t, "skipping preserving files because the source")
+	container.terminate(t)
+}
+
+func TestCNBIntegrationPrePostBuildpacks(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	registryContainer := setupDockerRegistry(t, ctx)
+	defer registryContainer.Terminate(ctx)
+
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   baseBuilder,
+		User:    "0",
+		TestDir: []string{"testdata", "TestCnbIntegration"},
+		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
+		Environment: map[string]string{
+			"PIPER_VAULTCREDENTIAL_DYNATRACE_API_KEY": "api-key-content",
+		},
+	})
+
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--projectDescriptor", "", "--path", "project", "--customConfig", "config.yml", "--containerImageTag", "0.0.1", "--containerImageName", "not-found", "--containerRegistryUrl", registryURL, "--postBuildpacks", "paketobuildpacks/datadog")
+	assert.NoError(t, err)
+	container.assertHasOutput(t, "Setting custom buildpacks: '[]'")
+	container.assertHasOutput(t, "Pre-buildpacks: '[]'")
+	container.assertHasOutput(t, "Post-buildpacks: '[paketobuildpacks/datadog]'")
 	container.terminate(t)
 }

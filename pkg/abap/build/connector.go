@@ -2,7 +2,11 @@ package build
 
 import (
 	"bytes"
-	"io/ioutil"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -13,6 +17,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/pkcs12"
 )
 
 // Connector : Connector Utility Wrapping http client
@@ -60,8 +65,8 @@ func (conn *Connector) GetToken(appendum string) error {
 			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
 		}
 		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", string(errorbody))
+		errorbody, _ := io.ReadAll(response.Body)
+		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", extractErrorStackFromJsonData(errorbody))
 
 	}
 	defer response.Body.Close()
@@ -79,12 +84,12 @@ func (conn Connector) Get(appendum string) ([]byte, error) {
 			return nil, errors.Wrap(err, "Get failed")
 		}
 		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Get failed: %v", string(errorbody))
+		errorbody, _ := io.ReadAll(response.Body)
+		return errorbody, errors.Wrapf(err, "Get failed: %v", extractErrorStackFromJsonData(errorbody))
 
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	return body, err
 }
 
@@ -103,12 +108,12 @@ func (conn Connector) Post(appendum string, importBody string) ([]byte, error) {
 			return nil, errors.Wrap(err, "Post failed")
 		}
 		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
+		errorbody, _ := io.ReadAll(response.Body)
+		return errorbody, errors.Wrapf(err, "Post failed: %v", extractErrorStackFromJsonData(errorbody))
 
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	return body, err
 }
 
@@ -130,25 +135,86 @@ func (conn Connector) createUrl(appendum string) string {
 }
 
 // InitAAKaaS : initialize Connector for communication with AAKaaS backend
-func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender) error {
+func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender, originHash string, certFile string, certPass string) error {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
 	conn.Header["Content-Type"] = []string{"application/json"}
 	conn.Header["User-Agent"] = []string{"Piper-abapAddonAssemblyKit/1.0"}
+	if originHash != "" {
+		conn.Header["build-config-token"] = []string{originHash}
+		log.Entry().Info("Origin info for restricted scenario added")
+	}
 
 	cookieJar, _ := cookiejar.New(nil)
-	conn.Client.SetOptions(piperhttp.ClientOptions{
-		Username:  username,
-		Password:  password,
-		CookieJar: cookieJar,
-	})
 	conn.Baseurl = aAKaaSEndpoint
 
-	if username == "" || password == "" {
+	tlsCertificates, err := conn.handleLogonCertificate(certFile, certPass)
+	if err != nil {
+		return errors.Wrap(err, "Handling certificates for client logon failed")
+	}
+
+	conn.Client.SetOptions(piperhttp.ClientOptions{
+		Username:         username,
+		Password:         password,
+		CookieJar:        cookieJar,
+		Certificates:     tlsCertificates,
+		TransportTimeout: 15 * time.Minute, //Usually ABAP Backend has timeout of 10min, let them interrupt the connection...
+	})
+
+	if tlsCertificates != nil {
+		log.Entry().Info("Logon procedure: via Certificate")
+		return nil
+	} else if username == "" || password == "" {
 		return errors.New("username/password for AAKaaS must not be initial") //leads to redirect to login page which causes HTTP200 instead of HTTP401 and thus side effects
 	} else {
+		log.Entry().Info("Logon procedure: via Password")
 		return nil
+	}
+}
+
+func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.Certificate, error) {
+	var tlsCertificate tls.Certificate
+	if certFile != "" && certPass != "" {
+		certFileInBytes, err := base64.StdEncoding.DecodeString(certFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "Base64 decoding of certificate File string failed")
+		}
+
+		pemBlocks, err := pkcs12.ToPEM(certFileInBytes, certPass)
+		if err != nil {
+			return nil, errors.Wrap(err, "Decoding certificate File from PKCS12 to PEM failed")
+		}
+
+		var key []byte
+		var userCertificate []byte
+
+		for _, pemBlock := range pemBlocks {
+			if pemBlock.Type == "PRIVATE KEY" {
+				key = pem.EncodeToMemory(pemBlock)
+			}
+
+			if pemBlock.Type == "CERTIFICATE" {
+				var tempCert, err = x509.ParseCertificate(pemBlock.Bytes)
+				if err != nil {
+					return nil, errors.Wrap(err, "Parsing x509 Certificate from PEM Block failed")
+				}
+
+				if tempCert.IsCA == false { //We ignore the 2 additional CA Certificates
+					userCertificate = pem.EncodeToMemory(pemBlock)
+				}
+			}
+		}
+
+		tlsCertificate, err = tls.X509KeyPair(userCertificate, key)
+		if err != nil {
+			return nil, errors.Wrap(err, "Creating x509 Key Pair failed")
+		}
+
+		return []tls.Certificate{tlsCertificate}, nil
+
+	} else {
+		return nil, nil
 	}
 }
 
@@ -201,8 +267,8 @@ func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 	response, err := conn.Client.SendRequest("PUT", url, bytes.NewBuffer(sarFile), conn.Header, nil)
 	if err != nil {
 		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
+		errorbody, _ := io.ReadAll(response.Body)
+		return errors.Wrapf(err, "Upload of SAR file failed: %v", extractErrorStackFromJsonData(errorbody))
 	}
 	defer response.Body.Close()
 	return nil
@@ -236,9 +302,9 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 		response, err := conn.Client.SendRequest("POST", url, nextChunk, header, nil)
 		if err != nil {
 			if response != nil && response.Body != nil {
-				errorbody, _ := ioutil.ReadAll(response.Body)
+				errorbody, _ := io.ReadAll(response.Body)
 				response.Body.Close()
-				return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
+				return errors.Wrapf(err, "Upload of SAR file failed: %v", extractErrorStackFromJsonData(errorbody))
 			} else {
 				return err
 			}

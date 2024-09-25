@@ -26,7 +26,7 @@ If you don't need to care about the underlying infrastructure of your pipelines,
 
  ![SAP CI/CD vs Project "Piper"](images/CICD_Piper.png "Solution Comparison")
 
-The support infrastructure for SAP Continuous Integration and Delivery is provided by SAP according to the Service Level Agreements (SLAs). Project "Piper" offers community support using GitHub issues and pull requests. Users are free to contribute to the repository independently. See [Contributing](https://github.com/SAP/jenkins-library/blob/master/.github/CONTRIBUTING.md).
+The support infrastructure for SAP Continuous Integration and Delivery is provided by SAP according to the Service Level Agreements (SLAs). Project "Piper" offers community support using GitHub issues and pull requests. Users are free to contribute to the repository independently. See [Contributing](https://github.com/SAP/jenkins-library/blob/master/CONTRIBUTING.md).
 
 For more information about the CI/CD solutions offered by SAP, see [SAP Solutions for Continuous Integration and Delivery](https://help.sap.com/docs/CICD_OVERVIEW/8cacec64ed854b2a88e9a0973e0f97a2/e9fa320181124fa9808d4446a1bf69dd.html).
 
@@ -60,20 +60,8 @@ the API and are subjected to change without prior notice. Types and methods anno
 `@API` are considered to be API, used e.g. from other shared libraries. Changes to those
 methods/types needs to be announced, discussed and agreed.
 
-[github]: https://github.com
 [piper-library]: https://github.com/SAP/jenkins-library
-[cloud-sdk-pipeline]: pipelines/cloud-sdk/introduction/
 [devops-docker-images]: https://github.com/SAP/devops-docker-images
-[devops-docker-images-issues]:       https://github.com/SAP/devops-docker-images/issues
-[devops-docker-images-cxs-guide]:     https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
 [piper-library-scenario]: scenarios/ui5-sap-cp/Readme/
 [piper-doc-extensibility]: extensibility
-[piper-library-pages-plugins]: requiredPlugins
-[piper-library-issues]: https://github.com/SAP/jenkins-library/issues
-[piper-library-license]: ./LICENSE
-[piper-library-contribution]: .github/CONTRIBUTING.md
 [jenkins-doc-pipelines]: https://jenkins.io/solutions/pipeline
-[jenkins-doc-libraries]: https://jenkins.io/doc/book/pipeline/shared-libraries
-[jenkins-doc-steps]: https://jenkins.io/doc/pipeline/steps
-[jenkins-plugin-sharedlibs]: https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Shared+Groovy+Libraries+Plugin
-[google-group]: https://groups.google.com/forum/#!forum/project-piper

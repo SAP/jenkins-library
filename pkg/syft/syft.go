@@ -15,9 +15,44 @@ import (
 	"github.com/pkg/errors"
 )
 
+type SyftScanner struct {
+	syftFile       string
+	additionalArgs []string
+}
+
+const cyclonedxFormatForSyft = "@1.4"
+
 func GenerateSBOM(syftDownloadURL, dockerConfigDir string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender, registryURL string, images []string) error {
+	scanner, err := CreateSyftScanner(syftDownloadURL, fileUtils, httpClient)
+	if err != nil {
+		return err
+	}
+	return scanner.ScanImages(dockerConfigDir, execRunner, registryURL, images)
+}
+
+func CreateSyftScanner(syftDownloadURL string, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) (*SyftScanner, error) {
+
+	tmpDir, err := fileUtils.TempDir("", "syft")
+	if err != nil {
+		return nil, err
+	}
+	syftFile := filepath.Join(tmpDir, "syft")
+
+	err = install(syftDownloadURL, syftFile, fileUtils, httpClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to install syft")
+	}
+
+	return &SyftScanner{syftFile: syftFile}, nil
+}
+
+func (s *SyftScanner) AddArgument(arg string) {
+	s.additionalArgs = append(s.additionalArgs, arg)
+}
+
+func (s *SyftScanner) ScanImages(dockerConfigDir string, execRunner command.ExecRunner, registryURL string, images []string) error {
 	if registryURL == "" {
-		return errors.New("syft: regisitry url must not be empty")
+		return errors.New("syft: registry url must not be empty")
 	}
 
 	if len(images) == 0 {
@@ -26,23 +61,14 @@ func GenerateSBOM(syftDownloadURL, dockerConfigDir string, execRunner command.Ex
 
 	execRunner.AppendEnv([]string{fmt.Sprintf("DOCKER_CONFIG=%s", dockerConfigDir)})
 
-	tmpDir, err := fileUtils.TempDir("", "syft")
-	if err != nil {
-		return err
-	}
-	syftFile := filepath.Join(tmpDir, "syft")
-
-	err = install(syftDownloadURL, syftFile, fileUtils, httpClient)
-	if err != nil {
-		return errors.Wrap(err, "failed to install syft")
-	}
-
 	for index, image := range images {
 		if image == "" {
 			return errors.New("syft: image name must not be empty")
 		}
 		// TrimPrefix needed as syft needs containerRegistry name only
-		err = execRunner.RunExecutable(syftFile, "packages", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", "cyclonedx-xml", "--file", fmt.Sprintf("bom-docker-%v.xml", index), "-q")
+		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml%s=bom-docker-%v.xml", cyclonedxFormatForSyft, index), "-q"}
+		args = append(args, s.additionalArgs...)
+		err := execRunner.RunExecutable(s.syftFile, args...)
 		if err != nil {
 			return fmt.Errorf("failed to generate SBOM: %w", err)
 		}

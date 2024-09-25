@@ -4,14 +4,31 @@
 package npm
 
 import (
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"io"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
 )
+
+type npmMockUtilsBundleRelativeGlob struct {
+	*mock.FilesMockRelativeGlob
+	execRunner *mock.ExecMockRunner
+}
+
+func (u *npmMockUtilsBundleRelativeGlob) GetExecRunner() ExecRunner {
+	return u.execRunner
+}
+
+func newNpmMockUtilsBundleRelativeGlob() npmMockUtilsBundleRelativeGlob {
+	return npmMockUtilsBundleRelativeGlob{
+		FilesMockRelativeGlob: &mock.FilesMockRelativeGlob{FilesMock: &mock.FilesMock{}},
+		execRunner:            &mock.ExecMockRunner{},
+	}
+}
 
 func TestNpmPublish(t *testing.T) {
 	type wants struct {
@@ -102,9 +119,9 @@ func TestNpmPublish(t *testing.T) {
 			packBeforePublish: true,
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/package.tgz",
 			},
 		},
 		{
@@ -123,9 +140,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsThePassword",
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/package.tgz",
 			},
 		},
 		{
@@ -145,9 +162,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsTheOtherPassword",
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.other.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nalways-auth=true\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/package.tgz",
 			},
 		},
 		// scoped project
@@ -216,9 +233,9 @@ func TestNpmPublish(t *testing.T) {
 			packBeforePublish: true,
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/package.tgz",
 			},
 		},
 		{
@@ -237,9 +254,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsThePassword",
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/package.tgz",
 			},
 		},
 		{
@@ -259,9 +276,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsTheOtherPassword",
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nalways-auth=true\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/package.tgz",
 			},
 		},
 		// project in a subfolder
@@ -330,9 +347,9 @@ func TestNpmPublish(t *testing.T) {
 			packBeforePublish: true,
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.private.npm.registry/\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/sub/package.tgz",
 			},
 		},
 		{
@@ -351,9 +368,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsThePassword",
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/sub/package.tgz",
 			},
 		},
 		{
@@ -373,9 +390,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsTheOtherPassword",
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.other.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nalways-auth=true\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/sub/package.tgz",
 			},
 		},
 		// scoped project in a subfolder
@@ -444,9 +461,9 @@ func TestNpmPublish(t *testing.T) {
 			packBeforePublish: true,
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\n@piper:registry=https://my.private.npm.registry/\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/sub/package.tgz",
 			},
 		},
 		{
@@ -465,9 +482,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsThePassword",
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/sub/package.tgz",
 			},
 		},
 		{
@@ -487,9 +504,9 @@ func TestNpmPublish(t *testing.T) {
 			registryPassword: "AndHereIsTheOtherPassword",
 
 			wants: wants{
-				publishConfigPath: `temp-(?:test|[0-9]+)/\.piperNpmrc`,
+				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nregistry=https://my.other.private.npm.registry/\n@piper:registry=https://my.other.private.npm.registry/\n//my.other.private.npm.registry/:_auth=VGhpc0lzVGhlT3RoZXJVc2VyOkFuZEhlcmVJc1RoZU90aGVyUGFzc3dvcmQ=\nalways-auth=true\n",
-				tarballPath:       "/temp-test/package.tgz",
+				tarballPath:       "/sub/package.tgz",
 			},
 		},
 		// TODO multiple projects
@@ -497,17 +514,14 @@ func TestNpmPublish(t *testing.T) {
 
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
-			utils := newNpmMockUtilsBundle()
-
+			utils := newNpmMockUtilsBundleRelativeGlob()
 			for path, content := range test.files {
 				utils.AddFile(path, []byte(content))
 			}
-
-			options := ExecutorOptions{}
+			utils.Separator = string(filepath.Separator)
 
 			exec := &Execute{
-				Utils:   &utils,
-				Options: options,
+				Utils: &utils,
 			}
 
 			propertiesLoadFile = utils.FileRead
@@ -516,22 +530,13 @@ func TestNpmPublish(t *testing.T) {
 
 			// This stub simulates the behavior of npm pack and puts a tgz into the requested
 			utils.execRunner.Stub = func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-				r := regexp.MustCompile(`npm\s+pack\s+.*--pack-destination\s+(?P<destination>[^\s]+).*`)
-
-				matches := r.FindStringSubmatch(call)
-
-				if len(matches) == 0 {
-					return nil
-				}
-
-				packDestination := matches[1]
-
-				utils.AddFile(filepath.Join(packDestination, "package.tgz"), []byte("this is a tgz file"))
-
+				//tgzTargetPath := filepath.Dir(test.packageDescriptors[0])
+				utils.AddFile(filepath.Join(".", "package.tgz"), []byte("this is a tgz file"))
 				return nil
 			}
 
-			err := exec.PublishAllPackages(test.packageDescriptors, test.registryURL, test.registryUser, test.registryPassword, test.packBeforePublish)
+			coordinates := []versioning.Coordinates{}
+			err := exec.PublishAllPackages(test.packageDescriptors, test.registryURL, test.registryUser, test.registryPassword, test.packBeforePublish, &coordinates)
 
 			if len(test.wants.err) == 0 && assert.NoError(t, err) {
 				if assert.NotEmpty(t, utils.execRunner.Calls) {
@@ -543,16 +548,20 @@ func TestNpmPublish(t *testing.T) {
 
 					if len(test.wants.tarballPath) > 0 && assert.Contains(t, publishCmd.Params, "--tarball") {
 						tarballPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--tarball")+1]
-						assert.Equal(t, test.wants.tarballPath, tarballPath)
+						assert.Equal(t, test.wants.tarballPath, filepath.ToSlash(tarballPath))
 					}
 
 					if assert.Contains(t, publishCmd.Params, "--userconfig") {
 						effectivePublishConfigPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--userconfig")+1]
 
-						assert.Regexp(t, test.wants.publishConfigPath, effectivePublishConfigPath)
+						assert.Regexp(t, test.wants.publishConfigPath, filepath.ToSlash(effectivePublishConfigPath))
+
+						if test.packBeforePublish {
+							subPath := filepath.Dir(test.packageDescriptors[0])
+							effectivePublishConfigPath = filepath.Join(subPath, effectivePublishConfigPath)
+						}
 
 						effectiveConfig, err := utils.FileRead(effectivePublishConfigPath)
-
 						if assert.NoError(t, err) {
 							assert.Equal(t, test.wants.publishConfig, string(effectiveConfig))
 						}

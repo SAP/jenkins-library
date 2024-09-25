@@ -23,6 +23,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'kubernetesDeploy',
     /** For TMS use-cases: Performs upload to Transport Management Service node*/
     'tmsUpload',
+    /** For TMS use-cases: Performs export to Transport Management Service node*/
+    'tmsExport',
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
     /** Executes smoke tests by running the npm script 'ci-smoke' defined in the project's package.json file. */
@@ -60,10 +62,6 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
-
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
-
         // Prefer the newer multicloudDeploy step if it is configured as it is more capable
         if (config.multicloudDeploy) {
             durationMeasure(script: script, measurementName: 'deploy_release_multicloud_duration') {
@@ -92,6 +90,10 @@ void call(Map parameters = [:]) {
         if (config.tmsUpload) {
             durationMeasure(script: script, measurementName: 'upload_release_tms_duration') {
                 tmsUpload script: script
+            }
+        } else if(config.tmsExport){
+            durationMeasure(script: script, measurementName: 'export_release_tms_duration') {
+                tmsExport script: script
             }
         }
 

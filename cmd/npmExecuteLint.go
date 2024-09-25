@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -55,7 +55,7 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 
 	defer response.Body.Close()
 
-	content, err := ioutil.ReadAll(response.Body)
+	content, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Entry().Warnf("error while reading the general purpose configuration: %v", err)
 		return
@@ -166,10 +166,15 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool,
 		// install dependencies manually, since npx cannot resolve the dependencies required for general purpose
 		// ESLint config, e.g., TypeScript ESLint plugin
 		log.Entry().Info("Run ESLint with general purpose config")
-		utils.getGeneralPurposeConfig("https://raw.githubusercontent.com/SAP/jenkins-library/master/resources/.eslintrc.json")
+		generalPurposeLintConfigURI := "https://raw.githubusercontent.com/SAP/jenkins-library/master/resources/.eslintrc.json"
+		utils.getGeneralPurposeConfig(generalPurposeLintConfigURI)
 
-		// Ignore possible errors when invoking ESLint to not fail the pipeline based on linting results
-		_ = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0")
+		err = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0")
+		if err != nil {
+			if failOnError {
+				return fmt.Errorf("linter installation failed: %s", err)
+			}
+		}
 
 		args := prepareArgs([]string{
 			"--no-install",
@@ -181,7 +186,12 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool,
 			"--ignore-pattern", ".eslintrc.js",
 		}, "./%s", outputFileName)
 
-		_ = execRunner.RunExecutable("npx", args...)
+		err = execRunner.RunExecutable("npx", args...)
+		if err != nil {
+			if failOnError {
+				return fmt.Errorf("lint execution failed. This might be the result of severe linting findings. The lint configuration used can be found here: %s", generalPurposeLintConfigURI)
+			}
+		}
 	}
 	return nil
 }

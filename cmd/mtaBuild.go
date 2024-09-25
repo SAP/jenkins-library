@@ -180,8 +180,10 @@ func runMtaBuild(config mtaBuildOptions,
 		log.Entry().Infof("\"%s\" file found in project sources", mtaYamlFile)
 	}
 
-	if err = setTimeStamp(mtaYamlFile, utils); err != nil {
-		return err
+	if config.EnableSetTimestamp {
+		if err = setTimeStamp(mtaYamlFile, utils); err != nil {
+			return err
+		}
 	}
 
 	mtarName, isMtarNativelySuffixed, err := getMtarName(config, mtaYamlFile, utils)
@@ -205,6 +207,10 @@ func runMtaBuild(config mtaBuildOptions,
 
 	call = append(call, "--source", getSourcePath(config))
 	call = append(call, "--target", getAbsPath(getMtarFileRoot(config)))
+
+	if config.CreateBOM {
+		call = append(call, "--sbom-file-path", filepath.FromSlash("sbom-gen/bom-mta.xml"))
+	}
 
 	if config.Jobs > 0 {
 		call = append(call, "--mode=verbose")

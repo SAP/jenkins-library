@@ -1,7 +1,6 @@
 package versioning
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -21,10 +20,10 @@ type GoMod struct {
 
 func (m *GoMod) init() error {
 	if m.readFile == nil {
-		m.readFile = ioutil.ReadFile
+		m.readFile = os.ReadFile
 	}
 	if m.writeFile == nil {
-		m.writeFile = ioutil.WriteFile
+		m.writeFile = os.WriteFile
 	}
 	if len(m.buildDescriptorContent) == 0 {
 		content, err := m.readFile(m.path)

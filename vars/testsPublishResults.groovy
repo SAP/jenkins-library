@@ -74,12 +74,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
-
         publishJUnitReport(configuration.get('junit'))
         publishJacocoReport(configuration.get('jacoco'))
         publishCoberturaReport(configuration.get('cobertura'))
@@ -163,7 +157,8 @@ def publishJMeterReport(Map settings = [:]){
             nthBuildNumber: settings.get('nthBuildNumber'),
             configType: settings.get('configType'),
             failBuildIfNoResultFile: settings.get('failBuildIfNoResultFile'),
-            compareBuildPrevious: settings.get('compareBuildPrevious')
+            compareBuildPrevious: settings.get('compareBuildPrevious'),
+            filterRegex: settings.get('filterRegex')
         )
         archiveResults(settings.get('archive'), pattern, settings.get('allowEmptyResults'))
     }

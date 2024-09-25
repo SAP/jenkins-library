@@ -18,41 +18,61 @@ func TestGenerateCnbAuth(t *testing.T) {
 	}
 
 	t.Run("successfully generates cnb auth env variable", func(t *testing.T) {
-		mockUtils.AddFile("/test/valid_config.json", []byte("{\"auths\":{\"example.com\":{\"auth\":\"dXNlcm5hbWU6cGFzc3dvcmQ=\"}}}"))
-		auth, err := cnbutils.GenerateCnbAuth("/test/valid_config.json", mockUtils)
+		mockUtils.AddFile("/test/valid_config.json", []byte("{\"auths\":{\"https://example.com/\":{\"auth\":\"dXNlcm5hbWU6cGFzc3dvcmQ=\"}}}"))
+		auth, err := cnbutils.ParseDockerConfig("/test/valid_config.json", mockUtils)
 		assert.NoError(t, err)
-		assert.Equal(t, "{\"example.com\":\"Basic dXNlcm5hbWU6cGFzc3dvcmQ=\"}", auth)
+
+		authString, err := auth.ToCNBString()
+		assert.NoError(t, err)
+		assert.Equal(t, "{\"example.com\":\"Basic dXNlcm5hbWU6cGFzc3dvcmQ=\"}", authString)
+		assert.True(t, auth.AuthExistsForImage("example.com/foo/bar:123"))
+		assert.False(t, auth.AuthExistsForImage("docker.io/foo/bar"))
 	})
 
 	t.Run("successfully generates cnb auth env variable from username and password", func(t *testing.T) {
 		mockUtils.AddFile("/test/valid_config.json", []byte("{\"auths\":{\"example.com\":{\"username\":\"username\",\"password\":\"password\"}}}"))
-		auth, err := cnbutils.GenerateCnbAuth("/test/valid_config.json", mockUtils)
+		auth, err := cnbutils.ParseDockerConfig("/test/valid_config.json", mockUtils)
 		assert.NoError(t, err)
-		assert.Equal(t, "{\"example.com\":\"Basic dXNlcm5hbWU6cGFzc3dvcmQ=\"}", auth)
+
+		authString, err := auth.ToCNBString()
+		assert.NoError(t, err)
+		assert.Equal(t, "{\"example.com\":\"Basic dXNlcm5hbWU6cGFzc3dvcmQ=\"}", authString)
+		assert.True(t, auth.AuthExistsForImage("example.com/foo/bar:123"))
+		assert.False(t, auth.AuthExistsForImage("docker.io/foo/bar"))
 	})
 
 	t.Run("skips registry with empty credentials", func(t *testing.T) {
 		mockUtils.AddFile("/test/valid_config.json", []byte("{\"auths\":{\"example.com\":{}}}"))
-		auth, err := cnbutils.GenerateCnbAuth("/test/valid_config.json", mockUtils)
+		auth, err := cnbutils.ParseDockerConfig("/test/valid_config.json", mockUtils)
 		assert.NoError(t, err)
-		assert.Equal(t, "{}", auth)
+
+		authString, err := auth.ToCNBString()
+		assert.NoError(t, err)
+		assert.Equal(t, "{}", authString)
+		assert.False(t, auth.AuthExistsForImage("example.com/foo/bar:123"))
+		assert.False(t, auth.AuthExistsForImage("docker.io/foo/bar"))
 	})
 
 	t.Run("successfully generates cnb auth env variable if docker config is not present", func(t *testing.T) {
-		auth, err := cnbutils.GenerateCnbAuth("", mockUtils)
+		auth, err := cnbutils.ParseDockerConfig("", mockUtils)
 		assert.NoError(t, err)
-		assert.Equal(t, "{}", auth)
+
+		authString, err := auth.ToCNBString()
+		assert.NoError(t, err)
+		assert.Equal(t, "{}", authString)
+		assert.False(t, auth.AuthExistsForImage("example.com/foo/bar:123"))
+		assert.False(t, auth.AuthExistsForImage("docker.io/foo/bar"))
 	})
 
 	t.Run("fails if file not found", func(t *testing.T) {
-		_, err := cnbutils.GenerateCnbAuth("/not/found", mockUtils)
+		_, err := cnbutils.ParseDockerConfig("/not/found", mockUtils)
 		assert.Error(t, err)
 		assert.Equal(t, "could not read '/not/found'", err.Error())
 	})
 
 	t.Run("fails if file is invalid json", func(t *testing.T) {
 		mockUtils.AddFile("/test/invalid_config.json", []byte("not a json"))
-		_, err := cnbutils.GenerateCnbAuth("/test/invalid_config.json", mockUtils)
+		_, err := cnbutils.ParseDockerConfig("/test/invalid_config.json", mockUtils)
 		assert.Error(t, err)
 		assert.Equal(t, "invalid character 'o' in literal null (expecting 'u')", err.Error())
 	})

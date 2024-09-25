@@ -5,9 +5,9 @@ package mock
 
 import (
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 )
@@ -26,10 +26,11 @@ type ExecMockRunner struct {
 }
 
 type ExecCall struct {
-	Execution *Execution
-	Async     bool
-	Exec      string
-	Params    []string
+	Execution    *Execution
+	SysProcAttrs *syscall.SysProcAttr
+	Async        bool
+	Exec         string
+	Params       []string
 }
 
 type Execution struct {
@@ -62,8 +63,11 @@ func (m *ExecMockRunner) AppendEnv(e []string) {
 }
 
 func (m *ExecMockRunner) RunExecutable(e string, p ...string) error {
+	return m.RunExecutableWithAttrs(e, nil, p...)
+}
 
-	exec := ExecCall{Exec: e, Params: p}
+func (m *ExecMockRunner) RunExecutableWithAttrs(e string, attrs *syscall.SysProcAttr, p ...string) error {
+	exec := ExecCall{Exec: e, SysProcAttrs: attrs, Params: p}
 	m.Calls = append(m.Calls, exec)
 
 	c := strings.Join(append([]string{e}, p...), " ")
@@ -243,5 +247,5 @@ func OpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) 
 	default:
 		r = ""
 	}
-	return ioutil.NopCloser(strings.NewReader(r)), nil
+	return io.NopCloser(strings.NewReader(r)), nil
 }

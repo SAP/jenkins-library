@@ -127,6 +127,17 @@ spec:
           - STAGES
           - STEPS
         type: string
+      - name: gitBranch
+        description: "Set the GitHub repository branch."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/branch
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
       - name: clientSecret
         type: string
         description: The clientSecret to authenticate using a service account
@@ -187,6 +198,22 @@ spec:
         type: string
         description: The name of the checkmarxOne project to scan into
         mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: projectTags
+        type: string
+        description: Used to tag a project with a JSON string, e.g., {"key":"value", "keywithoutvalue":""}
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scanTags
+        type: string
+        description: Used to tag a scan with a JSON string, e.g., {"key":"value", "keywithoutvalue":""}
+        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -256,7 +283,7 @@ spec:
         default: "1"
       - name: groupName
         type: string
-        description: The full name of the group to assign newly created projects to which is preferred to groupId
+        description: The full name of the group to which the newly created projects will be assigned
         scope:
           - PARAMETERS
           - STAGES
@@ -469,7 +496,7 @@ spec:
               - name: group_full_path_on_report_date
               - name: scan_start
               - name: scan_time
-              - name: checkmarxOne_version
+              - name: tool_version
               - name: scan_type
               - name: preset
               - name: deep_link
@@ -484,4 +511,6 @@ spec:
           - filePattern: "**/ScanReport.*"
             type: checkmarxone
           - filePattern: "**/toolrun_checkmarxone_*.json"
+            type: checkmarxone
+          - filePattern: "**/piper_checkmarxone_report.json"
             type: checkmarxone

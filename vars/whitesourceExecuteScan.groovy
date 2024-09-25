@@ -18,6 +18,7 @@ void call(Map parameters = [:]) {
         [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
         [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
         [type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']],
+        [type: 'usernamePassword', id: 'golangPrivateModulesGitTokenCredentialsId', env: ['PIPER_privateModulesGitUsername', 'PIPER_privateModulesGitToken']]
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

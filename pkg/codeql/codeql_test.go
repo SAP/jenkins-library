@@ -24,30 +24,36 @@ func (g *githubCodeqlScanningMock) ListAlertsForRepo(ctx context.Context, owner,
 	testToolName := "Test"
 
 	if repo == "testRepo1" {
-		alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}})
-		alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}})
-		alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}})
-		alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}})
+		alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+		alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+		alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+		alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+		alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
+		alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 		response.NextPage = 0
 	}
 
 	if repo == "testRepo2" {
 		if opts.Page == 1 {
 			for i := 0; i < 50; i++ {
-				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}})
+				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 			}
 			for i := 0; i < 50; i++ {
-				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 			}
 			response.NextPage = 2
 		}
 
 		if opts.Page == 2 {
 			for i := 0; i < 10; i++ {
-				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}})
+				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 			}
 			for i := 0; i < 30; i++ {
-				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
+				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
 			}
 			response.NextPage = 0
 		}
@@ -71,8 +77,10 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 		codeqlScanAuditInstance := NewCodeqlScanAuditInstance("", "", "testRepo1", "", []string{})
 		codeScanning, err := getVulnerabilitiesFromClient(ctx, &ghCodeqlScanningMock, "ref", &codeqlScanAuditInstance)
 		assert.NoError(t, err)
-		assert.Equal(t, 3, codeScanning.Total)
-		assert.Equal(t, 1, codeScanning.Audited)
+		assert.NotEmpty(t, codeScanning)
+		assert.Equal(t, 2, len(codeScanning))
+		assert.Equal(t, 3, codeScanning[0].Total)
+		assert.Equal(t, 1, codeScanning[0].Audited)
 	})
 
 	t.Run("Success with pagination results", func(t *testing.T) {
@@ -80,8 +88,10 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 		codeqlScanAuditInstance := NewCodeqlScanAuditInstance("", "", "testRepo2", "", []string{})
 		codeScanning, err := getVulnerabilitiesFromClient(ctx, &ghCodeqlScanningMock, "ref", &codeqlScanAuditInstance)
 		assert.NoError(t, err)
-		assert.Equal(t, 140, codeScanning.Total)
-		assert.Equal(t, 80, codeScanning.Audited)
+		assert.NotEmpty(t, codeScanning)
+		assert.Equal(t, 2, len(codeScanning))
+		assert.Equal(t, 140, codeScanning[0].Total)
+		assert.Equal(t, 80, codeScanning[0].Audited)
 	})
 
 	t.Run("Error", func(t *testing.T) {

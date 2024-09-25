@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/vault/api"
 
 	"github.com/SAP/jenkins-library/pkg/ado"
-	"github.com/SAP/jenkins-library/pkg/github"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/jenkins"
 	"github.com/SAP/jenkins-library/pkg/vault"
 
@@ -81,11 +81,12 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		return nil
 	}
 
-	log.Entry().Debugf("Your secret ID is about to expire in %.0f", ttl.Round(time.Hour*24).Hours()/24)
+	log.Entry().Infof("Your secret ID is about to expire in %.0f", ttl.Round(time.Hour*24).Hours()/24)
 
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
 		return nil
 	}
+	log.Entry().Info("Rotating...")
 
 	newSecretID, err := utils.GenerateNewAppRoleSecret(GeneralConfig.VaultRoleSecretID, roleName)
 
@@ -136,7 +137,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		// Additional info:
 		// https://github.com/google/go-github/blob/master/example/newreposecretwithxcrypto/main.go
 
-		ctx, client, err := github.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+		ctx, client, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 		if err != nil {
 			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: GitHub client not created: %v", err)
 			return err
@@ -148,7 +149,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 			return err
 		}
 
-		encryptedSecret, err := github.CreateEncryptedSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
+		encryptedSecret, err := piperGithub.CreateEncryptedSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
 		if err != nil {
 			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: secret encryption failed: %v", err)
 			return err

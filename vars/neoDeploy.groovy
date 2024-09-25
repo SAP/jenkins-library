@@ -207,16 +207,6 @@ void call(parameters = [:]) {
         if(deployMode != DeployMode.MTA && ! extensionFileNames.isEmpty())
             error "Extensions (${extensionFileNames} found for deploy mode ${deployMode}. Extensions are only supported for deploy mode '${DeployMode.MTA}')"
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'deployMode',
-            stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
-            stepParamKey2: 'warAction',
-            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
-            stepParamKey3: 'scriptMissing',
-            stepParam3: parameters?.script == null,
-        ], configuration)
-
         if(configuration.neo.credentialType == 'UsernamePassword'){
             withCredentials([usernamePassword(
                 credentialsId: configuration.neo.credentialsId,
@@ -227,6 +217,7 @@ void call(parameters = [:]) {
 
                 dockerExecute(
                     script: script,
+                    juStabUtils: parameters.utils ?: null,
                     dockerImage: configuration.dockerImage,
                     dockerEnvVars: configuration.dockerEnvVars,
                     dockerOptions: configuration.dockerOptions

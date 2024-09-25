@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -48,7 +47,7 @@ func (mc *MockClient) Add(Method, Url, Body string) {
 	mc.AddResponse(Method, Url, http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{},
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(Body))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(Body))),
 	})
 }
 
@@ -57,7 +56,7 @@ func (mc *MockClient) AddBody(Method, Url, Body string, StatusCode int, header h
 	mc.AddResponse(Method, Url, http.Response{
 		StatusCode: StatusCode,
 		Header:     header,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(Body))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(Body))),
 	})
 }
 
@@ -66,7 +65,7 @@ func (mc *MockClient) AddData(data MockData) {
 	mc.AddResponse(data.Method, data.Url, http.Response{
 		StatusCode: data.StatusCode,
 		Header:     data.Header,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(data.Body))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(data.Body))),
 	})
 }
 
@@ -92,7 +91,6 @@ func (mc *MockClient) SetOptions(opts piperhttp.ClientOptions) {}
 func (mc *MockClient) SendRequest(Method, Url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	response, ok := mc.getResponse(Method, Url)
 	if !ok {
-		//return nil, errors.New("No Mock data for given Method+Url")
 		return nil, fmt.Errorf("No Mock data for %s", Method+Url)
 	}
 	return &response, nil

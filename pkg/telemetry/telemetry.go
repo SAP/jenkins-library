@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -15,13 +16,20 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	// "go.opentelemetry.io/otel/metric/global"
+	"os"
+	"strconv"
+	"time"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 )
 
-// eventType
-const eventType = "library-os-ng"
-
-// actionName
-const actionName = "Piper Library OS"
+const (
+	eventType      = "library-os-ng"
+	actionName     = "Piper Library OS"
+	pipelineIDPath = ".pipeline/commonPipelineEnvironment/custom/cumulusPipelineID"
+)
 
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
@@ -32,9 +40,8 @@ var Environment string = "development"
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
 	baseData             BaseData
-	baseMetaData         BaseMetaData
 	data                 Data
-	provider             orchestrator.OrchestratorSpecificConfigProviding
+	provider             orchestrator.ConfigProvider
 	disabled             bool
 	client               *piperhttp.Client
 	CustomReportingDsn   string
@@ -43,18 +50,29 @@ type Telemetry struct {
 	BaseURL              string
 	Endpoint             string
 	SiteID               string
-	// ctx                          context.Context
-	// shutdownOpenTelemetry        func(context.Context) error
-	// shutdownOpenTelemetryTracing func(context.Context) error
+	PendoToken           string
+	Pendo                Pendo
+}
+
+type Pendo struct {
+	Type       string `json:"type"`
+	Event      string `json:"event"`
+	VisitorID  string `json:"visitorId"`
+	AccountID  string `json:"accountId"`
+	Timestamp  int64  `json:"timestamp"`
+	Properties *Data  `json:"properties"`
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
-func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
+func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
+	if token == "" {
+		telemetryDisabled = true
+	}
 	t.disabled = telemetryDisabled
 	// t.ctx = ctx
 
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
-	if err != nil || provider == nil {
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
 		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
@@ -67,31 +85,32 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
 
 	if t.BaseURL == "" {
-		//SWA baseURL
-		t.BaseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
+		// Pendo baseURL
+		t.BaseURL = "https://app.pendo.io"
 	}
 	if t.Endpoint == "" {
-		// SWA endpoint
-		t.Endpoint = "/tracker/log"
+		// Pendo endpoint
+		t.Endpoint = "/data/track"
 	}
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
 	}
-
 	if t.SiteID == "" {
 		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 	}
 
+	t.PendoToken = token
+
 	t.baseData = BaseData{
-		Orchestrator:    provider.OrchestratorType(),
-		StageName:       provider.GetStageName(),
+		Orchestrator:    t.provider.OrchestratorType(),
+		StageName:       t.provider.StageName(),
 		URL:             LibraryRepository,
 		ActionName:      actionName,
 		EventType:       eventType,
 		StepName:        stepName,
 		SiteID:          t.SiteID,
-		PipelineURLHash: t.getPipelineURLHash(), // http://server:port/jenkins/job/foo/
-		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
+		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
+		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
 	t.baseMetaData = baseMetaData
 
@@ -116,12 +135,12 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	jobURL := t.provider.GetJobURL()
+	jobURL := t.provider.JobURL()
 	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	buildURL := t.provider.GetBuildURL()
+	buildURL := t.provider.BuildURL()
 	return t.toSha1OrNA(buildURL)
 }
 
@@ -132,12 +151,20 @@ func (t *Telemetry) toSha1OrNA(input string) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(input)))
 }
 
-// SetData sets the custom telemetry data and base data into the Data object
+// SetData sets the custom telemetry, Pendo and base data
 func (t *Telemetry) SetData(customData *CustomData) {
 	t.data = Data{
-		BaseData:     t.baseData,
-		BaseMetaData: t.baseMetaData,
-		CustomData:   *customData,
+		BaseData:   t.baseData,
+		CustomData: *customData,
+	}
+	pipelineID := readPipelineID(pipelineIDPath)
+	t.Pendo = Pendo{
+		Type:       "track",
+		Event:      t.baseData.StepName,
+		AccountID:  pipelineID,
+		VisitorID:  pipelineID,
+		Timestamp:  time.Now().UnixMilli(),
+		Properties: &t.data,
 	}
 }
 
@@ -168,11 +195,17 @@ func (t *Telemetry) Send() {
 	// counter, _ := meter.Int64Counter("piper.step.execution")
 	// counter.Add(t.ctx, 1)
 
-	request, _ := url.Parse(t.BaseURL)
-	request.Path = t.Endpoint
-	request.RawQuery = t.data.toPayloadString()
-	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
-	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
+	b, err := json.Marshal(t.Pendo)
+	if err != nil {
+		log.Entry().WithError(err).Println("Failed to marshal data")
+		return
+	}
+
+	log.Entry().Debug("Sending telemetry data")
+	h := http.Header{}
+	h.Add("Content-Type", "application/json")
+	h.Add("X-Pendo-Integration-Key", t.PendoToken)
+	t.client.SendRequest(http.MethodPost, t.BaseURL+t.Endpoint, bytes.NewReader(b), h, nil)
 }
 
 func (t *Telemetry) logStepTelemetryData() {
@@ -201,7 +234,7 @@ func (t *Telemetry) logStepTelemetryData() {
 		StepDuration:    t.data.CustomData.Duration,
 		ErrorCategory:   t.data.CustomData.ErrorCategory,
 		ErrorDetail:     fatalError,
-		CorrelationID:   t.provider.GetBuildURL(),
+		CorrelationID:   t.provider.BuildURL(),
 		PiperCommitHash: t.data.CustomData.PiperCommitHash,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
@@ -212,4 +245,13 @@ func (t *Telemetry) logStepTelemetryData() {
 		// log step telemetry data, changes here need to change the regex in the internal piper lib
 		log.Entry().Infof("Step telemetry data:%v", string(stepTelemetryJSON))
 	}
+}
+
+func readPipelineID(filePath string) string {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Entry().Debugf("Could not read %v file: %v", filePath, err)
+		content = []byte("N/A")
+	}
+	return string(content)
 }
