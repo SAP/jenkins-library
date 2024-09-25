@@ -10,6 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
@@ -148,9 +149,13 @@ func GetStageConfig() (config.StepConfig, error) {
 		}
 	}
 
-	if stage, ok := myConfig.Stages["Central Build"]; ok {
-		delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
-		myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
+	currentOrchestrator := orchestrator.DetectOrchestrator().String()
+
+	if currentOrchestrator == "Jenkins" {
+		if stage, ok := myConfig.Stages["Central Build"]; ok {
+			delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
+			myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
+		}
 	}
 
 	return myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
