@@ -53,7 +53,6 @@ void call(Map parameters = [:]) {
     if (config.appUrls){
         for (int i = 0; i < config.appUrls.size(); i++) {
             def appUrl = config.appUrls[i]
-            // ... existing code ...
             if (appUrl.credentialId) {
                 credentials.add([
                     id: appUrl.credentialId,
