@@ -2,11 +2,12 @@ package telemetry
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"google.golang.org/grpc/credentials"
-	"os"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"go.opentelemetry.io/otel/attribute"
