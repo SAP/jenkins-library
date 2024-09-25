@@ -112,6 +112,7 @@ func Execute() {
 	ctx, cleanup := telemetry.InitOpenTelemetry(context.Background())
 
 	log.DeferExitHandler(cleanup)
+	defer cleanup()
 
 	tracer := telemetry.GetTracer(ctx)
 
