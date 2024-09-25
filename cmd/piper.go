@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go.opentelemetry.io/otel/attribute"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
+
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -88,14 +88,16 @@ var GeneralConfig GeneralConfigOptions
 func Execute() {
 	log.Entry().Info("STARTING")
 	ctx, cleanup := telemetry.InitOpenTelemetry(context.Background())
-	defer cleanup()
+
+	log.DeferExitHandler(cleanup)
+
 	tracer := telemetry.GetTracer(ctx)
 
 	ctx, span := tracer.Start(ctx, "cobra-build")
 	span.SetAttributes(attribute.String("cobra", "start"))
 	defer span.End()
 
-	time.Sleep(15 * time.Second)
+	// time.Sleep(15 * time.Second)
 
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
