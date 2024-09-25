@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go.opentelemetry.io/otel/attribute"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -85,12 +87,15 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 	log.Entry().Info("STARTING")
-	ctx := telemetry.InitOpenTelemetry(context.Background())
-
+	ctx, cleanup := telemetry.InitOpenTelemetry(context.Background())
+	defer cleanup()
 	tracer := telemetry.GetTracer(ctx)
 
 	ctx, span := tracer.Start(ctx, "cobra-build")
+	span.SetAttributes(attribute.String("cobra", "start"))
 	defer span.End()
+
+	time.Sleep(15 * time.Second)
 
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())

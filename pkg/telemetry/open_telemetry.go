@@ -15,13 +15,16 @@ type key struct {
 
 var tracerKey = key{id: "piper"}
 
-func InitOpenTelemetry(ctx context.Context) context.Context {
+func InitOpenTelemetry(ctx context.Context) (context.Context, func()) {
 
 	log.Entry().Info("STARTING2")
 	// _, _ :=
-	InitTracer(ctx, []attribute.KeyValue{})
+	cleanup, err := InitTracer(ctx, []attribute.KeyValue{})
+	if err != nil {
+		log.Entry().Info("failed to initialize telemetry")
+	}
 
-	return context.WithValue(ctx, tracerKey, otel.Tracer("com.sap.piper"))
+	return context.WithValue(ctx, tracerKey, otel.Tracer("com.sap.piper")), cleanup
 
 	// t.shutdownOpenTelemetry, err = InitMeter(t.ctx, res)
 	// if err != nil {
