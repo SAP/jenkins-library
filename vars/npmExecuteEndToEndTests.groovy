@@ -53,25 +53,39 @@ void call(Map parameters = [:]) {
     if (config.appUrls){
         for (int i = 0; i < config.appUrls.size(); i++) {
             def appUrl = config.appUrls[i]
-            if (!(appUrl instanceof Map)) {
-                error "[${STEP_NAME}] The element ${appUrl} is not of type map. Please provide appUrls as a list of maps. For example:\n" +
-                        "appUrls: \n" + "  - url: 'https://my-url.com'\n" + "    credentialId: myCreds"
-            }
-            if (!appUrl.url) {
-                error "[${STEP_NAME}] No url property was defined for the following element in appUrls: ${appUrl}"
-            }
+            // ... existing code ...
             if (appUrl.credentialId) {
-                credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+                credentials.add([
+                    id: appUrl.credentialId,
+                    resolveCredentialsId: false,
+                    type: 'usernamePassword',
+                    env: ['e2e_username', 'e2e_password']
+                ])
                 if (config.wdi5) {
-                    credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username'))
+                    credentials.add([
+                        id: appUrl.credentialId,
+                        resolveCredentialsId: false,
+                        type: 'usernamePassword',
+                        env: ['wdi5_username', 'wdi5_password']
+                    ])
                 }
             }
         }
     } else{
         if (config.credentialsId) {
-            credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+            credentials.add([
+                id: config.credentialsId,
+                resolveCredentialsId: false,
+                type: 'usernamePassword',
+                env: ['e2e_username', 'e2e_password']
+            ])
             if (config.wdi5) {
-                credentials.add(usernamePassword(credentialsId: config.credentialsId, passwordVariable: 'wdi5_password', usernameVariable: 'wdi5_username'))
+                credentials.add([
+                    id: config.credentialsId,
+                    resolveCredentialsId: false,
+                    type: 'usernamePassword',
+                    env: ['wdi5_username', 'wdi5_password']
+                ])
             }
         }
     }
