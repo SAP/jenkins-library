@@ -5,9 +5,10 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
+
+const service_name = "Piper"
 
 type key struct {
 	id string
@@ -15,27 +16,29 @@ type key struct {
 
 var tracerKey = key{id: "piper"}
 
-func InitOpenTelemetry(ctx context.Context) (context.Context, func()) {
+var initFunctions = []func() bool{
+	initDefault, // check if otel envvar is already set
+	initWithUptrace,
+	initWithLightstep,
+	initWithTelemetryhub,
+	// initWithSplunk,
+}
 
-	log.Entry().Info("STARTING2")
-	// _, _ :=
-	cleanup, err := InitTracer(ctx, []attribute.KeyValue{})
+const EnvVar_otel_endpoint = ""
+
+func InitOpenTelemetry(ctx context.Context) (context.Context, func()) {
+	for _, init := range initFunctions {
+		if ok := init(); ok {
+			break
+		}
+	}
+
+	cleanup, err := InitTracer(ctx)
 	if err != nil {
-		log.Entry().Info("failed to initialize telemetry")
+		log.Entry().Info("failed to initialize OpenTelemetry")
 	}
 
 	return context.WithValue(ctx, tracerKey, otel.Tracer("com.sap.piper")), cleanup
-
-	// t.shutdownOpenTelemetry, err = InitMeter(t.ctx, res)
-	// if err != nil {
-	// 	log.Entry().WithError(err).Error("failed to initialize telemetry")
-	// }
-
-	// t.shutdownOpenTelemetryTracing, err = InitTracer(t.ctx, res)
-	// if err != nil {
-	// 	log.Entry().WithError(err).Error("failed to initialize telemetry (tracing)")
-	// }
-
 }
 
 func GetTracer(ctx context.Context) trace.Tracer {
