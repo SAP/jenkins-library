@@ -82,10 +82,13 @@ func runEndToEndTestForUrl(url string, config npmExecuteEndToEndTestsOptions, co
 		}
 		return
 	}
+	// Install npm dependencies
+	if err := command.RunExecutable("npm", "install"); err != nil {
+		log.Entry().WithError(err).Fatal("Failed to install npm dependencies")
+	}
 
 	// Execute the npm script
-	err := command.RunExecutable("npm", append([]string{"run", config.RunScript}, scriptOptions...)...)
-	if err != nil {
+	if err := command.RunExecutable("npm", append([]string{"run", config.RunScript}, scriptOptions...)...); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute end to end tests")
 	}
 }
