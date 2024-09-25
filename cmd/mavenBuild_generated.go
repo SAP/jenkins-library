@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"fmt"
-	"go.opentelemetry.io/otel"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -20,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type mavenBuildOptions struct {
@@ -209,9 +209,15 @@ general:
 			return nil
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
+			ctx := cmd.Root().Context()
+			tracer := telemetry.GetTracer(ctx)
+			_, span := tracer.Start(ctx, "piper.step.run")
+			span.SetAttributes(attribute.String("piper.step.name", STEP_NAME))
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				defer span.End()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
@@ -226,7 +232,7 @@ general:
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(cmd.Context(), GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -234,16 +240,7 @@ general:
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-
-			tracer := otel.Tracer("com.sap.piper.generated")
-			ctx, span := tracer.Start(cmd.Context(), STEP_NAME)
-			defer span.End()
-
 			mavenBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
-
-			_, prepareSpan := tracer.Start(ctx, "build-completed")
-			defer prepareSpan.End()
-
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},

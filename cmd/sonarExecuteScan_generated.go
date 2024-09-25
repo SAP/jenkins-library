@@ -19,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type sonarExecuteScanOptions struct {
@@ -204,14 +205,13 @@ func SonarExecuteScanCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, _ []string) {
 			ctx := cmd.Root().Context()
 			tracer := telemetry.GetTracer(ctx)
-
-			newCtx, span := tracer.Start(ctx, "cobra-run")
-			// span.AddAttributes(trace.StringAttribute("piper.step.name", STEP_NAME))
-			defer span.End()
+			_, span := tracer.Start(ctx, "piper.step.run")
+			span.SetAttributes(attribute.String("piper.step.name", STEP_NAME))
 
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				defer span.End()
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				config.RemoveVaultSecretFiles()
@@ -226,7 +226,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(ctx, GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				splunkClient.Initialize(GeneralConfig.CorrelationID,
 					GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -234,13 +234,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-
-
-			// tracer.FromContext()
-			// ctx, span := tracer.Start(cmd.Context(), STEP_NAME)
-			// defer span.End()
-
-			sonarExecuteScan(newCtx, stepConfig, &stepTelemetryData, &influx)
+			sonarExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
