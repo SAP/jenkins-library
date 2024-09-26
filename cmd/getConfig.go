@@ -129,6 +129,8 @@ func GetStageConfig() (config.StepConfig, error) {
 	stepConfig := config.StepConfig{}
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
+	updateConfigFile()
+
 	customConfig, err := configOptions.OpenFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -185,6 +187,8 @@ func getConfig() (config.StepConfig, error) {
 
 		projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
+		updateConfigFile()
+
 		customConfig, err := configOptions.OpenFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
@@ -224,29 +228,7 @@ func getConfig() (config.StepConfig, error) {
 		if configOptions.ContextConfig {
 			applyContextConditions(metadata, &stepConfig)
 		}
-
-		log.Entry().Info("CBfix: STARTED")
-		currentOrchestrator := orchestrator.DetectOrchestrator().String()
-		log.Entry().Infof("CBfix: checking orchestrator %s", currentOrchestrator)
-		stageConfig, err := myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
-		if err != nil {
-			return stepConfig, errors.Wrap(err, "getting stage config failed")
-		} else {
-
-			//if currentOrchestrator == "Jenkins" {
-			log.Entry().Infof("CBfix: stages are: %s", stageConfig.Config)
-			log.Entry().Infof("CBfix: config: %v", stageConfig)
-			if stage, ok := stageConfig.Config["Central Build"]; ok {
-				log.Entry().Infof("CBfix: replacing stage name %s", stage)
-				delete(stageConfig.Config, "Central Build") // Remove "Central Build" stage name
-				stageConfig.Config["Build"] = stage         // Assign the inner steps map "Build" stage name
-			}
-		}
-		//}
-
-		log.Entry().Infof("CBfix: stages in resulted config %s", stageConfig.Config)
 	}
-
 	return stepConfig, nil
 }
 
@@ -358,4 +340,32 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			_ = os.MkdirAll(dir, 0777)
 		}
 	}
+}
+
+func updateConfigFile() error {
+	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
+	currentOrchestrator := orchestrator.DetectOrchestrator().String()
+
+	if currentOrchestrator == "Jenkins" {
+		data, err := os.ReadFile(projectConfigFile)
+		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+			}
+		}
+		customConfig := string(data)
+
+		if strings.Contains(customConfig, "Central build") {
+			updatedContent := strings.ReplaceAll(customConfig, "Central build", "Build")
+			err = os.WriteFile(projectConfigFile, []byte(updatedContent), 0644)
+			if err != nil {
+				return fmt.Errorf("error writing updated file: %v", err)
+			} else {
+				log.Entry().Info("Custom config file for Jenkins updated successfully.")
+			}
+		} else {
+			log.Entry().Info("Stage 'Central build' not found.")
+		}
+	}
+	return nil
 }
