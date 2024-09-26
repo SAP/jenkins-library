@@ -10,6 +10,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+const (
+	baseURLParam   = "--baseUrl="
+	launchURLParam = "--launchUrl="
+)
+
 func npmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, _ *telemetry.CustomData) {
 	c := command.Command{}
 
@@ -25,7 +30,6 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 		Password string `json:"password"`
 	}
 	var appURLs []AppURL
-
 	err := json.Unmarshal([]byte(config.AppURLsVault), &appURLs)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to unmarshal appURLsVault")
@@ -39,11 +43,13 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 		return
 	}
+
 	env := provider.Branch()
 	if config.OnlyRunInProductiveBranch && config.ProductiveBranch != env {
 		log.Entry().Info("Skipping execution because it is configured to run only in the productive branch.")
 		return
 	}
+
 	if config.Wdi5 {
 		// install wdi5 and all required WebdriverIO peer dependencies
 		// add a config file (wdio.conf.js) to your current working directory, using http://localhost:8080/index.html as baseUrl,
@@ -57,26 +63,19 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 
 	for _, appUrl := range appURLs {
 		credentialsToEnv(appUrl.Username, appUrl.Password, config.Wdi5)
-		runEndToEndTestForUrl(appUrl.URL, config, c)
+		runEndToEndTestForUrl(appUrl.URL, config, c, launchURLParam)
 	}
 
 	for _, appUrl := range config.AppURLs {
 		url := appUrl["url"].(string)
-		runEndToEndTestForUrl(url, config, c)
+		runEndToEndTestForUrl(url, config, c, launchURLParam)
 	}
 
-	runEndToEndTestForUrl(config.BaseURL, config, c)
+	runEndToEndTestForUrl(config.BaseURL, config, c, baseURLParam)
 }
 
-func runEndToEndTestForUrl(url string, config npmExecuteEndToEndTestsOptions, command command.ExecRunner) {
+func runEndToEndTestForUrl(url string, config npmExecuteEndToEndTestsOptions, command command.ExecRunner, urlParam string) {
 	log.Entry().Infof("Running end to end tests for URL: %s", url)
-
-	// Prepare script options
-	urlParam := "--baseUrl="
-	if len(config.AppURLs) > 0 {
-		urlParam = "--launchUrl="
-	}
-	scriptOptions := []string{urlParam + url}
 
 	if config.Wdi5 {
 		if err := command.RunExecutable("npm", "run", "wdi5"); err != nil {
@@ -90,6 +89,7 @@ func runEndToEndTestForUrl(url string, config npmExecuteEndToEndTestsOptions, co
 	}
 
 	// Execute the npm script
+	scriptOptions := []string{urlParam + url}
 	if err := command.RunExecutable("npm", append([]string{"run", config.RunScript}, scriptOptions...)...); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute end to end tests")
 	}
