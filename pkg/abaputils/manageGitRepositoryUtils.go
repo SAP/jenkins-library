@@ -19,9 +19,10 @@ const logOutputTimestampLength = 29
 
 // Specifies which output option is used for logs
 type ArchiveOutputLogs struct {
-	LogOutput   string
-	PiperStep   string
-	StepReports *[]piperutils.Path
+	LogOutput    string
+	PiperStep    string
+	FileNameStep string
+	StepReports  *[]piperutils.Path
 }
 
 func PersistArchiveLogsForPiperStep(archiveOutput ArchiveOutputLogs) {
@@ -31,7 +32,7 @@ func PersistArchiveLogsForPiperStep(archiveOutput ArchiveOutputLogs) {
 		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
 	case "pull":
 		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, *archiveOutput.StepReports, nil)
-	case "checkoutBranche":
+	case "checkoutBranch":
 		piperutils.PersistReportsAndLinks("abapEnvironmentCheckoutBranch", "", fileUtils, *archiveOutput.StepReports, nil)
 	default:
 		log.Entry().Info("Cannot save log archive because no piper step was defined.")
@@ -71,7 +72,7 @@ func PrintLogs(api SoftwareComponentApiInterface, archiveOutput ArchiveOutputLog
 		zipfile, err := api.GetLogArchive()
 		// Saving logs in file and adding to piperutils to archive file
 		if err == nil {
-			fileName := "LogArchive-" + archiveOutput.PiperStep + "-" + api.getRepositoryName() + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05 -070000") + ".zip"
+			fileName := "LogArchive-" + archiveOutput.FileNameStep + "-" + api.getRepositoryName() + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05") + ".zip"
 
 			err = os.WriteFile(fileName, zipfile, 0o644)
 

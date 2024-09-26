@@ -108,6 +108,8 @@ func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, 
 		return errors.Wrapf(err, errorString)
 	}
 
+	// set correct filename for archive file
+	archiveOutput.FileNameStep = "pull"
 	// Polling the status of the repository import on the ABAP Environment system
 	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
 	if errorPollEntity != nil {

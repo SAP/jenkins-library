@@ -35,7 +35,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 
 	archiveOutput := abaputils.ArchiveOutputLogs{
 		LogOutput:   options.LogOutput,
-		PiperStep:   "checkoutBranche",
+		PiperStep:   "checkoutBranch",
 		StepReports: &reports,
 	}
 
@@ -127,6 +127,8 @@ func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputi
 		return fmt.Errorf("Failed to trigger Checkout: %w", errors.New("Checkout of "+repo.Branch+" for software component "+repo.Name+" failed on the ABAP System"))
 	}
 
+	// set correct filename for archive file
+	archiveOutput.FileNameStep = "checkoutbranch"
 	// Polling the status of the repository import on the ABAP Environment system
 	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
 	if errorPollEntity != nil {

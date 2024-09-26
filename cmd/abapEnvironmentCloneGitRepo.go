@@ -30,9 +30,10 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 
 	var reports []piperutils.Path
 	archiveOutput := abaputils.ArchiveOutputLogs{
-		LogOutput:   config.LogOutput,
-		PiperStep:   "clone",
-		StepReports: &reports,
+		LogOutput:    config.LogOutput,
+		PiperStep:    "clone",
+		FileNameStep: "clone",
+		StepReports:  &reports,
 	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
@@ -72,7 +73,6 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 			return cloneError
 		}
 	}
-
 	// Persist log archive
 	abaputils.PersistArchiveLogsForPiperStep(archiveOutput)
 
@@ -112,7 +112,8 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		if errClone != nil {
 			return errors.Wrapf(errClone, errorString)
 		}
-
+		// set correct filename for archive file
+		archiveOutput.FileNameStep = "clone"
 		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
 		if errorPollEntity != nil {
 			return errors.Wrapf(errorPollEntity, errorString)
