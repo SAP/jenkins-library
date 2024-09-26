@@ -34,9 +34,10 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	var reports []piperutils.Path
 
 	archiveOutput := abaputils.ArchiveOutputLogs{
-		LogOutput:   options.LogOutput,
-		PiperStep:   "checkoutBranch",
-		StepReports: &reports,
+		LogOutput:    options.LogOutput,
+		PiperStep:    "checkoutBranch",
+		FileNameStep: "checkoutBranch",
+		StepReports:  &reports,
 	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end

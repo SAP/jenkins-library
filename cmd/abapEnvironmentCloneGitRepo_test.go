@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -75,6 +76,7 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "filename.yaml",
+			LogOutput:         "STANDARD",
 		}
 
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -100,8 +102,16 @@ repositories:
 			Token: "myToken",
 		}
 
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
+		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, archiveOutput)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -123,6 +133,7 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			RepositoryName:    "testRepo1",
+			LogOutput:         "STANDARD",
 		}
 
 		logResultSuccess := `{"d": { "sc_name": "testRepo1", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -139,9 +150,16 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, archiveOutput)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -164,6 +182,7 @@ repositories:
 			Password:          "testPassword",
 			RepositoryName:    "testRepo1",
 			BranchName:        "testBranch1",
+			LogOutput:         "STANDARD",
 		}
 
 		client := &abaputils.ClientMock{
@@ -176,9 +195,16 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -224,6 +250,7 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "filename.yaml",
+			LogOutput:         "STANDARD",
 		}
 
 		logResultError := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -239,8 +266,16 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
+		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component '/DMO/REPO_A', branch 'branchA', commit 'ABCD1234' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -264,6 +299,7 @@ repositories:
 			Password:          "testPassword",
 			RepositoryName:    "testRepo1",
 			BranchName:        "testBranch1",
+			LogOutput:         "STANDARD",
 		}
 
 		client := &abaputils.ClientMock{
@@ -275,8 +311,16 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -300,6 +344,7 @@ repositories:
 			Password:          "testPassword",
 			RepositoryName:    "testRepo1",
 			BranchName:        "testBranch1",
+			LogOutput:         "STANDARD",
 		}
 
 		client := &abaputils.ClientMock{
@@ -310,8 +355,16 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -334,6 +387,7 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "filename.yaml",
+			LogOutput:         "STANDARD",
 		}
 
 		client := &abaputils.ClientMock{
@@ -344,8 +398,16 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Could not read repositories: Could not find filename.yaml", err.Error(), "Expected different error message")
 		}
@@ -371,6 +433,7 @@ repositories:
 			Repositories:      "filename.yaml",
 			RepositoryName:    "/DMO/REPO",
 			BranchName:        "Branch",
+			LogOutput:         "STANDARD",
 		}
 
 		logResultError := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -385,8 +448,16 @@ repositories:
 			Token:      "myToken",
 			StatusCode: 200,
 		}
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "The provided configuration is not allowed: It is not allowed to configure the parameters `repositories`and `repositoryName` at the same time", err.Error(), "Expected different error message")
 		}
@@ -412,6 +483,7 @@ func TestALreadyCloned(t *testing.T) {
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
+			LogOutput:         "STANDARD",
 		}
 
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -441,8 +513,16 @@ func TestALreadyCloned(t *testing.T) {
 			CommitID: "abcd1234",
 		}
 
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils)
+		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils, archiveOutput)
 		assert.NoError(t, err, "Did not expect error")
 	})
 
@@ -464,6 +544,7 @@ func TestALreadyCloned(t *testing.T) {
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
+			LogOutput:         "STANDARD",
 		}
 
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -487,8 +568,16 @@ func TestALreadyCloned(t *testing.T) {
 			CommitID: "abcd1234",
 		}
 
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "clone",
+			FileNameStep: "clone",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils)
+		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils, archiveOutput)
 		assert.NoError(t, err, "Did not expect error")
 	})
 

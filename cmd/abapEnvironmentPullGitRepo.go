@@ -31,9 +31,10 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *te
 	}
 	var reports []piperutils.Path
 	archiveOutput := abaputils.ArchiveOutputLogs{
-		LogOutput:   options.LogOutput,
-		PiperStep:   "pull",
-		StepReports: &reports,
+		LogOutput:    options.LogOutput,
+		PiperStep:    "pull",
+		FileNameStep: "pull",
+		StepReports:  &reports,
 	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -53,6 +54,7 @@ func TestPullStep(t *testing.T) {
 			Username:          "testUser",
 			Password:          "testPassword",
 			RepositoryNames:   []string{"testRepo1"},
+			LogOutput:         "STANDARD",
 		}
 
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -70,7 +72,16 @@ func TestPullStep(t *testing.T) {
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -96,8 +107,16 @@ func TestPullStep(t *testing.T) {
 
 		config := abapEnvironmentPullGitRepoOptions{}
 
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    "STANDARD",
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
 
@@ -146,9 +165,19 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
+			LogOutput:         "STANDARD",
 		}
+
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		assert.NoError(t, err)
 	})
 
@@ -189,6 +218,7 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "filename.yaml",
+			LogOutput:         "STANDARD",
 		}
 		client := &abaputils.ClientMock{
 			BodyList: []string{
@@ -203,8 +233,16 @@ repositories:
 			StatusCode: 200,
 		}
 
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -248,6 +286,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "filename.yaml",
 			IgnoreCommit:      true,
+			LogOutput:         "STANDARD",
 		}
 		client := &abaputils.ClientMock{
 			BodyList: []string{
@@ -262,8 +301,16 @@ repositories:
 			StatusCode: 200,
 		}
 
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/REPO_A', tag 'v-1.0.1-build-0001' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -288,6 +335,7 @@ repositories:
 			RepositoryName:    "/DMO/SWC",
 			CommitID:          "123456",
 			IgnoreCommit:      false,
+			LogOutput:         "STANDARD",
 		}
 		client := &abaputils.ClientMock{
 			BodyList: []string{
@@ -302,8 +350,16 @@ repositories:
 			StatusCode: 200,
 		}
 
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/SWC', commit '123456' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -327,6 +383,7 @@ repositories:
 			Password:          "testPassword",
 			RepositoryName:    "/DMO/SWC",
 			IgnoreCommit:      false,
+			LogOutput:         "STANDARD",
 		}
 		client := &abaputils.ClientMock{
 			BodyList: []string{
@@ -341,8 +398,16 @@ repositories:
 			StatusCode: 200,
 		}
 
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Pull of the repository / software component '/DMO/SWC' failed on the ABAP system", err.Error(), "Expected different error message")
 		}
@@ -387,9 +452,19 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
+			LogOutput:         "STANDARD",
 		}
+
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 
@@ -437,9 +512,19 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
+			LogOutput:         "STANDARD",
 		}
+
+		var reports []piperutils.Path
+		archiveOutput := abaputils.ArchiveOutputLogs{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "pull",
+			FileNameStep: "pull",
+			StepReports:  &reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, apiManager, archiveOutput)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }
