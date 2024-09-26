@@ -157,8 +157,6 @@ func getConfig() (config.StepConfig, error) {
 	var stepConfig config.StepConfig
 	var err error
 
-	log.Entry().Info("CBfix: check if using custom opensource library")
-
 	if configOptions.StageConfig {
 		stepConfig, err = GetStageConfig()
 		if err != nil {
@@ -217,20 +215,6 @@ func getConfig() (config.StepConfig, error) {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
 
-		currentOrchestrator := orchestrator.DetectOrchestrator().String()
-		log.Entry().Infof("CBfix: checking orchestrator %s", currentOrchestrator)
-		if currentOrchestrator == "Jenkins" {
-			log.Entry().Infof("CBfix: stages are: %s", myConfig.Stages)
-			log.Entry().Infof("CBfix: config: %v", myConfig)
-			if stage, ok := myConfig.Stages["Central Build"]; ok {
-				log.Entry().Infof("CBfix: replacing stage name %s", stage)
-				delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
-				myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
-			}
-		}
-
-		log.Entry().Infof("CBfix: stages in resulted config %s", myConfig.Stages)
-
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting step config failed")
@@ -240,7 +224,29 @@ func getConfig() (config.StepConfig, error) {
 		if configOptions.ContextConfig {
 			applyContextConditions(metadata, &stepConfig)
 		}
+
+		log.Entry().Info("CBfix: STARTED")
+		currentOrchestrator := orchestrator.DetectOrchestrator().String()
+		log.Entry().Infof("CBfix: checking orchestrator %s", currentOrchestrator)
+		stageConfig, err := myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
+		if err != nil {
+			return stepConfig, errors.Wrap(err, "getting stage config failed")
+		} else {
+
+			//if currentOrchestrator == "Jenkins" {
+			log.Entry().Infof("CBfix: stages are: %s", stageConfig.Config)
+			log.Entry().Infof("CBfix: config: %v", stageConfig)
+			if stage, ok := stageConfig.Config["Central Build"]; ok {
+				log.Entry().Infof("CBfix: replacing stage name %s", stage)
+				delete(stageConfig.Config, "Central Build") // Remove "Central Build" stage name
+				stageConfig.Config["Build"] = stage         // Assign the inner steps map "Build" stage name
+			}
+		}
+		//}
+
+		log.Entry().Infof("CBfix: stages in resulted config %s", stageConfig.Config)
 	}
+
 	return stepConfig, nil
 }
 
