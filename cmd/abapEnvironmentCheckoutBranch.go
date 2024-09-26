@@ -129,7 +129,7 @@ func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputi
 	}
 
 	// set correct filename for archive file
-	archiveOutput.FileNameStep = "checkoutbranch"
+	archiveOutput.FileNameStep = "checkoutBranch"
 	// Polling the status of the repository import on the ABAP Environment system
 	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
 	if errorPollEntity != nil {
