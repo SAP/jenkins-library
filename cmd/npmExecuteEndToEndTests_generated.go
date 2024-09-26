@@ -175,7 +175,7 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 func addNpmExecuteEndToEndTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteEndToEndTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", os.Getenv("PIPER_runScript"), "Script to be executed from package.json. Defaults to `ci-e2e`.")
 
-	cmd.Flags().StringVar(&stepConfig.AppURLsVault, "appUrlsVault", os.Getenv("PIPER_appUrlsVault"), "TODO")
+	cmd.Flags().StringVar(&stepConfig.AppURLsVault, "appUrlsVault", os.Getenv("PIPER_appUrlsVault"), "A JSON string containing an array of objects, each representing an application URL with associated credentials.\nEach object must have the following properties:\n- `url`: The URL of the application.\n- `username`: The username for accessing the application.\n- `password`: The password for accessing the application.\nThis parameter is used to securely pass multiple application URLs and their credentials from Vault.\n")
 	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean to indicate whether the step should only be executed in the productive branch or not.")
 	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", os.Getenv("PIPER_productiveBranch"), "The branch used as productive branch.")
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", os.Getenv("PIPER_baseUrl"), "Base URL of the application to be tested.")

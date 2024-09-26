@@ -35,7 +35,13 @@ spec:
           - STEPS
       - name: appUrlsVault
         type: string
-        description: TODO
+        description: |
+          A JSON string containing an array of objects, each representing an application URL with associated credentials.
+          Each object must have the following properties:
+          - `url`: The URL of the application.
+          - `username`: The username for accessing the application.
+          - `password`: The password for accessing the application.
+          This parameter is used to securely pass multiple application URLs and their credentials from Vault.
         scope:
           - PARAMETERS
           - STAGES
