@@ -221,6 +221,7 @@ func getConfig() (config.StepConfig, error) {
 		log.Entry().Infof("CBfix: checking orchestrator %s", currentOrchestrator)
 		if currentOrchestrator == "Jenkins" {
 			log.Entry().Infof("CBfix: stages are: %s", myConfig.Stages)
+			log.Entry().Infof("CBfix: config: %v", myConfig)
 			if stage, ok := myConfig.Stages["Central Build"]; ok {
 				log.Entry().Infof("CBfix: replacing stage name %s", stage)
 				delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
