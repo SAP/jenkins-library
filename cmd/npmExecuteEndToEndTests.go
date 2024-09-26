@@ -34,8 +34,6 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 
 	log.Entry().Infof("vault value is %v, len is %d", appURLs, len(appURLs))
 
-	// TODO: handle config.AppURLs
-
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
@@ -56,13 +54,17 @@ func runNpmExecuteEndToEndTests(config npmExecuteEndToEndTestsOptions, c command
 			return
 		}
 	}
-	if len(appURLs) > 0 {
-		for _, appUrl := range appURLs {
-			credentialsToEnv(appUrl.Username, appUrl.Password, config.Wdi5)
-			runEndToEndTestForUrl(appUrl.URL, config, c)
-		}
-		return
+
+	for _, appUrl := range appURLs {
+		credentialsToEnv(appUrl.Username, appUrl.Password, config.Wdi5)
+		runEndToEndTestForUrl(appUrl.URL, config, c)
 	}
+
+	for _, appUrl := range config.AppURLs {
+		url := appUrl["url"].(string)
+		runEndToEndTestForUrl(url, config, c)
+	}
+
 	runEndToEndTestForUrl(config.BaseURL, config, c)
 }
 
