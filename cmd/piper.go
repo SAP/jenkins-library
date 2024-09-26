@@ -300,7 +300,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
-
+	rootCmd.PersistentFlags().StringToStringVar(&GeneralConfig.OtelCarrier, "otelCarrier", map[string]string{}, "OpenTelemetry carrier")
 }
 
 // ResolveAccessTokens reads a list of tokens in format host:token passed via command line
