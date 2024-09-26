@@ -311,8 +311,8 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry", "-ws=false", "iwr"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.Options.DefaultNpmRegistry, "-ws=false", "iwr"}}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry", "-ws=false", "-iwr"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.Options.DefaultNpmRegistry, "-ws=false", "-iwr"}}, utils.execRunner.Calls[1])
 			}
 		}
 	})
