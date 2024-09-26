@@ -128,12 +128,14 @@ func Execute() {
 		span.End()
 	}()
 
-	// Ensure OtelCarrier is initialized before use
-	GeneralConfig.OtelCarrier = make(map[string]string)
+	if GeneralConfig.OtelCarrier == nil {
+		// Ensure OtelCarrier is initialized before use
+		GeneralConfig.OtelCarrier = make(map[string]string)
 
-	propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
-	carrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
-	propagator.Inject(ctx, carrier)
+		propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+		carrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
+		propagator.Inject(ctx, carrier)
+	}
 	log.Entry().Infof("carrier is %v.", GeneralConfig.OtelCarrier)
 
 	err := tp.ForceFlush(ctx)
