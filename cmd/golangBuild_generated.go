@@ -5,7 +5,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/kusto/mgmt/kusto"
 	"golang.org/x/oauth2"
 	"os"
 	"path/filepath"
@@ -23,7 +22,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
 
