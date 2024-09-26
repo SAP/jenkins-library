@@ -150,13 +150,16 @@ func GetStageConfig() (config.StepConfig, error) {
 	}
 
 	currentOrchestrator := orchestrator.DetectOrchestrator().String()
-
+	log.Entry().Infof("CBfix: checking orchestrator %s", currentOrchestrator)
 	if currentOrchestrator == "Jenkins" {
 		if stage, ok := myConfig.Stages["Central Build"]; ok {
+			log.Entry().Infof("CBfix: replacing stage name %s", stage)
 			delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
 			myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
 		}
 	}
+
+	log.Entry().Infof("CBfix: stages in resulted config %s", myConfig.Stages)
 
 	return myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 }
