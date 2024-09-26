@@ -167,6 +167,7 @@ func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 	var err error
+	currentOrchestrator := orchestrator.DetectOrchestrator().String()
 
 	if configOptions.StageConfig {
 		stepConfig, err = GetStageConfig()
