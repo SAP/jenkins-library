@@ -14,21 +14,21 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-func InitTracer(ctx context.Context) (func(), error) {
+func InitTracer(ctx context.Context) (*trace.TracerProvider, func(), error) {
 	var err error
 	var tracerProvider *trace.TracerProvider
 
 	//TODO: handle missing endpoint -> use stdout
 	if _, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT"); ok {
 		if tracerProvider, err = initGRPCTracer(ctx); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	log.Entry().Infof("Setting up TracerProvider...")
 	otel.SetTracerProvider(tracerProvider)
 
-	return func() {
+	return tracerProvider, func() {
 		log.Entry().Infof("Shutting down TracerProvider...")
 		if err := tracerProvider.Shutdown(ctx); err != nil {
 			log.Entry().Infof("Failed to shutdown TracerProvider: %v", err)

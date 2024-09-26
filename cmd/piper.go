@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go.opentelemetry.io/otel/propagation"
 	"io"
 	"os"
 	"path/filepath"
@@ -52,6 +53,7 @@ type GeneralConfigOptions struct {
 	GCSFolderPath        string
 	GCSBucketId          string
 	GCSSubFolder         string
+	OtelCarrier          map[string]string
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -109,16 +111,35 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 	log.Entry().Info("STARTING")
-	ctx, cleanup := telemetry.InitOpenTelemetry(context.Background())
+	tp, ctx, cleanup := telemetry.InitOpenTelemetry(context.Background())
 
 	log.DeferExitHandler(cleanup)
 	defer cleanup()
 
 	tracer := telemetry.GetTracer(ctx)
-
 	ctx, span := tracer.Start(ctx, "cobra-build")
 	span.SetAttributes(attribute.String("cobra", "start"))
-	defer span.End()
+	log.DeferExitHandler(func() {
+		log.Entry().Infof("Ending initial span from the error handler")
+		span.End()
+	})
+	defer func() {
+		log.Entry().Infof("Ending initial span")
+		span.End()
+	}()
+
+	// Ensure OtelCarrier is initialized before use
+	GeneralConfig.OtelCarrier = make(map[string]string)
+
+	propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+	carrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
+	propagator.Inject(ctx, carrier)
+	log.Entry().Infof("carrier is %v.", GeneralConfig.OtelCarrier)
+
+	err := tp.ForceFlush(ctx)
+	if err != nil {
+		log.Entry().Infof("Failed to flush telemetry: %v", err)
+	}
 
 	// time.Sleep(15 * time.Second)
 	log.Entry().Infof("Version %s", GitCommit)

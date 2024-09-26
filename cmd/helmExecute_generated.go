@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type helmExecuteOptions struct {
@@ -168,6 +169,10 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			ctx := cmd.Root().Context()
+			propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+			extractedCarrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
+			ctx = propagator.Extract(ctx, extractedCarrier)
+			log.Entry().Infof("OtelCarrier from step: %v", GeneralConfig.OtelCarrier)
 			tracer := telemetry.GetTracer(ctx)
 			_, span := tracer.Start(ctx, "piper.step.run")
 			span.SetAttributes(attribute.String("piper.step.name", STEP_NAME))

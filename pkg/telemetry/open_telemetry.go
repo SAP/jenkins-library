@@ -5,6 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -26,19 +27,19 @@ var initFunctions = []func() bool{
 
 const EnvVar_otel_endpoint = ""
 
-func InitOpenTelemetry(ctx context.Context) (context.Context, func()) {
+func InitOpenTelemetry(ctx context.Context) (*sdktrace.TracerProvider, context.Context, func()) {
 	for _, init := range initFunctions {
 		if ok := init(); ok {
 			break
 		}
 	}
 
-	cleanup, err := InitTracer(ctx)
+	tp, cleanup, err := InitTracer(ctx)
 	if err != nil {
 		log.Entry().Info("failed to initialize OpenTelemetry")
 	}
 
-	return context.WithValue(ctx, tracerKey, otel.Tracer("com.sap.piper")), cleanup
+	return tp, context.WithValue(ctx, tracerKey, otel.Tracer("com.sap.piper")), cleanup
 }
 
 func GetTracer(ctx context.Context) trace.Tracer {
