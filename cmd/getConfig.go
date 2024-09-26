@@ -169,6 +169,8 @@ func getConfig() (config.StepConfig, error) {
 	var stepConfig config.StepConfig
 	var err error
 
+	log.Entry().Info("CBfix: check if using custom opensource library")
+
 	if configOptions.StageConfig {
 		stepConfig, err = GetStageConfig()
 		if err != nil {
