@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,10 +10,10 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -131,29 +130,6 @@ func GetStageConfig() (config.StepConfig, error) {
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 	currentOrchestrator := orchestrator.DetectOrchestrator().String()
 
-	if currentOrchestrator == "Jenkins"{
-		data, err := os.ReadFile(projectConfigFile)
-		if err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
-			}
-		}
-		customConfig := string(data)
-
-		if strings.Contains(customConfig, "Central build") && {
-			updatedContent := strings.ReplaceAll(customConfig, "Central build", "Build")
-
-			// Write the updated content back to the file
-			err = os.WriteFile(projectConfigFile, []byte(updatedContent), 0644)
-			if err != nil {
-				log.Entry().Errorf("error: %v", err)
-			}
-			log.Entry().Info("Custom config file for Jenkins updated successfully.")
-		} else {
-			log.Entry().Info("Stage 'Central build' not found.")
-		}
-	}
-
 	customConfig, err := configOptions.OpenFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -174,7 +150,7 @@ func GetStageConfig() (config.StepConfig, error) {
 		}
 	}
 
-	myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
+	cfg, err := myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 
 	if currentOrchestrator == "Jenkins" {
 		log.Entry().Info("CBfix: replacing stage name")
@@ -184,7 +160,7 @@ func GetStageConfig() (config.StepConfig, error) {
 		}
 	}
 
-	return myConfig
+	return cfg, err
 }
 
 func getConfig() (config.StepConfig, error) {
