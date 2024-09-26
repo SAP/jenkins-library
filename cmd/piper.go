@@ -52,11 +52,18 @@ type GeneralConfigOptions struct {
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
+	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcp_pubsub,omitempty"`
 	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
 	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
 	PendoConfig       PendoConfiguration       `json:"pendo,omitempty"`
 	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
 	TrustEngineConfig TrustEngineConfiguration `json:"trustengine,omitempty"`
+}
+
+type GCPPubSubConfiguration struct {
+	ProjectName   string
+	ProjectNumber string
+	Topic         string
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
