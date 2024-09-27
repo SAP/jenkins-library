@@ -20,7 +20,6 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/attribute"
-	// "go.opentelemetry.io/otel/propagation"
 )
 
 type mavenBuildOptions struct {
@@ -215,12 +214,8 @@ general:
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			ctx := cmd.Root().Context()
-			// propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
-			// extractedCarrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
-			// ctx = propagator.Extract(ctx, extractedCarrier)
-			log.Entry().Infof("OtelCarrier from step: %v", GeneralConfig.OtelCarrier)
 			tracer := telemetry.GetTracer(ctx)
-			_, span := tracer.Start(ctx, "piper.step.run")
+			_, span := tracer.Start(ctx, STEP_NAME)
 			span.SetAttributes(attribute.String("piper.step.name", STEP_NAME))
 
 			stepTelemetryData := telemetry.CustomData{}
