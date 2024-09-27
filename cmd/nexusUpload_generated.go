@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type nexusUploadOptions struct {
@@ -108,10 +109,16 @@ If an image for mavenExecute is configured, and npm packages are to be published
 
 			return nil
 		},
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
+			ctx := cmd.Root().Context()
+			tracer := telemetry.GetTracer(ctx)
+			_, span := tracer.Start(ctx, STEP_NAME)
+			span.SetAttributes(attribute.String("piper.step.name", STEP_NAME))
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				defer span.End()
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()

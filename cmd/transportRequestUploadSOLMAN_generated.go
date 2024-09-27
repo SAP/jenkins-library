@@ -15,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type transportRequestUploadSOLMANOptions struct {
@@ -121,10 +122,16 @@ The application ID specifies how the file needs to be handled on server side.`,
 
 			return nil
 		},
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
+			ctx := cmd.Root().Context()
+			tracer := telemetry.GetTracer(ctx)
+			_, span := tracer.Start(ctx, STEP_NAME)
+			span.SetAttributes(attribute.String("piper.step.name", STEP_NAME))
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				defer span.End()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())

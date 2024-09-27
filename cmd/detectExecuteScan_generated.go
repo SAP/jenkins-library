@@ -19,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type detectExecuteScanOptions struct {
@@ -238,10 +239,16 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 
 			return nil
 		},
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
+			ctx := cmd.Root().Context()
+			tracer := telemetry.GetTracer(ctx)
+			_, span := tracer.Start(ctx, STEP_NAME)
+			span.SetAttributes(attribute.String("piper.step.name", STEP_NAME))
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
+				defer span.End()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()

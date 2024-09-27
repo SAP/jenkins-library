@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,8 +15,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // GeneralConfigOptions contains all global configuration options for piper binary
@@ -48,6 +51,7 @@ type GeneralConfigOptions struct {
 	GCSFolderPath        string
 	GCSBucketId          string
 	GCSSubFolder         string
+	OtelCarrier          map[string]string
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -104,6 +108,40 @@ var GeneralConfig GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
+
+	_, ctx, cleanup := telemetry.InitOpenTelemetry(context.Background())
+
+	log.DeferExitHandler(cleanup)
+	defer cleanup()
+
+	tracer := telemetry.GetTracer(ctx)
+	ctx, span := tracer.Start(ctx, "piper-cli")
+	// span.SetAttributes(attribute.String("cobra", "start"))
+	log.DeferExitHandler(func() {
+		log.Entry().Infof("Ending initial span from the error handler")
+		span.End()
+	})
+	defer func() {
+		log.Entry().Infof("Ending initial span")
+		span.End()
+	}()
+
+	// if GeneralConfig.OtelCarrier == nil {
+	// 	// Ensure OtelCarrier is initialized before use
+	// 	GeneralConfig.OtelCarrier = make(map[string]string)
+
+	// 	propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+	// 	carrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
+	// 	propagator.Inject(ctx, carrier)
+	// }
+	// log.Entry().Infof("carrier is %v.", GeneralConfig.OtelCarrier)
+
+	// err := tp.ForceFlush(ctx)
+	// if err != nil {
+	// 	log.Entry().Infof("Failed to flush telemetry: %v", err)
+	// }
+
+	// time.Sleep(15 * time.Second)
 	log.Entry().Infof("Version %s", GitCommit)
 
 	rootCmd.AddCommand(GcpPublishEventCommand())
@@ -226,20 +264,25 @@ func Execute() {
 	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
 
-	addRootFlags(rootCmd)
-
-	if err := rootCmd.Execute(); err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		log.Entry().WithError(err).Fatal("configuration error")
-	}
-}
-
-func addRootFlags(rootCmd *cobra.Command) {
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().Error(err)
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
+
+	span.SetAttributes(attribute.String("piper.correlationID", provider.BuildURL()))
+	span.SetAttributes(attribute.String("piper.orchestrator.name", provider.OrchestratorType()))
+	span.SetAttributes(attribute.String("piper.orchestrator.version", provider.OrchestratorVersion()))
+
+	addRootFlags(rootCmd, provider)
+
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		log.Entry().WithError(err).Fatal("configuration error")
+	}
+}
+
+func addRootFlags(rootCmd *cobra.Command, provider orchestrator.ConfigProvider) {
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.BuildURL(), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
@@ -260,7 +303,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
-
+	// rootCmd.PersistentFlags().StringToStringVar(&GeneralConfig.OtelCarrier, "otelCarrier", map[string]string{}, "OpenTelemetry carrier")
 }
 
 // ResolveAccessTokens reads a list of tokens in format host:token passed via command line

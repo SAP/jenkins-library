@@ -60,6 +60,12 @@ const (
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
+	// tracer := telemetry.GetTracer(ctx)
+	// newCtx, span := tracer.Start(ctx, "step-run")
+	// span.SetAttributes()
+	// // span.SetAttributes(attribute.KeyValue{Key: "sonar.serverURL", Value: attribute.Value{ }config.ServerURL})
+	// defer span.End()
+
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
@@ -126,6 +132,12 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, utils piperutils.FileUtils, influx *sonarExecuteScanInflux) error {
+	// tracer := telemetry.GetTracer(ctx)
+	// newCtx, span := tracer.Start(ctx, "step-run-two")
+	// span.SetAttributes(attribute.Key("sonar.server.url").String(config.ServerURL))
+	// // span.AddAttributes(trace.StringAttribute("sonar.serverURL", config.ServerURL))
+	// defer span.End()
+
 	// Set config based on orchestrator-specific environment variables
 	detectParametersFromCI(&config)
 
@@ -178,10 +190,12 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
 	}
+
 	if err := loadSonarScanner(config.SonarScannerDownloadURL, client); err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return err
 	}
+
 	if err := loadCertificates(config.CustomTLSCertificateLinks, client, runner); err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return err
@@ -200,10 +214,18 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		Debug("Executing sonar scan command")
 	// execute scan
 	runner.SetEnv(sonar.environment)
+
+	// prepareSpan.End()
+	// _, toolrunSpan := tracer.Start(ctx, "tool-run")
+	// defer toolrunSpan.End()
+
 	err := runner.RunExecutable(sonar.binary, sonar.options...)
 	if err != nil {
 		return err
 	}
+	// toolrunSpan.End()
+	// _, reportSpan := tracer.Start(ctx, "report")
+	// defer reportSpan.End()
 
 	// as PRs are handled locally for legacy SonarQube systems, no measurements will be fetched.
 	if len(config.ChangeID) > 0 && config.LegacyPRHandling {
@@ -384,38 +406,47 @@ func handlePullRequest(config sonarExecuteScanOptions) error {
 }
 
 func loadSonarScanner(url string, client piperhttp.Downloader) error {
-	if scannerPath, err := execLookPath(sonar.binary); err == nil {
-		// using existing sonar-scanner
-		log.Entry().WithField("path", scannerPath).Debug("Using local sonar-scanner")
-	} else if len(url) != 0 {
-		// download sonar-scanner-cli into TEMP folder
-		log.Entry().WithField("url", url).Debug("Downloading sonar-scanner")
-		tmpFolder := getTempDir()
-		defer os.RemoveAll(tmpFolder) // clean up
-		archive := filepath.Join(tmpFolder, path.Base(url))
-		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
-			return errors.Wrap(err, "Download of sonar-scanner failed")
-		}
-		// unzip sonar-scanner-cli
-		log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
-		if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
-			return errors.Wrap(err, "Extraction of sonar-scanner failed")
-		}
-		// move sonar-scanner-cli to .sonar-scanner/
-		toolPath := ".sonar-scanner"
-		foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
-		log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
-		if err := osRename(foldername, toolPath); err != nil {
-			return errors.Wrap(err, "Moving of sonar-scanner failed")
-		}
-		// update binary path
-		sonar.binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.binary)
-		log.Entry().Debug("Download completed")
+	// tracer := telemetry.GetTracer(ctx)
+	// _, span := tracer.Start(ctx, "sonar.download")
+	// span.SetAttributes(attribute.Key("sonar.download.url").String(url))
+	// // span.AddAttributes(trace.StringAttribute("sonar.download.url", url))
+	// defer span.End()
+	// if scannerPath, err := execLookPath(sonar.binary); err == nil {
+	// 	// using existing sonar-scanner
+	// 	log.Entry().WithField("path", scannerPath).Debug("Using local sonar-scanner")
+	// } else if len(url) != 0 {
+	// download sonar-scanner-cli into TEMP folder
+	log.Entry().WithField("url", url).Debug("Downloading sonar-scanner")
+	tmpFolder := getTempDir()
+	defer os.RemoveAll(tmpFolder) // clean up
+	archive := filepath.Join(tmpFolder, path.Base(url))
+	if err := client.DownloadFile(url, archive, nil, nil); err != nil {
+		return errors.Wrap(err, "Download of sonar-scanner failed")
 	}
+	// unzip sonar-scanner-cli
+	log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
+	if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
+		return errors.Wrap(err, "Extraction of sonar-scanner failed")
+	}
+	// move sonar-scanner-cli to .sonar-scanner/
+	toolPath := ".sonar-scanner"
+	foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
+	log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
+	if err := osRename(foldername, toolPath); err != nil {
+		return errors.Wrap(err, "Moving of sonar-scanner failed")
+	}
+	// update binary path
+	sonar.binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.binary)
+	log.Entry().Debug("Download completed")
+	// }
 	return nil
 }
 
 func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
+	// tracer := telemetry.GetTracer(ctx)
+	// _, span := tracer.Start(ctx, "sonar.certificates")
+	// defer span.End()
+
 	truststorePath := filepath.Join(getWorkingDir(), ".certificates")
 	truststoreFile := filepath.Join(truststorePath, "cacerts")
 

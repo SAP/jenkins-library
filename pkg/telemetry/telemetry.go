@@ -13,6 +13,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	// "go.opentelemetry.io/otel/metric/global"
 )
 
 const (
@@ -23,6 +24,9 @@ const (
 
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
+
+// Environment ....
+var Environment string = "development"
 
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
@@ -56,6 +60,7 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 		telemetryDisabled = true
 	}
 	t.disabled = telemetryDisabled
+	// t.ctx = ctx
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
@@ -98,6 +103,25 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName, token string) {
 		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
 		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
+
+	// res := []attribute.KeyValue{
+	// 	//TODO: use global parameter to distinguish between envs
+	// 	attribute.String("environment", Environment),
+	// 	attribute.String("piper.orchestrator", t.baseData.Orchestrator),
+	// 	attribute.String("piper.correlationID", t.provider.GetBuildURL()),
+	// 	attribute.String("piper.step.name", t.baseData.StepName),
+	// }
+	// // OpenTelemetry
+	// InitOpenTelemetry(t.ctx, )
+	// t.shutdownOpenTelemetry, err = InitMeter(t.ctx, res)
+	// if err != nil {
+	// 	log.Entry().WithError(err).Error("failed to initialize telemetry")
+	// }
+
+	// t.shutdownOpenTelemetryTracing, err = InitTracer(t.ctx, res)
+	// if err != nil {
+	// 	log.Entry().WithError(err).Error("failed to initialize telemetry (tracing)")
+	// }
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
@@ -141,6 +165,14 @@ func (t *Telemetry) GetData() Data {
 
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
+	// defer func() {
+	// 	if t.shutdownOpenTelemetry != nil {
+	// 		t.shutdownOpenTelemetry(t.ctx)
+	// 	}
+	// 	if t.shutdownOpenTelemetryTracing != nil {
+	// 		t.shutdownOpenTelemetryTracing(t.ctx)
+	// 	}
+	// }()
 	// always log step telemetry data to logfile used for internal use-case
 	t.logStepTelemetryData()
 
@@ -148,6 +180,10 @@ func (t *Telemetry) Send() {
 	if t.disabled {
 		return
 	}
+	// sent telemetry data using OpenTelemetry
+	// meter := global.Meter("piper-go")
+	// counter, _ := meter.Int64Counter("piper.step.execution")
+	// counter.Add(t.ctx, 1)
 
 	b, err := json.Marshal(t.Pendo)
 	if err != nil {
