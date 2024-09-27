@@ -111,6 +111,8 @@ var GeneralConfig GeneralConfigOptions
 func Execute() {
 
 	carrierJSONString, _ := os.LookupEnv("PIPER_otel_carrier")
+
+	log.Entry().Infof("FOUND CARRIER %s", carrierJSONString)
 	var carrier propagation.MapCarrier
 
 	if err := json.Unmarshal([]byte(carrierJSONString), &carrier); err != nil {
