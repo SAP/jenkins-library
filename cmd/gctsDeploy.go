@@ -824,7 +824,7 @@ type getRepositoryResponseBody struct {
 			Value    string `json:"value"`
 			Category string `json:"category"`
 		} `json:"config"`
-		Objects       int64  `json:"objects"`
+		Objects       any    `json:"objects"`
 		CurrentCommit string `json:"currentCommit"`
 		Connection    string `json:"connection"`
 	} `json:"result"`
