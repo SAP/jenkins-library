@@ -8,10 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 type defaultsCommandOptions struct {
@@ -56,6 +58,17 @@ func DefaultsCommand() *cobra.Command {
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
+			ctx := cmd.Root().Context()
+			tracer := telemetry.GetTracer(ctx)
+			_, span := tracer.Start(ctx, "getDefaults")
+			span.SetAttributes(attribute.String("piper.step.name", "getDefaults"))
+
+			handler := func() {
+				span.End()
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+
 			utils := newGetDefaultsUtilsUtils()
 			_, err := generateDefaults(utils)
 			if err != nil {

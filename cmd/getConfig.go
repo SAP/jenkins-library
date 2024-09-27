@@ -12,9 +12,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type ConfigCommandOptions struct {
@@ -76,6 +78,17 @@ func ConfigCommand() *cobra.Command {
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
+			ctx := cmd.Root().Context()
+			tracer := telemetry.GetTracer(ctx)
+			_, span := tracer.Start(ctx, "getConfig")
+			span.SetAttributes(attribute.String("piper.step.name", "getConfig"))
+
+			handler := func() {
+				span.End()
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+
 			if err := generateConfigWrapper(); err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				log.Entry().WithError(err).Fatal("failed to retrieve configuration")

@@ -19,7 +19,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/propagation"
 )
 
 // GeneralConfigOptions contains all global configuration options for piper binary
@@ -110,26 +109,14 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
-	carrierJSONString, _ := os.LookupEnv("PIPER_otel_carrier")
-
-	log.Entry().Infof("FOUND CARRIER %s", carrierJSONString)
-	var carrier propagation.MapCarrier
-
-	if err := json.Unmarshal([]byte(carrierJSONString), &carrier); err != nil {
-		log.Entry().Fatalf("Failed to unmarshal carrier JSON: %v", err)
-	}
-
-	propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
-	ctx := propagator.Extract(context.Background(), carrier)
-
-	_, ctx, cleanup := telemetry.InitOpenTelemetry(ctx)
+	_, ctx, cleanup := telemetry.InitOpenTelemetry(context.Background())
 
 	log.DeferExitHandler(cleanup)
 	defer cleanup()
 
 	tracer := telemetry.GetTracer(ctx)
-	ctx, span := tracer.Start(ctx, "cobra-build")
-	span.SetAttributes(attribute.String("cobra", "start"))
+	ctx, span := tracer.Start(ctx, "piper-cli")
+	// span.SetAttributes(attribute.String("cobra", "start"))
 	log.DeferExitHandler(func() {
 		log.Entry().Infof("Ending initial span from the error handler")
 		span.End()
@@ -277,7 +264,17 @@ func Execute() {
 	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
 
-	addRootFlags(rootCmd)
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
+		log.Entry().Error(err)
+		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
+	}
+
+	span.SetAttributes(attribute.String("piper.correlationID", provider.BuildURL()))
+	span.SetAttributes(attribute.String("piper.orchestrator.name", provider.OrchestratorType()))
+	span.SetAttributes(attribute.String("piper.orchestrator.version", provider.OrchestratorVersion()))
+
+	addRootFlags(rootCmd, provider)
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -285,12 +282,7 @@ func Execute() {
 	}
 }
 
-func addRootFlags(rootCmd *cobra.Command) {
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().Error(err)
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
-	}
+func addRootFlags(rootCmd *cobra.Command, provider orchestrator.ConfigProvider) {
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.BuildURL(), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
