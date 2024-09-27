@@ -20,7 +20,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/propagation"
+	// "go.opentelemetry.io/otel/propagation"
 )
 
 type fortifyExecuteScanOptions struct {
@@ -272,9 +272,9 @@ Besides triggering a scan the step verifies the results after they have been upl
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			ctx := cmd.Root().Context()
-			propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
-			extractedCarrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
-			ctx = propagator.Extract(ctx, extractedCarrier)
+			// propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+			// extractedCarrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
+			// ctx = propagator.Extract(ctx, extractedCarrier)
 			log.Entry().Infof("OtelCarrier from step: %v", GeneralConfig.OtelCarrier)
 			tracer := telemetry.GetTracer(ctx)
 			_, span := tracer.Start(ctx, "piper.step.run")

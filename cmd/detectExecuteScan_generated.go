@@ -20,7 +20,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/propagation"
+	// "go.opentelemetry.io/otel/propagation"
 )
 
 type detectExecuteScanOptions struct {
@@ -242,9 +242,9 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			ctx := cmd.Root().Context()
-			propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
-			extractedCarrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
-			ctx = propagator.Extract(ctx, extractedCarrier)
+			// propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+			// extractedCarrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
+			// ctx = propagator.Extract(ctx, extractedCarrier)
 			log.Entry().Infof("OtelCarrier from step: %v", GeneralConfig.OtelCarrier)
 			tracer := telemetry.GetTracer(ctx)
 			_, span := tracer.Start(ctx, "piper.step.run")
