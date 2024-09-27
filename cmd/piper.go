@@ -4,15 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go.opentelemetry.io/otel/propagation"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -21,6 +18,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 // GeneralConfigOptions contains all global configuration options for piper binary
@@ -110,8 +109,18 @@ var GeneralConfig GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
-	log.Entry().Info("STARTING")
-	tp, ctx, cleanup := telemetry.InitOpenTelemetry(context.Background())
+
+	carrierJSONString, _ := os.LookupEnv("PIPER_otel_carrier")
+	var carrier propagation.MapCarrier
+
+	if err := json.Unmarshal([]byte(carrierJSONString), &carrier); err != nil {
+		log.Entry().Fatalf("Failed to unmarshal carrier JSON: %v", err)
+	}
+
+	propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+	ctx := propagator.Extract(context.Background(), carrier)
+
+	_, ctx, cleanup := telemetry.InitOpenTelemetry(ctx)
 
 	log.DeferExitHandler(cleanup)
 	defer cleanup()
@@ -128,20 +137,20 @@ func Execute() {
 		span.End()
 	}()
 
-	if GeneralConfig.OtelCarrier == nil {
-		// Ensure OtelCarrier is initialized before use
-		GeneralConfig.OtelCarrier = make(map[string]string)
+	// if GeneralConfig.OtelCarrier == nil {
+	// 	// Ensure OtelCarrier is initialized before use
+	// 	GeneralConfig.OtelCarrier = make(map[string]string)
 
-		propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
-		carrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
-		propagator.Inject(ctx, carrier)
-	}
-	log.Entry().Infof("carrier is %v.", GeneralConfig.OtelCarrier)
+	// 	propagator := propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
+	// 	carrier := propagation.MapCarrier(GeneralConfig.OtelCarrier)
+	// 	propagator.Inject(ctx, carrier)
+	// }
+	// log.Entry().Infof("carrier is %v.", GeneralConfig.OtelCarrier)
 
-	err := tp.ForceFlush(ctx)
-	if err != nil {
-		log.Entry().Infof("Failed to flush telemetry: %v", err)
-	}
+	// err := tp.ForceFlush(ctx)
+	// if err != nil {
+	// 	log.Entry().Infof("Failed to flush telemetry: %v", err)
+	// }
 
 	// time.Sleep(15 * time.Second)
 	log.Entry().Infof("Version %s", GitCommit)
@@ -300,7 +309,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
-	rootCmd.PersistentFlags().StringToStringVar(&GeneralConfig.OtelCarrier, "otelCarrier", map[string]string{}, "OpenTelemetry carrier")
+	// rootCmd.PersistentFlags().StringToStringVar(&GeneralConfig.OtelCarrier, "otelCarrier", map[string]string{}, "OpenTelemetry carrier")
 }
 
 // ResolveAccessTokens reads a list of tokens in format host:token passed via command line
