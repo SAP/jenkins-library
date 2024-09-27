@@ -72,8 +72,9 @@ func newTracerProvider(exporter *otlptrace.Exporter) *trace.TracerProvider {
 			resource.NewWithAttributes(
 				semconv.SchemaURL,
 				semconv.ServiceNameKey.String(service_name),
-				semconv.ServiceVersionKey.String("v0.1.0"),
-				semconv.DeploymentEnvironmentKey.String("development"),
+				// semconv.ServiceVersionKey.String("v0.1.0"),
+				// semconv.DeploymentEnvironmentKey.String("development"),
+				semconv.TelemetrySDKLanguageGo,
 			),
 		),
 	)
