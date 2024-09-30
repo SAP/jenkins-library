@@ -276,7 +276,7 @@ func isAggregatedBOM(bom Bom) bool {
 }
 
 func getBomForThePom(pomFilePath string, bomFilePaths []string) string {
-	expectedBomFilePath := filepath.Dir(pomFilePath) + "/target/" + mvnBomFilename + ".xml"
+	expectedBomFilePath := filepath.Join(filepath.Dir(pomFilePath) + "/target/" + mvnBomFilename + ".xml")
 	log.Entry().Debugf("bom file paths: %v", bomFilePaths)
 	log.Entry().Debugf("expected bom file path: %s", expectedBomFilePath)
 	log.Entry().Debugf("pom file path: %s", pomFilePath)
