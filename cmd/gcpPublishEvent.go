@@ -15,8 +15,7 @@ import (
 type gcpPublishEventUtils interface {
 	GetConfig() *gcpPublishEventOptions
 	GetOIDCTokenByValidation(roleID string) (string, error)
-	GetFederatedToken(projectNumber, pool, provider, token string) (string, error)
-	Publish(projectNumber string, topic string, token string, key string, data []byte) error
+	Publish(projectNumber, pool, provider, topic, key string, data []byte) error
 }
 
 type gcpPublishEventUtilsBundle struct {
@@ -28,12 +27,8 @@ func (g gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
 	return g.config
 }
 
-func (g gcpPublishEventUtilsBundle) GetFederatedToken(projectNumber, pool, provider, token string) (string, error) {
-	return gcp.GetFederatedToken(projectNumber, pool, provider, token)
-}
-
-func (g gcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, token string, key string, data []byte) error {
-	return gcp.Publish(projectNumber, topic, token, key, data)
+func (g gcpPublishEventUtilsBundle) Publish(projectNumber, pool, provider, topic, key string, data []byte) error {
+	return gcp.NewGcpPubsubClient(projectNumber, pool, provider, topic, key).Publish(data)
 }
 
 func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
@@ -88,17 +83,13 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		return errors.Wrap(err, "failed to create event data")
 	}
 
-	oidcToken, err := utils.GetOIDCTokenByValidation(GeneralConfig.HookConfig.OIDCConfig.RoleID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get OIDC token")
-	}
-
-	token, err := utils.GetFederatedToken(config.GcpProjectNumber, config.GcpWorkloadIDentityPool, config.GcpWorkloadIDentityPoolProvider, oidcToken)
-	if err != nil {
-		return errors.Wrap(err, "failed to get federated token")
-	}
-
-	err = utils.Publish(config.GcpProjectNumber, config.Topic, token, provider.BuildURL(), data)
+	err = utils.Publish(
+		config.GcpProjectNumber,
+		config.GcpWorkloadIDentityPool,
+		config.GcpWorkloadIDentityPoolProvider,
+		config.Topic,
+		provider.BuildURL(),
+		data)
 	if err != nil {
 		return errors.Wrap(err, "failed to publish event")
 	}

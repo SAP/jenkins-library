@@ -3,16 +3,14 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"golang.org/x/oauth2"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
 
-	"cloud.google.com/go/pubsub"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -22,7 +20,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
-	"google.golang.org/api/option"
 )
 
 type golangBuildOptions struct {
@@ -219,34 +216,18 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 
-				GeneralConfig.HookConfig.GCPPubSubConfig.ProjectName = "sap-hyper-int-dev"
-				accToken := os.Getenv("PIPER_OIDCIdentityToken")
-				if accToken == "" {
-					log.Entry().Error("OIDC token is empty")
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					gcpPubsubClient := gcp.NewGcpPubsubClient(
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.HookConfig.GCPPubSubConfig.Topic,
+						GeneralConfig.CorrelationID,
+					)
+					if err := gcpPubsubClient.Publish(telemetryClient.GetDataBytes()); err != nil {
+						log.Entry().WithError(err).Error("event publish failed")
+					}
 				}
-				pubsubClient, err := pubsub.NewClient(
-					context.Background(),
-					GeneralConfig.HookConfig.GCPPubSubConfig.ProjectName,
-					option.WithTokenSource(oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accToken})),
-				)
-				if err != nil {
-					log.Entry().WithError(err).Error("failed to create pubsubClient")
-				}
-
-				pubRes := pubsubClient.Topic("anyTopic").Publish(context.Background(), &pubsub.Message{Data: []byte("test")})
-				id, err := pubRes.Get(context.Background())
-				if err != nil {
-					log.Entry().WithError(err).Error("publish failed")
-				}
-				log.Entry().Info("msg id:", id)
-				//if len(GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber) != 0 {
-				//	gcp.Publish(
-				//		GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-				//		GeneralConfig.HookConfig.GCPPubSubConfig.Topic,
-				//		token, // TODO
-				//		GeneralConfig.CorrelationID,
-				//		data)
-				//}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()

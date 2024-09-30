@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path"
 	"regexp"
@@ -505,4 +506,22 @@ func toStringSlice(interfaceSlice []interface{}) []string {
 		log.Entry().Warnf("'%s' needs to be of type string or an array of strings but got %T (%[2]v)", vaultPath, vRaw)
 	}
 	return retSlice
+}
+
+func initializeOIDCToken(client VaultClient, hookConfig map[string]interface{}) error {
+	oidcConfigI, exists := hookConfig["oidc"]
+	if !exists {
+		return errors.New("OIDC hook config is missing")
+	}
+	oidcConfig, ok := oidcConfigI.(map[string]interface{})
+	if !ok {
+		return errors.New("OIDC hook config is invalid format")
+	}
+	roleId, ok := oidcConfig["roleID"].(string)
+	if !ok {
+		return errors.New("roleID parameter is invalid")
+	}
+
+	_, err := client.GetOIDCTokenByValidation(roleId)
+	return err
 }
