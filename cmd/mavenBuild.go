@@ -64,7 +64,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	if config.CreateBOM {
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom", "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.4",
 			"-DincludeBomSerialNumber=true",
@@ -187,7 +187,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 						} else {
 							coordinate.BuildPath = filepath.Dir(match)
 							coordinate.URL = config.AltDeploymentRepositoryURL
-							coordinate.PURL = getPurlForThePom(match, bomMatches)
+							coordinate.PURL = getPurlForThePomAndDeleteIndividualBom(match, bomMatches)
 							buildCoordinates = append(buildCoordinates, coordinate)
 						}
 					}
@@ -219,14 +219,20 @@ type Bom struct {
 }
 
 type Metadata struct {
-	Component BomComponent `xml:"component"`
+	Component  BomComponent  `xml:"component"`
+	Properties []BomProperty `xml:"properties>property"`
+}
+
+type BomProperty struct {
+	Name  string `xml:"name,attr"`
+	Value string `xml:"value,attr"`
 }
 
 type BomComponent struct {
 	Purl string `xml:"purl"`
 }
 
-func getPurlForThePom(pomFilePath string, bomFilePaths []string) string {
+func getPurlForThePomAndDeleteIndividualBom(pomFilePath string, bomFilePaths []string) string {
 	bomPath := getBomForThePom(pomFilePath, bomFilePaths)
 	if bomPath != "" {
 		xmlFile, err := os.Open(bomPath)
@@ -243,9 +249,30 @@ func getPurlForThePom(pomFilePath string, bomFilePaths []string) string {
 			return ""
 		}
 		log.Entry().Debugf("Found purl: %s for the bomPath: %s", bom.Metadata.Component.Purl, bomPath)
-		return bom.Metadata.Component.Purl
+		// Extract pURL
+		purl := bom.Metadata.Component.Purl
+
+		// Check if the BOM is an aggregated BOM
+		if !isAggregatedBOM(bom) {
+			// Delete the individual BOM file
+			err = os.Remove(bomPath)
+			if err != nil {
+				log.Entry().Warnf("failed to delete BOM file %s: %v", bomPath, err)
+			}
+		}
+
+		return purl
 	}
 	return ""
+}
+
+func isAggregatedBOM(bom Bom) bool {
+	for _, property := range bom.Metadata.Properties {
+		if property.Name == "maven.goal" && property.Value == "makeAggregateBom" {
+			return true
+		}
+	}
+	return false
 }
 
 func getBomForThePom(pomFilePath string, bomFilePaths []string) string {
