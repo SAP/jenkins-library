@@ -227,7 +227,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 }
 
 func getPurl(packageJSON string) string {
-	expectedBomFilePath := filepath.Join(filepath.Dir(packageJSON) + "/" + npmBomFilename + ".xml")
+	expectedBomFilePath := filepath.Join(filepath.Dir(packageJSON) + "/" + npmBomFilename)
 	if exists, _ := CredentialUtils.FileExists(expectedBomFilePath); exists {
 		bom, err := CredentialUtils.GetBom(expectedBomFilePath)
 		if err != nil {
