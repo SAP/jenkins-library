@@ -77,7 +77,7 @@ spec:
           - STEPS
       - name: logOutput
         type: string
-        description: Specifies how the clone logs from the Manage Software Components App are displayed or saved 
+        description: Specifies how the clone logs from the Manage Software Components App are displayed or saved
         scope:
           - PARAMETERS
           - STAGES
