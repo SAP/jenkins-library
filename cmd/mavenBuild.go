@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"encoding/xml"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -214,40 +212,16 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	return err
 }
 
-type Bom struct {
-	Metadata Metadata `xml:"metadata"`
-}
-
-type Metadata struct {
-	Component  BomComponent  `xml:"component"`
-	Properties []BomProperty `xml:"properties>property"`
-}
-
-type BomProperty struct {
-	Name  string `xml:"name,attr"`
-	Value string `xml:"value,attr"`
-}
-
-type BomComponent struct {
-	Purl string `xml:"purl"`
-}
-
 func getPurlForThePomAndDeleteIndividualBom(pomFilePath string, bomFilePaths []string) string {
 	bomPath := getBomForThePom(pomFilePath, bomFilePaths)
 	if bomPath != "" {
-		xmlFile, err := os.Open(bomPath)
+
+		bom, err := piperutils.GetBom(bomPath)
 		if err != nil {
-			log.Entry().Debugf("failed to open bom file %s", bomPath)
+			log.Entry().Warnf("failed to get bom file %s: %v", bomPath, err)
 			return ""
 		}
-		defer xmlFile.Close()
-		byteValue, _ := io.ReadAll(xmlFile)
-		var bom Bom
-		err = xml.Unmarshal(byteValue, &bom)
-		if err != nil {
-			log.Entry().Debugf("failed to unmarshal bom file %s", bomPath)
-			return ""
-		}
+
 		log.Entry().Debugf("Found purl: %s for the bomPath: %s", bom.Metadata.Component.Purl, bomPath)
 		// Extract pURL
 		purl := bom.Metadata.Component.Purl
@@ -266,7 +240,7 @@ func getPurlForThePomAndDeleteIndividualBom(pomFilePath string, bomFilePaths []s
 	return ""
 }
 
-func isAggregatedBOM(bom Bom) bool {
+func isAggregatedBOM(bom piperutils.Bom) bool {
 	for _, property := range bom.Metadata.Properties {
 		if property.Name == "maven.goal" && property.Value == "makeAggregateBom" {
 			return true

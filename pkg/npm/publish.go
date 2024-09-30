@@ -217,12 +217,27 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			coordinate.BuildPath = filepath.Dir(packageJSON)
 			coordinate.URL = registry
 			coordinate.Packaging = "tgz"
+			coordinate.PURL = getPurl(packageJSON)
 
 			*buildCoordinates = append(*buildCoordinates, coordinate)
 		}
 	}
 
 	return nil
+}
+
+func getPurl(packageJSON string) string {
+	expectedBomFilePath := filepath.Join(filepath.Dir(packageJSON) + npmBomFilename + ".xml")
+	if exists, _ := CredentialUtils.FileExists(expectedBomFilePath); exists {
+		bom, err := CredentialUtils.GetBom(expectedBomFilePath)
+		if err != nil {
+			log.Entry().Warnf("unable to get bom metdata : %v", err)
+			return ""
+		}
+		return bom.Metadata.Component.Purl
+	}
+	log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", expectedBomFilePath)
+	return ""
 }
 
 func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
