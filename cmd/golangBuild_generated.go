@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/gcp"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -215,17 +215,16 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					gcpPubsubClient := gcp.NewGcpPubsubClient(
+					err := gcp.NewGcpPubsubClient(
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.HookConfig.GCPPubSubConfig.Topic,
 						GeneralConfig.CorrelationID,
-					)
-					if err := gcpPubsubClient.Publish(telemetryClient.GetDataBytes()); err != nil {
-						log.Entry().WithError(err).Error("event publish failed")
+					).Publish(telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
 					}
 				}
 			}
