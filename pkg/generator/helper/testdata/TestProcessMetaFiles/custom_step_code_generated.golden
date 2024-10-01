@@ -232,13 +232,13 @@ func TestStepCommand() *cobra.Command {
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+				if piperOsCmd.GeneralConfig.GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.HookConfig.GCPPubSubConfig.Topic,
-						GeneralConfig.CorrelationID,
+						piperOsCmd.GeneralConfig.GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						piperOsCmd.GeneralConfig.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						piperOsCmd.GeneralConfig.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						piperOsCmd.GeneralConfig.GeneralConfig.HookConfig.GCPPubSubConfig.Topic,
+						piperOsCmd.GeneralConfig.GeneralConfig.CorrelationID,
 					).Publish(telemetryClient.GetDataBytes())
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
