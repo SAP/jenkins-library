@@ -7,7 +7,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String METADATA_FILE = 'metadata/npmExecuteTests.yaml'
 
 @Field Set CONFIG_KEYS = [
-    "wdi5"
+    "wdi5",
     "credentialsId",
 ]
 
