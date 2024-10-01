@@ -88,3 +88,42 @@ jobs:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./target/jenkins-library.jar
+
+  post:
+    name: Post Action
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: always()
+    steps:
+      # Check status of the worklfow
+      - uses: martialonline/workflow-status@v4
+        id: check
+
+      # This step expects base64 encoded JSON object as below:
+      # {
+      #   "smtp_url": "smtp+starttls://user:password@server:port",
+      #   "smtp_mail_from": "from@mail.example",
+      #   "smtp_mail_rcpt": "to@mail.example",
+      # }
+      - name: Decode SMTP secrets and set them in GITHUB_ENV
+        id: smtp_secrets
+        if: steps.check.outputs.status == 'failure' || steps.check.outputs.status == 'cancelled'
+        run: >
+          echo "${{ secrets.SMTP_CONFIG }}" |
+          base64 --decode |
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' |
+          while read line; do
+            echo "$line" >> $GITHUB_ENV; echo "::add-mask::${line#*=}";
+          done
+      - name: Notify Piper team on failure or cancelled
+        if: steps.smtp_secrets.conclusion == 'success'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          connection_url: ${{ env.smtp_url }}
+          subject: Workflow failure in ${{ github.repository }}
+          priority: high
+          to: ${{ env.smtp_mail_rcpt }}
+          from: Piper on GitHub <${{ env.smtp_mail_from }}>
+          body: |
+            Workflow '${{ github.workflow }}' has a job with status '${{ steps.check.outputs.status }}'.
+            Workflow link: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
