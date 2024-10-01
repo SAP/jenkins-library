@@ -33,7 +33,11 @@ func GetBom(absoluteBomPath string) (Bom, error) {
 		return Bom{}, err
 	}
 	defer xmlFile.Close()
-	byteValue, _ := io.ReadAll(xmlFile)
+	byteValue, err := io.ReadAll(xmlFile)
+	if err != nil {
+		log.Entry().Debugf("failed to read bom file %s", absoluteBomPath)
+		return Bom{}, err
+	}
 	var bom Bom
 	err = xml.Unmarshal(byteValue, &bom)
 	if err != nil {

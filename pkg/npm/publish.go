@@ -228,16 +228,17 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 func getPurl(packageJSON string) string {
 	expectedBomFilePath := filepath.Join(filepath.Dir(packageJSON) + "/" + npmBomFilename)
-	if exists, _ := CredentialUtils.FileExists(expectedBomFilePath); exists {
-		bom, err := CredentialUtils.GetBom(expectedBomFilePath)
-		if err != nil {
-			log.Entry().Warnf("unable to get bom metdata : %v", err)
-			return ""
-		}
-		return bom.Metadata.Component.Purl
+	exists, _ := CredentialUtils.FileExists(expectedBomFilePath)
+	if !exists {
+		log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", expectedBomFilePath)
+		return ""
 	}
-	log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", expectedBomFilePath)
-	return ""
+	bom, err := CredentialUtils.GetBom(expectedBomFilePath)
+	if err != nil {
+		log.Entry().Warnf("unable to get bom metdata : %v", err)
+		return ""
+	}
+	return bom.Metadata.Component.Purl
 }
 
 func (exec *Execute) readPackageScope(packageJSON string) (string, error) {

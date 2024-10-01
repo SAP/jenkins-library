@@ -211,29 +211,29 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 func getPurlForThePomAndDeleteIndividualBom(pomFilePath string) string {
 	bomPath := filepath.Join(filepath.Dir(pomFilePath) + "/target/" + mvnBomFilename + ".xml")
-	if exists, _ := piperutils.FileExists(bomPath); exists {
-		bom, err := piperutils.GetBom(bomPath)
-		if err != nil {
-			log.Entry().Warnf("failed to get bom file %s: %v", bomPath, err)
-			return ""
-		}
-
-		log.Entry().Debugf("Found purl: %s for the bomPath: %s", bom.Metadata.Component.Purl, bomPath)
-		purl := bom.Metadata.Component.Purl
-
-		// Check if the BOM is an aggregated BOM
-		if !isAggregatedBOM(bom) {
-			// Delete the individual BOM file
-			err = os.Remove(bomPath)
-			if err != nil {
-				log.Entry().Warnf("failed to delete bom file %s: %v", bomPath, err)
-			}
-		}
-
-		return purl
+	exists, _ := piperutils.FileExists(bomPath)
+	if !exists {
+		log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", bomPath)
+		return ""
 	}
-	log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", bomPath)
-	return ""
+	bom, err := piperutils.GetBom(bomPath)
+	if err != nil {
+		log.Entry().Warnf("failed to get bom file %s: %v", bomPath, err)
+		return ""
+	}
+
+	log.Entry().Debugf("Found purl: %s for the bomPath: %s", bom.Metadata.Component.Purl, bomPath)
+	purl := bom.Metadata.Component.Purl
+
+	// Check if the BOM is an aggregated BOM
+	if !isAggregatedBOM(bom) {
+		// Delete the individual BOM file
+		err = os.Remove(bomPath)
+		if err != nil {
+			log.Entry().Warnf("failed to delete bom file %s: %v", bomPath, err)
+		}
+	}
+	return purl
 }
 
 func isAggregatedBOM(bom piperutils.Bom) bool {
