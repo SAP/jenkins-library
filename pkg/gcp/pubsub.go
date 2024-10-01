@@ -49,8 +49,8 @@ func publish(projectNumber, accessToken, topic, orderingKey string, data []byte)
 	msg := &pubsub.Message{Data: data, OrderingKey: orderingKey}
 	publishResult := pubsubClient.Topic(topic).Publish(ctx, msg)
 
-	// publishResult.Get() will make API call synchronous by awaiting messageId/error.
-	// By removing these method call we can make publishing asynchronous, but without ability to catch errors
+	// publishResult.Get() will make API call synchronous by awaiting messageId or error.
+	// By removing .Get() method call we can make publishing asynchronous, but without ability to catch errors
 	if _, err := publishResult.Get(context.Background()); err != nil {
 		return errors.Wrap(err, "event publish failed")
 	}

@@ -24,32 +24,6 @@ func TestGetExchangeTokenRequestData(t *testing.T) {
 	})
 }
 
-//const exchangeTokenAPIURL = "https://sts.googleapis.com/v1/token"
-//
-//func TestGetFederatedToken(t *testing.T) {
-//	t.Run("success", func(t *testing.T) {
-//		// init
-//		projectID := "PROJECT_NUMBER"
-//		pool := "POOL"
-//		provider := "PROVIDER"
-//
-//		// mock
-//		httpmock.Activate()
-//		defer httpmock.DeactivateAndReset()
-//		httpmock.RegisterResponder(http.MethodPost, exchangeTokenAPIURL,
-//			func(req *http.Request) (*http.Response, error) {
-//				return httpmock.NewJsonResponse(http.StatusOK, sts.GoogleIdentityStsV1ExchangeTokenResponse{AccessToken: mock.Anything})
-//			},
-//		)
-//
-//		// test
-//		federatedToken, err := GetFederatedToken(projectID, pool, provider, mock.Anything)
-//		// asserts
-//		assert.NoError(t, err)
-//		assert.Equal(t, mock.Anything, federatedToken)
-//	})
-//}
-
 func Test_tokenIsValid(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -70,12 +44,12 @@ func Test_tokenIsValid(t *testing.T) {
 		}, {
 			"token is expired",
 			"someToken",
-			fmt.Sprintf("%d", time.Now().Unix()-100),
+			fmt.Sprintf("%d", time.Now().Unix()-100), // expiresAt is 100 seconds ahead
 			false,
 		}, {
 			"token is valid",
 			"someToken",
-			fmt.Sprintf("%d", time.Now().Unix()+100),
+			fmt.Sprintf("%d", time.Now().Unix()+100), // expiresAt is 100 seconds before
 			true,
 		},
 	}
