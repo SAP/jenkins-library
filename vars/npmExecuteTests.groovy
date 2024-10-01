@@ -6,7 +6,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/npmExecuteTests.yaml'
 
-@Field Set GLOBAL_CONFIG_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = []
 
 @Field Set STEP_CONFIG_KEYS = [
     "wdi5",
