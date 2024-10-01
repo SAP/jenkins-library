@@ -27,7 +27,6 @@ const (
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
-
 	// enables url-log.json creation
 	cmd := reflect.ValueOf(utils).Elem().FieldByName("Command")
 	if cmd.IsValid() {
@@ -220,7 +219,6 @@ func getPurlForThePomAndDeleteIndividualBom(pomFilePath string) string {
 		}
 
 		log.Entry().Debugf("Found purl: %s for the bomPath: %s", bom.Metadata.Component.Purl, bomPath)
-		// Extract pURL
 		purl := bom.Metadata.Component.Purl
 
 		// Check if the BOM is an aggregated BOM
@@ -228,7 +226,7 @@ func getPurlForThePomAndDeleteIndividualBom(pomFilePath string) string {
 			// Delete the individual BOM file
 			err = os.Remove(bomPath)
 			if err != nil {
-				log.Entry().Warnf("failed to delete BOM file %s: %v", bomPath, err)
+				log.Entry().Warnf("failed to delete bom file %s: %v", bomPath, err)
 			}
 		}
 
