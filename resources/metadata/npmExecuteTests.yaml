@@ -1,0 +1,106 @@
+metadata:
+  name: npmExecuteTests
+  description: Executes end-to-end tests using npm
+  longDescription: |
+    This step executes end-to-end tests in a Docker environment using npm.
+
+    The step spins up a Docker container based on the specified `dockerImage` and executes the `installScript` and `runScript` from `package.json`.
+
+    The application URLs and credentials can be specified in `appUrls` and `credentialsId` respectively. If `wdi5` is set to `true`, the step uses `wdi5_username` and `wdi5_password` for authentication.
+
+    The tests can be restricted to run only on the productive branch by setting `onlyRunInProductiveBranch` to `true`.
+
+spec:
+  inputs:
+    params:
+      - name: installCommand
+        type: string
+        description: Command to be executed for installation. Defaults to `npm install`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "npm install"
+      - name: runScript
+        type: string
+        description: Script to be executed from package.json for running tests. Defaults to `wdi5`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        default: "wdi5"
+      - name: appUrls
+        type: string
+        description: |
+          A JSON string containing an array of objects, each representing an application URL with associated credentials.
+          Each object must have the following properties:
+          - `url`: The URL of the application.
+          - `username`: The username for accessing the application.
+          - `password`: The password for accessing the application.
+          This parameter is used to securely pass multiple application URLs and their credentials from Vault.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "[]"
+        resourceRef:
+          - type: vaultSecret
+            default: appMetadata
+            name: appMetadataVaultSecretName
+      - name: onlyRunInProductiveBranch
+        type: bool
+        default: false
+        description: Boolean   to indicate whether the step should only be executed in the productive branch or not.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: productiveBranch
+        type: string
+        default: "main"
+        description: The branch used as productive branch.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: baseUrl
+        type: string
+        default: "0.0.0.0"
+        description: Base URL of the application to be tested.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: wdi5
+        type: bool
+        description: Distinguish if these are wdi5 tests.
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: credentialsId
+        type: string
+        description: Credentials to access the application to be tested.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/e2e-results.xml"
+            type: e2e
+  containers:
+    - name: node
+      image: node:lts-buster
+      env:
+        - name: BASE_URL
+          value: ${{params.baseUrl}}
+        - name: CREDENTIALS_ID
+          value: ${{params.credentialsId}}
+      workingDir: /app
