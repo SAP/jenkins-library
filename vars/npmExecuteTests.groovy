@@ -27,7 +27,7 @@ void call(Map parameters = [:]) {
         if (config.wdi5) {
             credentials.add([type: 'usernamePassword', id: config.credentialsId, env: ['wdi5_username', 'wdi5_password']])
         } else {
-            credentials.add([type: 'usernamePassword', id: config.credentialsId, env: ['e2e_username', 'e2e_password']]
+            credentials.add([type: 'usernamePassword', id: config.credentialsId, env: ['e2e_username', 'e2e_password']])
         }
     }
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
