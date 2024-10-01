@@ -81,7 +81,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	repoMetadataInitState, getRepositoryErr := getRepository(config, httpClient)
 	currentBranch := repoMetadataInitState.Result.Branch
 	// If Repository does not exist in the system then Create and Clone Repository
-	if getRepositoryErr != nil {
+	if getRepositoryErr != nil || repoMetadataInitState.Result.Rid == ""{
 		// If scope is set for a new repository then creation/cloning of the repository cannot be done
 		if config.Scope != "" {
 			log.Entry().Error("Error during deploy : deploy scope cannot be provided while deploying a new repo")
