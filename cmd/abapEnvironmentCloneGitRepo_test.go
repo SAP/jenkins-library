@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -188,9 +185,10 @@ repositories:
 		client := &abaputils.ClientMock{
 			BodyList: []string{
 				`{"d" : {} }`,
+				`{"d" : {} }`,
 				`{"d" : { "status" : "R" } }`,
 				`{"d" : { "sc_name" : "testRepo1", "avail_on_instance" : true, "active_branch": "testBranch1" } }`,
-				`{"d" : [] }`,
+				`{"d" : {} }`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,

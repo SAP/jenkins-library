@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -146,6 +143,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			BodyList: []string{
 				`{"d" : ` + executionLogStringCheckout + `}`,
 				logResultError,
+				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
