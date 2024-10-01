@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type npmExecuteTestsMockUtils struct {
@@ -31,7 +32,7 @@ func TestRunNpmExecuteTests(t *testing.T) {
 		utils.AddFile("file.txt", []byte("dummy content"))
 
 		// test
-		err := runNpmExecuteTests(&config, nil, utils)
+		err := runNpmExecuteTests(&config, utils)
 
 		// assert
 		assert.NoError(t, err)
@@ -45,7 +46,7 @@ func TestRunNpmExecuteTests(t *testing.T) {
 		utils := newNpmExecuteTestsTestsUtils()
 
 		// test
-		err := runNpmExecuteTests(&config, nil, utils)
+		err := runNpmExecuteTests(&config, utils)
 
 		// assert
 		assert.EqualError(t, err, "cannot run without important file")

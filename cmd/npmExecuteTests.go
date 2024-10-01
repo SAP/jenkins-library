@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 
@@ -16,10 +17,13 @@ func npmExecuteTests(config npmExecuteTestsOptions, _ *telemetry.CustomData) {
 
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
-	runNpmExecuteTests(config, &c)
+	err := runNpmExecuteTests(&config, &c)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Step execution failed")
+	}
 }
 
-func runNpmExecuteTests(config npmExecuteTestsOptions, c command.ExecRunner) {
+func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) error {
 	type AppURL struct {
 		URL      string `json:"url"`
 		Username string `json:"username"`
@@ -28,34 +32,40 @@ func runNpmExecuteTests(config npmExecuteTestsOptions, c command.ExecRunner) {
 	var appURLs []AppURL
 	err := json.Unmarshal([]byte(config.AppURLs), &appURLs)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to unmarshal appURLs")
+		return fmt.Errorf("failed to parse app URLs: %w", err)
 	}
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
-		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+		return fmt.Errorf("failed to get orchestrator config provider: %w", err)
 	}
 
 	env := provider.Branch()
 	if config.OnlyRunInProductiveBranch && config.ProductiveBranch != env {
 		log.Entry().Info("Skipping execution because it is configured to run only in the productive branch.")
-		return
+		return nil
 	}
 
 	installCommandTokens := strings.Fields(config.InstallCommand)
 	if err := c.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
-		log.Entry().WithError(err).Fatal("Failed to execute install command")
+		return fmt.Errorf("failed to execute install command: %w", err)
 	}
 
 	for _, appUrl := range appURLs {
 		credentialsToEnv(appUrl.Username, appUrl.Password, config.Wdi5)
-		runTestForUrl(appUrl.URL, config, c)
+		err := runTestForUrl(appUrl.URL, config, c)
+		if err != nil {
+			return err
+		}
 	}
 
-	runTestForUrl(config.BaseURL, config, c)
+	if err := runTestForUrl(config.BaseURL, config, c); err != nil {
+		return err
+	}
+	return nil
 }
 
-func runTestForUrl(url string, config npmExecuteTestsOptions, command command.ExecRunner) {
+func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.ExecRunner) error {
 	log.Entry().Infof("Running end to end tests for URL: %s", url)
 
 	if config.Wdi5 {
@@ -64,19 +74,20 @@ func runTestForUrl(url string, config npmExecuteTestsOptions, command command.Ex
 		// looking for tests in $ui5-app/webapp/test/**/* that follow the name pattern *.test.js
 		// set an npm script named “wdi5” to run wdi5 so you can immediately do npm run wdi5
 		if err := command.RunExecutable("npm", "init", "wdi5@latest", "--baseUrl", url); err != nil {
-			log.Entry().WithError(err).Fatal("Failed to setup wdi5")
+			return fmt.Errorf("failed to install wdi5: %w", err)
 		}
 		if err := command.RunExecutable("npm", "run", "wdi5"); err != nil {
-			log.Entry().WithError(err).Fatal("Failed to execute wdi5")
+			return fmt.Errorf("failed to execute wdi5: %w", err)
 		}
-		return
+		return nil
 	}
 
 	// Execute the npm script
-	options := "--baseUrl=" + url
+	options := "--baseUrl_" + url
 	if err := command.RunExecutable("npm", "run", config.RunScript, options); err != nil {
-		log.Entry().WithError(err).Fatal("Failed to execute end to end tests")
+		return fmt.Errorf("failed to execute npm script: %w", err)
 	}
+	return nil
 }
 
 func credentialsToEnv(username, password string, wdi5 bool) {
