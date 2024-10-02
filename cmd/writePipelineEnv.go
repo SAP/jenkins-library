@@ -57,6 +57,7 @@ func WritePipelineEnv() *cobra.Command {
 func runWritePipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 	var err error
 	pipelineEnv, ok := os.LookupEnv("PIPER_pipelineEnv")
+	log.Entry().Debugf("PIPER_pipelineEnv exists: %t, value: %s", ok, pipelineEnv)
 	inBytes := []byte(pipelineEnv)
 	if !ok {
 		var err error
@@ -66,6 +67,7 @@ func runWritePipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 		}
 	}
 	if len(inBytes) == 0 {
+		log.Entry().Debug("No pipeline env")
 		return nil
 	}
 
