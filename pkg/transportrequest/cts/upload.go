@@ -194,7 +194,7 @@ func getFioriDeployStatement(
 	if len(app.Name) > 0 {
 		re := regexp.MustCompile(pattern)
 		if !re.MatchString(app.Name) {
-			fmt.Errorf("application name '%s' contains spaces or special characters", app.Name)
+			fmt.Errorf("application name '%s' contains spaces or special characters. It is not according to the '%s'", app.Name, pattern)
 		}
 		log.Entry().Debugf("application name '%s' used from piper config", app.Name)
 		cmd = append(cmd, "--name", app.Name)
