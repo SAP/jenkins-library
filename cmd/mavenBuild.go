@@ -1,18 +1,21 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -24,7 +27,6 @@ const (
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
 	utils := maven.NewUtilsBundle()
-
 	// enables url-log.json creation
 	cmd := reflect.ValueOf(utils).Elem().FieldByName("Command")
 	if cmd.IsValid() {
@@ -59,7 +61,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	if config.CreateBOM {
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom", "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.4",
 			"-DincludeBomSerialNumber=true",
@@ -159,13 +161,88 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			mavenOptions.Goals = []string{"deploy"}
 			mavenOptions.Defines = []string{}
 			_, err := maven.Execute(&mavenOptions, utils)
-			return err
+			if err != nil {
+				return err
+			}
+			if config.CreateBuildArtifactsMetadata {
+				buildCoordinates := []versioning.Coordinates{}
+				options := versioning.Options{}
+				var utils versioning.Utils
+
+				matches, _ := fileUtils.Glob("**/pom.xml")
+				for _, match := range matches {
+
+					artifact, err := versioning.GetArtifact("maven", match, &options, utils)
+					if err != nil {
+						log.Entry().Warnf("unable to get artifact metdata : %v", err)
+					} else {
+						coordinate, err := artifact.GetCoordinates()
+						if err != nil {
+							log.Entry().Warnf("unable to get artifact coordinates : %v", err)
+						} else {
+							coordinate.BuildPath = filepath.Dir(match)
+							coordinate.URL = config.AltDeploymentRepositoryURL
+							coordinate.PURL = getPurlForThePomAndDeleteIndividualBom(match)
+							buildCoordinates = append(buildCoordinates, coordinate)
+						}
+					}
+				}
+
+				if len(buildCoordinates) == 0 {
+					log.Entry().Warnf("unable to identify artifact coordinates for the maven packages published")
+					return nil
+				}
+
+				var buildArtifacts build.BuildArtifacts
+
+				buildArtifacts.Coordinates = buildCoordinates
+				jsonResult, _ := json.Marshal(buildArtifacts)
+				commonPipelineEnvironment.custom.mavenBuildArtifacts = string(jsonResult)
+			}
+
+			return nil
 		} else {
 			log.Entry().Infof("publish not detected, ignoring maven deploy")
 		}
 	}
 
 	return err
+}
+
+func getPurlForThePomAndDeleteIndividualBom(pomFilePath string) string {
+	bomPath := filepath.Join(filepath.Dir(pomFilePath) + "/target/" + mvnBomFilename + ".xml")
+	exists, _ := piperutils.FileExists(bomPath)
+	if !exists {
+		log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", bomPath)
+		return ""
+	}
+	bom, err := piperutils.GetBom(bomPath)
+	if err != nil {
+		log.Entry().Warnf("failed to get bom file %s: %v", bomPath, err)
+		return ""
+	}
+
+	log.Entry().Debugf("Found purl: %s for the bomPath: %s", bom.Metadata.Component.Purl, bomPath)
+	purl := bom.Metadata.Component.Purl
+
+	// Check if the BOM is an aggregated BOM
+	if !isAggregatedBOM(bom) {
+		// Delete the individual BOM file
+		err = os.Remove(bomPath)
+		if err != nil {
+			log.Entry().Warnf("failed to delete bom file %s: %v", bomPath, err)
+		}
+	}
+	return purl
+}
+
+func isAggregatedBOM(bom piperutils.Bom) bool {
+	for _, property := range bom.Metadata.Properties {
+		if property.Name == "maven.goal" && property.Value == "makeAggregateBom" {
+			return true
+		}
+	}
+	return false
 }
 
 func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils maven.Utils) (string, error) {

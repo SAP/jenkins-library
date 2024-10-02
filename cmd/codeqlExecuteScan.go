@@ -482,7 +482,7 @@ func getMavenSettings(buildCmd string, config *codeqlExecuteScanOptions, utils c
 			return params
 		}
 		for i := 1; i < len(mvnParams); i += 2 {
-			params = fmt.Sprintf("%s %s=%s", params, mvnParams[i-1], mvnParams[i])
+			params = fmt.Sprintf("%s \"%s=%s\"", params, mvnParams[i-1], mvnParams[i])
 		}
 	}
 	return params

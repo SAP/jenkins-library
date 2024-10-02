@@ -37,7 +37,7 @@ func TestNPMIntegrationRunScriptsWithOptions(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --runScripts=start --scriptOptions=--tag,tag1 >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --runScripts=start --scriptOptions=--tag,tag1 >test-log-runScriptWithOptions.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -60,9 +60,9 @@ cd /test
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log-runScriptWithOptions.txt"))
 	if err != nil {
-		t.Fatal("Could not read test-log.txt.", err)
+		t.Fatal("Could not read test-log-runScriptWithOptions.txt.", err)
 	}
 	output := string(content)
 	assert.Contains(t, output, "info  npmExecuteScripts - running command: npm run start -- --tag tag1")
@@ -89,7 +89,7 @@ func TestNPMIntegrationRegistrySetInFlags(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --defaultNpmRegistry=https://foo.bar >test-log-registrySetInFlags.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -112,9 +112,9 @@ cd /test
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log-registrySetInFlags.txt"))
 	if err != nil {
-		t.Fatal("Could not read test-log.txt.", err)
+		t.Fatal("Could not read test-log-registrySetInFlags.txt.", err)
 	}
 	output := string(content)
 	assert.Contains(t, output, "info  npmExecuteScripts - https://foo.bar")
@@ -140,7 +140,7 @@ func TestNPMIntegrationRegistrySetInNpmrc(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build >test-log-registrySetInNpmrc.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -163,9 +163,9 @@ cd /test
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log-registrySetInNpmrc.txt"))
 	if err != nil {
-		t.Fatal("Could not read test-log.txt.", err)
+		t.Fatal("Could not read test-log-registrySetInNpmrc.txt.", err)
 	}
 	output := string(content)
 	assert.Contains(t, output, "info  npmExecuteScripts - https://example.com")
@@ -191,7 +191,7 @@ func TestNPMIntegrationRegistryWithTwoModules(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --defaultNpmRegistry=https://foo.bar >test-log-registryWithTwoModules.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -214,9 +214,9 @@ cd /test
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log-registryWithTwoModules.txt"))
 	if err != nil {
-		t.Fatal("Could not read test-log.txt.", err)
+		t.Fatal("Could not read test-log-registryWithTwoModules.txt.", err)
 	}
 	output := string(content)
 	assert.Contains(t, output, "info  npmExecuteScripts - https://example.com")
