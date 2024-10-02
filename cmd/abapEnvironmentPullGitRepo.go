@@ -30,7 +30,7 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *te
 		PollIntervall: 5 * time.Second,
 	}
 	var reports []piperutils.Path
-	archiveOutput := abaputils.ArchiveOutputLogs{
+	logOutputManager := abaputils.LogOutputManager{
 		LogOutput:    options.LogOutput,
 		PiperStep:    "pull",
 		FileNameStep: "pull",
@@ -38,13 +38,13 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *te
 	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager, archiveOutput)
+	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager, logOutputManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, archiveOutput abaputils.ArchiveOutputLogs) (err error) {
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager abaputils.LogOutputManager) (err error) {
 
 	subOptions := convertPullConfig(options)
 
@@ -67,19 +67,19 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 		return err
 	}
 
-	err = pullRepositories(repositories, connectionDetails, apiManager, archiveOutput)
+	err = pullRepositories(repositories, connectionDetails, apiManager, logOutputManager)
 
 	// Persist log archive
-	abaputils.PersistArchiveLogsForPiperStep(archiveOutput)
+	abaputils.PersistArchiveLogsForPiperStep(logOutputManager)
 
 	return err
 
 }
 
-func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, archiveOutput abaputils.ArchiveOutputLogs) (err error) {
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager abaputils.LogOutputManager) (err error) {
 	log.Entry().Infof("Start pulling %v repositories", len(repositories))
 	for _, repo := range repositories {
-		err = handlePull(repo, pullConnectionDetails, apiManager, archiveOutput)
+		err = handlePull(repo, pullConnectionDetails, apiManager, logOutputManager)
 		if err != nil {
 			break
 		}
@@ -90,7 +90,7 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 	return err
 }
 
-func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, archiveOutput abaputils.ArchiveOutputLogs) (err error) {
+func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager abaputils.LogOutputManager) (err error) {
 
 	logString := repo.GetPullLogString()
 	errorString := "Pull of the " + logString + " failed on the ABAP system"
@@ -110,9 +110,9 @@ func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, 
 	}
 
 	// set correct filename for archive file
-	archiveOutput.FileNameStep = "pull"
+	logOutputManager.FileNameStep = "pull"
 	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
 	if errorPollEntity != nil {
 		return errors.Wrapf(errorPollEntity, errorString)
 	}

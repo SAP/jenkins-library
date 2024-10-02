@@ -29,7 +29,7 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 	}
 
 	var reports []piperutils.Path
-	archiveOutput := abaputils.ArchiveOutputLogs{
+	logOutputManager := abaputils.LogOutputManager{
 		LogOutput:    config.LogOutput,
 		PiperStep:    "clone",
 		FileNameStep: "clone",
@@ -37,13 +37,13 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &apiManager, archiveOutput)
+	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &apiManager, logOutputManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, archiveOutput abaputils.ArchiveOutputLogs) error {
+func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager abaputils.LogOutputManager) error {
 	// Mapping for options
 	subOptions := convertCloneConfig(config)
 
@@ -68,20 +68,20 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 
 	for _, repo := range repositories {
 
-		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, archiveOutput)
+		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, logOutputManager)
 		if cloneError != nil {
 			return cloneError
 		}
 	}
 	// Persist log archive
-	abaputils.PersistArchiveLogsForPiperStep(archiveOutput)
+	abaputils.PersistArchiveLogsForPiperStep(logOutputManager)
 
 	abaputils.AddDefaultDashedLine(1)
 	log.Entry().Info("All repositories were cloned successfully")
 	return nil
 }
 
-func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, archiveOutput abaputils.ArchiveOutputLogs) error {
+func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, logOutputManager abaputils.LogOutputManager) error {
 
 	// New API instance for each request
 	// Triggering the Clone of the repository into the ABAP Environment system
@@ -113,8 +113,8 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 			return errors.Wrapf(errClone, errorString)
 		}
 		// set correct filename for archive file
-		archiveOutput.FileNameStep = "clone"
-		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), archiveOutput)
+		logOutputManager.FileNameStep = "clone"
+		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
 		if errorPollEntity != nil {
 			return errors.Wrapf(errorPollEntity, errorString)
 		}
@@ -129,13 +129,13 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		abaputils.AddDefaultDashedLine(2)
 		var returnedError error
 		if repo.Branch != "" && !(activeBranch == repo.Branch) {
-			returnedError = runAbapEnvironmentCheckoutBranch(getCheckoutOptions(config, repo), com, apiManager, archiveOutput)
+			returnedError = runAbapEnvironmentCheckoutBranch(getCheckoutOptions(config, repo), com, apiManager, logOutputManager)
 			abaputils.AddDefaultDashedLine(2)
 			if returnedError != nil {
 				return returnedError
 			}
 		}
-		returnedError = runAbapEnvironmentPullGitRepo(getPullOptions(config, repo), com, apiManager, archiveOutput)
+		returnedError = runAbapEnvironmentPullGitRepo(getPullOptions(config, repo), com, apiManager, logOutputManager)
 		return returnedError
 	}
 	return nil

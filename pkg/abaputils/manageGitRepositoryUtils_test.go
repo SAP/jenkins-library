@@ -65,13 +65,13 @@ func TestPollEntity(t *testing.T) {
 		api, _ := swcManager.GetAPI(con, repo)
 
 		var reports []piperutils.Path
-		archiveOutput := ArchiveOutputLogs{
+		logOutputManager := LogOutputManager{
 			LogOutput:   "STANDARD",
 			PiperStep:   "pull",
 			StepReports: &reports,
 		}
 
-		status, _ := PollEntity(api, 0, archiveOutput)
+		status, _ := PollEntity(api, 0, logOutputManager)
 		assert.Equal(t, "S", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -104,13 +104,13 @@ func TestPollEntity(t *testing.T) {
 		api, _ := swcManager.GetAPI(con, repo)
 
 		var reports []piperutils.Path
-		archiveOutput := ArchiveOutputLogs{
+		logOutputManager := LogOutputManager{
 			LogOutput:   "STANDARD",
 			PiperStep:   "pull",
 			StepReports: &reports,
 		}
 
-		status, _ := PollEntity(api, 0, archiveOutput)
+		status, _ := PollEntity(api, 0, logOutputManager)
 		assert.Equal(t, "E", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
