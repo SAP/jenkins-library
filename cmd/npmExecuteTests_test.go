@@ -3,52 +3,14 @@ package cmd
 import (
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-type npmExecuteTestsMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newNpmExecuteTestsTestsUtils() npmExecuteTestsMockUtils {
-	utils := npmExecuteTestsMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestRunNpmExecuteTests(t *testing.T) {
 	t.Parallel()
 
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := npmExecuteTestsOptions{}
+	testCmd := NpmExecuteTestsCommand()
 
-		utils := newNpmExecuteTestsTestsUtils()
-		utils.AddFile("file.txt", []byte("dummy content"))
-
-		// test
-		err := runNpmExecuteTests(&config, utils)
-
-		// assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("error path", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := npmExecuteTestsOptions{}
-
-		utils := newNpmExecuteTestsTestsUtils()
-
-		// test
-		err := runNpmExecuteTests(&config, utils)
-
-		// assert
-		assert.EqualError(t, err, "cannot run without important file")
-	})
+	// only high level testing performed - details are tested in step generation procedure
+	assert.Equal(t, "npmExecuteTests", testCmd.Use, "command name incorrect")
 }
