@@ -508,7 +508,8 @@ func toStringSlice(interfaceSlice []interface{}) []string {
 	return retSlice
 }
 
-func initializeOIDCToken(client VaultClient, hookConfig map[string]interface{}) error {
+// This function parses hookConfig and calls method which obtains OIDC token and exposes it to env variables.
+func exposeOIDCTokenToEnv(client VaultClient, hookConfig map[string]interface{}) error {
 	oidcConfigI, exists := hookConfig["oidc"]
 	if !exists {
 		return errors.New("OIDC hook config is missing")
