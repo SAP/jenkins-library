@@ -67,7 +67,8 @@ func tokenIsValid(token string, expiresAtStr string) bool {
 	}
 
 	expiresAt, _ := strconv.Atoi(expiresAtStr)
-	if int64(expiresAt) < time.Now().Unix() {
+	buffer := 5 // 5 second buffer to prevent using token that potentially may expire during step execution
+	if int64(expiresAt-buffer) < time.Now().Unix() {
 		return false
 	}
 

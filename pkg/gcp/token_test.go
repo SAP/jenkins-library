@@ -25,6 +25,7 @@ func TestGetExchangeTokenRequestData(t *testing.T) {
 }
 
 func Test_tokenIsValid(t *testing.T) {
+	nowUnix := time.Now().Unix()
 	tests := []struct {
 		name         string
 		token        string
@@ -44,12 +45,17 @@ func Test_tokenIsValid(t *testing.T) {
 		}, {
 			"token is expired",
 			"someToken",
-			fmt.Sprintf("%d", time.Now().Unix()-100), // expiresAt is 100 seconds ahead
+			fmt.Sprintf("%d", nowUnix-100), // expiresAt is 100 seconds ahead
+			false,
+		}, {
+			"token is expired inside buffered timeframe",
+			"someToken",
+			fmt.Sprintf("%d", nowUnix+3), // expiresAt is 3 seconds before
 			false,
 		}, {
 			"token is valid",
 			"someToken",
-			fmt.Sprintf("%d", time.Now().Unix()+100), // expiresAt is 100 seconds before
+			fmt.Sprintf("%d", nowUnix+100), // expiresAt is 100 seconds before
 			true,
 		},
 	}
