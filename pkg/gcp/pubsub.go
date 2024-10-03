@@ -3,6 +3,7 @@ package gcp
 import (
 	"cloud.google.com/go/pubsub"
 	"context"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
@@ -52,9 +53,11 @@ func publish(projectNumber, accessToken, topic, orderingKey string, data []byte)
 
 	// publishResult.Get() will make API call synchronous by awaiting messageId or error.
 	// By removing .Get() method call we can make publishing asynchronous, but without ability to catch errors
-	if _, err := publishResult.Get(context.Background()); err != nil {
+	msgID, err := publishResult.Get(context.Background())
+	if err != nil {
 		return errors.Wrap(err, "event publish failed")
 	}
+	log.Entry().Debugf("Event published with ID: %s", msgID)
 
 	return nil
 }
