@@ -65,7 +65,7 @@ func ConfigCommand() *cobra.Command {
 		OpenFile: config.OpenPiperFile,
 	})
 
-	var createConfigCmd = &cobra.Command{
+	createConfigCmd := &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -138,6 +138,9 @@ func GetStageConfig() (config.StepConfig, error) {
 
 	defaultConfig := []io.ReadCloser{}
 	for _, f := range GeneralConfig.DefaultConfig {
+		if configOptions.OpenFile == nil {
+			return stepConfig, errors.New("config: open file function not set")
+		}
 		fc, err := configOptions.OpenFile(f, GeneralConfig.GitHubAccessTokens)
 		// only create error for non-default values
 		if err != nil && f != ".pipeline/defaults.yaml" {
@@ -265,7 +268,6 @@ func GenerateConfig(formatter func(interface{}) (string, error)) error {
 }
 
 func addConfigFlags(cmd *cobra.Command) {
-
 	// ToDo: support more output options, like https://kubernetes.io/docs/reference/kubectl/overview/#formatting-output
 	cmd.Flags().StringVar(&configOptions.Output, "output", "json", "Defines the output format")
 	cmd.Flags().StringVar(&configOptions.OutputFile, "outputFile", "", "Defines a file path. f set, the output will be written to the defines file")
@@ -276,7 +278,6 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&configOptions.StepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
 	cmd.Flags().StringVar(&configOptions.StepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.ContextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
-
 }
 
 func defaultsAndFilters(metadata *config.StepData, stepName string) ([]io.ReadCloser, config.StepFilters, error) {
