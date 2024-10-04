@@ -19,6 +19,7 @@ type Coordinates struct {
 	Packaging  string
 	BuildPath  string
 	URL        string
+	PURL       string
 }
 
 // Artifact defines the versioning operations for various build tools
