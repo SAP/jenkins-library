@@ -34,17 +34,17 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *te
 		LogOutput:    options.LogOutput,
 		PiperStep:    "pull",
 		FileNameStep: "pull",
-		StepReports:  &reports,
+		StepReports:  reports,
 	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager, logOutputManager)
+	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager, &logOutputManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager abaputils.LogOutputManager) (err error) {
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 
 	subOptions := convertPullConfig(options)
 
@@ -76,7 +76,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 
 }
 
-func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager abaputils.LogOutputManager) (err error) {
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 	log.Entry().Infof("Start pulling %v repositories", len(repositories))
 	for _, repo := range repositories {
 		err = handlePull(repo, pullConnectionDetails, apiManager, logOutputManager)
@@ -90,7 +90,7 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 	return err
 }
 
-func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager abaputils.LogOutputManager) (err error) {
+func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 
 	logString := repo.GetPullLogString()
 	errorString := "Pull of the " + logString + " failed on the ABAP system"

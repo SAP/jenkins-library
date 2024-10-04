@@ -22,25 +22,25 @@ type LogOutputManager struct {
 	LogOutput    string
 	PiperStep    string
 	FileNameStep string
-	StepReports  *[]piperutils.Path
+	StepReports  []piperutils.Path
 }
 
-func PersistArchiveLogsForPiperStep(logOutputManager LogOutputManager) {
+func PersistArchiveLogsForPiperStep(logOutputManager *LogOutputManager) {
 	fileUtils := piperutils.Files{}
 	switch logOutputManager.PiperStep {
 	case "clone":
-		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, *logOutputManager.StepReports, nil)
+		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, logOutputManager.StepReports, nil)
 	case "pull":
-		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, *logOutputManager.StepReports, nil)
+		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, logOutputManager.StepReports, nil)
 	case "checkoutBranch":
-		piperutils.PersistReportsAndLinks("abapEnvironmentCheckoutBranch", "", fileUtils, *logOutputManager.StepReports, nil)
+		piperutils.PersistReportsAndLinks("abapEnvironmentCheckoutBranch", "", fileUtils, logOutputManager.StepReports, nil)
 	default:
 		log.Entry().Info("Cannot save log archive because no piper step was defined.")
 	}
 }
 
 // PollEntity periodically polls the action entity to get the status. Check if the import is still running
-func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, logOutputManager LogOutputManager) (string, error) {
+func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, logOutputManager *LogOutputManager) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var statusCode string = "R"
@@ -65,7 +65,7 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, 
 	return statusCode, nil
 }
 
-func PrintLogs(api SoftwareComponentApiInterface, logOutputManager LogOutputManager) {
+func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputManager) {
 
 	if logOutputManager.LogOutput == "ZIP" {
 		// get zip file as byte array
@@ -78,7 +78,7 @@ func PrintLogs(api SoftwareComponentApiInterface, logOutputManager LogOutputMana
 
 			if err == nil {
 				log.Entry().Infof("Writing %s file was successful", fileName)
-				*logOutputManager.StepReports = append(*logOutputManager.StepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
+				logOutputManager.StepReports = append(logOutputManager.StepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
 			}
 		}
 	} else {

@@ -33,17 +33,17 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 		LogOutput:    config.LogOutput,
 		PiperStep:    "clone",
 		FileNameStep: "clone",
-		StepReports:  &reports,
+		StepReports:  reports,
 	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &apiManager, logOutputManager)
+	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &apiManager, &logOutputManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager abaputils.LogOutputManager) error {
+func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) error {
 	// Mapping for options
 	subOptions := convertCloneConfig(config)
 
@@ -81,7 +81,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	return nil
 }
 
-func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, logOutputManager abaputils.LogOutputManager) error {
+func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, logOutputManager *abaputils.LogOutputManager) error {
 
 	// New API instance for each request
 	// Triggering the Clone of the repository into the ABAP Environment system

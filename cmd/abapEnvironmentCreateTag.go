@@ -98,12 +98,13 @@ func createSingleTag(item abaputils.CreateTagBacklog, index int, con abaputils.C
 	}
 
 	logOutputManager := abaputils.LogOutputManager{
-		LogOutput:   "STANDARD",
-		PiperStep:   "createTag",
-		StepReports: nil,
+		LogOutput:    "STANDARD",
+		PiperStep:    "createTag",
+		FileNameStep: "createTag",
+		StepReports:  nil,
 	}
 
-	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), &logOutputManager)
 
 	if errorPollEntity == nil && status == "S" {
 		log.Entry().Info("Created tag " + item.Tags[index].TagName + " for repository " + item.RepositoryName + " with commitID " + item.CommitID)
