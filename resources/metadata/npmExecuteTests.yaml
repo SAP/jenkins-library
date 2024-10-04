@@ -23,13 +23,13 @@ spec:
         default: "npm ci"
       - name: runScript
         type: string
-        description: Script to be executed from package.json for running tests. Defaults to `wdi5`.
+        description: Script to be executed from package.json for running tests. Defaults to `npm run wdi5`.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: true
-        default: "wdi5"
+        default: "npm run wdi5"
       - name: appUrls
         type: string
         description: |

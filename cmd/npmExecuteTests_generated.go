@@ -173,8 +173,8 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 }
 
 func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install`, "Command to be executed for installation. Defaults to `npm install`.")
-	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `wdi5`, "Script to be executed from package.json for running tests. Defaults to `wdi5`.")
+	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm ci`, "Command to be executed for installation. Defaults to `npm ci`.")
+	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `npm run wdi5`, "Script to be executed from package.json for running tests. Defaults to `npm run wdi5`.")
 	cmd.Flags().StringVar(&stepConfig.AppURLs, "appUrls", `[]`, "A JSON string containing an array of objects, each representing an application URL with associated credentials.\nEach object must have the following properties:\n- `url`: The URL of the application.\n- `username`: The username for accessing the application.\n- `password`: The password for accessing the application.\nThis parameter is used to securely pass multiple application URLs and their credentials from Vault.\n")
 	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean   to indicate whether the step should only be executed in the productive branch or not.")
 	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", `main`, "The branch used as productive branch.")
@@ -203,7 +203,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `npm install`,
+						Default:     `npm ci`,
 					},
 					{
 						Name:        "runScript",
@@ -212,7 +212,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     `wdi5`,
+						Default:     `npm run wdi5`,
 					},
 					{
 						Name: "appUrls",

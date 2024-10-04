@@ -84,7 +84,8 @@ func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.E
 
 	// Execute the npm script
 	options := "--baseUrl_" + url
-	if err := command.RunExecutable("npm", "run", config.RunScript, options); err != nil {
+	runScriptTokens := strings.Fields(config.RunScript)
+	if err := command.RunExecutable(runScriptTokens[0], append(runScriptTokens[1:], options)...); err != nil {
 		return fmt.Errorf("failed to execute npm script: %w", err)
 	}
 	return nil
