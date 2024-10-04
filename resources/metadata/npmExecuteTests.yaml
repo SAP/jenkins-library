@@ -97,7 +97,7 @@ spec:
             type: e2e
   containers:
     - name: node
-      image: node:lts-buster
+      image: node:lts-bookworm
       env:
         - name: BASE_URL
           value: ${{params.baseUrl}}
