@@ -107,11 +107,11 @@ repositories:
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, logOutputManager)
+		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, &logOutputManager)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -155,11 +155,11 @@ repositories:
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, logOutputManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, &logOutputManager)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -201,11 +201,11 @@ repositories:
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, logOutputManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, &logOutputManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -272,11 +272,11 @@ repositories:
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, logOutputManager)
+		err = runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, &logOutputManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component '/DMO/REPO_A', branch 'branchA', commit 'ABCD1234' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -317,11 +317,11 @@ repositories:
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, logOutputManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, &logOutputManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -361,11 +361,11 @@ repositories:
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, logOutputManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, &logOutputManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of repository / software component 'testRepo1', branch 'testBranch1' failed on the ABAP system: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
@@ -404,11 +404,11 @@ repositories:
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, logOutputManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, &logOutputManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Could not read repositories: Could not find filename.yaml", err.Error(), "Expected different error message")
 		}
@@ -454,11 +454,11 @@ repositories:
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, logOutputManager)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, apiManager, &logOutputManager)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "The provided configuration is not allowed: It is not allowed to configure the parameters `repositories`and `repositoryName` at the same time", err.Error(), "Expected different error message")
 		}
@@ -519,11 +519,11 @@ func TestALreadyCloned(t *testing.T) {
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils, logOutputManager)
+		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils, &logOutputManager)
 		assert.NoError(t, err, "Did not expect error")
 	})
 
@@ -574,11 +574,11 @@ func TestALreadyCloned(t *testing.T) {
 			LogOutput:    config.LogOutput,
 			PiperStep:    "clone",
 			FileNameStep: "clone",
-			StepReports:  &reports,
+			StepReports:  reports,
 		}
 
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils, logOutputManager)
+		err := cloneSingleRepo(apiManager, autils.ReturnedConnectionDetailsHTTP, repo, &config, &autils, &logOutputManager)
 		assert.NoError(t, err, "Did not expect error")
 	})
 

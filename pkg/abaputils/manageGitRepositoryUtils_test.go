@@ -68,10 +68,10 @@ func TestPollEntity(t *testing.T) {
 		logOutputManager := LogOutputManager{
 			LogOutput:   "STANDARD",
 			PiperStep:   "pull",
-			StepReports: &reports,
+			StepReports: reports,
 		}
 
-		status, _ := PollEntity(api, 0, logOutputManager)
+		status, _ := PollEntity(api, 0, &logOutputManager)
 		assert.Equal(t, "S", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -107,10 +107,10 @@ func TestPollEntity(t *testing.T) {
 		logOutputManager := LogOutputManager{
 			LogOutput:   "STANDARD",
 			PiperStep:   "pull",
-			StepReports: &reports,
+			StepReports: reports,
 		}
 
-		status, _ := PollEntity(api, 0, logOutputManager)
+		status, _ := PollEntity(api, 0, &logOutputManager)
 		assert.Equal(t, "E", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
