@@ -897,9 +897,9 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 	}
 
 	severeVulnerabilities, nonSevereVulnerabilities := ws.CountSecurityVulnerabilities(&alerts, cvssSeverityLimit)
-	influx.whitesource_data.fields.minor_vulnerabilities = nonSevereVulnerabilities
-	influx.whitesource_data.fields.major_vulnerabilities = severeVulnerabilities
-	influx.whitesource_data.fields.vulnerabilities = nonSevereVulnerabilities + severeVulnerabilities
+	influx.whitesource_data.fields.minor_vulnerabilities += nonSevereVulnerabilities
+	influx.whitesource_data.fields.major_vulnerabilities += severeVulnerabilities
+	influx.whitesource_data.fields.vulnerabilities += (nonSevereVulnerabilities + severeVulnerabilities)
 	if nonSevereVulnerabilities > 0 {
 		log.Entry().Warnf("WARNING: %v Open Source Software Security vulnerabilities with "+
 			"CVSS score below threshold %.1f detected in project %s.", nonSevereVulnerabilities,
