@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -70,6 +71,7 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 	var commonPipelineEnvironment transportRequestUploadCTSCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTransportRequestUploadCTSCmd = &cobra.Command{
@@ -93,6 +95,7 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -149,8 +152,22 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						config.GlobalVaultClient(),
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			transportRequestUploadCTS(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
