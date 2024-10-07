@@ -35,29 +35,32 @@ func NewGcpPubsubClient(vaultClient piperConfig.VaultClient, projectNumber, pool
 }
 
 func (cl *pubsubClient) Publish(topic string, data []byte) error {
+	ctx := context.Background()
+	psClient, err := cl.getAuthorizedGCPClient(ctx)
+	if err != nil {
+		return errors.Wrap(err, "could not get authorized pubsub client token")
+	}
+
+	return cl.publish(ctx, psClient, topic, cl.orderingKey, data)
+}
+
+func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Client, error) {
 	oidcToken, err := cl.vaultClient.GetOIDCTokenByValidation(cl.oidcRoleId)
 	if err != nil {
-		return errors.Wrap(err, "could not get oidc token")
+		return nil, errors.Wrap(err, "could not get oidc token")
 	}
 
 	accessToken, err := getFederatedToken(cl.projectNumber, cl.pool, cl.provider, oidcToken)
 	if err != nil {
-		return errors.Wrap(err, "could not get federated token")
+		return nil, errors.Wrap(err, "could not get federated token")
 	}
-
-	return publish(cl.projectNumber, accessToken, topic, cl.orderingKey, data)
-}
-
-func publish(projectNumber, accessToken, topic, orderingKey string, data []byte) error {
-	ctx := context.Background()
 
 	staticTokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
-	pubsubClient, err := pubsub.NewClient(ctx, projectNumber, option.WithTokenSource(staticTokenSource))
-	if err != nil {
-		return errors.Wrap(err, "pubsub client creation failed")
-	}
+	return pubsub.NewClient(ctx, cl.projectNumber, option.WithTokenSource(staticTokenSource))
+}
 
-	t := pubsubClient.Topic(topic)
+func (cl *pubsubClient) publish(ctx context.Context, psClient *pubsub.Client, topic, orderingKey string, data []byte) error {
+	t := psClient.Topic(topic)
 	t.EnableMessageOrdering = true
 	publishResult := t.Publish(ctx, &pubsub.Message{Data: data, OrderingKey: orderingKey})
 
@@ -67,7 +70,7 @@ func publish(projectNumber, accessToken, topic, orderingKey string, data []byte)
 	if err != nil {
 		return errors.Wrap(err, "event publish failed")
 	}
-	log.Entry().Debugf("Event published with ID: %s", msgID)
 
+	log.Entry().Debugf("Event published with ID: %s", msgID)
 	return nil
 }
