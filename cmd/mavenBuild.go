@@ -61,7 +61,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	if config.CreateBOM {
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom", "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.4",
 			"-DincludeBomSerialNumber=true",
@@ -182,7 +182,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 						} else {
 							coordinate.BuildPath = filepath.Dir(match)
 							coordinate.URL = config.AltDeploymentRepositoryURL
-							coordinate.PURL = getPurlForThePomAndDeleteIndividualBom(match)
+							//coordinate.PURL = getPurlForThePomAndDeleteIndividualBom(match)
 							buildCoordinates = append(buildCoordinates, coordinate)
 						}
 					}
