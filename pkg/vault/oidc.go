@@ -81,7 +81,7 @@ func (v Client) GetOIDCTokenByValidation(roleID string) (string, error) {
 
 	token, err := v.getOIDCToken(roleID)
 	if token == "" || err != nil {
-		return "", errors.Wrap(err, "failed to get OIDC token")
+		return "", err
 	}
 
 	return token, nil

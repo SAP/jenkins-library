@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -230,6 +231,19 @@ func TestStepCommand() *cobra.Command {
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						config.GlobalVaultClient(),
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						piperOsCmd.GeneralConfig.CorrelationID,
+						piperOsCmd.GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
