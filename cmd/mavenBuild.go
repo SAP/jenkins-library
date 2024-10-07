@@ -84,6 +84,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		goals = append(goals, "verify")
 	} else {
 		goals = append(goals, "install")
+		goals = append(goals, "-U")
 	}
 
 	mavenOptions := maven.ExecuteOptions{
