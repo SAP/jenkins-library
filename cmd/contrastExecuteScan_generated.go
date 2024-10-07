@@ -78,6 +78,7 @@ func ContrastExecuteScanCommand() *cobra.Command {
 	var reports contrastExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createContrastExecuteScanCmd = &cobra.Command{
@@ -100,6 +101,7 @@ func ContrastExecuteScanCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.UserAPIKey)
 			log.RegisterSecret(stepConfig.ServiceKey)
 			log.RegisterSecret(stepConfig.Username)
@@ -172,6 +174,7 @@ func ContrastExecuteScanCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			contrastExecuteScan(stepConfig, &stepTelemetryData)

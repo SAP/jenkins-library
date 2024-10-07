@@ -31,6 +31,7 @@ func JsonApplyPatchCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createJsonApplyPatchCmd = &cobra.Command{
@@ -54,6 +55,7 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -122,6 +124,7 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			jsonApplyPatch(stepConfig, &stepTelemetryData)

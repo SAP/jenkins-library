@@ -130,6 +130,7 @@ func GolangBuildCommand() *cobra.Command {
 	var reports golangBuildReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createGolangBuildCmd = &cobra.Command{
@@ -157,6 +158,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.TargetRepositoryPassword)
 			log.RegisterSecret(stepConfig.TargetRepositoryUser)
 			log.RegisterSecret(stepConfig.PrivateModulesGitToken)
@@ -230,6 +232,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			golangBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

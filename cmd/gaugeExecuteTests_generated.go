@@ -111,6 +111,7 @@ func GaugeExecuteTestsCommand() *cobra.Command {
 	var reports gaugeExecuteTestsReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createGaugeExecuteTestsCmd = &cobra.Command{
@@ -143,6 +144,7 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -213,6 +215,7 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			gaugeExecuteTests(stepConfig, &stepTelemetryData, &influx)

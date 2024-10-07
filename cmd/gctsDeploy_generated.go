@@ -44,6 +44,7 @@ func GctsDeployCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createGctsDeployCmd = &cobra.Command{
@@ -70,6 +71,7 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -140,6 +142,7 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			gctsDeploy(stepConfig, &stepTelemetryData)

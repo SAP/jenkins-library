@@ -38,6 +38,7 @@ func CredentialdiggerScanCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createCredentialdiggerScanCmd = &cobra.Command{
@@ -63,6 +64,7 @@ It supports several scan flavors, i.e., full scans of a repo, scan of a snapshot
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Token)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -132,6 +134,7 @@ It supports several scan flavors, i.e., full scans of a repo, scan of a snapshot
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			credentialdiggerScan(stepConfig, &stepTelemetryData)

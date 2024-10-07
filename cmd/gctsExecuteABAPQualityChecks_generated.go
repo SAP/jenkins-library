@@ -43,6 +43,7 @@ func GctsExecuteABAPQualityChecksCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createGctsExecuteABAPQualityChecksCmd = &cobra.Command{
@@ -72,6 +73,7 @@ You can use this step as of SAP S/4HANA 2020 with SAP Note [3159798](https://lau
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -142,6 +144,7 @@ You can use this step as of SAP S/4HANA 2020 with SAP Note [3159798](https://lau
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			gctsExecuteABAPQualityChecks(stepConfig, &stepTelemetryData)

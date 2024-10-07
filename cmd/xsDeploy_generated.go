@@ -70,6 +70,7 @@ func XsDeployCommand() *cobra.Command {
 	var commonPipelineEnvironment xsDeployCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createXsDeployCmd = &cobra.Command{
@@ -92,6 +93,7 @@ func XsDeployCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -163,6 +165,7 @@ func XsDeployCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			xsDeploy(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

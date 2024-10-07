@@ -235,6 +235,7 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 	var reports checkmarxExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createCheckmarxExecuteScanCmd = &cobra.Command{
@@ -267,6 +268,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.Username)
@@ -340,6 +342,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			checkmarxExecuteScan(stepConfig, &stepTelemetryData, &influx)

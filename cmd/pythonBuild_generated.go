@@ -68,6 +68,7 @@ func PythonBuildCommand() *cobra.Command {
 	var commonPipelineEnvironment pythonBuildCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createPythonBuildCmd = &cobra.Command{
@@ -100,6 +101,7 @@ and are exposed are environment variables that must be present in the environmen
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.TargetRepositoryPassword)
 			log.RegisterSecret(stepConfig.TargetRepositoryUser)
 
@@ -171,6 +173,7 @@ and are exposed are environment variables that must be present in the environmen
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			pythonBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

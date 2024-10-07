@@ -151,6 +151,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 	var influx sonarExecuteScanInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createSonarExecuteScanCmd = &cobra.Command{
@@ -173,6 +174,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Token)
 			log.RegisterSecret(stepConfig.GithubToken)
 
@@ -245,6 +247,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			sonarExecuteScan(stepConfig, &stepTelemetryData, &influx)

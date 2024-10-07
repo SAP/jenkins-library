@@ -61,6 +61,7 @@ func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 	var commonPipelineEnvironment integrationArtifactGetServiceEndpointCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createIntegrationArtifactGetServiceEndpointCmd = &cobra.Command{
@@ -83,6 +84,7 @@ func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.APIServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -153,6 +155,7 @@ func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			integrationArtifactGetServiceEndpoint(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

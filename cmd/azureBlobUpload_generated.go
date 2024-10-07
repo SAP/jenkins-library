@@ -30,6 +30,7 @@ func AzureBlobUploadCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createAzureBlobUploadCmd = &cobra.Command{
@@ -53,6 +54,7 @@ In case a file is uploaded that is already contained in the storage, it will be 
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.JSONCredentialsAzure)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -122,6 +124,7 @@ In case a file is uploaded that is already contained in the storage, it will be 
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			azureBlobUpload(stepConfig, &stepTelemetryData)

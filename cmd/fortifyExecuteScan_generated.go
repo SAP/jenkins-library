@@ -207,6 +207,7 @@ func FortifyExecuteScanCommand() *cobra.Command {
 	var reports fortifyExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createFortifyExecuteScanCmd = &cobra.Command{
@@ -240,6 +241,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.AuthToken)
 			log.RegisterSecret(stepConfig.GithubToken)
 
@@ -312,6 +314,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			fortifyExecuteScan(stepConfig, &stepTelemetryData, &influx)

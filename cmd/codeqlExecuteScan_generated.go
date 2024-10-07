@@ -155,6 +155,7 @@ func CodeqlExecuteScanCommand() *cobra.Command {
 	var reports codeqlExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createCodeqlExecuteScanCmd = &cobra.Command{
@@ -180,6 +181,7 @@ and Java plus Maven.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.GithubToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -251,6 +253,7 @@ and Java plus Maven.`,
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			codeqlExecuteScan(stepConfig, &stepTelemetryData, &influx)

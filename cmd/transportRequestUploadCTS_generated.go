@@ -71,6 +71,7 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 	var commonPipelineEnvironment transportRequestUploadCTSCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTransportRequestUploadCTSCmd = &cobra.Command{
@@ -94,6 +95,7 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -165,6 +167,7 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			transportRequestUploadCTS(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

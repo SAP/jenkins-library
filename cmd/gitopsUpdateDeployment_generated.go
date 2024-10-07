@@ -43,6 +43,7 @@ func GitopsUpdateDeploymentCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createGitopsUpdateDeploymentCmd = &cobra.Command{
@@ -73,6 +74,7 @@ For *kustomize* the ` + "`" + `images` + "`" + ` section will be update with the
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -143,6 +145,7 @@ For *kustomize* the ` + "`" + `images` + "`" + ` section will be update with the
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			gitopsUpdateDeployment(stepConfig, &stepTelemetryData)

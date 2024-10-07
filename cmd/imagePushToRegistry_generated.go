@@ -46,6 +46,7 @@ func ImagePushToRegistryCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createImagePushToRegistryCmd = &cobra.Command{
@@ -72,6 +73,7 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.SourceRegistryUser)
 			log.RegisterSecret(stepConfig.SourceRegistryPassword)
 			log.RegisterSecret(stepConfig.TargetRegistryUser)
@@ -145,6 +147,7 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			imagePushToRegistry(stepConfig, &stepTelemetryData)

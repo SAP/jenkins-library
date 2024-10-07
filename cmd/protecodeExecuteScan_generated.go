@@ -150,6 +150,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 	var reports protecodeExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createProtecodeExecuteScanCmd = &cobra.Command{
@@ -176,6 +177,7 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
@@ -252,6 +254,7 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			protecodeExecuteScan(stepConfig, &stepTelemetryData, &influx)

@@ -41,6 +41,7 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createAbapEnvironmentRunATCCheckCmd = &cobra.Command{
@@ -70,6 +71,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -140,6 +142,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapEnvironmentRunATCCheck(stepConfig, &stepTelemetryData)

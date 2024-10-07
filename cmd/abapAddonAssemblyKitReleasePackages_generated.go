@@ -68,6 +68,7 @@ func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
 	var commonPipelineEnvironment abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createAbapAddonAssemblyKitReleasePackagesCmd = &cobra.Command{
@@ -95,6 +96,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificateFile)
 			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificatePass)
 			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitOriginHash)
@@ -167,6 +169,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapAddonAssemblyKitReleasePackages(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

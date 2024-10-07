@@ -108,6 +108,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 	var influx cloudFoundryDeployInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createCloudFoundryDeployCmd = &cobra.Command{
@@ -130,6 +131,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.DockerPassword)
 			log.RegisterSecret(stepConfig.DockerUsername)
 			log.RegisterSecret(stepConfig.Password)
@@ -203,6 +205,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			cloudFoundryDeploy(stepConfig, &stepTelemetryData, &influx)

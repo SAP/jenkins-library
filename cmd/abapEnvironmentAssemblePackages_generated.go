@@ -71,6 +71,7 @@ func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 	var commonPipelineEnvironment abapEnvironmentAssemblePackagesCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
@@ -94,6 +95,7 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -165,6 +167,7 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapEnvironmentAssemblePackages(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

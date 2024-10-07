@@ -185,6 +185,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 	var reports detectExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
+	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createDetectExecuteScanCmd = &cobra.Command{
@@ -209,6 +210,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Token)
 			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.PrivateModulesGitToken)
@@ -282,6 +284,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				}
 			}
 			log.DeferExitHandler(handler)
+			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			detectExecuteScan(stepConfig, &stepTelemetryData, &influx)
