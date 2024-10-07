@@ -21,6 +21,16 @@ type Client struct {
 	config  *Config
 }
 
+var globalClient *Client
+
+func SetGlobalClient(client *Client) {
+	globalClient = client
+}
+
+func GetGlobalClient() *Client {
+	return globalClient
+}
+
 // Config contains the vault client configuration
 type Config struct {
 	*api.Config

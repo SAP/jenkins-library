@@ -18,9 +18,9 @@ const (
 	gcpPubsubTokenExpiryKey = "PIPER_gcpPubsubTokenExpiresAt"
 )
 
-// GetFederatedToken tries to retrieve cached token from env variables, otherwise it will exchange
+// getFederatedToken tries to retrieve cached token from env variables, otherwise it will exchange
 // OIDC identity token to access token and cache them in env variables
-func GetFederatedToken(projectNumber, pool, provider, oidcToken string) (string, error) {
+func getFederatedToken(projectNumber, pool, provider, oidcToken string) (string, error) {
 	cachedToken := os.Getenv(gcpPubsubTokenKey)
 	cachedExpiresAt := os.Getenv(gcpPubsubTokenExpiryKey)
 	if tokenIsValid(cachedToken, cachedExpiresAt) {

@@ -3,39 +3,49 @@ package gcp
 import (
 	"cloud.google.com/go/pubsub"
 	"context"
+	piperConfig "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
-	"os"
 )
 
-type PubsubClient struct {
+type PubsubClient interface {
+	Publish(topic string, data []byte) error
+}
+
+type pubsubClient struct {
+	vaultClient   piperConfig.VaultClient
 	projectNumber string
 	pool          string
 	provider      string
-	topic         string
 	orderingKey   string
+	oidcRoleId    string
 }
 
-func NewGcpPubsubClient(projectNumber, pool, provider, topic, orderingKey string) *PubsubClient {
-	return &PubsubClient{
+func NewGcpPubsubClient(vaultClient piperConfig.VaultClient, projectNumber, pool, provider, orderingKey, oidcRoleId string) PubsubClient {
+	return &pubsubClient{
+		vaultClient:   vaultClient,
 		projectNumber: projectNumber,
 		pool:          pool,
 		provider:      provider,
-		topic:         topic,
 		orderingKey:   orderingKey,
+		oidcRoleId:    oidcRoleId,
 	}
 }
 
-func (cl *PubsubClient) Publish(data []byte) error {
-	oidcToken := os.Getenv("PIPER_OIDCIdentityToken")
-	accessToken, err := GetFederatedToken(cl.projectNumber, cl.pool, cl.provider, oidcToken)
+func (cl *pubsubClient) Publish(topic string, data []byte) error {
+	oidcToken, err := cl.vaultClient.GetOIDCTokenByValidation(cl.oidcRoleId)
+	if err != nil {
+		return errors.Wrap(err, "could not get oidc token")
+	}
+
+	accessToken, err := getFederatedToken(cl.projectNumber, cl.pool, cl.provider, oidcToken)
 	if err != nil {
 		return errors.Wrap(err, "could not get federated token")
 	}
 
-	return publish(cl.projectNumber, accessToken, cl.topic, cl.orderingKey, data)
+	return publish(cl.projectNumber, accessToken, topic, cl.orderingKey, data)
 }
 
 func publish(projectNumber, accessToken, topic, orderingKey string, data []byte) error {

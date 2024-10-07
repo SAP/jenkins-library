@@ -83,6 +83,12 @@ type VaultClient interface {
 	GetOIDCTokenByValidation(string) (string, error)
 }
 
+var globalClient *vault.Client
+
+func GlobalVaultClient() VaultClient {
+	return globalClient
+}
+
 func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
 	for _, config := range configs {
 		s.mixIn(config, vaultFilter, StepData{})
@@ -108,7 +114,7 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 		namespace = config["vaultNamespace"].(string)
 		log.Entry().Debugf("  with namespace %s", namespace)
 	}
-	var client VaultClient
+	var client vault.Client
 	var err error
 	clientConfig := &vault.Config{Config: &api.Config{Address: address}, Namespace: namespace}
 	if creds.VaultToken != "" {
@@ -122,6 +128,10 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 		log.Entry().Info("  failed")
 		return nil, err
 	}
+
+	// Set global vault client for usage in steps
+	globalClient = &client
+
 	log.Entry().Info("  succeeded")
 	return client, nil
 }

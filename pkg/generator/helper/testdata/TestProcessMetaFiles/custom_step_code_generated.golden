@@ -16,7 +16,6 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -231,18 +230,6 @@ func TestStepCommand() *cobra.Command {
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
-				}
-				if piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Topic,
-						piperOsCmd.GeneralConfig.CorrelationID,
-					).Publish(telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
-					}
 				}
 			}
 			log.DeferExitHandler(handler)
