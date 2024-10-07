@@ -270,13 +270,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
 			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
-
-			// This will get OIDC token from Vault and expose it to envvar for further usage by step.
-			// Currently, it is used only for GCP event publishing
-			if err := exposeOIDCTokenToEnv(vaultClient, stepConfig.HookConfig); err != nil {
-				log.Entry().WithError(err).Debug("OIDC token initialization failed")
-				log.Entry().Debug("GCP event publishing disabled")
-			}
 		}
 	}
 
