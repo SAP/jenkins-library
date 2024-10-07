@@ -65,7 +65,7 @@ func ConfigCommand() *cobra.Command {
 		OpenFile: config.OpenPiperFile,
 	})
 
-	createConfigCmd := &cobra.Command{
+	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -76,7 +76,7 @@ func ConfigCommand() *cobra.Command {
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
-			if err := generateConfigWrapper(cmd); err != nil {
+			if err := generateConfigWrapper(); err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
 			}
@@ -152,10 +152,6 @@ func GetStageConfig() (config.StepConfig, error) {
 }
 
 func getConfig() (config.StepConfig, error) {
-	return getConfigWithFlagValues(nil)
-}
-
-func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 	var err error
@@ -212,16 +208,13 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 			}
 		}
 
+		var flags map[string]interface{}
+
 		if configOptions.ContextConfig {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
 
-		var flagValues map[string]interface{}
-		if cmd != nil {
-			flagValues = config.AvailableFlagValues(cmd, &paramFilter)
-		}
-
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
+		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting step config failed")
 		}
@@ -234,7 +227,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 	return stepConfig, nil
 }
 
-func generateConfigWrapper(cmd *cobra.Command) error {
+func generateConfigWrapper() error {
 	var formatter func(interface{}) (string, error)
 	switch strings.ToLower(configOptions.Output) {
 	case "yaml", "yml":
@@ -244,13 +237,13 @@ func generateConfigWrapper(cmd *cobra.Command) error {
 	default:
 		formatter = config.GetJSON
 	}
-	return GenerateConfig(cmd, formatter)
+	return GenerateConfig(formatter)
 }
 
-func GenerateConfig(cmd *cobra.Command, formatter func(interface{}) (string, error)) error {
+func GenerateConfig(formatter func(interface{}) (string, error)) error {
 	utils := newGetConfigUtilsUtils()
 
-	stepConfig, err := getConfigWithFlagValues(cmd)
+	stepConfig, err := getConfig()
 	if err != nil {
 		return err
 	}
@@ -261,7 +254,7 @@ func GenerateConfig(cmd *cobra.Command, formatter func(interface{}) (string, err
 	}
 
 	if len(configOptions.OutputFile) > 0 {
-		if err := utils.FileWrite(configOptions.OutputFile, []byte(myConfig), 0o666); err != nil {
+		if err := utils.FileWrite(configOptions.OutputFile, []byte(myConfig), 0666); err != nil {
 			return fmt.Errorf("failed to write output file %v: %w", configOptions.OutputFile, err)
 		}
 		return nil
@@ -272,6 +265,7 @@ func GenerateConfig(cmd *cobra.Command, formatter func(interface{}) (string, err
 }
 
 func addConfigFlags(cmd *cobra.Command) {
+
 	// ToDo: support more output options, like https://kubernetes.io/docs/reference/kubectl/overview/#formatting-output
 	cmd.Flags().StringVar(&configOptions.Output, "output", "json", "Defines the output format")
 	cmd.Flags().StringVar(&configOptions.OutputFile, "outputFile", "", "Defines a file path. f set, the output will be written to the defines file")
@@ -282,6 +276,7 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&configOptions.StepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
 	cmd.Flags().StringVar(&configOptions.StepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.ContextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
+
 }
 
 func defaultsAndFilters(metadata *config.StepData, stepName string) ([]io.ReadCloser, config.StepFilters, error) {
@@ -321,7 +316,7 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			}
 			if _, err := os.Stat(filepath.Dir(paramPath)); errors.Is(err, os.ErrNotExist) {
 				log.Entry().Debugf("Creating directory: %v", filepath.Dir(paramPath))
-				_ = os.MkdirAll(filepath.Dir(paramPath), 0o777)
+				_ = os.MkdirAll(filepath.Dir(paramPath), 0777)
 			}
 		}
 	}
@@ -337,7 +332,7 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 	for _, dir := range stepOutputDirectories {
 		if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
 			log.Entry().Debugf("Creating directory: %v", dir)
-			_ = os.MkdirAll(dir, 0o777)
+			_ = os.MkdirAll(dir, 0777)
 		}
 	}
 }

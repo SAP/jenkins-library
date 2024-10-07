@@ -218,8 +218,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// merge parameters provided via env vars
 	stepConfig.mixIn(envValues(filters.All), filters.All, metadata)
 
-	vaultParams := map[string]interface{}{}
-
 	// if parameters are provided in JSON format merge them
 	if len(paramJSON) != 0 {
 		var params map[string]interface{}
@@ -230,16 +228,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			// apply aliases
 			for _, p := range parameters {
 				params = setParamValueFromAlias(stepName, params, filters.Parameters, p.Name, p.Aliases)
-				vaultParams = setParamValueFromAlias(stepName, vaultParams, vaultFilter, p.Name, p.Aliases)
 			}
 			for _, s := range secrets {
 				params = setParamValueFromAlias(stepName, params, filters.Parameters, s.Name, s.Aliases)
-			}
-			// retrieve Vault config if provided
-			for _, v := range vaultFilter {
-				if params[v] != nil {
-					vaultParams[v] = params[v]
-				}
 			}
 
 			stepConfig.mixIn(params, filters.Parameters, metadata)
@@ -248,13 +239,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// merge command line flags
 	if flagValues != nil {
-		stepConfig.mixIn(flagValues, filters.Parameters, metadata)
-		// retrieve Vault config from flags if provided
-		for _, v := range vaultFilter {
-			if flagValues[v] != nil {
-				vaultParams[v] = flagValues[v]
-			}
-		}
+		flagFilter := append(filters.Parameters, vaultFilter...)
+		stepConfig.mixIn(flagValues, flagFilter, metadata)
 	}
 
 	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
@@ -263,7 +249,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
 
-	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName], vaultParams)
+	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName])
 
 	reportingConfig, err := cloneConfig(c)
 	if err != nil {
@@ -531,7 +517,7 @@ func merge(base, overlay map[string]interface{}, metadata StepData) map[string]i
 				tVal := reflect.TypeOf(value).String()
 				if v.Name == key && tVal != v.Type {
 					if tVal == "[]interface {}" && v.Type == "[]string" {
-						// json Unmarshal genertes arrays of interface{} for string arrays
+						//json Unmarshal genertes arrays of interface{} for string arrays
 						for _, interfaceValue := range value.([]interface{}) {
 							arrayValueType := reflect.TypeOf(interfaceValue).String()
 							if arrayValueType != "string" {
