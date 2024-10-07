@@ -518,7 +518,7 @@ func executeAUnitTest(config *gctsExecuteABAPQualityChecksOptions, client piperh
 
 		switch object.Type {
 		case "CLAS":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + url.QueryEscape(object.Object) + `"/>`
 		case "DEVC":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/repository/informationsystem/virtualfolders?selection=package%3a` + url.QueryEscape(object.Object) + `"/>`
 
@@ -757,7 +757,7 @@ func executeATCCheck(config *gctsExecuteABAPQualityChecksOptions, client piperht
 		switch object.Type {
 
 		case "CLAS":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + url.QueryEscape(object.Object) + `"/>`
 		case "INTF":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/interfaces/` + object.Object + `"/>`
 		case "DEVC":

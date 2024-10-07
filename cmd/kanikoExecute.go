@@ -2,19 +2,19 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/syft"
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -54,8 +54,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
 		log.Entry().Warning("Parameter containerBuildOptions is deprecated, please use buildOptions instead.")
-		telemetryData.Custom1Label = "ContainerBuildOptions"
-		telemetryData.Custom1 = config.ContainerBuildOptions
+		telemetryData.ContainerBuildOptions = config.ContainerBuildOptions
 	}
 
 	// prepare kaniko container for running with proper Docker config.json and custom certificates
@@ -274,8 +273,11 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			}
 		}
 
+		// Docker image tags don't allow plus signs in tags, thus replacing with dash
+		containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+
 		// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
-		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, config.ContainerImageTag)
+		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
 		commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 

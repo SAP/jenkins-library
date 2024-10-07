@@ -18,11 +18,13 @@ import (
 )
 
 type abapAddonAssemblyKitCheckCVsOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitCertificateFile string `json:"abapAddonAssemblyKitCertificateFile,omitempty"`
+	AbapAddonAssemblyKitCertificatePass string `json:"abapAddonAssemblyKitCertificatePass,omitempty"`
+	AbapAddonAssemblyKitEndpoint        string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	Username                            string `json:"username,omitempty"`
+	Password                            string `json:"password,omitempty"`
+	AddonDescriptorFileName             string `json:"addonDescriptorFileName,omitempty"`
+	AddonDescriptor                     string `json:"addonDescriptor,omitempty"`
 }
 
 type abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment struct {
@@ -71,6 +73,8 @@ func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 		Long: `This steps takes the list of ABAP Software Component Versions(repositories) from the addonDescriptor configuration file specified via addonDescriptorFileName (e.g. addon.yml) and checks by calling AAKaaS whether they exist or are a valid successor of an existing Software Component Version.
 It resolves the dotted version string into version, support package level and patch level and writes it to the addonDescriptor structure in the Piper commonPipelineEnvironment for usage of subsequent pipeline steps.
 <br />
+For logon you can either provide a credential with basic authorization (username and password) or two secret text credentials containing the technical s-users certificate (see note [2805811](https://me.sap.com/notes/2805811) for download) as base64 encoded string and the password to decrypt the file
+<br />
 For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -88,6 +92,8 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificateFile)
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificatePass)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -96,7 +102,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -147,7 +153,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapAddonAssemblyKitCheckCVs(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -159,6 +165,8 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 }
 
 func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCheckCVsOptions) {
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitCertificateFile, "abapAddonAssemblyKitCertificateFile", os.Getenv("PIPER_abapAddonAssemblyKitCertificateFile"), "base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitCertificatePass, "abapAddonAssemblyKitCertificatePass", os.Getenv("PIPER_abapAddonAssemblyKitCertificatePass"), "password to decrypt the certificate file")
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
@@ -166,8 +174,6 @@ func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAd
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
-	cmd.MarkFlagRequired("username")
-	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("addonDescriptorFileName")
 }
 
@@ -183,8 +189,40 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "abapAddonAssemblyKitCredentialsId", Description: "CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCertificateFileCredentialsId", Description: "Jenkins secret text credential ID containing the base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCertificatePassCredentialsId", Description: "Jenkins secret text credential ID containing the password to decrypt the certificate file stored in abapAddonAssemblyKitCertificateFileCredentialsId", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name: "abapAddonAssemblyKitCertificateFile",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapAddonAssemblyKitCertificateFileCredentialsId",
+								Param: "abapAddonAssemblyKitCertificateFile",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_abapAddonAssemblyKitCertificateFile"),
+					},
+					{
+						Name: "abapAddonAssemblyKitCertificatePass",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapAddonAssemblyKitCertificatePassCredentialsId",
+								Param: "abapAddonAssemblyKitCertificatePass",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_abapAddonAssemblyKitCertificatePass"),
+					},
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
@@ -199,7 +237,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_username"),
 					},
@@ -208,7 +246,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_password"),
 					},

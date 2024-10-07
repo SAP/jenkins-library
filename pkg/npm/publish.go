@@ -11,6 +11,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 type npmMinimalPackageDescriptor struct {
@@ -31,7 +32,7 @@ func (pd *npmMinimalPackageDescriptor) Scope() string {
 }
 
 // PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
-func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool) error {
+func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
 	for _, packageJSON := range packageJSONFiles {
 		log.Entry().Infof("triggering publish for %s", packageJSON)
 
@@ -43,7 +44,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
 		}
 
-		err = exec.publish(packageJSON, registry, username, password, packBeforePublish)
+		err = exec.publish(packageJSON, registry, username, password, packBeforePublish, buildCoordinates)
 		if err != nil {
 			return err
 		}
@@ -52,13 +53,12 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 }
 
 // publish executes npm publish for package.json
-func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool) error {
+func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
 	execRunner := exec.Utils.GetExecRunner()
 
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 
 	scope, err := exec.readPackageScope(packageJSON)
-
 	if err != nil {
 		return errors.Wrapf(err, "error reading package scope from %s", packageJSON)
 	}
@@ -82,6 +82,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	// temporary installation folder used to install BOM to be ignored
 	log.Entry().Debug("adding tmp to npmignore")
 	npmignore.Add("tmp/")
+	log.Entry().Debug("adding sboms to npmignore")
+	npmignore.Add("**/bom*.xml")
 
 	npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
@@ -201,12 +203,46 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 	}
 
+	options := versioning.Options{}
+	var utils versioning.Utils
+
+	artifact, err := versioning.GetArtifact("npm", packageJSON, &options, utils)
+	if err != nil {
+		log.Entry().Warnf("unable to get artifact metdata : %v", err)
+	} else {
+		coordinate, err := artifact.GetCoordinates()
+		if err != nil {
+			log.Entry().Warnf("unable to get artifact coordinates : %v", err)
+		} else {
+			coordinate.BuildPath = filepath.Dir(packageJSON)
+			coordinate.URL = registry
+			coordinate.Packaging = "tgz"
+			coordinate.PURL = getPurl(packageJSON)
+
+			*buildCoordinates = append(*buildCoordinates, coordinate)
+		}
+	}
+
 	return nil
+}
+
+func getPurl(packageJSON string) string {
+	expectedBomFilePath := filepath.Join(filepath.Dir(packageJSON) + "/" + npmBomFilename)
+	exists, _ := CredentialUtils.FileExists(expectedBomFilePath)
+	if !exists {
+		log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", expectedBomFilePath)
+		return ""
+	}
+	bom, err := CredentialUtils.GetBom(expectedBomFilePath)
+	if err != nil {
+		log.Entry().Warnf("unable to get bom metdata : %v", err)
+		return ""
+	}
+	return bom.Metadata.Component.Purl
 }
 
 func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
 	b, err := exec.Utils.FileRead(packageJSON)
-
 	if err != nil {
 		return "", err
 	}

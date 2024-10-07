@@ -90,7 +90,6 @@ boolean isInsidePod(Script script) {
 }
 
 def unstash(name, msg = "Unstash failed:") {
-
     def unstashedContent = []
     try {
         echo "Unstash content: ${name}"
@@ -98,7 +97,7 @@ def unstash(name, msg = "Unstash failed:") {
         unstashedContent += name
     } catch (e) {
         echo "$msg $name (${e.getMessage()})"
-        if (e.getMessage().contains("JNLP4-connect")) {
+        if (e.getMessage() != null && e.getMessage().contains("JNLP4-connect")) {
             sleep(3) // Wait 3 seconds in case it has been a network hiccup
             try {
                 echo "[Retry JNLP4-connect issue] Unstashing content: ${name}"
@@ -135,12 +134,7 @@ def generateSha1(input) {
 
 void pushToSWA(Map parameters, Map config) {
     try {
-        parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
-        parameters.eventType = parameters.get('eventType') ?: 'library-os'
-        parameters.jobUrlSha1 = generateSha1(env.JOB_URL ?: '')
-        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL ?: '')
-
-        Telemetry.notify(this, config, parameters)
+        echo "SAP web analytics is disabled. Please remove any remaining use of 'pushToSWA' function!"
     } catch (ignore) {
         // some error occured in telemetry reporting. This should not break anything though.
         echo "[${parameters.step}] Telemetry Report failed: ${ignore.getMessage()}"

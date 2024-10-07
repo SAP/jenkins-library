@@ -866,7 +866,7 @@ func (v gitUtilsMock) PushChangesToRepository(_ string, _ string, force *bool, c
 	return nil
 }
 
-func (v *gitUtilsMock) PlainClone(_, _, _, directory string, caCerts []byte) error {
+func (v *gitUtilsMock) PlainClone(_, _, _, _, directory string, caCerts []byte) error {
 	if v.skipClone {
 		return nil
 	}

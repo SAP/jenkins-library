@@ -227,6 +227,23 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: enableSetTimestamp
+        type: bool
+        description: Enables setting the timestamp in the `mta.yaml` when it contains `${timestamp}`. Disable this when you want the MTA Deploy Service to do this instead.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: true
   outputs:
     resources:
       - name: commonPipelineEnvironment

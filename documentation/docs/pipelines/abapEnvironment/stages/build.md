@@ -35,7 +35,7 @@ general:
   cfSpace: 'mySpaceBld'
   cfCredentialsId: 'cfAuthentification'
   cfServiceInstance: 'bld_system'
-  cfServiceKeyName: 'JENKINS_SAP_COM_0510'
+  cfServiceKeyName: 'JENKINS_SAP_COM_0948'
 stages:
   Build:
     cfServiceKeyName: 'JENKINS_SAP_COM_0582'

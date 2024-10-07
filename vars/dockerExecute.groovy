@@ -168,14 +168,6 @@ void call(Map parameters = [:], body) {
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null,
-            stepParamKey2: 'kubernetes',
-            stepParam2: isKubernetes()
-        ], config)
-
         if (isKubernetes() && config.dockerImage) {
             List dockerEnvVars = []
             config.dockerEnvVars?.each { key, value ->
@@ -183,10 +175,11 @@ void call(Map parameters = [:], body) {
             }
 
             def securityContext = securityContextFromOptions(config.dockerOptions)
+            def containerMountPath = containerMountPathFromVolumeBind(config.dockerVolumeBind)
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
                     withEnv(dockerEnvVars) {
-                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container. Docker image: ${config.dockerImage}"
                         body()
                         sh "chown -R 1000:1000 ."
                     }
@@ -208,6 +201,7 @@ void call(Map parameters = [:], body) {
                     stashContent: config.stashContent,
                     stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                     securityContext: securityContext,
+                    containerMountPath: containerMountPath,
                 ]
 
                 if (config.sidecarImage) {
@@ -222,7 +216,7 @@ void call(Map parameters = [:], body) {
                 }
 
                 dockerExecuteOnKubernetes(dockerExecuteOnKubernetesParams) {
-                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
+                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod. Docker image: ${config.dockerImage}"
                     body()
                 }
             }
@@ -377,6 +371,17 @@ def securityContextFromOptions(dockerOptions) {
     }
 
     return securityContext
+}
+
+/*
+ * Picks the first volumeBind option and translates it into containerMountPath, currently only one fix volume is supported
+ */
+@NonCPS
+def containerMountPathFromVolumeBind(dockerVolumeBind) {
+    if (dockerVolumeBind) {
+        return dockerVolumeBind[0].split(":")[1]
+    }
+    return ""
 }
 
 boolean isContainerDefined(config) {

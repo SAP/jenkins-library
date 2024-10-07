@@ -111,12 +111,6 @@ void call(parameters = [:]) {
             // for the following parameters we expect a value provided from outside
             .withMandatoryProperty('changeManagement/endpoint')
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
-
         def changeId = getChangeDocumentId(script, configuration)
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
