@@ -82,10 +82,11 @@ type VaultClient interface {
 	GetOIDCTokenByValidation(string) (string, error)
 }
 
-var globalClient *vault.Client
+// globalVaultClient is supposed to be used in the steps code.
+var globalVaultClient *vault.Client
 
 func GlobalVaultClient() VaultClient {
-	return globalClient
+	return globalVaultClient
 }
 
 func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
@@ -129,7 +130,7 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 	}
 
 	// Set global vault client for usage in steps
-	globalClient = &client
+	globalVaultClient = &client
 
 	log.Entry().Info("  succeeded")
 	return client, nil
