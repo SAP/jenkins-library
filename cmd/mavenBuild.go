@@ -56,6 +56,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	var goals []string
 
 	if config.Flatten {
+		goals = append(goals, "-U")
 		goals = append(goals, "flatten:flatten")
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
