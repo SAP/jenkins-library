@@ -63,7 +63,7 @@ func TestMavenBuild(t *testing.T) {
 	t.Run("mavenBuild include install and deploy when publish is true", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
-		config := mavenBuildOptions{Publish: true, Verify: false}
+		config := mavenBuildOptions{Publish: true, Verify: false, AltDeploymentRepositoryID: "ID", AltDeploymentRepositoryURL: "http://sampleRepo.com", AltDeploymentRepositoryUser: "user", AltDeploymentRepositoryPassword: "pass"}
 
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
@@ -78,7 +78,7 @@ func TestMavenBuild(t *testing.T) {
 	t.Run("mavenBuild with deploy must skip build, install and test", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
-		config := mavenBuildOptions{Publish: true, Verify: false, DeployFlags: []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}}
+		config := mavenBuildOptions{Publish: true, Verify: false, DeployFlags: []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}, AltDeploymentRepositoryID: "ID", AltDeploymentRepositoryURL: "http://sampleRepo.com", AltDeploymentRepositoryUser: "user", AltDeploymentRepositoryPassword: "pass"}
 
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
@@ -93,7 +93,7 @@ func TestMavenBuild(t *testing.T) {
 	t.Run("mavenBuild with deploy must include alt repo id and url when passed as parameter", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
-		config := mavenBuildOptions{Publish: true, Verify: false, AltDeploymentRepositoryID: "ID", AltDeploymentRepositoryURL: "http://sampleRepo.com"}
+		config := mavenBuildOptions{Publish: true, Verify: false, AltDeploymentRepositoryID: "ID", AltDeploymentRepositoryURL: "http://sampleRepo.com", AltDeploymentRepositoryUser: "user", AltDeploymentRepositoryPassword: "pass"}
 
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
@@ -106,7 +106,7 @@ func TestMavenBuild(t *testing.T) {
 	t.Run("mavenBuild should not create build artifacts metadata when CreateBuildArtifactsMetadata is false and Publish is true", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 		mockedUtils.AddFile("pom.xml", []byte{})
-		config := mavenBuildOptions{CreateBuildArtifactsMetadata: false, Publish: true}
+		config := mavenBuildOptions{CreateBuildArtifactsMetadata: false, Publish: true, AltDeploymentRepositoryID: "ID", AltDeploymentRepositoryURL: "http://sampleRepo.com", AltDeploymentRepositoryUser: "user", AltDeploymentRepositoryPassword: "pass"}
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 		assert.Nil(t, err)
 		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
