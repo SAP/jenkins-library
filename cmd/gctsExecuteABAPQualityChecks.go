@@ -1900,7 +1900,7 @@ type repository struct {
 	CreatedBy     string       `json:"createdBy"`
 	CreatedDate   string       `json:"createdDate"`
 	Config        []repoConfig `json:"config"`
-	Objects       int          `json:"objects"`
+	Objects       any          `json:"objects"`
 	CurrentCommit string       `json:"currentCommit"`
 }
 
