@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMavenBuild(t *testing.T) {
+var cpe mavenBuildCommonPipelineEnvironment
 
-	cpe := mavenBuildCommonPipelineEnvironment{}
+func TestMavenBuild(t *testing.T) {
 
 	t.Run("mavenBuild should install the artifact", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()

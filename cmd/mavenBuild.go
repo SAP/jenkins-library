@@ -188,9 +188,11 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 				downloadClient := &piperhttp.Client{}
 				downloadClient.SetOptions(piperhttp.ClientOptions{})
+
 				runner := &command.Command{
 					StepName: "mavenBuild",
 				}
+
 				fileUtils := &piperutils.Files{}
 				if len(config.CustomTLSCertificateLinks) > 0 {
 					if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
