@@ -57,6 +57,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: credentialsEnvVarPrefix
+        type: string
+        default: "wdi5"
+        description: Prefix for username and password env vars.
   outputs:
     resources:
       - name: reports

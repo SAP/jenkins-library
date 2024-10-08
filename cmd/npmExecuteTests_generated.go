@@ -20,10 +20,11 @@ import (
 )
 
 type npmExecuteTestsOptions struct {
-	InstallCommand string                 `json:"installCommand,omitempty"`
-	RunScript      string                 `json:"runScript,omitempty"`
-	VaultMetadata  map[string]interface{} `json:"vaultMetadata,omitempty"`
-	BaseURL        string                 `json:"baseUrl,omitempty"`
+	InstallCommand          string                 `json:"installCommand,omitempty"`
+	RunScript               string                 `json:"runScript,omitempty"`
+	VaultMetadata           map[string]interface{} `json:"vaultMetadata,omitempty"`
+	BaseURL                 string                 `json:"baseUrl,omitempty"`
+	CredentialsEnvVarPrefix string                 `json:"credentialsEnvVarPrefix,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -173,6 +174,7 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `npm run wdi5`, "Script to be executed from package.json for running tests`.")
 
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `http://localhost:8080/index.html`, "Base URL of the application to be tested.")
+	cmd.Flags().StringVar(&stepConfig.CredentialsEnvVarPrefix, "credentialsEnvVarPrefix", `wdi5`, "Prefix for username and password env vars.")
 
 	cmd.MarkFlagRequired("runScript")
 }
@@ -228,6 +230,15 @@ func npmExecuteTestsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `http://localhost:8080/index.html`,
+					},
+					{
+						Name:        "credentialsEnvVarPrefix",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `wdi5`,
 					},
 				},
 			},

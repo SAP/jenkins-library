@@ -47,18 +47,17 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		return fmt.Errorf("failed to execute install command: %w", err)
 	}
 
-	isWdi5 := strings.Contains(config.RunScript, "wdi5")
 	for _, appUrl := range appURLs {
-		credentialsToEnv(appUrl.Username, appUrl.Password, isWdi5)
+		credentialsToEnv(appUrl.Username, appUrl.Password, config.CredentialsEnvVarPrefix)
 		err := runTestForUrl(appUrl.URL, config, c)
 		if err != nil {
 			return err
 		}
 	}
 
-	username := config.AppSecrets["username"].(string)
-	password := config.AppSecrets["password"].(string)
-	credentialsToEnv(username, password, isWdi5)
+	username := config.VaultMetadata["username"].(string)
+	password := config.VaultMetadata["password"].(string)
+	credentialsToEnv(username, password, config.CredentialsEnvVarPrefix)
 	if err := runTestForUrl(config.BaseURL, config, c); err != nil {
 		return err
 	}
@@ -77,11 +76,7 @@ func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.E
 	return nil
 }
 
-func credentialsToEnv(username, password string, wdi5 bool) {
-	prefix := "e2e"
-	if wdi5 {
-		prefix = "wdi5"
-	}
+func credentialsToEnv(username, password, prefix string) {
 	os.Setenv(prefix+"_username", username)
 	os.Setenv(prefix+"_password", password)
 }
