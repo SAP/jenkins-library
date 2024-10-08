@@ -67,10 +67,11 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.ExecRunner) error {
 	log.Entry().Infof("Running end to end tests for URL: %s", url)
 
-	// Execute the npm script
-	options := "--baseUrl=" + url
 	runScriptTokens := strings.Fields(config.RunScript)
-	if err := command.RunExecutable(runScriptTokens[0], append(runScriptTokens[1:], options)...); err != nil {
+	if config.UrlOptionPrefix != "" {
+		runScriptTokens = append(runScriptTokens, config.UrlOptionPrefix+url)
+	}
+	if err := command.RunExecutable(runScriptTokens[0], runScriptTokens[1:]...); err != nil {
 		return fmt.Errorf("failed to execute npm script: %w", err)
 	}
 	return nil

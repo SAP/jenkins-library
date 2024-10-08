@@ -61,6 +61,12 @@ spec:
         type: string
         default: "wdi5"
         description: Prefix for username and password env vars.
+      - name: urlOptionPrefix
+        type: string
+        description: |
+          If you want to specify an extra option that the tested url it appended to.
+          For example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,
+          we'll add `--base-url=http://localhost` to your runScript.
   outputs:
     resources:
       - name: reports
