@@ -68,16 +68,8 @@ spec:
           - STEPS
       - name: baseUrl
         type: string
-        default: "0.0.0.0"
+        default: "http://localhost:8080/index.html"
         description: Base URL of the application to be tested.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: wdi5
-        type: bool
-        description: Distinguish if these are wdi5 tests.
-        default: true
         scope:
           - PARAMETERS
           - STAGES

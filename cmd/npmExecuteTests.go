@@ -59,8 +59,9 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		return fmt.Errorf("failed to execute install command: %w", err)
 	}
 
+	isWdi5 := strings.Contains(config.RunScript, "wdi5")
 	for _, appUrl := range appURLs {
-		credentialsToEnv(appUrl.Username, appUrl.Password, config.Wdi5)
+		credentialsToEnv(appUrl.Username, appUrl.Password, isWdi5)
 		err := runTestForUrl(appUrl.URL, config, c)
 		if err != nil {
 			return err
@@ -69,7 +70,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 
 	username := config.AppSecrets["username"].(string)
 	password := config.AppSecrets["password"].(string)
-	credentialsToEnv(username, password, config.Wdi5)
+	credentialsToEnv(username, password, isWdi5)
 	if err := runTestForUrl(config.BaseURL, config, c); err != nil {
 		return err
 	}
@@ -78,20 +79,6 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 
 func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.ExecRunner) error {
 	log.Entry().Infof("Running end to end tests for URL: %s", url)
-
-	if config.Wdi5 {
-		// install wdi5 and all required WebdriverIO peer dependencies
-		// add a config file (wdio.conf.js) to your current working directory, using http://localhost:8080/index.html as baseUrl,
-		// looking for tests in $ui5-app/webapp/test/**/* that follow the name pattern *.test.js
-		// set an npm script named “wdi5” to run wdi5 so you can immediately do npm run wdi5
-		if err := command.RunExecutable("npm", "init", "wdi5@latest", "--baseUrl", url); err != nil {
-			return fmt.Errorf("failed to install wdi5: %w", err)
-		}
-		if err := command.RunExecutable("npm", "run", "wdi5"); err != nil {
-			return fmt.Errorf("failed to execute wdi5: %w", err)
-		}
-		return nil
-	}
 
 	// Execute the npm script
 	options := "--baseUrl=" + url

@@ -26,7 +26,6 @@ type npmExecuteTestsOptions struct {
 	OnlyRunInProductiveBranch bool                   `json:"onlyRunInProductiveBranch,omitempty"`
 	ProductiveBranch          string                 `json:"productiveBranch,omitempty"`
 	BaseURL                   string                 `json:"baseUrl,omitempty"`
-	Wdi5                      bool                   `json:"wdi5,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -177,8 +176,7 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 
 	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean to indicate whether the step should only be executed in the productive branch or not.")
 	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", `main`, "The branch used as productive branch.")
-	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `0.0.0.0`, "Base URL of the application to be tested.")
-	cmd.Flags().BoolVar(&stepConfig.Wdi5, "wdi5", true, "Distinguish if these are wdi5 tests.")
+	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `http://localhost:8080/index.html`, "Base URL of the application to be tested.")
 
 	cmd.MarkFlagRequired("runScript")
 }
@@ -251,16 +249,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `0.0.0.0`,
-					},
-					{
-						Name:        "wdi5",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     true,
+						Default:     `http://localhost:8080/index.html`,
 					},
 				},
 			},
