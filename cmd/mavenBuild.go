@@ -243,7 +243,7 @@ func createBuildArtifactsMetadata(config *mavenBuildOptions, commonPipelineEnvir
 			} else {
 				coordinate.BuildPath = filepath.Dir(match)
 				coordinate.URL = config.AltDeploymentRepositoryURL
-				coordinate.PURL = getPurlForThePomAndDeleteIndividualBom(match)
+				coordinate.PURL = getPurlForThePom(match)
 				buildCoordinates = append(buildCoordinates, coordinate)
 			}
 		}
@@ -262,7 +262,7 @@ func createBuildArtifactsMetadata(config *mavenBuildOptions, commonPipelineEnvir
 	return nil, false
 }
 
-func getPurlForThePomAndDeleteIndividualBom(pomFilePath string) string {
+func getPurlForThePom(pomFilePath string) string {
 	bomPath := filepath.Join(filepath.Dir(pomFilePath) + "/target/" + mvnSimpleBomFilename + ".xml")
 	exists, _ := piperutils.FileExists(bomPath)
 	if !exists {
