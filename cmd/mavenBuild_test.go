@@ -10,6 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
+	"strings"
 )
 
 func TestMavenBuild(t *testing.T) {
@@ -22,10 +23,34 @@ func TestMavenBuild(t *testing.T) {
 		config := mavenBuildOptions{}
 
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
+		expectedParamsFirstCall := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom"}
+		expectedParamsSecondCall := []string{"install"}
 
 		assert.Nil(t, err)
-		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
-		assert.Contains(t, mockedUtils.Calls[0].Params, "install")
+		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two maven invocations (makeBOM and main build)") {
+			assert.Equal(t, "mvn", mockedUtils.Calls[0].Exec)
+			assert.Contains(t, mockedUtils.Calls[0].Params, expectedParamsFirstCall[0], "First call should contain makeBom goal")
+
+			assert.Equal(t, "mvn", mockedUtils.Calls[1].Exec)
+			assert.Contains(t, mockedUtils.Calls[1].Params, expectedParamsSecondCall[0], "Second call should contain install goal")
+		}
+	})
+
+	t.Run("mavenBuild should accept profiles", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+
+		config := mavenBuildOptions{Profiles: []string{"profile1", "profile2"}}
+
+		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
+
+		assert.Nil(t, err)
+
+		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two maven invocations (makeBOM and main build)") {
+			assert.Contains(t, mockedUtils.Calls[0].Params, "--activate-profiles")
+			assert.True(t, strings.Contains(mockedUtils.Calls[0].Params[1], "profile1,profile2"), "Profiles should be activated")
+			assert.Contains(t, mockedUtils.Calls[1].Params, "--activate-profiles")
+			assert.True(t, strings.Contains(mockedUtils.Calls[1].Params[1], "profile1,profile2"), "Profiles should be activated in the second call as well")
+		}
 	})
 
 	t.Run("mavenBuild should skip integration tests", func(t *testing.T) {
@@ -124,18 +149,6 @@ func TestMavenBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Contains(t, mockedUtils.Calls[1].Params, "-DaltDeploymentRepository=ID::default::http://sampleRepo.com")
-	})
-
-	t.Run("mavenBuild accepts profiles", func(t *testing.T) {
-		mockedUtils := newMavenMockUtils()
-
-		config := mavenBuildOptions{Profiles: []string{"profile1", "profile2"}}
-
-		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
-
-		assert.Nil(t, err)
-		assert.Contains(t, mockedUtils.Calls[0].Params, "--activate-profiles")
-		assert.Contains(t, mockedUtils.Calls[0].Params, "profile1,profile2")
 	})
 
 	t.Run("mavenBuild should not create build artifacts metadata when CreateBuildArtifactsMetadata is false and Publish is true", func(t *testing.T) {

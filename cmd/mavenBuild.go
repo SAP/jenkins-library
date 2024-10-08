@@ -88,7 +88,9 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 }
 
 func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
+
 	var flags = []string{"-update-snapshots", "--batch-mode"}
+
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
 	}
@@ -107,6 +109,11 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	if config.CreateBOM {
+		// Separate run for makeBOM goal
+		if err := runMakeBOMGoal(config, utils); err != nil {
+			return errors.Wrap(err, "failed to execute makeBOM goal")
+		}
+
 		// Append the makeAggregateBOM goal to the rest of the goals
 		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
 		createBOMConfig := []string{
@@ -134,11 +141,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	if err := executeMavenGoals(config, utils, flags, goals, defines); err != nil {
 		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
-	}
-
-	// Separate run for makeBOM goal
-	if err := runMakeBOMGoal(config, utils); err != nil {
-		return errors.Wrap(err, "failed to execute makeBOM goal")
 	}
 
 	log.Entry().Debugf("creating build settings information...")
