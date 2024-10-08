@@ -28,17 +28,17 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		Password string `json:"password"`
 	}
 
-	appURLs := make(map[string]AppURL)
+	appURLs := []AppURL{}
 	urlsRaw, ok := config.VaultMetadata["urls"].([]interface{})
 	if ok {
 		for _, urlRaw := range urlsRaw {
 			urlMap := urlRaw.(map[string]interface{})
-			url := urlMap["url"].(string)
-			appURLs[url] = AppURL{
-				URL:      url,
+			appURL := AppURL{
+				URL:      urlMap["url"].(string),
 				Username: urlMap["username"].(string),
 				Password: urlMap["password"].(string),
 			}
+			appURLs = append(appURLs, appURL)
 		}
 	}
 
