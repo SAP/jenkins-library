@@ -20,14 +20,13 @@ import (
 )
 
 type npmExecuteTestsOptions struct {
-	InstallCommand            string `json:"installCommand,omitempty"`
-	RunScript                 string `json:"runScript,omitempty"`
-	AppURLs                   string `json:"appUrls,omitempty"`
-	OnlyRunInProductiveBranch bool   `json:"onlyRunInProductiveBranch,omitempty"`
-	ProductiveBranch          string `json:"productiveBranch,omitempty"`
-	BaseURL                   string `json:"baseUrl,omitempty"`
-	Wdi5                      bool   `json:"wdi5,omitempty"`
-	CredentialsID             string `json:"credentialsId,omitempty"`
+	InstallCommand            string                 `json:"installCommand,omitempty"`
+	RunScript                 string                 `json:"runScript,omitempty"`
+	AppSecrets                map[string]interface{} `json:"appSecrets,omitempty"`
+	OnlyRunInProductiveBranch bool                   `json:"onlyRunInProductiveBranch,omitempty"`
+	ProductiveBranch          string                 `json:"productiveBranch,omitempty"`
+	BaseURL                   string                 `json:"baseUrl,omitempty"`
+	Wdi5                      bool                   `json:"wdi5,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -175,12 +174,11 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm ci`, "Command to be executed for installation. Defaults to `npm ci`.")
 	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `npm run wdi5`, "Script to be executed from package.json for running tests. Defaults to `npm run wdi5`.")
-	cmd.Flags().StringVar(&stepConfig.AppURLs, "appUrls", `[]`, "A JSON string containing an array of objects, each representing an application URL with associated credentials.\nEach object must have the following properties:\n- `url`: The URL of the application.\n- `username`: The username for accessing the application.\n- `password`: The password for accessing the application.\nThis parameter is used to securely pass multiple application URLs and their credentials from Vault.\n")
-	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean   to indicate whether the step should only be executed in the productive branch or not.")
+
+	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean to indicate whether the step should only be executed in the productive branch or not.")
 	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", `main`, "The branch used as productive branch.")
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `0.0.0.0`, "Base URL of the application to be tested.")
 	cmd.Flags().BoolVar(&stepConfig.Wdi5, "wdi5", true, "Distinguish if these are wdi5 tests.")
-	cmd.Flags().StringVar(&stepConfig.CredentialsID, "credentialsId", os.Getenv("PIPER_credentialsId"), "Credentials to access the application to be tested.")
 
 	cmd.MarkFlagRequired("runScript")
 }
@@ -215,7 +213,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Default:     `npm run wdi5`,
 					},
 					{
-						Name: "appUrls",
+						Name: "appSecrets",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -224,10 +222,9 @@ func npmExecuteTestsMetadata() config.StepData {
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Type:      "map[string]interface{}",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   `[]`,
 					},
 					{
 						Name:        "onlyRunInProductiveBranch",
@@ -264,15 +261,6 @@ func npmExecuteTestsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
-					},
-					{
-						Name:        "credentialsId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_credentialsId"),
 					},
 				},
 			},

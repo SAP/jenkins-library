@@ -30,20 +30,21 @@ spec:
           - STEPS
         mandatory: true
         default: "npm run wdi5"
-      - name: appUrls
-        type: string
+      - name: appSecrets
+        type: map[string]interface{}
         description: |
-          A JSON string containing an array of objects, each representing an application URL with associated credentials.
-          Each object must have the following properties:
-          - `url`: The URL of the application.
-          - `username`: The username for accessing the application.
-          - `password`: The password for accessing the application.
-          This parameter is used to securely pass multiple application URLs and their credentials from Vault.
+          The object must have the following structure:
+          - `urls`: An array of objects, each representing an application URL with associated credentials.
+            Each object must have the following properties:
+            - `url`: The URL of the application.
+            - `username`: The username for accessing the application.
+            - `password`: The password for accessing the application.
+          - `username`: The base URL username.
+          - `password`: The base URL password.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "[]"
         resourceRef:
           - type: vaultSecret
             default: appMetadata
@@ -51,7 +52,7 @@ spec:
       - name: onlyRunInProductiveBranch
         type: bool
         default: false
-        description: Boolean   to indicate whether the step should only be executed in the productive branch or not.
+        description: Boolean to indicate whether the step should only be executed in the productive branch or not.
         scope:
           - PARAMETERS
           - STAGES
@@ -77,13 +78,6 @@ spec:
         type: bool
         description: Distinguish if these are wdi5 tests.
         default: true
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: credentialsId
-        type: string
-        description: Credentials to access the application to be tested.
         scope:
           - PARAMETERS
           - STAGES

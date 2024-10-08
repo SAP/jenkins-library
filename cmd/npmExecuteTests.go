@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -29,10 +28,19 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	var appURLs []AppURL
-	err := json.Unmarshal([]byte(config.AppURLs), &appURLs)
-	if err != nil {
-		return fmt.Errorf("failed to parse app URLs: %w", err)
+
+	appURLs := make(map[string]AppURL)
+	urlsRaw, ok := config.AppSecrets["urls"].([]interface{})
+	if ok {
+		for _, urlRaw := range urlsRaw {
+			urlMap := urlRaw.(map[string]interface{})
+			url := urlMap["url"].(string)
+			appURLs[url] = AppURL{
+				URL:      url,
+				Username: urlMap["username"].(string),
+				Password: urlMap["password"].(string),
+			}
+		}
 	}
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
@@ -59,6 +67,9 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		}
 	}
 
+	username := config.AppSecrets["username"].(string)
+	password := config.AppSecrets["password"].(string)
+	credentialsToEnv(username, password, config.Wdi5)
 	if err := runTestForUrl(config.BaseURL, config, c); err != nil {
 		return err
 	}
@@ -83,7 +94,7 @@ func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.E
 	}
 
 	// Execute the npm script
-	options := "--baseUrl_" + url
+	options := "--baseUrl=" + url
 	runScriptTokens := strings.Fields(config.RunScript)
 	if err := command.RunExecutable(runScriptTokens[0], append(runScriptTokens[1:], options)...); err != nil {
 		return fmt.Errorf("failed to execute npm script: %w", err)
