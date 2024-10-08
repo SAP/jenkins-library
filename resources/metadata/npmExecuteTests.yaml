@@ -15,7 +15,7 @@ spec:
     params:
       - name: installCommand
         type: string
-        description: Command to be executed for installation. Defaults to `npm ci`.
+        description: Command to be executed for installation`.
         scope:
           - PARAMETERS
           - STAGES
@@ -23,7 +23,7 @@ spec:
         default: "npm ci"
       - name: runScript
         type: string
-        description: Script to be executed from package.json for running tests. Defaults to `npm run wdi5`.
+        description: Script to be executed from package.json for running tests`.
         scope:
           - PARAMETERS
           - STAGES
