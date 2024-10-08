@@ -49,23 +49,6 @@ spec:
           - type: vaultSecret
             default: appMetadata
             name: appMetadataVaultSecretName
-      - name: onlyRunInProductiveBranch
-        type: bool
-        default: false
-        description: Boolean to indicate whether the step should only be executed in the productive branch or not.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: productiveBranch
-        type: string
-        default: "main"
-        description: The branch used as productive branch.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: baseUrl
         type: string
         default: "http://localhost:8080/index.html"

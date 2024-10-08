@@ -7,7 +7,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -41,17 +40,6 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 				Password: urlMap["password"].(string),
 			}
 		}
-	}
-
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		return fmt.Errorf("failed to get orchestrator config provider: %w", err)
-	}
-
-	env := provider.Branch()
-	if config.OnlyRunInProductiveBranch && config.ProductiveBranch != env {
-		log.Entry().Info("Skipping execution because it is configured to run only in the productive branch.")
-		return nil
 	}
 
 	installCommandTokens := strings.Fields(config.InstallCommand)
