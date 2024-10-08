@@ -109,11 +109,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	if config.CreateBOM {
-		// Separate run for makeBOM goal
-		if err := runMakeBOMGoal(config, utils); err != nil {
-			return errors.Wrap(err, "failed to execute makeBOM goal")
-		}
-
 		// Append the makeAggregateBOM goal to the rest of the goals
 		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
 		createBOMConfig := []string{
@@ -141,6 +136,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	if err := executeMavenGoals(config, utils, flags, goals, defines); err != nil {
 		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
+	}
+
+	if config.CreateBOM {
+		// Separate run for makeBOM goal
+		if err := runMakeBOMGoal(config, utils); err != nil {
+			return errors.Wrap(err, "failed to execute makeBOM goal")
+		}
 	}
 
 	log.Entry().Debugf("creating build settings information...")
