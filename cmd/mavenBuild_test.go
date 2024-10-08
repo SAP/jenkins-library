@@ -161,30 +161,6 @@ func TestMavenBuild(t *testing.T) {
 
 }
 
-func TestIsAggregatedBOM(t *testing.T) {
-	t.Run("is aggregated BOM", func(t *testing.T) {
-		bom := piperutils.Bom{
-			Metadata: piperutils.Metadata{
-				Properties: []piperutils.BomProperty{
-					{Name: "maven.goal", Value: "makeAggregateBom"},
-				},
-			},
-		}
-		assert.True(t, isAggregatedBOM(bom))
-	})
-
-	t.Run("is not aggregated BOM", func(t *testing.T) {
-		bom := piperutils.Bom{
-			Metadata: piperutils.Metadata{
-				Properties: []piperutils.BomProperty{
-					{Name: "some.property", Value: "someValue"},
-				},
-			},
-		}
-		assert.False(t, isAggregatedBOM(bom))
-	})
-}
-
 func createTempFile(t *testing.T, dir string, filename string, content string) string {
 	filePath := filepath.Join(dir, filename)
 	err := os.WriteFile(filePath, []byte(content), 0666)
@@ -216,7 +192,7 @@ func TestGetPurlForThePomAndDeleteIndividualBom(t *testing.T) {
 		if err := os.MkdirAll(bomDir, 0777); err != nil {
 			t.Fatalf("Failed to create temp directory: %s", err)
 		}
-		bomFilePath := createTempFile(t, bomDir, mvnBomFilename+".xml", bomContent)
+		bomFilePath := createTempFile(t, bomDir, mvnSimpleBomFilename+".xml", bomContent)
 		defer os.Remove(bomFilePath)
 
 		purl := getPurlForThePomAndDeleteIndividualBom(pomFilePath)
@@ -246,7 +222,7 @@ func TestGetPurlForThePomAndDeleteIndividualBom(t *testing.T) {
 		if err := os.MkdirAll(bomDir, 0777); err != nil {
 			t.Fatalf("Failed to create temp directory: %s", err)
 		}
-		bomFilePath := createTempFile(t, bomDir, mvnBomFilename+".xml", bomContent)
+		bomFilePath := createTempFile(t, bomDir, mvnSimpleBomFilename+".xml", bomContent)
 
 		purl := getPurlForThePomAndDeleteIndividualBom(pomFilePath)
 		assert.Equal(t, "pkg:maven/com.example/aggregatecomponent@1.0.0", purl)
