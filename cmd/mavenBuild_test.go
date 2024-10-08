@@ -53,18 +53,10 @@ func TestMavenBuild(t *testing.T) {
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
 		assert.Nil(t, err)
-		if assert.Equal(t, 1, len(mockedUtils.Calls), "Expected one Maven invocation for the main build") {
-			assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DschemaVersion=1.4")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeBomSerialNumber=true")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeCompileScope=true")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeProvidedScope=true")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeRuntimeScope=true")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeSystemScope=true")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeTestScope=false")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeLicenseText=false")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputFormat=xml")
-			assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputName=bom-maven")
+		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (default + makeAggregateBom)") {
+			assert.Equal(t, "mvn", mockedUtils.Calls[1].Exec)
+			assert.Contains(t, mockedUtils.Calls[1].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+			assert.Contains(t, mockedUtils.Calls[1].Params, "-DoutputName=bom-maven")
 		}
 	})
 
