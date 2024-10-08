@@ -10,7 +10,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
-	"strings"
 )
 
 func TestMavenBuild(t *testing.T) {
@@ -23,20 +22,16 @@ func TestMavenBuild(t *testing.T) {
 		config := mavenBuildOptions{}
 
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
-		expectedParamsFirstCall := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom"}
-		expectedParamsSecondCall := []string{"install"}
+		expectedParams := []string{"install"}
 
 		assert.Nil(t, err)
-		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two maven invocations (makeBOM and main build)") {
+		if assert.Equal(t, 1, len(mockedUtils.Calls), "Expected one maven invocation for the main build") {
 			assert.Equal(t, "mvn", mockedUtils.Calls[0].Exec)
-			assert.Contains(t, mockedUtils.Calls[0].Params, expectedParamsFirstCall[0], "First call should contain makeBom goal")
-
-			assert.Equal(t, "mvn", mockedUtils.Calls[1].Exec)
-			assert.Contains(t, mockedUtils.Calls[1].Params, expectedParamsSecondCall[0], "Second call should contain install goal")
+			assert.Contains(t, mockedUtils.Calls[0].Params, expectedParams[0], "Call should contain install goal")
 		}
 	})
 
-	t.Run("mavenBuild should accept profiles", func(t *testing.T) {
+	t.Run("mavenBuild accepts profiles", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
 		config := mavenBuildOptions{Profiles: []string{"profile1", "profile2"}}
@@ -44,16 +39,13 @@ func TestMavenBuild(t *testing.T) {
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
 		assert.Nil(t, err)
-
-		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two maven invocations (makeBOM and main build)") {
+		if assert.Equal(t, 1, len(mockedUtils.Calls), "Expected one maven invocation for the main build") {
 			assert.Contains(t, mockedUtils.Calls[0].Params, "--activate-profiles")
-			assert.True(t, strings.Contains(mockedUtils.Calls[0].Params[1], "profile1,profile2"), "Profiles should be activated")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "--activate-profiles")
-			assert.True(t, strings.Contains(mockedUtils.Calls[1].Params[1], "profile1,profile2"), "Profiles should be activated in the second call as well")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "profile1,profile2")
 		}
 	})
 
-	t.Run("mavenBuild should createBOM", func(t *testing.T) {
+	t.Run("mavenBuild should create BOM", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
 		config := mavenBuildOptions{CreateBOM: true}
@@ -61,19 +53,18 @@ func TestMavenBuild(t *testing.T) {
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 
 		assert.Nil(t, err)
-		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (makeBOM and makeAggregateBOM or main goals)") {
-			assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DschemaVersion=1.4")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DincludeBomSerialNumber=true")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DincludeCompileScope=true")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DincludeProvidedScope=true")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DincludeRuntimeScope=true")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DincludeSystemScope=true")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DincludeTestScope=false")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DincludeLicenseText=false")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DoutputFormat=xml")
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DoutputName=bom-maven")
+		if assert.Equal(t, 1, len(mockedUtils.Calls), "Expected one Maven invocation for the main build") {
+			assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DschemaVersion=1.4")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeBomSerialNumber=true")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeCompileScope=true")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeProvidedScope=true")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeRuntimeScope=true")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeSystemScope=true")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeTestScope=false")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeLicenseText=false")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputFormat=xml")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputName=bom-maven")
 		}
 	})
 
