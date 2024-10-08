@@ -268,7 +268,7 @@ func TestCreateRequestBodies(t *testing.T) {
 			CommitID: "1234567",
 			Tag:      "myTag",
 		}
-		body := repo.GetCloneRequestBody()
+		body, _ := repo.GetCloneRequestBody()
 		assert.Equal(t, `{"branch_name":"main", "commit_id":"1234567"}`, body, "Expected different body")
 	})
 	t.Run("Clone Body Tag", func(t *testing.T) {
@@ -298,5 +298,20 @@ func TestCreateRequestBodies(t *testing.T) {
 		}
 		body := repo.GetPullRequestBody()
 		assert.Equal(t, `{"sc_name":"/DMO/REPO", "tag_name":"myTag"}`, body, "Expected different body")
+	})
+}
+
+func TestExecutionLogOutput(t *testing.T) {
+	t.Run("Test execution log output", func(t *testing.T) {
+
+		executionLogValue := []ExecutionLogValue{
+			{IndexNo: 1, Type: "Success", Descr: "Something went well", Timestamp: "/Date(1644332299000+0000)/"},
+			{IndexNo: 2, Type: "Error", Descr: "Something went wrong", Timestamp: "/Date(1644332299000+0000)/"},
+		}
+		executionLog := ExecutionLog{
+			Value: executionLogValue,
+		}
+		printExecutionLogs(executionLog)
+
 	})
 }

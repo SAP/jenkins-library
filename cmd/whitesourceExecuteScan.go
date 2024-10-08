@@ -149,6 +149,7 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 	if log.IsVerbose() {
+		logConfigInVerboseModeForWhitesource(config)
 		logWorkspaceContent()
 	}
 	utils := newWhitesourceUtils(&config, client)
@@ -307,7 +308,7 @@ func checkAndReportScanResults(ctx context.Context, config *ScanOptions, scan *w
 	}
 
 	if len(checkErrors) > 0 {
-		return reportPaths, fmt.Errorf(strings.Join(checkErrors, ": "))
+		return reportPaths, errors.New(strings.Join(checkErrors, ": "))
 	}
 	return reportPaths, nil
 }
@@ -469,34 +470,36 @@ func validateProductVersion(version string) string {
 
 func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	return &ws.ScanOptions{
-		BuildTool:                   config.BuildTool,
-		ScanType:                    "", // no longer provided via config
-		OrgToken:                    config.OrgToken,
-		UserToken:                   config.UserToken,
-		ProductName:                 config.ProductName,
-		ProductToken:                config.ProductToken,
-		ProductVersion:              config.Version,
-		ProjectName:                 config.ProjectName,
-		BuildDescriptorFile:         config.BuildDescriptorFile,
-		BuildDescriptorExcludeList:  config.BuildDescriptorExcludeList,
-		PomPath:                     config.BuildDescriptorFile,
-		M2Path:                      config.M2Path,
-		GlobalSettingsFile:          config.GlobalSettingsFile,
-		ProjectSettingsFile:         config.ProjectSettingsFile,
-		InstallArtifacts:            config.InstallArtifacts,
-		DefaultNpmRegistry:          config.DefaultNpmRegistry,
-		AgentDownloadURL:            config.AgentDownloadURL,
-		AgentFileName:               config.AgentFileName,
-		ConfigFilePath:              config.ConfigFilePath,
-		Includes:                    config.Includes,
-		Excludes:                    config.Excludes,
-		JreDownloadURL:              config.JreDownloadURL,
-		AgentURL:                    config.AgentURL,
-		ServiceURL:                  config.ServiceURL,
-		ScanPath:                    config.ScanPath,
-		InstallCommand:              config.InstallCommand,
-		Verbose:                     GeneralConfig.Verbose,
-		SkipParentProjectResolution: config.SkipParentProjectResolution,
+		BuildTool:                       config.BuildTool,
+		ScanType:                        "", // no longer provided via config
+		OrgToken:                        config.OrgToken,
+		UserToken:                       config.UserToken,
+		ProductName:                     config.ProductName,
+		ProductToken:                    config.ProductToken,
+		ProductVersion:                  config.Version,
+		ProjectName:                     config.ProjectName,
+		BuildDescriptorFile:             config.BuildDescriptorFile,
+		BuildDescriptorExcludeList:      config.BuildDescriptorExcludeList,
+		PomPath:                         config.BuildDescriptorFile,
+		M2Path:                          config.M2Path,
+		GlobalSettingsFile:              config.GlobalSettingsFile,
+		ProjectSettingsFile:             config.ProjectSettingsFile,
+		InstallArtifacts:                config.InstallArtifacts,
+		DefaultNpmRegistry:              config.DefaultNpmRegistry,
+		NpmIncludeDevDependencies:       config.NpmIncludeDevDependencies,
+		AgentDownloadURL:                config.AgentDownloadURL,
+		AgentFileName:                   config.AgentFileName,
+		ConfigFilePath:                  config.ConfigFilePath,
+		Includes:                        config.Includes,
+		Excludes:                        config.Excludes,
+		JreDownloadURL:                  config.JreDownloadURL,
+		AgentURL:                        config.AgentURL,
+		ServiceURL:                      config.ServiceURL,
+		ScanPath:                        config.ScanPath,
+		InstallCommand:                  config.InstallCommand,
+		Verbose:                         GeneralConfig.Verbose,
+		SkipParentProjectResolution:     config.SkipParentProjectResolution,
+		DisableNpmSubmodulesAggregation: config.DisableNpmSubmodulesAggregation,
 	}
 }
 
@@ -671,7 +674,7 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		log.Entry().Debugf("Aggregated %v alerts for scanned projects", len(allAlerts))
 	}
 
-	reportPaths, errors := reportGitHubIssuesAndCreateReports(
+	reportPaths, e := reportGitHubIssuesAndCreateReports(
 		ctx,
 		config,
 		utils,
@@ -683,13 +686,13 @@ func checkSecurityViolations(ctx context.Context, config *ScanOptions, scan *ws.
 		vulnerabilitiesCount,
 	)
 
-	allOccurredErrors = append(allOccurredErrors, errors...)
+	allOccurredErrors = append(allOccurredErrors, e...)
 
 	if len(allOccurredErrors) > 0 {
 		if vulnerabilitiesCount > 0 {
 			log.SetErrorCategory(log.ErrorCompliance)
 		}
-		return reportPaths, fmt.Errorf(strings.Join(allOccurredErrors, ": "))
+		return reportPaths, errors.New(strings.Join(allOccurredErrors, ": "))
 	}
 
 	return reportPaths, nil
@@ -1161,4 +1164,17 @@ func renameTarfilePath(tarFilepath string) error {
 		return fmt.Errorf("error renaming file %s to %s: %v", tarFilepath, newFileName, err)
 	}
 	return nil
+}
+
+// log config parameters
+func logConfigInVerboseModeForWhitesource(config ScanOptions) {
+	config.ContainerRegistryPassword = "********"
+	config.ContainerRegistryUser = "********"
+	config.DockerConfigJSON = "********"
+	config.OrgToken = "********"
+	config.UserToken = "********"
+	config.GithubToken = "********"
+	config.PrivateModulesGitToken = "********"
+	debugLog, _ := json.Marshal(config)
+	log.Entry().Debugf("Whitesource configuration: %v", string(debugLog))
 }

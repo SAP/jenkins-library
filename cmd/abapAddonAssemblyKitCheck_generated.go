@@ -25,6 +25,7 @@ type abapAddonAssemblyKitCheckOptions struct {
 	Password                            string `json:"password,omitempty"`
 	AddonDescriptorFileName             string `json:"addonDescriptorFileName,omitempty"`
 	AddonDescriptor                     string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitOriginHash      string `json:"abapAddonAssemblyKitOriginHash,omitempty"`
 }
 
 type abapAddonAssemblyKitCheckCommonPipelineEnvironment struct {
@@ -70,11 +71,9 @@ func AbapAddonAssemblyKitCheckCommand() *cobra.Command {
 	var createAbapAddonAssemblyKitCheckCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step calls AAKaaS to check the validity of the Addon Product Modelling.",
-		Long: `This step does the following:<ul>
-  <li>[The Addon Product Modelling](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#add-on-descriptor-file) is read from the <b>addonDescriptorFileName</b> (e.g. addon.yml)</li>
-  <li>A connection to AAKaaS (Addon Assembly Kit as a Service) is established and the Addon Product Modelling is transfered for detailed [checks](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#versioning-rules)</li>
-  <li>The semantic versions are resolved and stored into the piper commonPipelineEnviroment for usage of subsequent pipeline steps</li>
-</ul>
+		Long: `[The Addon Product Modelling](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#add-on-descriptor-file) is read from the <b>addonDescriptorFileName</b> (e.g. addon.yml).
+A connection to AAKaaS (Addon Assembly Kit as a Service) is established and the Addon Product Modelling is transfered for detailed [checks](https://www.project-piper.io/scenarios/abapEnvironmentAddons/#versioning-rules).
+The semantic versions are resolved and stored into the piper commonPipelineEnviroment for usage in subsequent pipeline steps.
 <br />
 For logon to AAKaaS you can either provide a credential with basic authorization (username and password) or two secret text credentials containing the technical s-users certificate (see note [2805811](https://me.sap.com/notes/2805811) for download) as base64 encoded string and the password to decrypt the file
 <br />
@@ -99,6 +98,7 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitCertificatePass)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.AbapAddonAssemblyKitOriginHash)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -175,6 +175,7 @@ func addAbapAddonAssemblyKitCheckFlags(cmd *cobra.Command, stepConfig *abapAddon
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `addon.yml`, "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitOriginHash, "abapAddonAssemblyKitOriginHash", os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"), "Origin Hash for restricted AAKaaS scenarios")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("addonDescriptorFileName")
@@ -275,6 +276,15 @@ func abapAddonAssemblyKitCheckMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_addonDescriptor"),
+					},
+					{
+						Name:        "abapAddonAssemblyKitOriginHash",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapAddonAssemblyKitOriginHash"),
 					},
 				},
 			},

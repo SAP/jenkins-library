@@ -18,6 +18,7 @@ import (
 
 // ReportsDirectory defines the subfolder for the Blackduck reports which are generated
 const ReportsDirectory = "blackduck"
+const maxLimit = 50
 
 const (
 	HEADER_PROJECT_DETAILS_V4 = "application/vnd.blackducksoftware.project-detail-4+json"
@@ -246,26 +247,10 @@ func NewClient(token, serverURL string, httpClient piperhttp.Sender) Client {
 
 // GetProject returns a project with a given name
 func (b *Client) GetProject(projectName string) (*Project, error) {
-	if !b.authenticationValid(time.Now()) {
-		if err := b.authenticate(); err != nil {
-			return nil, err
-		}
-	}
-	headers := http.Header{}
-	headers.Add("Accept", HEADER_PROJECT_DETAILS_V4)
-	respBody, err := b.sendRequest("GET", "/api/projects", map[string]string{"q": fmt.Sprintf("name:%v", projectName)}, nil, headers)
+	projects, err := b.getProjectByPagination(projectName, 0)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project '%v'", projectName)
+		return nil, err
 	}
-
-	projects := Projects{}
-	err = json.Unmarshal(respBody, &projects)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve details for project '%v'", projectName)
-	} else if projects.TotalCount == 0 {
-		return nil, fmt.Errorf("project '%v' not found", projectName)
-	}
-
 	// even if more than one projects found, let's return the first one with exact project name match
 	for _, project := range projects.Items {
 		if project.Name == projectName {
@@ -273,7 +258,53 @@ func (b *Client) GetProject(projectName string) (*Project, error) {
 		}
 	}
 
+	if projects.TotalCount > maxLimit {
+		offset := maxLimit
+		totalProjects := projects.TotalCount
+		for offset < totalProjects {
+			projects, err = b.getProjectByPagination(projectName, offset)
+			if err != nil {
+				return nil, err
+			}
+			// even if more than one projects found, let's return the first one with exact project name match
+			for _, project := range projects.Items {
+				if project.Name == projectName {
+					return &project, nil
+				}
+			}
+			offset += maxLimit
+		}
+	}
+
 	return nil, fmt.Errorf("project '%v' not found", projectName)
+}
+
+func (b *Client) getProjectByPagination(projectName string, offset int) (*Projects, error) {
+	if !b.authenticationValid(time.Now()) {
+		if err := b.authenticate(); err != nil {
+			return nil, err
+		}
+	}
+	headers := http.Header{}
+	headers.Add("Accept", HEADER_PROJECT_DETAILS_V4)
+	queryParams := map[string]string{
+		"q":      fmt.Sprintf("name:%v", projectName),
+		"limit":  fmt.Sprint(maxLimit),
+		"offset": fmt.Sprint(offset),
+		"sort":   "asc",
+	}
+	respBody, err := b.sendRequest("GET", "/api/projects", queryParams, nil, headers)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project '%v'", projectName)
+	}
+	projects := Projects{}
+	err = json.Unmarshal(respBody, &projects)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve details for project '%v'", projectName)
+	} else if projects.TotalCount == 0 {
+		return nil, fmt.Errorf("project '%v' not found", projectName)
+	}
+	return &projects, nil
 }
 
 // GetProjectVersion returns a project version with a given name

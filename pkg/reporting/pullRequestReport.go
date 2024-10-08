@@ -94,12 +94,12 @@ type OtherViolation struct {
 }
 
 const rapidReportMdTemplate = `
-## {{if .Success}}:heavy_check_mark: OSS related checks passed successfully
- ### :clipboard: OSS related checks executed by Black Duck - rapid scan passed successfully.
- <a href="https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=downloadingandrunning%2Frapidscan.html&_LANG=enus"><h3>RAPID SCAN</h3> </a>
+ {{if .Success}}:heavy_check_mark: **OSS related checks passed successfully**
+  :clipboard: OSS related checks executed by Black Duck - rapid scan passed successfully.
+ <h4><a href="https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/runningdetect/rapidscan.html">RAPID SCAN</a></h4>
 
-{{else}} :x: OSS related checks failed
- ### :clipboard: Policies violated by added OSS components
+{{else}} :x: **OSS related checks failed**
+  :clipboard: Policies violated by added OSS components
  <table>
  <tr>{{range $s := .MainTableHeaders -}}<td><b>{{$s}}</b></td>{{- end}}</tr>
  {{range $s := .MainTableValues -}}<tr>{{range $s1 := $s }}<td>{{$s1}}</td>{{- end}}</tr>
@@ -109,8 +109,8 @@ const rapidReportMdTemplate = `
 {{range $index := .VulnerabilitiesTable -}}
 <details><summary>
 {{$len := len $index.Values}}
-{{if le $len 1}} <h3> {{$len}} Policy Violation of {{$index.PolicyViolationName}}</h3>
-{{else}}<h3> {{$len}} Policy Violations of {{$index.PolicyViolationName}} </h3> {{end}}
+{{if le $len 1}} <h4> {{$len}} Policy Violation of {{$index.PolicyViolationName}}</h4>
+{{else}}<h4> {{$len}} Policy Violations of {{$index.PolicyViolationName}} </h4> {{end}}
 </summary>
 	<table>
 		<tr><td><b>Vulnerability ID</b></td><td><b>Vulnerability Score</b></td><td><b>Component Name</b></td></tr>
@@ -125,8 +125,8 @@ const rapidReportMdTemplate = `
 {{range $index := .LicensesTable -}}
 <details><summary>
 {{$len := len $index.Values}}
-{{if le $len 1}} <h3> {{$len}} Policy Violation of {{$index.PolicyViolationName}}</h3>
-{{else}}<h3> {{$len}} Policy Violations of {{$index.PolicyViolationName}} </h3> {{end}}
+{{if le $len 1}} <h4> {{$len}} Policy Violation of {{$index.PolicyViolationName}}</h4>
+{{else}}<h4> {{$len}} Policy Violations of {{$index.PolicyViolationName}} </h4> {{end}}
 </summary>
 	<table>
 		<tr><td><b>License Name</b></td><td><b>Component Name</b></td></tr>
@@ -139,8 +139,8 @@ const rapidReportMdTemplate = `
 {{range $index := .OtherViolationsTable -}}
 <details><summary>
 {{$len := len $index.Values}}
-{{if le $len 1}} <h3> {{$len}} Policy Violation of {{$index.PolicyViolationName}}</h3>
-{{else}}<h3> {{$len}} Policy Violations of {{$index.PolicyViolationName}} </h3> {{end}}
+{{if le $len 1}} <h4> {{$len}} Policy Violation of {{$index.PolicyViolationName}}</h4>
+{{else}}<h4> {{$len}} Policy Violations of {{$index.PolicyViolationName}} </h4> {{end}}
 </summary>
 	<table>
 		<tr><td><b>Component Name</b></td></tr>

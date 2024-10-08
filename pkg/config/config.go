@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/trustengine"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
@@ -21,16 +23,17 @@ import (
 
 // Config defines the structure of the config files
 type Config struct {
-	CustomDefaults   []string                          `json:"customDefaults,omitempty"`
-	General          map[string]interface{}            `json:"general"`
-	Stages           map[string]map[string]interface{} `json:"stages"`
-	Steps            map[string]map[string]interface{} `json:"steps"`
-	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
-	defaults         PipelineDefaults
-	initialized      bool
-	accessTokens     map[string]string
-	openFile         func(s string, t map[string]string) (io.ReadCloser, error)
-	vaultCredentials VaultCredentials
+	CustomDefaults           []string                          `json:"customDefaults,omitempty"`
+	General                  map[string]interface{}            `json:"general"`
+	Stages                   map[string]map[string]interface{} `json:"stages"`
+	Steps                    map[string]map[string]interface{} `json:"steps"`
+	Hooks                    map[string]interface{}            `json:"hooks,omitempty"`
+	defaults                 PipelineDefaults
+	initialized              bool
+	accessTokens             map[string]string
+	openFile                 func(s string, t map[string]string) (io.ReadCloser, error)
+	vaultCredentials         VaultCredentials
+	trustEngineConfiguration trustengine.Configuration
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -215,6 +218,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// merge parameters provided via env vars
 	stepConfig.mixIn(envValues(filters.All), filters.All, metadata)
 
+	vaultParams := map[string]interface{}{}
+
 	// if parameters are provided in JSON format merge them
 	if len(paramJSON) != 0 {
 		var params map[string]interface{}
@@ -225,9 +230,16 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			// apply aliases
 			for _, p := range parameters {
 				params = setParamValueFromAlias(stepName, params, filters.Parameters, p.Name, p.Aliases)
+				vaultParams = setParamValueFromAlias(stepName, vaultParams, vaultFilter, p.Name, p.Aliases)
 			}
 			for _, s := range secrets {
 				params = setParamValueFromAlias(stepName, params, filters.Parameters, s.Name, s.Aliases)
+			}
+			// retrieve Vault config if provided
+			for _, v := range vaultFilter {
+				if params[v] != nil {
+					vaultParams[v] = params[v]
+				}
 			}
 
 			stepConfig.mixIn(params, filters.Parameters, metadata)
@@ -237,6 +249,12 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// merge command line flags
 	if flagValues != nil {
 		stepConfig.mixIn(flagValues, filters.Parameters, metadata)
+		// retrieve Vault config from flags if provided
+		for _, v := range vaultFilter {
+			if flagValues[v] != nil {
+				vaultParams[v] = flagValues[v]
+			}
+		}
 	}
 
 	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
@@ -245,7 +263,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
 
-	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName])
+	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName], vaultParams)
 
 	reportingConfig, err := cloneConfig(c)
 	if err != nil {
@@ -257,7 +275,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// fetch secrets from vault
-		vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
+		vaultClient, err := GetVaultClientFromConfig(stepConfig.Config, c.vaultCredentials)
 		if err != nil {
 			return StepConfig{}, err
 		}
@@ -267,6 +285,15 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
 			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
 		}
+	}
+
+	// hooks need to have been loaded from the defaults before the server URL is known
+	err = c.setTrustEngineConfiguration(stepConfig.HookConfig)
+	if err != nil {
+		log.Entry().WithError(err).Debug("Trust Engine lookup skipped due to missing or incorrect configuration")
+	} else {
+		trustengineClient := trustengine.PrepareClient(&piperhttp.Client{}, c.trustEngineConfiguration)
+		resolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, trustengineClient)
 	}
 
 	// finally do the condition evaluation post processing
@@ -325,7 +352,6 @@ func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON str
 }
 
 func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, acceptedParams []string, stageName string) (StepConfig, error) {
-
 	filters := StepFilters{
 		General:    acceptedParams,
 		Steps:      []string{},
@@ -338,7 +364,6 @@ func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, d
 
 // GetJSON returns JSON representation of an object
 func GetJSON(data interface{}) (string, error) {
-
 	result, err := json.Marshal(data)
 	if err != nil {
 		return "", errors.Wrapf(err, "error marshalling json: %v", err)
@@ -348,7 +373,6 @@ func GetJSON(data interface{}) (string, error) {
 
 // GetYAML returns YAML representation of an object
 func GetYAML(data interface{}) (string, error) {
-
 	result, err := yaml.Marshal(data)
 	if err != nil {
 		return "", errors.Wrapf(err, "error marshalling yaml: %v", err)
@@ -370,7 +394,6 @@ func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, 
 }
 
 func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
-
 	u, err := url.Parse(name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read url: %w", err)
@@ -409,7 +432,6 @@ func envValues(filter []string) map[string]interface{} {
 }
 
 func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string, metadata StepData) {
-
 	if s.Config == nil {
 		s.Config = map[string]interface{}{}
 	}
@@ -418,7 +440,6 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string, me
 }
 
 func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}, metadata StepData) {
-
 	if s.HookConfig == nil {
 		s.HookConfig = map[string]interface{}{}
 	}
@@ -487,7 +508,6 @@ func filterMap(data map[string]interface{}, filter []string) map[string]interfac
 }
 
 func merge(base, overlay map[string]interface{}, metadata StepData) map[string]interface{} {
-
 	result := map[string]interface{}{}
 
 	if base == nil {
@@ -510,7 +530,17 @@ func merge(base, overlay map[string]interface{}, metadata StepData) map[string]i
 			for _, v := range metadata.Spec.Inputs.Parameters {
 				tVal := reflect.TypeOf(value).String()
 				if v.Name == key && tVal != v.Type {
-					log.Entry().Warn("config value provided for", v.Name, " is of wrong type", tVal, "should be of type", v.Type)
+					if tVal == "[]interface {}" && v.Type == "[]string" {
+						// json Unmarshal genertes arrays of interface{} for string arrays
+						for _, interfaceValue := range value.([]interface{}) {
+							arrayValueType := reflect.TypeOf(interfaceValue).String()
+							if arrayValueType != "string" {
+								log.Entry().Warnf("config id %s should only contain strings but contains a %s", v.Name, arrayValueType)
+							}
+						}
+					} else {
+						log.Entry().Warnf("config value provided for %s is of wrong type %s should be of type %s", v.Name, tVal, v.Type)
+					}
 				}
 			}
 		}

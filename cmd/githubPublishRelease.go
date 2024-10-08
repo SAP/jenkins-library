@@ -16,7 +16,6 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
-// mock generated with: mockery --name GithubRepoClient --dir cmd --output cmd/mocks
 type GithubRepoClient interface {
 	CreateRelease(ctx context.Context, owner string, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, *github.Response, error)
 	DeleteReleaseAsset(ctx context.Context, owner string, repo string, id int64) (*github.Response, error)

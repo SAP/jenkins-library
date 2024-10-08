@@ -85,6 +85,7 @@ func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
 		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
 	}
+	utils.Client.SetOptions(piperhttp.ClientOptions{MaxRetries: 3})
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
@@ -142,6 +143,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve version")
+	} else if len(version) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("version is empty - please check versioning configuration")
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 
@@ -205,6 +209,10 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		if config.VersioningType == "cloud" {
 			certs, err := certutils.CertificateDownload(config.CustomTLSCertificateLinks, utils)
+			if err != nil {
+				return err
+			}
+
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now, certs)
 			if err != nil {

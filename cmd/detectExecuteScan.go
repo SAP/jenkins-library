@@ -20,6 +20,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -141,6 +142,8 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 	return &sys
 }
 
+const configPath = ".pipeline/*"
+
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 
@@ -192,6 +195,8 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	}
 
 	if config.InstallArtifacts {
+
+		log.Entry().Infof("#### installArtifacts - start")
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -200,10 +205,11 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### installArtifacts - end")
 	}
 
 	if config.BuildMaven {
-		log.Entry().Infof("running Maven Build")
+		log.Entry().Infof("#### BuildMaven - start")
 		mavenConfig := setMavenConfig(config)
 		mavenUtils := maven.NewUtilsBundle()
 
@@ -211,6 +217,37 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### BuildMaven - end")
+	}
+
+	// Install NPM dependencies
+	if config.InstallNPM {
+		log.Entry().Infof("#### InstallNPM - start")
+		npmExecutor := npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
+
+		buildDescriptorList := config.BuildDescriptorList
+		if len(buildDescriptorList) == 0 {
+			buildDescriptorList = []string{"package.json"}
+		}
+
+		err := npmExecutor.InstallAllDependencies(buildDescriptorList)
+		if err != nil {
+			return err
+		}
+		log.Entry().Infof("#### InstallNPM - end")
+	}
+
+	// for MTA
+	if config.BuildMTA {
+		log.Entry().Infof("#### BuildMTA - start")
+		mtaConfig := setMTAConfig(config)
+		mtaUtils := newMtaBuildUtilsBundle()
+
+		err := runMtaBuild(mtaConfig, &mtaBuildCommonPipelineEnvironment{}, mtaUtils)
+		if err != nil {
+			return err
+		}
+		log.Entry().Infof("#### BuildMTA - end")
 	}
 
 	blackduckSystem := newBlackduckSystem(config)
@@ -389,13 +426,16 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	log.Entry().Infof("Downloading Detect Script")
 
-	err := utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
-	if err != nil {
-		time.Sleep(time.Second * 5)
-		err = utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
-		if err != nil {
-			return err
+	downloadScript := func() error {
+		if config.UseDetect9 {
+			return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
 		}
+		return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+	}
+
+	if err := downloadScript(); err != nil {
+		time.Sleep(5 * time.Second)
+		return downloadScript()
 	}
 
 	return nil
@@ -422,9 +462,8 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	}
 
-	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
-		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
-	}
+	// Handle excluded directories
+	handleExcludedDirectories(&args, &config)
 
 	if config.Unmap {
 		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
@@ -511,6 +550,21 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	if len(config.DetectTools) > 0 {
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
+	}
+
+	if config.EnableDiagnostics {
+		args = append(args, fmt.Sprintf("\"--detect.diagnostic=true\""))
+		args = append(args, fmt.Sprintf("\"--detect.cleanup=false\""))
+
+		err := utils.MkdirAll(".pipeline/blackduckDiagnostics", 0o755)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create diagnostics directory")
+		}
+
+		log.Entry().Info("Diagnostics enabled, output will be stored in .pipeline/blackduckDiagnostics")
+
+		args = append(args, fmt.Sprintf("\"--detect.scan.output.path=.pipeline/blackduckDiagnostics\""))
+		args = append(args, fmt.Sprintf("\"--detect.output.path=.pipeline/blackduckDiagnostics\""))
 	}
 
 	// to exclude dependency types for npm
@@ -624,7 +678,11 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 		CounterHeader: "Entry#",
 	}
 
-	vulnItems := vulns.Items
+	var vulnItems []bd.Vulnerability
+	if vulns != nil {
+		vulnItems = vulns.Items
+	}
+
 	sort.Slice(vulnItems, func(i, j int) bool {
 		return vulnItems[i].OverallScore > vulnItems[j].OverallScore
 	})
@@ -716,7 +774,12 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	errorsOccured := []string{}
 	vulns, err := getVulnerabilitiesWithComponents(config, influx, sys)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch vulnerabilities")
+		if config.GenerateReportsForEmptyProjects &&
+			strings.Contains(err.Error(), "No Components found for project version") {
+			log.Entry().Debug(err.Error())
+		} else {
+			return errors.Wrap(err, "failed to fetch vulnerabilities")
+		}
 	}
 
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
@@ -782,7 +845,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	}
 
 	if len(errorsOccured) > 0 {
-		return fmt.Errorf(strings.Join(errorsOccured, ": "))
+		return errors.New(strings.Join(errorsOccured, ": "))
 	}
 
 	return nil
@@ -1028,13 +1091,70 @@ func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
 		Publish:                     false,
 	}
 
+	// Print the mavenBuildOptions configuration in verbose mode
+	log.Entry().Debugf("Maven configuration: %v", mavenConfig)
+
 	return mavenConfig
+}
+
+func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
+
+	if config.M2Path == "" {
+		config.M2Path = ".m2"
+	}
+
+	mtaConfig := mtaBuildOptions{
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		Platform:            config.MtaPlatform,
+		InstallArtifacts:    true,
+		CreateBOM:           false,
+	}
+
+	// Print the mtaBuildOptions configuration in verbose mode
+
+	log.Entry().Debugf("MTA configuration: %v", mtaConfig)
+
+	return mtaConfig
+
 }
 
 func logConfigInVerboseMode(config detectExecuteScanOptions) {
 	config.Token = "********"
 	config.GithubToken = "********"
 	config.PrivateModulesGitToken = "********"
+	config.RepositoryPassword = "********"
 	debugLog, _ := json.Marshal(config)
 	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
+}
+
+func handleExcludedDirectories(args *[]string, config *detectExecuteScanOptions) {
+	index := findItemInStringSlice(config.ScanProperties, "--detect.excluded.directories=")
+	if index != -1 && !strings.Contains(config.ScanProperties[index], configPath) {
+		config.ScanProperties[index] += "," + configPath
+	} else {
+		config.ExcludedDirectories = excludeConfigDirectory(config.ExcludedDirectories)
+		*args = append(*args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
+}
+
+func excludeConfigDirectory(directories []string) []string {
+	configDirectory := configPath
+	for i := range directories {
+		if directories[i] == configDirectory {
+			return directories
+		}
+	}
+	directories = append(directories, configDirectory)
+	return directories
+}
+
+func findItemInStringSlice(slice []string, item string) int {
+	for i := range slice {
+		if strings.Contains(slice[i], item) {
+			return i
+		}
+	}
+	return -1
 }

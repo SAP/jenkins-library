@@ -308,7 +308,7 @@ func (c *Client) initializeHttpClient() *http.Client {
 		log.Entry().Debug("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
-			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tsl config", err)
+			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tls config", err)
 		}
 	} else {
 		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
@@ -316,9 +316,7 @@ func (c *Client) initializeHttpClient() *http.Client {
 
 	if c.maxRetries > 0 {
 		retryClient := retryablehttp.NewClient()
-		localLogger := log.Entry()
-		localLogger.Level = logrus.DebugLevel
-		retryClient.Logger = localLogger
+		retryClient.Logger = c.logger
 		retryClient.HTTPClient.Timeout = c.maxRequestDuration
 		retryClient.HTTPClient.Jar = c.cookieJar
 		retryClient.RetryMax = c.maxRetries
@@ -401,12 +399,13 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
 	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
-	if t.doLogRequestBodyOnDebug && req.Body != nil {
+	if t.doLogRequestBodyOnDebug && req.Header.Get("Content-Type") == "application/octet-stream" {
+		// skip logging byte content as it's useless
+	} else if t.doLogRequestBodyOnDebug && req.Body != nil {
 		var buf bytes.Buffer
 		tee := io.TeeReader(req.Body, &buf)
 		log.Entry().Debugf("body: %v", transformBody(tee))
 		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
-		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
 }
