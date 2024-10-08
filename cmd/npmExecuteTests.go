@@ -22,23 +22,23 @@ func npmExecuteTests(config npmExecuteTestsOptions, _ *telemetry.CustomData) {
 }
 
 func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) error {
-	type AppURL struct {
+	type AppUnderTest struct {
 		URL      string `json:"url"`
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
-	appURLs := []AppURL{}
+	apps := []AppUnderTest{}
 	urlsRaw, ok := config.VaultMetadata["urls"].([]interface{})
 	if ok {
 		for _, urlRaw := range urlsRaw {
 			urlMap := urlRaw.(map[string]interface{})
-			appURL := AppURL{
+			app := AppUnderTest{
 				URL:      urlMap["url"].(string),
 				Username: urlMap["username"].(string),
 				Password: urlMap["password"].(string),
 			}
-			appURLs = append(appURLs, appURL)
+			apps = append(apps, app)
 		}
 	}
 
@@ -47,9 +47,9 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		return fmt.Errorf("failed to execute install command: %w", err)
 	}
 
-	for _, appUrl := range appURLs {
-		credentialsToEnv(appUrl.Username, appUrl.Password, config.CredentialsEnvVarPrefix)
-		err := runTestForUrl(appUrl.URL, config, c)
+	for _, app := range apps {
+		credentialsToEnv(app.Username, app.Password, config.CredentialsEnvVarPrefix)
+		err := runTestForUrl(app.URL, config, c)
 		if err != nil {
 			return err
 		}
