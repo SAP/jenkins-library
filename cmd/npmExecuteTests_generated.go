@@ -38,7 +38,7 @@ func (p *npmExecuteTestsReports) persist(stepConfig npmExecuteTestsOptions, gcpJ
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
-		{FilePattern: "**/e2e-results.xml", ParamRef: "", StepResultType: "e2e"},
+		{FilePattern: "**/e2e-results.xml", ParamRef: "", StepResultType: "end-to-end-test"},
 	}
 	envVars := []gcs.EnvVar{
 		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
@@ -262,7 +262,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
-							{"filePattern": "**/e2e-results.xml", "type": "e2e"},
+							{"filePattern": "**/e2e-results.xml", "type": "end-to-end-test"},
 						},
 					},
 				},
