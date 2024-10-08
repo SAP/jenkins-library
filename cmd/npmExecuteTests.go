@@ -29,7 +29,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 	}
 
 	appURLs := make(map[string]AppURL)
-	urlsRaw, ok := config.AppSecrets["urls"].([]interface{})
+	urlsRaw, ok := config.VaultMetadata["urls"].([]interface{})
 	if ok {
 		for _, urlRaw := range urlsRaw {
 			urlMap := urlRaw.(map[string]interface{})

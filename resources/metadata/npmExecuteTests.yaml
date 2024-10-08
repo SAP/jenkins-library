@@ -30,7 +30,7 @@ spec:
           - STEPS
         mandatory: true
         default: "npm run wdi5"
-      - name: appSecrets
+      - name: vaultMetadata
         type: map[string]interface{}
         description: |
           The object must have the following structure:

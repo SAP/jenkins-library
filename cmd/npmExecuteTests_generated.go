@@ -20,12 +20,10 @@ import (
 )
 
 type npmExecuteTestsOptions struct {
-	InstallCommand            string                 `json:"installCommand,omitempty"`
-	RunScript                 string                 `json:"runScript,omitempty"`
-	AppSecrets                map[string]interface{} `json:"appSecrets,omitempty"`
-	OnlyRunInProductiveBranch bool                   `json:"onlyRunInProductiveBranch,omitempty"`
-	ProductiveBranch          string                 `json:"productiveBranch,omitempty"`
-	BaseURL                   string                 `json:"baseUrl,omitempty"`
+	InstallCommand string                 `json:"installCommand,omitempty"`
+	RunScript      string                 `json:"runScript,omitempty"`
+	VaultMetadata  map[string]interface{} `json:"vaultMetadata,omitempty"`
+	BaseURL        string                 `json:"baseUrl,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -171,11 +169,9 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 }
 
 func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm ci`, "Command to be executed for installation. Defaults to `npm ci`.")
-	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `npm run wdi5`, "Script to be executed from package.json for running tests. Defaults to `npm run wdi5`.")
+	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm ci`, "Command to be executed for installation`.")
+	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `npm run wdi5`, "Script to be executed from package.json for running tests`.")
 
-	cmd.Flags().BoolVar(&stepConfig.OnlyRunInProductiveBranch, "onlyRunInProductiveBranch", false, "Boolean to indicate whether the step should only be executed in the productive branch or not.")
-	cmd.Flags().StringVar(&stepConfig.ProductiveBranch, "productiveBranch", `main`, "The branch used as productive branch.")
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `http://localhost:8080/index.html`, "Base URL of the application to be tested.")
 
 	cmd.MarkFlagRequired("runScript")
@@ -211,7 +207,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Default:     `npm run wdi5`,
 					},
 					{
-						Name: "appSecrets",
+						Name: "vaultMetadata",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -223,24 +219,6 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:      "map[string]interface{}",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-					},
-					{
-						Name:        "onlyRunInProductiveBranch",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "productiveBranch",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `main`,
 					},
 					{
 						Name:        "baseUrl",
