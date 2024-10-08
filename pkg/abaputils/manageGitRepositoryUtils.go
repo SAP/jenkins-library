@@ -72,7 +72,7 @@ func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputMan
 		zipfile, err := api.GetLogArchive()
 		// Saving logs in file and adding to piperutils to archive file
 		if err == nil {
-			fileName := "LogArchive-" + logOutputManager.FileNameStep + "-" + api.getRepositoryName() + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05") + ".zip"
+			fileName := "LogArchive-" + logOutputManager.FileNameStep + "-" + strings.Replace(api.getRepositoryName(), "/", "_", -1) + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05") + ".zip"
 
 			err = os.WriteFile(fileName, zipfile, 0o644)
 
