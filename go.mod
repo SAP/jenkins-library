@@ -14,7 +14,7 @@ require (
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/bndr/gojenkins v1.1.1-0.20240109173050-c316119c46d5
 	github.com/buildpacks/lifecycle v0.18.5
-	github.com/cloudevents/sdk-go/v2 v2.10.1
+	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/docker/cli v27.1.0+incompatible
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/evanphx/json-patch v5.7.0+incompatible
@@ -58,7 +58,7 @@ require (
 	google.golang.org/api v0.169.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0
-	helm.sh/helm/v3 v3.14.0
+	helm.sh/helm/v3 v3.14.2
 	mvdan.cc/xurls/v2 v2.4.0
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd
 )
