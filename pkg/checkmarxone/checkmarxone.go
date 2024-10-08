@@ -1314,6 +1314,10 @@ func (sys *SystemInstance) GetResultsPredicates(SimilarityID int64, ProjectID st
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
+	if strings.EqualFold("pdf", reportType) {
+		return sys.RequestNewPDFReport(scanID)
+	}
+
 	jsonData := map[string]interface{}{
 		"fileFormat": reportType,
 		"reportType": "ui",
@@ -1352,13 +1356,52 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
 	return reportResponse.ReportId, err
 }
 
+// Use the new V2 Report API to generate a PDF report
+func (sys *SystemInstance) RequestNewPDFReport(scanID string) (string, error) {
+	jsonData := map[string]interface{}{
+		"reportName": "improved-scan-report",
+		"entities": []map[string]interface{}{
+			map[string]interface{}{
+				"entity": "scan",
+				"ids":    []string{scanID},
+				"tags":   []string{},
+			},
+		},
+		"filters": map[string][]string{
+			"scanners": []string{"sast"},
+		},
+		"reportType": "ui",
+		"fileFormat": "pdf",
+	}
+
+	jsonValue, _ := json.Marshal(jsonData)
+
+	header := http.Header{}
+	header.Set("cxOrigin", cxOrigin)
+	header.Set("Content-Type", "application/json")
+	data, err := sendRequest(sys, http.MethodPost, "/reports/v2", bytes.NewBuffer(jsonValue), header, []int{})
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
+	} else {
+		sys.logger.Infof("Generating report %v", string(data))
+	}
+
+	var reportResponse struct {
+		ReportId string
+	}
+	err = json.Unmarshal(data, &reportResponse)
+
+	return reportResponse.ReportId, err
+
+}
+
 // GetReportStatus returns the status of the report generation process
 func (sys *SystemInstance) GetReportStatus(reportID string) (ReportStatus, error) {
 	var response ReportStatus
 
 	header := http.Header{}
 	header.Set("Accept", "application/json")
-	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v", reportID), nil, header, []int{})
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v?returnUrl=true", reportID), nil, header, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch report status for reportID %v: %s", reportID, err)
 		return response, errors.Wrapf(err, "failed to fetch report status for reportID %v", reportID)
