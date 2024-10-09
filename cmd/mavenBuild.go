@@ -181,53 +181,50 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				if err != nil {
 					return errors.Wrap(err, "Could not create or update project settings xml")
 				}
-				mavenOptions = maven.ExecuteOptions{
-					ProjectSettingsFile: projectSettingsFilePath,
-				}
+				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
+			}
 
-				deployFlags := []string{}
-				if len(config.DeployFlags) > 0 {
-					deployFlags = append(deployFlags, config.DeployFlags...)
-				}
-				if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryURL) > 0) {
-					deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
-				}
+			deployFlags := []string{}
+			if len(config.DeployFlags) > 0 {
+				deployFlags = append(deployFlags, config.DeployFlags...)
+			}
+			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryURL) > 0) {
+				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
+			}
 
-				downloadClient := &piperhttp.Client{}
-				downloadClient.SetOptions(piperhttp.ClientOptions{})
-
-				runner := &command.Command{
-					StepName: "mavenBuild",
-				}
-
-				fileUtils := &piperutils.Files{}
-				if len(config.CustomTLSCertificateLinks) > 0 {
-					if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
-						log.SetErrorCategory(log.ErrorInfrastructure)
-						return err
-					}
-				}
-
-				mavenOptions.Flags = deployFlags
-				mavenOptions.Goals = []string{"deploy"}
-				mavenOptions.Defines = []string{}
-				_, err = maven.Execute(&mavenOptions, utils)
-				if err != nil {
+			downloadClient := &piperhttp.Client{}
+			downloadClient.SetOptions(piperhttp.ClientOptions{})
+			runner := &command.Command{
+				StepName: "mavenBuild",
+			}
+			fileUtils := &piperutils.Files{}
+			if len(config.CustomTLSCertificateLinks) > 0 {
+				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
+					log.SetErrorCategory(log.ErrorInfrastructure)
 					return err
 				}
-
-				if config.CreateBuildArtifactsMetadata {
-					err2, done := createBuildArtifactsMetadata(config, commonPipelineEnvironment)
-					if done {
-						return err2
-					}
-				}
-				return nil
 			}
+
+			mavenOptions.Flags = deployFlags
+			mavenOptions.Goals = []string{"deploy"}
+			mavenOptions.Defines = []string{}
+			_, err := maven.Execute(&mavenOptions, utils)
+			if err != nil {
+				return err
+			}
+			if config.CreateBuildArtifactsMetadata {
+				err2, done := createBuildArtifactsMetadata(config, commonPipelineEnvironment)
+				if done {
+					return err2
+				}
+			}
+
+			return nil
 		} else {
 			log.Entry().Infof("publish not detected, ignoring maven deploy")
 		}
 	}
+
 	return err
 }
 
