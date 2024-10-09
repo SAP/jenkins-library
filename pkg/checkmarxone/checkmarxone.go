@@ -8,12 +8,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-
-	//"strconv"
+	"strconv"
 	"strings"
 	"time"
 
-	//"encoding/xml"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -1315,7 +1313,16 @@ func (sys *SystemInstance) GetResultsPredicates(SimilarityID int64, ProjectID st
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
 	if strings.EqualFold("pdf", reportType) {
-		return sys.RequestNewPDFReport(scanID)
+		version, err := sys.GetVersion()
+		if err == nil {
+			if version.CheckCxOne("3.20.0") >= 0 && version.CheckCxOne("3.21.0") == -1 {
+				sys.logger.Debugf("Current version is %v - between 3.20.0 and 3.21.0 - using v2 PDF report", version.CxOne)
+				return sys.RequestNewPDFReport(scanID)
+			}
+			sys.logger.Debugf("Current version is %v - using v1 PDF report", version.CxOne)
+		} else {
+			sys.logger.Errorf("Failed to get the CxOne version during report-gen request, will use v1 report. Error: %s", err)
+		}
 	}
 
 	jsonData := map[string]interface{}{
@@ -1454,4 +1461,41 @@ func (sys *SystemInstance) GetVersion() (VersionInfo, error) {
 
 	err = json.Unmarshal(data, &version)
 	return version, err
+}
+
+func (v VersionInfo) CheckCxOne(version string) int {
+	check := versionStringToInts(version)
+	cx1 := versionStringToInts(v.CxOne)
+
+	if check[0] < cx1[0] {
+		return 1
+	} else if check[0] > cx1[0] {
+		return -1
+	} else {
+		if check[1] < cx1[1] {
+			return 1
+		} else if check[1] > cx1[1] {
+			return -1
+		} else {
+			if check[2] < cx1[2] {
+				return 1
+			} else if check[2] > cx1[2] {
+				return -1
+			} else {
+				return 0
+			}
+		}
+	}
+}
+
+func versionStringToInts(version string) []int64 {
+	if version == "" {
+		return []int64{0, 0, 0}
+	}
+	str := strings.Split(version, ".")
+	ints := make([]int64, len(str))
+	for id, val := range str {
+		ints[id], _ = strconv.ParseInt(val, 10, 64)
+	}
+	return ints
 }
