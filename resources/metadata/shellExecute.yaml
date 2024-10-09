@@ -42,7 +42,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        description: "scriptArguments that are need to be passed to scripts."
+        description: "scriptArguments that need to be passed to the scripts."
         longDescription: |-
           The scriptArguments list is a flat list and has a positional relationship to the `sources` parameter.
 
