@@ -1316,12 +1316,12 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
 		version, err := sys.GetVersion()
 		if err == nil {
 			if version.CheckCxOne("3.20.0") >= 0 && version.CheckCxOne("3.21.0") == -1 {
-				sys.logger.Debugf("Current version is %v - between 3.20.0 and 3.21.0 - using v2 PDF report", version.CxOne)
-				return sys.RequestNewPDFReport(scanID)
+				sys.logger.Debugf("Current version is %v - between 3.20.0 and 3.21.0 - using v2 %v report", reportType, version.CxOne)
+				return sys.RequestNewReportV2(scanID, reportType)
 			}
-			sys.logger.Debugf("Current version is %v - using v1 PDF report", version.CxOne)
+			sys.logger.Debugf("Current version is %v - using v1 %v report", reportType, version.CxOne)
 		} else {
-			sys.logger.Errorf("Failed to get the CxOne version during report-gen request, will use v1 report. Error: %s", err)
+			sys.logger.Errorf("Failed to get the CxOne version during report-gen request, will use v1 %v report. Error: %s", reportType, err)
 		}
 	}
 
@@ -1364,21 +1364,21 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
 }
 
 // Use the new V2 Report API to generate a PDF report
-func (sys *SystemInstance) RequestNewPDFReport(scanID string) (string, error) {
+func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string, error) {
 	jsonData := map[string]interface{}{
 		"reportName": "improved-scan-report",
 		"entities": []map[string]interface{}{
-			map[string]interface{}{
+			{
 				"entity": "scan",
 				"ids":    []string{scanID},
 				"tags":   []string{},
 			},
 		},
 		"filters": map[string][]string{
-			"scanners": []string{"sast"},
+			"scanners": {"sast"},
 		},
 		"reportType": "ui",
-		"fileFormat": "pdf",
+		"fileFormat": reportType,
 	}
 
 	jsonValue, _ := json.Marshal(jsonData)
