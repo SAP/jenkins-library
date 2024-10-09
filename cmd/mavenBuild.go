@@ -84,6 +84,11 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 
 	goals := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom"}
 
+	if config.Flatten {
+		goals = append(goals, "flatten:flatten")
+		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
+	}
+
 	return executeMavenGoals(config, utils, flags, goals, defines)
 }
 
