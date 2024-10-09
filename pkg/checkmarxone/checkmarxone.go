@@ -1312,7 +1312,7 @@ func (sys *SystemInstance) GetResultsPredicates(SimilarityID int64, ProjectID st
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
-	if strings.EqualFold("pdf", reportType) {
+	if strings.EqualFold("pdf", reportType) || strings.EqualFold("json", reportType) {
 		version, err := sys.GetVersion()
 		if err == nil {
 			if version.CheckCxOne("3.20.0") >= 0 && version.CheckCxOne("3.21.0") == -1 {
