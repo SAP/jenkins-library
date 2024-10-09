@@ -40,23 +40,12 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, c
 	}
 }
 
-func executeMavenGoals(config *mavenBuildOptions, utils maven.Utils, flags []string, goals []string, defines []string) error {
-	mavenOptions := maven.ExecuteOptions{
-		Flags:                       flags,
-		Goals:                       goals,
-		Defines:                     defines,
-		PomPath:                     config.PomPath,
-		ProjectSettingsFile:         config.ProjectSettingsFile,
-		GlobalSettingsFile:          config.GlobalSettingsFile,
-		M2Path:                      config.M2Path,
-		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
-	}
-
-	_, err := maven.Execute(&mavenOptions, utils)
+func executeMavenGoals(config *mavenBuildOptions, utils maven.Utils, flags []string, goals []string, defines []string, mavenOptions *maven.ExecuteOptions) error {
+	_, err := maven.Execute(mavenOptions, utils)
 	return err
 }
 
-func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
+func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils, mavenOptions *maven.ExecuteOptions) error {
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
@@ -89,7 +78,7 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
-	return executeMavenGoals(config, utils, flags, goals, defines)
+	return executeMavenGoals(config, utils, flags, goals, defines, mavenOptions)
 }
 
 func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
@@ -139,13 +128,24 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		goals = append(goals, "install")
 	}
 
-	if err := executeMavenGoals(config, utils, flags, goals, defines); err != nil {
+	mavenOptions := maven.ExecuteOptions{
+		Flags:                       flags,
+		Goals:                       goals,
+		Defines:                     defines,
+		PomPath:                     config.PomPath,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		M2Path:                      config.M2Path,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+	}
+
+	if err := executeMavenGoals(config, utils, flags, goals, defines, &mavenOptions); err != nil {
 		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
 	}
 
 	if config.CreateBOM {
 		// Separate run for makeBOM goal
-		if err := runMakeBOMGoal(config, utils); err != nil {
+		if err := runMakeBOMGoal(config, utils, &mavenOptions); err != nil {
 			return errors.Wrap(err, "failed to execute makeBOM goal")
 		}
 	}
@@ -181,53 +181,50 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				if err != nil {
 					return errors.Wrap(err, "Could not create or update project settings xml")
 				}
-				mavenOptions := maven.ExecuteOptions{
-					ProjectSettingsFile: projectSettingsFilePath,
-				}
+				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
+			}
 
-				deployFlags := []string{}
-				if len(config.DeployFlags) > 0 {
-					deployFlags = append(deployFlags, config.DeployFlags...)
-				}
-				if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryURL) > 0) {
-					deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
-				}
+			deployFlags := []string{}
+			if len(config.DeployFlags) > 0 {
+				deployFlags = append(deployFlags, config.DeployFlags...)
+			}
+			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryURL) > 0) {
+				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
+			}
 
-				downloadClient := &piperhttp.Client{}
-				downloadClient.SetOptions(piperhttp.ClientOptions{})
-
-				runner := &command.Command{
-					StepName: "mavenBuild",
-				}
-
-				fileUtils := &piperutils.Files{}
-				if len(config.CustomTLSCertificateLinks) > 0 {
-					if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
-						log.SetErrorCategory(log.ErrorInfrastructure)
-						return err
-					}
-				}
-
-				mavenOptions.Flags = deployFlags
-				mavenOptions.Goals = []string{"deploy"}
-				mavenOptions.Defines = []string{}
-				_, err = maven.Execute(&mavenOptions, utils)
-				if err != nil {
+			downloadClient := &piperhttp.Client{}
+			downloadClient.SetOptions(piperhttp.ClientOptions{})
+			runner := &command.Command{
+				StepName: "mavenBuild",
+			}
+			fileUtils := &piperutils.Files{}
+			if len(config.CustomTLSCertificateLinks) > 0 {
+				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
+					log.SetErrorCategory(log.ErrorInfrastructure)
 					return err
 				}
-
-				if config.CreateBuildArtifactsMetadata {
-					err2, done := createBuildArtifactsMetadata(config, commonPipelineEnvironment)
-					if done {
-						return err2
-					}
-				}
-				return nil
 			}
+
+			mavenOptions.Flags = deployFlags
+			mavenOptions.Goals = []string{"deploy"}
+			mavenOptions.Defines = []string{}
+			_, err := maven.Execute(&mavenOptions, utils)
+			if err != nil {
+				return err
+			}
+			if config.CreateBuildArtifactsMetadata {
+				err2, done := createBuildArtifactsMetadata(config, commonPipelineEnvironment)
+				if done {
+					return err2
+				}
+			}
+
+			return nil
 		} else {
 			log.Entry().Infof("publish not detected, ignoring maven deploy")
 		}
 	}
+
 	return err
 }
 
