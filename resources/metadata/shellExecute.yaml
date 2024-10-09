@@ -53,7 +53,7 @@ spec:
           `--sources ".pipeline/yourScript.sh" --scriptArguments "\"$(first_arg),$(second_arg)\""`
 
           For multiple scripts with multiple arguments per each script your command would look like:
-          `--sources ".pipeline/firstScript.sh" --sources ".pipeline/secondScript.sh" --scriptArguments "\"$(first_script_arg1),$(first_script_arg2)\"" --scriptArguments "\"$(second_script_arg1),$(second_script_arg1)\""`
+          `--sources ".pipeline/firstScript.sh" --sources ".pipeline/secondScript.sh" --scriptArguments "\"$(first_script_arg1),$(first_script_arg2)\"" --scriptArguments "\"$(second_script_arg1),$(second_script_arg2)\""`
         mandatory: false
   containers:
     - name: shell
