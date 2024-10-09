@@ -81,6 +81,20 @@ func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputMan
 				logOutputManager.StepReports = append(logOutputManager.StepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
 			}
 		}
+
+		results, err := api.GetLogOverview()
+		if err != nil || len(results) == 0 {
+			// return if no logs are available
+			return
+		}
+
+		// Sort logs
+		sort.SliceStable(results, func(i, j int) bool {
+			return results[i].Index < results[j].Index
+		})
+
+		printOverview(results, api)
+
 	} else {
 		// Get Execution Logs
 		executionLogs, err := api.GetExecutionLog()
