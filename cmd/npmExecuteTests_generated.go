@@ -21,7 +21,7 @@ import (
 
 type npmExecuteTestsOptions struct {
 	InstallCommand          string                 `json:"installCommand,omitempty"`
-	RunScript               string                 `json:"runScript,omitempty"`
+	RunCommand              string                 `json:"runCommand,omitempty"`
 	VaultMetadata           map[string]interface{} `json:"vaultMetadata,omitempty"`
 	BaseURL                 string                 `json:"baseUrl,omitempty"`
 	CredentialsEnvVarPrefix string                 `json:"credentialsEnvVarPrefix,omitempty"`
@@ -174,7 +174,7 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 
 func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm ci`, "Command to be executed for installation`.")
-	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `npm run wdi5`, "Script to be executed from package.json for running tests`.")
+	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `npm run wdi5`, "Command to be executed for running tests`.")
 
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `http://localhost:8080/index.html`, "Base URL of the application to be tested.")
 	cmd.Flags().StringVar(&stepConfig.CredentialsEnvVarPrefix, "credentialsEnvVarPrefix", `wdi5`, "Prefix for username and password env vars.")
@@ -182,7 +182,7 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringSliceVar(&stepConfig.EnvVars, "envVars", []string{}, "List of environment variables to be set")
 	cmd.Flags().StringSliceVar(&stepConfig.Paths, "paths", []string{}, "List of paths to be added to $PATH")
 
-	cmd.MarkFlagRequired("runScript")
+	cmd.MarkFlagRequired("runCommand")
 }
 
 // retrieve step metadata
@@ -206,7 +206,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Default:     `npm ci`,
 					},
 					{
-						Name:        "runScript",
+						Name:        "runCommand",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

@@ -76,7 +76,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.ExecRunner) error {
 	log.Entry().Infof("Running end to end tests for URL: %s", url)
 
-	runScriptTokens := strings.Fields(config.RunScript)
+	runScriptTokens := strings.Fields(config.RunCommand)
 	if config.UrlOptionPrefix != "" {
 		runScriptTokens = append(runScriptTokens, config.UrlOptionPrefix+url)
 	}

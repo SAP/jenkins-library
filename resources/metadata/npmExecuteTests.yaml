@@ -21,9 +21,9 @@ spec:
           - STAGES
           - STEPS
         default: "npm ci"
-      - name: runScript
+      - name: runCommand
         type: string
-        description: Script to be executed from package.json for running tests`.
+        description: Command to be executed for running tests`.
         scope:
           - PARAMETERS
           - STAGES
