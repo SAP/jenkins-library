@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -15,15 +16,14 @@ func (g *mockGcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
 	return g.config
 }
 
-func (g *mockGcpPublishEventUtilsBundle) GetOIDCTokenByValidation(roleID string) (string, error) {
-	return "testOIDCtoken123", nil
+func (g *mockGcpPublishEventUtilsBundle) NewPubsubClient(_, _, _, _, _ string) gcp.PubsubClient {
+	return &mockPubsubClient{}
 }
 
-func (g *mockGcpPublishEventUtilsBundle) GetFederatedToken(projectNumber, pool, provider, token string) (string, error) {
-	return "testFederatedToken123", nil
+type mockPubsubClient struct {
 }
 
-func (g *mockGcpPublishEventUtilsBundle) Publish(projectNumber string, topic string, token string, key string, data []byte) error {
+func (p *mockPubsubClient) Publish(topic string, _ []byte) error {
 	if topic == "goodTestCase" {
 		return nil
 	} else if topic == "badTestCase" {

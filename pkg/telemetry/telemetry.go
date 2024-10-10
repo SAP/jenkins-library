@@ -139,6 +139,16 @@ func (t *Telemetry) GetData() Data {
 	return t.data
 }
 
+func (t *Telemetry) GetDataBytes() []byte {
+	data, err := json.Marshal(t.data)
+	if err != nil {
+		log.Entry().WithError(err).Println("Failed to marshal data")
+		return []byte{}
+	}
+
+	return data
+}
+
 // Send telemetry information to SWA
 func (t *Telemetry) Send() {
 	// always log step telemetry data to logfile used for internal use-case
