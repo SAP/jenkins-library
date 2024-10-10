@@ -195,7 +195,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		if err := runBOMCreation(utils, sbomFilename); err != nil {
+		if err := runBOMCreation(config, utils, sbomFilename); err != nil {
 			return err
 		}
 	}
@@ -518,8 +518,18 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	return binaryNames, nil
 }
 
-func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
+func runBOMCreation(config *golangBuildOptions, utils golangBuildUtils, outputFilename string) error {
+	params := []string{}
+	// differentiate creation of SBOM for app only "app" vs. all packages "mod"
+	// see https://github.com/CycloneDX/cyclonedx-gomod?tab=readme-ov-file#subcommands
+	if len(config.CreateBOMMainPath) > 0 {
+		params = append(params, "app", fmt.Sprintf("-main=%v", config.CreateBOMMainPath))
+	} else {
+		params = append(params, "mod")
+	}
+	params = append(params, "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-output", outputFilename, "-output-version", "1.4")
+
+	if err := utils.RunExecutable("cyclonedx-gomod", params...); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
