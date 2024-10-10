@@ -27,7 +27,7 @@ type npmExecuteTestsOptions struct {
 	UsernameEnvVar  string                 `json:"usernameEnvVar,omitempty"`
 	PasswordEnvVar  string                 `json:"passwordEnvVar,omitempty"`
 	UrlOptionPrefix string                 `json:"urlOptionPrefix,omitempty"`
-	EnvVars         []string               `json:"envVars,omitempty"`
+	Envs            []string               `json:"envs,omitempty"`
 	Paths           []string               `json:"paths,omitempty"`
 }
 
@@ -181,7 +181,7 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.UsernameEnvVar, "usernameEnvVar", `wdi5_username`, "Env var for username.")
 	cmd.Flags().StringVar(&stepConfig.PasswordEnvVar, "passwordEnvVar", `wdi5_password`, "Env var for password.")
 	cmd.Flags().StringVar(&stepConfig.UrlOptionPrefix, "urlOptionPrefix", os.Getenv("PIPER_urlOptionPrefix"), "If you want to specify an extra option that the tested url it appended to.\nFor example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,\nwe'll add `--base-url=http://localhost` to your runScript.\n")
-	cmd.Flags().StringSliceVar(&stepConfig.EnvVars, "envVars", []string{}, "List of environment variables to be set")
+	cmd.Flags().StringSliceVar(&stepConfig.Envs, "envs", []string{}, "List of environment variables to be set")
 	cmd.Flags().StringSliceVar(&stepConfig.Paths, "paths", []string{}, "List of paths to be added to $PATH")
 
 	cmd.MarkFlagRequired("runCommand")
@@ -267,7 +267,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_urlOptionPrefix"),
 					},
 					{
-						Name:        "envVars",
+						Name:        "envs",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{},
 						Type:        "[]string",

@@ -42,8 +42,8 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		}
 	}
 
-	if len(config.EnvVars) > 0 {
-		c.SetEnv(config.EnvVars)
+	if len(config.Envs) > 0 {
+		c.SetEnv(config.Envs)
 	}
 
 	if len(config.Paths) > 0 {
