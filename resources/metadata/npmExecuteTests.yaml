@@ -67,6 +67,12 @@ spec:
           If you want to specify an extra option that the tested url it appended to.
           For example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,
           we'll add `--base-url=http://localhost` to your runScript.
+      - name: envVars
+        type: "[]string"
+        description: List of environment variables to be set
+      - name: paths
+        type: "[]string"
+        description: List of paths to be added to $PATH
   outputs:
     resources:
       - name: reports

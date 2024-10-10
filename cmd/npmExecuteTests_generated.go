@@ -26,6 +26,8 @@ type npmExecuteTestsOptions struct {
 	BaseURL                 string                 `json:"baseUrl,omitempty"`
 	CredentialsEnvVarPrefix string                 `json:"credentialsEnvVarPrefix,omitempty"`
 	UrlOptionPrefix         string                 `json:"urlOptionPrefix,omitempty"`
+	EnvVars                 []string               `json:"envVars,omitempty"`
+	Paths                   []string               `json:"paths,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -177,6 +179,8 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `http://localhost:8080/index.html`, "Base URL of the application to be tested.")
 	cmd.Flags().StringVar(&stepConfig.CredentialsEnvVarPrefix, "credentialsEnvVarPrefix", `wdi5`, "Prefix for username and password env vars.")
 	cmd.Flags().StringVar(&stepConfig.UrlOptionPrefix, "urlOptionPrefix", os.Getenv("PIPER_urlOptionPrefix"), "If you want to specify an extra option that the tested url it appended to.\nFor example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,\nwe'll add `--base-url=http://localhost` to your runScript.\n")
+	cmd.Flags().StringSliceVar(&stepConfig.EnvVars, "envVars", []string{}, "List of environment variables to be set")
+	cmd.Flags().StringSliceVar(&stepConfig.Paths, "paths", []string{}, "List of paths to be added to $PATH")
 
 	cmd.MarkFlagRequired("runScript")
 }
@@ -250,6 +254,24 @@ func npmExecuteTestsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_urlOptionPrefix"),
+					},
+					{
+						Name:        "envVars",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "paths",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

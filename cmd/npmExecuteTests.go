@@ -42,13 +42,22 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		}
 	}
 
+	if len(config.EnvVars) > 0 {
+		c.SetEnv(config.EnvVars)
+	}
+
+	if len(config.Paths) > 0 {
+		path := fmt.Sprintf("PATH=%s:%s", os.Getenv("PATH"), strings.Join(config.Paths, ":"))
+		c.SetEnv([]string{path})
+	}
+
 	installCommandTokens := strings.Fields(config.InstallCommand)
 	if err := c.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
 		return fmt.Errorf("failed to execute install command: %w", err)
 	}
 
 	for _, app := range apps {
-		credentialsToEnv(app.Username, app.Password, config.CredentialsEnvVarPrefix)
+		credentialsToEnv(app.Username, app.Password, config.CredentialsEnvVarPrefix, c)
 		err := runTestForUrl(app.URL, config, c)
 		if err != nil {
 			return err
@@ -57,7 +66,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 
 	username := config.VaultMetadata["username"].(string)
 	password := config.VaultMetadata["password"].(string)
-	credentialsToEnv(username, password, config.CredentialsEnvVarPrefix)
+	credentialsToEnv(username, password, config.CredentialsEnvVarPrefix, c)
 	if err := runTestForUrl(config.BaseURL, config, c); err != nil {
 		return err
 	}
@@ -77,7 +86,6 @@ func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.E
 	return nil
 }
 
-func credentialsToEnv(username, password, prefix string) {
-	os.Setenv(prefix+"_username", username)
-	os.Setenv(prefix+"_password", password)
+func credentialsToEnv(username, password, prefix string, c command.ExecRunner) {
+	c.SetEnv([]string{prefix + "_username=" + username, prefix + "_password=" + password})
 }
