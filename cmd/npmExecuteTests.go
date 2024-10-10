@@ -10,6 +10,18 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+type parsedMetadata struct {
+	GlobalUsername string
+	GlobalPassword string
+	URLs           []appUrl
+}
+
+type appUrl struct {
+	URL      string `json:"url"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
 func npmExecuteTests(config npmExecuteTestsOptions, _ *telemetry.CustomData) {
 	c := command.Command{}
 
@@ -22,26 +34,6 @@ func npmExecuteTests(config npmExecuteTestsOptions, _ *telemetry.CustomData) {
 }
 
 func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) error {
-	type AppUnderTest struct {
-		URL      string `json:"url"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-
-	apps := []AppUnderTest{}
-	urlsRaw, ok := config.VaultMetadata["urls"].([]interface{})
-	if ok {
-		for _, urlRaw := range urlsRaw {
-			urlMap := urlRaw.(map[string]interface{})
-			app := AppUnderTest{
-				URL:      urlMap["url"].(string),
-				Username: urlMap["username"].(string),
-				Password: urlMap["password"].(string),
-			}
-			apps = append(apps, app)
-		}
-	}
-
 	if len(config.Envs) > 0 {
 		c.SetEnv(config.Envs)
 	}
@@ -56,26 +48,27 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		return fmt.Errorf("failed to execute install command: %w", err)
 	}
 
-	for _, app := range apps {
-		credentialsToEnv(app.Username, app.Password, config.UsernameEnvVar, config.PasswordEnvVar, c)
-		err := runTestForUrl(app.URL, config, c)
-		if err != nil {
+	parsedMetadata, err := parseMetadata(config.VaultMetadata)
+	if err != nil {
+		return err
+	}
+
+	for _, app := range parsedMetadata.URLs {
+		if err := runTestForUrl(app.URL, app.Username, app.Password, config, c); err != nil {
 			return err
 		}
 	}
 
-	username := config.VaultMetadata["username"].(string)
-	password := config.VaultMetadata["password"].(string)
-	credentialsToEnv(username, password, config.UsernameEnvVar, config.PasswordEnvVar, c)
-	if err := runTestForUrl(config.BaseURL, config, c); err != nil {
+	if err := runTestForUrl(config.BaseURL, parsedMetadata.GlobalUsername, parsedMetadata.GlobalPassword, config, c); err != nil {
 		return err
 	}
 	return nil
 }
 
-func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.ExecRunner) error {
+func runTestForUrl(url, username, password string, config *npmExecuteTestsOptions, command command.ExecRunner) error {
 	log.Entry().Infof("Running end to end tests for URL: %s", url)
 
+	credentialsToEnv(username, password, config.UsernameEnvVar, config.PasswordEnvVar, command)
 	runScriptTokens := strings.Fields(config.RunCommand)
 	if config.UrlOptionPrefix != "" {
 		runScriptTokens = append(runScriptTokens, config.UrlOptionPrefix+url)
@@ -83,12 +76,63 @@ func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.E
 	if err := command.RunExecutable(runScriptTokens[0], runScriptTokens[1:]...); err != nil {
 		return fmt.Errorf("failed to execute npm script: %w", err)
 	}
+
+	// we need to reset the env vars as the next test might not have any credentials
+	resetCredentials(config.UsernameEnvVar, config.PasswordEnvVar, command)
 	return nil
+}
+
+func parseMetadata(metadata map[string]interface{}) (*parsedMetadata, error) {
+	parsedMetadata := &parsedMetadata{
+		URLs: []appUrl{},
+	}
+
+	if metadata != nil {
+		if urls, ok := metadata["urls"].([]interface{}); ok {
+			for _, url := range urls {
+				urlMap, ok := url.(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("failed to parse vault metadata: 'urls' entry is not a map")
+				}
+
+				app := appUrl{}
+				if u, ok := urlMap["url"].(string); ok {
+					app.URL = u
+				} else {
+					return nil, fmt.Errorf("failed to parse vault metadata: 'url' field is not a string")
+				}
+
+				if username, ok := urlMap["username"].(string); ok {
+					app.Username = username
+				}
+
+				if password, ok := urlMap["password"].(string); ok {
+					app.Password = password
+				}
+
+				parsedMetadata.URLs = append(parsedMetadata.URLs, app)
+			}
+		}
+
+		if username, ok := metadata["username"].(string); ok {
+			parsedMetadata.GlobalUsername = username
+		}
+		if password, ok := metadata["password"].(string); ok {
+			parsedMetadata.GlobalPassword = password
+		}
+	}
+
+	return parsedMetadata, nil
 }
 
 func credentialsToEnv(username, password, usernameEnv, passwordEnv string, c command.ExecRunner) {
 	if username == "" || password == "" {
+		log.Entry().Warnf("Missing credentials: username: %s, password: %s", username, password)
 		return
 	}
 	c.SetEnv([]string{usernameEnv + "=" + username, passwordEnv + "=" + password})
+}
+
+func resetCredentials(usernameEnv, passwordEnv string, c command.ExecRunner) {
+	c.SetEnv([]string{usernameEnv + "=", passwordEnv + "="})
 }
