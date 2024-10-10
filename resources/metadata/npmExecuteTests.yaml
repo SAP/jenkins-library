@@ -57,10 +57,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: credentialsEnvVarPrefix
+      - name: usernameEnvVar
         type: string
-        default: "wdi5"
-        description: Prefix for username and password env vars.
+        default: "wdi5_username"
+        description: Env var for username.
+      - name: passwordEnvVar
+        type: string
+        default: "wdi5_password"
+        description: Env var for password.
       - name: urlOptionPrefix
         type: string
         description: |

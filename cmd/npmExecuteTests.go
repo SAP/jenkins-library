@@ -57,7 +57,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 	}
 
 	for _, app := range apps {
-		credentialsToEnv(app.Username, app.Password, config.CredentialsEnvVarPrefix, c)
+		credentialsToEnv(app.Username, app.Password, config.UsernameEnvVar, config.PasswordEnvVar, c)
 		err := runTestForUrl(app.URL, config, c)
 		if err != nil {
 			return err
@@ -66,7 +66,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 
 	username := config.VaultMetadata["username"].(string)
 	password := config.VaultMetadata["password"].(string)
-	credentialsToEnv(username, password, config.CredentialsEnvVarPrefix, c)
+	credentialsToEnv(username, password, config.UsernameEnvVar, config.PasswordEnvVar, c)
 	if err := runTestForUrl(config.BaseURL, config, c); err != nil {
 		return err
 	}
@@ -86,6 +86,9 @@ func runTestForUrl(url string, config *npmExecuteTestsOptions, command command.E
 	return nil
 }
 
-func credentialsToEnv(username, password, prefix string, c command.ExecRunner) {
-	c.SetEnv([]string{prefix + "_username=" + username, prefix + "_password=" + password})
+func credentialsToEnv(username, password, usernameEnv, passwordEnv string, c command.ExecRunner) {
+	if username == "" || password == "" {
+		return
+	}
+	c.SetEnv([]string{usernameEnv + "=" + username, passwordEnv + "=" + password})
 }
