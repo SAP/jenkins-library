@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ func (m *mtaBuildTestUtilsBundle) SetNpmRegistries(defaultNpmRegistry string) er
 }
 
 func (m *mtaBuildTestUtilsBundle) InstallAllDependencies(defaultNpmRegistry string) error {
-	return errors.New("Test should not install dependencies.") //TODO implement test
+	return errors.New("Test should not install dependencies.") // TODO implement test
 }
 
 func (m *mtaBuildTestUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
@@ -48,11 +49,12 @@ func newMtaBuildTestUtilsBundle() *mtaBuildTestUtilsBundle {
 }
 
 func TestMtaBuild(t *testing.T) {
-
 	cpe := mtaBuildCommonPipelineEnvironment{}
+	SetConfigOptions(ConfigCommandOptions{
+		OpenFile: config.OpenPiperFile,
+	})
 
 	t.Run("Application name not set", func(t *testing.T) {
-
 		utilsMock := newMtaBuildTestUtilsBundle()
 		options := mtaBuildOptions{}
 
@@ -60,11 +62,9 @@ func TestMtaBuild(t *testing.T) {
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "'mta.yaml' not found in project sources and 'applicationName' not provided as parameter - cannot generate 'mta.yaml' file", err.Error())
-
 	})
 
 	t.Run("Provide default npm registry", func(t *testing.T) {
-
 		utilsMock := newMtaBuildTestUtilsBundle()
 		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName", Source: "./", Target: "./"}
 
@@ -78,7 +78,6 @@ func TestMtaBuild(t *testing.T) {
 	})
 
 	t.Run("Package json does not exist", func(t *testing.T) {
-
 		utilsMock := newMtaBuildTestUtilsBundle()
 
 		options := mtaBuildOptions{ApplicationName: "myApp"}
@@ -88,11 +87,9 @@ func TestMtaBuild(t *testing.T) {
 		assert.NotNil(t, err)
 
 		assert.Equal(t, "package.json file does not exist", err.Error())
-
 	})
 
 	t.Run("Write yaml file", func(t *testing.T) {
-
 		utilsMock := newMtaBuildTestUtilsBundle()
 
 		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName", Source: "./", Target: "./", EnableSetTimestamp: true}
@@ -125,11 +122,9 @@ func TestMtaBuild(t *testing.T) {
 		assert.Equal(t, "myApp", result.Modules[0].Name)
 		assert.Regexp(t, "^1\\.2\\.3-[\\d]{14}$", result.Modules[0].Parameters["version"])
 		assert.Equal(t, "myApp", result.Modules[0].Parameters["name"])
-
 	})
 
 	t.Run("Dont write mta yaml file when already present no timestamp placeholder", func(t *testing.T) {
-
 		utilsMock := newMtaBuildTestUtilsBundle()
 
 		options := mtaBuildOptions{ApplicationName: "myApp"}
@@ -143,7 +138,6 @@ func TestMtaBuild(t *testing.T) {
 	})
 
 	t.Run("Write mta yaml file when already present with timestamp placeholder", func(t *testing.T) {
-
 		utilsMock := newMtaBuildTestUtilsBundle()
 
 		options := mtaBuildOptions{ApplicationName: "myApp", EnableSetTimestamp: true}
@@ -157,7 +151,6 @@ func TestMtaBuild(t *testing.T) {
 	})
 
 	t.Run("Mta build mbt toolset", func(t *testing.T) {
-
 		utilsMock := newMtaBuildTestUtilsBundle()
 
 		cpe.mtarFilePath = ""
@@ -179,7 +172,6 @@ func TestMtaBuild(t *testing.T) {
 
 	t.Run("Source and target related tests", func(t *testing.T) {
 		t.Run("Mta build mbt toolset with custom source and target paths", func(t *testing.T) {
-
 			utilsMock := newMtaBuildTestUtilsBundle()
 
 			cpe.mtarFilePath = ""
@@ -194,9 +186,11 @@ func TestMtaBuild(t *testing.T) {
 
 			if assert.Len(t, utilsMock.Calls, 1) {
 				assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
-				assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF",
+				assert.Equal(t, []string{
+					"build", "--mtar", "myName.mtar", "--platform", "CF",
 					"--source", filepath.FromSlash("mySourcePath/"),
-					"--target", filepath.Join(_ignoreError(os.Getwd()), filepath.FromSlash("mySourcePath/myTargetPath/"))},
+					"--target", filepath.Join(_ignoreError(os.Getwd()), filepath.FromSlash("mySourcePath/myTargetPath/")),
+				},
 					utilsMock.Calls[0].Params)
 			}
 			assert.Equal(t, "mySourcePath/myTargetPath/myName.mtar", cpe.mtarFilePath)
@@ -206,7 +200,6 @@ func TestMtaBuild(t *testing.T) {
 
 	t.Run("M2Path related tests", func(t *testing.T) {
 		t.Run("Mta build mbt toolset with m2Path", func(t *testing.T) {
-
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.CurrentDir = "root_folder/workspace"
 			cpe.mtarFilePath = ""
@@ -223,9 +216,7 @@ func TestMtaBuild(t *testing.T) {
 	})
 
 	t.Run("Settings file releatd tests", func(t *testing.T) {
-
 		t.Run("Copy global settings file", func(t *testing.T) {
-
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
@@ -240,7 +231,6 @@ func TestMtaBuild(t *testing.T) {
 		})
 
 		t.Run("Copy project settings file", func(t *testing.T) {
-
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
@@ -256,9 +246,7 @@ func TestMtaBuild(t *testing.T) {
 	})
 
 	t.Run("publish related tests", func(t *testing.T) {
-
 		t.Run("error when no repository url", func(t *testing.T) {
-
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
@@ -270,12 +258,13 @@ func TestMtaBuild(t *testing.T) {
 		})
 
 		t.Run("error when no mtar group", func(t *testing.T) {
-
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
-			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", Platform: "CF", MtarName: "myName", Source: "./", Target: "./", Publish: true,
-				MtaDeploymentRepositoryURL: "dummy", MtaDeploymentRepositoryPassword: "dummy", MtaDeploymentRepositoryUser: "dummy"}
+			options := mtaBuildOptions{
+				ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", Platform: "CF", MtarName: "myName", Source: "./", Target: "./", Publish: true,
+				MtaDeploymentRepositoryURL: "dummy", MtaDeploymentRepositoryPassword: "dummy", MtaDeploymentRepositoryUser: "dummy",
+			}
 
 			err := runMtaBuild(options, &cpe, utilsMock)
 
@@ -285,7 +274,6 @@ func TestMtaBuild(t *testing.T) {
 }
 
 func TestMtaBuildSourceDir(t *testing.T) {
-
 	cpe := mtaBuildCommonPipelineEnvironment{}
 	t.Run("getSourcePath", func(t *testing.T) {
 		t.Parallel()
@@ -364,12 +352,10 @@ func TestMtaBuildSourceDir(t *testing.T) {
 		err := runMtaBuild(options, &cpe, utilsMock)
 		assert.Nil(t, err)
 		assert.Contains(t, utilsMock.Calls[0].Params, "--sbom-file-path")
-
 	})
 }
 
 func TestMtaBuildMtar(t *testing.T) {
-
 	t.Run("getMtarName", func(t *testing.T) {
 		t.Parallel()
 
@@ -412,7 +398,6 @@ func TestMtaBuildMtar(t *testing.T) {
 			assert.Equal(t, filepath.FromSlash("source/target/mta.mtar"), getMtarFilePath(mtaBuildOptions{Source: "source", Target: "target"}, "mta.mtar"))
 		})
 	})
-
 }
 
 func _ignoreError(s string, e error) string {
