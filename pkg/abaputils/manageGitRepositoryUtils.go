@@ -67,6 +67,12 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, 
 
 func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputManager) {
 
+	// Get Execution Logs
+	executionLogs, err := api.GetExecutionLog()
+	if err == nil {
+		printExecutionLogs(executionLogs)
+	}
+
 	results, _ := api.GetLogOverview()
 
 	// Sort logs
@@ -92,12 +98,6 @@ func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputMan
 		}
 
 	} else {
-		// Get Execution Logs
-		executionLogs, err := api.GetExecutionLog()
-		if err == nil {
-			printExecutionLogs(executionLogs)
-		}
-
 		// Print Details
 		if len(results) != 0 {
 			for _, logEntryForDetails := range results {
@@ -121,6 +121,10 @@ func printExecutionLogs(executionLogs ExecutionLog) {
 }
 
 func printOverview(results []LogResultsV2, api SoftwareComponentApiInterface) {
+
+	if len(results) == 0 {
+		return
+	}
 
 	logOutputPhaseLength, logOutputLineLength := calculateLenghts(results)
 
