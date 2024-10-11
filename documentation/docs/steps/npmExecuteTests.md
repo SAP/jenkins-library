@@ -43,22 +43,20 @@ and Vault configuration in PIPELINE-GROUP-<id>/PIPELINE-<id>/appMetadata
 
 ```json
 {
-  "appSecrets": {
-    "urls": [
-      {
-       "url": "http://one.example.com/index.html",
-        "username": "some-username1",
-        "password": "some-password1"
-      },
-      {
-       "url": "http://two.example.com/index.html",
-        "username": "some-username2",
-        "password": "some-password2"
-      }
-    ],
-    "username": "base-url-username",
-    "password": "base-url-password"
-  }
+  "vaultURLs": [
+    {
+      "url": "http://one.example.com/index.html",
+      "username": "some-username1",
+      "password": "some-password1"
+    },
+    {
+      "url": "http://two.example.com/index.html",
+      "username": "some-username2",
+      "password": "some-password2"
+    }
+  ],
+  "vaultUsername": "base-url-username",
+  "vaultPassword": "base-url-password"
 }
 ```
 

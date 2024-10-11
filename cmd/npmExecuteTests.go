@@ -10,13 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-type parsedMetadata struct {
-	GlobalUsername string
-	GlobalPassword string
-	URLs           []appUrl
-}
-
-type appUrl struct {
+type vaultUrl struct {
 	URL      string `json:"url"`
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`
@@ -48,18 +42,18 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		return fmt.Errorf("failed to execute install command: %w", err)
 	}
 
-	parsedMetadata, err := parseMetadata(config.VaultMetadata)
+	parsedURLs, err := parseURLs(config.VaultURLs)
 	if err != nil {
 		return err
 	}
 
-	for _, app := range parsedMetadata.URLs {
+	for _, app := range parsedURLs {
 		if err := runTestForUrl(app.URL, app.Username, app.Password, config, c); err != nil {
 			return err
 		}
 	}
 
-	if err := runTestForUrl(config.BaseURL, parsedMetadata.GlobalUsername, parsedMetadata.GlobalPassword, config, c); err != nil {
+	if err := runTestForUrl(config.BaseURL, config.VaultUsername, config.VaultPassword, config, c); err != nil {
 		return err
 	}
 	return nil
@@ -82,47 +76,26 @@ func runTestForUrl(url, username, password string, config *npmExecuteTestsOption
 	return nil
 }
 
-func parseMetadata(metadata map[string]interface{}) (*parsedMetadata, error) {
-	parsedMetadata := &parsedMetadata{
-		URLs: []appUrl{},
+func parseURLs(urls []map[string]interface{}) ([]vaultUrl, error) {
+	parsedUrls := []vaultUrl{}
+
+	for _, url := range urls {
+		parsedUrl := vaultUrl{}
+		urlStr, ok := url["url"].(string)
+		if !ok {
+			return nil, fmt.Errorf("url field is not a string")
+		}
+		parsedUrl.URL = urlStr
+		if username, ok := url["username"].(string); ok {
+			parsedUrl.Username = username
+		}
+
+		if password, ok := url["password"].(string); ok {
+			parsedUrl.Password = password
+		}
+		parsedUrls = append(parsedUrls, parsedUrl)
 	}
-
-	if metadata != nil {
-		if urls, ok := metadata["urls"].([]interface{}); ok {
-			for _, url := range urls {
-				urlMap, ok := url.(map[string]interface{})
-				if !ok {
-					return nil, fmt.Errorf("failed to parse vault metadata: 'urls' entry is not a map")
-				}
-
-				app := appUrl{}
-				if u, ok := urlMap["url"].(string); ok {
-					app.URL = u
-				} else {
-					return nil, fmt.Errorf("failed to parse vault metadata: 'url' field is not a string")
-				}
-
-				if username, ok := urlMap["username"].(string); ok {
-					app.Username = username
-				}
-
-				if password, ok := urlMap["password"].(string); ok {
-					app.Password = password
-				}
-
-				parsedMetadata.URLs = append(parsedMetadata.URLs, app)
-			}
-		}
-
-		if username, ok := metadata["username"].(string); ok {
-			parsedMetadata.GlobalUsername = username
-		}
-		if password, ok := metadata["password"].(string); ok {
-			parsedMetadata.GlobalPassword = password
-		}
-	}
-
-	return parsedMetadata, nil
+	return parsedUrls, nil
 }
 
 func credentialsToEnv(username, password, usernameEnv, passwordEnv string, c command.ExecRunner) {

@@ -30,17 +30,36 @@ spec:
           - STEPS
         mandatory: true
         default: "npm run wdi5"
-      - name: vaultMetadata
-        type: map[string]interface{}
+      - name: vaultURLs
+        type: "[]map[string]interface{}"
         description: |
-          The object must have the following structure:
-          - `urls`: An array of objects, each representing an application URL with associated credentials.
-            Each object must have the following properties:
-            - `url`: The URL of the application.
-            - `username`: The username for accessing the application.
-            - `password`: The password for accessing the application.
-          - `username`: The base URL username.
-          - `password`: The base URL password.
+          An array of objects, each representing an application URL with associated credentials.
+          Each object must have the following properties:
+          - `url`: The URL of the application.
+          - `username`: The username for accessing the application.
+          - `password`: The password for accessing the application.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecret
+            default: appMetadata
+            name: appMetadataVaultSecretName
+      - name: vaultUsername
+        type: "string"
+        description: The base URL username.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecret
+            default: appMetadata
+            name: appMetadataVaultSecretName
+      - name: vaultPassword
+        type: "string"
+        description: The base URL password.
         scope:
           - PARAMETERS
           - STAGES

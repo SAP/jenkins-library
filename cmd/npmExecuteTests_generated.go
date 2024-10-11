@@ -20,15 +20,17 @@ import (
 )
 
 type npmExecuteTestsOptions struct {
-	InstallCommand  string                 `json:"installCommand,omitempty"`
-	RunCommand      string                 `json:"runCommand,omitempty"`
-	VaultMetadata   map[string]interface{} `json:"vaultMetadata,omitempty"`
-	BaseURL         string                 `json:"baseUrl,omitempty"`
-	UsernameEnvVar  string                 `json:"usernameEnvVar,omitempty"`
-	PasswordEnvVar  string                 `json:"passwordEnvVar,omitempty"`
-	UrlOptionPrefix string                 `json:"urlOptionPrefix,omitempty"`
-	Envs            []string               `json:"envs,omitempty"`
-	Paths           []string               `json:"paths,omitempty"`
+	InstallCommand  string                   `json:"installCommand,omitempty"`
+	RunCommand      string                   `json:"runCommand,omitempty"`
+	VaultURLs       []map[string]interface{} `json:"vaultURLs,omitempty"`
+	VaultUsername   string                   `json:"vaultUsername,omitempty"`
+	VaultPassword   string                   `json:"vaultPassword,omitempty"`
+	BaseURL         string                   `json:"baseUrl,omitempty"`
+	UsernameEnvVar  string                   `json:"usernameEnvVar,omitempty"`
+	PasswordEnvVar  string                   `json:"passwordEnvVar,omitempty"`
+	UrlOptionPrefix string                   `json:"urlOptionPrefix,omitempty"`
+	Envs            []string                 `json:"envs,omitempty"`
+	Paths           []string                 `json:"paths,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -177,6 +179,8 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm ci`, "Command to be executed for installation`.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `npm run wdi5`, "Command to be executed for running tests`.")
 
+	cmd.Flags().StringVar(&stepConfig.VaultUsername, "vaultUsername", os.Getenv("PIPER_vaultUsername"), "The base URL username.")
+	cmd.Flags().StringVar(&stepConfig.VaultPassword, "vaultPassword", os.Getenv("PIPER_vaultPassword"), "The base URL password.")
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `http://localhost:8080/index.html`, "Base URL of the application to be tested.")
 	cmd.Flags().StringVar(&stepConfig.UsernameEnvVar, "usernameEnvVar", `wdi5_username`, "Env var for username.")
 	cmd.Flags().StringVar(&stepConfig.PasswordEnvVar, "passwordEnvVar", `wdi5_password`, "Env var for password.")
@@ -217,7 +221,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Default:     `npm run wdi5`,
 					},
 					{
-						Name: "vaultMetadata",
+						Name: "vaultURLs",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -226,9 +230,39 @@ func npmExecuteTestsMetadata() config.StepData {
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "map[string]interface{}",
+						Type:      "[]map[string]interface{}",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+					},
+					{
+						Name: "vaultUsername",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "appMetadataVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "appMetadata",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_vaultUsername"),
+					},
+					{
+						Name: "vaultPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "appMetadataVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "appMetadata",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_vaultPassword"),
 					},
 					{
 						Name:        "baseUrl",
