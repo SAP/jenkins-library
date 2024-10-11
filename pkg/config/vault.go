@@ -99,6 +99,9 @@ func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...ma
 	}
 }
 
+// GetVaultClientFromConfig logs in to Vault and returns authorized Vault client.
+// It's important to revoke token provided to this client after usage.
+// Currently, revocation will happen at the end of each step execution (see _generated.go part of the steps)
 func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredentials) (VaultClient, error) {
 	address, addressOk := config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error

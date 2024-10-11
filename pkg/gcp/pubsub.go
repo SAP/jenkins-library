@@ -45,6 +45,10 @@ func (cl *pubsubClient) Publish(topic string, data []byte) error {
 }
 
 func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Client, error) {
+	if cl.vaultClient == nil {
+		return nil, errors.New("Vault client is not configured")
+	}
+
 	oidcToken, err := cl.vaultClient.GetOIDCTokenByValidation(cl.oidcRoleId)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get oidc token")
