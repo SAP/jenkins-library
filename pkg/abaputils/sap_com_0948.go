@@ -239,6 +239,10 @@ func (api *SAP_COM_0948) GetAction() (string, error) {
 	return abapStatusCode, nil
 }
 
+func (api *SAP_COM_0948) getRepositoryName() string {
+	return api.repository.Name
+}
+
 func (api *SAP_COM_0948) GetRepository() (bool, string, error, bool) {
 
 	if api.repository.Name == "" {
@@ -304,6 +308,28 @@ func (api *SAP_COM_0948) Clone() error {
 
 	return api.triggerRequest(cloneConnectionDetails, []byte(body))
 
+}
+
+func (api *SAP_COM_0948) GetLogArchive() (result []byte, err error) {
+
+	connectionDetails := api.con
+	connectionDetails.URL = api.con.URL + api.path + "/LogArchive/" + api.getUUID() + "/download"
+	resp, err := GetHTTPResponse("GET", connectionDetails, nil, api.client)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		_, err = handleHTTPError(resp, err, api.failureMessage, connectionDetails)
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("Error: HTTP Status", resp.StatusCode)
+		return nil, resp.Request.Context().Err()
+	}
+
+	body, err := io.ReadAll(resp.Body)
+
+	return body, err
 }
 
 func (api *SAP_COM_0948) triggerRequest(cloneConnectionDetails ConnectionDetailsHTTP, jsonBody []byte) error {

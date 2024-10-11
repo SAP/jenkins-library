@@ -49,6 +49,10 @@ func getJWTTokenPayload(token string) ([]byte, error) {
 }
 
 func oidcTokenIsValid(token string) bool {
+	if token == "" {
+		return false
+	}
+
 	payload, err := getJWTTokenPayload(token)
 	if err != nil {
 		log.Entry().Debugf("OIDC token couldn't be validated: %s", err)
@@ -71,13 +75,13 @@ func oidcTokenIsValid(token string) bool {
 // GetOIDCTokenByValidation returns the token if token is expired then get a new token else return old token
 func (v Client) GetOIDCTokenByValidation(roleID string) (string, error) {
 	token := os.Getenv("PIPER_OIDCIdentityToken")
-	if token != "" && oidcTokenIsValid(token) {
+	if oidcTokenIsValid(token) {
 		return token, nil
 	}
 
 	token, err := v.getOIDCToken(roleID)
 	if token == "" || err != nil {
-		return "", errors.Wrap(err, "failed to get OIDC token")
+		return "", err
 	}
 
 	return token, nil
