@@ -70,7 +70,6 @@ func XsDeployCommand() *cobra.Command {
 	var commonPipelineEnvironment xsDeployCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createXsDeployCmd = &cobra.Command{
@@ -93,7 +92,6 @@ func XsDeployCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -124,6 +122,11 @@ func XsDeployCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -152,7 +155,7 @@ func XsDeployCommand() *cobra.Command {
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -165,7 +168,6 @@ func XsDeployCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			xsDeploy(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

@@ -78,7 +78,6 @@ func ContrastExecuteScanCommand() *cobra.Command {
 	var reports contrastExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createContrastExecuteScanCmd = &cobra.Command{
@@ -101,7 +100,6 @@ func ContrastExecuteScanCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.UserAPIKey)
 			log.RegisterSecret(stepConfig.ServiceKey)
 			log.RegisterSecret(stepConfig.Username)
@@ -133,6 +131,11 @@ func ContrastExecuteScanCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -161,7 +164,7 @@ func ContrastExecuteScanCommand() *cobra.Command {
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -174,7 +177,6 @@ func ContrastExecuteScanCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			contrastExecuteScan(stepConfig, &stepTelemetryData)

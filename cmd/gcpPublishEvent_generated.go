@@ -39,7 +39,6 @@ func GcpPublishEventCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createGcpPublishEventCmd = &cobra.Command{
@@ -63,7 +62,6 @@ Authentication to GCP is handled by an OIDC token received from, for example, Va
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -92,6 +90,11 @@ Authentication to GCP is handled by an OIDC token received from, for example, Va
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -119,7 +122,7 @@ Authentication to GCP is handled by an OIDC token received from, for example, Va
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -132,7 +135,6 @@ Authentication to GCP is handled by an OIDC token received from, for example, Va
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			gcpPublishEvent(stepConfig, &stepTelemetryData)

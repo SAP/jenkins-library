@@ -35,7 +35,6 @@ func HadolintExecuteCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createHadolintExecuteCmd = &cobra.Command{
@@ -59,7 +58,6 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.ConfigurationUsername)
 			log.RegisterSecret(stepConfig.ConfigurationPassword)
 
@@ -90,6 +88,11 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -117,7 +120,7 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -130,7 +133,6 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			hadolintExecute(stepConfig, &stepTelemetryData)

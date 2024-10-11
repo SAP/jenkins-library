@@ -71,7 +71,6 @@ func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 	var commonPipelineEnvironment abapEnvironmentAssemblePackagesCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
@@ -95,7 +94,6 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -126,6 +124,11 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -154,7 +157,7 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -167,7 +170,6 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			abapEnvironmentAssemblePackages(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

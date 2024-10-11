@@ -30,7 +30,6 @@ func AwsS3UploadCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createAwsS3UploadCmd = &cobra.Command{
@@ -54,7 +53,6 @@ In case a file is uploaded that is already contained in the S3 bucket, it will b
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.JSONCredentialsAWS)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -84,6 +82,11 @@ In case a file is uploaded that is already contained in the S3 bucket, it will b
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -111,7 +114,7 @@ In case a file is uploaded that is already contained in the S3 bucket, it will b
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -124,7 +127,6 @@ In case a file is uploaded that is already contained in the S3 bucket, it will b
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			awsS3Upload(stepConfig, &stepTelemetryData)

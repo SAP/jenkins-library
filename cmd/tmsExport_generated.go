@@ -73,7 +73,6 @@ func TmsExportCommand() *cobra.Command {
 	var influx tmsExportInflux
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTmsExportCmd = &cobra.Command{
@@ -103,7 +102,6 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.TmsServiceKey)
 			log.RegisterSecret(stepConfig.ServiceKey)
 
@@ -134,6 +132,11 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -162,7 +165,7 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -175,7 +178,6 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			tmsExport(stepConfig, &stepTelemetryData, &influx)

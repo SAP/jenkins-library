@@ -114,7 +114,6 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var {{.CreateCmdVar}} = &cobra.Command{
@@ -137,7 +136,6 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
@@ -169,6 +167,11 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -206,7 +209,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				}
 				if {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -219,7 +222,6 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.PendoConfig.Token)
 			{{.StepName}}(stepConfig, &stepTelemetryData{{ range $notused, $oRes := .OutputResources}}{{ if ne (index $oRes "type") "reports" }}, &{{ index $oRes "name" }}{{ end }}{{ end }})

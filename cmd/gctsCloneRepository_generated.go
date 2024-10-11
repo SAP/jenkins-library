@@ -35,7 +35,6 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createGctsCloneRepositoryCmd = &cobra.Command{
@@ -58,7 +57,6 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -89,6 +87,11 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -116,7 +119,7 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -129,7 +132,6 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			gctsCloneRepository(stepConfig, &stepTelemetryData)

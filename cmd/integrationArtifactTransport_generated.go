@@ -33,7 +33,6 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createIntegrationArtifactTransportCmd = &cobra.Command{
@@ -56,7 +55,6 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.CasServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -86,6 +84,11 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -113,7 +116,7 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -126,7 +129,6 @@ func IntegrationArtifactTransportCommand() *cobra.Command {
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			integrationArtifactTransport(stepConfig, &stepTelemetryData)

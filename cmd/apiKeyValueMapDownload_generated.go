@@ -31,7 +31,6 @@ func ApiKeyValueMapDownloadCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createApiKeyValueMapDownloadCmd = &cobra.Command{
@@ -55,7 +54,6 @@ Learn more about the SAP API Management API for downloading an Key Value Map art
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.APIServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -85,6 +83,11 @@ Learn more about the SAP API Management API for downloading an Key Value Map art
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -112,7 +115,7 @@ Learn more about the SAP API Management API for downloading an Key Value Map art
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -125,7 +128,6 @@ Learn more about the SAP API Management API for downloading an Key Value Map art
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			apiKeyValueMapDownload(stepConfig, &stepTelemetryData)

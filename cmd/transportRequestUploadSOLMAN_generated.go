@@ -69,7 +69,6 @@ func TransportRequestUploadSOLMANCommand() *cobra.Command {
 	var commonPipelineEnvironment transportRequestUploadSOLMANCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTransportRequestUploadSOLMANCmd = &cobra.Command{
@@ -94,7 +93,6 @@ The application ID specifies how the file needs to be handled on server side.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -125,6 +123,11 @@ The application ID specifies how the file needs to be handled on server side.`,
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -153,7 +156,7 @@ The application ID specifies how the file needs to be handled on server side.`,
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -166,7 +169,6 @@ The application ID specifies how the file needs to be handled on server side.`,
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			transportRequestUploadSOLMAN(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

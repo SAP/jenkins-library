@@ -35,7 +35,6 @@ func ContainerSaveImageCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createContainerSaveImageCmd = &cobra.Command{
@@ -60,7 +59,6 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
@@ -92,6 +90,11 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -119,7 +122,7 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -132,7 +135,6 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			containerSaveImage(stepConfig, &stepTelemetryData)

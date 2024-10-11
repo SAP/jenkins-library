@@ -207,7 +207,6 @@ func FortifyExecuteScanCommand() *cobra.Command {
 	var reports fortifyExecuteScanReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createFortifyExecuteScanCmd = &cobra.Command{
@@ -241,7 +240,6 @@ Besides triggering a scan the step verifies the results after they have been upl
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.AuthToken)
 			log.RegisterSecret(stepConfig.GithubToken)
 
@@ -272,6 +270,11 @@ Besides triggering a scan the step verifies the results after they have been upl
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -301,7 +304,7 @@ Besides triggering a scan the step verifies the results after they have been upl
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -314,7 +317,6 @@ Besides triggering a scan the step verifies the results after they have been upl
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			fortifyExecuteScan(stepConfig, &stepTelemetryData, &influx)

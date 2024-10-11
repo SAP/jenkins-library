@@ -90,7 +90,6 @@ func HelmExecuteCommand() *cobra.Command {
 	var commonPipelineEnvironment helmExecuteCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createHelmExecuteCmd = &cobra.Command{
@@ -134,7 +133,6 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.TargetRepositoryUser)
 			log.RegisterSecret(stepConfig.TargetRepositoryPassword)
 			log.RegisterSecret(stepConfig.SourceRepositoryUser)
@@ -169,6 +167,11 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -197,7 +200,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -210,7 +213,6 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			helmExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)

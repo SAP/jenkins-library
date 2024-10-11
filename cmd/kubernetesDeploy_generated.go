@@ -66,7 +66,6 @@ func KubernetesDeployCommand() *cobra.Command {
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createKubernetesDeployCmd = &cobra.Command{
@@ -106,7 +105,6 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.GithubToken)
@@ -141,6 +139,11 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -168,7 +171,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -181,7 +184,6 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			kubernetesDeploy(stepConfig, &stepTelemetryData)

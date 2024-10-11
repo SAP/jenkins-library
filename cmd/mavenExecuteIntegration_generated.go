@@ -80,7 +80,6 @@ func MavenExecuteIntegrationCommand() *cobra.Command {
 	var reports mavenExecuteIntegrationReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
-	var vaultClient config.VaultClient
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createMavenExecuteIntegrationCmd = &cobra.Command{
@@ -104,7 +103,6 @@ the integration tests via the Jacoco Maven-plugin.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -133,6 +131,11 @@ the integration tests via the Jacoco Maven-plugin.`,
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -161,7 +164,7 @@ the integration tests via the Jacoco Maven-plugin.`,
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					err := gcp.NewGcpPubsubClient(
-						config.GlobalVaultClient(),
+						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -174,7 +177,6 @@ the integration tests via the Jacoco Maven-plugin.`,
 				}
 			}
 			log.DeferExitHandler(handler)
-			defer vaultClient.MustRevokeToken()
 			defer handler()
 			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
 			mavenExecuteIntegration(stepConfig, &stepTelemetryData)
