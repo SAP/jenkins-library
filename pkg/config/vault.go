@@ -86,6 +86,11 @@ type VaultClient interface {
 var globalVaultClient *vault.Client
 
 func GlobalVaultClient() VaultClient {
+	// an interface containing a nil pointer is considered non-nil in Go
+	if globalVaultClient == nil {
+		return nil
+	}
+
 	return globalVaultClient
 }
 
