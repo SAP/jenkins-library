@@ -153,7 +153,7 @@ func GetStageConfig() (config.StepConfig, error) {
 	cfg, err := myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 
 	if currentOrchestrator == "Jenkins" {
-		log.Entry().Info("CBfix: replacing stage name")
+		log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Central Build")
 		if stage, ok := myConfig.Stages["Central Build"]; ok {
 			log.Entry().Info("CBfix: Central Build stage name found")
 			delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
