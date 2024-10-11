@@ -128,7 +128,7 @@ func GetStageConfig() (config.StepConfig, error) {
 	myConfig := config.Config{}
 	stepConfig := config.StepConfig{}
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
-	currentOrchestrator := orchestrator.DetectOrchestrator().String()
+	//currentOrchestrator := orchestrator.DetectOrchestrator().String()
 
 	customConfig, err := configOptions.OpenFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
@@ -150,19 +150,19 @@ func GetStageConfig() (config.StepConfig, error) {
 		}
 	}
 
-	cfg, err := myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
+	// cfg, err := myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 
-	if currentOrchestrator == "Jenkins" {
-		log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Central Build")
-		if stage, ok := myConfig.Stages["Central Build"]; ok {
-			log.Entry().Info("CBfix: Central Build stage name was found")
-			delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
-			myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
-			log.Entry().Info(myConfig.Stages["Build"])
-		}
-	}
+	// if currentOrchestrator == "Jenkins" {
+	// 	log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Central Build")
+	// 	if stage, ok := myConfig.Stages["Central Build"]; ok {
+	// 		log.Entry().Info("CBfix: Central Build stage name was found")
+	// 		delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
+	// 		myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
+	// 		log.Entry().Info(myConfig.Stages["Build"])
+	// 	}
+	// }
 
-	return cfg, err
+	return myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 }
 
 func getConfig() (config.StepConfig, error) {
@@ -229,16 +229,16 @@ func getConfig() (config.StepConfig, error) {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
 
-		myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
+		// myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 
-		if currentOrchestrator == "Jenkins" {
-			log.Entry().Info("CBfix: replacing stage name")
-			if stage, ok := myConfig.Stages["Central Build"]; ok {
-				log.Entry().Info("CBfix: Central Build stage name found")
-				delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
-				myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
-			}
-		}
+		// if currentOrchestrator == "Jenkins" {
+		// 	log.Entry().Info("CBfix: replacing stage name")
+		// 	if stage, ok := myConfig.Stages["Central Build"]; ok {
+		// 		log.Entry().Info("CBfix: Central Build stage name found")
+		// 		delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
+		// 		myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
+		// 	}
+		// }
 
 		stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
