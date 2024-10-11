@@ -155,9 +155,10 @@ func GetStageConfig() (config.StepConfig, error) {
 	if currentOrchestrator == "Jenkins" {
 		log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Central Build")
 		if stage, ok := myConfig.Stages["Central Build"]; ok {
-			log.Entry().Info("CBfix: Central Build stage name found")
+			log.Entry().Info("CBfix: Central Build stage name was found")
 			delete(myConfig.Stages, "Central Build") // Remove "Central Build" stage name
 			myConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
+			log.Entry().Info(myConfig.Stages["Build"])
 		}
 	}
 
