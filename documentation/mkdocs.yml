@@ -155,6 +155,7 @@ nav:
         - npmExecuteEndToEndTests: steps/npmExecuteEndToEndTests.md
         - npmExecuteLint: steps/npmExecuteLint.md
         - npmExecuteScripts: steps/npmExecuteScripts.md
+        - npmExecuteTests: steps/npmExecuteTests.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
