@@ -10,7 +10,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
@@ -169,7 +168,7 @@ func getConfig() (config.StepConfig, error) {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 	var err error
-	currentOrchestrator := orchestrator.DetectOrchestrator().String()
+	//currentOrchestrator := orchestrator.DetectOrchestrator().String()
 
 	if configOptions.StageConfig {
 		stepConfig, err = GetStageConfig()
