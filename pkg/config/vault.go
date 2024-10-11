@@ -320,7 +320,6 @@ func resolveVaultCredentials(config *StepConfig, client VaultClient) {
 }
 
 func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string, keys []string) (matched bool) {
-
 	vaultTestCredentialEnvPrefix, ok := config.Config["vaultTestCredentialEnvPrefix"].(string)
 	if !ok || len(vaultTestCredentialEnvPrefix) == 0 {
 		vaultTestCredentialEnvPrefix = vaultTestCredentialEnvPrefixDefault
@@ -340,7 +339,6 @@ func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string,
 }
 
 func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, keys []string) (matched bool) {
-
 	vaultCredentialEnvPrefix, ok := config.Config["vaultCredentialEnvPrefix"].(string)
 	isCredentialEnvPrefixDefault := false
 
