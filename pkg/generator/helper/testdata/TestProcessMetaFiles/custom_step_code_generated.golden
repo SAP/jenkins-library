@@ -176,7 +176,6 @@ func TestStepCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			vaultClient = config.GlobalVaultClient()
 
 			if len(piperOsCmd.GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(piperOsCmd.GeneralConfig.HookConfig.SentryConfig.Dsn, piperOsCmd.GeneralConfig.CorrelationID)
