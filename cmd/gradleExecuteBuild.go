@@ -195,7 +195,7 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 
 	dockerImage, err := GetDockerImageValue(stepNameForBuildSettings)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to retrieve dockerImage configuration: %w", err)
 	}
 
 	gradleConfig := buildsettings.BuildOptions{

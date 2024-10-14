@@ -74,7 +74,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			jsonResult, err = json.Marshal(BuildSettings{
 				GolangBuild: settings,
 			})
-		case "gradleBuild":
+		case "gradleExecuteBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
 				GradleBuild: settings,
 			})
