@@ -573,3 +573,25 @@ func TestGetExecutionLog(t *testing.T) {
 		assert.Equal(t, "First log entry", results.Value[0].Descr)
 	})
 }
+
+func TestGetLogArchive(t *testing.T) {
+	t.Run("Test Get Log Archive Success", func(t *testing.T) {
+
+		client := &ClientMock{
+			BodyList: []string{
+				`{ zip content from log archive endpoint }`,
+				``,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		apiManager := &SoftwareComponentApiManager{Client: client}
+
+		api, _ := apiManager.GetAPI(conTest0948, Repository{Name: "/DMO/REPO"})
+
+		results, errAction := api.GetLogArchive()
+		assert.NoError(t, errAction)
+		assert.NotEmpty(t, results)
+	})
+}
