@@ -237,7 +237,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	commonPipelineEnvironment.git.commitID = gitCommitID // this commitID changes and is not necessarily the HEAD commitID
 	commonPipelineEnvironment.artifactVersion = newVersion
 	commonPipelineEnvironment.originalArtifactVersion = version
-	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
+
+	gitCommitMessages := strings.Split(gitCommitMessage, "\n")
+	commonPipelineEnvironment.git.commitMessage = gitCommitMessages[0]
 
 	// we may replace GetVersion() above with GetCoordinates() at some point ...
 	coordinates, err := artifact.GetCoordinates()
