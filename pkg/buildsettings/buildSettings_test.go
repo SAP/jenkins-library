@@ -28,9 +28,9 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 				expected:  "{\"golangBuild\":[{\"dockerImage\":\"golang:latest\"}]}",
 			},
 			{
-				config:    BuildOptions{CreateBOM: true},
-				buildTool: "gradleBuild",
-				expected:  "{\"gradleBuild\":[{\"createBOM\":true}]}",
+				config:    BuildOptions{CreateBOM: true, DockerImage: "gradle:latest"},
+				buildTool: "gradleExecuteBuild",
+				expected:  "{\"gradleExecuteBuild\":[{\"createBOM\":true}]}",
 			},
 			{
 				config:    BuildOptions{Publish: true},
