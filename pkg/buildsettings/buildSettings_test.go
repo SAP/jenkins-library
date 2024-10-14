@@ -30,7 +30,7 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 			{
 				config:    BuildOptions{CreateBOM: true, DockerImage: "gradle:latest"},
 				buildTool: "gradleExecuteBuild",
-				expected:  "{\"gradleExecuteBuild\":[{\"createBOM\":true}]}",
+				expected:  "{\"gradleExecuteBuild\":[{\"createBOM\":true,\"dockerImage\":\"gradle:latest\"]}",
 			},
 			{
 				config:    BuildOptions{Publish: true},
