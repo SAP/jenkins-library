@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package buildsettings
 
 import (
@@ -77,7 +74,7 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 		for _, testCase := range testTableConfig {
 			buildSettings, err := CreateBuildSettingsInfo(&testCase.config, testCase.buildTool)
 			assert.Nil(t, err)
-			assert.Equal(t, buildSettings, testCase.expected)
+			assert.Equal(t, testCase.expected, buildSettings)
 		}
 	})
 
