@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -30,14 +31,23 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 		PollIntervall: 5 * time.Second,
 	}
 
+	var reports []piperutils.Path
+
+	logOutputManager := abaputils.LogOutputManager{
+		LogOutput:    options.LogOutput,
+		PiperStep:    "checkoutBranch",
+		FileNameStep: "checkoutBranch",
+		StepReports:  reports,
+	}
+
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCheckoutBranch(&options, &autils, &apiManager)
+	err := runAbapEnvironmentCheckoutBranch(&options, &autils, &apiManager, &logOutputManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
+func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 
 	// Mapping for options
 	subOptions := convertCheckoutConfig(options)
@@ -58,19 +68,24 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	if err != nil {
 		return errors.Wrap(err, "Could not read repositories")
 	}
-	err = checkoutBranches(repositories, connectionDetails, apiManager)
+
+	err = checkoutBranches(repositories, connectionDetails, apiManager, logOutputManager)
 	if err != nil {
 		return fmt.Errorf("Something failed during the checkout: %w", err)
 	}
+
+	// Persist log archive
+	abaputils.PersistArchiveLogsForPiperStep(logOutputManager)
+
 	log.Entry().Infof("-------------------------")
 	log.Entry().Info("All branches were checked out successfully")
 	return nil
 }
 
-func checkoutBranches(repositories []abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
+func checkoutBranches(repositories []abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 	log.Entry().Infof("Start switching %v branches", len(repositories))
 	for _, repo := range repositories {
-		err = handleCheckout(repo, checkoutConnectionDetails, apiManager)
+		err = handleCheckout(repo, checkoutConnectionDetails, apiManager, logOutputManager)
 		if err != nil {
 			break
 		}
@@ -96,7 +111,7 @@ func checkCheckoutBranchRepositoryConfiguration(options abapEnvironmentCheckoutB
 	return nil
 }
 
-func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
+func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 
 	if reflect.DeepEqual(abaputils.Repository{}, repo) {
 		return fmt.Errorf("Failed to read repository configuration: %w", errors.New("Error in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
@@ -113,8 +128,10 @@ func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputi
 		return fmt.Errorf("Failed to trigger Checkout: %w", errors.New("Checkout of "+repo.Branch+" for software component "+repo.Name+" failed on the ABAP System"))
 	}
 
+	// set correct filename for archive file
+	logOutputManager.FileNameStep = "checkoutBranch"
 	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
 	if errorPollEntity != nil {
 		return fmt.Errorf("Failed to poll Checkout: %w", errors.New("Status of checkout action on repository"+repo.Name+" failed on the ABAP System"))
 	}
