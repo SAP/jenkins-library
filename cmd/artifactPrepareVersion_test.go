@@ -909,11 +909,11 @@ func TestTruncateString(t *testing.T) {
 		expected := "パイパーは..."
 
 		outputStr := truncateString(inputStr, 5)
-		assertEqual(t, outputStr, expected)
+		assert.Equal(t, outputStr, expected)
 	})
 
 	t.Run("input string is empty", func(t *testing.T) {
 		outputStr := truncateString("", 5)
-		assertEqual(t, outputStr, "")
+		assert.Equal(t, outputStr, "")
 	})
 }
