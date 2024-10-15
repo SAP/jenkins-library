@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
@@ -36,13 +35,13 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 
 	currentOrchestrator := orchestrator.DetectOrchestrator().String()
 	for _, stage := range r.PipelineConfig.Spec.Stages {
-		if currentOrchestrator == "Jenkins" {
-			log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Build")
-			if stage.DisplayName == "Build" {
-				log.Entry().Info("CBfix: Build stage name was found")
-				stage.DisplayName = "Central Build" // rename DisplayName field
-			}
-		}
+		// if currentOrchestrator == "Jenkins" {
+		// 	log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Build")
+		// 	if stage.DisplayName == "Build" {
+		// 		log.Entry().Info("CBfix: Build stage name was found")
+		// 		stage.DisplayName = "Central Build" // rename DisplayName field
+		// 	}
+		// }
 		// Currently, the displayName is being used, but it may be necessary
 		// to also consider using the technical name.
 		stageName := stage.DisplayName
