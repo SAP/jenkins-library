@@ -3,6 +3,7 @@ module github.com/SAP/jenkins-library
 go 1.22.4
 
 require (
+	cloud.google.com/go/pubsub v1.36.1
 	cloud.google.com/go/storage v1.38.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/BurntSushi/toml v1.3.2
