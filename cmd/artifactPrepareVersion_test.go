@@ -914,6 +914,6 @@ func TestTruncateString(t *testing.T) {
 
 	t.Run("input string is empty") {
 		outputStr := truncateString("", 5)
-		assertEqual(t, "", "")
+		assertEqual(t, outputStr, "")
 	}
 }
