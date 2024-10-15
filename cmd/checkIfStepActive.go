@@ -89,18 +89,22 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
 	currentOrchestrator := orchestrator.DetectOrchestrator().String()
 	if currentOrchestrator == "Jenkins" {
-		log.Entry().Info("CBfix config: ", runConfigV1)
-		log.Entry().Info("CBfix steps: ", runConfigV1.RunSteps)
-		log.Entry().Info("CBfix old runconfig: ", runConfigV1.RunConfig)
-		log.Entry().Info("CBfix runStages: ", runConfigV1.RunStages)
+		log.Entry().Info("CBfix [Central Build] steps: ", runConfigV1.RunSteps["Central Build"])
+		log.Entry().Info("CBfix [Build] steps: ", runConfigV1.RunSteps["Build"])
 		log.Entry().Info("CBfix [Central Build] config: ", runConfigV1.RunStages["Central Build"])
 		log.Entry().Info("CBfix [Build] config: ", runConfigV1.RunStages["Build"])
 		log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Central Build")
-		if stage, ok := runConfigV1.RunConfig.StageConfig.Stages["Central Build"]; ok {
+		if stage, ok := runConfigV1.RunStages["Central Build"]; ok {
 			log.Entry().Info("CBfix: Central Build stage name was found")
-			delete(runConfigV1.StageConfig.Stages, "Central Build") // Remove "Central Build" stage name
-			runConfigV1.StageConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
-			log.Entry().Info(runConfigV1.StageConfig.Stages["Build"])
+			delete(runConfigV1.RunStages, "Central Build") // Remove "Central Build" stage name
+			runConfigV1.RunStages["Build"] = stage         // Assign the inner steps map "Build" stage name
+			log.Entry().Info(runConfigV1.RunStages["Build"])
+		}
+		if stage, ok := runConfigV1.RunSteps["Central Build"]; ok {
+			log.Entry().Info("CBfix: Central Build stage name was found")
+			delete(runConfigV1.RunSteps, "Central Build") // Remove "Central Build" stage name
+			runConfigV1.RunSteps["Build"] = stage         // Assign the inner steps map "Build" stage name
+			log.Entry().Info(runConfigV1.RunSteps["Build"])
 		}
 	}
 	if err != nil {
