@@ -343,11 +343,6 @@ func (v *Client) GetAppRoleName() (string, error) {
 	return roleNameStr, nil
 }
 
-// SetAppRoleMountPoint sets the path under which the approle auth backend is mounted
-func (v *Client) SetAppRoleMountPoint(appRoleMountpoint string) {
-	v.config.AppRoleMountPoint = appRoleMountpoint
-}
-
 func (v *Client) getAppRolePath(roleName string) string {
 	appRoleMountPoint := v.config.AppRoleMountPoint
 	if appRoleMountPoint == "" {

@@ -335,15 +335,6 @@ func TestUnknownKvVersion(t *testing.T) {
 
 }
 
-func TestSetAppRoleMountPont(t *testing.T) {
-	client := Client{nil, &Config{}}
-	const newMountpoint = "auth/test"
-
-	client.SetAppRoleMountPoint("auth/test")
-
-	assert.Equal(t, newMountpoint, client.config.AppRoleMountPoint)
-}
-
 func setupMockKvV2(vaultMock *mocks.VaultMock) {
 	vaultMock.On("Read", mock.MatchedBy(func(path string) bool {
 		return strings.HasPrefix(path, sysLookupPath)
