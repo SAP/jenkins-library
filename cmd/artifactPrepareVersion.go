@@ -241,6 +241,8 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	gitCommitMessages := strings.Split(gitCommitMessage, "\n")
 	commonPipelineEnvironment.git.commitMessage = gitCommitMessages[0]
 
+	log.Entry().Debugf("commonPipelineEnvironment.git.commitMessage:", gitCommitMessages[0])
+
 	// we may replace GetVersion() above with GetCoordinates() at some point ...
 	coordinates, err := artifact.GetCoordinates()
 	if err != nil && !config.FetchCoordinates {
