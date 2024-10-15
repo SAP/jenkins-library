@@ -31,9 +31,10 @@ type ScanOptions struct {
 	DefaultNpmRegistry        string
 	NpmIncludeDevDependencies bool
 
-	AgentDownloadURL string
-	AgentFileName    string
-	ConfigFilePath   string
+	AgentDownloadURL       string
+	AgentFileName          string
+	ConfigFilePath         string
+	UseGlobalConfiguration bool
 
 	JreDownloadURL string
 
