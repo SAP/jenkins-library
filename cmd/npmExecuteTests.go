@@ -37,7 +37,12 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		c.SetEnv([]string{path})
 	}
 
-	if err := c.RunExecutable("npm", "config", "set", "cache", "~/.npm-cache", "--global"); err != nil {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %w", err)
+	}
+	npmCacheDir := fmt.Sprintf("%s/.npm-cache", homeDir)
+	if err := c.RunExecutable("npm", "config", "set", "cache", npmCacheDir, "--global"); err != nil {
 		return fmt.Errorf("failed to set npm cache directory: %w", err)
 	}
 
