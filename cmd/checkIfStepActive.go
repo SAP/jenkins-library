@@ -91,6 +91,8 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	if currentOrchestrator == "Jenkins" {
 		log.Entry().Info("CBfix config: ", runConfigV1)
 		log.Entry().Info("CBfix stages: ", runConfigV1.StageConfig)
+		log.Entry().Info("CBfix old runconfig: ", runConfigV1.RunConfig)
+		log.Entry().Info("CBfix runStages: ", runConfigV1.RunStages)
 		log.Entry().Info("CBfix [Central Build] config: ", runConfigV1.StageConfig.Stages["Central Build"])
 		log.Entry().Info("CBfix [Build] config: ", runConfigV1.StageConfig.Stages["Build"])
 		log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Central Build")
