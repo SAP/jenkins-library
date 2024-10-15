@@ -111,4 +111,4 @@ spec:
           value: ${{params.baseUrl}}
         - name: CREDENTIALS_ID
           value: ${{params.credentialsId}}
-      workingDir: /app
+      workingDir: /home/node
