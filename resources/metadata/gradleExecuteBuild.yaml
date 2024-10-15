@@ -157,6 +157,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: buildSettingsInfo
+        type: string
+        description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the gradle build. This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
   outputs:
     resources:
       - name: reports
@@ -169,6 +179,7 @@ spec:
         params:
           - name: custom/artifacts
             type: "piperenv.Artifacts"
+          - name: custom/buildSettingsInfo
   containers:
     - name: gradle
       image: gradle:6-jdk11-alpine
