@@ -239,9 +239,11 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	commonPipelineEnvironment.originalArtifactVersion = version
 
 	gitCommitMessages := strings.Split(gitCommitMessage, "\n")
-	commonPipelineEnvironment.git.commitMessage = gitCommitMessages[0]
+	commitMessage := truncateString(gitCommitMessages[0], 50) // Github recommends to keep commit message title less than 50 chars
 
-	log.Entry().Debug("commonPipelineEnvironment.git.commitMessage:", gitCommitMessages[0])
+	commonPipelineEnvironment.git.commitMessage = commitMessage
+
+	log.Entry().Debug("CPE git commitMessage:", commitMessage)
 
 	// we may replace GetVersion() above with GetCoordinates() at some point ...
 	coordinates, err := artifact.GetCoordinates()
@@ -256,6 +258,15 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	}
 
 	return nil
+}
+
+func truncateString(str string, maxLength int) string {
+	chars := []rune(str)
+
+	if len(chars) > maxLength {
+		return string(chars[:maxLength]) + "..."
+	}
+	return str
 }
 
 func openGit() (gitRepository, error) {
