@@ -88,14 +88,14 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 
 	currentOrchestrator := orchestrator.DetectOrchestrator().String()
 	if currentOrchestrator == "Jenkins" {
-		log.Entry().Info("CBfix stages: ", runConfig.StageConfig)
+		log.Entry().Info("CBfix stages: ", runConfig.StageConfig.Stages)
 		log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Central Build")
-		// if stage, ok := runConfig.StageConfig["Central Build"]; ok {
-		// 	log.Entry().Info("CBfix: Central Build stage name was found")
-		// 	delete(runConfig.StageConfig, "Central Build") // Remove "Central Build" stage name
-		// 	runConfig.StageConfig["Build"] = stage         // Assign the inner steps map "Build" stage name
-		// 	log.Entry().Info(runConfig.StageConfig["Build"])
-		// }
+		if stage, ok := runConfig.StageConfig.Stages["Central Build"]; ok {
+			log.Entry().Info("CBfix: Central Build stage name was found")
+			delete(runConfig.StageConfig.Stages, "Central Build") // Remove "Central Build" stage name
+			runConfig.StageConfig.Stages["Build"] = stage         // Assign the inner steps map "Build" stage name
+			log.Entry().Info(runConfig.StageConfig.Stages["Build"])
+		}
 	}
 
 	err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
