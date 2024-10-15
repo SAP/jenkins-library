@@ -37,6 +37,10 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		c.SetEnv([]string{path})
 	}
 
+	if err := c.RunExecutable("npm", "config", "set", "cache", "~/.npm-cache", "--global"); err != nil {
+		return fmt.Errorf("failed to set npm cache directory: %w", err)
+	}
+
 	installCommandTokens := strings.Fields(config.InstallCommand)
 	if err := c.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
 		return fmt.Errorf("failed to execute install command: %w", err)
