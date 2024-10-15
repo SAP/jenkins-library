@@ -887,3 +887,33 @@ func TestPropagateVersion(t *testing.T) {
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve artifact")
 	})
 }
+
+func TestTruncateString(t *testing.T) {
+	t.Run("input string longer than maxLength - truncate") {
+		inputStr := "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+		expected := "Lorem ipsum dolor sit amet, consectetur adipiscing..."
+
+		outputStr := truncateString(inputStr, 50)
+		assert.Equal(t, outputStr, expected)
+	}
+
+	t.Run("input string shorter than maxLength - return as is") {
+		inputStr := "Lorem ipsum dolor sit amet"
+		outputStr := truncateString(inputStr, 50)
+
+		assert.Equal(t, outputStr, inputStr)
+	}
+
+	t.Run("input string contains unicode chars") {
+		inputStr := "パイパーは素晴らしい図書館です"
+		expected := "パイパーは..."
+
+		outputStr := truncateString(inputStr, 5)
+		assertEqual(t, outputStr, expected)
+	}
+
+	t.Run("input string is empty") {
+		outputStr := truncateString("", 5)
+		assertEqual(t, "", "")
+	}
+}
