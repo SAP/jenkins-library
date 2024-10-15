@@ -11,7 +11,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
@@ -87,26 +86,6 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
 
 	err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
-	currentOrchestrator := orchestrator.DetectOrchestrator().String()
-	if currentOrchestrator == "Jenkins" {
-		log.Entry().Info("CBfix [Central Build] steps: ", runConfigV1.RunSteps["Central Build"])
-		log.Entry().Info("CBfix [Build] steps: ", runConfigV1.RunSteps["Build"])
-		log.Entry().Info("CBfix [Central Build] config: ", runConfigV1.RunStages["Central Build"])
-		log.Entry().Info("CBfix [Build] config: ", runConfigV1.RunStages["Build"])
-		log.Entry().Info("CBfix: Orchestrator is Jenkins, check if stage name is Central Build")
-		if stage, ok := runConfigV1.RunStages["Central Build"]; ok {
-			log.Entry().Info("CBfix: Central Build stage name was found")
-			delete(runConfigV1.RunStages, "Central Build") // Remove "Central Build" stage name
-			runConfigV1.RunStages["Build"] = stage         // Assign the inner steps map "Build" stage name
-			log.Entry().Info(runConfigV1.RunStages["Build"])
-		}
-		if stage, ok := runConfigV1.RunSteps["Central Build"]; ok {
-			log.Entry().Info("CBfix: Central Build stage name was found")
-			delete(runConfigV1.RunSteps, "Central Build") // Remove "Central Build" stage name
-			runConfigV1.RunSteps["Build"] = stage         // Assign the inner steps map "Build" stage name
-			log.Entry().Info(runConfigV1.RunSteps["Build"])
-		}
-	}
 	if err != nil {
 		return err
 	}
