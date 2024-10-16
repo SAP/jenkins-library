@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
@@ -49,6 +50,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				continue
 			}
 
+			config.handleLegacyStageNaming(stageName)
 			stepConfig, err := r.getStepConfig(config, stageName, step.Name, nil, nil, nil, nil)
 			if err != nil {
 				return err
@@ -304,4 +306,21 @@ func anyOtherStepIsActive(targetStep string, runSteps map[string]bool) bool {
 	}
 
 	return false
+}
+
+func (c *Config) handleLegacyStageNaming(stageName string) {
+	currentOrchestrator := orchestrator.DetectOrchestrator().String()
+	if currentOrchestrator == "Jenkins" && stageName == "Build" {
+		_, buildExists := c.Stages["Build"]
+		legacyStageConfig, centralBuildExists := c.Stages["Central Build"]
+		if buildExists && centralBuildExists {
+			log.Entry().Warnf("You have 2 entries for build stage in config.yml. Please move steps to the [Build] stage")
+			return
+		}
+
+		if centralBuildExists {
+			c.Stages["Build"] = legacyStageConfig
+			log.Entry().Warnf("You are using [Central Build] stage inconfig.yml. Please move steps to the [Build] stage")
+		}
+	}
 }
