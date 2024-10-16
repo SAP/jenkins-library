@@ -40,6 +40,9 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 		// to also consider using the technical name.
 		stageName := stage.DisplayName
 
+		// Central Build in Jenkins was renamed to Build.
+		handleLegacyStageNaming(config, currentOrchestrator, stageName)
+
 		// Check #1: Apply explicit activation/deactivation from config file (if any)
 		// and then evaluate stepActive conditions
 		runStep := make(map[string]bool, len(stage.Steps))
@@ -50,7 +53,6 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				continue
 			}
 
-			config.handleLegacyStageNaming(stageName)
 			stepConfig, err := r.getStepConfig(config, stageName, step.Name, nil, nil, nil, nil)
 			if err != nil {
 				return err
@@ -308,19 +310,22 @@ func anyOtherStepIsActive(targetStep string, runSteps map[string]bool) bool {
 	return false
 }
 
-func (c *Config) handleLegacyStageNaming(stageName string) {
-	currentOrchestrator := orchestrator.DetectOrchestrator().String()
-	if currentOrchestrator == "Jenkins" && stageName == "Build" {
+func handleLegacyStageNaming(c *Config, orchestrator, stageName string) {
+	if orchestrator == "Jenkins" && stageName == "Build" {
 		_, buildExists := c.Stages["Build"]
-		legacyStageConfig, centralBuildExists := c.Stages["Central Build"]
+		centralBuildStageConfig, centralBuildExists := c.Stages["Central Build"]
 		if buildExists && centralBuildExists {
-			log.Entry().Warnf("You have 2 entries for build stage in config.yml. Please move steps to the [Build] stage")
+			log.Entry().Warnf("You have 2 entries for build stage in config.yml. " +
+				"Parameters defined under 'Central Build' are ignored. " +
+				"Please use only 'Build'")
 			return
 		}
 
 		if centralBuildExists {
-			c.Stages["Build"] = legacyStageConfig
-			log.Entry().Warnf("You are using [Central Build] stage inconfig.yml. Please move steps to the [Build] stage")
+			c.Stages["Build"] = centralBuildStageConfig
+			log.Entry().Warnf("You are using 'Central Build' stage in config.yml. " +
+				"Please move parameters under the 'Build' stage, " +
+				"since 'Central Build' will be removed in future releases")
 		}
 	}
 }
