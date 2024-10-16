@@ -98,11 +98,11 @@ spec:
       - name: deployDockerImage
         type: string
         description: "Docker image deployments are supported
-          (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker].
+          [via manifest file in general](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker).
           If no manifest is used, this parameter defines the image to be deployed.
           The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must
           adhere it's naming pattern (e.g. REPO/IMAGE:TAG).
-          See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html]
+          See [cf CLI documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html)
           for details.
           Note: The used Docker registry must be visible for the targeted Cloud Foundry instance."
         scope:
