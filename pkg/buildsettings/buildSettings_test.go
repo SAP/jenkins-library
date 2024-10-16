@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package buildsettings
 
 import (
@@ -28,9 +25,9 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 				expected:  "{\"golangBuild\":[{\"dockerImage\":\"golang:latest\"}]}",
 			},
 			{
-				config:    BuildOptions{CreateBOM: true},
-				buildTool: "gradleBuild",
-				expected:  "{\"gradleBuild\":[{\"createBOM\":true}]}",
+				config:    BuildOptions{CreateBOM: true, DockerImage: "gradle:latest"},
+				buildTool: "gradleExecuteBuild",
+				expected:  "{\"gradleExecuteBuild\":[{\"createBOM\":true,\"dockerImage\":\"gradle:latest\"}]}",
 			},
 			{
 				config:    BuildOptions{Publish: true},
@@ -77,7 +74,7 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 		for _, testCase := range testTableConfig {
 			buildSettings, err := CreateBuildSettingsInfo(&testCase.config, testCase.buildTool)
 			assert.Nil(t, err)
-			assert.Equal(t, buildSettings, testCase.expected)
+			assert.Equal(t, testCase.expected, buildSettings)
 		}
 	})
 
