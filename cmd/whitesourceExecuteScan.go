@@ -490,6 +490,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		AgentDownloadURL:                config.AgentDownloadURL,
 		AgentFileName:                   config.AgentFileName,
 		ConfigFilePath:                  config.ConfigFilePath,
+		UseGlobalConfiguration:          config.UseGlobalConfiguration,
 		Includes:                        config.Includes,
 		Excludes:                        config.Excludes,
 		JreDownloadURL:                  config.JreDownloadURL,
