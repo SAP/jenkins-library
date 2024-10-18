@@ -5,7 +5,7 @@ go 1.22.4
 require (
 	cloud.google.com/go/pubsub v1.36.1
 	cloud.google.com/go/storage v1.38.0
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.4.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
@@ -68,7 +68,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/apex/log v1.9.0 // indirect
@@ -125,8 +125,8 @@ require (
 	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/compute v1.25.1 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.6.0
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -250,7 +250,7 @@ require (
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	golang.org/x/crypto v0.25.0
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sync v0.7.0
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
