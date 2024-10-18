@@ -297,9 +297,28 @@ func (v Client) RevokeToken() error {
 // MustRevokeToken same as RevokeToken but the programm is terminated with an error if this fails.
 // Should be used in defer statements only.
 func (v Client) MustRevokeToken() {
-	if err := v.RevokeToken(); err != nil {
-		log.Entry().WithError(err).Fatal("Could not revoke token")
+
+	// only service tokens should be revoked and not batch tokens, the below will lookup the token and depends on the token prefix hvs. for service token
+	lookupPath := "auth/token/lookup-self"
+	const serviceTokenPrefix string = "hvs."
+	secret, err := v.GetSecret(lookupPath)
+
+	if err != nil {
+		log.Entry().Warnf("Could not lookup token at %s, not continuing to revoke", lookupPath)
+	} else {
+		if id, ok := secret.Data["id"]; ok {
+			if strings.HasPrefix(id.(string), serviceTokenPrefix) {
+				if err := v.RevokeToken(); err != nil {
+					log.Entry().WithError(err).Fatal("Could not revoke token")
+				}
+			} else {
+				log.Entry().Warnf("Service token not identified at %s, not continuing to revoke", lookupPath)
+			}
+		} else {
+			log.Entry().Warnf("Could not lookup token.Data.id at %s, not continuing to revoke", lookupPath)
+		}
 	}
+
 }
 
 // GetAppRoleName returns the AppRole role name which was used to authenticate.
