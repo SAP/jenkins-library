@@ -13,20 +13,23 @@ import (
 	"github.com/pkg/errors"
 )
 
-type JwtPayload struct {
+type jwtPayload struct {
 	Expire int64 `json:"exp"`
 }
 
 // getOIDCToken returns the generated OIDC token and sets it in the env
-func (v Client) getOIDCToken(roleID string) (string, error) {
+func (c *Client) getOIDCToken(roleID string) (string, error) {
 	oidcPath := sanitizePath(path.Join("identity/oidc/token/", roleID))
-	c := v.lClient
-	jwt, err := c.Read(oidcPath)
+	jwt, err := c.logical.Read(oidcPath)
 	if err != nil {
 		return "", err
 	}
 
 	token := jwt.Data["token"].(string)
+	if token == "" {
+		return "", fmt.Errorf("received an empty token")
+	}
+
 	log.RegisterSecret(token)
 	os.Setenv("PIPER_OIDCIdentityToken", token)
 
@@ -34,18 +37,25 @@ func (v Client) getOIDCToken(roleID string) (string, error) {
 }
 
 // getJWTTokenPayload returns the payload of the JWT token using base64 decoding
-func getJWTTokenPayload(token string) ([]byte, error) {
+func getJWTTokenPayload(token string) (*jwtPayload, error) {
 	parts := strings.Split(token, ".")
-	if len(parts) >= 2 {
-		substr := parts[1]
-		decodedBytes, err := base64.RawStdEncoding.DecodeString(substr)
-		if err != nil {
-			return nil, errors.Wrap(err, "JWT payload couldn't be decoded: %s")
-		}
-		return decodedBytes, nil
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("not a valid JWT token")
 	}
 
-	return nil, fmt.Errorf("Not a valid JWT token")
+	substr := parts[1]
+	decodedBytes, err := base64.RawStdEncoding.DecodeString(substr)
+	if err != nil {
+		return nil, errors.Wrap(err, "JWT payload couldn't be decoded: %s")
+	}
+
+	var payload jwtPayload
+	err = json.Unmarshal(decodedBytes, &payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "JWT unmarshal failed")
+	}
+
+	return &payload, nil
 }
 
 func oidcTokenIsValid(token string) bool {
@@ -53,34 +63,28 @@ func oidcTokenIsValid(token string) bool {
 		return false
 	}
 
-	payload, err := getJWTTokenPayload(token)
+	jwtTokenPayload, err := getJWTTokenPayload(token)
 	if err != nil {
 		log.Entry().Debugf("OIDC token couldn't be validated: %s", err)
 		return false
 	}
 
-	var jwtPayload JwtPayload
-	err = json.Unmarshal(payload, &jwtPayload)
-	if err != nil {
-		log.Entry().Debugf("OIDC token couldn't be validated: %s", err)
-		return false
-	}
-
-	expiryTime := time.Unix(jwtPayload.Expire, 0)
+	expiryTime := time.Unix(jwtTokenPayload.Expire, 0)
 	currentTime := time.Now()
 
 	return expiryTime.After(currentTime)
 }
 
 // GetOIDCTokenByValidation returns the token if token is expired then get a new token else return old token
-func (v Client) GetOIDCTokenByValidation(roleID string) (string, error) {
+func (c *Client) GetOIDCTokenByValidation(roleID string) (string, error) {
 	token := os.Getenv("PIPER_OIDCIdentityToken")
 	if oidcTokenIsValid(token) {
 		return token, nil
 	}
 
-	token, err := v.getOIDCToken(roleID)
-	if token == "" || err != nil {
+	log.Entry().Debug("obtaining new OIDC token")
+	token, err := c.getOIDCToken(roleID)
+	if err != nil {
 		return "", err
 	}
 

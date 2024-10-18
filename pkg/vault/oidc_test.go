@@ -28,7 +28,7 @@ func TestOIDC(t *testing.T) {
 
 		// init
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Read", oidcPath).Return(mockJwt, nil)
 
 		// run
@@ -50,7 +50,7 @@ func TestOIDC(t *testing.T) {
 		t.Setenv("PIPER_OIDCIdentityToken", token)
 
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Read", oidcPath).Return(mockJwt, nil)
 
 		// run
@@ -72,7 +72,7 @@ func TestOIDC(t *testing.T) {
 		t.Setenv("PIPER_OIDCIdentityToken", token)
 
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Read", oidcPath).Return(mockJwt, nil)
 
 		// run
