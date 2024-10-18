@@ -222,6 +222,6 @@ The provided information should help you understand and extend the functionality
 Since project "Piper" fully builds on [Jenkins Pipelines as Code](https://jenkins.io/doc/book/pipeline-as-code/), you can also go with your own pipeline from scratch in a `Jenkinsfile`.
 
 !!! danger "Decoupling"
-    If you choose this option, you will be decoupled from the innovations provided with project "Piper", unless you re-use stages (as indicated above under [_2. Modified ready-made pipelines_](/extensibility.md#2-modified-ready-made-pipeline)), for example.
+    If you choose this option, you will be decoupled from the innovations provided with project "Piper", unless you re-use stages (as indicated above under [_2. Modified ready-made pipelines_](#2-modified-ready-made-pipeline)), for example.
 
     **We recommend using this only when none of the other provided options suit your use case.**
