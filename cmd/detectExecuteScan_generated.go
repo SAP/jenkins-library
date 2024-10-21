@@ -77,7 +77,7 @@ type detectExecuteScanOptions struct {
 	RegistryURL                     string   `json:"registryUrl,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	RepositoryUsername              string   `json:"repositoryUsername,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	RepositoryPassword              string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
-	UseDetect9                      bool     `json:"useDetect9,omitempty"`
+	UseDetect8                      bool     `json:"useDetect8,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -354,7 +354,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.RegistryURL, "registryUrl", os.Getenv("PIPER_registryUrl"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect9, "useDetect9", false, "This flag enables the use of the supported version 9 of the Detect Script instead of v8")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "This flag enables the use of the supported version 8 of the Detect Script instead of v9")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -947,12 +947,12 @@ func detectExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_repositoryPassword"),
 					},
 					{
-						Name:        "useDetect9",
+						Name:        "useDetect8",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect9"}},
+						Aliases:     []config.Alias{{Name: "detect/useDetect8"}},
 						Default:     false,
 					},
 				},
