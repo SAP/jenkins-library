@@ -128,6 +128,15 @@ spec:
           - STAGES
           - STEPS
         default: ./wss-unified-agent.config
+      - name: useGlobalConfiguration
+        type: bool
+        description: "The parameter is applicable for multi-module mend projects. If set to true, the configuration file will be used for all modules. Otherwise each module will require its own configuration file in the module folder."
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: false
       - name: containerRegistryPassword
         description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
         type: string
