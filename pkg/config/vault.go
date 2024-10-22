@@ -82,6 +82,19 @@ type VaultClient interface {
 	GetOIDCTokenByValidation(string) (string, error)
 }
 
+// globalVaultClient is supposed to be used in the steps code.
+var globalVaultClient *vault.Client
+
+func GlobalVaultClient() VaultClient {
+	// an interface containing a nil pointer is considered non-nil in Go
+	// It is nil if Vault is not configured
+	if globalVaultClient == nil {
+		return nil
+	}
+
+	return globalVaultClient
+}
+
 func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
 	for _, config := range configs {
 		s.mixIn(config, vaultFilter, StepData{})
@@ -92,6 +105,9 @@ func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...ma
 	}
 }
 
+// GetVaultClientFromConfig logs in to Vault and returns authorized Vault client.
+// It's important to revoke token provided to this client after usage.
+// Currently, revocation will happen at the end of each step execution (see _generated.go part of the steps)
 func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredentials) (VaultClient, error) {
 	address, addressOk := config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
@@ -107,20 +123,26 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 		namespace = config["vaultNamespace"].(string)
 		log.Entry().Debugf("  with namespace %s", namespace)
 	}
-	var client VaultClient
+	var client *vault.Client
 	var err error
-	clientConfig := &vault.Config{Config: &api.Config{Address: address}, Namespace: namespace}
+	clientConfig := &vault.ClientConfig{Config: &api.Config{Address: address}, Namespace: namespace}
 	if creds.VaultToken != "" {
 		log.Entry().Debugf("  with Token authentication")
-		client, err = vault.NewClient(clientConfig, creds.VaultToken)
+		client, err = vault.NewClientWithToken(clientConfig, creds.VaultToken)
 	} else {
 		log.Entry().Debugf("  with AppRole authentication")
-		client, err = vault.NewClientWithAppRole(clientConfig, creds.AppRoleID, creds.AppRoleSecretID)
+		clientConfig.RoleID = creds.AppRoleID
+		clientConfig.SecretID = creds.AppRoleSecretID
+		client, err = vault.NewClient(clientConfig)
 	}
 	if err != nil {
 		log.Entry().Info("  failed")
 		return nil, err
 	}
+
+	// Set global vault client for usage in steps
+	globalVaultClient = client
+
 	log.Entry().Info("  succeeded")
 	return client, nil
 }
@@ -306,7 +328,6 @@ func resolveVaultCredentials(config *StepConfig, client VaultClient) {
 }
 
 func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string, keys []string) (matched bool) {
-
 	vaultTestCredentialEnvPrefix, ok := config.Config["vaultTestCredentialEnvPrefix"].(string)
 	if !ok || len(vaultTestCredentialEnvPrefix) == 0 {
 		vaultTestCredentialEnvPrefix = vaultTestCredentialEnvPrefixDefault
@@ -326,7 +347,6 @@ func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string,
 }
 
 func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, keys []string) (matched bool) {
-
 	vaultCredentialEnvPrefix, ok := config.Config["vaultCredentialEnvPrefix"].(string)
 	isCredentialEnvPrefixDefault := false
 

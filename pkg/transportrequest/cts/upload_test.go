@@ -4,10 +4,11 @@
 package cts
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestUploadCTS(t *testing.T) {
@@ -98,6 +99,26 @@ func TestUploadCTS(t *testing.T) {
 				)
 				assert.Equal(t, []string{"ABAP_USER=me", "ABAP_PASSWORD=******"}, cmd.Env)
 			}
+		})
+
+		t.Run("fail in case of  invalid app name", func(t *testing.T) {
+			cmd := mock.ShellMockRunner{}
+			action := UploadAction{
+				Connection:  Connection{Endpoint: "https://example.org:8080/cts", Client: "001", User: "me", Password: "******"},
+				Application: Application{Pack: "abapPackage", Name: "app Name", Desc: "the Desc"},
+				Node: Node{
+					DeployDependencies: []string{},
+					InstallOpts:        []string{},
+				},
+				TransportRequestID: "12345678",
+				ConfigFile:         "ui5-deploy.yaml",
+				DeployUser:         "doesNotMatterInThisCase",
+			}
+
+			err := action.Perform(&cmd)
+			expectedErrorMessge := "application name 'app Name' contains spaces or special characters and is not according to the regex '^[a-zA-Z0-9_]+$'."
+
+			assert.EqualErrorf(t, err, expectedErrorMessge, "invalid app name")
 		})
 	})
 
