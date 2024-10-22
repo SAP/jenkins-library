@@ -12,14 +12,7 @@ import (
 
 // GetSecret uses the given path to fetch a secret from vault
 func (c *Client) GetSecret(path string) (*api.Secret, error) {
-	path = sanitizePath(path)
-
-	secret, err := c.logical.Read(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return secret, nil
+	return c.logical.Read(sanitizePath(path))
 }
 
 // GetKvSecret reads secret from the KV engine.

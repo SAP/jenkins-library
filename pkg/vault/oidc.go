@@ -36,8 +36,8 @@ func (c *Client) getOIDCToken(roleID string) (string, error) {
 	return token, nil
 }
 
-// getJWTTokenPayload returns the payload of the JWT token using base64 decoding
-func getJWTTokenPayload(token string) (*jwtPayload, error) {
+// getJWTPayload returns the payload of the JWT token using base64 decoding
+func getJWTPayload(token string) (*jwtPayload, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) < 2 {
 		return nil, fmt.Errorf("not a valid JWT token")
@@ -61,7 +61,7 @@ func oidcTokenIsValid(token string) bool {
 		return false
 	}
 
-	jwtTokenPayload, err := getJWTTokenPayload(token)
+	jwtTokenPayload, err := getJWTPayload(token)
 	if err != nil {
 		log.Entry().Debugf("OIDC token couldn't be validated: %s", err)
 		return false
