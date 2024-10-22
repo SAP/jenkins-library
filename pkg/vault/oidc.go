@@ -43,8 +43,7 @@ func getJWTTokenPayload(token string) (*jwtPayload, error) {
 		return nil, fmt.Errorf("not a valid JWT token")
 	}
 
-	substr := parts[1]
-	decodedBytes, err := base64.RawStdEncoding.DecodeString(substr)
+	decodedBytes, err := base64.RawStdEncoding.DecodeString(parts[1])
 	if err != nil {
 		return nil, errors.Wrap(err, "JWT payload couldn't be decoded: %s")
 	}
