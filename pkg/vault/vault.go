@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/vault/api"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -181,7 +182,27 @@ func (c *Client) RevokeToken() error {
 // MustRevokeToken same as RevokeToken but the program is terminated with an error if this fails.
 // Should be used in defer statements only.
 func (c *Client) MustRevokeToken() {
-	if err := c.RevokeToken(); err != nil {
+	lookupPath := "auth/token/lookup-self"
+	const serviceTokenPrefix = "hvs."
+
+	secret, err := c.GetSecret(lookupPath)
+	if err != nil {
+		log.Entry().Warnf("Could not lookup token at %s, not continuing to revoke: %v", lookupPath, err)
+		return
+	}
+
+	tokenID, ok := secret.Data["id"].(string)
+	if !ok {
+		log.Entry().Warnf("Could not lookup token.Data.id at %s, not continuing to revoke", lookupPath)
+		return
+	}
+
+	if !strings.HasPrefix(tokenID, serviceTokenPrefix) {
+		log.Entry().Warnf("Service token not identified at %s, not continuing to revoke", lookupPath)
+		return
+	}
+
+	if err = c.RevokeToken(); err != nil {
 		log.Entry().WithError(err).Fatal("Could not revoke token")
 	}
 }
