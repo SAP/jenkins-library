@@ -50,8 +50,7 @@ func getJWTTokenPayload(token string) (*jwtPayload, error) {
 	}
 
 	var payload jwtPayload
-	err = json.Unmarshal(decodedBytes, &payload)
-	if err != nil {
+	if err = json.Unmarshal(decodedBytes, &payload); err != nil {
 		return nil, errors.Wrap(err, "JWT unmarshal failed")
 	}
 
