@@ -122,10 +122,10 @@ func (c *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string,
 	if err != nil {
 		return "", err
 	}
+
 	secret, err := c.logical.Write(reqPath, map[string]interface{}{
 		"metadata": string(jsonBytes),
 	})
-
 	if err != nil {
 		return "", err
 	}
