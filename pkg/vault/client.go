@@ -90,13 +90,9 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 
 	initialLoginSucceed := false
 	for i := 0; i < c.vaultApiClient.MaxRetries(); i++ {
-		if i != 0 {
-			log.Entry().Infof("Retrying Vault login. Attempt %d of %d", i, c.vaultApiClient.MaxRetries())
-		}
-
 		vaultLoginResp, err := c.login()
 		if err != nil {
-			log.Entry().Warnf("unable to authenticate to Vault: %v", err)
+			log.Entry().Errorf("unable to authenticate to Vault: %v", err)
 			continue
 		}
 		if !initialLoginSucceed {
@@ -107,7 +103,7 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 
 		tokenErr := c.manageTokenLifecycle(vaultLoginResp)
 		if tokenErr != nil {
-			log.Entry().Warnf("unable to start managing token lifecycle: %v", err)
+			log.Entry().Errorf("unable to start managing token lifecycle: %v", err)
 			continue
 		}
 	}
