@@ -55,7 +55,7 @@ func TestMavenBuild(t *testing.T) {
 		assert.Nil(t, err)
 		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (default + makeAggregateBom)") {
 			assert.Equal(t, "mvn", mockedUtils.Calls[1].Exec)
-			assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom")
 			assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputName=bom-maven")
 		}
 	})

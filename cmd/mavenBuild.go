@@ -66,7 +66,7 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	}
 	defines = append(defines, createBOMConfig...)
 
-	goals := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom"}
+	goals := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeBom"}
 
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
