@@ -96,6 +96,9 @@ spec:
       - name: paths
         type: "[]string"
         description: List of paths to be added to $PATH
+      - name: workDir
+        type: string
+        description: Directory where your tests are located relative to the root of your project
   outputs:
     resources:
       - name: reports

@@ -37,6 +37,12 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		c.SetEnv([]string{path})
 	}
 
+	if config.WorkDir != "" {
+		if err := os.Chdir(config.WorkDir); err != nil {
+			return fmt.Errorf("failed to change directory: %w", err)
+		}
+	}
+
 	installCommandTokens := strings.Fields(config.InstallCommand)
 	if err := c.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
 		return fmt.Errorf("failed to execute install command: %w", err)

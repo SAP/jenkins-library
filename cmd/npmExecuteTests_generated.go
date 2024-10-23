@@ -32,6 +32,7 @@ type npmExecuteTestsOptions struct {
 	UrlOptionPrefix string                   `json:"urlOptionPrefix,omitempty"`
 	Envs            []string                 `json:"envs,omitempty"`
 	Paths           []string                 `json:"paths,omitempty"`
+	WorkDir         string                   `json:"workDir,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -206,6 +207,7 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.UrlOptionPrefix, "urlOptionPrefix", os.Getenv("PIPER_urlOptionPrefix"), "If you want to specify an extra option that the tested url it appended to.\nFor example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,\nwe'll add `--base-url=http://localhost` to your runScript.\n")
 	cmd.Flags().StringSliceVar(&stepConfig.Envs, "envs", []string{}, "List of environment variables to be set")
 	cmd.Flags().StringSliceVar(&stepConfig.Paths, "paths", []string{}, "List of paths to be added to $PATH")
+	cmd.Flags().StringVar(&stepConfig.WorkDir, "workDir", os.Getenv("PIPER_workDir"), "Directory where your tests are located relative to the root of your project")
 
 	cmd.MarkFlagRequired("runCommand")
 }
@@ -336,6 +338,15 @@ func npmExecuteTestsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "workDir",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_workDir"),
 					},
 				},
 			},
