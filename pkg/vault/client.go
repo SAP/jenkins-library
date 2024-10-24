@@ -82,28 +82,33 @@ func NewClientWithToken(cfg *ClientConfig, token string) (*Client, error) {
 func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 	defer func() {
 		// make sure to close channel to avoid blocking of the caller
-		_, open := <-initialLoginDone
-		if open {
-			close(initialLoginDone)
-		}
+		log.Entry().Debugf("exiting Vault token lifecycle manager")
+		initialLoginDone <- struct{}{}
+		close(initialLoginDone)
 	}()
 
 	initialLoginSucceed := false
-	for i := 0; i < c.vaultApiClient.MaxRetries(); i++ {
+	retryAttemptDuration := c.vaultApiClient.MinRetryWait()
+	for i := 0; i <= c.vaultApiClient.MaxRetries(); i++ {
+		if i != 0 {
+			log.Entry().Infof("Retrying Vault login in %.0f seconds. Attempt %d of %d",
+				retryAttemptDuration.Seconds(), i, c.vaultApiClient.MaxRetries())
+			time.Sleep(retryAttemptDuration)
+		}
+
 		vaultLoginResp, err := c.login()
 		if err != nil {
-			log.Entry().Errorf("unable to authenticate to Vault: %v", err)
+			log.Entry().Warnf("unable to authenticate to Vault: %v", err)
 			continue
 		}
 		if !initialLoginSucceed {
 			initialLoginDone <- struct{}{}
-			close(initialLoginDone)
 			initialLoginSucceed = true
 		}
 
 		tokenErr := c.manageTokenLifecycle(vaultLoginResp)
 		if tokenErr != nil {
-			log.Entry().Errorf("unable to start managing token lifecycle: %v", err)
+			log.Entry().Warnf("unable to start managing token lifecycle: %v", err)
 			continue
 		}
 	}
