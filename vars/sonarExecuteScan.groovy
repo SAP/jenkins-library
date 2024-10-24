@@ -65,17 +65,19 @@ void call(Map parameters = [:]) {
                         writePipelineEnv(script: script, piperGoPath: piperGoPath)
                         withEnv(environment) {
                             influxWrapper(script) {
-                                piperExecuteBin.credentialWrapper(config, credentialInfo) {
-                                    if (stepConfig.instance) {
-                                        withSonarQubeEnv(stepConfig.instance) {
-                                            echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
+                                try {
+                                    piperExecuteBin.credentialWrapper(config, credentialInfo) {
+                                        if (stepConfig.instance) {
+                                            withSonarQubeEnv(stepConfig.instance) {
+                                                echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
+                                                sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                            }
+                                        } else {
                                             sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-                                            jenkinsUtils.handleStepResults(STEP_NAME, false, false)
-                                            readPipelineEnv(script: script, piperGoPath: piperGoPath)
                                         }
-                                    } else {
-                                        sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     }
+                                } finally {
+                                    jenkinsUtils.handleStepResults(STEP_NAME, false, false)
                                 }
                             }
                         }
