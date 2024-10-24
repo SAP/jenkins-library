@@ -448,6 +448,7 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 		sastConfigString = sastConfigString + fmt.Sprintf(", languageMode %v", c.config.LanguageMode)
 	}
 
+	log.Entry().Debugf("branch = %v ; gitBranch = %v", c.config.Branch, c.config.GitBranch)
 	branch := c.config.Branch
 	if len(branch) == 0 && len(c.config.GitBranch) > 0 {
 		branch = c.config.GitBranch
