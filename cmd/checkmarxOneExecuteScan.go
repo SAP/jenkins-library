@@ -452,7 +452,7 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	branch := c.config.Branch
 	if len(branch) == 0 && len(c.config.GitBranch) > 0 && c.config.GitBranch != "n/a" {
 		branch = c.config.GitBranch
-	} else if len(branch) == 0 && len(c.config.GitBranch) == 0 { // use the branch from the orchestrator by default
+	} else if len(branch) == 0 && (len(c.config.GitBranch) == 0 || c.config.GitBranch == "n/a") { // use the branch from the orchestrator by default
 		cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
 		if err == nil {
 			branch = cicdOrch.Branch()
