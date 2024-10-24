@@ -20,6 +20,7 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -450,6 +451,14 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	branch := c.config.Branch
 	if len(branch) == 0 && len(c.config.GitBranch) > 0 {
 		branch = c.config.GitBranch
+	} else if len(branch) == 0 && len(c.config.GitBranch) == 0 { // use the branch from the orchestrator by default
+		cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
+		if err == nil {
+			branch = cicdOrch.Branch()
+			log.Entry().Infof("CxOne scan branch was automatically set to : %v", branch)
+		} else {
+			log.Entry().Info("Could not identify orchestrator and set the branch")
+		}
 	}
 	if len(c.config.PullRequestName) > 0 {
 		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
