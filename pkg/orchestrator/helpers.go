@@ -35,6 +35,7 @@ func getEnv(key, fallback string) string {
 		if value == "Central Build" {
 			log.Entry().Debugf("CB_FIX: %s", value)
 			value = "Build"
+			log.Entry().Debugf("CB_FIX after changing: %s", value)
 		}
 		log.Entry().Debugf("For: %s, found: %s", key, value)
 		return value
