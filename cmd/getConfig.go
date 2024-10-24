@@ -138,6 +138,9 @@ func GetStageConfig() (config.StepConfig, error) {
 
 	defaultConfig := []io.ReadCloser{}
 	for _, f := range GeneralConfig.DefaultConfig {
+		if configOptions.OpenFile == nil {
+			return stepConfig, errors.New("config: open file function not set")
+		}
 		fc, err := configOptions.OpenFile(f, GeneralConfig.GitHubAccessTokens)
 		// only create error for non-default values
 		if err != nil && f != ".pipeline/defaults.yaml" {
