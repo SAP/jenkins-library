@@ -325,7 +325,7 @@ func initStageName(outputToLog bool) {
 	} else {
 		stageNameSource = "env variable"
 		GeneralConfig.StageName = provider.StageName()
-		log.Entry().Infof("CHECK %v %v", orchestrator.DetectOrchestrator(), GeneralConfig.StageName)
+		log.Entry().Infof("CHECK_CB %v %v", orchestrator.DetectOrchestrator(), GeneralConfig.StageName)
 		if orchestrator.DetectOrchestrator() == orchestrator.Jenkins && GeneralConfig.StageName == "Central Build" {
 			GeneralConfig.StageName = "Build"
 		}
