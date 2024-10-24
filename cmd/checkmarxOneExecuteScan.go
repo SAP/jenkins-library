@@ -455,8 +455,13 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	} else if len(branch) == 0 && (len(c.config.GitBranch) == 0 || c.config.GitBranch == "n/a") { // use the branch from the orchestrator by default
 		cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
 		if err == nil {
-			branch = cicdOrch.Branch()
-			log.Entry().Infof("CxOne scan branch was automatically set to : %v", branch)
+			cicdBranch := cicdOrch.Branch()
+			if cicdBranch != "n/a" {
+				branch = cicdBranch
+				log.Entry().Infof("CxOne scan branch was automatically set to : %v", branch)
+			} else {
+				log.Entry().Info("Could not retrieve branch name from orchestrator")
+			}
 		} else {
 			log.Entry().Info("Could not identify orchestrator and set the branch")
 		}
