@@ -82,16 +82,18 @@ func NewClientWithToken(cfg *ClientConfig, token string) (*Client, error) {
 func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 	defer func() {
 		// make sure to close channel to avoid blocking of the caller
-		_, open := <-initialLoginDone
-		if open {
-			close(initialLoginDone)
-		}
+		log.Entry().Debugf("exiting Vault token lifecycle manager")
+		initialLoginDone <- struct{}{}
+		close(initialLoginDone)
 	}()
 
 	initialLoginSucceed := false
-	for i := 0; i < c.vaultApiClient.MaxRetries(); i++ {
+	retryAttemptDuration := c.vaultApiClient.MinRetryWait()
+	for i := 0; i <= c.vaultApiClient.MaxRetries(); i++ {
 		if i != 0 {
-			log.Entry().Infof("Retrying Vault login. Attempt %d of %d", i, c.vaultApiClient.MaxRetries())
+			log.Entry().Infof("Retrying Vault login in %.0f seconds. Attempt %d of %d",
+				retryAttemptDuration.Seconds(), i, c.vaultApiClient.MaxRetries())
+			time.Sleep(retryAttemptDuration)
 		}
 
 		vaultLoginResp, err := c.login()
@@ -101,7 +103,6 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 		}
 		if !initialLoginSucceed {
 			initialLoginDone <- struct{}{}
-			close(initialLoginDone)
 			initialLoginSucceed = true
 		}
 
