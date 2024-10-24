@@ -192,9 +192,9 @@ func (j *jenkinsConfigProvider) BuildID() string {
 // StageName returns the stage name the job is currently in, e.g. Promote
 func (j *jenkinsConfigProvider) StageName() string {
 	if getEnv("STAGE_NAME", "n/a") == "Central Build" {
-		return ("Build")
+		return ("ADD_DEBUG Build")
 	}
-	return getEnv("STAGE_NAME", "n/a")
+	return getEnv("ADD_DEBUG STAGE_NAME", "n/a")
 }
 
 // BuildReason returns the build reason of the current build
