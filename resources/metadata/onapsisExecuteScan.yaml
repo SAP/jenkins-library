@@ -1,0 +1,66 @@
+metadata:
+  name: onapsisExecuteScan
+  description: Execute a scan with Onapsis Control
+  longDescription: This step executes a scan with Onapsis Control.
+spec:
+  inputs:
+    secrets:
+      - name: onapsisTokenCredentialsId
+        type: jenkins
+        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate with Onapsis Control Scan Service"
+        mandatory: true
+    params:
+      - name: scanServiceUrl
+        type: string
+        description: URL of the scan service
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: accessToken
+        type: string
+        description: "Token used to authenticate with the Control Scan Service"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: onapsisTokenCredentialsId
+            type: secret
+      - name: appType
+        type: string
+        description: "Type of the application to be scanned"
+        default: "ui5"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - "abap"
+          - "ui5"
+      - name: failOnMandatoryFinding
+        type: bool
+        description: "Fail the build if mandatory findings are detected"
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: failOnOptionalFinding
+        type: bool
+        description: "Fail the build if optional findings are detected"
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: debugMode
+        type: bool
+        description: "Enable debug mode for the scan"
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
