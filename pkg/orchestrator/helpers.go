@@ -1,8 +1,9 @@
 package orchestrator
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // envVarsAreSet verifies if any envvar from the list has nona non-empty, non-false value
@@ -31,6 +32,9 @@ func envVarIsTrue(key string) bool {
 // Wrapper function to read env variable and set default value
 func getEnv(key, fallback string) string {
 	if value, found := os.LookupEnv(key); found {
+		if value == "Central Build" {
+			value = "Build"
+		}
 		log.Entry().Debugf("For: %s, found: %s", key, value)
 		return value
 	}
