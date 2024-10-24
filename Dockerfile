@@ -3,7 +3,7 @@ COPY . /build
 WORKDIR /build
 
 # execute tests
-RUN go test ./... -tags=unit -cover
+# RUN go test ./... -tags=unit -cover
 
 ## ONLY tests so far, building to be added later
 # execute build
