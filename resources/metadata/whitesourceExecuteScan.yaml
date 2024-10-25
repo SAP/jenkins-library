@@ -255,7 +255,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.24/sapmachine-jre-11.0.24_linux-x64_bin.tar.gz"
+        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.25/sapmachine-jre-11.0.25_linux-x64_bin.tar.gz"
       - name: licensingVulnerabilities
         type: bool
         description: "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment."
