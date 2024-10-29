@@ -15,7 +15,6 @@ import (
 var cpe mavenBuildCommonPipelineEnvironment
 
 func TestMavenBuild(t *testing.T) {
-
 	t.Run("mavenBuild should install the artifact", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
@@ -123,7 +122,6 @@ func TestMavenBuild(t *testing.T) {
 		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
 		assert.Empty(t, cpe.custom.mavenBuildArtifacts)
 	})
-
 }
 
 func createTempFile(t *testing.T, dir string, filename string, content string) string {
@@ -136,7 +134,6 @@ func createTempFile(t *testing.T, dir string, filename string, content string) s
 }
 
 func TestGetPurlForThePomAndDeleteIndividualBom(t *testing.T) {
-
 	t.Run("valid BOM file, aggregated BOM", func(t *testing.T) {
 		tempDir, err := piperutils.Files{}.TempDir("", "test")
 		if err != nil {
@@ -160,7 +157,7 @@ func TestGetPurlForThePomAndDeleteIndividualBom(t *testing.T) {
 		}
 		bomFilePath := createTempFile(t, bomDir, mvnSimpleBomFilename+".xml", bomContent)
 
-		purl := getPurlForThePom(pomFilePath)
+		purl := piperutils.GetPurl(pomFilePath, mvnSimpleBomFilename+".xml")
 		assert.Equal(t, "pkg:maven/com.example/aggregatecomponent@1.0.0", purl)
 		_, err = os.Stat(bomFilePath)
 		assert.False(t, os.IsNotExist(err)) // File should not be deleted
@@ -170,7 +167,7 @@ func TestGetPurlForThePomAndDeleteIndividualBom(t *testing.T) {
 		tempDir := t.TempDir()
 		pomFilePath := createTempFile(t, tempDir, "pom.xml", "") // Create a temp pom file
 
-		purl := getPurlForThePom(pomFilePath)
+		purl := piperutils.GetPurl(pomFilePath, mvnSimpleBomFilename+".xml")
 		assert.Equal(t, "", purl)
 	})
 }
