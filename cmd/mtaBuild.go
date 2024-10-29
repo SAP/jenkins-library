@@ -330,7 +330,7 @@ func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *m
 				Packaging:  "mtar",
 				BuildPath:  filepath.Dir(mtarPath),
 				URL:        config.MtaDeploymentRepositoryURL,
-				PURL:       getPurl(mtarPath),
+				PURL:       piperutils.GetPurl(mtarPath, "sbom-gen/bom-mta.xml"),
 			},
 		},
 	}
@@ -581,23 +581,4 @@ func getAbsPath(path string) string {
 		abspath = path
 	}
 	return filepath.FromSlash(abspath)
-}
-
-func getPurl(mtaYaml string) string {
-	expectedBomFilePath := filepath.Join(filepath.Dir(mtaYaml) + filepath.FromSlash("sbom-gen/bom-mta.xml"))
-	exists, err := piperutils.FileExists(expectedBomFilePath)
-	if err != nil {
-		log.Entry().Warnf("unable to check if bom file exists: %v", err)
-		return ""
-	}
-	if !exists {
-		log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", expectedBomFilePath)
-		return ""
-	}
-	bom, err := piperutils.GetBom(expectedBomFilePath)
-	if err != nil {
-		log.Entry().Warnf("unable to get bom metadata: %v", err)
-		return ""
-	}
-	return bom.Metadata.Component.Purl
 }

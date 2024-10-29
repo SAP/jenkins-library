@@ -2,9 +2,11 @@ package piperutils
 
 import (
 	"encoding/xml"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"os"
+	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // To serialize the cyclonedx BOM file
@@ -45,4 +47,23 @@ func GetBom(absoluteBomPath string) (Bom, error) {
 		return Bom{}, err
 	}
 	return bom, nil
+}
+
+func GetPurl(filePath, bomFilename string) string {
+	bomFilePath := filepath.Join(filepath.Dir(filePath), bomFilename)
+	exists, err := FileExists(bomFilePath)
+	if err != nil {
+		log.Entry().Warnf("unable to check if bom file exists: %v", err)
+		return ""
+	}
+	if !exists {
+		log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", bomFilePath)
+		return ""
+	}
+	bom, err := GetBom(bomFilePath)
+	if err != nil {
+		log.Entry().Warnf("unable to get bom metadata: %v", err)
+		return ""
+	}
+	return bom.Metadata.Component.Purl
 }
