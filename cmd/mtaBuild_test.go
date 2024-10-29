@@ -48,7 +48,7 @@ func (m *mtaBuildTestUtilsBundle) Open(name string) (io.ReadWriteCloser, error) 
 	if m.openReturns != "" {
 		return NewMockReadCloser(m.openReturns), nil
 	}
-	return nil, nil
+	return nil, errors.New("Test should not open files.")
 }
 
 // MockReadCloser is a struct that implements io.ReadCloser
