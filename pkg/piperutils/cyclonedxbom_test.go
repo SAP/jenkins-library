@@ -18,6 +18,18 @@ func createTempFile(t *testing.T, content string) (string, func()) {
 	}
 }
 
+const validBom = `<bom>
+			<metadata>
+				<component>
+					<purl>pkg:maven/com.example/mycomponent@1.0.0</purl>
+				</component>
+				<properties>
+					<property name="name1" value="value1" />
+					<property name="name2" value="value2" />
+				</properties>
+			</metadata>
+		</bom>`
+
 func TestGetBom(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -27,18 +39,8 @@ func TestGetBom(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name: "valid file",
-			xmlContent: `<bom>
-				<metadata>
-					<component>
-						<purl>pkg:maven/com.example/mycomponent@1.0.0</purl>
-					</component>
-					<properties>
-						<property name="name1" value="value1" />
-						<property name="name2" value="value2" />
-					</properties>
-				</metadata>
-			</bom>`,
+			name:       "valid file",
+			xmlContent: validBom,
 			expectedBom: Bom{
 				Metadata: Metadata{
 					Component: BomComponent{
@@ -73,12 +75,8 @@ func TestGetBom(t *testing.T) {
 			var fileName string
 			var cleanup func()
 			if tt.xmlContent != "" {
-				var err error
 				fileName, cleanup = createTempFile(t, tt.xmlContent)
 				defer cleanup()
-				if err != nil {
-					t.Fatalf("Failed to create temp file: %s", err)
-				}
 			} else {
 				// Use a non-existent file path
 				fileName = "nonexistent.xml"
@@ -97,6 +95,57 @@ func TestGetBom(t *testing.T) {
 
 			if !tt.expectError && !bomEquals(bom, tt.expectedBom) {
 				t.Errorf("Expected BOM: %+v, got: %+v", tt.expectedBom, bom)
+			}
+		})
+	}
+}
+
+func TestGetPurl(t *testing.T) {
+	tests := []struct {
+		name          string
+		filePath      string
+		bomFilename   string
+		xmlContent    string
+		expectedPurl  string
+		expectError   bool
+		expectedError string
+	}{
+		{
+			name:         "valid BOM file",
+			xmlContent:   validBom,
+			expectedPurl: "pkg:maven/com.example/mycomponent@1.0.0",
+		},
+		{
+			name:          "BOM file not found",
+			xmlContent:    "",
+			expectedPurl:  "",
+			expectError:   true,
+			expectedError: "no such file or directory",
+		},
+		{
+			name:          "invalid BOM file",
+			xmlContent:    "<bom><metadata><component><purl>invalid xml</metadata></bom>",
+			expectedPurl:  "",
+			expectError:   true,
+			expectedError: "XML syntax error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var filePath string
+			var cleanup func()
+			if tt.xmlContent != "" {
+				filePath, cleanup = createTempFile(t, tt.xmlContent)
+				defer cleanup()
+			} else {
+				// Use a non-existent file path
+				filePath = "nonexistent.xml"
+			}
+
+			purl := GetPurl(filePath, "test.xml")
+			if purl != tt.expectedPurl {
+				t.Errorf("Expected PURL: %v, got: %v", tt.expectedPurl, purl)
 			}
 		})
 	}
