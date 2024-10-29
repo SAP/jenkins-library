@@ -45,6 +45,7 @@ type mtaBuildOptions struct {
 	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
 	CreateBOM                       bool     `json:"createBOM,omitempty"`
 	EnableSetTimestamp              bool     `json:"enableSetTimestamp,omitempty"`
+	CreateBuildArtifactsMetadata    bool     `json:"createBuildArtifactsMetadata,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
@@ -53,6 +54,7 @@ type mtaBuildCommonPipelineEnvironment struct {
 		mtaBuildToolDesc  string
 		mtarPublishedURL  string
 		buildSettingsInfo string
+		mtaBuildArtifacts string
 	}
 }
 
@@ -66,6 +68,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		{category: "custom", name: "mtaBuildToolDesc", value: p.custom.mtaBuildToolDesc},
 		{category: "custom", name: "mtarPublishedUrl", value: p.custom.mtarPublishedURL},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "mtaBuildArtifacts", value: p.custom.mtaBuildArtifacts},
 	}
 
 	errCount := 0
@@ -266,6 +269,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build . This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 	cmd.Flags().BoolVar(&stepConfig.EnableSetTimestamp, "enableSetTimestamp", true, "Enables setting the timestamp in the `mta.yaml` when it contains `${timestamp}`. Disable this when you want the MTA Deploy Service to do this instead.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline")
 
 }
 
@@ -529,6 +533,15 @@ func mtaBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     true,
 					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -544,6 +557,7 @@ func mtaBuildMetadata() config.StepData {
 							{"name": "custom/mtaBuildToolDesc"},
 							{"name": "custom/mtarPublishedUrl"},
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/mtaBuildArtifacts"},
 						},
 					},
 					{
