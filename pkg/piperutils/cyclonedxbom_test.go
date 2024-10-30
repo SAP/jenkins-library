@@ -143,7 +143,7 @@ func TestGetPurl(t *testing.T) {
 				filePath = "nonexistent.xml"
 			}
 
-			purl := GetPurl(filePath, "test.xml")
+			purl := GetPurl(filePath)
 			if purl != tt.expectedPurl {
 				t.Errorf("Expected PURL: %v, got: %v", tt.expectedPurl, purl)
 			}

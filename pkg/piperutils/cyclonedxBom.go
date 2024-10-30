@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -49,17 +48,7 @@ func GetBom(absoluteBomPath string) (Bom, error) {
 	return bom, nil
 }
 
-func GetPurl(filePath, bomFilename string) string {
-	bomFilePath := filepath.Join(filepath.Dir(filePath), bomFilename)
-	exists, err := FileExists(bomFilePath)
-	if err != nil {
-		log.Entry().Warnf("unable to check if bom file exists: %v", err)
-		return ""
-	}
-	if !exists {
-		log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", bomFilePath)
-		return ""
-	}
+func GetPurl(bomFilePath string) string {
 	bom, err := GetBom(bomFilePath)
 	if err != nil {
 		log.Entry().Warnf("unable to get bom metadata: %v", err)

@@ -218,7 +218,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			coordinate.BuildPath = filepath.Dir(packageJSON)
 			coordinate.URL = registry
 			coordinate.Packaging = "tgz"
-			coordinate.PURL = piperutils.GetPurl(packageJSON, npmBomFilename)
+			coordinate.PURL = piperutils.GetPurl(filepath.Join(packageJSON, npmBomFilename))
 
 			*buildCoordinates = append(*buildCoordinates, coordinate)
 		}

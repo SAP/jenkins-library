@@ -330,7 +330,7 @@ func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *m
 				Packaging:  "mtar",
 				BuildPath:  filepath.Dir(mtarPath),
 				URL:        config.MtaDeploymentRepositoryURL,
-				PURL:       piperutils.GetPurl(mtarPath, "sbom-gen/bom-mta.xml"),
+				PURL:       piperutils.GetPurl(filepath.Join(mtarPath, "sbom-gen/bom-mta.xml")),
 			},
 		},
 	}
