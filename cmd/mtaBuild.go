@@ -274,6 +274,8 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 }
 
 func handlePublish(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment, utils mtaBuildUtils, mtarName string, isMtarNativelySuffixed bool) error {
+	log.Entry().Infof("publish detected")
+
 	if len(config.MtaDeploymentRepositoryPassword) == 0 ||
 		len(config.MtaDeploymentRepositoryUser) == 0 ||
 		len(config.MtaDeploymentRepositoryURL) == 0 {
