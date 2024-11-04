@@ -1,4 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
+
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
@@ -65,7 +67,7 @@ void call(Map parameters = [:], body = null) {
                     npm --version
                 """
                 if (configuration.defaultNpmRegistry) {
-                    sh "npm config set registry ${configuration.defaultNpmRegistry}"
+                    sh "npm config set registry ${q(configuration.defaultNpmRegistry)}"
                 }
                 if (configuration.npmCommand) {
                     sh "npm ${configuration.npmCommand}"
