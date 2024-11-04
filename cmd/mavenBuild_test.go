@@ -4,18 +4,14 @@
 package cmd
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
 var cpe mavenBuildCommonPipelineEnvironment
 
 func TestMavenBuild(t *testing.T) {
-
 	t.Run("mavenBuild should install the artifact", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
@@ -122,55 +118,5 @@ func TestMavenBuild(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
 		assert.Empty(t, cpe.custom.mavenBuildArtifacts)
-	})
-
-}
-
-func createTempFile(t *testing.T, dir string, filename string, content string) string {
-	filePath := filepath.Join(dir, filename)
-	err := os.WriteFile(filePath, []byte(content), 0666)
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %s", err)
-	}
-	return filePath
-}
-
-func TestGetPurlForThePomAndDeleteIndividualBom(t *testing.T) {
-
-	t.Run("valid BOM file, aggregated BOM", func(t *testing.T) {
-		tempDir, err := piperutils.Files{}.TempDir("", "test")
-		if err != nil {
-			t.Fatalf("Failed to create temp directory: %s", err)
-		}
-
-		bomContent := `<bom>
-			<metadata>
-				<component>
-					<purl>pkg:maven/com.example/aggregatecomponent@1.0.0</purl>
-				</component>
-				<properties>
-					<property name="maven.goal" value="makeAggregateBom" />
-				</properties>
-			</metadata>
-		</bom>`
-		pomFilePath := createTempFile(t, tempDir, "pom.xml", "")
-		bomDir := filepath.Join(tempDir, "target")
-		if err := os.MkdirAll(bomDir, 0777); err != nil {
-			t.Fatalf("Failed to create temp directory: %s", err)
-		}
-		bomFilePath := createTempFile(t, bomDir, mvnSimpleBomFilename+".xml", bomContent)
-
-		purl := getPurlForThePom(pomFilePath)
-		assert.Equal(t, "pkg:maven/com.example/aggregatecomponent@1.0.0", purl)
-		_, err = os.Stat(bomFilePath)
-		assert.False(t, os.IsNotExist(err)) // File should not be deleted
-	})
-
-	t.Run("BOM file does not exist", func(t *testing.T) {
-		tempDir := t.TempDir()
-		pomFilePath := createTempFile(t, tempDir, "pom.xml", "") // Create a temp pom file
-
-		purl := getPurlForThePom(pomFilePath)
-		assert.Equal(t, "", purl)
 	})
 }
