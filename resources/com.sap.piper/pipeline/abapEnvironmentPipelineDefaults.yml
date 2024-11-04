@@ -19,6 +19,7 @@ stages:
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0948","type":"basic"}'
     cfAsync: false
     ordinal: 30
+    logOutput: STANDARD
 
   'ATC':
     ordinal: 40

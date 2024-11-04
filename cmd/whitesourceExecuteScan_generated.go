@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -32,6 +33,7 @@ type whitesourceExecuteScanOptions struct {
 	BuildDescriptorFile                  string   `json:"buildDescriptorFile,omitempty"`
 	BuildTool                            string   `json:"buildTool,omitempty"`
 	ConfigFilePath                       string   `json:"configFilePath,omitempty"`
+	UseGlobalConfiguration               bool     `json:"useGlobalConfiguration,omitempty"`
 	ContainerRegistryPassword            string   `json:"containerRegistryPassword,omitempty"`
 	ContainerRegistryUser                string   `json:"containerRegistryUser,omitempty"`
 	CreateProductFromPipeline            bool     `json:"createProductFromPipeline,omitempty"`
@@ -280,6 +282,11 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -308,6 +315,19 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
@@ -333,6 +353,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Explicit path to the build descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
 	cmd.Flags().StringVar(&stepConfig.ConfigFilePath, "configFilePath", `./wss-unified-agent.config`, "Explicit path to the WhiteSource Unified Agent configuration file.")
+	cmd.Flags().BoolVar(&stepConfig.UseGlobalConfiguration, "useGlobalConfiguration", false, "The parameter is applicable for multi-module mend projects. If set to true, the configuration file will be used for all modules. Otherwise each module will require its own configuration file in the module folder.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().BoolVar(&stepConfig.CreateProductFromPipeline, "createProductFromPipeline", true, "Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.")
@@ -507,6 +528,15 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `./wss-unified-agent.config`,
+					},
+					{
+						Name:        "useGlobalConfiguration",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "containerRegistryPassword",
