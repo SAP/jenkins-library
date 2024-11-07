@@ -4,10 +4,11 @@
 package cts
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestUploadCTS(t *testing.T) {
@@ -51,7 +52,7 @@ func TestUploadCTS(t *testing.T) {
 			cmd := mock.ShellMockRunner{}
 			action := UploadAction{
 				Connection:  Connection{Endpoint: "https://example.org:8080/cts", Client: "001", User: "me", Password: "******"},
-				Application: Application{Pack: "abapPackage", Name: "appName", Desc: "the Desc"},
+				Application: Application{Pack: "abapPackage", Name: "/0ABCD/appName", Desc: "the Desc"},
 				Node: Node{
 					DeployDependencies: []string{},
 					InstallOpts:        []string{},
@@ -65,7 +66,7 @@ func TestUploadCTS(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Regexp(
 					t,
-					"(?m)^fiori deploy --failfast --yes --username ABAP_USER --password ABAP_PASSWORD --description \"the Desc\" --noConfig --url https://example.org:8080/cts --client 001 --transport 12345678 --package abapPackage --name appName$",
+					"(?m)^fiori deploy --failfast --yes --username ABAP_USER --password ABAP_PASSWORD --description \"the Desc\" --noConfig --url https://example.org:8080/cts --client 001 --transport 12345678 --package abapPackage --name /0ABCD/appName",
 					cmd.Calls[0],
 					"Expected fiori deploy command not found",
 				)
@@ -98,6 +99,26 @@ func TestUploadCTS(t *testing.T) {
 				)
 				assert.Equal(t, []string{"ABAP_USER=me", "ABAP_PASSWORD=******"}, cmd.Env)
 			}
+		})
+
+		t.Run("fail in case of invalid app name", func(t *testing.T) {
+			cmd := mock.ShellMockRunner{}
+			action := UploadAction{
+				Connection:  Connection{Endpoint: "https://example.org:8080/cts", Client: "001", User: "me", Password: "******"},
+				Application: Application{Pack: "abapPackage", Name: "/AB/app1", Desc: "the Desc"},
+				Node: Node{
+					DeployDependencies: []string{},
+					InstallOpts:        []string{},
+				},
+				TransportRequestID: "12345678",
+				ConfigFile:         "ui5-deploy.yaml",
+				DeployUser:         "doesNotMatterInThisCase",
+			}
+
+			err := action.Perform(&cmd)
+			expectedErrorMessge := "application name '/AB/app1' contains spaces or special characters or invalid namespace prefix and is not according to the regex '^(/[A-Za-z0-9_]{3,8}/)?[A-Za-z0-9_]+$'."
+
+			assert.EqualErrorf(t, err, expectedErrorMessge, "invalid app name")
 		})
 	})
 

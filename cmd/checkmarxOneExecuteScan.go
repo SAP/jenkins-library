@@ -943,12 +943,15 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 			return nil
 		}
 
+		fileName := strings.TrimPrefix(path, baseDir)
 		noMatch, err := c.isFileNotMatchingPattern(patterns, path, info, utils)
 		if err != nil || noMatch {
+			if noMatch {
+				log.Entry().Debugf("Excluded %s", fileName)
+			}
 			return err
 		}
 
-		fileName := strings.TrimPrefix(path, baseDir)
 		writer, err := archive.Create(fileName)
 		if err != nil {
 			return err
@@ -960,6 +963,9 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 		}
 		defer file.Close()
 		_, err = io.Copy(writer, file)
+		if err == nil {
+			log.Entry().Debugf("Zipped %s", fileName)
+		}
 		fileCount++
 		return err
 	})

@@ -1,6 +1,7 @@
 import com.sap.piper.SidecarUtils
 
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
@@ -242,7 +243,7 @@ void call(Map parameters = [:], body) {
                         }
                     } else {
                         def networkName = "sidecar-${UUID.randomUUID()}"
-                        sh "docker network create ${networkName}"
+                        sh "docker network create ${q(networkName)}"
                         try {
                             def sidecarImage = docker.image(config.sidecarImage)
                             pullWrapper(config.sidecarPullImage, sidecarImage, config.sidecarRegistryUrl, config.sidecarRegistryCredentialsId) {
