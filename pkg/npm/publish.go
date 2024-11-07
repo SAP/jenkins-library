@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
@@ -217,6 +218,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			coordinate.BuildPath = filepath.Dir(packageJSON)
 			coordinate.URL = registry
 			coordinate.Packaging = "tgz"
+			coordinate.PURL = piperutils.GetPurl(filepath.Join(filepath.Dir(packageJSON), npmBomFilename))
 
 			*buildCoordinates = append(*buildCoordinates, coordinate)
 		}

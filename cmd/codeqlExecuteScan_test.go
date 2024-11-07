@@ -56,7 +56,7 @@ func TestGetMavenSettings(t *testing.T) {
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
 		dir, _ := os.Getwd()
 		projectSettingsPath := filepath.Join(dir, "test.xml")
-		expectedCommand := fmt.Sprintf(" --settings=%s", projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--settings=%s\"", projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -73,7 +73,7 @@ func TestGetMavenSettings(t *testing.T) {
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, "global.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s", globalSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\"", globalSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -84,7 +84,7 @@ func TestGetMavenSettings(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, "global.xml")
 		projectSettingsPath := filepath.Join(dir, "test.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\" \"--settings=%s\"", globalSettingsPath, projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -94,7 +94,7 @@ func TestGetMavenSettings(t *testing.T) {
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
 		dir, _ := os.Getwd()
 		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
-		expectedCommand := fmt.Sprintf(" --settings=%s", projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--settings=%s\"", projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -104,7 +104,7 @@ func TestGetMavenSettings(t *testing.T) {
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
 		dir, _ := os.Getwd()
 		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
-		expectedCommand := fmt.Sprintf(" --settings=%s", projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--settings=%s\"", projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -114,7 +114,7 @@ func TestGetMavenSettings(t *testing.T) {
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s", globalSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\"", globalSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -124,7 +124,7 @@ func TestGetMavenSettings(t *testing.T) {
 		params := getMavenSettings(buildCmd, &config, newCodeqlExecuteScanTestsUtils())
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s", globalSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\"", globalSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -135,7 +135,7 @@ func TestGetMavenSettings(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
 		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\" \"--settings=%s\"", globalSettingsPath, projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -146,7 +146,7 @@ func TestGetMavenSettings(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
 		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\" \"--settings=%s\"", globalSettingsPath, projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -157,7 +157,7 @@ func TestGetMavenSettings(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
 		projectSettingsPath := filepath.Join(dir, "test.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\" \"--settings=%s\"", globalSettingsPath, projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -168,7 +168,7 @@ func TestGetMavenSettings(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, ".pipeline/mavenGlobalSettings.xml")
 		projectSettingsPath := filepath.Join(dir, "test.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\" \"--settings=%s\"", globalSettingsPath, projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -179,7 +179,7 @@ func TestGetMavenSettings(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, "global.xml")
 		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\" \"--settings=%s\"", globalSettingsPath, projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 
@@ -190,7 +190,7 @@ func TestGetMavenSettings(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, "global.xml")
 		projectSettingsPath := filepath.Join(dir, ".pipeline/mavenProjectSettings.xml")
-		expectedCommand := fmt.Sprintf(" --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		expectedCommand := fmt.Sprintf(" \"--global-settings=%s\" \"--settings=%s\"", globalSettingsPath, projectSettingsPath)
 		assert.Equal(t, expectedCommand, params)
 	})
 }
@@ -246,7 +246,7 @@ func TestUpdateCmdFlag(t *testing.T) {
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, "global.xml")
 		projectSettingsPath := filepath.Join(dir, "test.xml")
-		expectedCommand := fmt.Sprintf("mvn clean install --global-settings=%s --settings=%s", globalSettingsPath, projectSettingsPath)
+		expectedCommand := fmt.Sprintf("mvn clean install \"--global-settings=%s\" \"--settings=%s\"", globalSettingsPath, projectSettingsPath)
 		assert.Equal(t, expectedCommand, customFlags["--command"])
 		assert.Equal(t, "", customFlags["-c"])
 	})
