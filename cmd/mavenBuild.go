@@ -40,24 +40,8 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, c
 	}
 }
 
-func executeMavenGoals(config *mavenBuildOptions, utils maven.Utils, flags []string, goals []string, defines []string) error {
-	mavenOptions := maven.ExecuteOptions{
-		Flags:                       flags,
-		Goals:                       goals,
-		Defines:                     defines,
-		PomPath:                     config.PomPath,
-		ProjectSettingsFile:         config.ProjectSettingsFile,
-		GlobalSettingsFile:          config.GlobalSettingsFile,
-		M2Path:                      config.M2Path,
-		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
-	}
-
-	_, err := maven.Execute(&mavenOptions, utils)
-	return err
-}
-
 func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
-	var flags = []string{"-update-snapshots", "--batch-mode"}
+	flags := []string{"-update-snapshots", "--batch-mode"}
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
 	}
@@ -82,14 +66,30 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	}
 	defines = append(defines, createBOMConfig...)
 
-	goals := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeBom"}
+	goals := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeBom"}
 
-	return executeMavenGoals(config, utils, flags, goals, defines)
+	if config.Flatten {
+		goals = append(goals, "flatten:flatten")
+		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
+	}
+
+	mavenOptions := maven.ExecuteOptions{
+		Flags:                       flags,
+		Goals:                       goals,
+		Defines:                     defines,
+		PomPath:                     config.PomPath,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		M2Path:                      config.M2Path,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+	}
+
+	_, err := maven.Execute(&mavenOptions, utils)
+	return err
 }
 
-func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
-
-	var flags = []string{"-update-snapshots", "--batch-mode"}
+func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
+	flags := []string{"-update-snapshots", "--batch-mode"}
 
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
@@ -110,7 +110,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	if config.CreateBOM {
 		// Append the makeAggregateBOM goal to the rest of the goals
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.8:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.4",
 			"-DincludeBomSerialNumber=true",
@@ -134,7 +134,19 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		goals = append(goals, "install")
 	}
 
-	if err := executeMavenGoals(config, utils, flags, goals, defines); err != nil {
+	mavenOptions := maven.ExecuteOptions{
+		Flags:                       flags,
+		Goals:                       goals,
+		Defines:                     defines,
+		PomPath:                     config.PomPath,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		M2Path:                      config.M2Path,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+	}
+
+	_, err := maven.Execute(&mavenOptions, utils)
+	if err != nil {
 		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
 	}
 
@@ -176,53 +188,50 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				if err != nil {
 					return errors.Wrap(err, "Could not create or update project settings xml")
 				}
-				mavenOptions := maven.ExecuteOptions{
-					ProjectSettingsFile: projectSettingsFilePath,
-				}
+				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
+			}
 
-				deployFlags := []string{}
-				if len(config.DeployFlags) > 0 {
-					deployFlags = append(deployFlags, config.DeployFlags...)
-				}
-				if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryURL) > 0) {
-					deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
-				}
+			deployFlags := []string{}
+			if len(config.DeployFlags) > 0 {
+				deployFlags = append(deployFlags, config.DeployFlags...)
+			}
+			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryURL) > 0) {
+				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
+			}
 
-				downloadClient := &piperhttp.Client{}
-				downloadClient.SetOptions(piperhttp.ClientOptions{})
-
-				runner := &command.Command{
-					StepName: "mavenBuild",
-				}
-
-				fileUtils := &piperutils.Files{}
-				if len(config.CustomTLSCertificateLinks) > 0 {
-					if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
-						log.SetErrorCategory(log.ErrorInfrastructure)
-						return err
-					}
-				}
-
-				mavenOptions.Flags = deployFlags
-				mavenOptions.Goals = []string{"deploy"}
-				mavenOptions.Defines = []string{}
-				_, err = maven.Execute(&mavenOptions, utils)
-				if err != nil {
+			downloadClient := &piperhttp.Client{}
+			downloadClient.SetOptions(piperhttp.ClientOptions{})
+			runner := &command.Command{
+				StepName: "mavenBuild",
+			}
+			fileUtils := &piperutils.Files{}
+			if len(config.CustomTLSCertificateLinks) > 0 {
+				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
+					log.SetErrorCategory(log.ErrorInfrastructure)
 					return err
 				}
-
-				if config.CreateBuildArtifactsMetadata {
-					err2, done := createBuildArtifactsMetadata(config, commonPipelineEnvironment)
-					if done {
-						return err2
-					}
-				}
-				return nil
 			}
+
+			mavenOptions.Flags = deployFlags
+			mavenOptions.Goals = []string{"deploy"}
+			mavenOptions.Defines = []string{}
+			_, err := maven.Execute(&mavenOptions, utils)
+			if err != nil {
+				return err
+			}
+			if config.CreateBuildArtifactsMetadata {
+				err2, done := createBuildArtifactsMetadata(config, commonPipelineEnvironment)
+				if done {
+					return err2
+				}
+			}
+
+			return nil
 		} else {
 			log.Entry().Infof("publish not detected, ignoring maven deploy")
 		}
 	}
+
 	return err
 }
 
@@ -245,7 +254,7 @@ func createBuildArtifactsMetadata(config *mavenBuildOptions, commonPipelineEnvir
 			} else {
 				coordinate.BuildPath = filepath.Dir(match)
 				coordinate.URL = config.AltDeploymentRepositoryURL
-				coordinate.PURL = getPurlForThePom(match)
+				coordinate.PURL = piperutils.GetPurl(filepath.Join(filepath.Dir(match), "/target/"+mvnSimpleBomFilename+".xml"))
 				buildCoordinates = append(buildCoordinates, coordinate)
 			}
 		}
@@ -262,25 +271,6 @@ func createBuildArtifactsMetadata(config *mavenBuildOptions, commonPipelineEnvir
 	jsonResult, _ := json.Marshal(buildArtifacts)
 	commonPipelineEnvironment.custom.mavenBuildArtifacts = string(jsonResult)
 	return nil, false
-}
-
-func getPurlForThePom(pomFilePath string) string {
-	bomPath := filepath.Join(filepath.Dir(pomFilePath) + "/target/" + mvnSimpleBomFilename + ".xml")
-	exists, _ := piperutils.FileExists(bomPath)
-	if !exists {
-		log.Entry().Debugf("bom file doesn't exist and hence no pURL info: %v", bomPath)
-		return ""
-	}
-	bom, err := piperutils.GetBom(bomPath)
-	if err != nil {
-		log.Entry().Warnf("failed to get bom file %s: %v", bomPath, err)
-		return ""
-	}
-
-	log.Entry().Debugf("Found purl: %s for the bomPath: %s", bom.Metadata.Component.Purl, bomPath)
-	purl := bom.Metadata.Component.Purl
-
-	return purl
 }
 
 func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils maven.Utils) (string, error) {
@@ -300,7 +290,7 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 }
 
 func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils, javaCaCertFilePath string) error {
-	//TODO: make use of java/keytool package
+	// TODO: make use of java/keytool package
 	existingJavaCaCerts := filepath.Join(os.Getenv("JAVA_HOME"), "jre", "lib", "security", "cacerts")
 
 	if len(javaCaCertFilePath) > 0 {
@@ -308,7 +298,6 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 	}
 
 	exists, err := fileUtils.FileExists(existingJavaCaCerts)
-
 	if err != nil {
 		return errors.Wrap(err, "Could not find the existing java cacerts")
 	}

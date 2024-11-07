@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -14,8 +15,10 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/npm"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -53,7 +56,7 @@ const (
 	NEO MTABuildTarget = iota
 	// CF ...
 	CF MTABuildTarget = iota
-	//XSA ...
+	// XSA ...
 	XSA MTABuildTarget = iota
 )
 
@@ -67,7 +70,7 @@ func ValueOfBuildTarget(str string) (MTABuildTarget, error) {
 	case "XSA":
 		return XSA, nil
 	default:
-		return -1, fmt.Errorf("Unknown Platform: '%s'", str)
+		return -1, fmt.Errorf("unknown platform: '%s'", str)
 	}
 }
 
@@ -94,6 +97,9 @@ type mtaBuildUtils interface {
 
 	SetNpmRegistries(defaultNpmRegistry string) error
 	InstallAllDependencies(defaultNpmRegistry string) error
+
+	Open(name string) (io.ReadWriteCloser, error)
+	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 }
 
 type mtaBuildUtilsBundle struct {
@@ -131,9 +137,7 @@ func newMtaBuildUtilsBundle() mtaBuildUtils {
 	return &utils
 }
 
-func mtaBuild(config mtaBuildOptions,
-	telemetryData *telemetry.CustomData,
-	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
+func mtaBuild(config mtaBuildOptions, _ *telemetry.CustomData, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Debugf("Launching mta build")
 	utils := newMtaBuildUtilsBundle()
 
@@ -145,39 +149,31 @@ func mtaBuild(config mtaBuildOptions,
 	}
 }
 
-func runMtaBuild(config mtaBuildOptions,
-	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	utils mtaBuildUtils) error {
-
-	var err error
-
-	err = handleSettingsFiles(config, utils)
-	if err != nil {
+func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment, utils mtaBuildUtils) error {
+	if err := handleSettingsFiles(config, utils); err != nil {
 		return err
 	}
 
-	err = handleActiveProfileUpdate(config, utils)
-	if err != nil {
+	if err := handleActiveProfileUpdate(config, utils); err != nil {
 		return err
 	}
 
-	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
+	if err := utils.SetNpmRegistries(config.DefaultNpmRegistry); err != nil {
+		return err
+	}
 
 	mtaYamlFile := filepath.Join(getSourcePath(config), "mta.yaml")
 	mtaYamlFileExists, err := utils.FileExists(mtaYamlFile)
-
 	if err != nil {
 		return err
 	}
 
 	if !mtaYamlFileExists {
-
 		if err = createMtaYamlFile(mtaYamlFile, config.ApplicationName, utils); err != nil {
 			return err
 		}
-
 	} else {
-		log.Entry().Infof("\"%s\" file found in project sources", mtaYamlFile)
+		log.Entry().Infof(`"%s" file found in project sources`, mtaYamlFile)
 	}
 
 	if config.EnableSetTimestamp {
@@ -187,12 +183,9 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	mtarName, isMtarNativelySuffixed, err := getMtarName(config, mtaYamlFile, utils)
-
 	if err != nil {
 		return err
 	}
-
-	var call []string
 
 	platform, err := ValueOfBuildTarget(config.Platform)
 	if err != nil {
@@ -200,7 +193,7 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	call = append(call, "mbt", "build", "--mtar", mtarName, "--platform", platform.String())
+	call := []string{"mbt", "build", "--mtar", mtarName, "--platform", platform.String()}
 	if len(config.Extensions) != 0 {
 		call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
 	}
@@ -229,7 +222,7 @@ func runMtaBuild(config mtaBuildOptions,
 		utils.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
 	}
 
-	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
+	log.Entry().Infof(`Executing mta build call: "%s"`, strings.Join(call, " "))
 
 	if err := utils.RunExecutable(call[0], call[1:]...); err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -261,65 +254,97 @@ func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment.custom.mtaBuildToolDesc = filepath.ToSlash(mtaYamlFile)
 
 	if config.InstallArtifacts {
-		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
-		err = installMavenArtifacts(utils, config)
-		if err != nil {
+		if err = installMavenArtifacts(utils, config); err != nil {
 			return err
 		}
-		// mta-builder executes 'npm install --production', therefore we need 'npm ci/install' to install the dev-dependencies
-		err = utils.InstallAllDependencies(config.DefaultNpmRegistry)
-		if err != nil {
+		if err = utils.InstallAllDependencies(config.DefaultNpmRegistry); err != nil {
 			return err
 		}
 	}
 
 	if config.Publish {
-		log.Entry().Infof("publish detected")
-		if (len(config.MtaDeploymentRepositoryPassword) > 0) && (len(config.MtaDeploymentRepositoryUser) > 0) &&
-			(len(config.MtaDeploymentRepositoryURL) > 0) {
-			if (len(config.MtarGroup) > 0) && (len(config.Version) > 0) {
-				httpClient := &piperhttp.Client{}
-
-				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword)))
-				headers := http.Header{}
-				headers.Add("Authorization", credentialsEncoded)
-
-				config.MtarGroup = strings.ReplaceAll(config.MtarGroup, ".", "/")
-
-				mtarArtifactName := mtarName
-
-				// only trim the .mtar suffix from the mtarName
-				if !isMtarNativelySuffixed {
-					mtarArtifactName = strings.TrimSuffix(mtarArtifactName, ".mtar")
-				}
-
-				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
-
-				commonPipelineEnvironment.custom.mtarPublishedURL = config.MtaDeploymentRepositoryURL
-
-				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
-
-				data, err := os.Open(getMtarFilePath(config, mtarName))
-				if err != nil {
-					return errors.Wrap(err, "failed to open mtar archive for upload")
-				}
-				_, httpErr := httpClient.SendRequest("PUT", config.MtaDeploymentRepositoryURL, data, headers, nil)
-
-				if httpErr != nil {
-					return errors.Wrap(err, "failed to upload mtar to repository")
-				}
-			} else {
-				return errors.New("mtarGroup, version not found and must be present")
-
-			}
-
-		} else {
-			return errors.New("mtaDeploymentRepositoryUser, mtaDeploymentRepositoryPassword and mtaDeploymentRepositoryURL not found , must be present")
+		if err = handlePublish(config, commonPipelineEnvironment, utils, mtarName, isMtarNativelySuffixed); err != nil {
+			return err
 		}
 	} else {
 		log.Entry().Infof("no publish detected, skipping upload of mtar artifact")
 	}
-	return err
+
+	return nil
+}
+
+func handlePublish(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment, utils mtaBuildUtils, mtarName string, isMtarNativelySuffixed bool) error {
+	log.Entry().Infof("publish detected")
+
+	if len(config.MtaDeploymentRepositoryPassword) == 0 ||
+		len(config.MtaDeploymentRepositoryUser) == 0 ||
+		len(config.MtaDeploymentRepositoryURL) == 0 {
+		return errors.New("mtaDeploymentRepositoryUser, mtaDeploymentRepositoryPassword and mtaDeploymentRepositoryURL not found, must be present")
+	}
+
+	if len(config.MtarGroup) == 0 || len(config.Version) == 0 {
+		return errors.New("mtarGroup, version not found and must be present")
+	}
+
+	credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword)))
+	headers := http.Header{}
+	headers.Add("Authorization", credentialsEncoded)
+
+	config.MtarGroup = strings.ReplaceAll(config.MtarGroup, ".", "/")
+	mtarArtifactName := mtarName
+	if !isMtarNativelySuffixed {
+		mtarArtifactName = strings.TrimSuffix(mtarArtifactName, ".mtar")
+	}
+
+	config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
+	commonPipelineEnvironment.custom.mtarPublishedURL = config.MtaDeploymentRepositoryURL
+
+	log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
+
+	mtarPath := getMtarFilePath(config, mtarName)
+	data, err := utils.Open(mtarPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to open mtar archive for upload")
+	}
+	defer data.Close()
+
+	if _, httpErr := utils.SendRequest("PUT", config.MtaDeploymentRepositoryURL, data, headers, nil); httpErr != nil {
+		return errors.Wrap(httpErr, "failed to upload mtar to repository")
+	}
+
+	if config.CreateBuildArtifactsMetadata {
+		if err := buildArtifactsMetadata(config, commonPipelineEnvironment, mtarPath); err != nil {
+			log.Entry().Warnf("unable to create build artifacts metadata: %v", err)
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment, mtarPath string) error {
+	mtarDir := filepath.Dir(mtarPath)
+	buildArtifacts := build.BuildArtifacts{
+		Coordinates: []versioning.Coordinates{
+			{
+				GroupID:    config.MtarGroup,
+				ArtifactID: config.MtarName,
+				Version:    config.Version,
+				Packaging:  "mtar",
+				BuildPath:  getSourcePath(config),
+				URL:        config.MtaDeploymentRepositoryURL,
+				PURL:       piperutils.GetPurl(filepath.Join(mtarDir, "sbom-gen/bom-mta.xml")),
+			},
+		},
+	}
+
+	jsonResult, err := json.Marshal(buildArtifacts)
+	if err != nil {
+		return fmt.Errorf("failed to marshal build artifacts: %v", err)
+	}
+
+	commonPipelineEnvironment.custom.mtaBuildArtifacts = string(jsonResult)
+	return nil
 }
 
 func handleActiveProfileUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
@@ -355,15 +380,12 @@ func addNpmBinToPath(utils mtaBuildUtils) error {
 }
 
 func getMtarName(config mtaBuildOptions, mtaYamlFile string, utils mtaBuildUtils) (string, bool, error) {
-
 	mtarName := config.MtarName
 	isMtarNativelySuffixed := false
 	if len(mtarName) == 0 {
-
-		log.Entry().Debugf("mtar name not provided via config. Extracting from file \"%s\"", mtaYamlFile)
+		log.Entry().Debugf(`mtar name not provided via config. Extracting from file "%s"`, mtaYamlFile)
 
 		mtaID, err := getMtaID(mtaYamlFile, utils)
-
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return "", isMtarNativelySuffixed, err
@@ -371,10 +393,10 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, utils mtaBuildUtils
 
 		if len(mtaID) == 0 {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return "", isMtarNativelySuffixed, fmt.Errorf("Invalid mtar ID. Was empty")
+			return "", isMtarNativelySuffixed, fmt.Errorf("invalid mtar ID. Was empty")
 		}
 
-		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
+		log.Entry().Debugf(`mtar name extracted from file "%s": "%s"`, mtaYamlFile, mtaID)
 
 		// there can be cases where the mtaId itself has the value com.myComapany.mtar , adding an extra .mtar causes .mtar.mtar
 		if !strings.HasSuffix(mtaID, ".mtar") {
@@ -387,11 +409,9 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, utils mtaBuildUtils
 	}
 
 	return mtarName, isMtarNativelySuffixed, nil
-
 }
 
 func setTimeStamp(mtaYamlFile string, utils mtaBuildUtils) error {
-
 	mtaYaml, err := utils.FileRead(mtaYamlFile)
 	if err != nil {
 		return err
@@ -406,9 +426,9 @@ func setTimeStamp(mtaYamlFile string, utils mtaBuildUtils) error {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return err
 		}
-		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
+		log.Entry().Infof(`Timestamp replaced in "%s"`, mtaYamlFile)
 	} else {
-		log.Entry().Infof("No timestamp contained in \"%s\". File has not been modified.", mtaYamlFile)
+		log.Entry().Infof(`No timestamp contained in "%s". File has not been modified.`, mtaYamlFile)
 	}
 
 	return nil
@@ -420,14 +440,16 @@ func getTimestamp() string {
 }
 
 func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils) error {
-
-	log.Entry().Infof("\"%s\" file not found in project sources", mtaYamlFile)
+	log.Entry().Infof(`"%s" file not found in project sources`, mtaYamlFile)
 
 	if len(applicationName) == 0 {
 		return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
 	}
 
 	packageFileExists, err := utils.FileExists("package.json")
+	if err != nil {
+		return err
+	}
 	if !packageFileExists {
 		return fmt.Errorf("package.json file does not exist")
 	}
@@ -437,16 +459,18 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(pContent, &result)
+	if err := json.Unmarshal(pContent, &result); err != nil {
+		return fmt.Errorf("failed to unmarshal package.json: %w", err)
+	}
 
 	version, ok := result["version"].(string)
 	if !ok {
-		return fmt.Errorf("Version not found in \"package.json\" (or wrong type)")
+		return fmt.Errorf(`version not found in "package.json" (or wrong type)`)
 	}
 
 	name, ok := result["name"].(string)
 	if !ok {
-		return fmt.Errorf("Name not found in \"package.json\" (or wrong type)")
+		return fmt.Errorf(`name not found in "package.json" (or wrong type)`)
 	}
 
 	mtaConfig, err := generateMta(name, applicationName, version)
@@ -457,7 +481,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 	if err := utils.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644); err != nil {
 		return fmt.Errorf("failed to write %v: %w", mtaYamlFile, err)
 	}
-	log.Entry().Infof("\"%s\" created.", mtaYamlFile)
+	log.Entry().Infof(`"%s" created.`, mtaYamlFile)
 
 	return nil
 }
@@ -467,15 +491,14 @@ func handleSettingsFiles(config mtaBuildOptions, utils mtaBuildUtils) error {
 }
 
 func generateMta(id, applicationName, version string) (string, error) {
-
 	if len(id) == 0 {
-		return "", fmt.Errorf("Generating mta file: ID not provided")
+		return "", fmt.Errorf("generating mta file: ID not provided")
 	}
 	if len(applicationName) == 0 {
-		return "", fmt.Errorf("Generating mta file: ApplicationName not provided")
+		return "", fmt.Errorf("generating mta file: ApplicationName not provided")
 	}
 	if len(version) == 0 {
-		return "", fmt.Errorf("Generating mta file: Version not provided")
+		return "", fmt.Errorf("generating mta file: Version not provided")
 	}
 
 	tmpl, e := template.New("mta.yaml").Parse(templateMtaYml)
@@ -499,7 +522,6 @@ func generateMta(id, applicationName, version string) (string, error) {
 }
 
 func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
-
 	var result map[string]interface{}
 	p, err := utils.FileRead(mtaYamlFile)
 	if err != nil {
@@ -512,7 +534,7 @@ func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
 
 	id, ok := result["ID"].(string)
 	if !ok || len(id) == 0 {
-		return "", fmt.Errorf("Id not found in mta yaml file (or wrong type)")
+		return "", fmt.Errorf("id not found in mta yaml file (or wrong type)")
 	}
 
 	return id, nil

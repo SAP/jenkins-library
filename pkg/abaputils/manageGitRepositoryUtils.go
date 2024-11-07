@@ -2,12 +2,14 @@ package abaputils
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
@@ -15,12 +17,36 @@ const numberOfEntriesPerPage = 100000
 const logOutputStatusLength = 10
 const logOutputTimestampLength = 29
 
+// Specifies which output option is used for logs
+type LogOutputManager struct {
+	LogOutput    string
+	PiperStep    string
+	FileNameStep string
+	StepReports  []piperutils.Path
+}
+
+func PersistArchiveLogsForPiperStep(logOutputManager *LogOutputManager) {
+	fileUtils := piperutils.Files{}
+	switch logOutputManager.PiperStep {
+	case "clone":
+		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, logOutputManager.StepReports, nil)
+	case "pull":
+		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, logOutputManager.StepReports, nil)
+	case "checkoutBranch":
+		piperutils.PersistReportsAndLinks("abapEnvironmentCheckoutBranch", "", fileUtils, logOutputManager.StepReports, nil)
+	default:
+		log.Entry().Info("Cannot save log archive because no piper step was defined.")
+	}
+}
+
 // PollEntity periodically polls the action entity to get the status. Check if the import is still running
-func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) (string, error) {
+func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, logOutputManager *LogOutputManager) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var statusCode string = "R"
 	var err error
+
+	api.initialRequest()
 
 	for {
 		// pullEntity, responseStatus, err := api.GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
@@ -31,7 +57,7 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 
 		if statusCode != "R" && statusCode != "Q" {
 
-			PrintLogs(api)
+			PrintLogs(api, logOutputManager)
 			break
 		}
 		time.Sleep(pollIntervall)
@@ -39,7 +65,7 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 	return statusCode, nil
 }
 
-func PrintLogs(api SoftwareComponentApiInterface) {
+func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputManager) {
 
 	// Get Execution Logs
 	executionLogs, err := api.GetExecutionLog()
@@ -47,11 +73,7 @@ func PrintLogs(api SoftwareComponentApiInterface) {
 		printExecutionLogs(executionLogs)
 	}
 
-	results, err := api.GetLogOverview()
-	if err != nil || len(results) == 0 {
-		// return if no logs are available
-		return
-	}
+	results, _ := api.GetLogOverview()
 
 	// Sort logs
 	sort.SliceStable(results, func(i, j int) bool {
@@ -60,13 +82,31 @@ func PrintLogs(api SoftwareComponentApiInterface) {
 
 	printOverview(results, api)
 
-	// Print Details
-	for _, logEntryForDetails := range results {
-		printLog(logEntryForDetails, api)
-	}
-	AddDefaultDashedLine(1)
+	if logOutputManager.LogOutput == "ZIP" {
+		// get zip file as byte array
+		zipfile, err := api.GetLogArchive()
+		// Saving logs in file and adding to piperutils to archive file
+		if err == nil {
+			fileName := "LogArchive-" + logOutputManager.FileNameStep + "-" + strings.Replace(api.getRepositoryName(), "/", "_", -1) + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05") + ".zip"
 
-	return
+			err = os.WriteFile(fileName, zipfile, 0o644)
+
+			if err == nil {
+				log.Entry().Infof("Writing %s file was successful", fileName)
+				logOutputManager.StepReports = append(logOutputManager.StepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
+			}
+		}
+
+	} else {
+		// Print Details
+		if len(results) != 0 {
+			for _, logEntryForDetails := range results {
+				printLog(logEntryForDetails, api)
+			}
+		}
+		AddDefaultDashedLine(1)
+	}
+
 }
 
 func printExecutionLogs(executionLogs ExecutionLog) {
@@ -81,6 +121,10 @@ func printExecutionLogs(executionLogs ExecutionLog) {
 }
 
 func printOverview(results []LogResultsV2, api SoftwareComponentApiInterface) {
+
+	if len(results) == 0 {
+		return
+	}
 
 	logOutputPhaseLength, logOutputLineLength := calculateLenghts(results)
 
