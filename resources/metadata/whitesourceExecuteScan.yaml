@@ -257,7 +257,7 @@ spec:
             deprecated: true
         type: string
         description:
-          "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent. The URL is a HTTP 302 Temp Redirect to the always latest available SapMachine 21, linux-x64, JRE"
+          "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent."
         scope:
           - GENERAL
           - PARAMETERS
