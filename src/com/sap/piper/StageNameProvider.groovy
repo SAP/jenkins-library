@@ -9,7 +9,11 @@ class StageNameProvider implements Serializable {
 
     String getStageName(Script script, Map parameters, Script step) {
         if (parameters.stageName in CharSequence) {
-            return parameters.stageName
+            stageName = parameters.stageName
+            if (stageName == 'Central Build'){
+                stageName = 'Build'
+            }
+            return stageName
         }
         if (this.useTechnicalStageNames) {
             String technicalStageName = getTechnicalStageName(step)
@@ -17,7 +21,11 @@ class StageNameProvider implements Serializable {
                 return technicalStageName
             }
         }
-        return script.env.STAGE_NAME
+        stageName = script.env.STAGE_NAME
+        if (stageName == 'Central Build'){
+            stageName = 'Build'
+        }
+        return stageName
     }
 
     static String getTechnicalStageName(Script step) {
