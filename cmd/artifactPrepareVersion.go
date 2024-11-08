@@ -235,7 +235,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	log.Entry().Infof("New version: '%v'", newVersion)
 
 	commonPipelineEnvironment.git.commitID = gitCommitID // this commitID changes and is not necessarily the HEAD commitID
+	commonPipelineEnvironment.container.labels["org.opencontainers.image.revision"] = gitCommitID
 	commonPipelineEnvironment.artifactVersion = newVersion
+	commonPipelineEnvironment.container.labels["org.opencontainers.image.version"] = newVersion
 	commonPipelineEnvironment.originalArtifactVersion = version
 
 	gitCommitMessages := strings.Split(gitCommitMessage, "\n")
