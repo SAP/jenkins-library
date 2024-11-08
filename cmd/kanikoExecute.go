@@ -379,6 +379,10 @@ func runKaniko(config *kanikoExecuteOptions, dockerFilepath string, buildOptions
 	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", "dir://" + cwd}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
+	for label, value := range config.Labels {
+		kanikoOpts = append(kanikoOpts, "--label", fmt.Sprintf("%s=%s", label, value))
+	}
+
 	tmpDir, err := fileUtils.TempDir("", "*-kanikoExecute")
 	if err != nil {
 		return fmt.Errorf("failed to create tmp dir for kanikoExecute: %w", err)
