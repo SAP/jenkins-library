@@ -56,6 +56,9 @@ type artifactPrepareVersionCommonPipelineEnvironment struct {
 		headCommitID  string
 		commitMessage string
 	}
+	container struct {
+		labels map[string]interface{}
+	}
 }
 
 func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resourceName string) {
@@ -72,6 +75,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 		{category: "git", name: "commitId", value: p.git.commitID},
 		{category: "git", name: "headCommitId", value: p.git.headCommitID},
 		{category: "git", name: "commitMessage", value: p.git.commitMessage},
+		{category: "container", name: "labels", value: p.container.labels},
 	}
 
 	errCount := 0
@@ -582,6 +586,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 							{"name": "git/commitId"},
 							{"name": "git/headCommitId"},
 							{"name": "git/commitMessage"},
+							{"name": "container/labels", "type": "map[string]interface{}"},
 						},
 					},
 				},
