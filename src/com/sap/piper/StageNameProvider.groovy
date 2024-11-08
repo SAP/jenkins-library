@@ -21,7 +21,7 @@ class StageNameProvider implements Serializable {
             }
         } 
         if (script.env.STAGE_NAME == 'Central Build'){
-            return = 'Build'
+            return 'Build'
         }
         return script.env.STAGE_NAME
     }
