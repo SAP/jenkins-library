@@ -140,7 +140,7 @@ Another typical use-case is development of a library with regular releases where
 
 The version is then either manually set by the team in the course of the development process or automatically pushed to master after a successful release.
 
-Unlike for the _Continuous Deloyment_ pattern described above, in this case there is no dedicated tagging required for the build process since the version is already available in the repository.
+Unlike for the _Continuous Deployment_ pattern described above, in this case there is no dedicated tagging required for the build process since the version is already available in the repository.
 
 Configuration of this pattern is done via ` + "`" + `versioningType: library` + "`" + `.
 

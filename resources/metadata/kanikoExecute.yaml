@@ -103,7 +103,7 @@ spec:
             param: custom/buildSettingsInfo
       - name: containerBuildOptions
         type: string
-        description: Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.
+        description: Deprecated, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.
         scope:
           - PARAMETERS
           - STAGES
