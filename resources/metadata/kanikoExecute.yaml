@@ -306,6 +306,19 @@ spec:
           - PARAMETERS
           - STEPS
         default: "https://github.com/anchore/syft/releases/download/v1.4.1/syft_1.4.1_linux_amd64.tar.gz"
+      - name: labels
+        type: map[string]interface{}
+        description: Map of labels to be added to the image. The key is the label name and the value is the label value.
+        # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+        default: []
+        scope:
+        - GENERAL
+        - STEPS
+        - STAGES
+        - PARAMETERS
+        resourceRef:
+        - name: commonPipelineEnvironment
+          param: container/labels
   outputs:
     resources:
       - name: commonPipelineEnvironment

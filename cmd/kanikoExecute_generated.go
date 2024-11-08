@@ -44,6 +44,7 @@ type kanikoExecuteOptions struct {
 	ReadImageDigest                  bool                     `json:"readImageDigest,omitempty"`
 	CreateBOM                        bool                     `json:"createBOM,omitempty"`
 	SyftDownloadURL                  string                   `json:"syftDownloadUrl,omitempty"`
+	Labels                           map[string]interface{}   `json:"labels,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
@@ -577,6 +578,19 @@ func kanikoExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `https://github.com/anchore/syft/releases/download/v1.4.1/syft_1.4.1_linux_amd64.tar.gz`,
+					},
+					{
+						Name: "labels",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/labels",
+							},
+						},
+						Scope:     []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:      "map[string]interface{}",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},
