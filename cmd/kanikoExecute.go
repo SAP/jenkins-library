@@ -296,7 +296,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 		if config.CreateBOM {
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
-			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			err = syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			if err != nil {
+				return err
+			}
 		}
 		if config.CreateBuildArtifactsMetadata {
 			if err := buildArtifactsMetadataKaniko(config, commonPipelineEnvironment); err != nil {
@@ -381,7 +384,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	if config.CreateBOM {
 		// Syft for single image, generates bom-docker-0.xml
-		return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		err = syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		if err != nil {
+			return err
+		}
 	}
 	if config.CreateBuildArtifactsMetadata {
 		if err := buildArtifactsMetadataKaniko(config, commonPipelineEnvironment); err != nil {
