@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/build"
+	"github.com/SAP/jenkins-library/pkg/versioning"
+	"path/filepath"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -186,7 +190,16 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		}
 		if config.CreateBOM {
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
-			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			err = syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			if err != nil {
+				return err
+			}
+		}
+		if config.CreateBuildArtifactsMetadata {
+			if err := buildArtifactsMetadataKaniko(config, commonPipelineEnvironment); err != nil {
+				log.Entry().Warnf("unable to create build artifacts metadata: %v", err)
+				return nil
+			}
 		}
 		return nil
 
@@ -285,6 +298,12 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
 			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		}
+		if config.CreateBuildArtifactsMetadata {
+			if err := buildArtifactsMetadataKaniko(config, commonPipelineEnvironment); err != nil {
+				log.Entry().Warnf("unable to create build artifacts metadata: %v", err)
+				return nil
+			}
+		}
 		return nil
 
 	case piperutils.ContainsString(config.BuildOptions, "--destination"):
@@ -364,7 +383,48 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		// Syft for single image, generates bom-docker-0.xml
 		return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 	}
+	if config.CreateBuildArtifactsMetadata {
+		if err := buildArtifactsMetadataKaniko(config, commonPipelineEnvironment); err != nil {
+			log.Entry().Warnf("unable to create build artifacts metadata: %v", err)
+			return nil
+		}
+	}
 
+	return nil
+}
+
+func buildArtifactsMetadataKaniko(config *kanikoExecuteOptions, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+	buildCoordinates := []versioning.Coordinates{}
+	options := versioning.Options{}
+	var utils versioning.Utils
+	imageBuildPaths := commonPipelineEnvironment.container.imageNameTags // This needs to be populated earlier during the image build process.
+	for imageIndex, _ := range imageBuildPaths {
+		artifact, err := versioning.GetArtifact("docker", config.DockerfilePath, &options, utils)
+		if err != nil {
+			return err
+		}
+		coordinate, err := artifact.GetCoordinates()
+		if err != nil {
+			log.Entry().Warnf("unable to get artifact coordinates for image %d: %v", imageIndex, err)
+		} else {
+			bomFilename := fmt.Sprintf("bom-docker-%d.xml", imageIndex)
+			dockerfilePath := filepath.Dir(config.DockerfilePath)
+			coordinate.BuildPath = dockerfilePath
+			coordinate.URL = config.ContainerRegistryURL
+			coordinate.PURL = piperutils.GetPurl(filepath.Join(dockerfilePath, bomFilename))
+			buildCoordinates = append(buildCoordinates, coordinate)
+		}
+	}
+
+	if len(buildCoordinates) == 0 {
+		return errors.New("unable to identify artifact coordinates for the kaniko packages published")
+	}
+
+	var buildArtifacts build.BuildArtifacts
+
+	buildArtifacts.Coordinates = buildCoordinates
+	jsonResult, _ := json.Marshal(buildArtifacts)
+	commonPipelineEnvironment.custom.kanikoExecuteArtifacts = string(jsonResult)
 	return nil
 }
 

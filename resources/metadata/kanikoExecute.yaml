@@ -306,6 +306,14 @@ spec:
           - PARAMETERS
           - STEPS
         default: "https://github.com/anchore/syft/releases/download/v1.4.1/syft_1.4.1_linux_amd64.tar.gz"
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -321,6 +329,7 @@ spec:
           - name: container/imageDigests
             type: "[]string"
           - name: custom/buildSettingsInfo
+          - name: custom/kanikoExecuteArtifacts
       - name: reports
         type: reports
         params:
