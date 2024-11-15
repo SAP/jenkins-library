@@ -400,6 +400,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 }
 
 func buildArtifactsMetadataKaniko(config *kanikoExecuteOptions, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+	log.Entry().Debug("creating build artifacts metadata for kaniko packages")
 	buildCoordinates := []versioning.Coordinates{}
 	options := versioning.Options{}
 	var utils versioning.Utils
