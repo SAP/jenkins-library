@@ -92,6 +92,14 @@ private void stageLocking(Map config, Closure body) {
 private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled = false) {
     boolean projectExtensions
     boolean globalExtensions
+    if (stageName == 'Central Build') {
+        def stages = script.globalPipelineEnvironment.configuration.stages
+        if (stages != null && (!stages.containsKey('Central Build') || stages.containsKey('Build'))) {
+            stageName = 'Build'
+        } else {
+            stageName = 'Central Build'
+        }
+    }
     def startTime = System.currentTimeMillis()
 
     try {
