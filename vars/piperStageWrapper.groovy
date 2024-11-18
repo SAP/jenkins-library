@@ -92,14 +92,7 @@ private void stageLocking(Map config, Closure body) {
 private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled = false) {
     boolean projectExtensions
     boolean globalExtensions
-    if (stageName == 'Central Build') {
-        def stages = script.globalPipelineEnvironment.configuration.stages
-        if (stages != null && (!stages.containsKey('Central Build') || stages.containsKey('Build'))) {
-            stageName = 'Build'
-        } else {
-            stageName = 'Central Build'
-        }
-    }
+    
     def startTime = System.currentTimeMillis()
 
     try {
@@ -115,6 +108,14 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         globalExtensions = fileExists(globalInterceptorFile)
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist
         def body = originalStage
+        if (stageName == 'Central Build') {
+            def stages = script.globalPipelineEnvironment.configuration.stages
+            if (stages != null && (!stages.containsKey('Central Build') || stages.containsKey('Build'))) {
+                stageName = 'Build'
+            } else {
+                stageName = 'Central Build'
+            }
+        }
 
         // First, check if a global extension exists via a dedicated repository
         if (globalExtensions && allowExtensions(script)) {
