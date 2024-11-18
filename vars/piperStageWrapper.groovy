@@ -105,28 +105,21 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         def projectInterceptorFile = "${config.projectExtensionsDirectory}${stageName}.groovy"
         def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
         /* due to renaming stage 'Central Build' to 'Build' need to get configuration from
-        extension file name 'Central Build.groovy', once all the users will 'Build' as a stageName,
-        this reaming should be removed
+        extension file name 'Central Build.groovy', once all the users will 'Build' as a stageName
+        and extension filename, below renaming snippet should be removed
         */
         if (stageName == 'Build'){
             centralBuildExtensionFileName = "Central Build.groovy"
             projectInterceptorFile = "${config.projectExtensionsDirectory}${centralBuildExtensionFileName}"
             globalInterceptorFile = "${config.globalExtensionsDirectory}${centralBuildExtensionFileName}"
         }
+
         projectExtensions = fileExists(projectInterceptorFile)
         globalExtensions = fileExists(globalInterceptorFile)
         echo "[${STEP_NAME}] Running project interceptor '${projectExtensions}' for ${stageName}."
         echo "[${STEP_NAME}] VERBOSE: check allowed extensions '${script.env.PIPER_DISABLE_EXTENSIONS}'"
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist
         def body = originalStage
-        if (stageName == 'Central Build') {
-            def stages = script.globalPipelineEnvironment.configuration.stages
-            if (stages != null && (!stages.containsKey('Central Build') || stages.containsKey('Build'))) {
-                stageName = 'Build'
-            } else {
-                stageName = 'Central Build'
-            }
-        }
 
         // First, check if a global extension exists via a dedicated repository
         if (globalExtensions && allowExtensions(script)) {
