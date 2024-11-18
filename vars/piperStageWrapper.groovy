@@ -106,6 +106,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
         projectExtensions = fileExists(projectInterceptorFile)
         globalExtensions = fileExists(globalInterceptorFile)
+        echo "[${STEP_NAME}] Running project interceptor '${projectExtensions}' for ${stageName}."
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist
         def body = originalStage
         if (stageName == 'Central Build') {
