@@ -107,6 +107,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         projectExtensions = fileExists(projectInterceptorFile)
         globalExtensions = fileExists(globalInterceptorFile)
         echo "[${STEP_NAME}] Running project interceptor '${projectExtensions}' for ${stageName}."
+         echo "[${STEP_NAME}] VERBOSE: check allowed extensions '${script.env.PIPER_DISABLE_EXTENSIONS}'"
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist
         def body = originalStage
         if (stageName == 'Central Build') {
