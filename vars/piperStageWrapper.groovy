@@ -104,20 +104,20 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         */
         def projectInterceptorFile = "${config.projectExtensionsDirectory}${stageName}.groovy"
         def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
-        /* due to renaming stage 'Central Build' to 'Build' need to get configuration from
-        extension file name 'Central Build.groovy', once all the users will 'Build' as a stageName
+        /* due to renaming stage 'Central Build' to 'Build' need to define extension file name 'Central Build.groovy'
+        as stageName used to generate it, once all the users will 'Build' as a stageName
         and extension filename, below renaming snippet should be removed
         */
         if (stageName == 'Build'){
-            centralBuildExtensionFileName = "Central Build.groovy"
-            projectInterceptorFile = "${config.projectExtensionsDirectory}${centralBuildExtensionFileName}"
-            globalInterceptorFile = "${config.globalExtensionsDirectory}${centralBuildExtensionFileName}"
+            if (!fileExists(projectInterceptorFile || !fileExists(globalInterceptorFile){
+                def centralBuildExtensionFileName = "Central Build.groovy"
+                projectInterceptorFile = "${config.projectExtensionsDirectory}${centralBuildExtensionFileName}"
+                globalInterceptorFile = "${config.globalExtensionsDirectory}${centralBuildExtensionFileName}"
+            }
         }
 
         projectExtensions = fileExists(projectInterceptorFile)
         globalExtensions = fileExists(globalInterceptorFile)
-        echo "[${STEP_NAME}] Running project interceptor '${projectExtensions}' for ${stageName}."
-        echo "[${STEP_NAME}] VERBOSE: check allowed extensions '${script.env.PIPER_DISABLE_EXTENSIONS}'"
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist
         def body = originalStage
 
