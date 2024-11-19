@@ -109,7 +109,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         and extension filename, below renaming snippet should be removed
         */
         if (stageName == 'Build'){
-            if (!fileExists(projectInterceptorFile || !fileExists(globalInterceptorFile){
+            if (!fileExists(projectInterceptorFile) || !fileExists(globalInterceptorFile)){
                 def centralBuildExtensionFileName = "Central Build.groovy"
                 projectInterceptorFile = "${config.projectExtensionsDirectory}${centralBuildExtensionFileName}"
                 globalInterceptorFile = "${config.globalExtensionsDirectory}${centralBuildExtensionFileName}"
