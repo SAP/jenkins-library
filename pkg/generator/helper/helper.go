@@ -127,11 +127,14 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 			{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubAccessTokens = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}ResolveAccessTokens({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
