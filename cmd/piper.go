@@ -306,7 +306,6 @@ func AccessTokensFromEnvJSON(env string) []string {
 // Log output needs to be suppressed via outputToLog by the getConfig step.
 func initStageName(outputToLog bool) {
 	var stageNameSource string
-	log.Entry().Infof("CBFIX: Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
 	if outputToLog {
 		defer func() {
 			log.Entry().Debugf("Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
@@ -325,7 +324,6 @@ func initStageName(outputToLog bool) {
 		log.Entry().WithError(err).Warning("Cannot infer stage name from CI environment")
 	} else {
 		stageNameSource = "env variable"
-		log.Entry().Infof("CBFIX: General config stageName '%s' provider StageName %s", GeneralConfig.StageName, provider.StageName())
 		GeneralConfig.StageName = provider.StageName()
 	}
 
@@ -350,7 +348,6 @@ func initStageName(outputToLog bool) {
 	if stageNameString, ok := stageName.(string); ok && stageNameString != "" {
 		stageNameSource = "parametersJSON"
 		GeneralConfig.StageName = stageNameString
-		log.Entry().Infof("CBFIX: General config stageName '%s'", GeneralConfig.StageName)
 	}
 }
 

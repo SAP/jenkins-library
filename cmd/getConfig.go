@@ -220,6 +220,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 		if cmd != nil {
 			flagValues = config.AvailableFlagValues(cmd, &paramFilter)
 		}
+		log.Entry().Infof("CBFIX: custom config  '%s'", customConfig)
 
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
