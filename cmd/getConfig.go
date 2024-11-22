@@ -147,11 +147,6 @@ func GetStageConfig() (config.StepConfig, error) {
 			defaultConfig = append(defaultConfig, fc)
 		}
 	}
-	mystageConfig, _ := myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
-	log.Entry().Infof("CBFIX: customConfig  '%s'", customConfig)
-	log.Entry().Infof("CBFIX: default config  '%s'", defaultConfig)
-	log.Entry().Infof("CBFIX: GeneralConfig.StageName  '%s'", GeneralConfig.StageName)
-	log.Entry().Infof("CBFIX: GetStageConfig  '%s'", mystageConfig)
 
 	return myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 }
@@ -214,6 +209,8 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
+				log.Entry().Infof("CBFIX: appending  '%s'", fc)
+				log.Entry().Infof("CBFIX: defaulConfig  '%s'", defaultConfig)
 			}
 		}
 
@@ -225,6 +222,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 		if cmd != nil {
 			flagValues = config.AvailableFlagValues(cmd, &paramFilter)
 		}
+		log.Entry().Infof("CBFIX: default config  '%s'", defaultConfig)
 
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
