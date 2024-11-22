@@ -147,10 +147,11 @@ func GetStageConfig() (config.StepConfig, error) {
 			defaultConfig = append(defaultConfig, fc)
 		}
 	}
+	mystageConfig, _ := myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 	log.Entry().Infof("CBFIX: customConfig  '%s'", customConfig)
 	log.Entry().Infof("CBFIX: default config  '%s'", defaultConfig)
 	log.Entry().Infof("CBFIX: GeneralConfig.StageName  '%s'", GeneralConfig.StageName)
-	log.Entry().Infof("CBFIX: GetStageConfig  '%s'", myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
+	log.Entry().Infof("CBFIX: GetStageConfig  '%s'", mystageConfig)
 
 	return myConfig.GetStageConfig(GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, configOptions.StageConfigAcceptedParameters, GeneralConfig.StageName)
 }
