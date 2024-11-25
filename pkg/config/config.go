@@ -66,6 +66,7 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 	}
 	for _, p := range parameters {
 		c.General = setParamValueFromAlias(stepName, c.General, filters.General, p.Name, p.Aliases)
+		log.Entry().Infof("CBFIX: ApplyAliasConfig stages list  '%s'", c.Stages)
 		if c.Stages[stageName] != nil {
 			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
