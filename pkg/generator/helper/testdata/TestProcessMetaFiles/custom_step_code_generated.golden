@@ -167,11 +167,14 @@ func TestStepCommand() *cobra.Command {
 
 			piperOsCmd.GeneralConfig.GitHubAccessTokens = piperOsCmd.ResolveAccessTokens(piperOsCmd.GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := piperOsCmd.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = piperOsCmd.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

@@ -68,7 +68,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 }
 
 func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
-	event, err := events.NewEvent(config.EventType, config.EventSource).CreateWithJSONData(config.EventData)
+	event, err := events.NewEvent(config.EventType, config.EventSource, "").CreateWithJSONData(config.EventData)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to create new event")
 	}

@@ -427,10 +427,11 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	log.Entry().Infof("Downloading Detect Script")
 
 	downloadScript := func() error {
-		if config.UseDetect9 {
-			return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+		if config.UseDetect8 {
+			return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
 		}
-		return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+		return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+
 	}
 
 	if err := downloadScript(); err != nil {

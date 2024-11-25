@@ -4,15 +4,15 @@
 package npm
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"io"
 	"path/filepath"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
-	"os"
 )
 
 type npmMockUtilsBundleRelativeGlob struct {
@@ -531,7 +531,7 @@ func TestNpmPublish(t *testing.T) {
 
 			// This stub simulates the behavior of npm pack and puts a tgz into the requested
 			utils.execRunner.Stub = func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-				//tgzTargetPath := filepath.Dir(test.packageDescriptors[0])
+				// tgzTargetPath := filepath.Dir(test.packageDescriptors[0])
 				utils.AddFile(filepath.Join(".", "package.tgz"), []byte("this is a tgz file"))
 				return nil
 			}
@@ -573,47 +573,4 @@ func TestNpmPublish(t *testing.T) {
 			}
 		})
 	}
-}
-
-func createTempFile(t *testing.T, dir string, filename string, content string) string {
-	filePath := filepath.Join(dir, filename)
-	err := os.WriteFile(filePath, []byte(content), 0666)
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %s", err)
-	}
-	return filePath
-}
-
-func TestGetPurl(t *testing.T) {
-	t.Run("valid BOM file", func(t *testing.T) {
-		tempDir, err := piperutils.Files{}.TempDir("", "test")
-		if err != nil {
-			t.Fatalf("Failed to create temp directory: %s", err)
-		}
-
-		bomContent := `<bom>
-			<metadata>
-				<component>
-					<purl>pkg:npm/com.example/mycomponent@1.0.0</purl>
-				</component>
-				<properties>
-					<property name="name1" value="value1" />
-				</properties>
-			</metadata>
-		</bom>`
-		packageJsonFilePath := createTempFile(t, tempDir, "package.json", "")
-		bomFilePath := createTempFile(t, tempDir, npmBomFilename, bomContent)
-		defer os.Remove(bomFilePath)
-
-		purl := getPurl(packageJsonFilePath)
-		assert.Equal(t, "pkg:npm/com.example/mycomponent@1.0.0", purl)
-	})
-
-	t.Run("BOM file does not exist", func(t *testing.T) {
-		tempDir := t.TempDir()
-		packageJsonFilePath := createTempFile(t, tempDir, "pom.xml", "") // Create a temp pom file
-
-		purl := getPurl(packageJsonFilePath)
-		assert.Equal(t, "", purl)
-	})
 }
