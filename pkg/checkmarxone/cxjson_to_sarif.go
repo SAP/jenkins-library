@@ -252,7 +252,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	log.Entry().Debug("[SARIF] Now handling driver object.")
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
-	tool.Driver.Name = "CheckmarxOne SCA"
+	tool.Driver.Name = "Checkmarx One"
 
 	// TODO: a way to fetch/store the version
 	tool.Driver.Version = "1" //strings.Split(cxxml.CheckmarxVersion, "V ")
