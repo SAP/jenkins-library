@@ -71,11 +71,11 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		// 	delete(c.Stages, "Central Build")
 		// }
 		if c.Stages[stageName] != nil {
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 			if centralBuild, ok := c.Stages["Central Build"]; ok {
 				c.Stages["Build"] = centralBuild
 				delete(c.Stages, "Central Build")
 			}
-			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
