@@ -78,7 +78,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.25.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.5 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/cloudflare/circl v1.3.9 // indirect
+	github.com/cloudflare/circl v1.5.0 // indirect
 	github.com/containerd/errdefs v0.1.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
