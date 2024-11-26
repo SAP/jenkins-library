@@ -653,11 +653,11 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
-      - name: useDetect9
+      - name: useDetect8
         description:
-          "This flag enables the use of the supported version 9 of the Detect Script instead of v8"
+          "This flag enables the use of the supported version 8 of the Detect Script instead of v9"
         aliases:
-          - name: detect/useDetect9
+          - name: detect/useDetect8
         type: bool
         scope:
           - PARAMETERS
