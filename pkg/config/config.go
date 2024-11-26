@@ -193,6 +193,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
+	if stageName == "Central Build" {
+		stageName = "Build"
+	}
 
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
