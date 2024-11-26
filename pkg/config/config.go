@@ -66,19 +66,15 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 	}
 	for _, p := range parameters {
 		c.General = setParamValueFromAlias(stepName, c.General, filters.General, p.Name, p.Aliases)
-		// if centralBuild, ok := c.Stages["Central Build"]; ok {
-		// 	c.Stages["Build"] = centralBuild
-		// 	delete(c.Stages, "Central Build")
-		// }
 		if c.Stages[stageName] != nil {
 			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
-			if centralBuild, ok := c.Stages["Central Build"]; ok {
-				c.Stages["Build"] = centralBuild
-				delete(c.Stages, "Central Build")
-			}
 		}
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
+		}
+		if centralBuild, ok := c.Stages["Central Build"]; ok {
+			c.Stages["Build"] = centralBuild
+			delete(c.Stages, "Central Build")
 		}
 	}
 	for _, s := range secrets {
@@ -88,6 +84,10 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		}
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
+		}
+		if centralBuild, ok := c.Stages["Central Build"]; ok {
+			c.Stages["Build"] = centralBuild
+			delete(c.Stages, "Central Build")
 		}
 	}
 }
