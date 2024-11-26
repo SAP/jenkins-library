@@ -66,14 +66,14 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 	}
 	for _, p := range parameters {
 		c.General = setParamValueFromAlias(stepName, c.General, filters.General, p.Name, p.Aliases)
-		if centralBuild, ok := c.Stages["Central Build"]; ok {
-			c.Stages["Build"] = centralBuild
-			delete(c.Stages, "Central Build")
-		}
+		// if centralBuild, ok := c.Stages["Central Build"]; ok {
+		// 	c.Stages["Build"] = centralBuild
+		// 	delete(c.Stages, "Central Build")
+		// }
 		if c.Stages[stageName] != nil {
-			if stageName == "Central Build" {
-				log.Entry().Infof("CBFIX: centralBuild renamed")
-				stageName = "Build"
+			if centralBuild, ok := c.Stages["Central Build"]; ok {
+				c.Stages["Build"] = centralBuild
+				delete(c.Stages, "Central Build")
 			}
 			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
