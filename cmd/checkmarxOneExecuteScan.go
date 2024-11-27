@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net/url"
 
 	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
@@ -803,7 +804,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	}
 
 	resultMap["Preset"] = scanmeta.PresetName
-	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, scan.Branch)
+	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, url.QueryEscape(scan.Branch))
 	resultMap["ReportCreationTime"] = time.Now().String()
 	resultMap["High"] = map[string]int{}
 	resultMap["Medium"] = map[string]int{}
