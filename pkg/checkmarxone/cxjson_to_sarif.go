@@ -68,7 +68,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			loc := *new(format.Location)
 			loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
 			// remove absolute path of file name (coming from JSON format)
-			if (len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/") {
+			if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
 				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
 			}
 			loc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
@@ -96,7 +96,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			tfloc := new(format.Location)
 			tfloc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
 			// remove absolute path of file name (coming from JSON format)
-			if (len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/") {
+			if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
 				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
 			}
 			tfloc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
