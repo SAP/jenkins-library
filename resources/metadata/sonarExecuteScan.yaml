@@ -108,7 +108,7 @@ spec:
         type: string
         description: "A custom version used along with the uploaded scan results."
         longDescription: |-
-          Defines a custom version for the Sonar scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          Defines a custom version for the Sonar scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningmodel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
           The parameter is also used by other scan steps (e.g. Detect, Fortify, WhiteSource) and thus allows a common custom version across scan tools.
         scope: [GENERAL, STAGES, STEPS, PARAMETERS]
