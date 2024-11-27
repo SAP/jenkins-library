@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"net/url"
 
 	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
