@@ -92,6 +92,7 @@ private void stageLocking(Map config, Closure body) {
 private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled = false) {
     boolean projectExtensions
     boolean globalExtensions
+    
     def startTime = System.currentTimeMillis()
 
     try {
@@ -103,6 +104,18 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         */
         def projectInterceptorFile = "${config.projectExtensionsDirectory}${stageName}.groovy"
         def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
+        /* due to renaming stage 'Central Build' to 'Build' need to define extension file name 'Central Build.groovy'
+        as stageName used to generate it, once all the users will 'Build' as a stageName
+        and extension filename, below renaming snippet should be removed
+        */
+        if (stageName == 'Build'){
+            if (!fileExists(projectInterceptorFile) || !fileExists(globalInterceptorFile)){
+                def centralBuildExtensionFileName = "Central Build.groovy"
+                projectInterceptorFile = "${config.projectExtensionsDirectory}${centralBuildExtensionFileName}"
+                globalInterceptorFile = "${config.globalExtensionsDirectory}${centralBuildExtensionFileName}"
+            }
+        }
+
         projectExtensions = fileExists(projectInterceptorFile)
         globalExtensions = fileExists(globalInterceptorFile)
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist

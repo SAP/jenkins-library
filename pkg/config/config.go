@@ -72,6 +72,10 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
+		if centralBuild, ok := c.Stages["Central Build"]; ok {
+			c.Stages["Build"] = centralBuild
+			delete(c.Stages, "Central Build")
+		}
 	}
 	for _, s := range secrets {
 		c.General = setParamValueFromAlias(stepName, c.General, filters.General, s.Name, s.Aliases)
@@ -80,6 +84,10 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		}
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
+		}
+		if centralBuild, ok := c.Stages["Central Build"]; ok {
+			c.Stages["Build"] = centralBuild
+			delete(c.Stages, "Central Build")
 		}
 	}
 }
@@ -185,6 +193,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
+	if stageName == "Central Build" {
+		stageName = "Build"
+	}
 
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
