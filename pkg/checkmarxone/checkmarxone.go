@@ -759,7 +759,7 @@ func (sys *SystemInstance) GetProjectsByName(projectName string) ([]Project, err
 	var err error
 
 	body := url.Values{}
-	body.Add("name", projectName)
+	body.Add("names", projectName)
 
 	data, err = sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/?%v", body.Encode()), nil, header, []int{404})
 
