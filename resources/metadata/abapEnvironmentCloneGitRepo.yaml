@@ -125,6 +125,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+          - GENERAL
         possibleValues:
           - ZIP
           - STANDARD
