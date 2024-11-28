@@ -310,7 +310,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 					{
 						Name:        "logOutput",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
