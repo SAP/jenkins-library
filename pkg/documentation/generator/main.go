@@ -25,7 +25,7 @@ type DocuHelperData struct {
 }
 
 var stepParameterNames []string
-var includeAzure bool
+var includeAzure, includeGHA bool
 
 func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []string, docuHelperData DocuHelperData) config.StepConfig {
 	filters := stepMetadata.GetParameterFilters()
