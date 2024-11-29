@@ -86,7 +86,7 @@ func main() {
 			OpenDocTemplateFile: openDocTemplateFile,
 			DocFileWriter:       writeFile,
 			OpenFile:            openFile,
-		}, includeAzure)
+		}, includeAzure, includeGHA)
 		checkError(err)
 	}
 }
