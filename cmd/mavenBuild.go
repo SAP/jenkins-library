@@ -238,7 +238,9 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 func createBuildArtifactsMetadata(config *mavenBuildOptions, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) (error, bool) {
 	fileUtils := &piperutils.Files{}
 	buildCoordinates := []versioning.Coordinates{}
-	options := versioning.Options{}
+	options := versioning.Options{
+		ProjectSettingsFile: config.ProjectSettingsFile,
+	}
 	var utils versioning.Utils
 
 	matches, _ := fileUtils.Glob("**/pom.xml")
