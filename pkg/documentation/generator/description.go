@@ -77,7 +77,7 @@ func createDescriptionSection(stepData *config.StepData) string {
 		description += fmt.Sprintf("%v    uses: SAP/project-piper-action@main\n", spacingTabBox)
 		description += fmt.Sprintf("%v    with:\n", spacingTabBox)
 		description += fmt.Sprintf("%v      step-name: %v\n", spacingTabBox, stepData.Metadata.Name)
-		description += fmt.Sprintf("%v      flags: --anyStepFlag\n", spacingTabBox)
+		description += fmt.Sprintf("%v      flags: --anyStepParameter\n", spacingTabBox)
 		description += fmt.Sprintf("%v```\n\n", spacingTabBox)
 	}
 
