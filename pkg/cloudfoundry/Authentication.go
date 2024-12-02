@@ -3,6 +3,8 @@ package cloudfoundry
 import (
 	"errors"
 	"fmt"
+	"runtime"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -40,13 +42,15 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 	if err == nil {
 		log.Entry().Info("Logging in to Cloud Foundry")
 
+		escapedPassword := preparePasswordForCLI(options.Password)
+
 		var cfLoginScript = append([]string{
 			"login",
 			"-a", options.CfAPIEndpoint,
 			"-o", options.CfOrg,
 			"-s", options.CfSpace,
 			"-u", options.Username,
-			"-p", options.Password,
+			"-p", escapedPassword,
 		}, options.CfLoginOpts...)
 
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
@@ -60,6 +64,15 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 	log.Entry().Info("Logged in successfully to Cloud Foundry..")
 	cf.loggedIn = true
 	return nil
+}
+
+func preparePasswordForCLI(password string) string {
+	switch runtime.GOOS {
+	case "windows":
+		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(password, "\"", "\\\""))
+	default:
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", "'\\''"))
+	}
 }
 
 // Logout logs User out of Cloud Foundry
