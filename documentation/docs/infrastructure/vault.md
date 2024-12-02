@@ -69,7 +69,7 @@ When Piper is configured to lookup secrets in Vault, there are some aspects that
 ### Overwriting of Parameters
 
 Whenever a parameter is provided via `config.yml` or passed to the CLI it gets overwritten when a secret is found in
-Vault. To disable overriding parameters put a `vaultDisableOverwrite: false` on `Step` `Stage` or `General` Section in
+Vault. To disable overriding parameters put a `vaultDisableOverwrite: true` on `Step` `Stage` or `General` Section in
 your config.
 
 ```yaml
