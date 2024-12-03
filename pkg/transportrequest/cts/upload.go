@@ -62,7 +62,7 @@ const (
 	abapUserKey           = "ABAP_USER"
 	abapPasswordKey       = "ABAP_PASSWORD"
 	defaultConfigFileName = "ui5-deploy.yaml"
-	pattern               = "^[a-zA-Z0-9_]+$"
+	pattern               = "^(/[A-Za-z0-9_]{3,8}/)?[A-Za-z0-9_]+$"
 )
 
 // WithConnection ...
@@ -194,7 +194,7 @@ func getFioriDeployStatement(
 	if len(app.Name) > 0 {
 		re := regexp.MustCompile(pattern)
 		if !re.MatchString(app.Name) {
-			fmt.Errorf("application name '%s' contains spaces or special characters. It is not according to the '%s'", app.Name, pattern)
+			return "", fmt.Errorf("application name '%s' contains spaces or special characters or invalid namespace prefix and is not according to the regex '%s'.", app.Name, pattern)
 		}
 		log.Entry().Debugf("application name '%s' used from piper config", app.Name)
 		cmd = append(cmd, "--name", app.Name)

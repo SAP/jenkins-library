@@ -128,6 +128,15 @@ spec:
           - STAGES
           - STEPS
         default: ./wss-unified-agent.config
+      - name: useGlobalConfiguration
+        type: bool
+        description: "The parameter is applicable for multi-module mend projects. If set to true, the configuration file will be used for all modules. Otherwise each module will require its own configuration file in the module folder."
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: false
       - name: containerRegistryPassword
         description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
         type: string
@@ -168,7 +177,7 @@ spec:
         type: string
         description: Custom version of the WhiteSource project used as source.
         longDescription: |-
-          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningmodel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
           The parameter is also used by other scan steps (e.g. Detect, Fortify, Sonar) and thus allows a common custom version across scan tools.
         scope:
@@ -248,14 +257,13 @@ spec:
             deprecated: true
         type: string
         description:
-          "URL used for downloading the Java Runtime Environment (JRE) required to run the
-          WhiteSource Unified Agent."
+          "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent."
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz"
+        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.13/sapmachine-jre-17.0.13_linux-x64_bin.tar.gz"
       - name: licensingVulnerabilities
         type: bool
         description: "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment."

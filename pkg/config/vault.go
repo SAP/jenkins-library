@@ -87,6 +87,7 @@ var globalVaultClient *vault.Client
 
 func GlobalVaultClient() VaultClient {
 	// an interface containing a nil pointer is considered non-nil in Go
+	// It is nil if Vault is not configured
 	if globalVaultClient == nil {
 		return nil
 	}
@@ -122,15 +123,17 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 		namespace = config["vaultNamespace"].(string)
 		log.Entry().Debugf("  with namespace %s", namespace)
 	}
-	var client vault.Client
+	var client *vault.Client
 	var err error
-	clientConfig := &vault.Config{Config: &api.Config{Address: address}, Namespace: namespace}
+	clientConfig := &vault.ClientConfig{Config: &api.Config{Address: address}, Namespace: namespace}
 	if creds.VaultToken != "" {
 		log.Entry().Debugf("  with Token authentication")
-		client, err = vault.NewClient(clientConfig, creds.VaultToken)
+		client, err = vault.NewClientWithToken(clientConfig, creds.VaultToken)
 	} else {
 		log.Entry().Debugf("  with AppRole authentication")
-		client, err = vault.NewClientWithAppRole(clientConfig, creds.AppRoleID, creds.AppRoleSecretID)
+		clientConfig.RoleID = creds.AppRoleID
+		clientConfig.SecretID = creds.AppRoleSecretID
+		client, err = vault.NewClient(clientConfig)
 	}
 	if err != nil {
 		log.Entry().Info("  failed")
@@ -138,7 +141,7 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 	}
 
 	// Set global vault client for usage in steps
-	globalVaultClient = &client
+	globalVaultClient = client
 
 	log.Entry().Info("  succeeded")
 	return client, nil

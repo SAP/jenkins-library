@@ -221,7 +221,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
         assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
         assertThat(dockerMock.targetRegistry.isAnonymous, is(false))
         assertThat(dockerMock.image, is('path/testImage:tag'))
-        assertThat(shellCallRule.shell, hasItem('docker tag testRegistry:55555/path/testImage:tag path/testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem("docker tag 'testRegistry:55555'/'path/testImage:tag' 'path/testImage:tag'"))
         assertThat(dockerMockPull, is(true))
     }
 
@@ -238,7 +238,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
         assertThat(dockerMock.sourceRegistry.url, is('http://testSourceRegistry'))
         assertThat(dockerMock.image, is('testSourceName:testSourceTag'))
         assertThat(dockerMock.sourceRegistry.isAnonymous, is(true))
-        assertThat(shellCallRule.shell, hasItem('docker tag testSourceRegistry/testSourceName:testSourceTag testSourceName:testSourceTag'))
+        assertThat(shellCallRule.shell, hasItem("docker tag 'testSourceRegistry'/'testSourceName:testSourceTag' 'testSourceName:testSourceTag'"))
         assertThat(dockerMockPull, is(true))
     }
 
@@ -256,7 +256,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
         assertThat(dockerMock.sourceRegistry.url, is('http://testSourceRegistry'))
         assertThat(dockerMock.sourceRegistry.isAnonymous, is(true))
         assertThat(dockerMock.image, is('testSourceName:testSourceTag'))
-        assertThat(shellCallRule.shell, hasItem('docker tag testSourceRegistry/testSourceName:testSourceTag testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem("docker tag 'testSourceRegistry'/'testSourceName:testSourceTag' 'testImage:tag'"))
         assertThat(dockerMockPull, is(true))
     }
 
@@ -277,7 +277,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
         assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
         assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
         assertThat(dockerMock.image, is('testSourceName:testSourceTag'))
-        assertThat(shellCallRule.shell, hasItem('docker tag testSourceRegistry/testSourceName:testSourceTag testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem("docker tag 'testSourceRegistry'/'testSourceName:testSourceTag' 'testImage:tag'"))
         assertThat(dockerMockPull, is(true))
     }
 

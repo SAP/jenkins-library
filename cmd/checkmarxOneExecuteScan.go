@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -803,7 +804,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	}
 
 	resultMap["Preset"] = scanmeta.PresetName
-	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, scan.Branch)
+	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, url.QueryEscape(scan.Branch))
 	resultMap["ReportCreationTime"] = time.Now().String()
 	resultMap["High"] = map[string]int{}
 	resultMap["Medium"] = map[string]int{}
@@ -943,12 +944,15 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 			return nil
 		}
 
+		fileName := strings.TrimPrefix(path, baseDir)
 		noMatch, err := c.isFileNotMatchingPattern(patterns, path, info, utils)
 		if err != nil || noMatch {
+			if noMatch {
+				log.Entry().Debugf("Excluded %s", fileName)
+			}
 			return err
 		}
 
-		fileName := strings.TrimPrefix(path, baseDir)
 		writer, err := archive.Create(fileName)
 		if err != nil {
 			return err
@@ -960,6 +964,9 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 		}
 		defer file.Close()
 		_, err = io.Copy(writer, file)
+		if err == nil {
+			log.Entry().Debugf("Zipped %s", fileName)
+		}
 		fileCount++
 		return err
 	})

@@ -2,9 +2,10 @@ package piperutils
 
 import (
 	"encoding/xml"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"os"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // To serialize the cyclonedx BOM file
@@ -45,4 +46,13 @@ func GetBom(absoluteBomPath string) (Bom, error) {
 		return Bom{}, err
 	}
 	return bom, nil
+}
+
+func GetPurl(bomFilePath string) string {
+	bom, err := GetBom(bomFilePath)
+	if err != nil {
+		log.Entry().Warnf("unable to get bom metadata: %v", err)
+		return ""
+	}
+	return bom.Metadata.Component.Purl
 }

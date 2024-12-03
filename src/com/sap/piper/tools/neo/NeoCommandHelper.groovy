@@ -1,7 +1,9 @@
 package com.sap.piper.tools.neo
 
-import com.sap.piper.BashUtils
+import static com.sap.piper.BashUtils.quoteAndEscape as q
+
 import com.sap.piper.StepAssertions
+
 
 class NeoCommandHelper {
 
@@ -87,7 +89,7 @@ class NeoCommandHelper {
 
     private String source() {
         StepAssertions.assertFileExists(step, source)
-        return "--source ${BashUtils.quoteAndEscape(source)}"
+        return "--source ${q(source)}"
     }
 
     private String extensions() {
@@ -96,19 +98,19 @@ class NeoCommandHelper {
     }
 
     private String mainArgs() {
-        String usernamePassword = "--user ${BashUtils.quoteAndEscape(user)} --password ${BashUtils.quoteAndEscape(password)}"
+        String usernamePassword = "--user ${q(user)} --password ${q(password)}"
 
         if (deployMode == DeployMode.WAR_PROPERTIES_FILE) {
             StepAssertions.assertFileIsConfiguredAndExists(step, deploymentConfiguration, 'propertiesFile')
             return "${deploymentConfiguration.propertiesFile} ${usernamePassword}"
         }
 
-        String targetArgs = "--host ${BashUtils.quoteAndEscape(deploymentConfiguration.host)}"
-        targetArgs += " --account ${BashUtils.quoteAndEscape(deploymentConfiguration.account)}"
+        String targetArgs = "--host ${q(deploymentConfiguration.host)}"
+        targetArgs += " --account ${q(deploymentConfiguration.account)}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
 
-            targetArgs += " --application ${BashUtils.quoteAndEscape(deploymentConfiguration.application)}"
+            targetArgs += " --application ${q(deploymentConfiguration.application)}"
         }
 
         return "${targetArgs} ${usernamePassword}"
@@ -120,11 +122,11 @@ class NeoCommandHelper {
         }
 
         String args = ""
-        args += " --runtime ${BashUtils.quoteAndEscape(deploymentConfiguration.runtime)}"
-        args += " --runtime-version ${BashUtils.quoteAndEscape(deploymentConfiguration.runtimeVersion)}"
+        args += " --runtime ${q(deploymentConfiguration.runtime)}"
+        args += " --runtime-version ${q(deploymentConfiguration.runtimeVersion)}"
 
         if (deploymentConfiguration.size) {
-            args += " --size ${BashUtils.quoteAndEscape(deploymentConfiguration.size)}"
+            args += " --size ${q(deploymentConfiguration.size)}"
         }
 
         if (deploymentConfiguration.containsKey('environment')) {
@@ -139,17 +141,17 @@ class NeoCommandHelper {
             for (int i = 0; i < keys.size(); i++) {
                 def key = keys[i]
                 def value = environment.get(keys[i])
-                args += " --ev ${BashUtils.quoteAndEscape(key)}=${BashUtils.quoteAndEscape(value)}"
+                args += " --ev ${q(key)}=${q(value)}"
             }
         }
 
 
         if (deploymentConfiguration.containsKey('vmArguments')) {
-            args += " --vm-arguments ${BashUtils.quoteAndEscape(deploymentConfiguration.vmArguments)}"
+            args += " --vm-arguments ${q(deploymentConfiguration.vmArguments)}"
         }
-        
+
         if (deploymentConfiguration.containsKey('azDistribution')) {
-            args += " --az-distribution ${BashUtils.quoteAndEscape(deploymentConfiguration.azDistribution)}"
+            args += " --az-distribution ${q(deploymentConfiguration.azDistribution)}"
         }
 
         return args

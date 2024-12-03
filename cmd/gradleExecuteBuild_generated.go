@@ -38,6 +38,7 @@ type gradleExecuteBuildOptions struct {
 	ExcludeCreateBOMForProjects   []string `json:"excludeCreateBOMForProjects,omitempty"`
 	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
 	BuildFlags                    []string `json:"buildFlags,omitempty"`
+	BuildSettingsInfo             string   `json:"buildSettingsInfo,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -78,7 +79,8 @@ func (p *gradleExecuteBuildReports) persist(stepConfig gradleExecuteBuildOptions
 
 type gradleExecuteBuildCommonPipelineEnvironment struct {
 	custom struct {
-		artifacts piperenv.Artifacts
+		artifacts         piperenv.Artifacts
+		buildSettingsInfo string
 	}
 }
 
@@ -89,6 +91,7 @@ func (p *gradleExecuteBuildCommonPipelineEnvironment) persist(path, resourceName
 		value    interface{}
 	}{
 		{category: "custom", name: "artifacts", value: p.custom.artifacts},
+		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
 	errCount := 0
@@ -128,11 +131,14 @@ func GradleExecuteBuildCommand() *cobra.Command {
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -242,6 +248,7 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludeCreateBOMForProjects, "excludeCreateBOMForProjects", []string{}, "Defines which projects/subprojects will be ignored during bom creation. Only if applyCreateBOMForAllProjects is set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the gradle build. This information is typically used for compliance related processes.")
 
 }
 
@@ -421,6 +428,20 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -440,6 +461,7 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
+							{"name": "custom/buildSettingsInfo"},
 						},
 					},
 				},
