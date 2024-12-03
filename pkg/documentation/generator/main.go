@@ -25,7 +25,7 @@ type DocuHelperData struct {
 }
 
 var stepParameterNames []string
-var includeAzure bool
+var includeAzure, includeGHA bool
 
 func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []string, docuHelperData DocuHelperData) config.StepConfig {
 	filters := stepMetadata.GetParameterFilters()
@@ -58,8 +58,9 @@ func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []st
 }
 
 // GenerateStepDocumentation generates step coding based on step configuration provided in yaml files
-func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []string, docuHelperData DocuHelperData, azure bool) error {
+func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []string, docuHelperData DocuHelperData, azure bool, githubAction bool) error {
 	includeAzure = azure
+	includeGHA = githubAction
 	for key := range metadataFiles {
 		stepMetadata := readStepMetadata(metadataFiles[key], docuHelperData)
 
