@@ -19,7 +19,7 @@ require (
 	github.com/docker/cli v27.1.0+incompatible
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/evanphx/json-patch v5.7.0+incompatible
-	github.com/getsentry/sentry-go v0.26.0
+	github.com/getsentry/sentry-go v0.29.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.12.0
@@ -203,7 +203,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/klauspost/compress v1.17.4 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/magicsong/color-glog v0.0.1 // indirect
