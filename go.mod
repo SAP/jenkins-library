@@ -16,7 +16,7 @@ require (
 	github.com/bndr/gojenkins v1.1.1-0.20240109173050-c316119c46d5
 	github.com/buildpacks/lifecycle v0.18.5
 	github.com/cloudevents/sdk-go/v2 v2.15.2
-	github.com/docker/cli v27.1.0+incompatible
+	github.com/docker/cli v27.1.1+incompatible
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/evanphx/json-patch v5.7.0+incompatible
 	github.com/getsentry/sentry-go v0.26.0
@@ -29,7 +29,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/google/go-cmp v0.6.0
-	github.com/google/go-containerregistry v0.19.0
+	github.com/google/go-containerregistry v0.20.2
 	github.com/google/go-github/v45 v45.2.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
