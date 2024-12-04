@@ -192,7 +192,7 @@ spec:
             default: docker-config
       - name: dockerConfigJSONCPE
         type: string
-        description: This property is intended only for reading the `dockerConfigJSON` from the Common Pipeline Environment. If you want to provide your own credentials, please refer to the [dockerConfigJSON](#dockerConfigJSON) property. If both properties are set, the config files will be merged, with the [dockerConfigJSON](#dockerConfigJSON) having higher priority.
+        description: This property is intended only for reading the `dockerConfigJSON` from the Common Pipeline Environment. If you want to provide your own credentials, please refer to the [dockerConfigJSON](#dockerconfigjson) property. If both properties are set, the config files will be merged, with the [dockerConfigJSON](#dockerconfigjson) having higher priority.
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
