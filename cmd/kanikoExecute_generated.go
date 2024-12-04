@@ -44,6 +44,7 @@ type kanikoExecuteOptions struct {
 	ReadImageDigest                  bool                     `json:"readImageDigest,omitempty"`
 	CreateBOM                        bool                     `json:"createBOM,omitempty"`
 	SyftDownloadURL                  string                   `json:"syftDownloadUrl,omitempty"`
+	CreateBuildArtifactsMetadata     bool                     `json:"createBuildArtifactsMetadata,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
@@ -56,7 +57,8 @@ type kanikoExecuteCommonPipelineEnvironment struct {
 		imageDigests  []string
 	}
 	custom struct {
-		buildSettingsInfo string
+		buildSettingsInfo      string
+		kanikoExecuteArtifacts string
 	}
 }
 
@@ -73,6 +75,7 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 		{category: "container", name: "imageNameTags", value: p.container.imageNameTags},
 		{category: "container", name: "imageDigests", value: p.container.imageDigests},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "kanikoExecuteArtifacts", value: p.custom.kanikoExecuteArtifacts},
 	}
 
 	errCount := 0
@@ -337,6 +340,7 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().BoolVar(&stepConfig.ReadImageDigest, "readImageDigest", false, "")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.4.1/syft_1.4.1_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline")
 
 }
 
@@ -578,6 +582,15 @@ func kanikoExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     `https://github.com/anchore/syft/releases/download/v1.4.1/syft_1.4.1_linux_amd64.tar.gz`,
 					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -596,6 +609,7 @@ func kanikoExecuteMetadata() config.StepData {
 							{"name": "container/imageNameTags", "type": "[]string"},
 							{"name": "container/imageDigests", "type": "[]string"},
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/kanikoExecuteArtifacts"},
 						},
 					},
 					{
