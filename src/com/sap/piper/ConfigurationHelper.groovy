@@ -10,14 +10,7 @@ class ConfigurationHelper implements Serializable {
     }
 
     ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:], String stageName = step.env.STAGE_NAME) {
-        if (stageName == 'Central Build') {
-            def stages = script.globalPipelineEnvironment.configuration.stages
-            if (stages != null && (!stages.containsKey('Central Build') || stages.containsKey('Build'))) {
-                stageName = 'Build'
-            } else {
-                stageName = 'Central Build'
-            }
-        }
+        echo("CBFIX: step stageName: '${stageName}")
         DefaultValueCache.prepare(step)
         this.config = ConfigurationLoader.defaultGeneralConfiguration()
         mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
