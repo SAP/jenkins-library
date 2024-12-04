@@ -13,6 +13,7 @@ class ConfigurationHelper implements Serializable {
         this.step.echo "CBFIX: stagename ${stageName}"
         DefaultValueCache.prepare(step)
         this.config = ConfigurationLoader.defaultGeneralConfiguration()
+        this.config.stageName
         mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, compatibleParameters)
