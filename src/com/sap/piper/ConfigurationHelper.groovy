@@ -10,13 +10,12 @@ class ConfigurationHelper implements Serializable {
     }
 
     ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:], String stageName = step.env.STAGE_NAME) {
-        this.step.echo "CBFIX: stagename ${stageName}"
         DefaultValueCache.prepare(step)
         this.config = ConfigurationLoader.defaultGeneralConfiguration()
-        this.step.echo "CBFIX: print config ${this.config}"
         mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, compatibleParameters)
+        this.step.echo "CBFIX: print combined config for tageName ${stageName} ${this.config}"
         return this
     }
 
