@@ -718,6 +718,7 @@ func collectVulnsAndLibsForProject(
 	if err != nil {
 		errorsOccurred = append(errorsOccurred, fmt.Sprint(err))
 	}
+	log.Entry().Infof("Current influx data : minor_vulnerabilities = %v / major_vulnerabilities = %v / vulnerabilities = %v", influx.whitesource_data.fields.minor_vulnerabilities, influx.whitesource_data.fields.major_vulnerabilities, influx.whitesource_data.fields.vulnerabilities)
 
 	// collect all libraries detected in all related projects and errors
 	libraries, err := sys.GetProjectHierarchy(project.Token, true)
@@ -848,9 +849,11 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 	}
 
 	severeVulnerabilities, nonSevereVulnerabilities := ws.CountSecurityVulnerabilities(&alerts, cvssSeverityLimit)
-	influx.whitesource_data.fields.minor_vulnerabilities = nonSevereVulnerabilities
-	influx.whitesource_data.fields.major_vulnerabilities = severeVulnerabilities
-	influx.whitesource_data.fields.vulnerabilities = nonSevereVulnerabilities + severeVulnerabilities
+	influx.whitesource_data.fields.minor_vulnerabilities += nonSevereVulnerabilities
+	influx.whitesource_data.fields.major_vulnerabilities += severeVulnerabilities
+	influx.whitesource_data.fields.vulnerabilities += (nonSevereVulnerabilities + severeVulnerabilities)
+	log.Entry().Infof("Current influx data : minor_vulnerabilities = %v / major_vulnerabilities = %v / vulnerabilities = %v", influx.whitesource_data.fields.minor_vulnerabilities, influx.whitesource_data.fields.major_vulnerabilities, influx.whitesource_data.fields.vulnerabilities)
+		
 	if nonSevereVulnerabilities > 0 {
 		log.Entry().Warnf("WARNING: %v Open Source Software Security vulnerabilities with "+
 			"CVSS score below threshold %.1f detected in project %s.", nonSevereVulnerabilities,
@@ -861,11 +864,11 @@ func checkProjectSecurityViolations(config *ScanOptions, cvssSeverityLimit float
 	}
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
+		log.Entry().Infof("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
 		if config.FailOnSevereVulnerabilities {
 			log.SetErrorCategory(log.ErrorCompliance)
 			return severeVulnerabilities, alerts, assessedAlerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
 		}
-		log.Entry().Infof("%v Open Source Software Security vulnerabilities with CVSS score greater or equal to %.1f detected in project %s", severeVulnerabilities, cvssSeverityLimit, project.Name)
 		log.Entry().Info("Step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 		return severeVulnerabilities, alerts, assessedAlerts, nil
 	}
