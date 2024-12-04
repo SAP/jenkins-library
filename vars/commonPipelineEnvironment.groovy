@@ -192,7 +192,7 @@ class commonPipelineEnvironment implements Serializable {
 
     Map getStepConfiguration(stepName, stageName = env.STAGE_NAME, includeDefaults = true) {
         Map defaults = [:]
-        echo "CBFIX: print stages ${configuration.get('stages')?.get(stageName)}"
+        this.echo "CBFIX: print stages ${configuration.get('stages')?.get(stageName)}"
         // if (stageName == 'Central Build') {
         //         stageName = 'Build'
         // }
