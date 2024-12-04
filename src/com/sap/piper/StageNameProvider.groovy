@@ -14,7 +14,7 @@ class StageNameProvider implements Serializable {
         if (parameters.stageName in CharSequence) {
             // stageName = parameters.stageName
             // stageName = replaceCentralBuild(stageName);
-            return stageName
+            return parameters.stageName
         }
         if (this.useTechnicalStageNames) {
             String technicalStageName = getTechnicalStageName(step)
@@ -26,7 +26,7 @@ class StageNameProvider implements Serializable {
         //     stageName = script.env.STAGE_NAME
         //     stageName = replaceCentralBuild(stageName);
         // }
-        return stageName
+        return script.env.STAGE_NAME
     }
 
     // private String replaceCentralBuild(String stageName) {
