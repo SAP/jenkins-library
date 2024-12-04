@@ -37,6 +37,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		c.SetEnv([]string{path})
 	}
 
+	log.Entry().Infof("Working directory: %s", config.WorkDir)
 	if config.WorkDir != "" {
 		if err := os.Chdir(config.WorkDir); err != nil {
 			return fmt.Errorf("failed to change directory: %w", err)
@@ -45,7 +46,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		if err != nil {
 			return fmt.Errorf("failed to get current directory: %w", err)
 		}
-		log.Entry().Infof("current directory: ", c)
+		log.Entry().Infof("current directory: %s", c)
 	}
 
 	installCommandTokens := strings.Fields(config.InstallCommand)
