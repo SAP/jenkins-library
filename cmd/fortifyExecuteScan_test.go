@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +22,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/fortify"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/google/go-github/v45/github"
