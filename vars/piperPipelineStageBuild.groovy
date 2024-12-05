@@ -46,6 +46,14 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
+    if (stageName == 'Central Build') {
+        def stages = script.globalPipelineEnvironment.configuration.stages
+        if (stages != null && (!stages.containsKey('Central Build') || stages.containsKey('Build'))) {
+            stageName = 'Build'
+        } else {
+            stageName = 'Central Build'
+        }
+    }
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
