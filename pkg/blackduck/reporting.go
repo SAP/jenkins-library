@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/format"
@@ -89,12 +90,12 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 			results = append(results, result)
 
 			// append taxonomies
-			if len(v.VulnerabilityWithRemediation.CweID) > 0 && !piperutils.ContainsString(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID) {
+			if len(v.VulnerabilityWithRemediation.CweID) > 0 && !slices.Contains(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID) {
 				cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 			}
 
 			// only create rule on new CVE
-			if !piperutils.ContainsString(collectedRules, result.RuleID) {
+			if !slices.Contains(collectedRules, result.RuleID) {
 				collectedRules = append(collectedRules, result.RuleID)
 
 				// set information about BlackDuck project

@@ -132,13 +132,13 @@ func TestCreateSarifResultFile(t *testing.T) {
 
 	collectedRules := []string{}
 	for _, rule := range sarif.Runs[0].Tool.Driver.Rules {
-		piperutils.ContainsString(vulnerabilities, rule.ID)
+		slices.Contains(vulnerabilities, rule.ID)
 		collectedRules = append(collectedRules, rule.ID)
 	}
 
 	collectedResults := []string{}
 	for _, result := range sarif.Runs[0].Results {
-		piperutils.ContainsString(vulnerabilities, result.RuleID)
+		slices.Contains(vulnerabilities, result.RuleID)
 		collectedResults = append(collectedResults, result.RuleID)
 	}
 
