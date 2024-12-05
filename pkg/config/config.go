@@ -74,7 +74,7 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		}
 		if centralBuild, ok := c.Stages["Central Build"]; ok {
 			c.Stages["Build"] = centralBuild
-			delete(c.Stages, "Central Build")
+			// delete(c.Stages, "Central Build")
 		}
 	}
 	for _, s := range secrets {
@@ -87,7 +87,7 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		}
 		if centralBuild, ok := c.Stages["Central Build"]; ok {
 			c.Stages["Build"] = centralBuild
-			delete(c.Stages, "Central Build")
+			// delete(c.Stages, "Central Build")
 		}
 	}
 }
