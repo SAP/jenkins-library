@@ -15,7 +15,6 @@ class ConfigurationHelper implements Serializable {
         mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, compatibleParameters)
-        this.step.echo "CBFIX: print combined config for tageName ${stageName} ${this.config}"
         return this
     }
 
