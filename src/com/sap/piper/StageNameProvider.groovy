@@ -3,8 +3,8 @@ package com.sap.piper
 @Singleton
 class StageNameProvider implements Serializable {
     static final long serialVersionUID = 1L
-    // static final String CENTRAL_BUILD = "Central Build";
-    // static final String BUILD = "Build";
+    static final String CENTRAL_BUILD = "Central Build";
+    static final String BUILD = "Build";
 
     /** Stores a feature toggle for defaulting to technical names in stages */
     boolean useTechnicalStageNames = false
