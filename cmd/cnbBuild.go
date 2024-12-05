@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -594,7 +595,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
-		if !piperutils.ContainsString(creatorArgs, target) {
+		if !slices.Contains(creatorArgs, target) {
 			creatorArgs = append(creatorArgs, "-tag", target)
 		}
 	}
