@@ -72,9 +72,9 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
+		//copy stage configuration with Build name
 		if centralBuild, ok := c.Stages["Central Build"]; ok {
 			c.Stages["Build"] = centralBuild
-			// delete(c.Stages, "Central Build")
 		}
 	}
 	for _, s := range secrets {
@@ -85,9 +85,9 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
+		//copy stage secrets configuration with Build name
 		if centralBuild, ok := c.Stages["Central Build"]; ok {
 			c.Stages["Build"] = centralBuild
-			// delete(c.Stages, "Central Build")
 		}
 	}
 }
