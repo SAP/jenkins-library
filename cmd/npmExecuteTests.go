@@ -37,6 +37,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		c.SetEnv([]string{path})
 	}
 
+	log.Entry().Infof("Test param: %s", config.TestParam)
 	log.Entry().Infof("Working directory: %s", config.WorkingDirectory)
 	if config.WorkingDirectory != "" {
 		if err := os.Chdir(config.WorkingDirectory); err != nil {

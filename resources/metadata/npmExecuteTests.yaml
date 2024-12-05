@@ -100,6 +100,9 @@ spec:
         type: string
         default: "."
         description: Directory where your tests are located relative to the root of your project
+      - name: testParam
+        type: string
+        description: Param used for testing
   outputs:
     resources:
       - name: reports
