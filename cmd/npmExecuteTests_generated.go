@@ -21,18 +21,18 @@ import (
 )
 
 type npmExecuteTestsOptions struct {
-	InstallCommand  string                   `json:"installCommand,omitempty"`
-	RunCommand      string                   `json:"runCommand,omitempty"`
-	VaultURLs       []map[string]interface{} `json:"vaultURLs,omitempty"`
-	VaultUsername   string                   `json:"vaultUsername,omitempty"`
-	VaultPassword   string                   `json:"vaultPassword,omitempty"`
-	BaseURL         string                   `json:"baseUrl,omitempty"`
-	UsernameEnvVar  string                   `json:"usernameEnvVar,omitempty"`
-	PasswordEnvVar  string                   `json:"passwordEnvVar,omitempty"`
-	UrlOptionPrefix string                   `json:"urlOptionPrefix,omitempty"`
-	Envs            []string                 `json:"envs,omitempty"`
-	Paths           []string                 `json:"paths,omitempty"`
-	WorkDir         string                   `json:"workDir,omitempty"`
+	InstallCommand   string                   `json:"installCommand,omitempty"`
+	RunCommand       string                   `json:"runCommand,omitempty"`
+	VaultURLs        []map[string]interface{} `json:"vaultURLs,omitempty"`
+	VaultUsername    string                   `json:"vaultUsername,omitempty"`
+	VaultPassword    string                   `json:"vaultPassword,omitempty"`
+	BaseURL          string                   `json:"baseUrl,omitempty"`
+	UsernameEnvVar   string                   `json:"usernameEnvVar,omitempty"`
+	PasswordEnvVar   string                   `json:"passwordEnvVar,omitempty"`
+	UrlOptionPrefix  string                   `json:"urlOptionPrefix,omitempty"`
+	Envs             []string                 `json:"envs,omitempty"`
+	Paths            []string                 `json:"paths,omitempty"`
+	WorkingDirectory string                   `json:"workingDirectory,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -100,11 +100,14 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -207,7 +210,7 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.UrlOptionPrefix, "urlOptionPrefix", os.Getenv("PIPER_urlOptionPrefix"), "If you want to specify an extra option that the tested url it appended to.\nFor example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,\nwe'll add `--base-url=http://localhost` to your runScript.\n")
 	cmd.Flags().StringSliceVar(&stepConfig.Envs, "envs", []string{}, "List of environment variables to be set")
 	cmd.Flags().StringSliceVar(&stepConfig.Paths, "paths", []string{}, "List of paths to be added to $PATH")
-	cmd.Flags().StringVar(&stepConfig.WorkDir, "workDir", os.Getenv("PIPER_workDir"), "Directory where your tests are located relative to the root of your project")
+	cmd.Flags().StringVar(&stepConfig.WorkingDirectory, "workingDirectory", os.Getenv("PIPER_workingDirectory"), "Directory where your tests are located relative to the root of your project")
 
 	cmd.MarkFlagRequired("runCommand")
 }
@@ -340,13 +343,13 @@ func npmExecuteTestsMetadata() config.StepData {
 						Default:     []string{},
 					},
 					{
-						Name:        "workDir",
+						Name:        "workingDirectory",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_workDir"),
+						Default:     os.Getenv("PIPER_workingDirectory"),
 					},
 				},
 			},
