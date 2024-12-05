@@ -6,6 +6,7 @@ package blackduck
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/format"
