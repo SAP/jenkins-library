@@ -126,7 +126,7 @@ func validationBuildDescriptorFile(buildTool, buildDescriptorFile string) error 
 	case "sbt":
 		if !strings.HasSuffix(buildDescriptorFile, "sbtDescriptor.json") &&
 			!strings.HasSuffix(buildDescriptorFile, "build.sbt") {
-			return errors.New("extension of buildDescriptorFile must be in '*.json'")
+			return errors.New("extension of buildDescriptorFile must be in '*.json' or '*sbt'")
 		}
 	}
 	return nil
