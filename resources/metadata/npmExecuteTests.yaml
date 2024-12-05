@@ -98,6 +98,7 @@ spec:
         description: List of paths to be added to $PATH
       - name: workingDirectory
         type: string
+        default: "."
         description: Directory where your tests are located relative to the root of your project
   outputs:
     resources:

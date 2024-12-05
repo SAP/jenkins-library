@@ -210,7 +210,7 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.UrlOptionPrefix, "urlOptionPrefix", os.Getenv("PIPER_urlOptionPrefix"), "If you want to specify an extra option that the tested url it appended to.\nFor example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,\nwe'll add `--base-url=http://localhost` to your runScript.\n")
 	cmd.Flags().StringSliceVar(&stepConfig.Envs, "envs", []string{}, "List of environment variables to be set")
 	cmd.Flags().StringSliceVar(&stepConfig.Paths, "paths", []string{}, "List of paths to be added to $PATH")
-	cmd.Flags().StringVar(&stepConfig.WorkingDirectory, "workingDirectory", os.Getenv("PIPER_workingDirectory"), "Directory where your tests are located relative to the root of your project")
+	cmd.Flags().StringVar(&stepConfig.WorkingDirectory, "workingDirectory", `.`, "Directory where your tests are located relative to the root of your project")
 
 	cmd.MarkFlagRequired("runCommand")
 }
@@ -349,7 +349,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_workingDirectory"),
+						Default:     `.`,
 					},
 				},
 			},
