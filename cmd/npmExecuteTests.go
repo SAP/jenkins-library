@@ -37,6 +37,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		c.SetEnv([]string{path})
 	}
 
+	log.Entry().Infof("Running npm execute tests with config: %+v", config)
 	log.Entry().Infof("Test param: %s", config.TestParam)
 	log.Entry().Infof("Working directory: %s", config.WorkingDirectory)
 	if config.WorkingDirectory != "" {
