@@ -193,10 +193,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
-	log.Entry().Info("CBFIX: buildedFromCustomBranch")
-	// if stageName == "Central Build" {
-	// 	stageName = "Build"
-	// }
 
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
