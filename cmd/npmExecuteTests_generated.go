@@ -302,7 +302,7 @@ func npmExecuteTestsMetadata() config.StepData {
 					{
 						Name:        "usernameEnvVar",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -311,7 +311,7 @@ func npmExecuteTestsMetadata() config.StepData {
 					{
 						Name:        "passwordEnvVar",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -320,7 +320,7 @@ func npmExecuteTestsMetadata() config.StepData {
 					{
 						Name:        "urlOptionPrefix",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -329,7 +329,7 @@ func npmExecuteTestsMetadata() config.StepData {
 					{
 						Name:        "envs",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -338,7 +338,7 @@ func npmExecuteTestsMetadata() config.StepData {
 					{
 						Name:        "paths",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -347,7 +347,7 @@ func npmExecuteTestsMetadata() config.StepData {
 					{
 						Name:        "workingDirectory",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -356,7 +356,7 @@ func npmExecuteTestsMetadata() config.StepData {
 					{
 						Name:        "testParam",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

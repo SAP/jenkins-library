@@ -80,29 +80,57 @@ spec:
         type: string
         default: "wdi5_username"
         description: Env var for username.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: passwordEnvVar
         type: string
         default: "wdi5_password"
         description: Env var for password.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: urlOptionPrefix
         type: string
         description: |
           If you want to specify an extra option that the tested url it appended to.
           For example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,
           we'll add `--base-url=http://localhost` to your runScript.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: envs
         type: "[]string"
         description: List of environment variables to be set
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: paths
         type: "[]string"
         description: List of paths to be added to $PATH
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: workingDirectory
         type: string
         default: "."
         description: Directory where your tests are located relative to the root of your project
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: testParam
         type: string
         description: Param used for testing
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: reports
