@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
-
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
@@ -924,7 +924,7 @@ func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error)
 		var item config.StepParameters
 		for i := 0; i < l; i++ {
 			item = l2.Index(i).Interface().(config.StepParameters)
-			if !piperutils.ContainsString(names, item.Name) {
+			if !slices.Contains(names, item.Name) {
 				names = append(names, item.Name)
 				dest = append(dest, item)
 			}

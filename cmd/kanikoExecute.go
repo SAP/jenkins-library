@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -287,7 +288,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		}
 		return nil
 
-	case piperutils.ContainsString(config.BuildOptions, "--destination"):
+	case slices.Contains(config.BuildOptions, "--destination"):
 		log.Entry().Infof("Running Kaniko build with destination defined via buildOptions: %v", config.BuildOptions)
 
 		for i, o := range config.BuildOptions {
