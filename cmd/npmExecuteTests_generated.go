@@ -33,7 +33,6 @@ type npmExecuteTestsOptions struct {
 	Envs             []string                 `json:"envs,omitempty"`
 	Paths            []string                 `json:"paths,omitempty"`
 	WorkingDirectory string                   `json:"workingDirectory,omitempty"`
-	TestParam        string                   `json:"testParam,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -212,7 +211,6 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringSliceVar(&stepConfig.Envs, "envs", []string{}, "List of environment variables to be set")
 	cmd.Flags().StringSliceVar(&stepConfig.Paths, "paths", []string{}, "List of paths to be added to $PATH")
 	cmd.Flags().StringVar(&stepConfig.WorkingDirectory, "workingDirectory", `.`, "Directory where your tests are located relative to the root of your project")
-	cmd.Flags().StringVar(&stepConfig.TestParam, "testParam", os.Getenv("PIPER_testParam"), "Param used for testing")
 
 	cmd.MarkFlagRequired("runCommand")
 }
@@ -352,15 +350,6 @@ func npmExecuteTestsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `.`,
-					},
-					{
-						Name:        "testParam",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_testParam"),
 					},
 				},
 			},

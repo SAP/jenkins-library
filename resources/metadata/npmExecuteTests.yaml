@@ -124,13 +124,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: testParam
-        type: string
-        description: Param used for testing
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
   outputs:
     resources:
       - name: reports
