@@ -23,7 +23,7 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.11.0
+      - uses: styfle/cancel-workflow-action@0.12.1
       - name: Get pull request URL
         id: pull_request
         run: |
