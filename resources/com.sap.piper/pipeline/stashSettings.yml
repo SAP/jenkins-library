@@ -31,7 +31,6 @@ Acceptance:
 Compliance:
   unstash:
     - source
-    - classFiles
   stashes: []
 
 Performance:
