@@ -321,16 +321,16 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                     container(containerParams) {
                         try {
                             utils.unstashAll(stashContent)
-                            if (config.verbose) {
+                            //if (config.verbose) {
                                 lsDir('Directory content before body execution')
-                            }
+                            //}
                             if (defaultStashCreated) {
                                 invalidateStash(config, 'workspace', utils)
                             }
                             def result = body()
-                            if (config.verbose) {
+                            //if (config.verbose) {
                                 lsDir('Directory content after body execution')
-                            }
+                            //}
                             return result
                         } finally {
                             stashWorkspace(config, utils, 'container', true, true)
