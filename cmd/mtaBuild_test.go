@@ -87,6 +87,7 @@ func TestMtaBuild(t *testing.T) {
 	SetConfigOptions(ConfigCommandOptions{
 		OpenFile: config.OpenPiperFile,
 	})
+
 	t.Run("Application name not set", func(t *testing.T) {
 		utilsMock := newMtaBuildTestUtilsBundle()
 		options := mtaBuildOptions{}
