@@ -69,6 +69,8 @@ void call(Map parameters = [:]) {
                             influxWrapper(script) {
                                 try {
                                     piperExecuteBin.credentialWrapper(config, credentialInfo) {
+                                        echo "===== BEFORE EXECUTING SONAR ====="
+                                        sh "pwd; ls -la; find . -name '*.class'"
                                         if (stepConfig.instance) {
                                             withSonarQubeEnv(stepConfig.instance) {
                                                 echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
