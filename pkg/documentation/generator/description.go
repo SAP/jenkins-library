@@ -74,8 +74,8 @@ func createDescriptionSection(stepData *config.StepData) string {
 		description += headlineGHA
 		description += fmt.Sprintf("%v```\n", spacingTabBox)
 		description += fmt.Sprintf("%vsteps:\n", spacingTabBox)
-		description += fmt.Sprintf("%v  - name: %v\n", spacingTabBox, stepData.Metadata.Name)
-		description += fmt.Sprintf("%v    uses: SAP/project-piper-action@releaseCommitSHA\n", spacingTabBox)
+		description += fmt.Sprintf("%v  - uses: SAP/project-piper-action@releaseCommitSHA\n", spacingTabBox)
+		description += fmt.Sprintf("%v    name: %v\n", spacingTabBox, stepData.Metadata.Name)
 		description += fmt.Sprintf("%v    with:\n", spacingTabBox)
 		description += fmt.Sprintf("%v      step-name: %v\n", spacingTabBox, stepData.Metadata.Name)
 		description += fmt.Sprintf("%v      flags: --anyStepParameter\n", spacingTabBox)
