@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -211,7 +212,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 		prID, prAuthor := determinePullRequestMerge(config)
 		if prID != "0" {
 			log.Entry().Debugf("Determined PR ID '%v' for merge check", prID)
-			if len(prAuthor) > 0 && !piperutils.ContainsString(config.Assignees, prAuthor) {
+			if len(prAuthor) > 0 && !slices.Contains(config.Assignees, prAuthor) {
 				log.Entry().Debugf("Determined PR Author '%v' for result assignment", prAuthor)
 				config.Assignees = append(config.Assignees, prAuthor)
 			} else {

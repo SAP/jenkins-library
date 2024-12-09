@@ -29,10 +29,10 @@ var CustomLibrarySteps = []CustomLibrary{}
 
 // CustomLibrary represents a custom library with it's custom step names, binary name and library name.
 type CustomLibrary struct {
-	Name        string   `yaml: "name,omitempty"`
-	BinaryName  string   `yaml: "binaryName,omitempty"`
-	LibraryName string   `yaml: "libraryName,omitempty"`
-	Steps       []string `yaml: "steps,omitempty"`
+	Name        string   `yaml:"name,omitempty"`
+	BinaryName  string   `yaml:"binaryName,omitempty"`
+	LibraryName string   `yaml:"libraryName,omitempty"`
+	Steps       []string `yaml:"steps,omitempty"`
 }
 
 // Replaces the StepName placeholder with the content from the yaml
