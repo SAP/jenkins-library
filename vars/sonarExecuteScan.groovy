@@ -71,7 +71,7 @@ void call(Map parameters = [:]) {
                                 try {
                                     piperExecuteBin.credentialWrapper(config, credentialInfo) {
                                         echo "===== BEFORE EXECUTING SONAR ====="
-                                        sh 'pwd; ls -laR; cat /opt/sonar-scanner/conf/sonar-scanner.properties'
+                                        sh 'pwd; ls -laR; ls -la /opt/sonar-scanner/conf/sonar-scanner.properties; cat /opt/sonar-scanner/conf/sonar-scanner.properties'
                                         if (stepConfig.instance) {
                                             withSonarQubeEnv(stepConfig.instance) {
                                                 echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
