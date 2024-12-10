@@ -19,7 +19,6 @@ const (
 
 var jenkinsParams = []string{"containerCommand", "containerName", "containerShell", "dockerVolumeBind", "dockerWorkspace", "sidecarReadyCommand", "sidecarWorkspace", "stashContent"}
 
-
 // Replaces the Parameters placeholder with the content from the yaml
 func createParametersSection(stepData *config.StepData) string {
 
