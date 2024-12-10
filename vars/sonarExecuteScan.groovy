@@ -61,6 +61,7 @@ void call(Map parameters = [:]) {
                     loadCertificates(customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose)
                 }
                 // execute step
+                echo "Executimg docker-wrapper with config  ${config}"
                 piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
                     if(!fileExists('.git')) utils.unstash('git')
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
@@ -70,7 +71,7 @@ void call(Map parameters = [:]) {
                                 try {
                                     piperExecuteBin.credentialWrapper(config, credentialInfo) {
                                         echo "===== BEFORE EXECUTING SONAR ====="
-                                        sh 'pwd; ls -laR'
+                                        sh 'pwd; ls -laR; cat /opt/sonar-scanner/conf/sonar-scanner.properties'
                                         if (stepConfig.instance) {
                                             withSonarQubeEnv(stepConfig.instance) {
                                                 echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
