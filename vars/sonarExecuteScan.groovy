@@ -75,7 +75,7 @@ void call(Map parameters = [:]) {
                                         ls -laR
                                         ls -la /opt/sonar-scanner/conf/sonar-scanner.properties
                                         cat /opt/sonar-scanner/conf/sonar-scanner.properties
-                                        cat sonar.properties'''
+                                        cat sonar-project.properties'''
                                         if (stepConfig.instance) {
                                             withSonarQubeEnv(stepConfig.instance) {
                                                 echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
