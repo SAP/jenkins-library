@@ -17,6 +17,8 @@ const (
 	deprecatedBadge  = "![deprecated](https://img.shields.io/badge/-deprecated-red)"
 )
 
+var jenkinsParams = []string{"containerCommand", "containerName", "containerShell", "dockerVolumeBind", "dockerWorkspace", "sidecarReadyCommand", "sidecarWorkspace", "stashContent"}
+
 // Replaces the Parameters placeholder with the content from the yaml
 func createParametersSection(stepData *config.StepData) string {
 
@@ -97,7 +99,6 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 	}
 
 	// handle non-step parameters (e.g. Jenkins-specific parameters as well as execution environment parameters)
-	jenkinsParams := []string{"containerCommand", "containerName", "containerShell", "dockerVolumeBind", "dockerWorkspace", "sidecarReadyCommand", "sidecarWorkspace", "stashContent"}
 	if !contains(stepParameterNames, paramName) {
 		for _, secret := range stepData.Spec.Inputs.Secrets {
 			if paramName == secret.Name && secret.Type == "jenkins" {
@@ -161,7 +162,7 @@ func createParameterDetails(stepData *config.StepData) string {
 	for _, param := range stepData.Spec.Inputs.Parameters {
 		details += fmt.Sprintf("#### %v\n\n", param.Name)
 
-		if !contains(stepParameterNames, param.Name) {
+		if !contains(stepParameterNames, param.Name) && contains(jenkinsParams, param.Name) {
 			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
 		}
 
@@ -200,7 +201,7 @@ func createParameterDetails(stepData *config.StepData) string {
 	for _, secret := range stepData.Spec.Inputs.Secrets {
 		details += fmt.Sprintf("#### %v\n\n", secret.Name)
 
-		if !contains(stepParameterNames, secret.Name) {
+		if !contains(stepParameterNames, secret.Name) && contains(jenkinsParams, secret.Name) {
 			details += "**Jenkins-specific:** Used for proper environment setup. See *[using credentials](https://www.jenkins.io/doc/book/using/using-credentials/)* for details.\n\n"
 		}
 
