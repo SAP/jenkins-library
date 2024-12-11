@@ -40,7 +40,7 @@ func TestPreparePasswordForCLI(t *testing.T) {
 			name:     "Non-Windows password with single quotes",
 			os:       "darwin",
 			password: "my'password",
-			expected: "'my'\\\''password'",
+			expected: "'my'\\''password'",
 		},
 	}
 
