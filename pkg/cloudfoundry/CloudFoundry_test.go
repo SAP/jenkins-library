@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cloudfoundry
 
 import (
@@ -88,7 +85,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 					"-o", "testOrg",
 					"-s", "testSpace",
 					"-u", "testUser",
-					"-p", "testPassword",
+					"-p", "'testPassword'",
 				}},
 			}, m.Calls)
 		}
@@ -118,7 +115,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 					"-o", "testOrg",
 					"-s", "testSpace",
 					"-u", "testUser",
-					"-p", "testPassword",
+					"-p", "'testPassword'",
 				}},
 			}, m.Calls)
 		}
@@ -151,7 +148,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 					"-o", "testOrg",
 					"-s", "testSpace",
 					"-u", "testUser",
-					"-p", "testPassword",
+					"-p", "'testPassword'",
 					"--skip-ssl-validation",
 					"--origin", "ldap",
 				}},
@@ -214,7 +211,7 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 					"-o", "testOrg",
 					"-s", "testSpace",
 					"-u", "testUser",
-					"-p", "testPassword",
+					"-p", "'testPassword'",
 				}},
 				{Exec: "cf", Params: []string{"service-key", "testInstance", "testServiceKeyName"}},
 				{Exec: "cf", Params: []string{"logout"}},

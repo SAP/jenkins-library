@@ -27,7 +27,7 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 	}
 
 	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.Username == "" || options.Password == "" {
-		return fmt.Errorf("failed to login to Cloud Foundry: %w", errors.New("parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password"))
+		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password"))
 	}
 
 	if cf.loggedIn {
@@ -53,7 +53,7 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 
 	err := _c.RunExecutable("cf", cfLoginScript...)
 	if err != nil {
-		return fmt.Errorf("failed to login to Cloud Foundry: %w", err)
+		return fmt.Errorf("Failed to login to Cloud Foundry: %w", err)
 	}
 	log.Entry().Info("Logged in successfully to Cloud Foundry..")
 	cf.loggedIn = true
