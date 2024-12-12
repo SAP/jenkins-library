@@ -150,7 +150,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 					"-o", "testOrg",
 					"-s", "testSpace",
 					"-u", "testUser",
-					"-p", "'testPassword'",
+					"-p", "testPassword",
 					"--skip-ssl-validation",
 					"--origin", "ldap",
 				}},
