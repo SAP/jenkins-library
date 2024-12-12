@@ -20,14 +20,14 @@ func TestPreparePasswordForCLI(t *testing.T) {
 		{
 			name:     "Windows password with no quotes",
 			os:       "windows",
-			password: "mypassword",
-			expected: "\"mypassword\"",
+			password: `mypassword`,
+			expected: `"mypassword"`,
 		},
 		{
 			name:     "Windows password with quotes",
 			os:       "windows",
-			password: "my\"password",
-			expected: "\"my\\\"password\"",
+			password: `my\"password`,
+			expected: `"my\\\"password"`,
 		},
 		{
 			name:     "Non-Windows password with no single quotes",
@@ -38,8 +38,8 @@ func TestPreparePasswordForCLI(t *testing.T) {
 		{
 			name:     "Non-Windows password with single quotes",
 			os:       "darwin",
-			password: "my'password",
-			expected: "'my'\\''password'",
+			password: `my'password`,
+			expected: `'my'\''password'`,
 		},
 	}
 
