@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cloudfoundry
 
 import (
@@ -21,13 +18,13 @@ func TestPreparePasswordForCLI(t *testing.T) {
 			name:     "Windows password with no quotes",
 			os:       "windows",
 			password: `mypassword`,
-			expected: `"mypassword"`,
+			expected: `'mypassword'`,
 		},
 		{
 			name:     "Windows password with quotes",
 			os:       "windows",
 			password: `my\"password`,
-			expected: `"my\\\"password"`,
+			expected: `'my\"password'`,
 		},
 		{
 			name:     "Non-Windows password with no single quotes",
@@ -40,6 +37,24 @@ func TestPreparePasswordForCLI(t *testing.T) {
 			os:       "darwin",
 			password: `my'password`,
 			expected: `'my'\''password'`,
+		},
+		{
+			name:     "Macos password with all special characters",
+			os:       "darwin",
+			password: "~!@#$%^&*()_+{`}|:\"<>?-=[]\\;',./",
+			expected: "'~!@#$%^&*()_+{`}|:\"<>?-=[]\\;'\\'',./'",
+		},
+		{
+			name:     "Linux password with all special characters",
+			os:       "linux",
+			password: "~!@#$%^&*()_+{`}|:\"<>?-=[]\\;',./",
+			expected: "'~!@#$%^&*()_+{`}|:\"<>?-=[]\\;'\\'',./'",
+		},
+		{
+			name:     "Windows password with all special characters",
+			os:       "windows",
+			password: "~!@#$%^&*()_+{`}|:\"<>?-=[]\\;',./",
+			expected: "'~!@#$%^&*()_+{`}|:\"<>?-=[]\\;'',./'",
 		},
 	}
 

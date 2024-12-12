@@ -61,10 +61,13 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 }
 
 func preparePasswordForCLI(password string, getGOOS func() string) string {
-	password = strings.ReplaceAll(password, `\`, `\\`)
 	switch getGOOS() {
 	case "windows":
-		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(password, `"`, `\"`))
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `''`))
+	case "linux":
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `'\''`))
+	case "darwin":
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `'\''`))
 	default:
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `'\''`))
 	}
