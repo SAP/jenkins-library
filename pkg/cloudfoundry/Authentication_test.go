@@ -5,7 +5,6 @@ package cloudfoundry
 
 import (
 	"fmt"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,11 +45,11 @@ func TestPreparePasswordForCLI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			originalGOOS := runtime.GOOS
-			runtime.GOOS = tt.os // Mock the OS
-			defer func() { runtime.GOOS = originalGOOS }() // Restore the original OS after the test
+			//originalGOOS := getGOOS
+			getGOOS := func() string { return tt.os } // Mock the OS
+			//defer func() { getGOOS = originalGOOS }() // Restore the original OS after the test
 
-			result := preparePasswordForCLI(tt.password)
+			result := preparePasswordForCLI(tt.password, getGOOS)
 			assert.Equal(t, tt.expected, result, fmt.Sprintf("Failed for OS: %s and password: %s", tt.os, tt.password))
 		})
 	}

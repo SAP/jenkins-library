@@ -42,7 +42,7 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 	if err == nil {
 		log.Entry().Info("Logging in to Cloud Foundry")
 
-		escapedPassword := preparePasswordForCLI(options.Password)
+		escapedPassword := preparePasswordForCLI(options.Password, getGOOS)
 
 		var cfLoginScript = append([]string{
 			"login",
@@ -66,10 +66,10 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 	return nil
 }
 
-func preparePasswordForCLI(password string) string {
-	switch runtime.GOOS {
+func preparePasswordForCLI(password string, getGOOS func() string) string {
+	switch getGOOS() {
 	case "windows":
-		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(password, "\"", "\\\""))
+		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(password, `"`, `\"`))
 	default:
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", "'\\''"))
 	}
@@ -145,4 +145,8 @@ func (cf *CfUtilsMock) Logout() error {
 func (cf *CfUtilsMock) Cleanup() {
 	cf.LoginError = nil
 	cf.LogoutError = nil
+}
+
+func getGOOS() string {
+	return runtime.GOOS
 }
