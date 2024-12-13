@@ -13,11 +13,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/bmatcuk/doublestar"
 )
 
@@ -158,13 +158,13 @@ func (f *FilesMock) HasFile(path string) bool {
 // HasRemovedFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was removed via FileRemove().
 func (f *FilesMock) HasRemovedFile(path string) bool {
-	return piperutils.ContainsString(f.removedFiles, f.toAbsPath(path))
+	return slices.Contains(f.removedFiles, f.toAbsPath(path))
 }
 
 // HasWrittenFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was written via FileWrite().
 func (f *FilesMock) HasWrittenFile(path string) bool {
-	return piperutils.ContainsString(f.writtenFiles, f.toAbsPath(path))
+	return slices.Contains(f.writtenFiles, f.toAbsPath(path))
 }
 
 // HasCopiedFile returns true if the virtual file system at one point contained an entry for the given source and destination,

@@ -16,8 +16,8 @@ import (
 )
 
 type npmMinimalPackageDescriptor struct {
-	Name    string `json:version`
-	Version string `json:version`
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 func (pd *npmMinimalPackageDescriptor) Scope() string {
