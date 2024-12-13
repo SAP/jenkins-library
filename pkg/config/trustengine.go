@@ -56,7 +56,7 @@ func (c *Config) setTrustEngineConfiguration(hookConfig map[string]interface{}) 
 	}
 
 	if len(c.trustEngineConfiguration.Token) == 0 {
-		log.Entry().Debug("no Trust Engine token found")
+		return errors.New("no Trust Engine token found and envvar is empty")
 	}
 	return nil
 }

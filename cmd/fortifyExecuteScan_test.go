@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +22,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/fortify"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/google/go-github/v45/github"
@@ -421,7 +421,7 @@ func (er *execRunnerMock) Stderr(err io.Writer) {
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	er.numExecutions++
 	er.currentExecution().executable = e
-	if len(p) > 0 && piperutils.ContainsString(p, "--failTranslate") {
+	if len(p) > 0 && slices.Contains(p, "--failTranslate") {
 		return errors.New("Translate failed")
 	}
 	er.currentExecution().parameters = p
