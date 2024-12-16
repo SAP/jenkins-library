@@ -38,26 +38,9 @@ type Communication interface {
 func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
 	c := abaputils.Exec
 	var connectionDetails ConnectionDetailsHTTP
-	var error error
+	var err error
 
-	if options.Host != "" {
-		// Host, User and Password are directly provided -> check for host schema (double https)
-		match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return connectionDetails, errors.Wrap(err, "Schema validation for host parameter failed. Check for https.")
-		}
-		var hostOdataURL = options.Host + oDataURL
-		if match {
-			connectionDetails.URL = hostOdataURL
-			connectionDetails.Host = options.Host
-		} else {
-			connectionDetails.URL = "https://" + hostOdataURL
-			connectionDetails.Host = "https://" + options.Host
-		}
-		connectionDetails.User = options.Username
-		connectionDetails.Password = options.Password
-	} else {
+	if options.Host == "" {
 		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.CfServiceInstance == "" || options.CfServiceKeyName == "" {
 			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -66,14 +49,33 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		// Url, User and Password should be read from a cf service key
 		var abapServiceKey, err = ReadServiceKeyAbapEnvironment(options, c)
 		if err != nil {
-			return connectionDetails, errors.Wrap(error, "Read service key failed")
+			return connectionDetails, errors.Wrap(err, "Read service key failed")
 		}
 		connectionDetails.Host = abapServiceKey.URL
 		connectionDetails.URL = abapServiceKey.URL + oDataURL
 		connectionDetails.User = abapServiceKey.Abap.Username
 		connectionDetails.Password = abapServiceKey.Abap.Password
+		return connectionDetails, err
 	}
-	return connectionDetails, error
+
+	// Host, User and Password are directly provided -> check for host schema (double https)
+	match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return connectionDetails, errors.Wrap(err, "Schema validation for host parameter failed. Check for https.")
+	}
+	var hostOdataURL = options.Host + oDataURL
+	if match {
+		connectionDetails.URL = hostOdataURL
+		connectionDetails.Host = options.Host
+	} else {
+		connectionDetails.URL = "https://" + hostOdataURL
+		connectionDetails.Host = "https://" + options.Host
+	}
+	connectionDetails.User = options.Username
+	connectionDetails.Password = options.Password
+
+	return connectionDetails, err
 }
 
 // ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it. Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
