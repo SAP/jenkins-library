@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 
@@ -20,9 +21,13 @@ import (
 )
 
 // WritePipelineEnv Serializes the commonPipelineEnvironment JSON to disk
+// Can be used in two modes:
+// 1. JSON serialization: processes JSON input from stdin or PIPER_pipelineEnv environment variable
+// 2. Direct value: writes a single key-value pair using the --value flag (format: key=value)
 func WritePipelineEnv() *cobra.Command {
 	var stepConfig artifactPrepareVersionOptions
 	var encryptedCPE bool
+	var directValue string
 	metadata := artifactPrepareVersionMetadata()
 
 	writePipelineEnv := &cobra.Command{
@@ -43,6 +48,13 @@ func WritePipelineEnv() *cobra.Command {
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
+			if directValue != "" {
+				err := writeDirectValue(directValue)
+				if err != nil {
+					log.Entry().Fatalf("error when writing direct value: %v", err)
+				}
+				return
+			}
 			err := runWritePipelineEnv(stepConfig.Password, encryptedCPE)
 			if err != nil {
 				log.Entry().Fatalf("error when writing common Pipeline environment: %v", err)
@@ -51,6 +63,7 @@ func WritePipelineEnv() *cobra.Command {
 	}
 
 	writePipelineEnv.Flags().BoolVar(&encryptedCPE, "encryptedCPE", false, "Bool to use encryption in CPE")
+	writePipelineEnv.Flags().StringVar(&directValue, "value", "", "Key-value pair to write directly (format: key=value)")
 	return writePipelineEnv
 }
 
@@ -105,6 +118,29 @@ func runWritePipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 		return err
 	}
 	return nil
+}
+
+// writeDirectValue writes a single value to a file in the commonPipelineEnvironment directory
+// The key-value pair should be in the format "key=value"
+// The key will be used as the file name and the value as its content
+func writeDirectValue(keyValue string) error {
+	parts := strings.SplitN(keyValue, "=", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid key-value format. Expected 'key=value', got '%s'", keyValue)
+	}
+
+	key := parts[0]
+	value := parts[1]
+
+	rootPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	filePath := filepath.Join(rootPath, key)
+
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+
+	return os.WriteFile(filePath, []byte(value), 0644)
 }
 
 func decrypt(secret, base64CipherText []byte) ([]byte, error) {
