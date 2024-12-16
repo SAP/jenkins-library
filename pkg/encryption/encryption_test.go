@@ -58,12 +58,12 @@ func TestEncrypt(t *testing.T) {
 		secret := []byte("test-secret-key")
 		plaintext := []byte("hello world")
 
-		result, err := Encrypt(secret, plaintext)
+		encrypted, err := Encrypt(secret, plaintext)
 		assert.NoError(t, err)
-		assert.NotNil(t, result)
+		assert.NotNil(t, encrypted)
 
 		// Verify we can decrypt it back
-		decrypted, err := Decrypt(secret, result)
+		decrypted, err := Decrypt(secret, encrypted)
 		assert.NoError(t, err)
 		assert.Equal(t, plaintext, decrypted)
 	})
@@ -72,12 +72,12 @@ func TestEncrypt(t *testing.T) {
 		secret := []byte("test-secret-key")
 		empty := []byte("")
 
-		result, err := Encrypt(secret, empty)
+		encrypted, err := Encrypt(secret, empty)
 		assert.NoError(t, err)
-		assert.NotNil(t, result)
+		assert.NotNil(t, encrypted)
 
 		// Verify we can decrypt it back
-		decrypted, err := Decrypt(secret, result)
+		decrypted, err := Decrypt(secret, encrypted)
 		assert.NoError(t, err)
 		assert.Equal(t, empty, decrypted)
 	})
@@ -86,9 +86,9 @@ func TestEncrypt(t *testing.T) {
 		secret := []byte("")
 		plaintext := []byte("hello world")
 
-		result, err := Encrypt(secret, plaintext)
+		encrypted, err := Encrypt(secret, plaintext)
 		assert.Error(t, err)
-		assert.Nil(t, result)
+		assert.Nil(t, encrypted)
 		assert.Contains(t, err.Error(), "failed to create cipher")
 	})
 
@@ -96,12 +96,12 @@ func TestEncrypt(t *testing.T) {
 		secret := []byte("test-secret-key")
 		largeInput := []byte(strings.Repeat("large input test ", 1000))
 
-		result, err := Encrypt(secret, largeInput)
+		encrypted, err := Encrypt(secret, largeInput)
 		assert.NoError(t, err)
-		assert.NotNil(t, result)
+		assert.NotNil(t, encrypted)
 
 		// Verify we can decrypt it back
-		decrypted, err := Decrypt(secret, result)
+		decrypted, err := Decrypt(secret, encrypted)
 		assert.NoError(t, err)
 		assert.Equal(t, largeInput, decrypted)
 	})
