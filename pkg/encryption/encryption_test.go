@@ -89,7 +89,7 @@ func TestEncrypt(t *testing.T) {
 		encrypted, err := Encrypt(secret, plaintext)
 		assert.Error(t, err)
 		assert.Nil(t, encrypted)
-		assert.Contains(t, err.Error(), "failed to create cipher")
+		assert.Contains(t, err.Error(), "failed to create cipher: empty secret")
 	})
 
 	t.Run("large input", func(t *testing.T) {

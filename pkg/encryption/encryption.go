@@ -38,6 +38,10 @@ func Decrypt(secret, base64CipherText []byte) ([]byte, error) {
 
 // Encrypt encrypts data using AES-CFB and encodes it in base64
 func Encrypt(secret, inBytes []byte) ([]byte, error) {
+	if len(secret) == 0 {
+		return nil, fmt.Errorf("failed to create cipher: empty secret")
+	}
+
 	key := sha256.Sum256(secret)
 	block, err := aes.NewCipher(key[:])
 	if err != nil {
