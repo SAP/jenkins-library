@@ -64,9 +64,7 @@ func preparePasswordForCLI(password string, getGOOS func() string) string {
 	switch getGOOS() {
 	case "windows":
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `''`))
-	case "linux":
-		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `'\''`))
-	case "darwin":
+	case "linux", "darwin":
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `'\''`))
 	default:
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `'\''`))

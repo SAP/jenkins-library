@@ -17,7 +17,7 @@ func TestPreparePasswordForCLI(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "Windows password with no quotes",
+			name:     "Windows password without quotes",
 			os:       "windows",
 			password: `mypassword`,
 			expected: `'mypassword'`,
@@ -29,7 +29,7 @@ func TestPreparePasswordForCLI(t *testing.T) {
 			expected: `'my\"password'`,
 		},
 		{
-			name:     "Non-Windows password with no single quotes",
+			name:     "Non-Windows password without single quotes",
 			os:       "linux",
 			password: "mypassword",
 			expected: "'mypassword'",
@@ -39,12 +39,6 @@ func TestPreparePasswordForCLI(t *testing.T) {
 			os:       "darwin",
 			password: `my'password`,
 			expected: `'my'\''password'`,
-		},
-		{
-			name:     "Macos password with all special characters",
-			os:       "darwin",
-			password: "~!@#$%^&*()_+{`}|:\"<>?-=[]\\;',./",
-			expected: "'~!@#$%^&*()_+{`}|:\"<>?-=[]\\;'\\'',./'",
 		},
 		{
 			name:     "Linux password with all special characters",
