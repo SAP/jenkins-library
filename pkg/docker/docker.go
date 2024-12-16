@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/docker/cli/cli/config"
@@ -306,7 +307,7 @@ func ImageListWithFilePath(imageName string, excludes []string, trimDir string, 
 		// ToDo: needs rework
 		// dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
 
-		if piperutils.ContainsString(excludes, dockerfilePath) {
+		if slices.Contains(excludes, dockerfilePath) {
 			log.Entry().Infof("Discard %v since it is in the exclude list %v", dockerfilePath, excludes)
 			continue
 		}

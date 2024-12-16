@@ -6,10 +6,10 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
-	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -317,7 +317,7 @@ func (e *newmanExecuteMockUtils) RunExecutable(executable string, params ...stri
 	if e.errorOnNewmanExecution && strings.Contains(executable, "newman") {
 		return errors.New("error on newman execution")
 	}
-	if e.errorOnNewmanInstall && sliceUtils.ContainsString(params, "install") {
+	if e.errorOnNewmanInstall && slices.Contains(params, "install") {
 		return errors.New("error on newman install")
 	}
 

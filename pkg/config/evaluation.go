@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -49,7 +50,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 		stepConfigCache := make(map[string]StepConfig, len(stage.Steps))
 		for _, step := range stage.Steps {
 			// Consider only orchestrator-specific steps if the orchestrator limitation is set.
-			if len(step.Orchestrators) > 0 && !piperutils.ContainsString(step.Orchestrators, currentOrchestrator) {
+			if len(step.Orchestrators) > 0 && !slices.Contains(step.Orchestrators, currentOrchestrator) {
 				continue
 			}
 

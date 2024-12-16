@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -414,7 +415,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		deployCommand = "bg-deploy"
 
 		const noConfirmFlag = "--no-confirm"
-		if !piperutils.ContainsString(deployParams, noConfirmFlag) {
+		if !slices.Contains(deployParams, noConfirmFlag) {
 			deployParams = append(deployParams, noConfirmFlag)
 		}
 	}

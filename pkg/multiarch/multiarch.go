@@ -3,10 +3,10 @@ package multiarch
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 var knownGoos = []string{"aix", "android", "darwin", "dragonfly", "freebsd", "hurd", "illumos", "ios", "js", "linux", "nacl", "netbsd", "openbsd", "plan9", "solaris", "windows", "zos"}
@@ -42,13 +42,13 @@ func ParsePlatformString(s string) (Platform, error) {
 
 	p.OS = strings.Trim(matches[1], " ")
 
-	if !piperutils.ContainsString(knownGoos, p.OS) {
+	if !slices.Contains(knownGoos, p.OS) {
 		log.Entry().Warningf("OS '%s' is unknown to us", p.OS)
 	}
 
 	p.Arch = strings.Trim(matches[2], " ")
 
-	if !piperutils.ContainsString(knownGoarch, p.Arch) {
+	if !slices.Contains(knownGoarch, p.Arch) {
 		log.Entry().Warningf("Architecture '%s' is unknown to us", p.Arch)
 	}
 
