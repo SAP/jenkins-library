@@ -1,9 +1,6 @@
 package encryption
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/sha256"
 	"encoding/base64"
 	"strings"
 	"testing"
@@ -13,37 +10,26 @@ import (
 
 func TestDecrypt(t *testing.T) {
 	t.Run("successful decryption", func(t *testing.T) {
-		// Prepare test data by doing encryption first
 		secret := []byte("test-secret-key")
 		plaintext := []byte("hello world")
 
-		// Create encryption key
-		key := sha256.Sum256(secret)
-		block, err := aes.NewCipher(key[:])
+		// Encrypt first using our package function
+		encrypted, err := Encrypt(secret, plaintext)
 		assert.NoError(t, err)
-
-		// Create ciphertext
-		ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-		iv := ciphertext[:aes.BlockSize]
-		stream := cipher.NewCFBEncrypter(block, iv)
-		stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
-
-		// Base64 encode
-		base64Data := base64.StdEncoding.EncodeToString(ciphertext)
 
 		// Test decryption
-		result, err := Decrypt(secret, []byte(base64Data))
+		decrypted, err := Decrypt(secret, encrypted)
 		assert.NoError(t, err)
-		assert.Equal(t, plaintext, result)
+		assert.Equal(t, plaintext, decrypted)
 	})
 
 	t.Run("invalid base64 input", func(t *testing.T) {
 		secret := []byte("test-secret-key")
 		invalidBase64 := []byte("this is not base64!")
 
-		result, err := Decrypt(secret, invalidBase64)
+		decrypted, err := Decrypt(secret, invalidBase64)
 		assert.Error(t, err)
-		assert.Nil(t, result)
+		assert.Nil(t, decrypted)
 		assert.Contains(t, err.Error(), "failed to decode from base64")
 	})
 
@@ -51,9 +37,9 @@ func TestDecrypt(t *testing.T) {
 		secret := []byte("test-secret-key")
 		tooSmall := base64.StdEncoding.EncodeToString([]byte("small"))
 
-		result, err := Decrypt(secret, []byte(tooSmall))
+		decrypted, err := Decrypt(secret, []byte(tooSmall))
 		assert.Error(t, err)
-		assert.Nil(t, result)
+		assert.Nil(t, decrypted)
 		assert.Contains(t, err.Error(), "invalid ciphertext: block size too small")
 	})
 
@@ -61,9 +47,9 @@ func TestDecrypt(t *testing.T) {
 		secret := []byte("test-secret-key")
 		empty := []byte("")
 
-		result, err := Decrypt(secret, empty)
+		decrypted, err := Decrypt(secret, empty)
 		assert.Error(t, err)
-		assert.Nil(t, result)
+		assert.Nil(t, decrypted)
 	})
 }
 
