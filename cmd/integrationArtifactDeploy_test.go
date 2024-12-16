@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package cmd
 
@@ -211,7 +210,7 @@ func (c *httpMockCpis) SendRequest(method string, url string, r io.Reader, heade
 		c.CPIFunction = cpi.GetCPIFunctionNameByURLCheck(url, method, c.TestType)
 		resp, err := cpi.GetCPIFunctionMockResponse(c.CPIFunction, c.TestType)
 		c.CPIFunction = ""
-		return resp, error
+		return resp, err
 	}
 
 	return cpi.GetCPIFunctionMockResponse(c.CPIFunction, c.TestType)

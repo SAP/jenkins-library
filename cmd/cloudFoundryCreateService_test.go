@@ -162,7 +162,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			ManifestVariables: manifestVariables,
 			CfAsync:           false, // should be ignored
 		}
-		err := runCloudFoundryCreateService(&config, &telemetryData, cf)
+		err = runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "'testUser'", "-p", "'testPassword'"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "manifestTest.yml", "--var", "name1=Test1", "--var", "name2=Test2"}},
@@ -219,7 +219,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			ManifestVariablesFiles: manifestVariablesFiles,
 			ManifestVariables:      []string{"a=b", "x=y"},
 		}
-		err := runCloudFoundryCreateService(&config, &telemetryData, cf)
+		err = runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "'testUser'", "-p", "'testPassword'"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "manifestTest.yml", "--vars-file", "varsTest.yml", "--vars-file", "varsTest2.yml", "--var", "a=b", "--var", "x=y"}},
