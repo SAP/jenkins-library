@@ -64,8 +64,8 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, c)
-		if error != nil {
+		var abapServiceKey, err = ReadServiceKeyAbapEnvironment(options, c)
+		if err != nil {
 			return connectionDetails, errors.Wrap(error, "Read service key failed")
 		}
 		connectionDetails.Host = abapServiceKey.URL
