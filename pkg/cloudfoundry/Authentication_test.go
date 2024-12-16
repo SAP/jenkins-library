@@ -9,59 +9,55 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPreparePasswordForCLI(t *testing.T) {
+func Test_escapeValuesForCLI(t *testing.T) {
 	tests := []struct {
 		name     string
 		os       string
-		password string
+		input    string
 		expected string
 	}{
 		{
 			name:     "Windows password without quotes",
 			os:       "windows",
-			password: `mypassword`,
+			input:    `mypassword`,
 			expected: `'mypassword'`,
 		},
 		{
 			name:     "Windows password with quotes",
 			os:       "windows",
-			password: `my\"password`,
+			input:    `my\"password`,
 			expected: `'my\"password'`,
 		},
 		{
 			name:     "Non-Windows password without single quotes",
 			os:       "linux",
-			password: "mypassword",
+			input:    "mypassword",
 			expected: "'mypassword'",
 		},
 		{
 			name:     "Non-Windows password with single quotes",
 			os:       "darwin",
-			password: `my'password`,
+			input:    `my'password`,
 			expected: `'my'\''password'`,
 		},
 		{
 			name:     "Linux password with all special characters",
 			os:       "linux",
-			password: "~!@#$%^&*()_+{`}|:\"<>?-=[]\\;',./",
+			input:    "~!@#$%^&*()_+{`}|:\"<>?-=[]\\;',./",
 			expected: "'~!@#$%^&*()_+{`}|:\"<>?-=[]\\;'\\'',./'",
 		},
 		{
 			name:     "Windows password with all special characters",
 			os:       "windows",
-			password: "~!@#$%^&*()_+{`}|:\"<>?-=[]\\;',./",
+			input:    "~!@#$%^&*()_+{`}|:\"<>?-=[]\\;',./",
 			expected: "'~!@#$%^&*()_+{`}|:\"<>?-=[]\\;'',./'",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			//originalGOOS := getGOOS
-			getGOOS := func() string { return tt.os } // Mock the OS
-			//defer func() { getGOOS = originalGOOS }() // Restore the original OS after the test
-
-			result := preparePasswordForCLI(tt.password, getGOOS)
-			assert.Equal(t, tt.expected, result, fmt.Sprintf("Failed for OS: %s and password: %s", tt.os, tt.password))
+			result := escapeValuesForCLI(tt.input, func() string { return tt.os })
+			assert.Equal(t, tt.expected, result, fmt.Sprintf("Failed for OS: %s and password: %s", tt.os, tt.input))
 		})
 	}
 }

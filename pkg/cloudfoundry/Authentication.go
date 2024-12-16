@@ -36,14 +36,15 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 
 	log.Entry().Info("Logging in to Cloud Foundry")
 
-	escapedPassword := preparePasswordForCLI(options.Password, getGOOS)
+	escapedUsername := escapeValuesForCLI(options.Username, getGOOS)
+	escapedPassword := escapeValuesForCLI(options.Password, getGOOS)
 
 	cfLoginScript := []string{
 		"login",
 		"-a", options.CfAPIEndpoint,
 		"-o", options.CfOrg,
 		"-s", options.CfSpace,
-		"-u", options.Username,
+		"-u", escapedUsername,
 		"-p", escapedPassword,
 	}
 
@@ -60,7 +61,7 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 	return nil
 }
 
-func preparePasswordForCLI(password string, getGOOS func() string) string {
+func escapeValuesForCLI(password string, getGOOS func() string) string {
 	switch getGOOS() {
 	case "windows":
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `''`))
