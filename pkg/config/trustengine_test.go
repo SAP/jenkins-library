@@ -5,11 +5,12 @@ package config
 
 import (
 	"fmt"
+	"net/http"
+	"testing"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/trustengine"
 	"github.com/jarcoal/httpmock"
-	"net/http"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -40,7 +41,7 @@ func TestTrustEngineConfig(t *testing.T) {
 	client := &piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
-	t.Run("Load secret from Trust Engine - secret not set yet by Vault or config.yml", func(t *testing.T) {
+	t.Run("Load secret from System Trust - secret not set yet by Vault or config.yml", func(t *testing.T) {
 		stepConfig := &StepConfig{Config: map[string]interface{}{
 			secretName: "",
 		}}
@@ -49,7 +50,7 @@ func TestTrustEngineConfig(t *testing.T) {
 		assert.Equal(t, mockSonarToken, stepConfig.Config[secretName])
 	})
 
-	t.Run("Load secret from Trust Engine - secret already by Vault or config.yml", func(t *testing.T) {
+	t.Run("Load secret from System Trust - secret already by Vault or config.yml", func(t *testing.T) {
 		stepConfig := &StepConfig{Config: map[string]interface{}{
 			secretName: "aMockTokenFromVault",
 		}}
