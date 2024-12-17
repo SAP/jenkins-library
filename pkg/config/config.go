@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/systemtrust"
+	"github.com/SAP/jenkins-library/pkg/trustengine"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -33,7 +33,7 @@ type Config struct {
 	accessTokens             map[string]string
 	openFile                 func(s string, t map[string]string) (io.ReadCloser, error)
 	vaultCredentials         VaultCredentials
-	systemTrustConfiguration systemtrust.Configuration
+	trustEngineConfiguration trustengine.Configuration
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -295,12 +295,12 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	// hooks need to have been loaded from the defaults before the server URL is known
-	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
+	err = c.setTrustEngineConfiguration(stepConfig.HookConfig)
 	if err != nil {
-		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
+		log.Entry().WithError(err).Debug("Trust Engine lookup skipped due to missing or incorrect configuration")
 	} else {
-		systemtrustClient := systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
-		resolveAllSystemTrustReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.systemTrustConfiguration, systemtrustClient)
+		trustengineClient := trustengine.PrepareClient(&piperhttp.Client{}, c.trustEngineConfiguration)
+		resolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, trustengineClient)
 	}
 
 	// finally do the condition evaluation post processing

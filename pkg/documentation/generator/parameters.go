@@ -13,7 +13,7 @@ const (
 	vaultBadge       = "![Vault](https://img.shields.io/badge/-Vault-lightgrey)"
 	jenkinsOnlyBadge = "![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)"
 	secretBadge      = "![Secret](https://img.shields.io/badge/-Secret-yellowgreen)"
-	systemtrustBadge = "![System Trust](https://img.shields.io/badge/-System%20Trust-lightblue)"
+	trustengineBadge = "![Trust Engine](https://img.shields.io/badge/-Trust%20Engine-lightblue)"
 	deprecatedBadge  = "![deprecated](https://img.shields.io/badge/-deprecated-red)"
 )
 
@@ -122,9 +122,9 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 				secretInfo := fmt.Sprintf("%s pass via ENV or Jenkins credentials", secretBadge)
 
 				isVaultSecret := param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil
-				isSystemtrustSecret := param.GetReference(config.RefTypeSystemtrustSecret) != nil
-				if isVaultSecret && isSystemtrustSecret {
-					secretInfo = fmt.Sprintf(" %s %s %s pass via ENV, Vault, System Trust or Jenkins credentials", vaultBadge, systemtrustBadge, secretBadge)
+				isTrustengineSecret := param.GetReference(config.RefTypeTrustengineSecret) != nil
+				if isVaultSecret && isTrustengineSecret {
+					secretInfo = fmt.Sprintf(" %s %s %s pass via ENV, Vault, Trust Engine or Jenkins credentials", vaultBadge, trustengineBadge, secretBadge)
 				} else if isVaultSecret {
 					secretInfo = fmt.Sprintf(" %s %s pass via ENV, Vault or Jenkins credentials", vaultBadge, secretBadge)
 				}
@@ -347,8 +347,8 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 			resourceDetails = addVaultResourceDetails(resource, resourceDetails)
 			continue
 		}
-		if resource.Type == config.RefTypeSystemtrustSecret {
-			resourceDetails = addSystemTrustResourceDetails(resource, resourceDetails)
+		if resource.Type == config.RefTypeTrustengineSecret {
+			resourceDetails = addTrustEngineResourceDetails(resource, resourceDetails)
 		}
 	}
 
@@ -369,8 +369,8 @@ func addVaultResourceDetails(resource config.ResourceReference, resourceDetails 
 	return resourceDetails
 }
 
-func addSystemTrustResourceDetails(resource config.ResourceReference, resourceDetails string) string {
-	resourceDetails += "<br/>System Trust resource:<br />"
+func addTrustEngineResourceDetails(resource config.ResourceReference, resourceDetails string) string {
+	resourceDetails += "<br/>Trust Engine resource:<br />"
 	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;name: `%v`<br />", resource.Name)
 	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;value: `%v`<br />", resource.Default)
 
