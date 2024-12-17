@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package helper
 
@@ -57,7 +56,7 @@ spec:
         type: stash
     params:
       - name: param0
-        aliases: 
+        aliases:
         - name: oldparam0
         type: string
         description: param0 description
@@ -67,7 +66,7 @@ spec:
         - PARAMETERS
         mandatory: true
       - name: param1
-        aliases: 
+        aliases:
         - name: oldparam1
           deprecated: true
         type: string
