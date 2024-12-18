@@ -55,6 +55,20 @@ func (m manifestMock) WriteManifest() error {
 	return nil
 }
 
+// everything below in the config map annotated with '//default' is a default in the metadata
+// since we don't get injected these values during the tests we set it here.
+defaultConfig := cloudFoundryDeployOptions{
+	Org:                     "myOrg",
+	Space:                   "mySpace",
+	Username:                "me",
+	Password:                "******",
+	APIEndpoint:             "https://examples.sap.com/cf",
+	Manifest:                "manifest.yml", // default
+	MtaDeployParameters:     "-f",           // default
+	DeployType:              "standard",     // default
+	CheckMissingCredentials: true,           // default
+}
+
 func TestCfDeployment(t *testing.T) {
 
 	defer func() {
@@ -67,20 +81,6 @@ func TestCfDeployment(t *testing.T) {
 	err := filesMock.Chdir("/home/me")
 	assert.NoError(t, err)
 	fileUtils = &filesMock
-
-	// everything below in the config map annotated with '//default' is a default in the metadata
-	// since we don't get injected these values during the tests we set it here.
-	defaultConfig := cloudFoundryDeployOptions{
-		Org:                     "myOrg",
-		Space:                   "mySpace",
-		Username:                "me",
-		Password:                "******",
-		APIEndpoint:             "https://examples.sap.com/cf",
-		Manifest:                "manifest.yml", // default
-		MtaDeployParameters:     "-f",           // default
-		DeployType:              "standard",     // default
-		CheckMissingCredentials: true,           // default
-	}
 
 	config := defaultConfig
 
@@ -986,7 +986,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	err := filesMock.Chdir("/home/me")
 	assert.NoError(t, err)
 	fileUtils = &filesMock
-	config := cloudFoundryDeployOptions{}
+	config := defaultConfig
 
 	_environ = func() []string {
 		return []string{
