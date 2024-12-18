@@ -40,6 +40,7 @@ type cloudFoundryDeployOptions struct {
 	MtaDeployParameters      string                 `json:"mtaDeployParameters,omitempty"`
 	MtaExtensionDescriptor   string                 `json:"mtaExtensionDescriptor,omitempty"`
 	MtaExtensionCredentials  map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
+	CheckMissingCredentials  bool                   `json:"checkMissingCredentials,omitempty"`
 	MtaPath                  string                 `json:"mtaPath,omitempty"`
 	Org                      string                 `json:"org,omitempty"`
 	Password                 string                 `json:"password,omitempty"`
@@ -245,6 +246,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.MtaDeployParameters, "mtaDeployParameters", `-f`, "Additional parameters passed to mta deployment command")
 	cmd.Flags().StringVar(&stepConfig.MtaExtensionDescriptor, "mtaExtensionDescriptor", os.Getenv("PIPER_mtaExtensionDescriptor"), "Defines additional extension descriptor file for deployment with the mtaDeployPlugin")
 
+	cmd.Flags().BoolVar(&stepConfig.CheckMissingCredentials, "checkMissingCredentials", true, "If this option is set to false, then Piper will not check for missing mta extension credentials in env vars. Use this option if you have large amount of mtaExtensionCredentials values.")
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the path to *.mtar for deployment with the mtaDeployPlugin")
 	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "Cloud Foundry target organization.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
@@ -487,6 +489,15 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionCredentials", Deprecated: true}},
+					},
+					{
+						Name:        "checkMissingCredentials",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name: "mtaPath",
