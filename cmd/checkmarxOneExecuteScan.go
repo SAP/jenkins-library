@@ -519,7 +519,7 @@ func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) 
 
 		log.Entry().Debug("Polling for status: sleeping...")
 
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 	}
 	if status == "Canceled" {
 		log.SetErrorCategory(log.ErrorCustom)
