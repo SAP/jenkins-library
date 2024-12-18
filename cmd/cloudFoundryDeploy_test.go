@@ -71,14 +71,15 @@ func TestCfDeployment(t *testing.T) {
 	// everything below in the config map annotated with '//default' is a default in the metadata
 	// since we don't get injected these values during the tests we set it here.
 	defaultConfig := cloudFoundryDeployOptions{
-		Org:                 "myOrg",
-		Space:               "mySpace",
-		Username:            "me",
-		Password:            "******",
-		APIEndpoint:         "https://examples.sap.com/cf",
-		Manifest:            "manifest.yml", // default
-		MtaDeployParameters: "-f",           // default
-		DeployType:          "standard",     // default
+		Org:                     "myOrg",
+		Space:                   "mySpace",
+		Username:                "me",
+		Password:                "******",
+		APIEndpoint:             "https://examples.sap.com/cf",
+		Manifest:                "manifest.yml", // default
+		MtaDeployParameters:     "-f",           // default
+		DeployType:              "standard",     // default
+		CheckMissingCredentials: true,           // default
 	}
 
 	config := defaultConfig
