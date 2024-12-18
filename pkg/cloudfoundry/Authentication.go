@@ -3,6 +3,8 @@ package cloudfoundry
 import (
 	"errors"
 	"fmt"
+	"runtime"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -11,14 +13,13 @@ import (
 // LoginCheck checks if user is logged in to Cloud Foundry with the receiver provided
 // to the function call.
 func (cf *CFUtils) LoginCheck(options LoginOptions) (bool, error) {
+	// TODO: options are not used ?
 	return cf.loggedIn, nil
 }
 
 // Login logs user in to Cloud Foundry via cf cli.
 // Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
 func (cf *CFUtils) Login(options LoginOptions) error {
-	var err error
-
 	_c := cf.Exec
 
 	if _c == nil {
@@ -29,37 +30,46 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password"))
 	}
 
-	var loggedIn bool
-
-	loggedIn, err = cf.LoginCheck(options)
-
-	if loggedIn == true {
-		return err
+	if cf.loggedIn {
+		return nil
 	}
 
-	if err == nil {
-		log.Entry().Info("Logging in to Cloud Foundry")
+	log.Entry().Info("Logging in to Cloud Foundry")
 
-		var cfLoginScript = append([]string{
-			"login",
-			"-a", options.CfAPIEndpoint,
-			"-o", options.CfOrg,
-			"-s", options.CfSpace,
-			"-u", options.Username,
-			"-p", options.Password,
-		}, options.CfLoginOpts...)
+	escapedUsername := escapeValuesForCLI(options.Username, getGOOS)
+	escapedPassword := escapeValuesForCLI(options.Password, getGOOS)
 
-		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
-
-		err = _c.RunExecutable("cf", cfLoginScript...)
+	cfLoginScript := []string{
+		"login",
+		"-a", options.CfAPIEndpoint,
+		"-o", options.CfOrg,
+		"-s", options.CfSpace,
+		"-u", escapedUsername,
+		"-p", escapedPassword,
 	}
 
+	cfLoginScript = append(cfLoginScript, options.CfLoginOpts...)
+
+	log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
+
+	err := _c.RunExecutable("cf", cfLoginScript...)
 	if err != nil {
 		return fmt.Errorf("Failed to login to Cloud Foundry: %w", err)
 	}
 	log.Entry().Info("Logged in successfully to Cloud Foundry..")
 	cf.loggedIn = true
 	return nil
+}
+
+func escapeValuesForCLI(password string, getGOOS func() string) string {
+	switch getGOOS() {
+	case "windows":
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `''`))
+	case "linux", "darwin":
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `'\''`))
+	default:
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(password, "'", `'\''`))
+	}
 }
 
 // Logout logs User out of Cloud Foundry
@@ -132,4 +142,8 @@ func (cf *CfUtilsMock) Logout() error {
 func (cf *CfUtilsMock) Cleanup() {
 	cf.LoginError = nil
 	cf.LogoutError = nil
+}
+
+func getGOOS() string {
+	return runtime.GOOS
 }
