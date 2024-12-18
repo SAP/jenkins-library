@@ -497,7 +497,7 @@ func handleMtaExtensionCredentials(config *cloudFoundryDeployOptions, extFile st
 			log.Entry().Debugf("Mta extension credentials handling: Variable '%s' is not used in file '%s'", name, extFile)
 		}
 	}
-	if len(missingCredentials) > 0 && config.checkMissingCredentials {
+	if len(missingCredentials) > 0 && config.CheckMissingCredentials {
 		missinCredsEnvVarKeyCompatible := []string{}
 		for _, missingKey := range missingCredentials {
 			missinCredsEnvVarKeyCompatible = append(missinCredsEnvVarKeyCompatible, toEnvVarKey(missingKey))
