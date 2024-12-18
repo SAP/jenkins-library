@@ -57,7 +57,7 @@ func (m manifestMock) WriteManifest() error {
 
 // everything below in the config map annotated with '//default' is a default in the metadata
 // since we don't get injected these values during the tests we set it here.
-defaultConfig := cloudFoundryDeployOptions{
+var defaultConfig = cloudFoundryDeployOptions{
 	Org:                     "myOrg",
 	Space:                   "mySpace",
 	Username:                "me",
