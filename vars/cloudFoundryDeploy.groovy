@@ -17,7 +17,7 @@ void call(Map parameters = [:]) {
     ]
 
     Map mtaExtensionCredentials = parameters.mtaExtensionCredentials ?: script.commonPipelineEnvironment.getStepConfiguration(STEP_NAME, stageName).mtaExtensionCredentials
-    Bool checkMissingCredentials = parameters.checkMissingCredentials ?: script.commonPipelineEnvironment.getStepConfiguration(STEP_NAME, stageName).checkMissingCredentials
+    boolean checkMissingCredentials = parameters.checkMissingCredentials ?: script.commonPipelineEnvironment.getStepConfiguration(STEP_NAME, stageName).checkMissingCredentials
 
     if (mtaExtensionCredentials) {
         if (checkMissingCredentials) {
