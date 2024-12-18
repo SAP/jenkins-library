@@ -139,6 +139,21 @@ spec:
           value: ${{params.baseUrl}}
         - name: CREDENTIALS_ID
           value: ${{params.credentialsId}}
+        - name: no_proxy
+          value: localhost,selenium,$no_proxy
+        - name: NO_PROXY
+          value: localhost,selenium,$NO_PROXY
+      workingDir: /home/node
   sidecars:
-    - name: selenium
-      image: selenium/standalone-chrome
+    - image: selenium/standalone-chrome
+      name: selenium
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /dev/shm
+          name: dev-shm
+      env:
+        - name: "NO_PROXY"
+          value: "localhost,selenium,$NO_PROXY"
+        - name: "no_proxy"
+          value: "localhost,selenium,$no_proxy"
