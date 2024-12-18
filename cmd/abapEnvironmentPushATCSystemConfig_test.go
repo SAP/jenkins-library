@@ -28,8 +28,8 @@ func TestFetchXcsrfTokenFromHead(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		token, error := fetchXcsrfTokenFromHead(con, client)
-		if error == nil {
+		token, err := fetchXcsrfTokenFromHead(con, client)
+		if err == nil {
 			assert.Equal(t, tokenExpected, token)
 		}
 	})
@@ -46,8 +46,8 @@ func TestFetchXcsrfTokenFromHead(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		token, error := fetchXcsrfTokenFromHead(con, client)
-		if error == nil {
+		token, err := fetchXcsrfTokenFromHead(con, client)
+		if err == nil {
 			assert.Equal(t, tokenExpected, token)
 		}
 	})
@@ -77,39 +77,39 @@ func TestHandleHttpResponse(t *testing.T) {
 --B772E21DAA42B9571C778276B829D6C20
 Content-Type: multipart/mixed; boundary=B772E21DAA42B9571C778276B829D6C21
 Content-Length:         1973
-		
+
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 646
 content-transfer-encoding: binary
 content-id: 1
-		
+
 HTTP/1.1 200 OK
 Content-Type: application/json;odata.metadata=minimal;charset=utf-8
 Content-Length: 465
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
-		
+
 {"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
 content-transfer-encoding: binary
 content-id: 2
-		
+
 HTTP/1.1 200 OK
 Content-Type: application/json;odata.metadata=minimal;charset=utf-8
 Content-Length: 247
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
-		
+
 {"@odata.context":"$metadata#priority/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","test":"CL_CI_ARS_COMPATIBILITY_CHECK","message_id":"010","default_priority":1,"priority":2}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
 content-transfer-encoding: binary
 content-id: 3
-		
+
 HTTP/1.1 4** OK
 Content-Type: application/json;odata.metadata=minimal;charset=utf-8
 Content-Length: 247
@@ -118,7 +118,7 @@ cache-control: no-cache, no-store, must-revalidate
 
 {"Some Error Messages possible in here!"}
 --B772E21DAA42B9571C778276B829D6C21--
-		
+
 --B772E21DAA42B9571C778276B829D6C20--`
 
 		client := &abaputils.ClientMock{
@@ -150,39 +150,39 @@ cache-control: no-cache, no-store, must-revalidate
 --B772E21DAA42B9571C778276B829D6C20
 Content-Type: multipart/mixed; boundary=B772E21DAA42B9571C778276B829D6C21
 Content-Length:         1973
-		
+
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 646
 content-transfer-encoding: binary
 content-id: 1
-		
+
 HTTP/1.1 200 OK
 Content-Type: application/json;odata.metadata=minimal;charset=utf-8
 Content-Length: 465
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
-		
+
 {"@odata.context":"$metadata#configuration/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","conf_name":"Z_CONFIG_VIA_PIPELINE_STEP","checkvariant":"ABAP_CLOUD_DEVELOPMENT_DEFAULT","pseudo_comment_policy":"SP","last_changed_by":"CC0000000017","last_changed_at":"2022-03-02T11:16:51.336172Z","block_findings":"0","inform_findings":"1","transport_check_policy":"C","check_tasks":true,"check_requests":false,"check_tocs":true,"is_default":false,"is_proxy_variant":false,"SAP__Messages":[]}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
 content-transfer-encoding: binary
 content-id: 2
-		
+
 HTTP/1.1 200 OK
 Content-Type: application/json;odata.metadata=minimal;charset=utf-8
 Content-Length: 247
 odata-version: 4.0
 cache-control: no-cache, no-store, must-revalidate
-		
+
 {"@odata.context":"$metadata#priority/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","test":"CL_CI_ARS_COMPATIBILITY_CHECK","message_id":"010","default_priority":1,"priority":2}
 --B772E21DAA42B9571C778276B829D6C21
 Content-Type: application/http
 Content-Length: 428
 content-transfer-encoding: binary
 content-id: 3
-		
+
 HTTP/1.1 200 OK
 Content-Type: application/json;odata.metadata=minimal;charset=utf-8
 Content-Length: 247
@@ -191,7 +191,7 @@ cache-control: no-cache, no-store, must-revalidate
 
 {"@odata.context":"$metadata#priority/$entity","@odata.metadataEtag":"W/\"20220211135922\"","root_id":"1","conf_id":"aef8f52b-fe16-1edc-a3fe-27a1e0226c7b","test":"CL_CI_ARS_COMPATIBILITY_CHECK","message_id":"011","default_priority":2,"priority":1}
 --B772E21DAA42B9571C778276B829D6C21--
-		
+
 --B772E21DAA42B9571C778276B829D6C20--`
 
 		client := &abaputils.ClientMock{
@@ -328,7 +328,7 @@ Content-Type: application/json
 			"transport_check_policy": "C",
 			"check_tasks": true,
 			"check_requests": false,
-			"check_tocs": true,	
+			"check_tocs": true,
 			"_priorities": [
 				{
 					"test": "CL_CI_TEST_AMDP_HDB_MIGRATION",

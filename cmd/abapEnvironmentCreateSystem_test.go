@@ -32,7 +32,7 @@ func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
 		err := runAbapEnvironmentCreateSystem(&config, nil, cf, u)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{
-				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "'testUser'", "-p", "'testPassword'"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", config.CfService, config.CfServicePlan, config.CfServiceInstance, "-c", "{\"is_development_allowed\":false}", "--wait"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
@@ -79,7 +79,7 @@ func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
 		err = runAbapEnvironmentCreateSystem(&config, nil, cf, u)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{
-				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "'testUser'", "-p", "'testPassword'"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "customManifest.yml"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
