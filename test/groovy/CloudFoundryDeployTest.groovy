@@ -45,6 +45,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             juStabUtils            : utils,
             useGoStep              : true,
             mtaExtensionCredentials: [myCred: 'Mta.ExtensionCredential~Credential_Id1'],
+            checkMissingCredentials: true,
         ])
 
         assertEquals('cloudFoundryDeploy', calledStep)
@@ -74,7 +75,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[cloudFoundryDeploy:[
-            mtaExtensionCredentials: [myCred: 'Mta.ExtensionCredential~Credential_Id1']
+            mtaExtensionCredentials: [myCred: 'Mta.ExtensionCredential~Credential_Id1'],
+            checkMissingCredentials: true,
         ]]]
 
         stepRule.step.cloudFoundryDeploy([
