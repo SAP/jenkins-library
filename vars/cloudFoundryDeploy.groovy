@@ -17,11 +17,14 @@ void call(Map parameters = [:]) {
     ]
 
     Map mtaExtensionCredentials = parameters.mtaExtensionCredentials ?: script.commonPipelineEnvironment.getStepConfiguration(STEP_NAME, stageName).mtaExtensionCredentials
+    Bool checkMissingCredentials = parameters.checkMissingCredentials ?: script.commonPipelineEnvironment.getStepConfiguration(STEP_NAME, stageName).checkMissingCredentials
 
     if (mtaExtensionCredentials) {
-        mtaExtensionCredentials.each { key, credentialsId ->
+        if checkMissingCredentials {
+            mtaExtensionCredentials.each { key, credentialsId ->
             echo "[INFO]${STEP_NAME}] Preparing credential for being used by piper-go. key: ${key}, credentialsId is: ${credentialsId}, exposed as environment variable ${toEnvVarKey(credentialsId)}"
             credentials << [type: 'token', id: credentialsId, env: [toEnvVarKey(credentialsId)], resolveCredentialsId: false]
+            }
         }
     }
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)

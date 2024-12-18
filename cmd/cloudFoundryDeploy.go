@@ -436,7 +436,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		if err != nil {
 			return fmt.Errorf("Cannot prepare mta extension files: %w", err)
 		}
-		_, _, err = handleMtaExtensionCredentials(extFile, config.MtaExtensionCredentials)
+		_, _, err = handleMtaExtensionCredentials(config, extFile, config.MtaExtensionCredentials)
 		if err != nil {
 			return fmt.Errorf("Cannot handle credentials inside mta extension files: %w", err)
 		}
@@ -456,7 +456,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	return err
 }
 
-func handleMtaExtensionCredentials(extFile string, credentials map[string]interface{}) (updated, containsUnresolved bool, err error) {
+func handleMtaExtensionCredentials(config *cloudFoundryDeployOptions, extFile string, credentials map[string]interface{}) (updated, containsUnresolved bool, err error) {
 
 	log.Entry().Debugf("Inserting credentials into extension file '%s'", extFile)
 
@@ -497,7 +497,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 			log.Entry().Debugf("Mta extension credentials handling: Variable '%s' is not used in file '%s'", name, extFile)
 		}
 	}
-	if len(missingCredentials) > 0 {
+	if len(missingCredentials) > 0 && config.checkMissingCredentials {
 		missinCredsEnvVarKeyCompatible := []string{}
 		for _, missingKey := range missingCredentials {
 			missinCredsEnvVarKeyCompatible = append(missinCredsEnvVarKeyCompatible, toEnvVarKey(missingKey))
