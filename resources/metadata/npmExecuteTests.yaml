@@ -139,3 +139,6 @@ spec:
           value: ${{params.baseUrl}}
         - name: CREDENTIALS_ID
           value: ${{params.credentialsId}}
+  sidecars:
+    - name: selenium
+      image: selenium/standalone-chrome
