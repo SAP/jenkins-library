@@ -134,7 +134,7 @@ spec:
           buildEnvVars:
             foo: bar
           ```
-          **Note**: If used in conjunction with the [expandBuildEnvVars](#expandBuildEnvVars) property. Environment variables used will be expanded.
+          **Note**: If used in conjunction with the [expandBuildEnvVars](#expandBuildEnvVars) property, environment variables used will be expanded.
         scope:
           - PARAMETERS
           - STAGES
