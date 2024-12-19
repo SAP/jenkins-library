@@ -41,11 +41,6 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		if err := os.Chdir(config.WorkingDirectory); err != nil {
 			return fmt.Errorf("failed to change directory: %w", err)
 		}
-		c, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current directory: %w", err)
-		}
-		log.Entry().Infof("current directory: %s", c)
 	}
 
 	installCommandTokens := strings.Fields(config.InstallCommand)
@@ -71,8 +66,6 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 }
 
 func runTestForUrl(url, username, password string, config *npmExecuteTestsOptions, command command.ExecRunner) error {
-	log.Entry().Infof("Running end to end tests for URL: %s", url)
-
 	credentialsToEnv(username, password, config.UsernameEnvVar, config.PasswordEnvVar, command)
 	runScriptTokens := strings.Fields(config.RunCommand)
 	if config.UrlOptionPrefix != "" {
@@ -111,7 +104,6 @@ func parseURLs(urls []map[string]interface{}) ([]vaultUrl, error) {
 
 func credentialsToEnv(username, password, usernameEnv, passwordEnv string, c command.ExecRunner) {
 	if username == "" || password == "" {
-		log.Entry().Warnf("Missing credentials: username: %s, password: %s", username, password)
 		return
 	}
 	c.SetEnv([]string{usernameEnv + "=" + username, passwordEnv + "=" + password})
