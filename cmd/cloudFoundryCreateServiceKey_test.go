@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package cmd
 
@@ -30,8 +29,8 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 		cfUtilsMock := cloudfoundry.CfUtilsMock{}
 		defer cfUtilsMock.Cleanup()
 
-		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
-		if error == nil {
+		err := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
+		if err == nil {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
 			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey"}, execRunner.Calls[0].Params)
 		}
@@ -52,8 +51,7 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 		cfUtilsMock := cloudfoundry.CfUtilsMock{}
 		defer cfUtilsMock.Cleanup()
 
-		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
-		if error == nil {
+		if err := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock); err == nil {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
 			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "testconfig.yml"}, execRunner.Calls[0].Params)
 		}
@@ -74,8 +72,7 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 		cfUtilsMock := cloudfoundry.CfUtilsMock{}
 		defer cfUtilsMock.Cleanup()
 
-		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
-		if error == nil {
+		if err := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock); err == nil {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
 			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}", cfCliSynchronousRequestFlag}, execRunner.Calls[0].Params)
 		}
@@ -103,8 +100,8 @@ func TestCloudFoundryCreateServiceKeyErrorMessages(t *testing.T) {
 		}
 		defer cfUtilsMock.Cleanup()
 
-		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
-		assert.Equal(t, error.Error(), "Error while logging in occurred: "+errorMessage, "Wrong error message")
+		err := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
+		assert.Equal(t, err.Error(), "Error while logging in occurred: "+errorMessage, "Wrong error message")
 	})
 
 	t.Run("CF Logout Error", func(t *testing.T) {
@@ -152,7 +149,7 @@ func TestCloudFoundryCreateServiceKeyErrorMessages(t *testing.T) {
 		}
 		defer cfUtilsMock.Cleanup()
 
-		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
-		assert.Equal(t, error.Error(), "Failed to Create Service Key: "+errorMessage, "Wrong error message")
+		err := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
+		assert.Equal(t, err.Error(), "Failed to Create Service Key: "+errorMessage, "Wrong error message")
 	})
 }
