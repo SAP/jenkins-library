@@ -356,6 +356,9 @@ func npmExecuteTestsMetadata() config.StepData {
 			Containers: []config.Container{
 				{Name: "node", Image: "node:lts-bookworm", EnvVars: []config.EnvVar{{Name: "BASE_URL", Value: "${{params.baseUrl}}"}, {Name: "CREDENTIALS_ID", Value: "${{params.credentialsId}}"}}},
 			},
+			Sidecars: []config.Container{
+				{},
+			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{

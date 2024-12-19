@@ -139,3 +139,6 @@ spec:
           value: ${{params.baseUrl}}
         - name: CREDENTIALS_ID
           value: ${{params.credentialsId}}
+  # This declaration is necessary in order to return any sidecar configuration in the context config.
+  sidecars:
+    - name: ""
