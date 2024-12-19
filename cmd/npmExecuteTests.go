@@ -67,6 +67,9 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 
 func runTestForUrl(url, username, password string, config *npmExecuteTestsOptions, command command.ExecRunner) error {
 	credentialsToEnv(username, password, config.UsernameEnvVar, config.PasswordEnvVar, command)
+	// we need to reset the env vars as the next test might not have any credentials
+	defer resetCredentials(config.UsernameEnvVar, config.PasswordEnvVar, command)
+
 	runScriptTokens := strings.Fields(config.RunCommand)
 	if config.UrlOptionPrefix != "" {
 		runScriptTokens = append(runScriptTokens, config.UrlOptionPrefix+url)
@@ -75,8 +78,6 @@ func runTestForUrl(url, username, password string, config *npmExecuteTestsOption
 		return fmt.Errorf("failed to execute npm script: %w", err)
 	}
 
-	// we need to reset the env vars as the next test might not have any credentials
-	resetCredentials(config.UsernameEnvVar, config.PasswordEnvVar, command)
 	return nil
 }
 
