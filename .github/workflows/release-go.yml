@@ -13,7 +13,7 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.11.0
+      - uses: styfle/cancel-workflow-action@0.12.1
 
       - uses: actions/checkout@v4
 
