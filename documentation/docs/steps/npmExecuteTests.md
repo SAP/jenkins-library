@@ -109,3 +109,18 @@ stages:
           paths:
             - "~/.npm-global/bin"
 ```
+
+### Using Selenium Grid
+
+If your tests rely on Selenium Grid, you can specify it as a sidecar:
+
+```yaml
+stages:
+  - name: Test
+    steps:
+      - name: npmExecuteTests
+        type: npmExecuteTests
+        sidecars:
+          - name: selenium
+            image: selenium/standalone-chrome
+```
