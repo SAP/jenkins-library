@@ -29,9 +29,9 @@ func TestHostConfig(t *testing.T) {
 			Exec: execRunner,
 		}
 		var con abaputils.ConnectionDetailsHTTP
-		con, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
+		con, error := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 
-		if err == nil {
+		if error == nil {
 			assert.Equal(t, "testUser", con.User)
 			assert.Equal(t, "testPassword", con.Password)
 			assert.Equal(t, "https://api.endpoint.com", con.URL)
@@ -82,8 +82,8 @@ func TestHostConfig(t *testing.T) {
 			Exec: execRunner,
 		}
 		var con abaputils.ConnectionDetailsHTTP
-		con, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
-		if err == nil {
+		con, error := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
+		if error == nil {
 			assert.Equal(t, "", con.User)
 			assert.Equal(t, "", con.Password)
 			assert.Equal(t, "", con.URL)
@@ -106,8 +106,8 @@ func TestATCTrigger(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		resp, err := runATC("GET", con, []byte(client.Body), client)
-		if err == nil {
+		resp, error := runATC("GET", con, []byte(client.Body), client)
+		if error == nil {
 			assert.Equal(t, tokenExpected, resp.Header["X-Csrf-Token"][0])
 			assert.Equal(t, int64(0), resp.ContentLength)
 			assert.Equal(t, []string([]string(nil)), resp.Header["Location"])
@@ -129,8 +129,8 @@ func TestFetchXcsrfToken(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		token, err := fetchXcsrfToken("GET", con, []byte(client.Body), client)
-		if err == nil {
+		token, error := fetchXcsrfToken("GET", con, []byte(client.Body), client)
+		if error == nil {
 			assert.Equal(t, tokenExpected, token)
 		}
 	})
@@ -147,8 +147,8 @@ func TestFetchXcsrfToken(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		token, err := fetchXcsrfToken("GET", con, []byte(client.Body), client)
-		if err == nil {
+		token, error := fetchXcsrfToken("GET", con, []byte(client.Body), client)
+		if error == nil {
 			assert.Equal(t, tokenExpected, token)
 		}
 	})
