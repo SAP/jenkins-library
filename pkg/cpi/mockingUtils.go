@@ -309,9 +309,9 @@ func IntegrationDesigntimeArtifactUpdateMockResponse(testType string) (*http.Res
 // GetMockResponseByTestTypeAndMockFunctionName - Get mock response by testtype and mock function name
 func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType string) (*http.Response, error) {
 
-	response, err := GetPositiveCaseResponseByTestType(testType)
+	response, error := GetPositiveCaseResponseByTestType(testType)
 
-	if response == nil && err == nil {
+	if response == nil && error == nil {
 
 		switch mockFuntionName {
 
@@ -355,7 +355,7 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 			return &res, errors.New("Unable to get integration artifact deploy error status, Response Status code:400")
 		}
 	}
-	return response, err
+	return response, error
 }
 
 // NegtiveResForIntegrationArtifactGenericCommandMockResponse -Nagative Case http response body
@@ -377,9 +377,9 @@ func NegtiveResForIntegrationArtifactGenericCommandMockResponse(message string) 
 // UpdateIntegrationDesigntimeArtifactMockResponse -Provide http respose body
 func UpdateIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Response, error) {
 
-	response, err := GetRespBodyHTTPStatusCreated()
+	response, error := GetRespBodyHTTPStatusCreated()
 
-	if response == nil && err == nil {
+	if response == nil && error == nil {
 
 		res := http.Response{
 			StatusCode: 400,
@@ -393,7 +393,7 @@ func UpdateIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Res
 		}
 		return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
 	}
-	return response, err
+	return response, error
 }
 
 // IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody -Provide http respose body for positive case

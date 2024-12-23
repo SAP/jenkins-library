@@ -1,4 +1,5 @@
 //go:build unit
+// +build unit
 
 package cloudfoundry
 
@@ -86,8 +87,8 @@ func TestCloudFoundryLogin(t *testing.T) {
 					"-a", "https://api.endpoint.com",
 					"-o", "testOrg",
 					"-s", "testSpace",
-					"-u", "'testUser'",
-					"-p", "'testPassword'",
+					"-u", "testUser",
+					"-p", "testPassword",
 				}},
 			}, m.Calls)
 		}
@@ -116,8 +117,8 @@ func TestCloudFoundryLogin(t *testing.T) {
 					"-a", "https://api.endpoint.com",
 					"-o", "testOrg",
 					"-s", "testSpace",
-					"-u", "'testUser'",
-					"-p", "'testPassword'",
+					"-u", "testUser",
+					"-p", "testPassword",
 				}},
 			}, m.Calls)
 		}
@@ -149,8 +150,8 @@ func TestCloudFoundryLogin(t *testing.T) {
 					"-a", "https://api.endpoint.com",
 					"-o", "testOrg",
 					"-s", "testSpace",
-					"-u", "'testUser'",
-					"-p", "'testPassword'",
+					"-u", "testUser",
+					"-p", "testPassword",
 					"--skip-ssl-validation",
 					"--origin", "ldap",
 				}},
@@ -183,7 +184,7 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 		const password = "test_password"
 		const serviceKey = `
 		cf comment test \n\n
-		{"sap.cloud.service":"com.sap.cloud.abap","url": "` + testURL + `" ,"systemid":"H01","abap":{"username":"'` + username + `'","password":"'` + password + `'","communication_scenario_id": "SAP_COM_0510","communication_arrangement_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_system_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_inbound_user_id": "CC0000000001","communication_inbound_user_auth_mode": "2"},"binding":{"env": "cf","version": "0.0.1.1","type": "basic","id": "i6cBiRfZppJdKynaTqa32W"},"preserve_host_header": true}`
+		{"sap.cloud.service":"com.sap.cloud.abap","url": "` + testURL + `" ,"systemid":"H01","abap":{"username":"` + username + `","password":"` + password + `","communication_scenario_id": "SAP_COM_0510","communication_arrangement_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_system_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_inbound_user_id": "CC0000000001","communication_inbound_user_auth_mode": "2"},"binding":{"env": "cf","version": "0.0.1.1","type": "basic","id": "i6cBiRfZppJdKynaTqa32W"},"preserve_host_header": true}`
 
 		m.StdoutReturn = map[string]string{"cf service-key testInstance testServiceKeyName": serviceKey}
 
@@ -212,13 +213,13 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 					"-a", "https://api.endpoint.com",
 					"-o", "testOrg",
 					"-s", "testSpace",
-					"-u", "'testUser'",
-					"-p", "'testPassword'",
+					"-u", "testUser",
+					"-p", "testPassword",
 				}},
 				{Exec: "cf", Params: []string{"service-key", "testInstance", "testServiceKeyName"}},
 				{Exec: "cf", Params: []string{"logout"}},
 			}, m.Calls)
 		}
-		assert.Equal(t, `		{"sap.cloud.service":"com.sap.cloud.abap","url": "`+testURL+`" ,"systemid":"H01","abap":{"username":"'`+username+`'","password":"'`+password+`'","communication_scenario_id": "SAP_COM_0510","communication_arrangement_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_system_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_inbound_user_id": "CC0000000001","communication_inbound_user_auth_mode": "2"},"binding":{"env": "cf","version": "0.0.1.1","type": "basic","id": "i6cBiRfZppJdKynaTqa32W"},"preserve_host_header": true}`, abapServiceKey)
+		assert.Equal(t, `		{"sap.cloud.service":"com.sap.cloud.abap","url": "`+testURL+`" ,"systemid":"H01","abap":{"username":"`+username+`","password":"`+password+`","communication_scenario_id": "SAP_COM_0510","communication_arrangement_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_system_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_inbound_user_id": "CC0000000001","communication_inbound_user_auth_mode": "2"},"binding":{"env": "cf","version": "0.0.1.1","type": "basic","id": "i6cBiRfZppJdKynaTqa32W"},"preserve_host_header": true}`, abapServiceKey)
 	})
 }

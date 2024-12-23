@@ -396,8 +396,8 @@ func (api *SAP_COM_0510) getLogProtocolQuery(page int) string {
 // ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp and returns it
 func (api *SAP_COM_0510) ConvertTime(logTimeStamp string) time.Time {
 	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
-	n, err := strconv.ParseInt(seconds, 10, 64)
-	if err != nil {
+	n, error := strconv.ParseInt(seconds, 10, 64)
+	if error != nil {
 		return time.Unix(0, 0).UTC()
 	}
 	t := time.Unix(n, 0).UTC()
