@@ -85,7 +85,6 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
 
                                         // Set ulimit for stack size to avoid "fork/exec argument list too long" error
                                         sh "ulimit -n 65536"
-                                        sh "ulimit -u 8192"
                                         sh "ulimit -s 32768"
 
                                         echo "New limits after setting ulimit:"
