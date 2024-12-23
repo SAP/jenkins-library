@@ -16,7 +16,7 @@ require (
 	github.com/bndr/gojenkins v1.1.1-0.20240109173050-c316119c46d5
 	github.com/buildpacks/lifecycle v0.18.5
 	github.com/cloudevents/sdk-go/v2 v2.15.2
-	github.com/docker/cli v27.1.0+incompatible
+	github.com/docker/cli v27.4.1+incompatible
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/evanphx/json-patch v5.7.0+incompatible
 	github.com/getsentry/sentry-go v0.26.0
