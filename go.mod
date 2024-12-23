@@ -54,7 +54,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.33.0
 	github.com/xuri/excelize/v2 v2.4.1
-	golang.org/x/mod v0.17.0
+	golang.org/x/mod v0.22.0
 	golang.org/x/oauth2 v0.18.0
 	golang.org/x/text v0.16.0
 	google.golang.org/api v0.169.0
@@ -248,9 +248,9 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	golang.org/x/crypto v0.25.0
-	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
+	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
 	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.10.0
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
