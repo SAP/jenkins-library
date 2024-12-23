@@ -81,16 +81,20 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                                     if (config.dockerImage == "ppiper/cf-cli:latest") {
                                         echo "Current limits:"
                                         sh "xargs --show-limits </dev/null"
+                                        sh "getconf ARG_MAX"
 
                                         // Set ulimit for stack size to avoid "fork/exec argument list too long" error
-                                        sh "ulimit -S -s unlimited"
+                                        sh "ulimit -n 65536"
+                                        sh "ulimit -u 8192"
+                                        sh "ulimit -s 32768"
 
                                         echo "New limits after setting ulimit:"
                                         sh "xargs --show-limits </dev/null"
+                                        sh "getconf ARG_MAX"
                                     }
 
                                     // Execute the main command
-                                    echo "Running command: ${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                                    echo "[DEBUG] Running command: ${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                                     sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                                 }
                             } finally {
