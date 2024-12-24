@@ -296,6 +296,15 @@ spec:
         aliases:
           - name: cloudFoundry/mtaExtensionCredentials
             deprecated: true
+      - name: checkMissingCredentials
+        type: bool
+        description: "If this option is set to false, then Piper will not check for missing mta extension credentials in env vars. Use this option if you have large amount of mtaExtensionCredentials values."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: true
       - name: mtaPath
         type: string
         description: "Defines the path to *.mtar for deployment with the mtaDeployPlugin"

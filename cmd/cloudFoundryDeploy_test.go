@@ -55,6 +55,20 @@ func (m manifestMock) WriteManifest() error {
 	return nil
 }
 
+// everything below in the config map annotated with '//default' is a default in the metadata
+// since we don't get injected these values during the tests we set it here.
+var defaultConfig = cloudFoundryDeployOptions{
+	Org:                     "myOrg",
+	Space:                   "mySpace",
+	Username:                "me",
+	Password:                "******",
+	APIEndpoint:             "https://examples.sap.com/cf",
+	Manifest:                "manifest.yml", // default
+	MtaDeployParameters:     "-f",           // default
+	DeployType:              "standard",     // default
+	CheckMissingCredentials: true,           // default
+}
+
 func TestCfDeployment(t *testing.T) {
 
 	defer func() {
@@ -67,19 +81,6 @@ func TestCfDeployment(t *testing.T) {
 	err := filesMock.Chdir("/home/me")
 	assert.NoError(t, err)
 	fileUtils = &filesMock
-
-	// everything below in the config map annotated with '//default' is a default in the metadata
-	// since we don't get injected these values during the tests we set it here.
-	defaultConfig := cloudFoundryDeployOptions{
-		Org:                 "myOrg",
-		Space:               "mySpace",
-		Username:            "me",
-		Password:            "******",
-		APIEndpoint:         "https://examples.sap.com/cf",
-		Manifest:            "manifest.yml", // default
-		MtaDeployParameters: "-f",           // default
-		DeployType:          "standard",     // default
-	}
 
 	config := defaultConfig
 
@@ -985,6 +986,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	err := filesMock.Chdir("/home/me")
 	assert.NoError(t, err)
 	fileUtils = &filesMock
+	config := defaultConfig
 
 	_environ = func() []string {
 		return []string{
@@ -999,7 +1001,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	}()
 
 	t.Run("extension file does not exist", func(t *testing.T) {
-		_, _, err := handleMtaExtensionCredentials("mtaextDoesNotExist.mtaext", map[string]interface{}{})
+		_, _, err := handleMtaExtensionCredentials(&config, "mtaextDoesNotExist.mtaext", map[string]interface{}{})
 		assert.EqualError(t, err, "Cannot handle credentials for mta extension file 'mtaextDoesNotExist.mtaext': could not read 'mtaextDoesNotExist.mtaext'")
 	})
 
@@ -1013,6 +1015,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 					test-credentials1: "<%= testCred1 %>"
 					test-credentials2: "<%=testCred2%>"`))
 		_, _, err := handleMtaExtensionCredentials(
+			&config,
 			"mtaext.mtaext",
 			map[string]interface{}{
 				"testCred1": "myCredEnvVar1NotDefined",
@@ -1032,6 +1035,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 					test-credentials1: "<%= testCred1 %>"
 					test-credentials2: "<%=testCred2%>`))
 		_, _, err := handleMtaExtensionCredentials(
+			&config,
 			"mtaext.mtaext",
 			map[string]interface{}{
 				"testCred1":       "myCredEnvVar1",
@@ -1050,7 +1054,9 @@ func TestMtaExtensionCredentials(t *testing.T) {
 				parameters
 					test-credentials1: "<%= testCred1 %>"
 					test-credentials2: "<%=testCred2%>`))
-		_, _, err := handleMtaExtensionCredentials("mtaext.mtaext",
+		_, _, err := handleMtaExtensionCredentials(
+			&config,
+			"mtaext.mtaext",
 			map[string]interface{}{
 				"test.*Cred1": "myCredEnvVar1",
 			},
@@ -1061,7 +1067,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 	t.Run("unresolved placeholders does not cause an error", func(t *testing.T) {
 		// we emit a log message, but it does not fail
 		filesMock.AddFile("mtaext-unresolved.mtaext", []byte("<%= unresolved %>"))
-		updated, containsUnresolved, err := handleMtaExtensionCredentials("mtaext-unresolved.mtaext", map[string]interface{}{})
+		updated, containsUnresolved, err := handleMtaExtensionCredentials(&config, "mtaext-unresolved.mtaext", map[string]interface{}{})
 		assert.True(t, containsUnresolved)
 		assert.False(t, updated)
 		assert.NoError(t, err)
@@ -1080,6 +1086,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 				test-credentials4: "<%=testCred2 %>"
 				test-credentials5: "<%=  testCred2    %>"`))
 		updated, containsUnresolved, err := handleMtaExtensionCredentials(
+			&config,
 			mtaFileName,
 			map[string]interface{}{
 				"testCred1": "myCredEnvVar1",
