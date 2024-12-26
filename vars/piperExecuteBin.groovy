@@ -78,22 +78,14 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         try {
                             try {
                                 credentialWrapper(config, credentialInfo) {
-                                    if (config.dockerImage == "ppiper/cf-cli:latest") {
-                                        echo "Current limits:"
-                                        sh "xargs --show-limits </dev/null"
-                                        sh "getconf ARG_MAX"
-
-                                        // Set ulimit for stack size to avoid "fork/exec argument list too long" error
-                                        sh "ulimit -n 65536"
-                                        sh "ulimit -s 32768"
-
-                                        echo "New limits after setting ulimit:"
-                                        sh "xargs --show-limits </dev/null"
-                                        sh "getconf ARG_MAX"
+                                    if (config.verbose) {
+                                        echo "[DEBUG] Verbose mode activated"
                                     }
+                                    echo "[DEBUG] Current environment limits:"
+                                    sh "xargs --show-limits </dev/null"
+                                    sh "getconf ARG_MAX"
+                                    sh "ulimit -a"
 
-                                    // Execute the main command
-                                    echo "[DEBUG] Running command: ${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                                     sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                                 }
                             } finally {
