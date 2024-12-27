@@ -565,7 +565,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cfDeploy", Image: "ppiper/cf-cli:latest"},
+				{Name: "cfDeploy", Image: "ppiper/cf-cli:latest", Options: []config.Option{{Name: "--ulimit", Value: "stack=67108864:67108864"}, {Name: "--ulimit", Value: "nofile=65536:65536"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
