@@ -78,12 +78,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         try {
                             try {
                                 credentialWrapper(config, credentialInfo) {
-                                    if (config.verbose) {
-                                        echo "[DEBUG] Verbose mode activated"
-                                    }
                                     echo "[DEBUG] Current environment limits:"
-                                    sh "xargs --show-limits </dev/null"
-                                    sh "getconf ARG_MAX"
                                     sh "ulimit -a"
 
                                     sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
