@@ -1,4 +1,5 @@
 //go:build unit
+// +build unit
 
 package abaputils
 
@@ -72,7 +73,6 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.Error(t, err)
 		assert.EqualError(t, err, "Read service key failed: Parsing the service key failed for all supported formats. Service key is empty")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Success V8", func(t *testing.T) {
