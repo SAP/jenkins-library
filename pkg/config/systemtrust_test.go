@@ -9,14 +9,14 @@ import (
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/trustengine"
+	"github.com/SAP/jenkins-library/pkg/systemtrust"
 	"github.com/jarcoal/httpmock"
 
 	"github.com/stretchr/testify/assert"
 )
 
 const secretName = "sonar"
-const secretNameInTrustEngine = "sonarTrustengineSecretName"
+const secretNameInSystemTrust = "sonarTrustengineSecretName"
 const testServerURL = "https://www.project-piper.io"
 const testTokenEndPoint = "tokens"
 const testTokenQueryParamName = "systems"
@@ -25,14 +25,14 @@ const mockSonarToken = "mockSonarToken"
 var testFullURL = fmt.Sprintf("%s/%s?%s=", testServerURL, testTokenEndPoint, testTokenQueryParamName)
 var mockSingleTokenResponse = fmt.Sprintf("{\"sonar\": \"%s\"}", mockSonarToken)
 
-func TestTrustEngineConfig(t *testing.T) {
+func TestSystemTrustConfig(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterResponder(http.MethodGet, testFullURL+"sonar", httpmock.NewStringResponder(200, mockSingleTokenResponse))
 
-	stepParams := []StepParameters{createStepParam(secretName, RefTypeTrustengineSecret, secretNameInTrustEngine, secretName)}
+	stepParams := []StepParameters{createStepParam(secretName, RefTypeSystemTrustSecret, secretNameInSystemTrust, secretName)}
 
-	var trustEngineConfiguration = trustengine.Configuration{
+	var systemTrustConfiguration = systemtrust.Configuration{
 		Token:               "testToken",
 		ServerURL:           testServerURL,
 		TokenEndPoint:       testTokenEndPoint,
@@ -46,7 +46,7 @@ func TestTrustEngineConfig(t *testing.T) {
 			secretName: "",
 		}}
 
-		resolveAllTrustEngineReferences(stepConfig, stepParams, trustEngineConfiguration, client)
+		resolveAllTrustEngineReferences(stepConfig, stepParams, systemTrustConfiguration, client)
 		assert.Equal(t, mockSonarToken, stepConfig.Config[secretName])
 	})
 
@@ -55,19 +55,19 @@ func TestTrustEngineConfig(t *testing.T) {
 			secretName: "aMockTokenFromVault",
 		}}
 
-		resolveAllTrustEngineReferences(stepConfig, stepParams, trustEngineConfiguration, client)
+		resolveAllTrustEngineReferences(stepConfig, stepParams, systemTrustConfiguration, client)
 		assert.NotEqual(t, mockSonarToken, stepConfig.Config[secretName])
 	})
 }
 
-func createStepParam(name, refType, trustengineSecretNameProperty, defaultSecretNameName string) StepParameters {
+func createStepParam(name, refType, systemTrustSecretNameProperty, defaultSecretNameName string) StepParameters {
 	return StepParameters{
 		Name:    name,
 		Aliases: []Alias{},
 		ResourceRef: []ResourceReference{
 			{
 				Type:    refType,
-				Name:    trustengineSecretNameProperty,
+				Name:    systemTrustSecretNameProperty,
 				Default: defaultSecretNameName,
 			},
 		},

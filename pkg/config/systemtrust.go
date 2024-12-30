@@ -5,19 +5,19 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/trustengine"
+	"github.com/SAP/jenkins-library/pkg/systemtrust"
 )
 
 // const RefTypeTrustengineSecretFile = "trustengineSecretFile"
 const RefTypeTrustengineSecret = "trustengineSecret"
 
 // resolveAllTrustEngineReferences retrieves all the step's secrets from the System Trust
-func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration trustengine.Configuration, client *piperhttp.Client) {
+func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration systemtrust.Configuration, client *piperhttp.Client) {
 	for _, param := range params {
 		if ref := param.GetReference(RefTypeTrustengineSecret); ref != nil {
 			if config.Config[param.Name] == "" {
 				log.Entry().Infof("Getting '%s' from System Trust", param.Name)
-				token, err := trustengine.GetToken(ref.Default, client, trustEngineConfiguration)
+				token, err := systemtrust.GetToken(ref.Default, client, trustEngineConfiguration)
 				if err != nil {
 					log.Entry().Info(" failed")
 					log.Entry().WithError(err).Debugf("Couldn't get '%s' token from System Trust", ref.Default)
