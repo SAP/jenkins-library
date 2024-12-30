@@ -16,7 +16,7 @@ import (
 )
 
 const secretName = "sonar"
-const secretNameInSystemTrust = "sonarTrustengineSecretName"
+const secretNameInSystemTrust = "sonarSystemtrustSecretName"
 const testServerURL = "https://www.project-piper.io"
 const testTokenEndPoint = "tokens"
 const testTokenQueryParamName = "systems"
@@ -46,7 +46,7 @@ func TestSystemTrustConfig(t *testing.T) {
 			secretName: "",
 		}}
 
-		resolveAllTrustEngineReferences(stepConfig, stepParams, systemTrustConfiguration, client)
+		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfiguration, client)
 		assert.Equal(t, mockSonarToken, stepConfig.Config[secretName])
 	})
 
@@ -55,7 +55,7 @@ func TestSystemTrustConfig(t *testing.T) {
 			secretName: "aMockTokenFromVault",
 		}}
 
-		resolveAllTrustEngineReferences(stepConfig, stepParams, systemTrustConfiguration, client)
+		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfiguration, client)
 		assert.NotEqual(t, mockSonarToken, stepConfig.Config[secretName])
 	})
 }

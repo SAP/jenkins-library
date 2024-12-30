@@ -33,7 +33,7 @@ type Config struct {
 	accessTokens             map[string]string
 	openFile                 func(s string, t map[string]string) (io.ReadCloser, error)
 	vaultCredentials         VaultCredentials
-	trustEngineConfiguration systemtrust.Configuration
+	systemTrustConfiguration systemtrust.Configuration
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -295,12 +295,12 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	// hooks need to have been loaded from the defaults before the server URL is known
-	err = c.setTrustEngineConfiguration(stepConfig.HookConfig)
+	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
 	if err != nil {
 		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
 	} else {
-		trustengineClient := systemtrust.PrepareClient(&piperhttp.Client{}, c.trustEngineConfiguration)
-		resolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, trustengineClient)
+		systemTrustClient := systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
+		resolveAllSystemTrustReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.systemTrustConfiguration, systemTrustClient)
 	}
 
 	// finally do the condition evaluation post processing

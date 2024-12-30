@@ -8,16 +8,15 @@ import (
 	"github.com/SAP/jenkins-library/pkg/systemtrust"
 )
 
-// const RefTypeTrustengineSecretFile = "trustengineSecretFile"
-const RefTypeTrustengineSecret = "trustengineSecret"
+const RefTypeSystemTrustSecret = "systemTrustSecret"
 
-// resolveAllTrustEngineReferences retrieves all the step's secrets from the System Trust
-func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters, trustEngineConfiguration systemtrust.Configuration, client *piperhttp.Client) {
+// resolveAllSystemTrustReferences retrieves all the step's secrets from the System Trust
+func resolveAllSystemTrustReferences(config *StepConfig, params []StepParameters, systemTrustConfiguration systemtrust.Configuration, client *piperhttp.Client) {
 	for _, param := range params {
-		if ref := param.GetReference(RefTypeTrustengineSecret); ref != nil {
+		if ref := param.GetReference(RefTypeSystemTrustSecret); ref != nil {
 			if config.Config[param.Name] == "" {
 				log.Entry().Infof("Getting '%s' from System Trust", param.Name)
-				token, err := systemtrust.GetToken(ref.Default, client, trustEngineConfiguration)
+				token, err := systemtrust.GetToken(ref.Default, client, systemTrustConfiguration)
 				if err != nil {
 					log.Entry().Info(" failed")
 					log.Entry().WithError(err).Debugf("Couldn't get '%s' token from System Trust", ref.Default)
@@ -33,35 +32,35 @@ func resolveAllTrustEngineReferences(config *StepConfig, params []StepParameters
 	}
 }
 
-// setTrustEngineConfiguration sets the server URL for the System Trust by taking it from the hooks
-func (c *Config) setTrustEngineConfiguration(hookConfig map[string]interface{}) error {
-	trustEngineHook, ok := hookConfig["trustengine"].(map[string]interface{})
+// setSystemTrustConfiguration sets the server URL for the System Trust by taking it from the hooks
+func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}) error {
+	systemTrustHook, ok := hookConfig["systemtrust"].(map[string]interface{})
 	if !ok {
 		return errors.New("no System Trust hook configuration found")
 	}
-	if serverURL, ok := trustEngineHook["serverURL"].(string); ok {
-		c.trustEngineConfiguration.ServerURL = serverURL
+	if serverURL, ok := systemTrustHook["serverURL"].(string); ok {
+		c.systemTrustConfiguration.ServerURL = serverURL
 	} else {
 		return errors.New("no System Trust server URL found")
 	}
-	if tokenEndPoint, ok := trustEngineHook["tokenEndPoint"].(string); ok {
-		c.trustEngineConfiguration.TokenEndPoint = tokenEndPoint
+	if tokenEndPoint, ok := systemTrustHook["tokenEndPoint"].(string); ok {
+		c.systemTrustConfiguration.TokenEndPoint = tokenEndPoint
 	} else {
 		return errors.New("no System Trust service endpoint found")
 	}
-	if tokenQueryParamName, ok := trustEngineHook["tokenQueryParamName"].(string); ok {
-		c.trustEngineConfiguration.TokenQueryParamName = tokenQueryParamName
+	if tokenQueryParamName, ok := systemTrustHook["tokenQueryParamName"].(string); ok {
+		c.systemTrustConfiguration.TokenQueryParamName = tokenQueryParamName
 	} else {
 		return errors.New("no System Trust query parameter name found")
 	}
 
-	if len(c.trustEngineConfiguration.Token) == 0 {
+	if len(c.systemTrustConfiguration.Token) == 0 {
 		return errors.New("no System Trust token found and envvar is empty")
 	}
 	return nil
 }
 
-// SetTrustEngineToken sets the token for the System Trust
-func (c *Config) SetTrustEngineToken(token string) {
-	c.trustEngineConfiguration.Token = token
+// SetSystemTrustToken sets the token for the System Trust
+func (c *Config) SetSystemTrustToken(token string) {
+	c.systemTrustConfiguration.Token = token
 }
