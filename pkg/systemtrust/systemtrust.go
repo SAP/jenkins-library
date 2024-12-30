@@ -33,7 +33,7 @@ type Configuration struct {
 
 // GetToken requests a single token
 func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration Configuration) (string, error) {
-	secrets, err := GetSecrets([]string{refName}, client, systemTrustConfiguration)
+	secrets, err := getSecrets([]string{refName}, client, systemTrustConfiguration)
 	if err != nil {
 		return "", errors.Wrap(err, "couldn't get token from System Trust")
 	}
@@ -45,8 +45,8 @@ func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration
 	return "", errors.New("could not find token in System Trust response")
 }
 
-// GetSecrets transforms the System Trust JSON response into System Trust secrets, and can be used to request multiple tokens
-func GetSecrets(refNames []string, client *piperhttp.Client, systemTrustConfiguration Configuration) ([]Secret, error) {
+// getSecrets transforms the System Trust JSON response into System Trust secrets, and can be used to request multiple tokens
+func getSecrets(refNames []string, client *piperhttp.Client, systemTrustConfiguration Configuration) ([]Secret, error) {
 	var secrets []Secret
 	query := url.Values{
 		systemTrustConfiguration.TokenQueryParamName: {

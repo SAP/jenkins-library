@@ -51,7 +51,7 @@ func TestSystemTrust(t *testing.T) {
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
-		secrets, err := GetSecrets([]string{"sonar", "blackduck"}, client, systemTrustConfiguration)
+		secrets, err := getSecrets([]string{"sonar", "blackduck"}, client, systemTrustConfiguration)
 
 		assert.NoError(t, err)
 		assert.Len(t, secrets, 2)
