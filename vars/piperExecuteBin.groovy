@@ -78,6 +78,11 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         try {
                             try {
                                 credentialWrapper(config, credentialInfo) {
+                                    if (config.verbose) {  // need to be set on step config
+                                        echo "[DEBUG] Current environment limits:"
+                                        sh "ulimit -a"
+                                    }
+
                                     sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                                 }
                             } finally {
