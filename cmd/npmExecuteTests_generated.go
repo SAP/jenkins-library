@@ -354,10 +354,10 @@ func npmExecuteTestsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-bookworm", EnvVars: []config.EnvVar{{Name: "BASE_URL", Value: "${{params.baseUrl}}"}, {Name: "CREDENTIALS_ID", Value: "${{params.credentialsId}}"}}},
+				{Name: "node", Image: "node:lts-bookworm", EnvVars: []config.EnvVar{{Name: "BASE_URL", Value: "${{params.baseUrl}}"}, {Name: "CREDENTIALS_ID", Value: "${{params.credentialsId}}"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
 			},
 			Sidecars: []config.Container{
-				{},
+				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

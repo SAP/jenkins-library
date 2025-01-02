@@ -139,6 +139,21 @@ spec:
           value: ${{params.baseUrl}}
         - name: CREDENTIALS_ID
           value: ${{params.credentialsId}}
-  # This declaration is necessary in order to return any sidecar configuration in the context config.
+        - name: no_proxy
+          value: localhost,selenium,$no_proxy
+        - name: NO_PROXY
+          value: localhost,selenium,$NO_PROXY
+      workingDir: /home/node
   sidecars:
-    - name: ""
+    - image: selenium/standalone-chrome
+      name: selenium
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /dev/shm
+          name: dev-shm
+      env:
+        - name: "NO_PROXY"
+          value: "localhost,selenium,$NO_PROXY"
+        - name: "no_proxy"
+          value: "localhost,selenium,$no_proxy"
