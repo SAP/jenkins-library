@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -30,7 +31,6 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
@@ -529,7 +529,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 	groupingList := []*models.IssueSelector{}
 	if issueFilterSelectorSet.GroupBySet != nil {
 		for _, group := range issueFilterSelectorSet.GroupBySet {
-			if piperutils.ContainsString(names, *group.DisplayName) {
+			if slices.Contains(names, *group.DisplayName) {
 				log.Entry().Debugf("adding new grouping '%v' to reduced list", *group.DisplayName)
 				groupingList = append(groupingList, group)
 			}
@@ -538,7 +538,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 	filterList := []*models.IssueFilterSelector{}
 	if issueFilterSelectorSet.FilterBySet != nil {
 		for _, filter := range issueFilterSelectorSet.FilterBySet {
-			if piperutils.ContainsString(names, filter.DisplayName) {
+			if slices.Contains(names, filter.DisplayName) {
 				newFilter := &models.IssueFilterSelector{}
 				newFilter.DisplayName = filter.DisplayName
 				newFilter.Description = filter.Description
@@ -548,7 +548,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 				newFilter.Value = filter.Value
 				newFilter.SelectorOptions = []*models.SelectorOption{}
 				for _, option := range filter.SelectorOptions {
-					if (nil != options && piperutils.ContainsString(options, option.DisplayName)) || options == nil || len(options) == 0 {
+					if (nil != options && slices.Contains(options, option.DisplayName)) || options == nil || len(options) == 0 {
 						log.Entry().Debugf("adding selector option '%v' to list for filter selector '%v'", option.DisplayName, newFilter.DisplayName)
 						newFilter.SelectorOptions = append(newFilter.SelectorOptions, option)
 					}

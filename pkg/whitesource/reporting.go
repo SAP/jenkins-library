@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -217,7 +218,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
 
 		// only create rule on new CVE
-		if !piperutils.ContainsString(collectedRules, ruleId) {
+		if !slices.Contains(collectedRules, ruleId) {
 			collectedRules = append(collectedRules, ruleId)
 
 			sarifRule := *new(format.SarifRule)

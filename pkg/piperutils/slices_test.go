@@ -9,41 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestContainsInt(t *testing.T) {
-	var intList []int
-	assert.Equal(t, false, ContainsInt(intList, 4))
-
-	intList = append(intList, 1, 2, 3, 4, 5, 6, 20)
-	assert.Equal(t, true, ContainsInt(intList, 20))
-	assert.Equal(t, true, ContainsInt(intList, 1))
-	assert.Equal(t, true, ContainsInt(intList, 4))
-	assert.Equal(t, false, ContainsInt(intList, 13))
-}
-
-func TestContainsString(t *testing.T) {
-	var stringList []string
-	assert.False(t, ContainsString(stringList, "test"))
-	assert.False(t, ContainsString(stringList, ""))
-
-	stringList = append(stringList, "", "foo", "bar", "foo")
-	assert.True(t, ContainsString(stringList, ""))
-	assert.True(t, ContainsString(stringList, "bar"))
-	assert.True(t, ContainsString(stringList, "foo"))
-	assert.False(t, ContainsString(stringList, "baz"))
-}
-
-func TestFindString(t *testing.T) {
-	var stringList []string
-	assert.Equal(t, -1, FindString(stringList, "test"))
-	assert.Equal(t, -1, FindString(stringList, ""))
-
-	stringList = append(stringList, "", "foo", "bar", "foo")
-	assert.Equal(t, 0, FindString(stringList, ""))
-	assert.Equal(t, 2, FindString(stringList, "bar"))
-	assert.Equal(t, 1, FindString(stringList, "foo"))
-	assert.Equal(t, -1, FindString(stringList, "baz"))
-}
-
 func TestRemoveAll(t *testing.T) {
 	t.Parallel()
 	t.Run("empty array", func(t *testing.T) {

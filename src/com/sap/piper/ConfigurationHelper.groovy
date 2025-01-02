@@ -10,9 +10,6 @@ class ConfigurationHelper implements Serializable {
     }
 
     ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:], String stageName = step.env.STAGE_NAME) {
-        if (stageName == 'Central Build'){
-            stageName = 'Build'
-        }
         DefaultValueCache.prepare(step)
         this.config = ConfigurationLoader.defaultGeneralConfiguration()
         mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
