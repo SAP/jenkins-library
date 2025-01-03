@@ -1,18 +1,13 @@
 package cmd
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/encryption"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
@@ -69,7 +64,7 @@ func runReadPipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 		}
 
 		cpeJsonBytes, _ := json.Marshal(cpe)
-		encryptedCPEBytes, err := encrypt([]byte(stepConfigPassword), cpeJsonBytes)
+		encryptedCPEBytes, err := encryption.Encrypt([]byte(stepConfigPassword), cpeJsonBytes)
 		if err != nil {
 			log.Entry().Fatal(err)
 		}
@@ -86,29 +81,4 @@ func runReadPipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
 	}
 
 	return nil
-}
-
-func encrypt(secret, inBytes []byte) ([]byte, error) {
-	// use SHA256 as key
-	key := sha256.Sum256(secret)
-	block, err := aes.NewCipher(key[:])
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new cipher: %v", err)
-	}
-
-	// Make the cipher text a byte array of size BlockSize + the length of the message
-	cipherText := make([]byte, aes.BlockSize+len(inBytes))
-
-	// iv is the ciphertext up to the blocksize (16)
-	iv := cipherText[:aes.BlockSize]
-	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, fmt.Errorf("failed to init iv: %v", err)
-	}
-
-	// Encrypt the data:
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(cipherText[aes.BlockSize:], inBytes)
-
-	// Return string encoded in base64
-	return []byte(base64.StdEncoding.EncodeToString(cipherText)), err
 }
