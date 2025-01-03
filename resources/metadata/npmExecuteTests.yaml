@@ -1,0 +1,159 @@
+metadata:
+  name: npmExecuteTests
+  description: Executes end-to-end tests using npm
+  longDescription: |
+    This step executes end-to-end tests in a Docker environment using npm.
+
+    The step spins up a Docker container based on the specified `dockerImage` and executes the `installScript` and `runScript` from `package.json`.
+
+    The application URLs and credentials can be specified in `appUrls` and `credentialsId` respectively. If `wdi5` is set to `true`, the step uses `wdi5_username` and `wdi5_password` for authentication.
+
+    The tests can be restricted to run only on the productive branch by setting `onlyRunInProductiveBranch` to `true`.
+
+spec:
+  inputs:
+    params:
+      - name: installCommand
+        type: string
+        description: Command to be executed for installation`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "npm ci"
+      - name: runCommand
+        type: string
+        description: Command to be executed for running tests`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        default: "npm run wdi5"
+      - name: vaultURLs
+        type: "[]map[string]interface{}"
+        description: |
+          An array of objects, each representing an application URL with associated credentials.
+          Each object must have the following properties:
+          - `url`: The URL of the application.
+          - `username`: The username for accessing the application.
+          - `password`: The password for accessing the application.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecret
+            default: appMetadata
+            name: appMetadataVaultSecretName
+      - name: vaultUsername
+        type: "string"
+        description: The base URL username.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecret
+            default: appMetadata
+            name: appMetadataVaultSecretName
+      - name: vaultPassword
+        type: "string"
+        description: The base URL password.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecret
+            default: appMetadata
+            name: appMetadataVaultSecretName
+      - name: baseUrl
+        type: string
+        default: "http://localhost:8080/index.html"
+        description: Base URL of the application to be tested.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: usernameEnvVar
+        type: string
+        default: "wdi5_username"
+        description: Env var for username.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: passwordEnvVar
+        type: string
+        default: "wdi5_password"
+        description: Env var for password.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: urlOptionPrefix
+        type: string
+        description: |
+          If you want to specify an extra option that the tested url it appended to.
+          For example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,
+          we'll add `--base-url=http://localhost` to your runScript.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: envs
+        type: "[]string"
+        description: List of environment variables to be set
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: paths
+        type: "[]string"
+        description: List of paths to be added to $PATH
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: workingDirectory
+        type: string
+        default: "."
+        description: Directory where your tests are located relative to the root of your project
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  outputs:
+    resources:
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/e2e-results.xml"
+            type: end-to-end-test
+  containers:
+    - name: node
+      image: node:lts-bookworm
+      env:
+        - name: BASE_URL
+          value: ${{params.baseUrl}}
+        - name: CREDENTIALS_ID
+          value: ${{params.credentialsId}}
+        - name: no_proxy
+          value: localhost,selenium,$no_proxy
+        - name: NO_PROXY
+          value: localhost,selenium,$NO_PROXY
+      workingDir: /home/node
+  sidecars:
+    - image: selenium/standalone-chrome
+      name: selenium
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /dev/shm
+          name: dev-shm
+      env:
+        - name: "NO_PROXY"
+          value: "localhost,selenium,$NO_PROXY"
+        - name: "no_proxy"
+          value: "localhost,selenium,$no_proxy"
