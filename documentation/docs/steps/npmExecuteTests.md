@@ -1,4 +1,7 @@
-# ${docGenStepName}
+# ${docGenStepName} (Beta)
+
+[!WARNING]
+Please note, that the npmExecuteTests step is in beta state, and there could be breaking changes before we remove the beta notice.
 
 ## ${docGenDescription}
 
@@ -108,19 +111,4 @@ stages:
             - "NPM_CONFIG_PREFIX=~/.npm-global"
           paths:
             - "~/.npm-global/bin"
-```
-
-### Using Selenium Grid
-
-If your tests rely on Selenium Grid, you can specify it as a sidecar:
-
-```yaml
-stages:
-  - name: Test
-    steps:
-      - name: npmExecuteTests
-        type: npmExecuteTests
-        sidecars:
-          - name: selenium
-            image: selenium/standalone-chrome
 ```
