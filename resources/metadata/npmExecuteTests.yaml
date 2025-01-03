@@ -96,7 +96,7 @@ spec:
         type: string
         description: |
           If you want to specify an extra option that the tested url it appended to.
-          For example if the test URL is `http://localhost and urlOptionPrefix is `--base-url=`,
+          For example if the test URL is `http://localhost` and urlOptionPrefix is `--base-url=`,
           we'll add `--base-url=http://localhost` to your runScript.
         scope:
           - PARAMETERS

@@ -1,7 +1,7 @@
-# ${docGenStepName} (Beta)
+# ${docGenStepName}
 
-[!WARNING]
-Please note, that the npmExecuteTests step is in beta state, and there could be breaking changes before we remove the beta notice.
+> [!WARNING]
+> Please note, that the npmExecuteTests step is in beta state, and there could be breaking changes before we remove the beta notice.
 
 ## ${docGenDescription}
 
