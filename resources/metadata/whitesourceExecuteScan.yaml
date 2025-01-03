@@ -257,13 +257,13 @@ spec:
             deprecated: true
         type: string
         description:
-          "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent."
+          "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent. The URL is a HTTP 302 Temp Redirect to the always latest available SapMachine 17, linux-x64, JRE"
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.13/sapmachine-jre-17.0.13_linux-x64_bin.tar.gz"
+        default: "https://sap.github.io/SapMachine/latest/17/linux-x64/jre"
       - name: licensingVulnerabilities
         type: bool
         description: "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment."
