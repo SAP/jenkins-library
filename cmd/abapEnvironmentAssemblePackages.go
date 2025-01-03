@@ -281,6 +281,10 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
 			buildFailed = true
 		}
+		if builds[i].build.ResultState == abapbuild.Erroneous {
+			log.Entry().Errorf("Assembly of %s revealed errors", builds[i].repo.PackageName)
+			buildFailed = true
+		}
 		if builds[i].build.BuildID != "" {
 			if err := builds[i].build.PrintLogs(); err != nil {
 				return err
