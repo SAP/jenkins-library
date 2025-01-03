@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	cloud.google.com/go/pubsub v1.36.1
 	cloud.google.com/go/storage v1.38.0
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
@@ -56,7 +56,7 @@ require (
 	github.com/xuri/excelize/v2 v2.4.1
 	golang.org/x/mod v0.17.0
 	golang.org/x/oauth2 v0.18.0
-	golang.org/x/text v0.16.0
+	golang.org/x/text v0.19.0
 	google.golang.org/api v0.169.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -69,7 +69,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/apex/log v1.9.0 // indirect
@@ -126,8 +126,8 @@ require (
 	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/compute v1.25.1 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.6.0
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -153,7 +153,7 @@ require (
 	github.com/aws/smithy-go v1.20.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buildpacks/imgutil v0.0.0-20230919143643-4ec9360d5f02 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/containerd v1.7.20 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -247,12 +247,12 @@ require (
 	go.mongodb.org/mongo-driver v1.11.6 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
-	golang.org/x/crypto v0.25.0
+	golang.org/x/crypto v0.28.0
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
-	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sync v0.7.0
-	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/term v0.22.0 // indirect
+	golang.org/x/net v0.29.0 // indirect
+	golang.org/x/sync v0.8.0
+	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/term v0.25.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
