@@ -54,14 +54,14 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.33.0
 	github.com/xuri/excelize/v2 v2.4.1
-	golang.org/x/mod v0.17.0
+	golang.org/x/mod v0.22.0
 	golang.org/x/oauth2 v0.18.0
 	golang.org/x/text v0.16.0
 	google.golang.org/api v0.169.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.14.4
-	mvdan.cc/xurls/v2 v2.4.0
+	mvdan.cc/xurls/v2 v2.6.0
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd
 )
 
@@ -250,8 +250,8 @@ require (
 	golang.org/x/crypto v0.25.0
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
 	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sync v0.7.0
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sync v0.10.0
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
