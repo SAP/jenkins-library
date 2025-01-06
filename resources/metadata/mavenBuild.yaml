@@ -242,6 +242,14 @@ spec:
           - -Dmaven.main.skip=true
           - -Dmaven.test.skip=true
           - -Dmaven.install.skip=true
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
     resources:
       - type: stash
   outputs:
@@ -250,6 +258,7 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/mavenBuildArtifacts
       - name: reports
         type: reports
         params:

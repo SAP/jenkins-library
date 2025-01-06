@@ -41,6 +41,7 @@ type GeneralConfigOptions struct {
 	VaultServerURL       string
 	VaultNamespace       string
 	VaultPath            string
+	TrustEngineToken     string
 	HookConfig           HookConfiguration
 	MetaDataResolver     func() map[string]config.StepData
 	GCPJsonKeyFilePath   string
@@ -51,10 +52,11 @@ type GeneralConfigOptions struct {
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
-	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
-	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
-	PendoConfig  PendoConfiguration  `json:"pendo,omitempty"`
-	OIDCConfig   OIDCConfiguration   `json:"oidc,omitempty"`
+	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
+	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
+	PendoConfig       PendoConfiguration       `json:"pendo,omitempty"`
+	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
+	TrustEngineConfig TrustEngineConfiguration `json:"trustengine,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -80,6 +82,12 @@ type PendoConfiguration struct {
 // OIDCConfiguration defines the configuration options for the OpenID Connect authentication system
 type OIDCConfiguration struct {
 	RoleID string `json:",roleID,omitempty"`
+}
+
+type TrustEngineConfiguration struct {
+	ServerURL           string `json:"baseURL,omitempty"`
+	TokenEndPoint       string `json:"tokenEndPoint,omitempty"`
+	TokenQueryParamName string `json:"tokenQueryParamName,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
@@ -368,6 +376,9 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		GeneralConfig.VaultToken = os.Getenv("PIPER_vaultToken")
 	}
 	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
+
+	GeneralConfig.TrustEngineToken = os.Getenv("PIPER_trustEngineToken")
+	myConfig.SetTrustEngineToken(GeneralConfig.TrustEngineToken)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON

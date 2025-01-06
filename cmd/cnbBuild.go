@@ -168,18 +168,17 @@ func cleanDir(dir string, utils cnbutils.BuildUtils) error {
 }
 
 func extractZip(source, target string) error {
-	if isZip(source) {
-		log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
-		_, err := piperutils.Unzip(source, target)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Extracting archive '%s' to '%s' failed", source, target)
-		}
-	} else {
+	if !isZip(source) {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.New("application path must be a directory or zip")
 	}
 
+	log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
+	_, err := piperutils.Unzip(source, target)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "Extracting archive '%s' to '%s' failed", source, target)
+	}
 	return nil
 }
 
@@ -494,7 +493,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	if pathType != buildpacks.PathEnumArchive {
-		err = cnbutils.CopyProject(source, target, include, exclude, utils)
+		err = cnbutils.CopyProject(source, target, include, exclude, utils, false)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
@@ -537,12 +536,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		}
 	}
 
-	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(config.DockerConfigJSON, utils)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
-	}
-
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
 		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
@@ -558,7 +551,17 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		log.Entry().Info("skipping certificates update")
 	}
 
-	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
+	dockerKeychain, err := cnbutils.ParseDockerConfig(config.DockerConfigJSON, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to parse dockerConfigJSON")
+	}
+	cnbAuthString, err := dockerKeychain.ToCNBString()
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
+	}
+	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbAuthString)})
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_PLATFORM_API=%s", platformAPIVersion)})
 
 	creatorArgs := []string{
@@ -574,6 +577,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	if config.RunImage != "" {
+		if !dockerKeychain.AuthExistsForImage(config.RunImage) {
+			log.Entry().Warnf("provided dockerConfigJSON does not contain credentials for the run-image %q, anonymous auth will be used", config.RunImage)
+		}
+
 		creatorArgs = append(creatorArgs, "-run-image", config.RunImage)
 	}
 
@@ -582,6 +589,9 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
+	if !dockerKeychain.AuthExistsForImage(containerImage) {
+		log.Entry().Warnf("provided dockerConfigJSON does not contain credentials for the target image %q, anonymous auth will be used", containerImage)
+	}
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
 		if !piperutils.ContainsString(creatorArgs, target) {
@@ -609,7 +619,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != buildpacks.PathEnumArchive {
-			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils)
+			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils, true)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)

@@ -92,7 +92,7 @@ func newBlackduckMockSystem(config detectExecuteScanOptions) blackduckSystem {
 	myTestClient := httpMockClient{
 		responseBodyForURL: map[string]string{
 			"https://my.blackduck.system/api/tokens/authenticate":                                                                               authContent,
-			"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                   projectContent,
+			"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                                        projectContent,
 			"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                         projectVersionContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/components?limit=999&offset=0":                                 componentsContent,
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/vunlerable-bom-components?limit=999&offset=0":                  vulnerabilitiesContent,
@@ -749,7 +749,6 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 				"--detect.source.path='.'",
 				"--detect.blackduck.scan.mode='RAPID'",
-				"--detect.blackduck.rapid.compare.mode='BOM_COMPARE_STRICT'",
 				"--detect.cleanup=false",
 				"--detect.output.path='report'",
 			},

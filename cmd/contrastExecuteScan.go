@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 type contrastExecuteScanUtils interface {
@@ -107,7 +108,7 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 				if unaudited > config.VulnerabilityThresholdTotal {
 					msg := fmt.Sprintf("Your application %v in organization %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v",
 						config.ApplicationID, config.OrganizationID, unaudited, config.VulnerabilityThresholdTotal)
-					return reports, fmt.Errorf(msg)
+					return reports, errors.New(msg)
 				}
 			}
 		}

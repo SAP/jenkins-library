@@ -486,6 +486,10 @@ func (f *FilesMock) Stat(path string) (os.FileInfo, error) {
 	}, nil
 }
 
+func (f *FilesMock) Lstat(path string) (os.FileInfo, error) {
+	return f.Stat(path)
+}
+
 // Chmod changes the file mode for the entry at the given path
 func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
 	props, exists := f.files[f.toAbsPath(path)]
@@ -540,8 +544,9 @@ func (f *FilesMock) Symlink(oldname, newname string) error {
 	f.init()
 
 	f.files[newname] = &fileProperties{
-		isLink: true,
-		target: oldname,
+		isLink:  true,
+		target:  oldname,
+		content: &[]byte{},
 	}
 
 	return nil
@@ -699,4 +704,12 @@ func (f *FilesMockRelativeGlob) Glob(pattern string) ([]string, error) {
 	// The order in f.files is not deterministic, this would result in flaky tests.
 	sort.Strings(matches)
 	return matches, nil
+}
+
+func (f *FilesMock) Readlink(name string) (string, error) {
+	properties, ok := f.files[name]
+	if ok && properties.isLink {
+		return properties.target, nil
+	}
+	return "", fmt.Errorf("could not retrieve target for %s", name)
 }

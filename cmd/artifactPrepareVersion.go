@@ -85,6 +85,7 @@ func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
 		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
 	}
+	utils.Client.SetOptions(piperhttp.ClientOptions{MaxRetries: 3})
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
@@ -208,6 +209,10 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		if config.VersioningType == "cloud" {
 			certs, err := certutils.CertificateDownload(config.CustomTLSCertificateLinks, utils)
+			if err != nil {
+				return err
+			}
+
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now, certs)
 			if err != nil {

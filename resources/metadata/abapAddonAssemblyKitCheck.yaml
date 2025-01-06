@@ -91,6 +91,13 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: abap/addonDescriptor
+      - name: abapAddonAssemblyKitOriginHash
+        type: string
+        description: Origin Hash for restricted AAKaaS scenarios
+        scope:
+          - PARAMETERS
+        mandatory: false
+        secret: true
   outputs:
     resources:
       - name: commonPipelineEnvironment

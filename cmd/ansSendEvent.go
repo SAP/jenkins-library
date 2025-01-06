@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"time"
 )
 
 func ansSendEvent(config ansSendEventOptions, telemetryData *telemetry.CustomData) {

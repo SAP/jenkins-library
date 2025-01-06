@@ -146,6 +146,12 @@ func azureBlobUploadMetadata() config.StepData {
 						Name: "jsonCredentialsAzure",
 						ResourceRef: []config.ResourceReference{
 							{
+								Name:    "azureDevOpsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "azure-dev-ops",
+							},
+
+							{
 								Name: "azureCredentialsId",
 								Type: "secret",
 							},

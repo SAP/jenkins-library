@@ -178,7 +178,7 @@ func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP
 	return httpResponse, err
 }
 
-// HandleHTTPError handles ABAP error messages which can occur when using OData services
+// HandleHTTPError handles ABAP error messages which can occur when using OData V2 services
 //
 // The point of this function is to enrich the error received from a HTTP Request (which is passed as a parameter to this function).
 // Further error details may be present in the response body of the HTTP response.
@@ -218,10 +218,11 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 	return errorCode, err
 }
 
+// GetErrorDetailsFromResponse parses OData V2 Responses containing ABAP Error messages
 func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, errorCode string, err error) {
 
 	// Include the error message of the ABAP Environment system, if available
-	var abapErrorResponse AbapError
+	var abapErrorResponse AbapErrorODataV2
 	bodyText, readError := io.ReadAll(resp.Body)
 	if readError != nil {
 		return "", "", readError
@@ -233,7 +234,7 @@ func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, error
 	}
 	if _, ok := abapResp["error"]; ok {
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
-		if (AbapError{}) != abapErrorResponse {
+		if (AbapErrorODataV2{}) != abapErrorResponse {
 			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Debug(abapErrorResponse.Message.Value)
 			return abapErrorResponse.Message.Value, abapErrorResponse.Code, nil
 		}
@@ -311,10 +312,16 @@ type ConnectionDetailsHTTP struct {
 	CertificateNames []string `json:"-"`
 }
 
-// AbapError contains the error code and the error message for ABAP errors
-type AbapError struct {
+// AbapErrorODataV2 contains the error code and the error message for ABAP errors
+type AbapErrorODataV2 struct {
 	Code    string           `json:"code"`
 	Message AbapErrorMessage `json:"message"`
+}
+
+// AbapErrorODataV4 contains the error code and the error message for ABAP errors
+type AbapErrorODataV4 struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // AbapErrorMessage contains the lanuage and value fields for ABAP errors

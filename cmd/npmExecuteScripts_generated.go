@@ -22,26 +22,28 @@ import (
 )
 
 type npmExecuteScriptsOptions struct {
-	Install                    bool     `json:"install,omitempty"`
-	RunScripts                 []string `json:"runScripts,omitempty"`
-	DefaultNpmRegistry         string   `json:"defaultNpmRegistry,omitempty"`
-	VirtualFrameBuffer         bool     `json:"virtualFrameBuffer,omitempty"`
-	ScriptOptions              []string `json:"scriptOptions,omitempty"`
-	BuildDescriptorExcludeList []string `json:"buildDescriptorExcludeList,omitempty"`
-	BuildDescriptorList        []string `json:"buildDescriptorList,omitempty"`
-	CreateBOM                  bool     `json:"createBOM,omitempty"`
-	Publish                    bool     `json:"publish,omitempty"`
-	RepositoryURL              string   `json:"repositoryUrl,omitempty"`
-	RepositoryPassword         string   `json:"repositoryPassword,omitempty"`
-	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
-	BuildSettingsInfo          string   `json:"buildSettingsInfo,omitempty"`
-	PackBeforePublish          bool     `json:"packBeforePublish,omitempty"`
-	Production                 bool     `json:"production,omitempty"`
+	Install                      bool     `json:"install,omitempty"`
+	RunScripts                   []string `json:"runScripts,omitempty"`
+	DefaultNpmRegistry           string   `json:"defaultNpmRegistry,omitempty"`
+	VirtualFrameBuffer           bool     `json:"virtualFrameBuffer,omitempty"`
+	ScriptOptions                []string `json:"scriptOptions,omitempty"`
+	BuildDescriptorExcludeList   []string `json:"buildDescriptorExcludeList,omitempty"`
+	BuildDescriptorList          []string `json:"buildDescriptorList,omitempty"`
+	CreateBOM                    bool     `json:"createBOM,omitempty"`
+	Publish                      bool     `json:"publish,omitempty"`
+	RepositoryURL                string   `json:"repositoryUrl,omitempty"`
+	RepositoryPassword           string   `json:"repositoryPassword,omitempty"`
+	RepositoryUsername           string   `json:"repositoryUsername,omitempty"`
+	BuildSettingsInfo            string   `json:"buildSettingsInfo,omitempty"`
+	PackBeforePublish            bool     `json:"packBeforePublish,omitempty"`
+	Production                   bool     `json:"production,omitempty"`
+	CreateBuildArtifactsMetadata bool     `json:"createBuildArtifactsMetadata,omitempty"`
 }
 
 type npmExecuteScriptsCommonPipelineEnvironment struct {
 	custom struct {
 		buildSettingsInfo string
+		npmBuildArtifacts string
 	}
 }
 
@@ -52,6 +54,7 @@ func (p *npmExecuteScriptsCommonPipelineEnvironment) persist(path, resourceName 
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "npmBuildArtifacts", value: p.custom.npmBuildArtifacts},
 	}
 
 	errCount := 0
@@ -241,6 +244,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the npm build . This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.PackBeforePublish, "packBeforePublish", false, "used for executing npm pack first, followed by npm publish. This two step maybe required in two cases. case 1) When building multiple npm packages (multiple package.json) please keep this parameter true and also see `buildDescriptorList` or  `buildDescriptorExcludeList` to choose which package(s) to publish. case 2)when you are building a single npm (single `package.json` in your repo) / multiple npm (multiple package.json) scoped package(s) and have npm dependencies from the same scope.")
 	cmd.Flags().BoolVar(&stepConfig.Production, "production", false, "used for omitting installation of dev. dependencies if true")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
 
 }
 
@@ -428,6 +432,15 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     false,
 					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -440,6 +453,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/npmBuildArtifacts"},
 						},
 					},
 					{

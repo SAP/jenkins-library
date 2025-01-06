@@ -845,7 +845,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	}
 
 	if len(errorsOccured) > 0 {
-		return fmt.Errorf(strings.Join(errorsOccured, ": "))
+		return errors.New(strings.Join(errorsOccured, ": "))
 	}
 
 	return nil
