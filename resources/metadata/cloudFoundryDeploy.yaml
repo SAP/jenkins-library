@@ -370,6 +370,11 @@ spec:
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli:latest
+      options:
+        - name: --ulimit
+          value: "stack=67108864:67108864"  # Stack Size (in bytes). 64mb
+        - name: --ulimit
+          value: "nofile=65536:65536"       # Number of Open Files
   outputs:
     resources:
       - name: influx
