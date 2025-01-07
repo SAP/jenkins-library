@@ -1376,6 +1376,17 @@ func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string
 		},
 		"filters": map[string][]string{
 			"scanners": {"sast"},
+			"severities": {
+				"high",
+				"medium",
+				"low",
+			},
+			"states": {
+				"to-verify",
+				"confirmed",
+				"urgent",
+				"proposed-not-exploitable",
+			},
 		},
 		"reportType": "ui",
 		"fileFormat": reportType,
