@@ -225,6 +225,10 @@ func (api *SAP_COM_0510) GetAction() (string, error) {
 	return abapStatusCode, nil
 }
 
+func (api *SAP_COM_0510) getRepositoryName() string {
+	return api.repository.Name
+}
+
 func (api *SAP_COM_0510) GetRepository() (bool, string, error, bool) {
 
 	if api.repository.Name == "" {
@@ -403,4 +407,9 @@ func (api *SAP_COM_0510) ConvertTime(logTimeStamp string) time.Time {
 // Dummy implementation of the "optional" method UpdateRepoWithBYOGCredentials (only used in SAP_COM_0948)
 func (api *SAP_COM_0510) UpdateRepoWithBYOGCredentials(byogAuthMethod string, byogUsername string, byogPassword string) {
 	panic("UpdateRepoWithBYOGCredentials cannot be used in SAP_COM_0510")
+}
+
+// Dummy implementation of the "optional" method LogArchive (only used in SAP_COM_0948)
+func (api *SAP_COM_0510) GetLogArchive() (result []byte, err error) {
+	panic("GetLogArchive cannot be used in SAP_COM_0510")
 }

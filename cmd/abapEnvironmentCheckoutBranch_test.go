@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,6 +52,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			Password:          "testPassword",
 			RepositoryName:    "testRepo1",
 			BranchName:        "testBranch",
+			LogOutput:         "STANDARD",
 		}
 
 		logResultSuccess := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Success", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -67,8 +69,16 @@ func TestCheckoutBranchStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
+		var reports []piperutils.Path
+		logOutputManager := abaputils.LogOutputManager{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "checkoutBranch",
+			FileNameStep: "checkoutBranch",
+			StepReports:  reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
+		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager, &logOutputManager)
 		assert.NoError(t, err, "Did not expect error")
 	})
 	t.Run("Run Step Failure - empty config", func(t *testing.T) {
@@ -96,8 +106,16 @@ func TestCheckoutBranchStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
+		var reports []piperutils.Path
+		logOutputManager := abaputils.LogOutputManager{
+			LogOutput:    "STANDARD",
+			PiperStep:    "checkoutBranch",
+			FileNameStep: "checkoutBranch",
+			StepReports:  reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
+		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager, &logOutputManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 	t.Run("Run Step Failure - wrong status", func(t *testing.T) {
@@ -120,6 +138,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			Password:          "testPassword",
 			RepositoryName:    "testRepo1",
 			BranchName:        "testBranch",
+			LogOutput:         "STANDARD",
 		}
 
 		logResultError := `{"d": { "sc_name": "/DMO/SWC", "status": "S", "to_Log_Overview": { "results": [ { "log_index": 1, "log_name": "Main Import", "type_of_found_issues": "Error", "timestamp": "/Date(1644332299000+0000)/", "to_Log_Protocol": { "results": [ { "log_index": 1, "index_no": "1", "log_name": "", "type": "Info", "descr": "Main import", "timestamp": null, "criticality": 0 } ] } } ] } } }`
@@ -130,13 +149,22 @@ func TestCheckoutBranchStep(t *testing.T) {
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "E" } }`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,
 		}
 
+		var reports []piperutils.Path
+		logOutputManager := abaputils.LogOutputManager{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "checkoutBranch",
+			FileNameStep: "checkoutBranch",
+			StepReports:  reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
+		err := runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager, &logOutputManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 	t.Run("Success case: checkout Branches from file config", func(t *testing.T) {
@@ -183,9 +211,19 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
+			LogOutput:         "STANDARD",
 		}
+
+		var reports []piperutils.Path
+		logOutputManager := abaputils.LogOutputManager{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "checkoutBranch",
+			FileNameStep: "checkoutBranch",
+			StepReports:  reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
+		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager, &logOutputManager)
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: checkout Branches from empty file config", func(t *testing.T) {
@@ -227,9 +265,19 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
+			LogOutput:         "STANDARD",
 		}
+
+		var reports []piperutils.Path
+		logOutputManager := abaputils.LogOutputManager{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "checkoutBranch",
+			FileNameStep: "checkoutBranch",
+			StepReports:  reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
+		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager, &logOutputManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 	t.Run("Failure case: checkout Branches from wrong file config", func(t *testing.T) {
@@ -276,9 +324,19 @@ repositories:
 			Username:          "testUser",
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
+			LogOutput:         "STANDARD",
 		}
+
+		var reports []piperutils.Path
+		logOutputManager := abaputils.LogOutputManager{
+			LogOutput:    config.LogOutput,
+			PiperStep:    "checkoutBranch",
+			FileNameStep: "checkoutBranch",
+			StepReports:  reports,
+		}
+
 		apiManager = &abaputils.SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Nanosecond, Force0510: true}
-		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager)
+		err = runAbapEnvironmentCheckoutBranch(&config, &autils, apiManager, &logOutputManager)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }

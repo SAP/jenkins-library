@@ -76,11 +76,60 @@ func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMod
 }
 
 func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Coordinates, error) {
+	if err := validationBuildDescriptorFile(buildTool, buildDescriptorFile); err != nil {
+		return versioning.Coordinates{}, err
+	}
 	artifact, err := versioning.GetArtifact(buildTool, buildDescriptorFile, options, w)
 	if err != nil {
 		return versioning.Coordinates{}, err
 	}
 	return artifact.GetCoordinates()
+}
+
+func validationBuildDescriptorFile(buildTool, buildDescriptorFile string) error {
+	if buildDescriptorFile == "" {
+		return nil
+	}
+	switch buildTool {
+	case "dub":
+		if filepath.Ext(buildDescriptorFile) != ".json" {
+			return errors.New("extension of buildDescriptorFile must be in '*.json'")
+		}
+	case "gradle":
+		if filepath.Ext(buildDescriptorFile) != ".properties" {
+			return errors.New("extension of buildDescriptorFile must be in '*.properties'")
+		}
+	case "golang":
+		if !strings.HasSuffix(buildDescriptorFile, "go.mod") &&
+			!strings.HasSuffix(buildDescriptorFile, "VERSION") &&
+			!strings.HasSuffix(buildDescriptorFile, "version.txt") {
+			return errors.New("buildDescriptorFile must be one of  [\"go.mod\",\"VERSION\", \"version.txt\"]")
+		}
+	case "maven":
+		if filepath.Ext(buildDescriptorFile) != ".xml" {
+			return errors.New("extension of buildDescriptorFile must be in '*.xml'")
+		}
+	case "mta":
+		if filepath.Ext(buildDescriptorFile) != ".yaml" {
+			return errors.New("extension of buildDescriptorFile must be in '*.yaml'")
+		}
+	case "npm", "yarn":
+		if filepath.Ext(buildDescriptorFile) != ".json" {
+			return errors.New("extension of buildDescriptorFile must be in '*.json'")
+		}
+	case "pip":
+		if !strings.HasSuffix(buildDescriptorFile, "setup.py") &&
+			!strings.HasSuffix(buildDescriptorFile, "version.txt") &&
+			!strings.HasSuffix(buildDescriptorFile, "VERSION") {
+			return errors.New("buildDescriptorFile must be one of  [\"setup.py\",\"version.txt\", \"VERSION\"]")
+		}
+	case "sbt":
+		if !strings.HasSuffix(buildDescriptorFile, "sbtDescriptor.json") &&
+			!strings.HasSuffix(buildDescriptorFile, "build.sbt") {
+			return errors.New("extension of buildDescriptorFile must be in '*.json' or '*sbt'")
+		}
+	}
+	return nil
 }
 
 func (w *whitesourceUtilsBundle) getNpmExecutor(config *ws.ScanOptions) npm.Executor {
@@ -490,6 +539,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		AgentDownloadURL:                config.AgentDownloadURL,
 		AgentFileName:                   config.AgentFileName,
 		ConfigFilePath:                  config.ConfigFilePath,
+		UseGlobalConfiguration:          config.UseGlobalConfiguration,
 		Includes:                        config.Includes,
 		Excludes:                        config.Excludes,
 		JreDownloadURL:                  config.JreDownloadURL,

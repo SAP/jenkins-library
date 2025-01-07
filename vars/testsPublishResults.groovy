@@ -1,4 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
@@ -193,7 +194,7 @@ void touchFiles(pattern){
     echo "[${STEP_NAME}] update test results"
     def patternArray = pattern.split(',')
     for(def i = 0; i < patternArray.length; i++){
-        sh "find . -wholename '${patternArray[i].trim()}' -exec touch {} \\;"
+        sh "find . -wholename ${q(patternArray[i].trim())} -exec touch {} \\;"
     }
 }
 

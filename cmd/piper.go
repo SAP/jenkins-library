@@ -24,14 +24,14 @@ type GeneralConfigOptions struct {
 	CorrelationID        string
 	CustomConfig         string
 	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
-	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	DefaultConfig        []string // ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	IgnoreCustomDefaults bool
 	ParametersJSON       string
 	EnvRootPath          string
 	NoTelemetry          bool
 	StageName            string
 	StepConfigJSON       string
-	StepMetadata         string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepMetadata         string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	StepName             string
 	Verbose              bool
 	LogFormat            string
@@ -52,11 +52,20 @@ type GeneralConfigOptions struct {
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
+	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub,omitempty"`
 	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
 	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
 	PendoConfig       PendoConfiguration       `json:"pendo,omitempty"`
 	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
 	TrustEngineConfig TrustEngineConfiguration `json:"trustengine,omitempty"`
+}
+
+type GCPPubSubConfiguration struct {
+	Enabled          bool   `json:"enabled"`
+	ProjectNumber    string `json:"projectNumber,omitempty"`
+	IdentityPool     string `json:"identityPool,omitempty"`
+	IdentityProvider string `json:"identityProvider,omitempty"`
+	Topic            string `json:"topic,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -152,6 +161,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
 	rootCmd.AddCommand(NpmExecuteLintCommand())
+	rootCmd.AddCommand(NpmExecuteTestsCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
 	rootCmd.AddCommand(GctsExecuteABAPQualityChecksCommand())
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
@@ -260,7 +270,6 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
-
 }
 
 // ResolveAccessTokens reads a list of tokens in format host:token passed via command line
@@ -344,7 +353,6 @@ func initStageName(outputToLog bool) {
 
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
 func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
-
 	log.SetFormatter(GeneralConfig.LogFormat)
 
 	initStageName(true)
@@ -389,7 +397,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		// use config & defaults
 		var customConfig io.ReadCloser
 		var err error
-		//accept that config file and defaults cannot be loaded since both are not mandatory here
+		// accept that config file and defaults cannot be loaded since both are not mandatory here
 		{
 			projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 			if exists, err := piperutils.FileExists(projectConfigFile); exists {
@@ -616,7 +624,6 @@ func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
 }
 
 func getProjectConfigFile(name string) string {
-
 	var altName string
 	if ext := filepath.Ext(name); ext == ".yml" {
 		altName = fmt.Sprintf("%v.yaml", strings.TrimSuffix(name, ext))

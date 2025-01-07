@@ -148,7 +148,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry", "-ws=false", "-iwr"}}, utils.execRunner.Calls[0])
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[3])
 			}
@@ -158,36 +158,52 @@ func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Call with createBOM", func(t *testing.T) {
 		cfg := npmExecuteScriptsOptions{CreateBOM: true, RunScripts: []string{"ci-build", "ci-test"}}
 
-		options := npm.ExecutorOptions{DefaultNpmRegistry: cfg.DefaultNpmRegistry}
-
-		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+		utils := npm.NewNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\", \"scripts\": \"ci-build\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\", \"scripts\": \"ci-test\" }"))
 
 		SetConfigOptions(ConfigCommandOptions{
 			OpenFile: config.OpenPiperFile,
 		})
 
-		npmExecutor := npm.Execute{Utils: &utils, Options: options}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: cfg.Install, RunScripts: cfg.RunScripts}}
 		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 
 		assert.NoError(t, err)
 	})
 
-	t.Run("Call with production", func(t *testing.T) {
-		cfg := npmExecuteScriptsOptions{Production: true, RunScripts: []string{"ci-build", "ci-test"}}
+	t.Run("fail if script not found", func(t *testing.T) {
+		cfg := npmExecuteScriptsOptions{RunScripts: []string{"ci-build"}}
 
 		options := npm.ExecutorOptions{DefaultNpmRegistry: cfg.DefaultNpmRegistry}
 
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
 		SetConfigOptions(ConfigCommandOptions{
 			OpenFile: config.OpenPiperFile,
 		})
 
 		npmExecutor := npm.Execute{Utils: &utils, Options: options}
+		wantError := "could not find any package.json file with script : ci-build "
+		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
+		assert.EqualErrorf(t, err, wantError, "expected to exit with error")
+	})
+
+	t.Run("Call with production", func(t *testing.T) {
+
+		cfg := npmExecuteScriptsOptions{Production: true, RunScripts: []string{"ci-build", "ci-test"}}
+
+		utils := npm.NewNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\", \"scripts\": \"ci-build\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\", \"scripts\": \"ci-test\" }"))
+
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: config.OpenPiperFile,
+		})
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: cfg.Install, RunScripts: cfg.RunScripts}}
+
 		err := runNpmExecuteScripts(&npmExecutor, &cfg, &cpe)
 		assert.NoError(t, err)
 

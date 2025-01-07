@@ -36,8 +36,7 @@ func extractMetadataFromCPE(piperEnvRoot string, utils cnbutils.BuildUtils) file
 		Source: &files.ProjectSource{
 			Type: "git",
 			Version: map[string]interface{}{
-				"commit":   piperenv.GetResourceParameter(cpePath, "git", "headCommitId"),
-				"describe": piperenv.GetResourceParameter(cpePath, "git", "commitMessage"),
+				"commit": piperenv.GetResourceParameter(cpePath, "git", "headCommitId"),
 			},
 			Metadata: map[string]interface{}{
 				"refs": []string{

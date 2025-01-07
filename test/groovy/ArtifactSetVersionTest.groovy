@@ -130,8 +130,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertThat(shellRule.shell.join(), stringContainsInOrder([
             "git add .",
             "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
-            'git tag build_1.2.3-20180101010203_testCommitId',
-            'git push myGitSshUrl build_1.2.3-20180101010203_testCommitId',
+            "git tag 'build_1.2.3-20180101010203_testCommitId'",
+            "git push 'myGitSshUrl' 'build_1.2.3-20180101010203_testCommitId'",
             ]
         ))
     }
@@ -173,8 +173,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
             "git add .",
             "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
-            'git tag build_1.2.3-20180101010203_testCommitId',
-            'git push https://me:topSecret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId',
+            "git tag 'build_1.2.3-20180101010203_testCommitId'",
+            "git push https://me:topSecret@example.org/myGitRepo 'build_1.2.3-20180101010203_testCommitId'",
             ]
         ))
     }
@@ -246,8 +246,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
             "git add .",
             "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
-            'git tag build_1.2.3-20180101010203_testCommitId',
-            '#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId &>/dev/null',
+            "git tag 'build_1.2.3-20180101010203_testCommitId'",
+            "#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo 'build_1.2.3-20180101010203_testCommitId' &>/dev/null",
             ]
         ))
     }
@@ -278,8 +278,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
             "git add .",
             "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
-            'git tag build_1.2.3-20180101010203_testCommitId',
-            '#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId &>/dev/null',
+            "git tag 'build_1.2.3-20180101010203_testCommitId'",
+            "#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo 'build_1.2.3-20180101010203_testCommitId' &>/dev/null",
             ]
         ))
     }
@@ -301,7 +301,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     void testVersioningCustomGitUserAndEMail() {
         stepRule.step.artifactSetVersion(script: stepRule.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertThat(shellRule.shell, hasItem(containsString("git -c user.email=\"test@test.com\" -c user.name=\"test\" commit -m 'update version 1.2.3-20180101010203_testCommitId'")))
+        assertThat(shellRule.shell, hasItem(containsString("git -c user.email='test@test.com' -c user.name='test' commit -m 'update version 1.2.3-20180101010203_testCommitId'")))
     }
 
     @Test

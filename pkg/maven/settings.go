@@ -218,7 +218,7 @@ func addServerTagtoProjectSettingsXML(projectSettingsFile string, altDeploymentR
 
 	settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
 	if err != nil {
-		fmt.Errorf("failed to marshal maven project settings xml: %w", err)
+		return fmt.Errorf("failed to marshal maven project settings xml: %w", err)
 	}
 	settingsXmlString := string(settingsXml)
 	Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
@@ -226,12 +226,11 @@ func addServerTagtoProjectSettingsXML(projectSettingsFile string, altDeploymentR
 
 	xmlstring := []byte(xml.Header + settingsXmlString)
 
-	err = utils.FileWrite(projectSettingsFile, xmlstring, 0777)
-	if err != nil {
-		fmt.Errorf("failed to write maven Settings xml: %w", err)
+	if err = utils.FileWrite(projectSettingsFile, xmlstring, 0777); err != nil {
+		return fmt.Errorf("failed to write maven Settings xml: %w", err)
 	}
-	log.Entry().Infof("Successfully updated <server> details in maven project settings file : '%s'", projectSettingsFile)
 
+	log.Entry().Infof("Successfully updated <server> details in maven project settings file : '%s'", projectSettingsFile)
 	return nil
 }
 

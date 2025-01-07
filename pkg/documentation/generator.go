@@ -32,12 +32,13 @@ func main() {
 	var docTemplatePath string
 	var customLibraryStepFile string
 	var customDefaultFiles sliceFlags
-	var includeAzure bool
+	var includeAzure, includeGHA bool
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
 	flag.StringVar(&docTemplatePath, "docuDir", "./documentation/docs/steps/", "The directory containing the docu stubs. Default points to \\'documentation/docs/steps/\\'.")
 	flag.StringVar(&customLibraryStepFile, "customLibraryStepFile", "", "")
 	flag.Var(&customDefaultFiles, "customDefaultFile", "Path to a custom default configuration file.")
 	flag.BoolVar(&includeAzure, "includeAzure", false, "Include Azure-specifics in step documentation.")
+	flag.BoolVar(&includeGHA, "includeGHA", false, "Include GitHub Actions-specifics in step documentation.")
 
 	// flags for stage documentation
 	var generateStageConfig bool
@@ -85,7 +86,7 @@ func main() {
 			OpenDocTemplateFile: openDocTemplateFile,
 			DocFileWriter:       writeFile,
 			OpenFile:            openFile,
-		}, includeAzure)
+		}, includeAzure, includeGHA)
 		checkError(err)
 	}
 }

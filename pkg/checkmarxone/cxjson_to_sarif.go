@@ -67,6 +67,10 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		for k := 0; k < len(r.Data.Nodes); k++ {
 			loc := *new(format.Location)
 			loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
+			// remove absolute path of file name (coming from JSON format)
+			if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
+				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
+			}
 			loc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
 			loc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
 			loc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
@@ -91,6 +95,10 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			threadFlowLocation := *new(format.Locations)
 			tfloc := new(format.Location)
 			tfloc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
+			// remove absolute path of file name (coming from JSON format)
+			if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
+				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
+			}
 			tfloc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
 			tfloc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
 			tfloc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
@@ -244,7 +252,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	log.Entry().Debug("[SARIF] Now handling driver object.")
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
-	tool.Driver.Name = "CheckmarxOne SCA"
+	tool.Driver.Name = "Checkmarx One"
 
 	// TODO: a way to fetch/store the version
 	tool.Driver.Version = "1" //strings.Split(cxxml.CheckmarxVersion, "V ")

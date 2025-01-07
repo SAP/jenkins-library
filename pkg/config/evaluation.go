@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
@@ -39,13 +41,16 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 		// to also consider using the technical name.
 		stageName := stage.DisplayName
 
+		// Central Build in Jenkins was renamed to Build.
+		handleLegacyStageNaming(config, currentOrchestrator, stageName)
+
 		// Check #1: Apply explicit activation/deactivation from config file (if any)
 		// and then evaluate stepActive conditions
 		runStep := make(map[string]bool, len(stage.Steps))
 		stepConfigCache := make(map[string]StepConfig, len(stage.Steps))
 		for _, step := range stage.Steps {
 			// Consider only orchestrator-specific steps if the orchestrator limitation is set.
-			if len(step.Orchestrators) > 0 && !piperutils.ContainsString(step.Orchestrators, currentOrchestrator) {
+			if len(step.Orchestrators) > 0 && !slices.Contains(step.Orchestrators, currentOrchestrator) {
 				continue
 			}
 
@@ -304,4 +309,24 @@ func anyOtherStepIsActive(targetStep string, runSteps map[string]bool) bool {
 	}
 
 	return false
+}
+
+func handleLegacyStageNaming(c *Config, orchestrator, stageName string) {
+	if orchestrator == "Jenkins" && stageName == "Build" {
+		_, buildExists := c.Stages["Build"]
+		centralBuildStageConfig, centralBuildExists := c.Stages["Central Build"]
+		if buildExists && centralBuildExists {
+			log.Entry().Warnf("You have 2 entries for build stage in config.yml. " +
+				"Parameters defined under 'Central Build' are ignored. " +
+				"Please use only 'Build'")
+			return
+		}
+
+		if centralBuildExists {
+			c.Stages["Build"] = centralBuildStageConfig
+			log.Entry().Warnf("You are using 'Central Build' stage in config.yml. " +
+				"Please move parameters under the 'Build' stage, " +
+				"since 'Central Build' will be removed in future releases")
+		}
+	}
 }

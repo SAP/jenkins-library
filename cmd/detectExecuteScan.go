@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -427,10 +428,11 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	log.Entry().Infof("Downloading Detect Script")
 
 	downloadScript := func() error {
-		if config.UseDetect9 {
-			return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+		if config.UseDetect8 {
+			return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
 		}
-		return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+		return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+
 	}
 
 	if err := downloadScript(); err != nil {
@@ -466,7 +468,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	handleExcludedDirectories(&args, &config)
 
 	if config.Unmap {
-		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
+		if !slices.Contains(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
 			args = append(args, "--detect.project.codelocation.unmap=true")
 		}
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")

@@ -8,6 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -28,15 +29,22 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *te
 		Client:        &piperhttp.Client{},
 		PollIntervall: 5 * time.Second,
 	}
+	var reports []piperutils.Path
+	logOutputManager := abaputils.LogOutputManager{
+		LogOutput:    options.LogOutput,
+		PiperStep:    "pull",
+		FileNameStep: "pull",
+		StepReports:  reports,
+	}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager)
+	err := runAbapEnvironmentPullGitRepo(&options, &autils, &apiManager, &logOutputManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 
 	subOptions := convertPullConfig(options)
 
@@ -52,21 +60,26 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	if err != nil {
 		return err
 	}
+
 	repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories, RepositoryName: options.RepositoryName, CommitID: options.CommitID}, false)
 	handleIgnoreCommit(repositories, options.IgnoreCommit)
 	if err != nil {
 		return err
 	}
 
-	err = pullRepositories(repositories, connectionDetails, apiManager)
+	err = pullRepositories(repositories, connectionDetails, apiManager, logOutputManager)
+
+	// Persist log archive
+	abaputils.PersistArchiveLogsForPiperStep(logOutputManager)
+
 	return err
 
 }
 
-func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 	log.Entry().Infof("Start pulling %v repositories", len(repositories))
 	for _, repo := range repositories {
-		err = handlePull(repo, pullConnectionDetails, apiManager)
+		err = handlePull(repo, pullConnectionDetails, apiManager, logOutputManager)
 		if err != nil {
 			break
 		}
@@ -77,7 +90,7 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 	return err
 }
 
-func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface) (err error) {
+func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) (err error) {
 
 	logString := repo.GetPullLogString()
 	errorString := "Pull of the " + logString + " failed on the ABAP system"
@@ -96,8 +109,10 @@ func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, 
 		return errors.Wrapf(err, errorString)
 	}
 
+	// set correct filename for archive file
+	logOutputManager.FileNameStep = "pull"
 	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
 	if errorPollEntity != nil {
 		return errors.Wrapf(errorPollEntity, errorString)
 	}

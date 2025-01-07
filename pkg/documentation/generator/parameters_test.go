@@ -48,7 +48,7 @@ func TestCreateParameterOverview(t *testing.T) {
 		expected := `| Name | Mandatory | Additional information |
 | ---- | --------- | ---------------------- |
 | [dockerImage](#dockerimage) | no |  |
-| [stashContent](#stashcontent) | no | [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) |
+| [stashContent](#stashcontent) | no | ![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen) |
 
 `
 		assert.Equal(t, expected, createParameterOverview(&stepData, true))
@@ -107,7 +107,7 @@ func TestParameterFurtherInfo(t *testing.T) {
 					},
 				},
 			},
-			contains: "![deprecated](https://img.shields.io/badge/-deprecated-red)[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#)",
+			contains: "![deprecated](https://img.shields.io/badge/-deprecated-red)![Secret](https://img.shields.io/badge/-Secret-yellowgreen)",
 		},
 		{
 			paramName:  "testSecret2",

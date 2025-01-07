@@ -8,15 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-
-	//"strconv"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
-	//"encoding/xml"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -412,7 +410,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	//header.Set("User-Agent", "Project-Piper.io cicd pipeline") // currently this causes some requests to fail due to unknown UA validation in the backend.
 
 	response, err := sys.client.SendRequest(method, url, requestBody, header, nil)
-	if err != nil && (response == nil || !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode)) {
+	if err != nil && (response == nil || !slices.Contains(acceptedErrorCodes, response.StatusCode)) {
 
 		var resBodyBytes []byte
 		if response != nil && response.Body != nil {
@@ -761,7 +759,7 @@ func (sys *SystemInstance) GetProjectsByName(projectName string) ([]Project, err
 	var err error
 
 	body := url.Values{}
-	body.Add("name", projectName)
+	body.Add("names", projectName)
 
 	data, err = sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/?%v", body.Encode()), nil, header, []int{404})
 
@@ -1314,6 +1312,19 @@ func (sys *SystemInstance) GetResultsPredicates(SimilarityID int64, ProjectID st
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
+	if strings.EqualFold("pdf", reportType) || strings.EqualFold("json", reportType) {
+		version, err := sys.GetVersion()
+		if err == nil {
+			if version.CheckCxOne("3.20.0") >= 0 && version.CheckCxOne("3.21.0") == -1 {
+				sys.logger.Debugf("Current version is %v - between 3.20.0 and 3.21.0 - using v2 %v report", reportType, version.CxOne)
+				return sys.RequestNewReportV2(scanID, reportType)
+			}
+			sys.logger.Debugf("Current version is %v - using v1 %v report", reportType, version.CxOne)
+		} else {
+			sys.logger.Errorf("Failed to get the CxOne version during report-gen request, will use v1 %v report. Error: %s", reportType, err)
+		}
+	}
+
 	jsonData := map[string]interface{}{
 		"fileFormat": reportType,
 		"reportType": "ui",
@@ -1352,13 +1363,52 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
 	return reportResponse.ReportId, err
 }
 
+// Use the new V2 Report API to generate a PDF report
+func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string, error) {
+	jsonData := map[string]interface{}{
+		"reportName": "improved-scan-report",
+		"entities": []map[string]interface{}{
+			{
+				"entity": "scan",
+				"ids":    []string{scanID},
+				"tags":   []string{},
+			},
+		},
+		"filters": map[string][]string{
+			"scanners": {"sast"},
+		},
+		"reportType": "ui",
+		"fileFormat": reportType,
+	}
+
+	jsonValue, _ := json.Marshal(jsonData)
+
+	header := http.Header{}
+	header.Set("cxOrigin", cxOrigin)
+	header.Set("Content-Type", "application/json")
+	data, err := sendRequest(sys, http.MethodPost, "/reports/v2", bytes.NewBuffer(jsonValue), header, []int{})
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
+	} else {
+		sys.logger.Infof("Generating report %v", string(data))
+	}
+
+	var reportResponse struct {
+		ReportId string
+	}
+	err = json.Unmarshal(data, &reportResponse)
+
+	return reportResponse.ReportId, err
+
+}
+
 // GetReportStatus returns the status of the report generation process
 func (sys *SystemInstance) GetReportStatus(reportID string) (ReportStatus, error) {
 	var response ReportStatus
 
 	header := http.Header{}
 	header.Set("Accept", "application/json")
-	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v", reportID), nil, header, []int{})
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v?returnUrl=true", reportID), nil, header, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch report status for reportID %v: %s", reportID, err)
 		return response, errors.Wrapf(err, "failed to fetch report status for reportID %v", reportID)
@@ -1411,4 +1461,41 @@ func (sys *SystemInstance) GetVersion() (VersionInfo, error) {
 
 	err = json.Unmarshal(data, &version)
 	return version, err
+}
+
+func (v VersionInfo) CheckCxOne(version string) int {
+	check := versionStringToInts(version)
+	cx1 := versionStringToInts(v.CxOne)
+
+	if check[0] < cx1[0] {
+		return 1
+	} else if check[0] > cx1[0] {
+		return -1
+	} else {
+		if check[1] < cx1[1] {
+			return 1
+		} else if check[1] > cx1[1] {
+			return -1
+		} else {
+			if check[2] < cx1[2] {
+				return 1
+			} else if check[2] > cx1[2] {
+				return -1
+			} else {
+				return 0
+			}
+		}
+	}
+}
+
+func versionStringToInts(version string) []int64 {
+	if version == "" {
+		return []int64{0, 0, 0}
+	}
+	str := strings.Split(version, ".")
+	ints := make([]int64, len(str))
+	for id, val := range str {
+		ints[id], _ = strconv.ParseInt(val, 10, 64)
+	}
+	return ints
 }

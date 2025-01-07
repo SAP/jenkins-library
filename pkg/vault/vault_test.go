@@ -30,7 +30,7 @@ const (
 func TestGetKV2Secret(t *testing.T) {
 	t.Run("Test missing secret", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		setupMockKvV2(vaultMock)
 		vaultMock.On("Read", "secret/data/notexist").Return(nil, nil)
 		secret, err := client.GetKvSecret("secret/notexist")
@@ -45,7 +45,7 @@ func TestGetKV2Secret(t *testing.T) {
 		t.Run("Getting secret from KV engine (v2)", func(t *testing.T) {
 			vaultMock := &mocks.VaultMock{}
 			setupMockKvV2(vaultMock)
-			client := Client{vaultMock, &Config{}}
+			client := Client{nil, vaultMock, &ClientConfig{}}
 			vaultMock.On("Read", secretAPIPath).Return(kv2Secret(SecretData{"key1": "value1", "key2": map[string]any{"subkey1": "subvalue2"}, "key3": 3, "key4": []string{"foo", "bar"}}), nil)
 			secret, err := client.GetKvSecret(secretName)
 			assert.NoError(t, err, "Expect GetKvSecret to succeed")
@@ -58,7 +58,7 @@ func TestGetKV2Secret(t *testing.T) {
 		t.Run("error is thrown when data field is missing", func(t *testing.T) {
 			vaultMock := &mocks.VaultMock{}
 			setupMockKvV2(vaultMock)
-			client := Client{vaultMock, &Config{}}
+			client := Client{nil, vaultMock, &ClientConfig{}}
 			vaultMock.On("Read", secretAPIPath).Return(kv1Secret(SecretData{"key1": "value1"}), nil)
 			secret, err := client.GetKvSecret(secretName)
 			assert.Error(t, err, "Expected to fail since 'data' field is missing")
@@ -74,7 +74,7 @@ func TestGetKV1Secret(t *testing.T) {
 	t.Run("Test missing secret", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		setupMockKvV1(vaultMock)
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 
 		vaultMock.On("Read", mock.AnythingOfType("string")).Return(nil, nil)
 		secret, err := client.GetKvSecret("secret/notexist")
@@ -85,7 +85,7 @@ func TestGetKV1Secret(t *testing.T) {
 	t.Run("Test parsing KV1 secrets", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		setupMockKvV1(vaultMock)
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 
 		vaultMock.On("Read", secretName).Return(kv1Secret(SecretData{"key1": "value1", "key2": 5}), nil)
 		secret, err := client.GetKvSecret(secretName)
@@ -103,7 +103,7 @@ func TestSecretIDGeneration(t *testing.T) {
 
 	t.Run("Test generating new secret-id", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		now := time.Now()
 		expiry := now.Add(5 * time.Hour).Format(time.RFC3339)
 		metadata := map[string]interface{}{
@@ -128,7 +128,7 @@ func TestSecretIDGeneration(t *testing.T) {
 
 	t.Run("Test with no secret-id returned", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		now := time.Now()
 		expiry := now.Add(5 * time.Hour).Format(time.RFC3339)
 		metadata := map[string]interface{}{
@@ -151,7 +151,7 @@ func TestSecretIDGeneration(t *testing.T) {
 
 	t.Run("Test with no new secret-id returned", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		now := time.Now()
 		expiry := now.Add(5 * time.Hour).Format(time.RFC3339)
 		metadata := map[string]interface{}{
@@ -168,7 +168,7 @@ func TestSecretIDGeneration(t *testing.T) {
 		vaultMock.On("Write", path.Join(appRolePath, "/secret-id"), mapWith("metadata", string(metadataJSON))).Return(kv1Secret(nil), nil)
 
 		newSecretID, err := client.GenerateNewAppRoleSecret(secretID, appRoleName)
-		assert.EqualError(t, err, fmt.Sprintf("Could not generate new approle secret-id for approle path %s", path.Join(appRolePath, "secret-id")))
+		assert.EqualError(t, err, fmt.Sprintf("could not generate new approle secret-id for approle path %s", path.Join(appRolePath, "secret-id")))
 		assert.Equal(t, newSecretID, "")
 	})
 }
@@ -181,7 +181,7 @@ func TestSecretIDTtl(t *testing.T) {
 
 	t.Run("Test fetching secreID TTL", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		now := time.Now()
 		expiry := now.Add(5 * time.Hour).Format(time.RFC3339)
 		vaultMock.On("Write", path.Join(appRolePath, "secret-id/lookup"), mapWith("secret_id", secretID)).Return(kv1Secret(SecretData{
@@ -195,16 +195,16 @@ func TestSecretIDTtl(t *testing.T) {
 
 	t.Run("Test with no expiration time", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Write", path.Join(appRolePath, "secret-id/lookup"), mapWith("secret_id", secretID)).Return(kv1Secret(SecretData{}), nil)
 		ttl, err := client.GetAppRoleSecretIDTtl(secretID, appRoleName)
-		assert.EqualError(t, err, fmt.Sprintf("Could not load secret-id information from path %s", appRolePath))
+		assert.EqualError(t, err, fmt.Sprintf("could not load secret-id information from path %s", appRolePath))
 		assert.Equal(t, time.Duration(0), ttl)
 	})
 
 	t.Run("Test with wrong date format", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Write", path.Join(appRolePath, "secret-id/lookup"), mapWith("secret_id", secretID)).Return(kv1Secret(SecretData{
 			"expiration_time": time.Now().String(),
 		}), nil)
@@ -215,7 +215,7 @@ func TestSecretIDTtl(t *testing.T) {
 
 	t.Run("Test with expired secret-id", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		now := time.Now()
 		expiry := now.Add(-5 * time.Hour).Format(time.RFC3339)
 		vaultMock.On("Write", path.Join(appRolePath, "secret-id/lookup"), mapWith("secret_id", secretID)).Return(kv1Secret(SecretData{
@@ -234,7 +234,7 @@ func TestGetAppRoleName(t *testing.T) {
 
 	t.Run("Test that correct role name is returned", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Read", "auth/token/lookup-self").Return(kv1Secret(SecretData{
 			"meta": SecretData{
 				"role_name": "test",
@@ -248,27 +248,27 @@ func TestGetAppRoleName(t *testing.T) {
 
 	t.Run("Test without secret data", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Read", "auth/token/lookup-self").Return(kv1Secret(nil), nil)
 
 		appRoleName, err := client.GetAppRoleName()
-		assert.EqualError(t, err, "Could not lookup token information: auth/token/lookup-self")
+		assert.EqualError(t, err, "could not lookup token information: auth/token/lookup-self")
 		assert.Empty(t, appRoleName)
 	})
 
 	t.Run("Test without metadata data", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Read", "auth/token/lookup-self").Return(kv1Secret(SecretData{}), nil)
 
 		appRoleName, err := client.GetAppRoleName()
-		assert.EqualError(t, err, "Token info did not contain metadata auth/token/lookup-self")
+		assert.EqualError(t, err, "token info did not contain metadata auth/token/lookup-self")
 		assert.Empty(t, appRoleName)
 	})
 
 	t.Run("Test without role name in metadata", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Read", "auth/token/lookup-self").Return(kv1Secret(SecretData{
 			"meta": SecretData{},
 		}), nil)
@@ -280,7 +280,7 @@ func TestGetAppRoleName(t *testing.T) {
 
 	t.Run("Test that different role_name types are ignored", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Read", "auth/token/lookup-self").Return(kv1Secret(SecretData{
 			"meta": SecretData{
 				"role_name": 5,
@@ -297,7 +297,7 @@ func TestTokenRevocation(t *testing.T) {
 	t.Parallel()
 	t.Run("Test that revocation error is returned", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Write",
 			"auth/token/revoke-self",
 			mock.IsType(map[string]interface{}{})).Return(nil, errors.New("Test"))
@@ -308,7 +308,7 @@ func TestTokenRevocation(t *testing.T) {
 
 	t.Run("Test that revocation endpoint is called", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock, &Config{}}
+		client := Client{nil, vaultMock, &ClientConfig{}}
 		vaultMock.On("Write",
 			"auth/token/revoke-self",
 			mock.IsType(map[string]interface{}{})).Return(nil, nil)
@@ -319,7 +319,7 @@ func TestTokenRevocation(t *testing.T) {
 
 func TestUnknownKvVersion(t *testing.T) {
 	vaultMock := &mocks.VaultMock{}
-	client := Client{vaultMock, &Config{}}
+	client := Client{nil, vaultMock, &ClientConfig{}}
 
 	vaultMock.On("Read", "sys/internal/ui/mounts/secret/secret").Return(&api.Secret{
 		Data: map[string]interface{}{
@@ -333,15 +333,6 @@ func TestUnknownKvVersion(t *testing.T) {
 	assert.EqualError(t, err, "KV Engine in version 3 is currently not supported")
 	assert.Nil(t, secret)
 
-}
-
-func TestSetAppRoleMountPont(t *testing.T) {
-	client := Client{nil, &Config{}}
-	const newMountpoint = "auth/test"
-
-	client.SetAppRoleMountPoint("auth/test")
-
-	assert.Equal(t, newMountpoint, client.config.AppRoleMountPoint)
 }
 
 func setupMockKvV2(vaultMock *mocks.VaultMock) {

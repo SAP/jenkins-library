@@ -75,6 +75,18 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: logOutput
+        type: string
+        description: Specifies how the clone logs from the Manage Software Components App are displayed or saved
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        possibleValues:
+          - ZIP
+          - STANDARD
+        default: STANDARD
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API Enpoint

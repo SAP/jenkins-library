@@ -21,12 +21,14 @@ type Event struct {
 	cloudEvent  cloudevents.Event
 	eventType   string
 	eventSource string
+	uuidData    string
 }
 
-func NewEvent(eventType, eventSource string) Event {
+func NewEvent(eventType, eventSource string, uuidString string) Event {
 	return Event{
 		eventType:   eventType,
 		eventSource: eventSource,
+		uuidData:    uuidString,
 	}
 }
 
@@ -45,8 +47,14 @@ func (e Event) CreateWithJSONData(data string, opts ...Option) (Event, error) {
 
 func (e Event) Create(data any, opts ...Option) Event {
 	e.cloudEvent = cloudevents.NewEvent("1.0")
+
+	if e.uuidData != "" {
+		e.cloudEvent.SetID(GetUUID(e.uuidData))
+	} else {
+		e.cloudEvent.SetID(uuid.New().String())
+	}
+
 	// set default values
-	e.cloudEvent.SetID(uuid.New().String())
 	e.cloudEvent.SetType(e.eventType)
 	e.cloudEvent.SetTime(time.Now())
 	e.cloudEvent.SetSource(e.eventSource)
@@ -56,6 +64,10 @@ func (e Event) Create(data any, opts ...Option) Event {
 		applyOpt(e.cloudEvent.Context.AsV1())
 	}
 	return e
+}
+
+func GetUUID(pipelineIdentifier string) string {
+	return uuid.NewMD5(uuid.NameSpaceOID, []byte(pipelineIdentifier)).String()
 }
 
 func (e Event) ToBytes() ([]byte, error) {

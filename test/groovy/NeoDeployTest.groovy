@@ -298,25 +298,24 @@ class NeoDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setMtarFilePath('archive.mtar')
 
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/api\\.test\\.com\\/oauth2\\/apitoken\\/v1", "{\"access_token\":\"xxx\"}")
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/slservice\\.test\\.host\\.com\\/slservice\\/v1\\/oauth\\/accounts\\/testUser123\\/mtars", "{\"id\":123}")
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/slservice\\.test\\.host\\.com\\/slservice\\/v1\\/oauth\\/accounts\\/testUser123\\/mtars", "{\"state\":\"DONE\"}")
-
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "-XPOST.*/apitoken", "{\"access_token\":\"xxx\"}")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "-XPOST.*https://slservice", "{\"id\":123}")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "-XGET.*https://slservice", "{\"state\":\"DONE\"}")
 
         stepRule.step.neoDeploy(
             script: nullScript,
             source: archiveName,
             deployMode: 'mta',
-              neo: [
-                  host: 'test.host.com',
-                  account: 'testUser123',
-                      credentialsId: 'OauthDataFileId',
-                      credentialType: 'SecretFile'
-                    ],
+            neo: [
+                host          : 'test.host.com',
+                account       : 'testUser123',
+                credentialsId : 'OauthDataFileId',
+                credentialType: 'SecretFile'
+            ],
         )
 
-        Assert.assertThat(shellRule.shell[0], containsString("#!/bin/bash curl --fail --silent --show-error --retry 12 -XPOST -u \"abc123:testclientsecret123\" \"https://api.test.com/oauth2/apitoken/v1?grant_type=client_credentials\""))
-        Assert.assertThat(shellRule.shell[1], containsString("#!/bin/bash curl --fail --silent --show-error --retry 12 -XPOST -H \"Authorization: Bearer xxx\" -F file=@\"archive.mtar\" \"https://slservice.test.host.com/slservice/v1/oauth/accounts/testUser123/mtars\""))
+        Assert.assertThat(shellRule.shell[0], containsString("#!/bin/bash curl --fail --silent --show-error --retry 12 -XPOST -u 'abc123':'testclientsecret123' 'https://api.test.com/oauth2'/apitoken/v1?grant_type=client_credentials"))
+        Assert.assertThat(shellRule.shell[1], containsString("#!/bin/bash curl --fail --silent --show-error --retry 12 -XPOST -H \"Authorization: Bearer xxx\" -F file=@'archive.mtar' https://slservice.'test.host.com'/slservice/v1/oauth/accounts/'testUser123'/mtars"))
     }
 
     @Test

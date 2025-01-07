@@ -59,6 +59,7 @@ type SoftwareComponentApiInterface interface {
 	setSleepTimeConfig(timeUnit time.Duration, maxSleepTime time.Duration)
 	getSleepTime(n int) (time.Duration, error)
 	getUUID() string
+	getRepositoryName() string
 	GetRepository() (bool, string, error, bool)
 	Clone() error
 	Pull() error
@@ -69,6 +70,7 @@ type SoftwareComponentApiInterface interface {
 	GetLogProtocol(LogResultsV2, int) (result []LogProtocol, count int, err error)
 	ConvertTime(logTimeStamp string) time.Time
 	GetExecutionLog() (ExecutionLog, error)
+	GetLogArchive() (result []byte, err error)
 	UpdateRepoWithBYOGCredentials(string, string, string)
 }
 

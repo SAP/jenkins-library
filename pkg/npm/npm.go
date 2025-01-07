@@ -96,7 +96,7 @@ func (exec *Execute) SetNpmRegistries() error {
 
 	var buffer bytes.Buffer
 	execRunner.Stdout(&buffer)
-	err := execRunner.RunExecutable("npm", "config", "get", npmRegistry)
+	err := execRunner.RunExecutable("npm", "config", "get", npmRegistry, "-ws=false", "-iwr")
 	execRunner.Stdout(log.Writer())
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (exec *Execute) SetNpmRegistries() error {
 
 	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
 		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
-		err = execRunner.RunExecutable("npm", "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry)
+		err = execRunner.RunExecutable("npm", "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry, "-ws=false", "-iwr")
 		if err != nil {
 			return err
 		}
@@ -158,8 +158,8 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 		}
 
 		if len(packagesWithScript) == 0 {
-			log.Entry().Warnf("could not find any package.json file with script " + script)
-			continue
+			return fmt.Errorf("could not find any package.json file with script : %s ", script)
+
 		}
 
 		for _, packageJSON := range packagesWithScript {

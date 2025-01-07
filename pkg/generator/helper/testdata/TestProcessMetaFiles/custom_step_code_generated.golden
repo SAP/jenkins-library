@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -166,11 +167,14 @@ func TestStepCommand() *cobra.Command {
 
 			piperOsCmd.GeneralConfig.GitHubAccessTokens = piperOsCmd.ResolveAccessTokens(piperOsCmd.GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := piperOsCmd.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = piperOsCmd.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -203,6 +207,11 @@ func TestStepCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -230,6 +239,19 @@ func TestStepCommand() *cobra.Command {
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						piperOsCmd.GeneralConfig.CorrelationID,
+						piperOsCmd.GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)

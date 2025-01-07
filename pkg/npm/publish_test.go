@@ -4,12 +4,13 @@
 package npm
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"io"
 	"path/filepath"
+	"slices"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
 )
@@ -530,7 +531,7 @@ func TestNpmPublish(t *testing.T) {
 
 			// This stub simulates the behavior of npm pack and puts a tgz into the requested
 			utils.execRunner.Stub = func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-				//tgzTargetPath := filepath.Dir(test.packageDescriptors[0])
+				// tgzTargetPath := filepath.Dir(test.packageDescriptors[0])
 				utils.AddFile(filepath.Join(".", "package.tgz"), []byte("this is a tgz file"))
 				return nil
 			}
@@ -547,12 +548,12 @@ func TestNpmPublish(t *testing.T) {
 					assert.Equal(t, "publish", publishCmd.Params[0])
 
 					if len(test.wants.tarballPath) > 0 && assert.Contains(t, publishCmd.Params, "--tarball") {
-						tarballPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--tarball")+1]
+						tarballPath := publishCmd.Params[slices.Index(publishCmd.Params, "--tarball")+1]
 						assert.Equal(t, test.wants.tarballPath, filepath.ToSlash(tarballPath))
 					}
 
 					if assert.Contains(t, publishCmd.Params, "--userconfig") {
-						effectivePublishConfigPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--userconfig")+1]
+						effectivePublishConfigPath := publishCmd.Params[slices.Index(publishCmd.Params, "--userconfig")+1]
 
 						assert.Regexp(t, test.wants.publishConfigPath, filepath.ToSlash(effectivePublishConfigPath))
 

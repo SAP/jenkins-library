@@ -47,7 +47,7 @@ func TestVaultIntegrationGetSecret(t *testing.T) {
 	assert.NoError(t, err)
 	port, err := vaultContainer.MappedPort(ctx, "8200")
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
-	config := &vault.Config{Config: &api.Config{Address: host}}
+	config := &vault.ClientConfig{Config: &api.Config{Address: host}}
 	// setup vault for testing
 	secretData := SecretData{
 		"key1": "value1",
@@ -55,7 +55,7 @@ func TestVaultIntegrationGetSecret(t *testing.T) {
 	}
 	setupVault(t, config, testToken, secretData)
 
-	client, err := vault.NewClient(config, testToken)
+	client, err := vault.NewClientWithToken(config, testToken)
 	assert.NoError(t, err)
 	secret, err := client.GetKvSecret("secret/test")
 	assert.NoError(t, err)
@@ -93,14 +93,14 @@ func TestVaultIntegrationWriteSecret(t *testing.T) {
 	assert.NoError(t, err)
 	port, err := vaultContainer.MappedPort(ctx, "8200")
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
-	config := &vault.Config{Config: &api.Config{Address: host}}
+	config := &vault.ClientConfig{Config: &api.Config{Address: host}}
 	// setup vault for testing
 	secretData := map[string]string{
 		"key1": "value1",
 		"key2": "value2",
 	}
 
-	client, err := vault.NewClient(config, testToken)
+	client, err := vault.NewClientWithToken(config, testToken)
 	assert.NoError(t, err)
 
 	err = client.WriteKvSecret("secret/test", secretData)
@@ -159,16 +159,17 @@ func TestVaultIntegrationAppRole(t *testing.T) {
 	assert.NoError(t, err)
 	port, err := vaultContainer.MappedPort(ctx, "8200")
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
-	config := &vault.Config{Config: &api.Config{Address: host}}
+	config := &vault.ClientConfig{Config: &api.Config{Address: host}}
 
 	secretIDMetadata := map[string]interface{}{
 		"field1": "value1",
 	}
 
 	roleID, secretID := setupVaultAppRole(t, config, testToken, appRolePath, secretIDMetadata)
-
+	config.RoleID = roleID
+	config.SecretID = secretID
 	t.Run("Test Vault AppRole login", func(t *testing.T) {
-		client, err := vault.NewClientWithAppRole(config, roleID, secretID)
+		client, err := vault.NewClient(config)
 		assert.NoError(t, err)
 		secret, err := client.GetSecret("auth/token/lookup-self")
 		meta := secret.Data["meta"].(SecretData)
@@ -178,7 +179,7 @@ func TestVaultIntegrationAppRole(t *testing.T) {
 	})
 
 	t.Run("Test Vault AppRoleTTL Fetch", func(t *testing.T) {
-		client, err := vault.NewClient(config, testToken)
+		client, err := vault.NewClientWithToken(config, testToken)
 		assert.NoError(t, err)
 		ttl, err := client.GetAppRoleSecretIDTtl(secretID, appRoleName)
 		assert.NoError(t, err)
@@ -186,7 +187,7 @@ func TestVaultIntegrationAppRole(t *testing.T) {
 	})
 
 	t.Run("Test Vault AppRole Rotation", func(t *testing.T) {
-		client, err := vault.NewClient(config, testToken)
+		client, err := vault.NewClientWithToken(config, testToken)
 		assert.NoError(t, err)
 		newSecretID, err := client.GenerateNewAppRoleSecret(secretID, appRoleName)
 		assert.NoError(t, err)
@@ -194,7 +195,7 @@ func TestVaultIntegrationAppRole(t *testing.T) {
 		assert.NotEqual(t, secretID, newSecretID)
 
 		// verify metadata is not broken
-		client, err = vault.NewClientWithAppRole(config, roleID, newSecretID)
+		client, err = vault.NewClient(config)
 		assert.NoError(t, err)
 		secret, err := client.GetSecret("auth/token/lookup-self")
 		meta := secret.Data["meta"].(SecretData)
@@ -204,7 +205,7 @@ func TestVaultIntegrationAppRole(t *testing.T) {
 	})
 
 	t.Run("Test Fetching RoleName from vault", func(t *testing.T) {
-		client, err := vault.NewClientWithAppRole(config, roleID, secretID)
+		client, err := vault.NewClient(config)
 		assert.NoError(t, err)
 		fetchedRoleName, err := client.GetAppRoleName()
 		assert.NoError(t, err)
@@ -238,16 +239,18 @@ func TestVaultIntegrationTokenRevocation(t *testing.T) {
 	assert.NoError(t, err)
 	port, err := vaultContainer.MappedPort(ctx, "8200")
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
-	config := &vault.Config{Config: &api.Config{Address: host}}
+	config := &vault.ClientConfig{Config: &api.Config{Address: host}}
 
 	secretIDMetadata := map[string]interface{}{
 		"field1": "value1",
 	}
 
 	roleID, secretID := setupVaultAppRole(t, config, testToken, appRolePath, secretIDMetadata)
+	config.RoleID = roleID
+	config.SecretID = secretID
 
 	t.Run("Test Revocation works", func(t *testing.T) {
-		client, err := vault.NewClientWithAppRole(config, roleID, secretID)
+		client, err := vault.NewClient(config)
 		assert.NoError(t, err)
 		secret, err := client.GetSecret("auth/token/lookup-self")
 		meta := secret.Data["meta"].(SecretData)
@@ -263,7 +266,7 @@ func TestVaultIntegrationTokenRevocation(t *testing.T) {
 	})
 }
 
-func setupVaultAppRole(t *testing.T, config *vault.Config, token, appRolePath string, metadata map[string]interface{}) (string, string) {
+func setupVaultAppRole(t *testing.T, config *vault.ClientConfig, token, appRolePath string, metadata map[string]interface{}) (string, string) {
 	t.Helper()
 	client, err := api.NewClient(config.Config)
 	assert.NoError(t, err)
@@ -302,7 +305,7 @@ func setupVaultAppRole(t *testing.T, config *vault.Config, token, appRolePath st
 	return roleID.(string), secretID.(string)
 }
 
-func setupVault(t *testing.T, config *vault.Config, token string, secret SecretData) {
+func setupVault(t *testing.T, config *vault.ClientConfig, token string, secret SecretData) {
 	t.Helper()
 	client, err := api.NewClient(config.Config)
 	assert.NoError(t, err)

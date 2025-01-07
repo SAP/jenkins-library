@@ -9,6 +9,7 @@ import com.sap.piper.analytics.InfluxData
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -77,6 +78,11 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         try {
                             try {
                                 credentialWrapper(config, credentialInfo) {
+                                    if (config.verbose) {  // need to be set on step config
+                                        echo "[DEBUG] Current environment limits:"
+                                        sh "ulimit -a"
+                                    }
+
                                     sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                                 }
                             } finally {
@@ -132,7 +138,7 @@ static String getCustomDefaultConfigs() {
     // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
     List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
     for (int i = 0; i < customDefaults.size(); i++) {
-        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/${customDefaults[i]}")
+        customDefaults[i] = q(".pipeline/${customDefaults[i]}")
     }
     return customDefaults.join(',')
 }
@@ -151,7 +157,7 @@ static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
-        return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
+        return " --customConfig ${q(script.commonPipelineEnvironment.configurationFile)}"
     }
     return ''
 }

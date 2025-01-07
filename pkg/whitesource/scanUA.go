@@ -127,6 +127,13 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 		}
 	}
 
+	if config.UseGlobalConfiguration {
+		config.ConfigFilePath, err = filepath.Abs(config.ConfigFilePath)
+		if err != nil {
+			return err
+		}
+	}
+
 	configPath, err := config.RewriteUAConfigurationFile(utils, s.AggregateProjectName, config.Verbose)
 	if err != nil {
 		return err

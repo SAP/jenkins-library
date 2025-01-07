@@ -13,12 +13,13 @@ import (
 
 // Coordinates to address the artifact coordinates like groupId, artifactId, version and packaging
 type Coordinates struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-	Packaging  string
-	BuildPath  string
-	URL        string
+	GroupID    string `json:"groupId"`
+	ArtifactID string `json:"artifactId"`
+	Version    string `json:"version"`
+	Packaging  string `json:"packaging"`
+	BuildPath  string `json:"buildPath"`
+	URL        string `json:"url"`
+	PURL       string `json:"purl"`
 }
 
 // Artifact defines the versioning operations for various build tools
