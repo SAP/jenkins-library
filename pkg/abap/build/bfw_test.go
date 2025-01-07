@@ -193,7 +193,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("No error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = successful
+		build.ResultState = Successful
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
@@ -210,7 +210,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("ResultState aborted => Error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = aborted
+		build.ResultState = Aborted
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
@@ -219,7 +219,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("ResultState erroneous => Error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = erroneous
+		build.ResultState = Erroneous
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
@@ -228,7 +228,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("ResultState warning, treatWarningsAsError false => No error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = warning
+		build.ResultState = Warning
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
@@ -237,7 +237,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("ResultState warning, treatWarningsAsError true => error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = warning
+		build.ResultState = Warning
 		treatWarningsAsError = true
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
