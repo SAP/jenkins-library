@@ -1,7 +1,7 @@
 //go:build unit
 // +build unit
 
-package trustengine
+package systemtrust
 
 import (
 	"fmt"
@@ -23,14 +23,14 @@ const errorMsg403 = "unauthorized to request token"
 var testFullURL = fmt.Sprintf("%s/%s?%s=", testServerURL, testTokenEndPoint, testTokenQueryParamName)
 var mockSingleTokenResponse = fmt.Sprintf("{\"sonar\": \"%s\"}", mockSonarToken)
 var mockTwoTokensResponse = fmt.Sprintf("{\"sonar\": \"%s\", \"blackduck\": \"%s\"}", mockSonarToken, mockblackduckToken)
-var trustEngineConfiguration = Configuration{
+var systemTrustConfiguration = Configuration{
 	Token:               "testToken",
 	ServerURL:           testServerURL,
 	TokenEndPoint:       testTokenEndPoint,
 	TokenQueryParamName: testTokenQueryParamName,
 }
 
-func TestTrustEngine(t *testing.T) {
+func TestSystemTrust(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
@@ -40,7 +40,7 @@ func TestTrustEngine(t *testing.T) {
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
-		token, err := GetToken("sonar", client, trustEngineConfiguration)
+		token, err := GetToken("sonar", client, systemTrustConfiguration)
 		assert.NoError(t, err)
 		assert.Equal(t, mockSonarToken, token)
 	})
@@ -51,7 +51,7 @@ func TestTrustEngine(t *testing.T) {
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
-		secrets, err := GetSecrets([]string{"sonar", "blackduck"}, client, trustEngineConfiguration)
+		secrets, err := getSecrets([]string{"sonar", "blackduck"}, client, systemTrustConfiguration)
 
 		assert.NoError(t, err)
 		assert.Len(t, secrets, 2)
@@ -73,7 +73,7 @@ func TestTrustEngine(t *testing.T) {
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
-		_, err := GetToken("sonar", client, trustEngineConfiguration)
+		_, err := GetToken("sonar", client, systemTrustConfiguration)
 		assert.Error(t, err)
 	})
 
