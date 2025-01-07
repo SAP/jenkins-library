@@ -582,8 +582,8 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		token, err := fetchAUnitXcsrfToken("GET", con, []byte(client.Body), client)
-		if assert.Equal(t, nil, err) {
+		token, error := fetchAUnitXcsrfToken("GET", con, []byte(client.Body), client)
+		if assert.Equal(t, nil, error) {
 			assert.Equal(t, tokenExpected, token)
 		}
 	})
@@ -603,8 +603,8 @@ func TestRunAbapEnvironmentRunAUnitTest(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		token, err := fetchAUnitXcsrfToken("GET", con, []byte(client.Body), client)
-		if assert.Equal(t, nil, err) {
+		token, error := fetchAUnitXcsrfToken("GET", con, []byte(client.Body), client)
+		if assert.Equal(t, nil, error) {
 			assert.Equal(t, tokenExpected, token)
 		}
 	})

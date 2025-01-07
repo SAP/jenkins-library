@@ -76,7 +76,8 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 		processId := jsonResponse.Path("processId").Data().(string)
 
 		if processId != "" {
-			return pollTransportStatus(processId, retryCount, config, httpClient, apistruct.Host)
+			error := pollTransportStatus(processId, retryCount, config, httpClient, apistruct.Host)
+			return error
 		}
 		return errors.New("Invalid process id")
 	}
