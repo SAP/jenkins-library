@@ -664,6 +664,17 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: useDetect10
+        description:
+          "This flag enables the use of the supported version 10 of the Detect Script instead of v9"
+        aliases:
+          - name: detect/useDetect10
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   outputs:
     resources:
       - name: influx

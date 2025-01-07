@@ -78,6 +78,7 @@ type detectExecuteScanOptions struct {
 	RepositoryUsername              string   `json:"repositoryUsername,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	RepositoryPassword              string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	UseDetect8                      bool     `json:"useDetect8,omitempty"`
+	UseDetect10                     bool     `json:"useDetect10,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -358,6 +359,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "This flag enables the use of the supported version 8 of the Detect Script instead of v9")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect10, "useDetect10", false, "This flag enables the use of the supported version 10 of the Detect Script instead of v9")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -956,6 +958,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/useDetect8"}},
+						Default:     false,
+					},
+					{
+						Name:        "useDetect10",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/useDetect10"}},
 						Default:     false,
 					},
 				},
