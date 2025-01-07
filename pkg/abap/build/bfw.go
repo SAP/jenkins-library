@@ -18,14 +18,14 @@ import (
 
 // RunState : Current Status of the Build
 type RunState string
-type resultState string
+type ResultState string
 type msgty string
 
 const (
-	successful resultState = "SUCCESSFUL"
-	warning    resultState = "WARNING"
-	erroneous  resultState = "ERRONEOUS"
-	aborted    resultState = "ABORTED"
+	Successful ResultState = "SUCCESSFUL"
+	Warning    ResultState = "WARNING"
+	Erroneous  ResultState = "ERRONEOUS"
+	Aborted    ResultState = "ABORTED"
 
 	Initializing RunState = "INITIALIZING" // Initializing : Build Framework prepared
 	Accepted     RunState = "ACCEPTED"     // Accepted : Build Framework triggered
@@ -46,7 +46,7 @@ type jsonBuild struct {
 	Build struct {
 		BuildID     string      `json:"build_id"`
 		RunState    RunState    `json:"run_state"`
-		ResultState resultState `json:"result_state"`
+		ResultState ResultState `json:"result_state"`
 		Phase       string      `json:"phase"`
 		Entitytype  string      `json:"entitytype"`
 		Startedby   string      `json:"startedby"`
@@ -68,7 +68,7 @@ type jsonTask struct {
 	PluginClass string      `json:"plugin_class"`
 	StartedAt   string      `json:"started_at"`
 	FinishedAt  string      `json:"finished_at"`
-	ResultState resultState `json:"result_state"`
+	ResultState ResultState `json:"result_state"`
 }
 
 type jsonLogs struct {
@@ -96,7 +96,7 @@ type Build struct {
 	Connector   Connector
 	BuildID     string      `json:"build_id"`
 	RunState    RunState    `json:"run_state"`
-	ResultState resultState `json:"result_state"`
+	ResultState ResultState `json:"result_state"`
 	Phase       string      `json:"phase"`
 	Entitytype  string      `json:"entitytype"`
 	Startedby   string      `json:"startedby"`
@@ -114,7 +114,7 @@ type task struct {
 	PluginClass string      `json:"plugin_class"`
 	StartedAt   string      `json:"started_at"`
 	FinishedAt  string      `json:"finished_at"`
-	ResultState resultState `json:"result_state"`
+	ResultState ResultState `json:"result_state"`
 	Logs        []logStruct
 	Results     []Result
 }
@@ -221,11 +221,11 @@ func (b *Build) EvaluteIfBuildSuccessful(treatWarningsAsError bool) error {
 	if b.RunState == Failed {
 		return errors.Errorf("Build ended with runState failed")
 	}
-	if treatWarningsAsError && b.ResultState == warning {
-		return errors.Errorf("Build ended with resultState warning, setting to failed as configured")
+	if treatWarningsAsError && b.ResultState == Warning {
+		return errors.Errorf("Build ended with ResultState warning, setting to failed as configured")
 	}
-	if (b.ResultState == aborted) || (b.ResultState == erroneous) {
-		return errors.Errorf("Build ended with resultState %s", b.ResultState)
+	if (b.ResultState == Aborted) || (b.ResultState == Erroneous) {
+		return errors.Errorf("Build ended with ResultState %s", b.ResultState)
 	}
 	return nil
 }

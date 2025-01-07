@@ -297,7 +297,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// hooks need to have been loaded from the defaults before the server URL is known
 	err = c.setTrustEngineConfiguration(stepConfig.HookConfig)
 	if err != nil {
-		log.Entry().WithError(err).Debug("Trust Engine lookup skipped due to missing or incorrect configuration")
+		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
 	} else {
 		trustengineClient := trustengine.PrepareClient(&piperhttp.Client{}, c.trustEngineConfiguration)
 		resolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, trustengineClient)
