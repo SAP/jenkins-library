@@ -6,11 +6,11 @@ package npm
 import (
 	"io"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
 )
@@ -548,12 +548,12 @@ func TestNpmPublish(t *testing.T) {
 					assert.Equal(t, "publish", publishCmd.Params[0])
 
 					if len(test.wants.tarballPath) > 0 && assert.Contains(t, publishCmd.Params, "--tarball") {
-						tarballPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--tarball")+1]
+						tarballPath := publishCmd.Params[slices.Index(publishCmd.Params, "--tarball")+1]
 						assert.Equal(t, test.wants.tarballPath, filepath.ToSlash(tarballPath))
 					}
 
 					if assert.Contains(t, publishCmd.Params, "--userconfig") {
-						effectivePublishConfigPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--userconfig")+1]
+						effectivePublishConfigPath := publishCmd.Params[slices.Index(publishCmd.Params, "--userconfig")+1]
 
 						assert.Regexp(t, test.wants.publishConfigPath, filepath.ToSlash(effectivePublishConfigPath))
 

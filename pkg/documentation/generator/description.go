@@ -13,7 +13,8 @@ const (
 	headlineUsage           = "## Usage\n\n"
 	headlineJenkinsPipeline = "    === \"Jenkins\"\n\n"
 	headlineCommandLine     = "    === \"Command Line\"\n\n"
-	headlineAzure           = "    === \"Azure\"\n\n"
+	headlineAzure           = "    === \"Azure DevOps\"\n\n"
+	headlineGHA             = "    === \"GitHub Actions\"\n\n"
 	spacingTabBox           = "        "
 )
 
@@ -28,10 +29,10 @@ var CustomLibrarySteps = []CustomLibrary{}
 
 // CustomLibrary represents a custom library with it's custom step names, binary name and library name.
 type CustomLibrary struct {
-	Name        string   `yaml: "name,omitempty"`
-	BinaryName  string   `yaml: "binaryName,omitempty"`
-	LibraryName string   `yaml: "libraryName,omitempty"`
-	Steps       []string `yaml: "steps,omitempty"`
+	Name        string   `yaml:"name,omitempty"`
+	BinaryName  string   `yaml:"binaryName,omitempty"`
+	LibraryName string   `yaml:"libraryName,omitempty"`
+	Steps       []string `yaml:"steps,omitempty"`
 }
 
 // Replaces the StepName placeholder with the content from the yaml
@@ -64,6 +65,20 @@ func createDescriptionSection(stepData *config.StepData) string {
 		description += fmt.Sprintf("%v    name: %v\n", spacingTabBox, stepData.Metadata.Name)
 		description += fmt.Sprintf("%v    inputs:\n", spacingTabBox)
 		description += fmt.Sprintf("%v      stepName: %v\n", spacingTabBox, stepData.Metadata.Name)
+		description += fmt.Sprintf("%v      flags: --anyStepParameter\n", spacingTabBox)
+		description += fmt.Sprintf("%v```\n\n", spacingTabBox)
+	}
+
+	// add GiHub Actions specific information if activated
+	if includeGHA {
+		description += headlineGHA
+		description += fmt.Sprintf("%v```\n", spacingTabBox)
+		description += fmt.Sprintf("%vsteps:\n", spacingTabBox)
+		description += fmt.Sprintf("%v  - uses: SAP/project-piper-action@releaseCommitSHA\n", spacingTabBox)
+		description += fmt.Sprintf("%v    name: %v\n", spacingTabBox, stepData.Metadata.Name)
+		description += fmt.Sprintf("%v    with:\n", spacingTabBox)
+		description += fmt.Sprintf("%v      step-name: %v\n", spacingTabBox, stepData.Metadata.Name)
+		description += fmt.Sprintf("%v      flags: --anyStepParameter\n", spacingTabBox)
 		description += fmt.Sprintf("%v```\n\n", spacingTabBox)
 	}
 

@@ -72,9 +72,9 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
+		//copy stage configuration with Build name
 		if centralBuild, ok := c.Stages["Central Build"]; ok {
 			c.Stages["Build"] = centralBuild
-			delete(c.Stages, "Central Build")
 		}
 	}
 	for _, s := range secrets {
@@ -85,9 +85,9 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
+		//copy stage secrets configuration with Build name
 		if centralBuild, ok := c.Stages["Central Build"]; ok {
 			c.Stages["Build"] = centralBuild
-			delete(c.Stages, "Central Build")
 		}
 	}
 }
@@ -193,9 +193,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
-	if stageName == "Central Build" {
-		stageName = "Build"
-	}
 
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
@@ -300,7 +297,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// hooks need to have been loaded from the defaults before the server URL is known
 	err = c.setTrustEngineConfiguration(stepConfig.HookConfig)
 	if err != nil {
-		log.Entry().WithError(err).Debug("Trust Engine lookup skipped due to missing or incorrect configuration")
+		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
 	} else {
 		trustengineClient := trustengine.PrepareClient(&piperhttp.Client{}, c.trustEngineConfiguration)
 		resolveAllTrustEngineReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.trustEngineConfiguration, trustengineClient)

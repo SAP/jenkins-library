@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -467,7 +468,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	handleExcludedDirectories(&args, &config)
 
 	if config.Unmap {
-		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
+		if !slices.Contains(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
 			args = append(args, "--detect.project.codelocation.unmap=true")
 		}
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
