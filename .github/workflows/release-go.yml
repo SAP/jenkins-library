@@ -28,6 +28,11 @@ jobs:
           npm install semver --quiet
           echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
 
+      - name: Remove files that should not be published
+        run: |
+          rm -f README.md
+          rm -f CONTRIBUTING.md
+
       - uses: SAP/project-piper-action@master
         name: Publish prerelease
         with:
