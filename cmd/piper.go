@@ -41,7 +41,7 @@ type GeneralConfigOptions struct {
 	VaultServerURL       string
 	VaultNamespace       string
 	VaultPath            string
-	TrustEngineToken     string
+	SystemTrustToken     string
 	HookConfig           HookConfiguration
 	MetaDataResolver     func() map[string]config.StepData
 	GCPJsonKeyFilePath   string
@@ -57,7 +57,7 @@ type HookConfiguration struct {
 	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
 	PendoConfig       PendoConfiguration       `json:"pendo,omitempty"`
 	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
-	TrustEngineConfig TrustEngineConfiguration `json:"trustengine,omitempty"`
+	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust,omitempty"`
 }
 
 type GCPPubSubConfiguration struct {
@@ -93,7 +93,7 @@ type OIDCConfiguration struct {
 	RoleID string `json:",roleID,omitempty"`
 }
 
-type TrustEngineConfiguration struct {
+type SystemTrustConfiguration struct {
 	ServerURL           string `json:"baseURL,omitempty"`
 	TokenEndPoint       string `json:"tokenEndPoint,omitempty"`
 	TokenQueryParamName string `json:"tokenQueryParamName,omitempty"`
@@ -385,8 +385,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	}
 	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
 
-	GeneralConfig.TrustEngineToken = os.Getenv("PIPER_trustEngineToken")
-	myConfig.SetTrustEngineToken(GeneralConfig.TrustEngineToken)
+	GeneralConfig.SystemTrustToken = os.Getenv("PIPER_systemTrustToken")
+	myConfig.SetSystemTrustToken(GeneralConfig.SystemTrustToken)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
