@@ -33,6 +33,14 @@ jobs:
           rm -f README.md
           rm -f CONTRIBUTING.md
 
+      - name: Create custom release ZIP
+        run: |
+          zip -r jenkins-library-${{ env.PIPER_version }}.zip . -x "*.git*" "*.github/workflows*"
+
+      - name: Create custom release tar.gz
+        run: |
+          tar -czvf jenkins-library-${{ env.PIPER_version }}.tar.gz --exclude=".git" --exclude=".github/workflows" .
+
       - uses: SAP/project-piper-action@master
         name: Publish prerelease
         with:
