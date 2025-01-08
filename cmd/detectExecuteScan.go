@@ -427,6 +427,7 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	log.Entry().Infof("Downloading Detect Script")
 
+	//Adding detect10 changes
 	downloadScript := func() error {
 		if config.UseDetect8 {
 			return utils.DownloadFile("https://detect.blackduck.com/detect8.sh", "detect.sh", nil, nil)
