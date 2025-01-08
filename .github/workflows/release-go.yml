@@ -41,6 +41,21 @@ jobs:
         run: |
           tar -czvf jenkins-library-${{ env.PIPER_version }}.tar.gz --exclude=".git" --exclude=".github/workflows" .
 
+      - name: Publish release assets
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./jenkins-library-${{ env.PIPER_version }}.zip
+          asset_name: jenkins-library-${{ env.PIPER_version }}.zip
+          asset_content_type: application/zip
+
+      - uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./jenkins-library-${{ env.PIPER_version }}.tar.gz
+          asset_name: jenkins-library-${{ env.PIPER_version }}.tar.gz
+          asset_content_type: application/gzip
+
       - uses: SAP/project-piper-action@master
         name: Publish prerelease
         with:
