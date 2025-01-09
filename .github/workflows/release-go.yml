@@ -28,17 +28,22 @@ jobs:
           npm install semver --quiet
           echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
 
-      - name: Remove files that should not be published
+      - name: Make temporary directory for archiving files
         run: |
+          mkdir temp_dir
+          cp -r ./* temp_dir
+          cd temp_dir
           rm -f README.md
           rm -f CONTRIBUTING.md
 
       - name: Create custom release ZIP
         run: |
+          cd temp_dir
           zip -r jenkins-library-${{ env.PIPER_version }}.zip . -x "*.git*" "*.github/workflows*"
 
       - name: Create custom release tar.gz
         run: |
+          cd temp_dir
           tar -czvf jenkins-library-${{ env.PIPER_version }}.tar.gz --exclude=".git" --exclude=".github/workflows" .
 
       - name: Publish release assets
