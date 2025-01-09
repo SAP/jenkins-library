@@ -12,8 +12,6 @@ jobs:
     permissions: write-all
     name: Publish
     runs-on: ubuntu-latest
-    env:
-      ARCHIVE_NAME: jenkins-library-${{ env.PIPER_version }}
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
 
@@ -29,6 +27,7 @@ jobs:
           cp ./piper_master-darwin.arm64 ./piper-darwin.arm64
           npm install semver --quiet
           echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
+          echo "ARCHIVE_NAME=jenkins-library-${{ env.PIPER_version }}" >> $GITHUB_ENV
 
       - name: Prepare files for archiving
         run: |
