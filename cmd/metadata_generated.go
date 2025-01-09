@@ -70,6 +70,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"githubCreateIssue":                         githubCreateIssueMetadata(),
 		"githubCreatePullRequest":                   githubCreatePullRequestMetadata(),
 		"githubPublishRelease":                      githubPublishReleaseMetadata(),
+		"githubSecretScanningReport":                githubSecretScanningReportMetadata(),
 		"githubSetCommitStatus":                     githubSetCommitStatusMetadata(),
 		"gitopsUpdateDeployment":                    gitopsUpdateDeploymentMetadata(),
 		"golangBuild":                               golangBuildMetadata(),
