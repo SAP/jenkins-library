@@ -1,4 +1,4 @@
-package trustengine
+package systemtrust
 
 import (
 	"encoding/json"
@@ -32,8 +32,8 @@ type Configuration struct {
 }
 
 // GetToken requests a single token
-func GetToken(refName string, client *piperhttp.Client, trustEngineConfiguration Configuration) (string, error) {
-	secrets, err := GetSecrets([]string{refName}, client, trustEngineConfiguration)
+func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration Configuration) (string, error) {
+	secrets, err := getSecrets([]string{refName}, client, systemTrustConfiguration)
 	if err != nil {
 		return "", errors.Wrap(err, "couldn't get token from System Trust")
 	}
@@ -45,15 +45,15 @@ func GetToken(refName string, client *piperhttp.Client, trustEngineConfiguration
 	return "", errors.New("could not find token in System Trust response")
 }
 
-// GetSecrets transforms the System Trust JSON response into System Trust secrets, and can be used to request multiple tokens
-func GetSecrets(refNames []string, client *piperhttp.Client, trustEngineConfiguration Configuration) ([]Secret, error) {
+// getSecrets transforms the System Trust JSON response into System Trust secrets, and can be used to request multiple tokens
+func getSecrets(refNames []string, client *piperhttp.Client, systemTrustConfiguration Configuration) ([]Secret, error) {
 	var secrets []Secret
 	query := url.Values{
-		trustEngineConfiguration.TokenQueryParamName: {
+		systemTrustConfiguration.TokenQueryParamName: {
 			strings.Join(refNames, ","),
 		},
 	}
-	response, err := getResponse(trustEngineConfiguration.ServerURL, trustEngineConfiguration.TokenEndPoint, query, client)
+	response, err := getResponse(systemTrustConfiguration.ServerURL, systemTrustConfiguration.TokenEndPoint, query, client)
 	if err != nil {
 		return secrets, errors.Wrap(err, "getting secrets from System Trust failed")
 	}
@@ -120,7 +120,7 @@ func parseURL(serverURL, endpoint string, query url.Values) (string, error) {
 }
 
 // PrepareClient adds the System Trust authentication token to the client
-func PrepareClient(client *piperhttp.Client, trustEngineConfiguration Configuration) *piperhttp.Client {
+func PrepareClient(client *piperhttp.Client, systemTrustConfiguration Configuration) *piperhttp.Client {
 	var logEntry *logrus.Entry
 	if logrus.GetLevel() < logrus.DebugLevel {
 		logger := logrus.New()
@@ -128,7 +128,7 @@ func PrepareClient(client *piperhttp.Client, trustEngineConfiguration Configurat
 		logEntry = logrus.NewEntry(logger)
 	}
 	client.SetOptions(piperhttp.ClientOptions{
-		Token:  fmt.Sprintf("Bearer %s", trustEngineConfiguration.Token),
+		Token:  fmt.Sprintf("Bearer %s", systemTrustConfiguration.Token),
 		Logger: logEntry,
 	})
 	return client
