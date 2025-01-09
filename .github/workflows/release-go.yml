@@ -12,6 +12,8 @@ jobs:
     permissions: write-all
     name: Publish
     runs-on: ubuntu-latest
+    env:
+      ARCHIVE_NAME: jenkins-library-${{ env.PIPER_version }}
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
 
@@ -28,37 +30,35 @@ jobs:
           npm install semver --quiet
           echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
 
-      - name: Make temporary directory for archiving files
+      - name: Prepare files for archiving
         run: |
-          mkdir temp_dir
-          cp -r ./* temp_dir
-          cd temp_dir
-          rm -f README.md
-          rm -f CONTRIBUTING.md
+          mkdir ${{ github.workspace }}/temp_dir
+          rsync -av --exclude={README.md,CONTRIBUTING.md,'*.git*','.github/workflows*'} ./ ${{ github.workspace }}/temp_dir/
 
       - name: Create custom release ZIP
         run: |
-          cd temp_dir
-          zip -r jenkins-library-${{ env.PIPER_version }}.zip . -x "*.git*" "*.github/workflows*"
+          cd ${{ github.workspace }}/temp_dir
+          zip -r ../${{ env.ARCHIVE_NAME }}.zip .
 
       - name: Create custom release tar.gz
         run: |
-          cd temp_dir
-          tar -czvf jenkins-library-${{ env.PIPER_version }}.tar.gz --exclude=".git" --exclude=".github/workflows" .
+          cd ${{ github.workspace }}/temp_dir
+          tar -czvf ../${{ env.ARCHIVE_NAME }}.tar.gz .
 
-      - name: Publish release assets
+      - name: Publish custom release ZIP
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./jenkins-library-${{ env.PIPER_version }}.zip
-          asset_name: jenkins-library-${{ env.PIPER_version }}.zip
+          asset_path: ./${{ env.ARCHIVE_NAME }}.zip
+          asset_name: ${{ env.ARCHIVE_NAME }}.zip
           asset_content_type: application/zip
 
-      - uses: actions/upload-release-asset@v1
+      - name: Publish custom release tar.gz
+        uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./jenkins-library-${{ env.PIPER_version }}.tar.gz
-          asset_name: jenkins-library-${{ env.PIPER_version }}.tar.gz
+          asset_path: ./${{ env.ARCHIVE_NAME }}.tar.gz
+          asset_name: ${{ env.ARCHIVE_NAME }}.tar.gz
           asset_content_type: application/gzip
 
       - uses: SAP/project-piper-action@master
