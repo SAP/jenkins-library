@@ -415,13 +415,23 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 	return nil
 }
 
+func addSonarScannerOpts(opts string) {
+	tmpOpts := os.Getenv("SONAR_SCANNER_OPTS")
+	if len(tmpOpts) > 0 {
+		log.Entry().Debug("SONAR_SCANNER_OPTS already set. Appending to existing value: " + tmpOpts)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + tmpOpts + " " + opts)
+	} else {
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + opts)
+	}
+}
+
 func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
 	truststorePath := filepath.Join(getWorkingDir(), ".certificates")
 	truststoreFile := filepath.Join(truststorePath, "cacerts")
 
 	if exists, _ := fileUtilsExists(truststoreFile); exists {
 		// use local existing trust store
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
+		addSonarScannerOpts(keytool.GetMavenOpts(truststoreFile))
 		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else if len(certificateList) > 0 {
 		// create download temp dir
@@ -451,7 +461,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 				// return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
+		addSonarScannerOpts(keytool.GetMavenOpts(truststoreFile))
 		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
