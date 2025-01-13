@@ -61,7 +61,7 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 			RequiredApprovingReviewCount: 1,
 		}
 		ghRepo := ghCheckBranchRepoService{protection: github.Protection{
-			RequiredStatusChecks:       &github.RequiredStatusChecks{Contexts: []string{"check0", "check1", "check2", "check3"}},
+			RequiredStatusChecks:       &github.RequiredStatusChecks{Contexts: &[]string{"check0", "check1", "check2", "check3"}},
 			EnforceAdmins:              &github.AdminEnforcement{Enabled: true},
 			RequiredPullRequestReviews: &github.PullRequestReviewsEnforcement{RequiredApprovingReviewCount: 1},
 		}}
@@ -86,7 +86,7 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 			RequiredChecks: []string{"check1", "check2"},
 		}
 		ghRepo := ghCheckBranchRepoService{protection: github.Protection{
-			RequiredStatusChecks: &github.RequiredStatusChecks{Contexts: []string{"check0", "check1"}},
+			RequiredStatusChecks: &github.RequiredStatusChecks{Contexts: &[]string{"check0", "check1"}},
 		}}
 		err := runGithubCheckBranchProtection(ctx, &config, &telemetryData, &ghRepo)
 		assert.Contains(t, fmt.Sprint(err), "required status check 'check2' not found")
