@@ -61,6 +61,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.14.4
+	mvdan.cc/sh/v3 v3.10.0
 	mvdan.cc/xurls/v2 v2.4.0
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd
 )
@@ -120,7 +121,6 @@ require (
 	golang.org/x/image v0.0.0-20220302094943-723b81ca9867 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
-	mvdan.cc/sh/v3 v3.10.0 // indirect
 )
 
 require (
