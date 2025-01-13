@@ -30,7 +30,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.19.0
-	github.com/google/go-github/v45 v45.2.0
+	github.com/google/go-github/v68 v68.0.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/vault/api v1.15.0

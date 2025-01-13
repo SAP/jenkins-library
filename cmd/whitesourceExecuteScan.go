@@ -29,7 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 )
 
 // ScanOptions is just used to make the lines less long
