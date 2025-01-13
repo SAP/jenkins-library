@@ -27,6 +27,21 @@ jobs:
           cp ./piper_master-darwin.arm64 ./piper-darwin.arm64
           npm install semver --quiet
           echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
+          echo "ARCHIVE_NAME=jenkins-library-${{ env.PIPER_version }}" >> $GITHUB_ENV
+
+      - name: Create ZIP Archive
+        run: git archive --format=zip --output=${{ env.ARCHIVE_NAME }}.zip HEAD
+
+      - name: Create TAR.GZ Archive
+        run: git archive --format=tar.gz --output=${{ env.ARCHIVE_NAME }}.tar.gz HEAD
+
+      - name: Upload Archives
+        uses: actions/upload-release-artifact@v4
+        with:
+          name: release-archives
+          path: |
+            ${{ env.ARCHIVE_NAME }}.zip
+            ${{ env.ARCHIVE_NAME }}.tar.gz
 
       - uses: SAP/project-piper-action@master
         name: Publish prerelease
@@ -39,6 +54,7 @@ jobs:
             --assetPathList ./piper --assetPathList ./piper_master
             --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-darwin.x86_64
             --assetPathList ./piper-darwin.arm64 --assetPathList ./piper_master-darwin.arm64
+            --assetPathList ./${{ env.ARCHIVE_NAME }}.zip --assetPathList ./${{ env.ARCHIVE_NAME }}.tar.gz
 
       - name: Download Piper binary from recently published prerelease
         uses: robinraju/release-downloader@v1
