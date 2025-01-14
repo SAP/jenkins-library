@@ -1,0 +1,7 @@
+name: piperTestStep
+description: Executes a custom Java build step.
+parameters:
+  message:
+    type: string
+    description: A message to be printed by the custom step.
+    default: "Hello from Piper!"
