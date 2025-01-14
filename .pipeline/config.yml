@@ -1,28 +1,3 @@
 steps:
-  githubPublishRelease:
-    addClosedIssues: true
-    addDeltaToLastRelease: true
-    excludeLabels:
-      - 'discussion'
-      - 'duplicate'
-      - 'invalid'
-      - 'question'
-      - 'wontfix'
-      - 'stale'
-    owner: 'SAP'
-    repository: 'jenkins-library'
-    releaseBodyHeader: ''
-  githubCreatePullRequest:
-    base: master
-    owner: 'SAP'
-    repository: 'jenkins-library'
-    labels:
-      - 'REVIEW'
-      - 'go-piper'
-    assignees:
-      - 'marcusholl'
-      - 'daniel-kurzynski'
-      - 'fwilhe'
-      - 'CCFenner'
-      - 'OliverNocon'
-      - 'nevskrem'
+  piperTestStep:
+    message: "Custom message for Piper Test Step"
