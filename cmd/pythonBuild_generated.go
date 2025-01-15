@@ -20,6 +20,7 @@ import (
 
 type pythonBuildOptions struct {
 	BuildFlags               []string `json:"buildFlags,omitempty"`
+	SetupFlags               []string `json:"setupFlags,omitempty"`
 	CreateBOM                bool     `json:"createBOM,omitempty"`
 	Publish                  bool     `json:"publish,omitempty"`
 	TargetRepositoryPassword string   `json:"targetRepositoryPassword,omitempty"`
@@ -192,7 +193,8 @@ and are exposed are environment variables that must be present in the environmen
 }
 
 func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags to be used.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags passed to python binary.")
+	cmd.Flags().StringSliceVar(&stepConfig.SetupFlags, "setupFlags", []string{}, "Defines list of flags passed to setup.py.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
@@ -217,6 +219,15 @@ func pythonBuildMetadata() config.StepData {
 				Parameters: []config.StepParameters{
 					{
 						Name:        "buildFlags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "setupFlags",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
