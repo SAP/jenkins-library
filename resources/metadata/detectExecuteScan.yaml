@@ -664,11 +664,11 @@ spec:
           - STAGES
           - STEPS
         default: false
-      - name: useDetect10
+      - name: useDetect9
         description:
-          "This flag enables the use of the supported version 10 of the Detect Script instead of v9"
+          "This flag enables the use of the supported version 9 of the Detect Script instead of v8"
         aliases:
-          - name: detect/useDetect10
+          - name: detect/useDetect9
         type: bool
         scope:
           - PARAMETERS
