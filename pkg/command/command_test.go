@@ -235,6 +235,120 @@ func TestCmdPipes(t *testing.T) {
 	})
 }
 
+func TestValidateExecutable(t *testing.T) {
+	tests := []struct {
+		name       string
+		executable string
+		wantErr    bool
+		errMsg     string
+	}{
+		{
+			name:       "valid executable",
+			executable: "go",
+			wantErr:    false,
+		},
+		{
+			name:       "empty executable",
+			executable: "",
+			wantErr:    true,
+			errMsg:     "executable name cannot be empty",
+		},
+		{
+			name:       "path traversal forward slash",
+			executable: "../malicious",
+			wantErr:    true,
+			errMsg:     "must not contain path separators",
+		},
+		{
+			name:       "path traversal backslash",
+			executable: "..\\malicious",
+			wantErr:    true,
+			errMsg:     "must not contain path separators",
+		},
+		{
+			name:       "shell metacharacters",
+			executable: "ls&pwd",
+			wantErr:    true,
+			errMsg:     "contains shell metacharacters",
+		},
+		{
+			name:       "too long executable",
+			executable: strings.Repeat("a", 256),
+			wantErr:    true,
+			errMsg:     "exceeds maximum length",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateExecutable(tt.executable)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSanitizeParams(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  []string
+		want    []string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:   "valid parameters",
+			params: []string{"-v", "--flag", "value"},
+			want:   []string{"-v", "--flag", "value"},
+		},
+		{
+			name:    "too many parameters",
+			params:  make([]string, 4097),
+			wantErr: true,
+			errMsg:  "too many parameters",
+		},
+		{
+			name:    "parameter too long",
+			params:  []string{strings.Repeat("a", 32769)},
+			wantErr: true,
+			errMsg:  "exceeds maximum length",
+		},
+		{
+			name:   "removes control characters",
+			params: []string{"test\x00file", "normal"},
+			want:   []string{"testfile", "normal"},
+		},
+		{
+			name:   "removes shell metacharacters",
+			params: []string{"file&pwd", "arg|ls"},
+			want:   []string{"filepwd", "argls"},
+		},
+		{
+			name:    "empty after sanitization",
+			params:  []string{"&|;<>"},
+			wantErr: true,
+			errMsg:  "empty after sanitization",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := sanitizeParams(tt.params)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
 // based on https://golang.org/src/os/exec/exec_test.go
 // this is not directly executed
 func TestHelperProcess(*testing.T) {

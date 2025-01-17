@@ -123,12 +123,87 @@ func (c *Command) RunShell(shell, script string) error {
 	return nil
 }
 
+// validateExecutable performs security checks on the executable name
+func validateExecutable(executable string) error {
+	if executable == "" {
+		return fmt.Errorf("executable name cannot be empty")
+	}
+
+	// Check for path traversal attempts
+	if strings.ContainsAny(executable, "/\\") {
+		return fmt.Errorf("invalid executable name: must not contain path separators")
+	}
+
+	// Check for common shell metacharacters
+	if strings.ContainsAny(executable, "&|;<>$`\\") {
+		return fmt.Errorf("invalid executable name: contains shell metacharacters")
+	}
+
+	// Maximum length check
+	if len(executable) > 255 {
+		return fmt.Errorf("invalid executable name: exceeds maximum length")
+	}
+
+	return nil
+}
+
+// sanitizeParams removes any potentially dangerous characters from command parameters
+func sanitizeParams(params []string) ([]string, error) {
+	if len(params) > 4096 {
+		return nil, fmt.Errorf("too many parameters: maximum allowed is 4096")
+	}
+
+	sanitized := make([]string, len(params))
+	for i, param := range params {
+		// Check parameter length
+		if len(param) > 32768 {
+			return nil, fmt.Errorf("parameter %d exceeds maximum length", i)
+		}
+
+		// Remove null bytes and control characters
+		param = strings.Map(func(r rune) rune {
+			if r < 32 {
+				return -1
+			}
+			return r
+		}, param)
+
+		// Remove dangerous shell characters
+		param = strings.Map(func(r rune) rune {
+			if strings.ContainsRune("&|;<>`$()\\", r) {
+				return -1
+			}
+			return r
+		}, param)
+
+		// Basic sanitization
+		param = strings.TrimSpace(param)
+
+		// Ensure param isn't empty after sanitization
+		if param == "" {
+			return nil, fmt.Errorf("parameter %d is empty after sanitization", i)
+		}
+
+		sanitized[i] = param
+	}
+	return sanitized, nil
+}
+
 // RunExecutable runs the specified executable with parameters
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
 //
 //	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
-	return c.RunExecutableWithAttrs(executable, nil, params...)
+	if err := validateExecutable(executable); err != nil {
+		return err
+	}
+
+	sanitizedParams, err := sanitizeParams(params)
+	if err != nil {
+		return fmt.Errorf("parameter sanitization failed: %v", err)
+	}
+
+	return c.RunExecutableWithAttrs(executable, nil, sanitizedParams...)
 }
 
 // RunExecutableWithAttrs runs the specified executable with parameters and as a specified UID and GID
