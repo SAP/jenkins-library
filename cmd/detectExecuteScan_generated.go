@@ -977,7 +977,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect9"}},
+						Aliases:     []config.Alias{{Name: "detect/useDetect10"}},
 						Default:     true,
 					},
 				},
