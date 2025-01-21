@@ -367,7 +367,7 @@ func Test_prepareTelemetry(t *testing.T) {
 			want: MonitoringData{
 				PipelineUrlHash: "",
 				BuildUrlHash:    "",
-				Orchestrator:	 "Jenkins",
+				Orchestrator:    "Jenkins",
 				StageName:       "",
 				StepName:        "",
 				ExitCode:        "0",
