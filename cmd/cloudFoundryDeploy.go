@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"mvdan.cc/sh/v3/syntax"
 	"os"
 	"regexp"
 	"slices"
@@ -592,6 +593,11 @@ func cfDeploy(
 	// TODO set HOME to config.DockerWorkspace
 	command.SetEnv(additionalEnvironment)
 
+	escapedPassword, err := syntax.Quote(config.Password, syntax.LangPOSIX)
+	if err != nil {
+		return errors.Wrapf(err, "Cannot quote password")
+	}
+
 	err = command.RunExecutable("cf", "version")
 
 	if err == nil {
@@ -600,7 +606,7 @@ func cfDeploy(
 			CfOrg:         config.Org,
 			CfSpace:       config.Space,
 			Username:      config.Username,
-			Password:      config.Password,
+			Password:      escapedPassword,
 			CfLoginOpts:   strings.Fields(config.LoginParameters),
 		})
 	}
