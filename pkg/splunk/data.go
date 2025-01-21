@@ -18,6 +18,7 @@ type Details struct {
 type MonitoringData struct {
 	PipelineUrlHash string `json:"PipelineUrlHash,omitempty"`
 	BuildUrlHash    string `json:"BuildUrlHash,omitempty"`
+	Orchestrator    string `json:"Orchestrator,omitempty"`
 	StageName       string `json:"StageName,omitempty"`
 	StepName        string `json:"StepName,omitempty"`
 	ExitCode        string `json:"ExitCode,omitempty"`
