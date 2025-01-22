@@ -9,7 +9,7 @@ require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/antchfx/htmlquery v1.2.4
+	github.com/antchfx/htmlquery v1.3.4
 	github.com/aws/aws-sdk-go-v2/config v1.27.31
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.61.0
 	github.com/bmatcuk/doublestar v1.3.4
@@ -135,7 +135,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.3 // indirect
-	github.com/antchfx/xpath v1.2.0 // indirect
+	github.com/antchfx/xpath v1.3.3 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/aws/aws-sdk-go-v2 v1.30.4 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.4 // indirect
@@ -249,7 +249,7 @@ require (
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	golang.org/x/crypto v0.31.0
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
