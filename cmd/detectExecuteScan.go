@@ -429,9 +429,11 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	downloadScript := func() error {
 		if config.UseDetect8 {
-			return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+			return utils.DownloadFile("https://detect.blackduck.com/detect8.sh", "detect.sh", nil, nil)
+		} else if config.UseDetect9 {
+			return utils.DownloadFile("https://detect.blackduck.com/detect9.sh", "detect.sh", nil, nil)
 		}
-		return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+		return utils.DownloadFile("https://detect.blackduck.com/detect10.sh", "detect.sh", nil, nil)
 
 	}
 
