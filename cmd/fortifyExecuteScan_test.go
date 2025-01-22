@@ -24,7 +24,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -359,7 +359,7 @@ func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64
 
 type pullRequestServiceMock struct{}
 
-func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 	authorString := author
 	user := github.User{Login: &authorString}
 	if owner == "A" {
