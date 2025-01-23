@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
-	github "github.com/google/go-github/v45/github"
+	github "github.com/google/go-github/v68/github"
 )
 
 type githubCreateIssueUtils interface {

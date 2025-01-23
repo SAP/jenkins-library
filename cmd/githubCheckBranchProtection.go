@@ -7,7 +7,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 
 	"github.com/pkg/errors"
 
@@ -41,8 +41,8 @@ func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBran
 	for _, check := range config.RequiredChecks {
 		var found bool
 		foundContexts := []string{}
-		if requiredStatusChecks := ghProtection.GetRequiredStatusChecks(); requiredStatusChecks != nil {
-			foundContexts = requiredStatusChecks.Contexts
+		if requiredStatusChecks := ghProtection.GetRequiredStatusChecks(); requiredStatusChecks != nil && requiredStatusChecks.Contexts != nil {
+			foundContexts = *requiredStatusChecks.Contexts
 		}
 		for _, context := range foundContexts {
 			if check == context {

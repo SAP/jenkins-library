@@ -354,7 +354,9 @@ func Test_prepareTelemetry(t *testing.T) {
 		{name: "Testing prepare telemetry information",
 			args: args{
 				telemetryData: telemetry.Data{
-					BaseData: telemetry.BaseData{},
+					BaseData: telemetry.BaseData{
+						Orchestrator: "Jenkins",
+					},
 					CustomData: telemetry.CustomData{
 						Duration:      "1234",
 						ErrorCode:     "0",
@@ -365,6 +367,7 @@ func Test_prepareTelemetry(t *testing.T) {
 			want: MonitoringData{
 				PipelineUrlHash: "",
 				BuildUrlHash:    "",
+				Orchestrator:    "Jenkins",
 				StageName:       "",
 				StepName:        "",
 				ExitCode:        "0",
