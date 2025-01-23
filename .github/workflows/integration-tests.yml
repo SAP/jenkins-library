@@ -53,7 +53,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
       - name: Upload Piper binary
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: piper
           path: piper
@@ -82,7 +82,7 @@ jobs:
           echo "matrix=$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)" >> "$GITHUB_OUTPUT"
       - name: Upload integration tests binary
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration_tests
           path: integration_tests
