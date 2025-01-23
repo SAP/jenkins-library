@@ -1100,7 +1100,7 @@ func Test_gitConfigurationForPrivateModules(t *testing.T) {
 			},
 			expected: expectations{
 				commandsExecuted: [][]string{
-					{"git", "config", "--global", "url.https://mytoken@example.com.insteadOf", "https://example.com"},
+					{"git", "config", "--global", "url.https://git:mytoken@example.com.insteadOf", "https://example.com"},
 				},
 			},
 		},
@@ -1112,8 +1112,8 @@ func Test_gitConfigurationForPrivateModules(t *testing.T) {
 			},
 			expected: expectations{
 				commandsExecuted: [][]string{
-					{"git", "config", "--global", "url.https://mytoken@example.com.insteadOf", "https://example.com"},
-					{"git", "config", "--global", "url.https://mytoken@test.com.insteadOf", "https://test.com"},
+					{"git", "config", "--global", "url.https://git:mytoken@example.com.insteadOf", "https://example.com"},
+					{"git", "config", "--global", "url.https://git:mytoken@test.com.insteadOf", "https://test.com"},
 				},
 			},
 		},

@@ -585,7 +585,7 @@ func gitConfigurationForPrivateModules(privateMod string, token string, utils go
 	privateMod = strings.ReplaceAll(privateMod, "*.", "")
 	modules := strings.Split(privateMod, ",")
 	for _, v := range modules {
-		authenticatedRepoURL := fmt.Sprintf("https://%s@%s", token, v)
+		authenticatedRepoURL := fmt.Sprintf("https://git:%s@%s", token, v)
 		repoBaseURL := fmt.Sprintf("https://%s", v)
 		err := utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
 		if err != nil {
