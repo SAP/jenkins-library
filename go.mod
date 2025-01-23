@@ -40,7 +40,7 @@ require (
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/imdario/mergo v1.0.1
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
-	github.com/jarcoal/httpmock v1.0.8
+	github.com/jarcoal/httpmock v1.3.1
 	github.com/magiconair/properties v1.8.7
 	github.com/magicsong/sonargo v0.0.1
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
