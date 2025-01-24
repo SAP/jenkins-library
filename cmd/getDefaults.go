@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 
 	"github.com/pkg/errors"
@@ -74,6 +75,12 @@ func getDefaults() ([]map[string]string, error) {
 	var yamlDefaults []map[string]string
 
 	for _, f := range defaultsOptions.defaultsFiles {
+		// Keep full URL for reading but use cleaned path for output
+		cleanPath := f
+		if u, err := url.Parse(f); err == nil && u.RawQuery != "" {
+			cleanPath = u.Path
+		}
+
 		fc, err := defaultsOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			return yamlDefaults, errors.Wrapf(err, "defaults: retrieving defaults file failed: '%v'", f)
@@ -100,7 +107,7 @@ func getDefaults() ([]map[string]string, error) {
 				}
 			}
 
-			yamlDefaults = append(yamlDefaults, map[string]string{"content": yamlContent, "filepath": f})
+			yamlDefaults = append(yamlDefaults, map[string]string{"content": yamlContent, "filepath": cleanPath})
 		}
 	}
 
