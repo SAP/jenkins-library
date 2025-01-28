@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"dario.cat/mergo"
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -22,7 +23,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
@@ -50,13 +50,11 @@ func processConfigs(main cnbBuildOptions, multipleImages []map[string]interface{
 
 	for _, conf := range multipleImages {
 		var structuredConf cnbBuildOptions
-		err := mapstructure.Decode(conf, &structuredConf)
-		if err != nil {
+		if err := mapstructure.Decode(conf, &structuredConf); err != nil {
 			return nil, err
 		}
 
-		err = mergo.Merge(&structuredConf, main)
-		if err != nil {
+		if err := mergo.Merge(&structuredConf, main); err != nil {
 			return nil, err
 		}
 
