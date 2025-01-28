@@ -6,5 +6,9 @@
     "ignorePaths": [
         "integration/testdata/**",
         "test/resources/**"
+    ],
+    "postUpdateOptions": [
+        "gomodTidy",
+        "gomodUpdateImportPaths"
     ]
 }
