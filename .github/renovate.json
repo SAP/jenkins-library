@@ -15,7 +15,8 @@
           "description": "Automerge non-major updates (versions >1.0.0)",
           "matchUpdateTypes": ["minor", "patch"],
           "matchCurrentVersion": "!/^0/",
-          "automerge": true
+          "automerge": true,
+          "rollbackPrs": true
         }
     ],
     "postUpdateOptions": [
