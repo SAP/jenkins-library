@@ -1,0 +1,24 @@
+name: Renovatebot - Trigger integration tests on PR update
+
+on:
+  pull_request:
+    # Assuming Renovate creates branches with a specific prefix
+    branches: 
+      - 'renovate/**'
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post a comment
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const issue_number = context.payload.pull_request.number;
+            const comment = "/it-go";
+            github.issues.createComment({
+              ...context.repo,
+              issue_number,
+              body: comment
+            });
