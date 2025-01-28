@@ -3,7 +3,7 @@ name: Renovatebot - Trigger integration tests on PR update
 on:
   pull_request:
     # Assuming Renovate creates branches with a specific prefix
-    branches: 
+    branches:
       - 'renovate/**'
 
 jobs:
