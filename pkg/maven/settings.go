@@ -12,6 +12,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
+const defaultMavenProjectSettingsPath = ".pipeline/mavenProjectSettings.xml"
+
 var getenv = os.Getenv
 
 // SettingsDownloadUtils defines an interface for downloading and storing maven settings files.
@@ -40,7 +42,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 	}
 
 	if len(projectSettingsFile) > 0 {
-		projectSettingsFileName, err := getSettingsFilePath(projectSettingsFile, ".pipeline/mavenProjectSettings.xml", utils, false)
+		projectSettingsFileName, err := getSettingsFilePath(projectSettingsFile, defaultMavenProjectSettingsPath, utils, false)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +68,6 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 			return err
 		}
 	} else {
-
 		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 
@@ -79,7 +80,6 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 			return err
 		}
 	} else {
-
 		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
 
@@ -98,9 +98,7 @@ func UpdateActiveProfileInSettingsXML(newActiveProfiles []string, utils Settings
 	}
 
 	var projectSettings Settings
-	err = xml.Unmarshal([]byte(settingsXMLContent), &projectSettings)
-
-	if err != nil {
+	if err = xml.Unmarshal(settingsXMLContent, &projectSettings); err != nil {
 		return fmt.Errorf("failed to unmarshal settings xml file '%v': %w", settingsFile, err)
 	}
 
@@ -123,9 +121,7 @@ func UpdateActiveProfileInSettingsXML(newActiveProfiles []string, utils Settings
 		settingsXmlString = Replacer.Replace(settingsXmlString)
 		xmlstring := []byte(xml.Header + settingsXmlString)
 
-		err = utils.FileWrite(settingsFile, xmlstring, 0777)
-
-		if err != nil {
+		if err = utils.FileWrite(settingsFile, xmlstring, 0777); err != nil {
 			return fmt.Errorf("failed to write maven Settings during <activeProfile> update xml: %w", err)
 		}
 		log.Entry().Infof("Successfully updated <acitveProfile> details in maven settings file : '%s'", settingsFile)
@@ -157,25 +153,26 @@ func CreateNewProjectSettingsXML(altDeploymentRepositoryID string, altDeployment
 
 	xmlstring = []byte(xml.Header + string(xmlstring))
 
-	err = utils.FileWrite(".pipeline/mavenProjectSettings.xml", xmlstring, 0777)
-	if err != nil {
+	if err = utils.FileWrite(defaultMavenProjectSettingsPath, xmlstring, 0777); err != nil {
 		return "", fmt.Errorf("failed to write maven Project Settings xml: %w", err)
 	}
 
-	log.Entry().Infof("Successfully created maven project settings with <server> details at .pipeline/mavenProjectSettings.xml")
+	log.Entry().Infof("Successfully created maven project settings with <server> details at %s", defaultMavenProjectSettingsPath)
 
-	return ".pipeline/mavenProjectSettings.xml", nil
+	return defaultMavenProjectSettingsPath, nil
 
 }
 
 func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) (string, error) {
-	projectSettingsFileDestination := ".pipeline/mavenProjectSettings"
+	projectSettingsFileDestination := defaultMavenProjectSettingsPath
 	var err error
 	if exists, _ := utils.FileExists(projectSettingsFile); exists {
+		log.Entry().Debugf("Project settings file provided via configuration: %s", projectSettingsFile)
 		projectSettingsFileDestination = projectSettingsFile
 		err = addServerTagtoProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
 	} else {
-		err = addServerTagtoProjectSettingsXML(".pipeline/mavenProjectSettings", altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+		log.Entry().Debugf("Project settings file provided '%s' does not exist. Using default location: %s", projectSettingsFile, defaultMavenProjectSettingsPath)
+		err = addServerTagtoProjectSettingsXML(defaultMavenProjectSettingsPath, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
 	}
 
 	if err != nil {
@@ -246,31 +243,28 @@ func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownload
 	log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
 
 	if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
-		err := downloadSettingsFromURL(src, dest, utils, true)
-		if err != nil {
-			return err
-		}
-	} else {
-
-		// for sake os symmetry it would be better to use a file protocol prefix here (file:)
-
-		parent := filepath.Dir(dest)
-
-		parentFolderExists, err := utils.FileExists(parent)
-
-		if err != nil {
+		if err := downloadSettingsFromURL(src, dest, utils, true); err != nil {
 			return err
 		}
 
-		if !parentFolderExists {
-			if err = utils.MkdirAll(parent, 0775); err != nil {
-				return err
-			}
-		}
+		return nil
+	}
 
-		if _, err := utils.Copy(src, dest); err != nil {
+	// for sake os symmetry it would be better to use a file protocol prefix here (file:)
+	parent := filepath.Dir(dest)
+	parentFolderExists, err := utils.FileExists(parent)
+	if err != nil {
+		return err
+	}
+
+	if !parentFolderExists {
+		if err = utils.MkdirAll(parent, 0775); err != nil {
 			return err
 		}
+	}
+
+	if _, err := utils.Copy(src, dest); err != nil {
+		return err
 	}
 
 	return nil
