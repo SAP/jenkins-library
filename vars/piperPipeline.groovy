@@ -8,6 +8,9 @@ void call(parameters) {
             skipDefaultCheckout()
             timestamps()
         }
+        environment {
+            PIPER_systemTrustToken = ''
+        }
         stages {
             stage('Init') {
                 steps {
