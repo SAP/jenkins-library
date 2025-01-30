@@ -12,12 +12,11 @@
       ],
     "packageRules": [
         {
-          "description": "Automerge non-major updates (versions >1.0.0)",
-          "matchUpdateTypes": ["minor", "patch"],
-          "matchCurrentVersion": "!/^0/",
-          "automerge": true
-        }
-    ],
+            "description": "Automerge only patch version updates (except versions 0.x as they could have breaking changes)",
+            "matchUpdateTypes": ["patch"],
+            "matchCurrentVersion": "!/^(v?0)/",
+            "automerge": true
+        }],
     "postUpdateOptions": [
         "gomodTidy",
         "gomodUpdateImportPaths"
