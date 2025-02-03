@@ -22,7 +22,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
