@@ -115,7 +115,11 @@ func TestTelemetry_Send(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			httpmock.Reset()
-			telemetryClient := &Telemetry{disabled: tt.fields.disabled}
+			telemetryClient := &Telemetry{
+				disabled: tt.fields.disabled,
+				BaseURL:  "https://test.com",
+				Endpoint: "/test",
+			}
 			telemetryClient.Initialize(tt.fields.disabled, tt.name)
 			telemetryClient.CustomReportingDsn = tt.fields.CustomReportingDsn
 			if telemetryClient.client == nil {
