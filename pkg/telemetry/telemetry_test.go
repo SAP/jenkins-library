@@ -97,14 +97,14 @@ func TestTelemetry_Send(t *testing.T) {
 		{
 			name: "Telemetry disabled",
 			fields: fields{
-				disabled:   true,
+				disabled: true,
 			},
 			calls: 0,
 		},
 		{
 			name: "Telemetry enabled",
 			fields: fields{
-				disabled:   false,
+				disabled: false,
 			},
 			calls: 1,
 		},
