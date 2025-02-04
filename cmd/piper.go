@@ -55,7 +55,6 @@ type HookConfiguration struct {
 	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub,omitempty"`
 	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
 	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
-	PendoConfig       PendoConfiguration       `json:"pendo,omitempty"`
 	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
 	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust,omitempty"`
 }
@@ -82,10 +81,6 @@ type SplunkConfiguration struct {
 	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
 	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
 	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
-}
-
-type PendoConfiguration struct {
-	Token string `json:"token,omitempty"`
 }
 
 // OIDCConfiguration defines the configuration options for the OpenID Connect authentication system
@@ -439,9 +434,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 	}
 
-	// since Pendo has been sunset
 	// disable telemetry reporting in go
-	// follow-up cleanup needed
 	GeneralConfig.NoTelemetry = true
 
 	stepConfig.Config = checkTypes(stepConfig.Config, options)
