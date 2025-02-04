@@ -35,7 +35,6 @@ func TestTelemetry_Initialize(t *testing.T) {
 		BaseURL              string
 		Endpoint             string
 		SiteID               string
-		Pendo                Pendo
 	}
 	type args struct {
 		telemetryDisabled bool
@@ -69,7 +68,7 @@ func TestTelemetry_Initialize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			telemetryClient := &Telemetry{}
-			telemetryClient.Initialize(tt.args.telemetryDisabled, tt.args.stepName, "token")
+			telemetryClient.Initialize(tt.args.telemetryDisabled, tt.args.stepName)
 			// assert
 			assert.NotEqual(t, tt.want, telemetryClient.client)
 			assert.Equal(t, tt.args.stepName, telemetryClient.baseData.StepName)
@@ -89,8 +88,6 @@ func TestTelemetry_Send(t *testing.T) {
 		BaseURL              string
 		Endpoint             string
 		SiteID               string
-		PendoToken           string
-		Pendo                Pendo
 	}
 	tests := []struct {
 		name   string
@@ -98,10 +95,9 @@ func TestTelemetry_Send(t *testing.T) {
 		calls  int
 	}{
 		{
-			name: "Telemetry disabled, reporting disabled",
+			name: "Telemetry disabled",
 			fields: fields{
 				disabled:   true,
-				PendoToken: "token",
 			},
 			calls: 0,
 		},
@@ -109,24 +105,8 @@ func TestTelemetry_Send(t *testing.T) {
 			name: "Telemetry enabled",
 			fields: fields{
 				disabled:   false,
-				PendoToken: "token",
 			},
 			calls: 1,
-		},
-		{
-			name: "Telemetry disabled",
-			fields: fields{
-				disabled:   true,
-				PendoToken: "token",
-			},
-			calls: 0,
-		},
-		{
-			name: "Telemetry enabled, token not provided",
-			fields: fields{
-				disabled: false,
-			},
-			calls: 0,
 		},
 	}
 
@@ -136,7 +116,7 @@ func TestTelemetry_Send(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			httpmock.Reset()
 			telemetryClient := &Telemetry{disabled: tt.fields.disabled}
-			telemetryClient.Initialize(tt.fields.disabled, tt.name, tt.fields.PendoToken)
+			telemetryClient.Initialize(tt.fields.disabled, tt.name)
 			telemetryClient.CustomReportingDsn = tt.fields.CustomReportingDsn
 			if telemetryClient.client == nil {
 				telemetryClient.client = &piperhttp.Client{}
@@ -242,7 +222,7 @@ func TestSetData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			telemetryClient := Telemetry{}
-			telemetryClient.Initialize(false, "TestCreateDataObject", "token")
+			telemetryClient.Initialize(false, "TestCreateDataObject")
 			telemetryClient.baseData = BaseData{
 				URL:             "",
 				ActionName:      "",
