@@ -149,7 +149,7 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			gctsDeploy(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

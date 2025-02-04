@@ -146,7 +146,7 @@ It can for example be used to create additional check indicators for a pull requ
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			githubSetCommitStatus(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

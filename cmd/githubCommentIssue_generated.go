@@ -137,7 +137,7 @@ This comes in very handy when you want to make developers aware of certain thing
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			githubCommentIssue(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

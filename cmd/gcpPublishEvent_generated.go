@@ -139,7 +139,7 @@ Authentication to GCP is handled by an OIDC token received from, for example, Va
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			gcpPublishEvent(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

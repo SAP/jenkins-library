@@ -181,7 +181,7 @@ the integration tests via the Jacoco Maven-plugin.`,
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenExecuteIntegration(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
