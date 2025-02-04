@@ -145,7 +145,7 @@ func TestTelemetry_Send(t *testing.T) {
 				})
 			}
 
-			httpmock.RegisterResponder(http.MethodPost, url,
+			httpmock.RegisterResponder(http.MethodGet, url,
 				func(req *http.Request) (*http.Response, error) {
 					return httpmock.NewStringResponse(200, "Ok"), nil
 				},
