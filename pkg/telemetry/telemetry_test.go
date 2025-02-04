@@ -163,7 +163,7 @@ func TestTelemetry_Send(t *testing.T) {
 			// assert
 			info := httpmock.GetCallCountInfo()
 
-			if got := info["POST "+url]; !assert.Equal(t, tt.calls, got) {
+			if got := info["GET "+url]; !assert.Equal(t, tt.calls, got) {
 				t.Errorf("Send() = calls %v, wanted %v", got, tt.calls)
 			}
 		})
