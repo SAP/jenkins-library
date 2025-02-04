@@ -256,7 +256,7 @@ func TestStepCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME, piperOsCmd.GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME)
 			testStep(stepConfig, &stepTelemetryData, &commonPipelineEnvironment, &influxTest)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
