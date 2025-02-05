@@ -114,6 +114,7 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	monitoringData := MonitoringData{
 		PipelineUrlHash: telemetryData.PipelineURLHash,
 		BuildUrlHash:    telemetryData.BuildURLHash,
+		Orchestrator:    telemetryData.Orchestrator,
 		StageName:       telemetryData.StageName,
 		StepName:        telemetryData.BaseData.StepName,
 		ExitCode:        telemetryData.CustomData.ErrorCode,
