@@ -37,8 +37,7 @@ func TestTelemetry_Initialize(t *testing.T) {
 		SiteID               string
 	}
 	type args struct {
-		telemetryDisabled bool
-		stepName          string
+		stepName string
 	}
 	tests := []struct {
 		name   string
@@ -47,20 +46,10 @@ func TestTelemetry_Initialize(t *testing.T) {
 		want   *piperhttp.Client
 	}{
 		{
-			name:   "telemetry disabled",
-			fields: fields{},
-			args: args{
-				telemetryDisabled: true,
-				stepName:          "test",
-			},
-			want: nil,
-		},
-		{
 			name:   "telemetry enabled",
 			fields: fields{},
 			args: args{
-				telemetryDisabled: false,
-				stepName:          "test",
+				stepName: "test",
 			},
 			want: &piperhttp.Client{},
 		},
@@ -68,7 +57,7 @@ func TestTelemetry_Initialize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			telemetryClient := &Telemetry{}
-			telemetryClient.Initialize(tt.args.telemetryDisabled, tt.args.stepName)
+			telemetryClient.Initialize(tt.args.stepName)
 			// assert
 			assert.NotEqual(t, tt.want, telemetryClient.client)
 			assert.Equal(t, tt.args.stepName, telemetryClient.baseData.StepName)
@@ -131,7 +120,7 @@ func TestSetData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			telemetryClient := Telemetry{}
-			telemetryClient.Initialize(false, "TestCreateDataObject")
+			telemetryClient.Initialize("TestCreateDataObject")
 			telemetryClient.baseData = BaseData{
 				URL:             "",
 				ActionName:      "",
