@@ -6,13 +6,10 @@ package telemetry
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"reflect"
 	"regexp"
 	"testing"
-	"time"
 
-	"github.com/jarcoal/httpmock"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
