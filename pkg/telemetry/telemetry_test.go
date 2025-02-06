@@ -76,101 +76,6 @@ func TestTelemetry_Initialize(t *testing.T) {
 	}
 }
 
-func TestTelemetry_Send(t *testing.T) {
-	type fields struct {
-		baseData             BaseData
-		data                 Data
-		provider             orchestrator.ConfigProvider
-		disabled             bool
-		client               *piperhttp.Client
-		CustomReportingDsn   string
-		CustomReportingToken string
-		BaseURL              string
-		Endpoint             string
-		SiteID               string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		calls  int
-	}{
-		{
-			name: "Telemetry disabled",
-			fields: fields{
-				disabled: true,
-			},
-			calls: 0,
-		},
-		{
-			name: "Telemetry enabled",
-			fields: fields{
-				disabled: false,
-			},
-			calls: 1,
-		},
-	}
-
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			httpmock.Reset()
-			telemetryClient := &Telemetry{
-				disabled: tt.fields.disabled,
-				BaseURL:  "https://test.com",
-				Endpoint: "/test",
-			}
-			telemetryClient.Initialize(tt.fields.disabled, tt.name)
-			telemetryClient.CustomReportingDsn = tt.fields.CustomReportingDsn
-			if telemetryClient.client == nil {
-				telemetryClient.client = &piperhttp.Client{}
-			}
-
-			url := telemetryClient.BaseURL + telemetryClient.Endpoint
-
-			telemetryClient.client.SetOptions(piperhttp.ClientOptions{
-				MaxRequestDuration:        5 * time.Second,
-				TransportSkipVerification: true,
-				UseDefaultTransport:       true,
-				MaxRetries:                -1,
-			})
-
-			if tt.fields.CustomReportingDsn != "" {
-				telemetryClient.customClient = &piperhttp.Client{}
-				telemetryClient.customClient.SetOptions(piperhttp.ClientOptions{
-					MaxRequestDuration:        5 * time.Second,
-					TransportSkipVerification: true,
-					UseDefaultTransport:       true, // Needed for mocking
-					MaxRetries:                -1,
-				})
-			}
-
-			httpmock.RegisterResponder(http.MethodGet, url,
-				func(req *http.Request) (*http.Response, error) {
-					return httpmock.NewStringResponse(200, "Ok"), nil
-				},
-			)
-			httpmock.RegisterResponder(http.MethodPost, telemetryClient.CustomReportingDsn,
-				func(req *http.Request) (*http.Response, error) {
-					return httpmock.NewStringResponse(200, "Ok"), nil
-				},
-			)
-
-			// test
-			telemetryClient.SetData(&CustomData{})
-			telemetryClient.Send()
-
-			// assert
-			info := httpmock.GetCallCountInfo()
-
-			if got := info["GET "+url]; !assert.Equal(t, tt.calls, got) {
-				t.Errorf("Send() = calls %v, wanted %v", got, tt.calls)
-			}
-		})
-	}
-	defer httpmock.DeactivateAndReset()
-}
-
 func TestSetData(t *testing.T) {
 	type args struct {
 		customData *CustomData
@@ -327,7 +232,7 @@ func TestTelemetry_logStepTelemetryData(t *testing.T) {
 			} else {
 				re = regexp.MustCompile(`Step telemetry data:{"StepStartTime":".*?","PipelineURLHash":"","BuildURLHash":"","StageName":"","StepName":"","ErrorCode":"\d","StepDuration":"\d+","ErrorCategory":"","CorrelationID":"n/a","PiperCommitHash":"n/a","ErrorDetail":null}`)
 			}
-			telemetry.logStepTelemetryData()
+			telemetry.LogStepTelemetryData()
 			assert.Regexp(t, re, hook.LastEntry().Message)
 			hook.Reset()
 		})

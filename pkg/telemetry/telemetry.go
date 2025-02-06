@@ -29,7 +29,6 @@ type Telemetry struct {
 	baseData             BaseData
 	data                 Data
 	provider             orchestrator.ConfigProvider
-	disabled             bool
 	client               *piperhttp.Client
 	CustomReportingDsn   string
 	CustomReportingToken string
@@ -40,9 +39,7 @@ type Telemetry struct {
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
-func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
-	t.disabled = telemetryDisabled
-
+func (t *Telemetry) Initialize(stepName string) {
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
@@ -55,13 +52,6 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 	}
 
 	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
-
-	if t.BaseURL == "" {
-		log.Entry().Infof("Telemetry BaseURL is not set")
-	}
-	if t.Endpoint == "" {
-		log.Entry().Infof("Telemetry Endpoint is not set")
-	}
 
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
@@ -123,25 +113,9 @@ func (t *Telemetry) GetDataBytes() []byte {
 	return data
 }
 
-// Send telemetry information to SWA
-func (t *Telemetry) Send() {
-	// always log step telemetry data to logfile used for internal use-case
-	t.logStepTelemetryData()
-
-	// skip if telemetry is disabled
-	if t.disabled {
-		return
-	}
-
-	log.Entry().Debug("Sending telemetry data")
-	request, _ := url.Parse(t.BaseURL)
-	request.Path = t.Endpoint
-	request.RawQuery = t.data.toPayloadString()
-	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
-	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
-}
-
-func (t *Telemetry) logStepTelemetryData() {
+// Logs step telemetry data to logfile used for internal use-case
+func (t *Telemetry) LogStepTelemetryData() {
+	log.Entry().Debug("Logging step telemetry data")
 
 	var fatalError map[string]interface{}
 	if t.data.CustomData.ErrorCode != "0" && log.GetFatalErrorDetail() != nil {
