@@ -4,9 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
-	"os"
 	"strconv"
 	"time"
 
