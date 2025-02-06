@@ -106,8 +106,6 @@ func (t *Telemetry) SetData(customData *CustomData) {
 		BaseData:   t.baseData,
 		CustomData: *customData,
 	}
-	// TODO: We may need it in future
-	// pipelineID := readPipelineID(pipelineIDPath)
 }
 
 // GetData returns telemetryData
@@ -180,13 +178,4 @@ func (t *Telemetry) logStepTelemetryData() {
 		// log step telemetry data, changes here need to change the regex in the internal piper lib
 		log.Entry().Infof("Step telemetry data:%v", string(stepTelemetryJSON))
 	}
-}
-
-func readPipelineID(filePath string) string {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		log.Entry().Debugf("Could not read %v file: %v", filePath, err)
-		content = []byte("N/A")
-	}
-	return string(content)
 }
