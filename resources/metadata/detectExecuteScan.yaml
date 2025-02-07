@@ -655,9 +655,20 @@ spec:
             param: container/repositoryPassword
       - name: useDetect8
         description:
-          "This flag enables the use of the supported version 8 of the Detect Script instead of v9"
+          "This flag enables the use of the supported version 8 of the Detect script instead of default version 10"
         aliases:
           - name: detect/useDetect8
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: useDetect9
+        description:
+          "This flag enables the use of the supported version 9 of the Detect script instead of default version 10"
+        aliases:
+          - name: detect/useDetect9
         type: bool
         scope:
           - PARAMETERS
