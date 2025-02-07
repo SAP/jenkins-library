@@ -9,7 +9,6 @@ import (
 type BaseData struct {
 	ActionName      string `json:"actionName"`
 	EventType       string `json:"eventType"`
-	SiteID          string `json:"idsite"`
 	URL             string `json:"url"`
 	StepName        string `json:"stepName"` // set by step generator
 	StageName       string `json:"stageName"`

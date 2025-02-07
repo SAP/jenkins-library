@@ -32,7 +32,6 @@ type Telemetry struct {
 	customClient         *piperhttp.Client
 	BaseURL              string
 	Endpoint             string
-	SiteID               string
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
@@ -53,9 +52,6 @@ func (t *Telemetry) Initialize(stepName string) {
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
 	}
-	if t.SiteID == "" {
-		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
-	}
 
 	t.baseData = BaseData{
 		Orchestrator:    t.provider.OrchestratorType(),
@@ -64,7 +60,6 @@ func (t *Telemetry) Initialize(stepName string) {
 		ActionName:      actionName,
 		EventType:       eventType,
 		StepName:        stepName,
-		SiteID:          t.SiteID,
 		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
 		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
