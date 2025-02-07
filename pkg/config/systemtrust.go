@@ -55,7 +55,7 @@ func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}) 
 		return errors.New("no System Trust query parameter name found")
 	}
 
-	if len(c.systemTrustConfiguration.Token) == 0 {
+	if len(c.systemTrustConfiguration.Token) == 0 || c.systemTrustConfiguration.Token == "null" {
 		return errors.New("no System Trust token found and envvar is empty")
 	}
 	return nil
@@ -66,4 +66,5 @@ func (c *Config) SetSystemTrustToken(token string) {
 	c.systemTrustConfiguration.Token = token
 	fmt.Print("got System trust token: %v\n", token)
 	fmt.Printf("Length of token: %d\n", len(token))
+	fmt.Printf("Length of token: %T\n", token)
 }
