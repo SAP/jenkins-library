@@ -35,6 +35,8 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
+            // additional logic " ?: ''" requires to set env var to empty string if value is null
+            // if not used, than will be string "null" and go check if token is empty wouldn't work
             "PIPER_systemTrustToken=${env.PIPER_systemTrustToken ?: ''}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
