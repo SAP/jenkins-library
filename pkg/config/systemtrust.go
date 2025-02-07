@@ -55,6 +55,7 @@ func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}) 
 		return errors.New("no System Trust query parameter name found")
 	}
 
+	// Ensure to check if the token is equivalent to null because Jenkins represents empty values as the string "null".
 	if len(c.systemTrustConfiguration.Token) == 0 || c.systemTrustConfiguration.Token == "null" {
 		return errors.New("no System Trust token found and envvar is empty")
 	}
