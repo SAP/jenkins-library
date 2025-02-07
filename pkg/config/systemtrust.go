@@ -64,6 +64,6 @@ func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}) 
 // SetSystemTrustToken sets the token for the System Trust
 func (c *Config) SetSystemTrustToken(token string) {
 	c.systemTrustConfiguration.Token = token
-	fmt.Print("got System trust token: %s\n", token)
+	fmt.Print("got System trust token: %v\n", token)
 	fmt.Printf("Length of token: %d\n", len(token))
 }
