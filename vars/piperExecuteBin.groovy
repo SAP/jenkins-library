@@ -35,8 +35,12 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
-            // additional logic " ?: ''" requires to set env var to empty string if value is null
-            // if not used, than will be string "null" and go check if token is empty wouldn't work
+            /*
+            Additional logic "?: ''" is necessary to ensure the environment
+            variable is set to an empty string if the value is null
+            Without this, the environment variable would be set to the string "null",
+            causing checks for an empty token in the Go application to fail.
+            */
             "PIPER_systemTrustToken=${env.PIPER_systemTrustToken ?: ''}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
