@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -64,7 +63,4 @@ func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}) 
 // SetSystemTrustToken sets the token for the System Trust
 func (c *Config) SetSystemTrustToken(token string) {
 	c.systemTrustConfiguration.Token = token
-	fmt.Printf("got System trust token: %s\n", token)
-	fmt.Printf("Length of token: %d\n", len(token))
-	fmt.Printf("Type of token: %T\n", token)
 }
