@@ -8,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func (g *githubCodeqlScanningMock) ListAlertsForRepo(ctx context.Context, owner,
 	}
 
 	if repo == "testRepo2" {
-		if opts.Page == 1 {
+		if opts.ListOptions.Page == 1 {
 			for i := 0; i < 50; i++ {
 				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
 				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})
@@ -46,7 +46,7 @@ func (g *githubCodeqlScanningMock) ListAlertsForRepo(ctx context.Context, owner,
 			response.NextPage = 2
 		}
 
-		if opts.Page == 2 {
+		if opts.ListOptions.Page == 2 {
 			for i := 0; i < 10; i++ {
 				alerts = append(alerts, &github.Alert{State: &openState, Tool: &github.Tool{Name: &codeqlToolName}, Rule: &github.Rule{Tags: []string{"security"}}})
 				alerts = append(alerts, &github.Alert{State: &dismissedState, Tool: &github.Tool{Name: &testToolName}, Rule: &github.Rule{Tags: []string{"useless_code"}}})

@@ -467,7 +467,11 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
-	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{All: true, Author: &object.Signature{Name: config.CommitUserName, When: t}})
+	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
+		All:               true,
+		AllowEmptyCommits: true,
+		Author:            &object.Signature{Name: config.CommitUserName, When: t}},
+	)
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}
