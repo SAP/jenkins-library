@@ -177,6 +177,7 @@ func TestRunSonar(t *testing.T) {
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		os.Setenv("SONAR_SCANNER_OPTS", "-Xmx42m")
+		defer os.Setenv("SONAR_SCANNER_OPTS", "")
 		// test
 		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		// assert
