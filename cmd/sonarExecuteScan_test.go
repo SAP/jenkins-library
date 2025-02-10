@@ -176,6 +176,8 @@ func TestRunSonar(t *testing.T) {
 			PullRequestProvider:       "GitHub",
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
+		os.Setenv("SONAR_SCANNER_OPTS", "-Xmx42m")
+		defer os.Setenv("SONAR_SCANNER_OPTS", "")
 		// test
 		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		// assert
@@ -184,7 +186,7 @@ func TestRunSonar(t *testing.T) {
 		assert.Contains(t, sonar.options, "-Dsonar.organization=SAP")
 		assert.Contains(t, sonar.environment, "SONAR_HOST_URL="+sonarServerURL)
 		assert.Contains(t, sonar.environment, "SONAR_TOKEN=secret-ABC")
-		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts")+" -Djavax.net.ssl.trustStorePassword=changeit")
+		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Xmx42m -Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts")+" -Djavax.net.ssl.trustStorePassword=changeit")
 	})
 	t.Run("with custom options", func(t *testing.T) {
 		// init
@@ -456,6 +458,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() { fileUtilsExists = piperutils.FileExists }()
+		defer os.Setenv("SONAR_SCANNER_OPTS", "")
 		// test
 		err := loadCertificates([]string{}, &mockClient, &mockRunner)
 		// assert
@@ -471,6 +474,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 			options:     []string{},
 		}
 		fileUtilsExists = mockFileUtilsExists(false)
+		defer os.Setenv("SONAR_SCANNER_OPTS", "")
 		// test
 		err := loadCertificates([]string{"https://sap.com/custom-1.crt", "https://sap.com/custom-2.crt"}, &mockClient, &mockRunner)
 		// assert
