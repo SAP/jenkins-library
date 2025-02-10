@@ -458,6 +458,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() { fileUtilsExists = piperutils.FileExists }()
+		defer os.Setenv("SONAR_SCANNER_OPTS", "")
 		// test
 		err := loadCertificates([]string{}, &mockClient, &mockRunner)
 		// assert
@@ -473,6 +474,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 			options:     []string{},
 		}
 		fileUtilsExists = mockFileUtilsExists(false)
+		defer os.Setenv("SONAR_SCANNER_OPTS", "")
 		// test
 		err := loadCertificates([]string{"https://sap.com/custom-1.crt", "https://sap.com/custom-2.crt"}, &mockClient, &mockRunner)
 		// assert
