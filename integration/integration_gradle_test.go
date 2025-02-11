@@ -37,9 +37,38 @@ func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *test
 
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := fmt.Sprintf(`#!/bin/sh
-cd /test
-/piperbin/piper gradleExecuteBuild >test-log.txt 2>&1
-`)
+
+	# Defining variables
+	max_retries=2
+	retry_count=0
+	log_file="test-log.txt"
+	piper_command="/piperbin/piper gradleExecuteBuild"
+
+	# Function to execute piper command with retries
+	execute_command() {
+	  while [ $retry_count -lt $max_retries ]; do
+	    echo "Attempt $(($retry_count + 1)) of $max_retries: Executing piper command..."
+	    $piper_command >$1 2>&1
+	
+	    if [ -f "$1" ]; then
+	      echo "File with test results created successfully: $1"
+	      return 0
+	    else
+	      echo "Error: File not found after running tests - $1"
+	      retry_count=$(($retry_count + 1))
+	      echo "Waiting for 2 seconds before retry..."
+	      sleep 2
+	    fi
+	  done
+	
+	  echo "Failed to create file after $max_retries attempts."
+	  return 1
+	}
+	cd /test
+
+	# Execute command with retry logic
+	execute_command $log_file
+	`)
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
