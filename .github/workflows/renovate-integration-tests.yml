@@ -1,0 +1,39 @@
+name: Renovatebot - Trigger integration tests on PR update
+
+on:
+  push:
+    branches:
+      - 'renovate/**'
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Post a comment on the PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            const repository = context.repo.repo;
+            const owner = context.repo.owner;
+
+            // Find PRs associated with the branch
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: owner,
+              repo: repository,
+              head: `${owner}:${branch}`,
+              state: 'open'
+            });
+
+            // Post a comment to each found PR
+            for (const pr of pullRequests) {
+              await github.rest.issues.createComment({
+                issue_number: pr.number,
+                owner: owner,
+                repo: repository,
+                body: '/it-go'
+              });
+            }
