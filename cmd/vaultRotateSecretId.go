@@ -134,6 +134,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 				Name:     config.VaultAppRoleSecretTokenCredentialsID,
 				Value:    secretID,
 				IsSecret: true,
+				AllowOverride: true,
 			},
 		}
 		if err := adoBuildClient.UpdateVariables(variables); err != nil {
