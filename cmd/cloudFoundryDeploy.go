@@ -105,7 +105,7 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 }
 
 func validateDeployTool(config *cloudFoundryDeployOptions) {
-	if config.DeployTool != "" || config.BuildTool == "" {
+	if config.DeployTool != "" {
 		return
 	}
 
