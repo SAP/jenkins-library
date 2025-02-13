@@ -90,6 +90,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	}
 
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
+		log.Entry().Info("Secret ID TTL valid.")
 		return nil
 	}
 	log.Entry().Info("Rotating secret ID...")
