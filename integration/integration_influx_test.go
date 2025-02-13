@@ -22,7 +22,7 @@ import (
 )
 
 func TestInfluxIntegrationWriteMetrics(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	const authToken = "influx-token"
 	const username = "username"
