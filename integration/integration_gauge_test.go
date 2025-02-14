@@ -88,11 +88,11 @@ cd /test
 }
 
 func TestGaugeIntegrationJava(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	runTest(t, "java")
 }
 
 func TestGaugeIntegrationJS(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	runTest(t, "js")
 }
