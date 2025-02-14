@@ -11,7 +11,7 @@ import (
 )
 
 func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",
@@ -46,7 +46,7 @@ func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 }
 
 func TestMavenIntegrationBuildCloudSdkTomeeProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",

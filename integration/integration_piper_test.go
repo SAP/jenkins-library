@@ -22,7 +22,7 @@ import (
 )
 
 func TestPiperIntegrationHelp(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	piperHelpCmd := command.Command{}
 
 	var commandOutput bytes.Buffer
