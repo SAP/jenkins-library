@@ -269,7 +269,7 @@ spec:
         aliases:
           - name: dockerfile
         type: string
-        description: Defines the location of the Dockerfile relative to the Jenkins workspace.
+        description: Defines the location of the Dockerfile relative to the pipeline working directory.
         scope:
           - PARAMETERS
           - STAGES
