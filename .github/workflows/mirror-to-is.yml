@@ -1,0 +1,67 @@
+name: Secure Mirror Repository
+
+on:
+  schedule:
+    - cron: '0 */12 * * *' # run every 12 hours
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'  # Trigger on all branches
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history
+
+      - name: Securely Mirror to Internal Repository
+        env:
+          GIT_USER: "github-actions"
+          GIT_EMAIL: "actions@github.com"
+          GH_TOKEN: ${{ secrets.INNER_PAT }}  # Secure GitHub token
+          TARGET_REPO: ${{ secrets.INNER_URL }}  # Secure GHE repository URL
+        run: |
+          # Ensure sensitive data is not printed
+          set -o errexit  # Exit immediately on failure
+          set -o nounset  # Treat unset variables as an error
+          set -o pipefail # Fail pipeline if any command fails
+
+           git config --global user.name "$GIT_USER"
+          git config --global user.email "$GIT_EMAIL"
+
+          # Add internal repository as a remote (securely)
+          git remote add mirror "$TARGET_REPO" 2>/dev/null || true
+
+          # Exclude .github files from the push
+          git filter-branch --force --index-filter \
+            'git rm --cached --ignore-unmatch -r .github/' \
+            --prune-empty --tag-name-filter cat -- --all
+
+          # Push all branches
+          git push mirror --all --force --quiet
+
+          # Push all tags
+          git push mirror --tags --force --quiet
+
+          echo "Mirror update successful."
+
+      - name: Send Failure Email
+        if: failure()
+        uses: dawidd6/action-send-mail@v4
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: 587
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Mirror Failure Alert: ${{ github.repository }}"
+          body: |
+            Mirroring from `SAP/jenkins-library` to `inner` has failed.
+
+            Latest committer: $LATEST_COMMITTER
+
+            Please investigate the issue.
+          to: ${{ secrets.PIPER_TEAM_EMAIL }}
+          from: "Piper <project-piper@sap.com>"
