@@ -7,6 +7,7 @@ replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 require (
 	cloud.google.com/go/pubsub v1.36.1
 	cloud.google.com/go/storage v1.38.0
+	dario.cat/mergo v1.0.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Jeffail/gabs/v2 v2.7.0
@@ -38,7 +39,6 @@ require (
 	github.com/hashicorp/vault/api v1.15.0
 	github.com/hashicorp/vault/api/auth/approle v0.8.0
 	github.com/iancoleman/orderedmap v0.2.0
-	github.com/imdario/mergo v1.0.1
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.7
@@ -70,7 +70,6 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	dario.cat/mergo v1.0.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
@@ -97,6 +96,7 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/heroku/color v0.0.6 // indirect
+	github.com/imdario/mergo v1.0.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/moby/buildkit v0.12.5 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect

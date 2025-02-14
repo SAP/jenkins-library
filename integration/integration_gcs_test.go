@@ -26,7 +26,7 @@ import (
 )
 
 func TestGCSIntegrationClient(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	testdataPath, err := filepath.Abs("testdata/TestGCSIntegration")
 	assert.NoError(t, err)

@@ -141,7 +141,7 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -174,7 +174,7 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			transportRequestUploadCTS(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
