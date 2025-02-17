@@ -240,6 +240,8 @@ func createBuildArtifactsMetadata(config *mavenBuildOptions, commonPipelineEnvir
 	buildCoordinates := []versioning.Coordinates{}
 	options := versioning.Options{
 		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
 	}
 	var utils versioning.Utils
 
