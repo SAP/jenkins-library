@@ -759,21 +759,21 @@ func executeATCCheck(config *gctsExecuteABAPQualityChecksOptions, client piperht
 		case "CLAS":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + url.QueryEscape(object.Object) + `"/>`
 		case "INTF":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/interfaces/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/interfaces/` + url.QueryEscape(object.Object) + `"/>`
 		case "DEVC":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/repository/informationsystem/virtualfolders?selection=package%3a` + url.QueryEscape(object.Object) + `"/>`
 		case "FUGR":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/functions/groups/` + object.Object + `/source/main"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/functions/groups/` + url.QueryEscape(object.Object) + `/source/main"/>`
 		case "TABL":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/tables/` + object.Object + `/source/main"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/tables/` + url.QueryEscape(object.Object) + `/source/main"/>`
 		case "DTEL":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/dataelements/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/dataelements/` + url.QueryEscape(object.Object) + `"/>`
 		case "DOMA":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/domains/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/ddic/domains/` + url.QueryEscape(object.Object) + `"/>`
 		case "MSAG":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/messageclass/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/messageclass/` + url.QueryEscape(object.Object) + `"/>`
 		case "PROG":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/programs/programs/` + object.Object + `/source/main"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/programs/programs/` + url.QueryEscape(object.Object) + `/source/main"/>`
 		default:
 			log.Entry().Warning("object Type " + object.Type + " is not supported!")
 
