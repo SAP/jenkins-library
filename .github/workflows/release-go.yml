@@ -17,6 +17,14 @@ jobs:
   run_integration_tests:
     name: Run Integration Tests
     uses: ./.github/workflows/integration-tests.yml
+    permissions:
+      contents: read
+      actions: read
+    secrets:
+      INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
+      PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
+      PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
+      PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
 
   publish:
     needs: run_integration_tests

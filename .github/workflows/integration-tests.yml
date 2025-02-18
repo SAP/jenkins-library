@@ -6,6 +6,15 @@ on:
       - master
       - it/**
   workflow_call:
+    secrets:
+      INTEGRATION_TEST_VOTING_TOKEN:
+        required: true
+      PIPER_INTEGRATION_GITHUB_TOKEN:
+        required: true
+      PIPER_INTEGRATION_SONAR_TOKEN:
+        required: true
+      PIPER_TMSSERVICEKEY:
+        required: true
     outputs:
       test_status:
         description: "Integration test status (success/failure)"
