@@ -114,9 +114,9 @@ func CloudFoundryDeployCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Deploys an application to Cloud Foundry",
 		Long: `Deploys an application to a test or production space within Cloud Foundry.
-This step supports two deployment types 
+This step supports two deployment types:
 
-* in a standard way with some possible system downtime during app deployment
+* in a standard way
 * in a zero-downtime manner using a [blue-green deployment approach](https://martinfowler.com/bliki/BlueGreenDeployment.html)
 
 The step achieves this via following deploy tools
