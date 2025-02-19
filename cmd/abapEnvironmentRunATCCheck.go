@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, _ *telemetry.CustomData) {
 	// Mapping for options
 	subOptions := convertATCOptions(&options)
 
@@ -33,7 +33,6 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	autils := abaputils.AbapUtils{
 		Exec: c,
 	}
-	var err error
 
 	client := piperhttp.Client{}
 	fileUtils := piperutils.Files{}
@@ -43,32 +42,41 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	}
 	client.SetOptions(clientOptions)
 
+	err := runAbapEnvironmentRunATCCheck(autils, subOptions, cookieJar, client, options, fileUtils)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runAbapEnvironmentRunATCCheck(autils abaputils.AbapUtils, subOptions abaputils.AbapEnvironmentOptions, cookieJar *cookiejar.Jar, client piperhttp.Client, options abapEnvironmentRunATCCheckOptions, fileUtils piperutils.Files) error {
 	var details abaputils.ConnectionDetailsHTTP
 	// If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
-	if err == nil {
-		details, err = autils.GetAbapCommunicationArrangementInfo(subOptions, "")
+
+	details, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "")
+	if err != nil {
+		return err
 	}
-	var resp *http.Response
-	// Fetch Xcrsf-Token
-	if err == nil {
-		credentialsOptions := piperhttp.ClientOptions{
-			Username:  details.User,
-			Password:  details.Password,
-			CookieJar: cookieJar,
-		}
-		client.SetOptions(credentialsOptions)
-		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
+
+	credentialsOptions := piperhttp.ClientOptions{
+		Username:  details.User,
+		Password:  details.Password,
+		CookieJar: cookieJar,
 	}
-	if err == nil {
-		resp, err = triggerATCRun(options, details, &client)
+	client.SetOptions(credentialsOptions)
+	details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
+	if err != nil {
+		return err
 	}
-	if err == nil {
-		if err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML, options.FailOnSeverity); err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed")
-		}
+	resp, err := triggerATCRun(options, details, &client)
+	if err != nil {
+		return err
+	}
+	if err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML, options.FailOnSeverity); err != nil {
+		return err
 	}
 
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
+	return nil
 }
 
 func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) error {
