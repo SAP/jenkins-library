@@ -30,7 +30,7 @@ func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExec
 }
 
 func TestNexusIntegrationV3UploadMta(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
 		User:        "nexus",
@@ -57,7 +57,7 @@ func TestNexusIntegrationV3UploadMta(t *testing.T) {
 }
 
 func TestNexusIntegrationV3UploadMaven(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
 		User:        "nexus",
@@ -84,7 +84,7 @@ func TestNexusIntegrationV3UploadMaven(t *testing.T) {
 }
 
 func TestNexusIntegrationV3UploadNpm(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:       "sonatype/nexus3:3.25.1",
 		User:        "nexus",

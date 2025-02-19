@@ -5,6 +5,20 @@ on:
     branches:
       - master
       - it/**
+  workflow_call:
+    secrets:
+      INTEGRATION_TEST_VOTING_TOKEN:
+        required: true
+      PIPER_INTEGRATION_GITHUB_TOKEN:
+        required: true
+      PIPER_INTEGRATION_SONAR_TOKEN:
+        required: true
+      PIPER_TMSSERVICEKEY:
+        required: true
+    outputs:
+      test_status:
+        description: "Integration test status (success/failure)"
+        value: ${{ jobs.finish.outputs.status }}
 
 jobs:
   start:
@@ -134,8 +148,11 @@ jobs:
       - build_integration_tests
       - run_integration_tests
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.set_status.outputs.status }}
     steps:
       - name: Update status
+        id: set_status
         run: |
           if [[ "${{ needs.run_integration_tests.result }}" == "success" ]]
           then
@@ -147,6 +164,7 @@ jobs:
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+            echo "status=success" >> "$GITHUB_OUTPUT" && \
             exit 0
           else
             curl \
@@ -157,5 +175,6 @@ jobs:
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+            echo "status=failure" >> "$GITHUB_OUTPUT" && \
             exit 1
           fi

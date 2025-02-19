@@ -1,5 +1,10 @@
 package telemetry
 
+import (
+	"encoding/json"
+	"net/url"
+)
+
 // BaseData object definition containing the base data
 type BaseData struct {
 	ActionName      string `json:"actionName"`
@@ -62,4 +67,24 @@ type StepTelemetryData struct {
 type Data struct {
 	BaseData
 	CustomData
+}
+
+// toMap transfers the data object into a map using JSON tags
+func (d *Data) toMap() (result map[string]string) {
+	jsonObj, _ := json.Marshal(d)
+	json.Unmarshal(jsonObj, &result)
+	return
+}
+
+// toPayloadString transfers the data object into a 'key=value&..' string
+func (d *Data) toPayloadString() string {
+	parameters := url.Values{}
+
+	for key, value := range d.toMap() {
+		if len(value) > 0 {
+			parameters.Add(key, value)
+		}
+	}
+
+	return parameters.Encode()
 }
