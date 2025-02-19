@@ -18,6 +18,8 @@ import (
 
 type onapsisExecuteScanOptions struct {
 	ScanServiceURL         string `json:"scanServiceUrl,omitempty"`
+	OnapsisUsername        string `json:"onapsisUsername,omitempty"`
+	OnapsisPassword        string `json:"onapsisPassword,omitempty"`
 	AccessToken            string `json:"accessToken,omitempty"`
 	AppType                string `json:"appType,omitempty" validate:"possible-values=abap ui5"`
 	FailOnMandatoryFinding bool   `json:"failOnMandatoryFinding,omitempty"`
@@ -144,6 +146,8 @@ func OnapsisExecuteScanCommand() *cobra.Command {
 
 func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.ScanServiceURL, "scanServiceUrl", os.Getenv("PIPER_scanServiceUrl"), "URL of the scan service")
+	cmd.Flags().StringVar(&stepConfig.OnapsisUsername, "onapsisUsername", os.Getenv("PIPER_onapsisUsername"), "Onapsis username for JWT authentication")
+	cmd.Flags().StringVar(&stepConfig.OnapsisPassword, "onapsisPassword", os.Getenv("PIPER_onapsisPassword"), "Onapsis password for JWT authentication")
 	cmd.Flags().StringVar(&stepConfig.AccessToken, "accessToken", os.Getenv("PIPER_accessToken"), "Token used to authenticate with the Control Scan Service")
 	cmd.Flags().StringVar(&stepConfig.AppType, "appType", `ui5`, "Type of the application to be scanned")
 	cmd.Flags().BoolVar(&stepConfig.FailOnMandatoryFinding, "failOnMandatoryFinding", true, "Fail the build if mandatory findings are detected")
@@ -151,6 +155,8 @@ func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.DebugMode, "debugMode", false, "Enable debug mode for the scan")
 
 	cmd.MarkFlagRequired("scanServiceUrl")
+	cmd.MarkFlagRequired("onapsisUsername")
+	cmd.MarkFlagRequired("onapsisPassword")
 }
 
 // retrieve step metadata
@@ -164,17 +170,50 @@ func onapsisExecuteScanMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "onapsisTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate with Onapsis Control Scan Service", Type: "jenkins"},
+					{Name: "onapsisPassword", Description: "Onapsis password for JWT authentication", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:        "scanServiceUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_scanServiceUrl"),
+						Name: "scanServiceUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "scanServiceUrl",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_scanServiceUrl"),
+					},
+					{
+						Name: "onapsisUsername",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "onapsisUsername",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_onapsisUsername"),
+					},
+					{
+						Name: "onapsisPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "onapsisPassword",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_onapsisPassword"),
 					},
 					{
 						Name: "accessToken",

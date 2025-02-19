@@ -9,6 +9,11 @@ spec:
         type: jenkins
         description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate with Onapsis Control Scan Service"
         mandatory: true
+    secrets:
+      - name: onapsisPassword
+        type: jenkins
+        description: "Onapsis password for JWT authentication"
+        mandatory: true
     params:
       - name: scanServiceUrl
         type: string
@@ -18,6 +23,31 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: scanServiceUrl
+            type: secret
+      - name: onapsisUsername
+        type: string
+        description: "Onapsis username for JWT authentication"
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: onapsisUsername
+            type: secret
+      - name: onapsisPassword
+        type: string
+        description: "Onapsis password for JWT authentication"
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: onapsisPassword
+            type: secret
       - name: accessToken
         type: string
         description: "Token used to authenticate with the Control Scan Service"

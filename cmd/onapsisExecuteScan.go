@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"archive/zip"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -179,16 +181,158 @@ func zipProject(folderPath string, outputPath string) error {
 	return nil
 }
 
+// AuthResponse for Onapsis response
+// AuthResponse matches the Onapsis API response
+type AuthResponse struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+// createSecureHTTPClient initializes and returns an HTTP client with a custom CA certificate
+func createSecureHTTPClient(certPath string) (*http.Client, error) {
+	// Read the CA certificate
+	caCert, err := os.ReadFile(certPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA certificate: %v", err)
+	}
+
+	// Create a certificate pool and append the internal CA
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return nil, fmt.Errorf("failed to append CA certificate")
+	}
+
+	// Create and return the secure HTTP client
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		},
+		Timeout: 10 * time.Second,
+	}
+
+	return client, nil
+}
+
+func refreshJwtToken(refreshToken, scanServiceUrl string) (string, error) {
+	refreshTokenURL := scanServiceUrl + "/cca/v1.2/auth_token"
+
+	// Create HTTP request
+	req, err := http.NewRequest("GET", refreshTokenURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creating request: %v", err)
+	}
+
+	// Set and format the expected Cookie header
+	req.Header.Set("Cookie", fmt.Sprintf("refresh_token=%s", refreshToken))
+
+	certPath := "/home/ca.pem"
+
+	client, err = createSecureHTTPClient(certPath)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error making request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading response body: %v", err)
+	}
+
+	// Handle response
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to refresh token, status: %d, response: %s", resp.StatusCode, string(body))
+	}
+
+	// Extract new JWT from the response (assuming JSON response)
+	var refreshJwtToken AuthResponse
+	if err := json.Unmarshal(body, &refreshJwtToken); err != nil {
+		return "", fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	return refreshJwtToken.AccessToken, nil
+
+}
+
+// getJWTFromService fetches a JWT using Basic Auth
+func getJWTFromService(username, password, scanServiceUrl string) (*AuthResponse, error) {
+
+	url := scanServiceUrl + "/cca/v1.2/auth_token"
+	certPath := "/home/ca.pem"
+
+	fmt.Println("This is the scan servcie url: ", scanServiceUrl)
+
+	// Create the request with GET method
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	// Set Basic Auth (Postman Authorization tab)
+	req.SetBasicAuth(username, password)
+
+	client, err = createSecureHTTPClient(certPath)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request to JWT service failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to obtain JWT, status code: %d, response: %s", resp.StatusCode, body)
+	}
+
+	var authResp AuthResponse
+	if err := json.Unmarshal(body, &authResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	return &authResp, nil
+}
+
 func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newOnapsisExecuteScanUtils()
 
+	//display token and refresh token for tests purposes should be deleted after the merge
+	token, tokenErr := getJWTFromService(config.OnapsisUsername, config.OnapsisPassword, config.ScanServiceURL)
+	if tokenErr != nil {
+		log.Entry().WithError(tokenErr).Fatal("Error obtaining JWT")
+	}
+
+	fmt.Println("Received JWT:", token.AccessToken)
+	fmt.Println("Received Refresh Token:", token.RefreshToken)
+
+	newJwt, refreshTokenErr := refreshJwtToken(token.RefreshToken, config.ScanServiceURL)
+
+	if refreshTokenErr != nil {
+		log.Entry().WithError(refreshTokenErr).Fatal("Error obtaining refreshed JWT")
+	}
+
+	fmt.Println("Received refreshed JWT:", newJwt)
+
 	if config.DebugMode {
 		log.SetVerbose(true)
 	}
 
-	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err := runOnapsisExecuteScan(&config, telemetryData, utils)
 	if err != nil {
