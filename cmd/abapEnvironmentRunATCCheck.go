@@ -24,7 +24,6 @@ import (
 
 func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, _ *telemetry.CustomData) {
 	// Mapping for options
-	subOptions := convertATCOptions(&options)
 
 	c := &command.Command{}
 	c.Stdout(log.Entry().Writer())
@@ -36,22 +35,23 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, _ *te
 
 	client := piperhttp.Client{}
 	fileUtils := piperutils.Files{}
+
+	err := runAbapEnvironmentRunATCCheck(autils, client, options, fileUtils)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runAbapEnvironmentRunATCCheck(autils abaputils.AbapUtils, client piperhttp.Client, options abapEnvironmentRunATCCheckOptions, fileUtils piperutils.Files) error {
+
+	var details abaputils.ConnectionDetailsHTTP
 	cookieJar, _ := cookiejar.New(nil)
 	clientOptions := piperhttp.ClientOptions{
 		CookieJar: cookieJar,
 	}
 	client.SetOptions(clientOptions)
 
-	err := runAbapEnvironmentRunATCCheck(autils, subOptions, cookieJar, client, options, fileUtils)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
-	}
-}
-
-func runAbapEnvironmentRunATCCheck(autils abaputils.AbapUtils, subOptions abaputils.AbapEnvironmentOptions, cookieJar *cookiejar.Jar, client piperhttp.Client, options abapEnvironmentRunATCCheckOptions, fileUtils piperutils.Files) error {
-	var details abaputils.ConnectionDetailsHTTP
-	// If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
-
+	subOptions := convertATCOptions(&options)
 	details, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "")
 	if err != nil {
 		return err
