@@ -1,6 +1,6 @@
 module github.com/SAP/jenkins-library
 
-go 1.23.4
+go 1.24.0
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
