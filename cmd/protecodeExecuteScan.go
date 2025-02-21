@@ -385,7 +385,7 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions, utils protec
 	}
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to create / update docker config json file")
+		return errors.Wrap(err, "failed to create / update docker config json file")
 	}
 
 	if len(path) > 0 {

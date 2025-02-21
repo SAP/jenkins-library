@@ -453,7 +453,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			// download certificate
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
-				return errors.Wrapf(err, "Download of TLS certificate failed")
+				return errors.Wrap(err, "Download of TLS certificate failed")
 			}
 			// add certificate to keystore
 			if err := keytool.ImportCert(runner, truststoreFile, target); err != nil {

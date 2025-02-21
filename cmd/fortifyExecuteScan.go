@@ -281,7 +281,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
 	if err != nil {
-		return reports, errors.Wrapf(err, "failed to scan project")
+		return reports, errors.Wrap(err, "failed to scan project")
 	}
 
 	var message string
@@ -785,7 +785,7 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	// redirect stdout and create cp file from command output
 	outfile, err := os.Create(file)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create classpath file")
+		return "", errors.Wrap(err, "failed to create classpath file")
 	}
 	defer outfile.Close()
 	utils.Stdout(outfile)

@@ -62,7 +62,7 @@ func createTags(backlog []abaputils.CreateTagBacklog, con abaputils.ConnectionDe
 
 	if errorOccurred {
 		message := "At least one tag has not been created"
-		log.Entry().Errorf(message)
+		log.Entry().Error(message)
 		return errors.New(message)
 	}
 	return nil
@@ -94,7 +94,7 @@ func createSingleTag(item abaputils.CreateTagBacklog, index int, con abaputils.C
 
 	createTagError := api.CreateTag(item.Tags[index])
 	if createTagError != nil {
-		return errors.Wrapf(err, "Creation of Tag failed on the ABAP system")
+		return errors.Wrap(err, "Creation of Tag failed on the ABAP system")
 	}
 
 	logOutputManager := abaputils.LogOutputManager{
