@@ -442,7 +442,7 @@ func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
 
-	log.Entry().Infof("lint report: \n" + outputBuffer.String())
+	log.Entry().Info("lint report: \n" + outputBuffer.String())
 	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
 	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0o644)
 	if err != nil {

@@ -253,7 +253,7 @@ func AddDefaultDashedLine(j int) {
 
 // AddDefaultDebugLine adds 25 dashes in debug
 func AddDebugDashedLine() {
-	log.Entry().Debugf(strings.Repeat("-", 25))
+	log.Entry().Debug(strings.Repeat("-", 25))
 }
 
 /*******************************
