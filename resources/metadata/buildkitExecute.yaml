@@ -1,0 +1,26 @@
+metadata:
+  name: buildkitExecute
+  description: Executes a Buildkit build for creating a Docker container.
+  longDescription: |
+    Executes a Buildkit build for creating a Docker container.
+
+spec:
+  inputs:
+    params:
+      - name: dockerfilePath
+        type: string
+        description: Defines the location of the Dockerfile relative to the pipeline working directory.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: Dockerfile
+
+  containers:
+    - name: buildkitd
+      image: moby/buildkit:latest-rootless
+      args:
+        - --oci-worker-no-process-sandbox
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
