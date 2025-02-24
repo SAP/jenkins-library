@@ -25,7 +25,7 @@ type Client interface {
 type gcsClient struct {
 	context       context.Context
 	envVars       []EnvVar
-	client        storage.Client
+	gcs           storage.Client
 	clientOptions []option.ClientOption
 	openFile      func(name string) (io.ReadCloser, error)
 	createFile    func(name string) (io.WriteCloser, error)
@@ -47,66 +47,40 @@ func WithEnvVars(envVars []EnvVar) gcsOption {
 	}
 }
 
-// WithOpenFileFunction sets the openFile function in gcsClient
-func WithOpenFileFunction(openFile func(name string) (io.ReadCloser, error)) gcsOption {
-	return func(g *gcsClient) {
-		g.openFile = openFile
-	}
-}
-
-// WithCreateFileFunction sets the createFile function in gcsClient
-func WithCreateFileFunction(createFile func(name string) (io.WriteCloser, error)) gcsOption {
-	return func(g *gcsClient) {
-		g.createFile = createFile
-	}
-}
-
-// WithClientOptions sets the Google Cloud Storage client options
-func WithClientOptions(opts ...option.ClientOption) gcsOption {
-	return func(g *gcsClient) {
-		g.clientOptions = append(g.clientOptions, opts...)
-	}
-}
-
 // NewClient initializes the Google Cloud Storage client with the provided options
-func NewClient(opts ...gcsOption) (*gcsClient, error) {
-	var (
-		defaultOpenFile   = openFileFromFS
-		defaultCreateFile = createFileOnFS
-	)
-
+func NewClient(opts ...gcsOption) (Client, error) {
 	ctx := context.Background()
-	gcsClient := &gcsClient{
+	client := &gcsClient{
 		context:    ctx,
-		openFile:   defaultOpenFile,
-		createFile: defaultCreateFile,
+		openFile:   openFileFromFS,
+		createFile: createFileOnFS,
 	}
 
 	// Apply options
 	for _, opt := range opts {
-		opt(gcsClient)
+		opt(client)
 	}
 
-	gcsClient.prepareEnv()
-	client, err := storage.NewClient(ctx, gcsClient.clientOptions...)
+	client.prepareEnv()
+	gcs, err := storage.NewClient(ctx, client.clientOptions...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "bucket connection failed: %v", err)
 	}
-	gcsClient.client = *client
-	return gcsClient, nil
+	client.gcs = *gcs
+	return client, nil
 }
 
 // UploadFile uploads a file to a Google Cloud Storage bucket
-func (g *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath string) error {
-	target := g.client.Bucket(bucketID).Object(targetPath).NewWriter(g.context)
+func (cl *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath string) error {
+	target := cl.gcs.Bucket(bucketID).Object(targetPath).NewWriter(cl.context)
 	log.Entry().Debugf("uploading %v to %v", sourcePath, targetPath)
-	sourceFile, err := g.openFile(sourcePath)
+	sourceFile, err := cl.openFile(sourcePath)
 	if err != nil {
 		return errors.Wrapf(err, "could not open source file: %v", err)
 	}
 	defer sourceFile.Close()
 
-	if err := g.copy(sourceFile, target); err != nil {
+	if _, err := io.Copy(target, sourceFile); err != nil {
 		return errors.Wrapf(err, "upload failed: %v", err)
 	}
 
@@ -117,20 +91,20 @@ func (g *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath st
 }
 
 // DownloadFile downloads a file from a Google Cloud Storage bucket
-func (g *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath string) error {
+func (cl *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath string) error {
 	log.Entry().Debugf("downloading %v to %v\n", sourcePath, targetPath)
-	gcsReader, err := g.client.Bucket(bucketID).Object(sourcePath).NewReader(g.context)
+	gcsReader, err := cl.gcs.Bucket(bucketID).Object(sourcePath).NewReader(cl.context)
 	if err != nil {
 		return errors.Wrapf(err, "could not open source file from Google Cloud Storage bucket: %v", err)
 	}
 
-	targetWriter, err := g.createFile(targetPath)
+	targetWriter, err := cl.createFile(targetPath)
 	if err != nil {
 		return errors.Wrapf(err, "could not create target file: %v", err)
 	}
 	defer targetWriter.Close()
 
-	if err := g.copy(gcsReader, targetWriter); err != nil {
+	if _, err := io.Copy(targetWriter, gcsReader); err != nil {
 		return errors.Wrapf(err, "download failed: %v", err)
 	}
 	if err := gcsReader.Close(); err != nil {
@@ -140,16 +114,16 @@ func (g *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath 
 }
 
 // ListFiles lists all files in a specified Google Cloud Storage bucket
-func (g *gcsClient) ListFiles(bucketID string) ([]string, error) {
+func (cl *gcsClient) ListFiles(bucketID string) ([]string, error) {
 	fileNames := []string{}
-	it := g.client.Bucket(bucketID).Objects(g.context, nil)
+	it := cl.gcs.Bucket(bucketID).Objects(cl.context, nil)
 	for {
 		attrs, err := it.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "could not list files")
 		}
 		fileNames = append(fileNames, attrs.Name)
 	}
@@ -157,34 +131,26 @@ func (g *gcsClient) ListFiles(bucketID string) ([]string, error) {
 }
 
 // Close closes the client and removes previously set environment variables
-func (g *gcsClient) Close() error {
-	if err := g.client.Close(); err != nil {
+func (cl *gcsClient) Close() error {
+	if err := cl.gcs.Close(); err != nil {
 		return err
 	}
-	if err := g.cleanupEnv(); err != nil {
-		return err
-	}
-	return nil
-}
-
-// copy copies data from the source reader to the target writer
-func (g *gcsClient) copy(source io.Reader, target io.Writer) error {
-	if _, err := io.Copy(target, source); err != nil {
+	if err := cl.cleanupEnv(); err != nil {
 		return err
 	}
 	return nil
 }
 
 // prepareEnv sets required environment variables if they are not already set
-func (g *gcsClient) prepareEnv() {
-	for key, env := range g.envVars {
-		g.envVars[key].Modified = setenvIfEmpty(env.Name, env.Value)
+func (cl *gcsClient) prepareEnv() {
+	for key, env := range cl.envVars {
+		cl.envVars[key].Modified = setenvIfEmpty(env.Name, env.Value)
 	}
 }
 
 // cleanupEnv removes environment variables set by prepareEnv
-func (g *gcsClient) cleanupEnv() error {
-	for _, env := range g.envVars {
+func (cl *gcsClient) cleanupEnv() error {
+	for _, env := range cl.envVars {
 		if err := removeEnvIfPreviouslySet(env.Name, env.Modified); err != nil {
 			return err
 		}
@@ -211,6 +177,33 @@ func removeEnvIfPreviouslySet(env string, previouslySet bool) error {
 	return nil
 }
 
+// TODO: consider refactoring to avoid keeping functions that are used only for unit/integration testing in the production code
+// Below functions WithOpenFileFunction, WithCreateFileFunction and WithClientOptions are
+// used only for unit/integration testing.
+
+// WithOpenFileFunction sets the openFile function in gcsClient
+func WithOpenFileFunction(openFile func(name string) (io.ReadCloser, error)) gcsOption {
+	return func(g *gcsClient) {
+		g.openFile = openFile
+	}
+}
+
+// WithCreateFileFunction sets the createFile function in gcsClient
+func WithCreateFileFunction(createFile func(name string) (io.WriteCloser, error)) gcsOption {
+	return func(g *gcsClient) {
+		g.createFile = createFile
+	}
+}
+
+// WithClientOptions sets the Google Cloud Storage client options
+func WithClientOptions(opts ...option.ClientOption) gcsOption {
+	return func(g *gcsClient) {
+		g.clientOptions = append(g.clientOptions, opts...)
+	}
+}
+
+// openFileFromFS and createFileOnFS functions are existing just because of the integration tests
+// TODO: find a better way to mock filesystem operations in the integration tests
 // openFileFromFS opens a file from the filesystem
 func openFileFromFS(name string) (io.ReadCloser, error) {
 	return os.Open(name)
