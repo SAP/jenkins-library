@@ -23,32 +23,17 @@ type Client interface {
 
 // gcsClient provides functions to interact with Google Cloud Storage API
 type gcsClient struct {
-	ctx           context.Context
-	envVars       []EnvVar
-	gcs           storage.Client
-	clientOptions []option.ClientOption
-	openFile      func(name string) (io.ReadCloser, error)
-	createFile    func(name string) (io.WriteCloser, error)
+	ctx        context.Context
+	gcs        storage.Client
+	gcsOptions []option.ClientOption
+	openFile   func(name string) (io.ReadCloser, error)
+	createFile func(name string) (io.WriteCloser, error)
 }
 
-// EnvVar defines an environment variable including information about a potential modification to the variable
-type EnvVar struct {
-	Name     string
-	Value    string
-	Modified bool
-}
-
-type gcsOption func(*gcsClient)
-
-// WithEnvVars sets environment variables in gcsClient
-func WithEnvVars(envVars []EnvVar) gcsOption {
-	return func(g *gcsClient) {
-		g.envVars = envVars
-	}
-}
+type clientOptions func(*gcsClient)
 
 // NewClient initializes the Google Cloud Storage client with the provided options
-func NewClient(opts ...gcsOption) (Client, error) {
+func NewClient(keyFile, token string, opts ...clientOptions) (Client, error) {
 	ctx := context.Background()
 	client := &gcsClient{
 		ctx:        ctx,
@@ -61,11 +46,11 @@ func NewClient(opts ...gcsOption) (Client, error) {
 		opt(client)
 	}
 
-	client.prepareEnv()
-	gcs, err := storage.NewClient(ctx, client.clientOptions...)
+	gcs, err := initGcsClient(ctx, keyFile, token, client.gcsOptions...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "bucket connection failed: %v", err)
+		return nil, err
 	}
+
 	client.gcs = *gcs
 	return client, nil
 }
@@ -151,70 +136,32 @@ func (cl *gcsClient) Close() error {
 	if err := cl.gcs.Close(); err != nil {
 		return err
 	}
-	if err := cl.cleanupEnv(); err != nil {
-		return err
-	}
-	return nil
-}
 
-// prepareEnv sets required environment variables if they are not already set
-func (cl *gcsClient) prepareEnv() {
-	for key, env := range cl.envVars {
-		cl.envVars[key].Modified = setenvIfEmpty(env.Name, env.Value)
-	}
-}
-
-// cleanupEnv removes environment variables set by prepareEnv
-func (cl *gcsClient) cleanupEnv() error {
-	for _, env := range cl.envVars {
-		if err := removeEnvIfPreviouslySet(env.Name, env.Modified); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// setenvIfEmpty sets an environment variable if it is not already set
-func setenvIfEmpty(env, val string) bool {
-	if len(os.Getenv(env)) == 0 {
-		os.Setenv(env, val)
-		return true
-	}
-	return false
-}
-
-// removeEnvIfPreviouslySet removes an environment variable if it was previously set by setenvIfEmpty
-func removeEnvIfPreviouslySet(env string, previouslySet bool) error {
-	if previouslySet {
-		if err := os.Setenv(env, ""); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
 // TODO: consider refactoring to avoid keeping functions that are used only for unit/integration testing in the production code
-// Below functions WithOpenFileFunction, WithCreateFileFunction and WithClientOptions are
+// Below functions WithOpenFileFunction, WithCreateFileFunction and WithGCSClientOptions are
 // used only for unit/integration testing.
 
 // WithOpenFileFunction sets the openFile function in gcsClient
-func WithOpenFileFunction(openFile func(name string) (io.ReadCloser, error)) gcsOption {
+func WithOpenFileFunction(openFile func(name string) (io.ReadCloser, error)) clientOptions {
 	return func(g *gcsClient) {
 		g.openFile = openFile
 	}
 }
 
 // WithCreateFileFunction sets the createFile function in gcsClient
-func WithCreateFileFunction(createFile func(name string) (io.WriteCloser, error)) gcsOption {
+func WithCreateFileFunction(createFile func(name string) (io.WriteCloser, error)) clientOptions {
 	return func(g *gcsClient) {
 		g.createFile = createFile
 	}
 }
 
-// WithClientOptions sets the Google Cloud Storage client options
-func WithClientOptions(opts ...option.ClientOption) gcsOption {
+// WithGCSClientOptions sets the Google Cloud Storage client options
+func WithGCSClientOptions(opts ...option.ClientOption) clientOptions {
 	return func(g *gcsClient) {
-		g.clientOptions = append(g.clientOptions, opts...)
+		g.gcsOptions = append(g.gcsOptions, opts...)
 	}
 }
 
