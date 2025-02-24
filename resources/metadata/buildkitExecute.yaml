@@ -18,7 +18,7 @@ spec:
 
   containers:
     - name: buildkitd
-      image: moby/buildkit:latest-rootless
+      image: moby/buildkit:rootless
       args:
         - --oci-worker-no-process-sandbox
       securityContext:

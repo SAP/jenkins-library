@@ -167,7 +167,7 @@ func buildkitExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildkitd", Image: "moby/buildkit:latest-rootless"},
+				{Name: "buildkitd", Image: "moby/buildkit:rootless"},
 			},
 		},
 	}
