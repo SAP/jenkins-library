@@ -179,3 +179,26 @@ func createFileOnFS(name string) (io.WriteCloser, error) {
 	}
 	return os.Create(name)
 }
+
+// NewClientLegacy is also still here because of integration tests
+func NewClientLegacy(opts ...clientOptions) (Client, error) {
+	ctx := context.Background()
+	client := &gcsClient{
+		ctx:        ctx,
+		openFile:   openFileFromFS,
+		createFile: createFileOnFS,
+	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt(client)
+	}
+
+	gcs, err := storage.NewClient(ctx, client.gcsOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	client.gcs = *gcs
+	return client, nil
+}
