@@ -36,15 +36,15 @@ This table compares deployment strategies for MTA and Non-MTA applications.
 | **blue-green** | deployTool = mtaDeployPlugin, <br> Uses MTA plugin <br> Command run `cf deploy bgdeploy` | Deprecated. <br> **Alternative:** Rolling deployment strategy by setting <br> `cfNativeDeployParameters = '--strategy rolling'` |
 |               | **deployDockerImage not supported** | **deployDockerImage supported**<br>Docker credentials can only be provided as Jenkins environment variable. |
 
-!!! note
-    Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
-    If your `application` contains a list of `buildpacks` instead of a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
+ !!! note
 
-!!! note
-    Cloud Foundry supports the deployment of multiple applications using a single manifest file.
+- Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
+    If your `application` contains a list of `buildpacks` instead of a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
+- Cloud Foundry supports the deployment of multiple applications using a single manifest file.
     This option is supported with project "Piper".
     In this case, define `appName: ''` since the app name for the individual applications has to be defined via the manifest.
     You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
+- Recommended way to do **docker image deployments** is via [Kubernetes Piper step](https://github.wdf.sap.corp/pages/ContinuousDelivery/piper-doc/steps/kubernetesDeploy/).This step is not capable of deploying docker images built in the same pipeline using other piper steps[i.e., kanikoExecute].
 
 ## Prerequisites
 
