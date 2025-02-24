@@ -1,16 +1,16 @@
 package gcs
 
 import (
-	"context"
-	"io"
-	"os"
-	"path/filepath"
-
 	"cloud.google.com/go/storage"
+	"context"
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"io"
+	"os"
+	"path/filepath"
 )
 
 // Client is an interface to mock gcsClient
@@ -23,7 +23,7 @@ type Client interface {
 
 // gcsClient provides functions to interact with Google Cloud Storage API
 type gcsClient struct {
-	context       context.Context
+	ctx           context.Context
 	envVars       []EnvVar
 	gcs           storage.Client
 	clientOptions []option.ClientOption
@@ -51,7 +51,7 @@ func WithEnvVars(envVars []EnvVar) gcsOption {
 func NewClient(opts ...gcsOption) (Client, error) {
 	ctx := context.Background()
 	client := &gcsClient{
-		context:    ctx,
+		ctx:        ctx,
 		openFile:   openFileFromFS,
 		createFile: createFileOnFS,
 	}
@@ -70,53 +70,69 @@ func NewClient(opts ...gcsOption) (Client, error) {
 	return client, nil
 }
 
-// UploadFile uploads a file to a Google Cloud Storage bucket
 func (cl *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath string) error {
-	target := cl.gcs.Bucket(bucketID).Object(targetPath).NewWriter(cl.context)
-	log.Entry().Debugf("uploading %v to %v", sourcePath, targetPath)
-	sourceFile, err := cl.openFile(sourcePath)
+	sourcePath = filepath.Clean(sourcePath)
+	log.Entry().Debugf("Uploading %v to %v\n", sourcePath, targetPath)
+
+	sourceFile, err := os.Open(sourcePath)
 	if err != nil {
-		return errors.Wrapf(err, "could not open source file: %v", err)
+		return fmt.Errorf("failed to open source file: %w", err)
 	}
 	defer sourceFile.Close()
 
-	if _, err := io.Copy(target, sourceFile); err != nil {
-		return errors.Wrapf(err, "upload failed: %v", err)
+	// Get file size
+	fileInfo, err := sourceFile.Stat()
+	if err != nil {
+		log.Entry().Debugf("Failed to get file info: %v", err)
 	}
 
-	if err := target.Close(); err != nil {
-		return errors.Wrapf(err, "closing bucket failed: %v", err)
+	// Set up a progress writer and io.TeeReader to track upload progress
+	source := io.TeeReader(sourceFile, newProgressW(fileInfo.Size()))
+
+	target := cl.gcs.Bucket(bucketID).Object(targetPath).NewWriter(cl.ctx)
+	defer target.Close()
+
+	task := func(ctx context.Context) error {
+		if _, err = io.Copy(target, source); err != nil {
+			return fmt.Errorf("upload failed: %w", err)
+		}
+		return nil
 	}
-	return nil
+
+	return retryWithLogging(cl.ctx, log.Entry(), task, initialBackoff, maxRetries, retryMultiplier)
 }
 
 // DownloadFile downloads a file from a Google Cloud Storage bucket
-func (cl *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath string) error {
-	log.Entry().Debugf("downloading %v to %v\n", sourcePath, targetPath)
-	gcsReader, err := cl.gcs.Bucket(bucketID).Object(sourcePath).NewReader(cl.context)
-	if err != nil {
-		return errors.Wrapf(err, "could not open source file from Google Cloud Storage bucket: %v", err)
-	}
+func (cl *gcsClient) DownloadFile(bucketID, sourcePath, targetPath string) error {
+	targetPath = filepath.Clean(targetPath)
+	log.Entry().Debugf("Downloading %v to %v\n", sourcePath, targetPath)
 
-	targetWriter, err := cl.createFile(targetPath)
+	target, err := cl.createFile(targetPath)
 	if err != nil {
 		return errors.Wrapf(err, "could not create target file: %v", err)
 	}
-	defer targetWriter.Close()
+	defer target.Close()
 
-	if _, err := io.Copy(targetWriter, gcsReader); err != nil {
-		return errors.Wrapf(err, "download failed: %v", err)
+	source, err := cl.gcs.Bucket(bucketID).Object(sourcePath).NewReader(cl.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create reader: %w", err)
 	}
-	if err := gcsReader.Close(); err != nil {
-		return errors.Wrapf(err, "closing bucket failed: %v", err)
+	defer source.Close()
+
+	task := func(ctx context.Context) error {
+		if _, err = io.Copy(target, source); err != nil {
+			return fmt.Errorf("download failed: %w", err)
+		}
+		return nil
 	}
-	return nil
+
+	return retryWithLogging(cl.ctx, log.Entry(), task, initialBackoff, maxRetries, retryMultiplier)
 }
 
 // ListFiles lists all files in a specified Google Cloud Storage bucket
 func (cl *gcsClient) ListFiles(bucketID string) ([]string, error) {
 	fileNames := []string{}
-	it := cl.gcs.Bucket(bucketID).Objects(cl.context, nil)
+	it := cl.gcs.Bucket(bucketID).Objects(cl.ctx, nil)
 	for {
 		attrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
