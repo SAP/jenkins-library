@@ -3,6 +3,7 @@ package gcs
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -20,7 +21,7 @@ type Task struct {
 func PersistReportsToGCS(gcsClient Client, outputParams []ReportOutputParam, inputParams map[string]string, gcsFolderPath string, gcsBucketID string, gcsSubFolder string, searchFilesFunc func(string) ([]string, error), fileInfo func(string) (os.FileInfo, error)) error {
 	tasks := []Task{}
 	for _, param := range outputParams {
-		targetFolder := GetTargetFolder(gcsFolderPath, param.StepResultType, gcsSubFolder)
+		targetFolder := path.Join(gcsFolderPath, param.StepResultType, gcsSubFolder)
 		if param.ParamRef != "" {
 			paramValue, ok := inputParams[param.ParamRef]
 			if !ok {
