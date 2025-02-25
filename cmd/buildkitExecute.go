@@ -61,25 +61,12 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		}
 	}
 
-	// Diagnostic checks before building
-	log.Entry().Info("Running pre-build diagnostics...")
-	// Check buildkit directories
-	err = execRunner.RunExecutable("ls", "-la", "/var/lib/buildkit")
-	if err != nil {
-		log.Entry().Warnf("Could not check buildkit directory permissions: %v", err)
-	}
-	err = execRunner.RunExecutable("id")
-	if err != nil {
-		log.Entry().Warnf("Could not determine current user: %v", err)
-	}
-
 	// Build with buildkit
 	buildOpts := []string{
 		"build",
 		"--frontend=dockerfile.v0",
 		"--local", "context=.",
 		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
-		"--debug", // Enable debug output for buildkit
 	}
 
 	// Add build options from config
@@ -103,7 +90,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	log.Entry().Info("Executing buildkit build...")
-	err = execRunner.RunExecutable("buildctl", buildOpts...)
+	err = execRunner.RunExecutable("buildctl-daemonless.sh", buildOpts...)
 	if err != nil {
 		return fmt.Errorf("buildkit build failed: %w", err)
 	}
