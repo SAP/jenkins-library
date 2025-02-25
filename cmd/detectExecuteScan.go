@@ -112,6 +112,10 @@ func newDetectUtils(client *github.Client) detectUtils {
 					"FAILURE_GENERAL_ERROR - Detect encountered a known error, details of the error are provided.",
 					"FAILURE_UNKNOWN_ERROR - Detect encountered an unknown error.",
 					"FAILURE_MINIMUM_INTERVAL_NOT_MET - Detect did not wait the minimum required scan interval.",
+					"FAILURE_IAC - Detect was unable to perform IaC Scan against your source. Please check your configuration, and see logs and IaC Scanner documentation for more information.",
+					"FAILURE_ACCURACY_NOT_MET - Detect was unable to meet the required accuracy.",
+					"FAILURE_IMAGE_NOT_AVAILABLE - Image scan attempted but no return data available.",
+					"FAILURE_COMPONENT_LOCATION_ANALYSIS => Component Location Analysis failed.",
 				},
 			},
 		},
@@ -384,6 +388,16 @@ func mapErrorCategory(exitCodeKey int) {
 		log.SetErrorCategory(log.ErrorService)
 	case 12:
 		log.SetErrorCategory(log.ErrorInfrastructure)
+	case 13:
+		log.SetErrorCategory(log.ErrorService)
+	case 14:
+		log.SetErrorCategory(log.ErrorService)
+	case 15:
+		log.SetErrorCategory(log.ErrorService)
+	case 20:
+		log.SetErrorCategory(log.ErrorService)
+	case 25:
+		log.SetErrorCategory(log.ErrorService)
 	case 99:
 		log.SetErrorCategory(log.ErrorService)
 	case 100:
@@ -408,9 +422,13 @@ func exitCodeMapping(exitCodeKey int) string {
 		10:  "FAILURE_BLACKDUCK_VERSION_NOT_SUPPORTED => Detect attempted an operation that was not supported by your version of Black Duck. Ensure your Black Duck is compatible with this version of detect.",
 		11:  "FAILURE_BLACKDUCK_FEATURE_ERROR => Detect encountered an error while attempting an operation on Black Duck. Ensure your Black Duck is compatible with this version of detect.",
 		12:  "FAILURE_POLARIS_CONNECTIVITY => Detect was unable to connect to Polaris. Check your configuration and connection.",
+		13:  "FAILURE_MINIMUM_INTERVAL_NOT_MET => Detect did not wait the minimum required scan interval.",
+		14:  "FAILURE_IAC => Detect was unable to perform IaC Scan against your source. Please check your configuration, and see logs and IaC Scanner documentation for more information.",
+		15:  "FAILURE_ACCURACY_NOT_MET => Detect was unable to meet the required accuracy.",
+		20:  "FAILURE_IMAGE_NOT_AVAILABLE => Image scan attempted but no return data available.",
+		25:  "FAILURE_COMPONENT_LOCATION_ANALYSIS => Component Location Analysis failed. ",
 		99:  "FAILURE_GENERAL_ERROR => Detect encountered a known error, details of the error are provided.",
 		100: "FAILURE_UNKNOWN_ERROR => Detect encountered an unknown error.",
-		13:  "FAILURE_MINIMUM_INTERVAL_NOT_MET => Detect did not wait the minimum required scan interval.",
 	}
 
 	if _, isKeyExists := exitCodes[exitCodeKey]; isKeyExists {
