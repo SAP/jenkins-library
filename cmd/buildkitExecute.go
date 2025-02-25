@@ -9,7 +9,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) {
@@ -39,12 +38,6 @@ func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.Cus
 func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
 	log.Entry().Info("Starting buildkit execution...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
-
-	// Test buildctl command availability
-	err := execRunner.RunExecutable("buildctl", "--version")
-	if err != nil {
-		return errors.Wrap(err, "Failed to execute buildctl command")
-	}
 
 	// Handle Docker authentication
 	dockerConfigDir := "/root/.docker"
@@ -90,7 +83,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	log.Entry().Info("Executing buildkit build...")
-	err = execRunner.RunExecutable("buildctl-daemonless.sh", buildOpts...)
+	err := execRunner.RunExecutable("buildctl-daemonless.sh", buildOpts...)
 	if err != nil {
 		return fmt.Errorf("buildkit build failed: %w", err)
 	}
