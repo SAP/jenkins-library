@@ -110,9 +110,25 @@ spec:
 
   containers:
     - name: buildkitd
-      image: moby/buildkit:rootless
+      image: moby/buildkit:latest
+      command:
+        - buildkitd
       args:
         - --oci-worker-no-process-sandbox
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
+        privileged: true
+      volumeMounts:
+        - name: workspace
+          readOnly: true
+          mountPath: /workspace
+        # Dockerfile has `VOLUME /home/user/.local/share/buildkit` by default too,
+        # but the default VOLUME does not work with rootless on Google's Container-Optimized OS
+        # as it is mounted with `nosuid,nodev`.
+        # https://github.com/moby/buildkit/issues/879#issuecomment-1240347038
+        - mountPath: /home/user/.local/share/buildkit
+          name: buildkitd
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: buildkitd
+          emptyDir: {}
