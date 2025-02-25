@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) {
@@ -42,7 +43,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	// Test buildctl command availability
 	err := execRunner.RunExecutable("buildctl", "--version")
 	if err != nil {
-		return fmt.Errorf("failed to execute buildctl command: %w", err)
+		return errors.Wrap(err, "Failed to execute buildctl command")
 	}
 
 	// Handle Docker authentication

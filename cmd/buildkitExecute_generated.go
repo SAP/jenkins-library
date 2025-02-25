@@ -343,7 +343,7 @@ func buildkitExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildkitd", Image: "moby/buildkit:rootless", EnvVars: []config.EnvVar{{Name: "BUILDKIT_HOST", Value: "unix:///run/buildkit/buildkitd.sock"}}},
+				{Name: "buildkitd", Image: "moby/buildkit:rootless"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
