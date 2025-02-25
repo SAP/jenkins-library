@@ -110,18 +110,12 @@ spec:
 
   containers:
     - name: buildkitd
-      image: moby/buildkit:master-rootless
-      env:
-        - name: BUILDKITD_FLAGS
-          value: --oci-worker-no-process-sandbox
+      image: moby/buildkit:latest
       securityContext:
-        seccompProfile:
-          type: Unconfined
-        runAsUser: 1000
-        runAsGroup: 1000
+        privileged: true
       volumeMounts:
-        - mountPath: /home/user/.local/share/buildkit
-          name: buildkitd
+        - name: buildkit-socket
+          mountPath: /run/buildkit
   volumes:
-    - name: buildkitd
+    - name: buildkit-socket
       emptyDir: {}

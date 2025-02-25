@@ -40,19 +40,14 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Info("Starting buildkit execution...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Test buildctl-daemonless.sh command availability
-	err := execRunner.RunExecutable("buildctl-daemonless.sh", "--version")
+	// Test buildctl command availability
+	err := execRunner.RunExecutable("buildctl", "--version")
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute buildctl-daemonless.sh command")
 	}
 
-	// Set environment variables for rootless buildkit
-	execRunner.SetEnv([]string{
-		"BUILDKITD_FLAGS=--oci-worker-no-process-sandbox",
-	})
-
 	// Handle Docker authentication
-	dockerConfigDir := "/home/user/.docker"
+	dockerConfigDir := "/root/.docker"
 	if len(config.DockerConfigJSON) > 0 {
 		dockerConfigJSON, err := fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
@@ -95,7 +90,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	log.Entry().Info("Executing buildkit build...")
-	err = execRunner.RunExecutable("buildctl-daemonless.sh", buildOpts...)
+	err = execRunner.RunExecutable("buildctl", buildOpts...)
 	if err != nil {
 		return fmt.Errorf("buildkit build failed: %w", err)
 	}
