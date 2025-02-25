@@ -111,6 +111,17 @@ spec:
   containers:
     - name: buildkitd
       image: moby/buildkit:latest
+      args:
+        - --addr
+        - unix:///run/buildkit/buildkitd.sock
+      readinessProbe:
+        exec:
+          command:
+            - buildctl
+            - debug
+            - workers
+        initialDelaySeconds: 5
+        periodSeconds: 5
       securityContext:
         privileged: true
       volumeMounts:
