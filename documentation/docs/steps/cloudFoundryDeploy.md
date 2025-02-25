@@ -44,7 +44,7 @@ This table compares deployment strategies for MTA and Non-MTA applications.
     This option is supported with project "Piper".
     In this case, define `appName: ''` since the app name for the individual applications has to be defined via the manifest.
     You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
-- Recommended way to do **docker image deployments** is via [Kubernetes Piper step](https://github.wdf.sap.corp/pages/ContinuousDelivery/piper-doc/steps/kubernetesDeploy/).This step is not capable of deploying docker images built in the same pipeline using other piper steps[i.e., kanikoExecute].
+- Recommended way to do **docker image deployments** is via kubernetesDeploy Piper step.This step is not capable of deploying docker images built in the same pipeline using other piper steps[i.e., kanikoExecute].
 
 ## Prerequisites
 
