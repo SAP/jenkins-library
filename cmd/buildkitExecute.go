@@ -1,16 +1,16 @@
 package cmd
 
 import (
-"fmt"
-"time"
+	"fmt"
+	"time"
 
-"github.com/SAP/jenkins-library/pkg/command"
-piperhttp "github.com/SAP/jenkins-library/pkg/http"
-"github.com/SAP/jenkins-library/pkg/log"
-"github.com/SAP/jenkins-library/pkg/piperutils"
-"github.com/SAP/jenkins-library/pkg/syft"
-"github.com/SAP/jenkins-library/pkg/telemetry"
-"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/syft"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) {
@@ -44,21 +44,21 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	// Wait for buildkit daemon to be available
 	maxRetries := 30
 	for i := 0; i < maxRetries; i++ {
-	    err := execRunner.RunExecutable("buildctl", "debug", "workers")
-	    if err == nil {
-	        break
-	    }
-	    if i == maxRetries-1 {
-	        return errors.Wrap(err, "Buildkit daemon not available after max retries")
-	    }
-	    log.Entry().Info("Waiting for buildkit daemon to be available...")
-	    time.Sleep(2 * time.Second)
+		err := execRunner.RunExecutable("buildctl", "debug", "workers")
+		if err == nil {
+			break
+		}
+		if i == maxRetries-1 {
+			return errors.Wrap(err, "Buildkit daemon not available after max retries")
+		}
+		log.Entry().Info("Waiting for buildkit daemon to be available...")
+		time.Sleep(2 * time.Second)
 	}
 
 	// Verify buildctl version after daemon is available
 	err := execRunner.RunExecutable("buildctl", "--version")
 	if err != nil {
-	    return errors.Wrap(err, "Failed to execute buildctl command")
+		return errors.Wrap(err, "Failed to execute buildctl command")
 	}
 
 	// Handle Docker authentication
