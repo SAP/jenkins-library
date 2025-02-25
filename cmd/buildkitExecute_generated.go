@@ -343,7 +343,7 @@ func buildkitExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildkitd", Image: "moby/buildkit:latest"},
+				{Image: "moby/buildkit:latest", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

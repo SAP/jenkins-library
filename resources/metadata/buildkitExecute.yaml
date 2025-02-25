@@ -109,22 +109,19 @@ spec:
             type: sbom
 
   containers:
-    - name: buildkitd
-      image: moby/buildkit:latest
+    - image: moby/buildkit:latest
       command:
         - /bin/sh
-      args:
         - -c
+      args:
         - |
           buildkitd --addr unix:///run/buildkit/buildkitd.sock &
-          sleep 2
-          exec cat
+          /bin/tail -f /dev/null
+      shell: /bin/sh
+      options:
+        - name: -u
+          value: "0"
+        - name: --entrypoint
+          value: ""
       securityContext:
         privileged: true
-      volumeMounts:
-        - name: buildkit-socket
-          mountPath: /run/buildkit
-      tty: true
-  volumes:
-    - name: buildkit-socket
-      emptyDir: {}
