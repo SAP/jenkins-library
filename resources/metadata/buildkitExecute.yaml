@@ -126,10 +126,10 @@ spec:
     - name: container-exec
       image: moby/buildkit:latest
       command:
-        - sh
+        - tail
       args:
-        - -c
-        - "sleep infinity"
+        - -f
+        - /dev/null
       securityContext:
         privileged: true
       volumeMounts:
