@@ -112,30 +112,19 @@ spec:
     - name: buildkitd
       image: moby/buildkit:latest
       command:
-        - buildkitd
+        - /bin/sh
       args:
-        - --addr
-        - unix:///run/buildkit/buildkitd.sock
-        - --oci-worker=true
-        - --containerd-worker=false
+        - -c
+        - |
+          buildkitd --addr unix:///run/buildkit/buildkitd.sock &
+          sleep 2
+          exec cat
       securityContext:
         privileged: true
       volumeMounts:
         - name: buildkit-socket
           mountPath: /run/buildkit
-      ttyEnabled: true
-      alwaysPullImage: false
-    - name: container-exec
-      image: moby/buildkit:latest
-      command:
-        - cat
-      ttyEnabled: true
-      alwaysPullImage: false
-      securityContext:
-        privileged: true
-      volumeMounts:
-        - name: buildkit-socket
-          mountPath: /run/buildkit
+      tty: true
   volumes:
     - name: buildkit-socket
       emptyDir: {}

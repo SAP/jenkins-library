@@ -344,7 +344,6 @@ func buildkitExecuteMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Name: "buildkitd", Image: "moby/buildkit:latest"},
-				{Name: "container-exec", Image: "moby/buildkit:latest"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
