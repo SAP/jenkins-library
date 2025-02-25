@@ -110,13 +110,10 @@ spec:
 
   containers:
     - name: buildkitd
-      image: moby/buildkit:rootless
+      image: moby/buildkit:latest
       command:
         - buildkitd
       args:
-        - --addr
-        - unix:///run/buildkit/buildkitd.sock
         - --oci-worker-no-process-sandbox
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
+        privileged: true
