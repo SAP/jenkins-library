@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) {
@@ -39,8 +40,19 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Info("Starting buildkit execution...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
+	// Test buildctl-daemonless.sh command availability
+	err := execRunner.RunExecutable("buildctl-daemonless.sh", "--version")
+	if err != nil {
+		return errors.Wrap(err, "Failed to execute buildctl-daemonless.sh command")
+	}
+
+	// Set environment variables for rootless buildkit
+	execRunner.SetEnv([]string{
+		"BUILDKITD_FLAGS=--oci-worker-no-process-sandbox",
+	})
+
 	// Handle Docker authentication
-	dockerConfigDir := "/root/.docker"
+	dockerConfigDir := "/home/user/.docker"
 	if len(config.DockerConfigJSON) > 0 {
 		dockerConfigJSON, err := fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
@@ -54,7 +66,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		}
 	}
 
-	// Build with buildkit
+	// Build with buildkit in daemonless mode
 	buildOpts := []string{
 		"build",
 		"--frontend=dockerfile.v0",
@@ -83,7 +95,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	log.Entry().Info("Executing buildkit build...")
-	err := execRunner.RunExecutable("buildctl-daemonless.sh", buildOpts...)
+	err = execRunner.RunExecutable("buildctl-daemonless.sh", buildOpts...)
 	if err != nil {
 		return fmt.Errorf("buildkit build failed: %w", err)
 	}
