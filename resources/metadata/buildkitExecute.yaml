@@ -15,6 +15,46 @@ spec:
           - STAGES
           - STEPS
         default: Dockerfile
+      - name: createBOM
+        type: bool
+        description: If set to true, a bill of materials (BOM) will be generated using syft
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: syftDownloadURL
+        type: string
+        description: URL to download syft from. If not specified, the default URL from pkg/syft/defaults.go will be used
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ""
+      - name: containerImageName
+        type: string
+        description: Name of the container image
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: containerImageTag
+        type: string
+        description: Tag of the container image
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: containerRegistryURL
+        type: string
+        description: URL of the container registry
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
 
   containers:
     - name: buildkitd

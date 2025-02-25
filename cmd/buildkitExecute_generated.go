@@ -17,7 +17,12 @@ import (
 )
 
 type buildkitExecuteOptions struct {
-	DockerfilePath string `json:"dockerfilePath,omitempty"`
+	DockerfilePath       string `json:"dockerfilePath,omitempty"`
+	CreateBOM            bool   `json:"createBOM,omitempty"`
+	SyftDownloadURL      string `json:"syftDownloadURL,omitempty"`
+	ContainerImageName   string `json:"containerImageName,omitempty"`
+	ContainerImageTag    string `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL string `json:"containerRegistryURL,omitempty"`
 }
 
 // BuildkitExecuteCommand Executes a Buildkit build for creating a Docker container.
@@ -141,6 +146,11 @@ func BuildkitExecuteCommand() *cobra.Command {
 
 func addBuildkitExecuteFlags(cmd *cobra.Command, stepConfig *buildkitExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.DockerfilePath, "dockerfilePath", `Dockerfile`, "Defines the location of the Dockerfile relative to the pipeline working directory.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "If set to true, a bill of materials (BOM) will be generated using syft")
+	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadURL", ``, "URL to download syft from. If not specified, the default URL from pkg/syft/defaults.go will be used")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container image")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container image")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryURL", os.Getenv("PIPER_containerRegistryURL"), "URL of the container registry")
 
 }
 
@@ -163,6 +173,51 @@ func buildkitExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `Dockerfile`,
+					},
+					{
+						Name:        "createBOM",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "syftDownloadURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     ``,
+					},
+					{
+						Name:        "containerImageName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerImageName"),
+					},
+					{
+						Name:        "containerImageTag",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerImageTag"),
+					},
+					{
+						Name:        "containerRegistryURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerRegistryURL"),
 					},
 				},
 			},
