@@ -32,7 +32,6 @@ func TestGCSIntegrationClient(t *testing.T) {
 	assert.NoError(t, err)
 
 	req := testcontainers.GenericContainerRequest{
-		ProviderType: testcontainers.ProviderPodman,
 		ContainerRequest: testcontainers.ContainerRequest{
 			AlwaysPullImage: true,
 			Image:           "fsouza/fake-gcs-server:1.30.2",
