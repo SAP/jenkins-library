@@ -6,7 +6,19 @@ metadata:
 
 spec:
   inputs:
+    secrets:
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s))
+        type: jenkins
     params:
+      - name: buildOptions
+        type: "[]string"
+        description: Defines a list of build options for buildkit
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: []
       - name: dockerfilePath
         type: string
         description: Defines the location of the Dockerfile relative to the pipeline working directory.
@@ -17,7 +29,7 @@ spec:
         default: Dockerfile
       - name: createBOM
         type: bool
-        description: If set to true, a bill of materials (BOM) will be generated using syft
+        description: Creates the BOM using Syft and stores it in a file
         scope:
           - PARAMETERS
           - STAGES
@@ -32,29 +44,69 @@ spec:
           - STEPS
         default: ""
       - name: containerImageName
+        aliases:
+          - name: dockerImageName
         type: string
-        description: Name of the container image
+        description: Name of the container which will be built
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
       - name: containerImageTag
+        aliases:
+          - name: artifactVersion
         type: string
-        description: Tag of the container image
+        description: Tag of the container which will be built
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: URL of the container registry where the image should be pushed to
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` containing docker credentials
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
-      - name: containerRegistryURL
-        type: string
-        description: URL of the container registry
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: false
+        secret: true
+        resourceRef:
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: container/registryUrl
+          - name: container/imageNameTag
+          - name: container/imageNames
+            type: "[]string"
+          - name: container/imageNameTags
+            type: "[]string"
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom-*.xml"
+            type: sbom
 
   containers:
     - name: buildkitd

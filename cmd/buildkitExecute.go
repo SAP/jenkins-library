@@ -12,14 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type buildkitExecuteCommonPipelineEnvironment struct {
-	container struct {
-		registryURL   string
-		imageNameTag  string
-		imageNameTags []string
-	}
-}
-
 func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) {
 	// for command execution use Command
 	c := command.Command{
@@ -54,6 +46,21 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		return errors.Wrap(err, "Failed to execute buildctl command")
 	}
 
+	// Handle Docker authentication
+	dockerConfigDir := "/root/.docker"
+	if len(config.DockerConfigJSON) > 0 {
+		dockerConfigJSON, err := fileUtils.FileRead(config.DockerConfigJSON)
+		if err != nil {
+			return fmt.Errorf("failed to read Docker config: %w", err)
+		}
+		if err := fileUtils.MkdirAll(dockerConfigDir, 0755); err != nil {
+			return fmt.Errorf("failed to create .docker directory: %w", err)
+		}
+		if err := fileUtils.FileWrite(fmt.Sprintf("%s/config.json", dockerConfigDir), dockerConfigJSON, 0644); err != nil {
+			return fmt.Errorf("failed to write Docker config: %w", err)
+		}
+	}
+
 	// Build with buildkit
 	buildOpts := []string{
 		"build",
@@ -61,6 +68,9 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		"--local", "context=.",
 		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
 	}
+
+	// Add build options from config
+	buildOpts = append(buildOpts, config.BuildOptions...)
 
 	imageTag := "latest"
 	if config.ContainerImageTag != "" {
@@ -73,7 +83,9 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 		commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag)
 		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag))
+		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
 	} else {
+		// Build without pushing if no registry/name provided
 		buildOpts = append(buildOpts, "--output", "type=docker")
 	}
 
@@ -86,8 +98,8 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Info("Buildkit execution completed")
 
 	if config.CreateBOM {
-		log.Entry().Info("Generating BOM using syft...")
-		if err := syft.GenerateSBOM(config.SyftDownloadURL, "/buildkit/docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags); err != nil {
+		log.Entry().Info("Generating bill of materials using syft...")
+		if err := syft.GenerateSBOM(config.SyftDownloadURL, dockerConfigDir, execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags); err != nil {
 			return fmt.Errorf("failed to generate BOM: %w", err)
 		}
 		log.Entry().Info("BOM generation completed")
