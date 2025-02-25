@@ -111,17 +111,24 @@ spec:
   containers:
     - name: buildkitd
       image: moby/buildkit:latest
+      command:
+        - buildkitd
       args:
         - --addr
         - unix:///run/buildkit/buildkitd.sock
-      readinessProbe:
-        exec:
-          command:
-            - buildctl
-            - debug
-            - workers
-        initialDelaySeconds: 5
-        periodSeconds: 5
+        - --oci-worker=true
+        - --containerd-worker=false
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: buildkit-socket
+          mountPath: /run/buildkit
+    - name: container-exec
+      image: moby/buildkit:latest
+      command:
+        - sleep
+      args:
+        - infinity
       securityContext:
         privileged: true
       volumeMounts:
