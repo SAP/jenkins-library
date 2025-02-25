@@ -59,26 +59,17 @@ func (cl *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath s
 	sourcePath = filepath.Clean(sourcePath)
 	log.Entry().Debugf("Uploading %v to %v\n", sourcePath, targetPath)
 
-	sourceFile, err := os.Open(sourcePath)
+	sourceFile, err := cl.openFile(sourcePath)
 	if err != nil {
 		return fmt.Errorf("failed to open source file: %w", err)
 	}
 	defer sourceFile.Close()
 
-	// Get file size
-	fileInfo, err := sourceFile.Stat()
-	if err != nil {
-		log.Entry().Debugf("Failed to get file info: %v", err)
-	}
-
-	// Set up a progress writer and io.TeeReader to track upload progress
-	source := io.TeeReader(sourceFile, newProgressW(fileInfo.Size()))
-
 	target := cl.gcs.Bucket(bucketID).Object(targetPath).NewWriter(cl.ctx)
 	defer target.Close()
 
 	task := func(ctx context.Context) error {
-		if _, err = io.Copy(target, source); err != nil {
+		if _, err = io.Copy(target, sourceFile); err != nil {
 			return fmt.Errorf("upload failed: %w", err)
 		}
 		return nil
@@ -100,7 +91,7 @@ func (cl *gcsClient) DownloadFile(bucketID, sourcePath, targetPath string) error
 
 	source, err := cl.gcs.Bucket(bucketID).Object(sourcePath).NewReader(cl.ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create reader: %w", err)
+		return fmt.Errorf("failed to open source file: %w", err)
 	}
 	defer source.Close()
 
@@ -140,7 +131,7 @@ func (cl *gcsClient) Close() error {
 	return nil
 }
 
-// TODO: consider refactoring to avoid keeping functions that are used only for unit/integration testing in the production code
+// TODO: consider refactoring to avoid keeping functions that are used only for integration testing in the production code
 // Below functions WithOpenFileFunction, WithCreateFileFunction and WithGCSClientOptions are
 // used only for unit/integration testing.
 

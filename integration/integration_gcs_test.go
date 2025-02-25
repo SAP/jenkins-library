@@ -32,6 +32,7 @@ func TestGCSIntegrationClient(t *testing.T) {
 	assert.NoError(t, err)
 
 	req := testcontainers.GenericContainerRequest{
+		ProviderType: testcontainers.ProviderPodman,
 		ContainerRequest: testcontainers.ContainerRequest{
 			AlwaysPullImage: true,
 			Image:           "fsouza/fake-gcs-server:1.30.2",
@@ -116,7 +117,7 @@ func TestGCSIntegrationClient(t *testing.T) {
 			gcs.WithGCSClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
 		assert.NoError(t, err)
 		err = gcsClient.UploadFile(bucketID, "file3", "test/file3")
-		assert.Contains(t, err.Error(), "could not open source file")
+		assert.Contains(t, err.Error(), "failed to open source file")
 		err = gcsClient.Close()
 		assert.NoError(t, err)
 	})
@@ -127,7 +128,7 @@ func TestGCSIntegrationClient(t *testing.T) {
 			gcs.WithGCSClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
 		assert.NoError(t, err)
 		err = gcsClient.DownloadFile(bucketID, "test/file3", "file3")
-		assert.Contains(t, err.Error(), "could not open source file")
+		assert.Contains(t, err.Error(), "failed to open source file")
 		err = gcsClient.Close()
 		assert.NoError(t, err)
 	})
