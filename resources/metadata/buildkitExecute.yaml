@@ -123,13 +123,14 @@ spec:
       volumeMounts:
         - name: buildkit-socket
           mountPath: /run/buildkit
+      ttyEnabled: true
+      alwaysPullImage: false
     - name: container-exec
       image: moby/buildkit:latest
       command:
-        - tail
-      args:
-        - -f
-        - /dev/null
+        - cat
+      ttyEnabled: true
+      alwaysPullImage: false
       securityContext:
         privileged: true
       volumeMounts:
