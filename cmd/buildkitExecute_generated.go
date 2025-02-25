@@ -67,7 +67,8 @@ func (p *buildkitExecuteCommonPipelineEnvironment) persist(path, resourceName st
 	}
 }
 
-type buildkitExecuteReports struct{}
+type buildkitExecuteReports struct {
+}
 
 func (p *buildkitExecuteReports) persist(stepConfig buildkitExecuteOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
 	if gcsBucketId == "" {
@@ -115,7 +116,7 @@ func BuildkitExecuteCommand() *cobra.Command {
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	createBuildkitExecuteCmd := &cobra.Command{
+	var createBuildkitExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes a Buildkit build for creating a Docker container.",
 		Long:  `Executes a Buildkit build for creating a Docker container.`,
@@ -228,18 +229,19 @@ func BuildkitExecuteCommand() *cobra.Command {
 
 func addBuildkitExecuteFlags(cmd *cobra.Command, stepConfig *buildkitExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{``}, "Defines a list of build options for buildkit")
-	cmd.Flags().StringVar(&stepConfig.DockerfilePath, "dockerfilePath", `Dockerfile`, "Defines the location of the Dockerfile relative to the pipeline working directory.")
+	cmd.Flags().StringVar(&stepConfig.DockerfilePath, "dockerfilePath", `.`, "Defines the location of the Dockerfile relative to the pipeline working directory.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the BOM using Syft and stores it in a file")
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadURL", ``, "URL to download syft from. If not specified, the default URL from pkg/syft/defaults.go will be used")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "URL of the container registry where the image should be pushed to")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` containing docker credentials")
+
 }
 
 // retrieve step metadata
 func buildkitExecuteMetadata() config.StepData {
-	theMetaData := config.StepData{
+	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "buildkitExecute",
 			Aliases:     []config.Alias{},
@@ -267,7 +269,7 @@ func buildkitExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `Dockerfile`,
+						Default:     `.`,
 					},
 					{
 						Name:        "createBOM",
