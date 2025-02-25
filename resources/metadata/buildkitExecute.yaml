@@ -112,7 +112,17 @@ spec:
     - name: buildkitd
       image: moby/buildkit:rootless
       args:
+        - --addr=unix:///run/buildkit/buildkitd.sock
         - --oci-worker-no-process-sandbox
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
+      env:
+        - name: BUILDKIT_HOST
+          value: unix:///run/buildkit/buildkitd.sock
+      volumeMounts:
+        - name: buildkit-socket
+          mountPath: /run/buildkit
+  volumes:
+    - name: buildkit-socket
+      emptyDir: {}
