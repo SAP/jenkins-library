@@ -15,15 +15,14 @@ import (
 
 // Client is an interface to mock gcsClient
 type Client interface {
-	UploadFile(bucketID string, sourcePath string, targetPath string) error
-	DownloadFile(bucketID string, sourcePath string, targetPath string) error
-	ListFiles(bucketID string) ([]string, error)
+	UploadFile(ctx context.Context, bucketID string, sourcePath string, targetPath string) error
+	DownloadFile(ctx context.Context, bucketID string, sourcePath string, targetPath string) error
+	ListFiles(ctx context.Context, bucketID string) ([]string, error)
 	Close() error
 }
 
 // gcsClient provides functions to interact with Google Cloud Storage API
 type gcsClient struct {
-	ctx        context.Context
 	gcs        storage.Client
 	gcsOptions []option.ClientOption
 	openFile   func(name string) (io.ReadCloser, error)
@@ -34,9 +33,7 @@ type clientOptions func(*gcsClient)
 
 // NewClient initializes the Google Cloud Storage client with the provided options
 func NewClient(keyFile, token string, opts ...clientOptions) (Client, error) {
-	ctx := context.Background()
 	client := &gcsClient{
-		ctx:        ctx,
 		openFile:   openFileFromFS,
 		createFile: createFileOnFS,
 	}
@@ -46,7 +43,7 @@ func NewClient(keyFile, token string, opts ...clientOptions) (Client, error) {
 		opt(client)
 	}
 
-	gcs, err := initGcsClient(ctx, keyFile, token, client.gcsOptions...)
+	gcs, err := initGcsClient(context.Background(), keyFile, token, client.gcsOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +52,7 @@ func NewClient(keyFile, token string, opts ...clientOptions) (Client, error) {
 	return client, nil
 }
 
-func (cl *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath string) error {
+func (cl *gcsClient) UploadFile(ctx context.Context, bucketID string, sourcePath string, targetPath string) error {
 	sourcePath = filepath.Clean(sourcePath)
 	log.Entry().Debugf("Uploading %v to %v\n", sourcePath, targetPath)
 
@@ -65,7 +62,7 @@ func (cl *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath s
 	}
 	defer sourceFile.Close()
 
-	target := cl.gcs.Bucket(bucketID).Object(targetPath).NewWriter(cl.ctx)
+	target := cl.gcs.Bucket(bucketID).Object(targetPath).NewWriter(ctx)
 	defer target.Close()
 
 	task := func(ctx context.Context) error {
@@ -75,11 +72,11 @@ func (cl *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath s
 		return nil
 	}
 
-	return retryWithLogging(cl.ctx, log.Entry(), task, initialBackoff, maxRetries, retryMultiplier)
+	return retryWithLogging(ctx, log.Entry(), task, initialBackoff, maxRetries, retryMultiplier)
 }
 
 // DownloadFile downloads a file from a Google Cloud Storage bucket
-func (cl *gcsClient) DownloadFile(bucketID, sourcePath, targetPath string) error {
+func (cl *gcsClient) DownloadFile(ctx context.Context, bucketID, sourcePath, targetPath string) error {
 	targetPath = filepath.Clean(targetPath)
 	log.Entry().Debugf("Downloading %v to %v\n", sourcePath, targetPath)
 
@@ -89,7 +86,7 @@ func (cl *gcsClient) DownloadFile(bucketID, sourcePath, targetPath string) error
 	}
 	defer target.Close()
 
-	source, err := cl.gcs.Bucket(bucketID).Object(sourcePath).NewReader(cl.ctx)
+	source, err := cl.gcs.Bucket(bucketID).Object(sourcePath).NewReader(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open source file: %w", err)
 	}
@@ -102,13 +99,13 @@ func (cl *gcsClient) DownloadFile(bucketID, sourcePath, targetPath string) error
 		return nil
 	}
 
-	return retryWithLogging(cl.ctx, log.Entry(), task, initialBackoff, maxRetries, retryMultiplier)
+	return retryWithLogging(ctx, log.Entry(), task, initialBackoff, maxRetries, retryMultiplier)
 }
 
 // ListFiles lists all files in a specified Google Cloud Storage bucket
-func (cl *gcsClient) ListFiles(bucketID string) ([]string, error) {
+func (cl *gcsClient) ListFiles(ctx context.Context, bucketID string) ([]string, error) {
 	fileNames := []string{}
-	it := cl.gcs.Bucket(bucketID).Objects(cl.ctx, nil)
+	it := cl.gcs.Bucket(bucketID).Objects(ctx, nil)
 	for {
 		attrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
@@ -173,9 +170,7 @@ func createFileOnFS(name string) (io.WriteCloser, error) {
 
 // NewClientLegacy is also still here because of integration tests
 func NewClientLegacy(opts ...clientOptions) (Client, error) {
-	ctx := context.Background()
 	client := &gcsClient{
-		ctx:        ctx,
 		openFile:   openFileFromFS,
 		createFile: createFileOnFS,
 	}
@@ -185,7 +180,7 @@ func NewClientLegacy(opts ...clientOptions) (Client, error) {
 		opt(client)
 	}
 
-	gcs, err := storage.NewClient(ctx, client.gcsOptions...)
+	gcs, err := storage.NewClient(context.Background(), client.gcsOptions...)
 	if err != nil {
 		return nil, err
 	}

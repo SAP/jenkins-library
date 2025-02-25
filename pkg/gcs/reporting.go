@@ -1,6 +1,7 @@
 package gcs
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -25,7 +26,7 @@ func PersistReportsToGCS(gcsClient Client, outputParams []ReportOutputParam, inp
 	}
 
 	for _, task := range tasks {
-		if err := gcsClient.UploadFile(gcsBucketID, task.SourcePath, task.TargetPath); err != nil {
+		if err := gcsClient.UploadFile(context.Background(), gcsBucketID, task.SourcePath, task.TargetPath); err != nil {
 			return fmt.Errorf("failed to persist reports: %v", err)
 		}
 	}
