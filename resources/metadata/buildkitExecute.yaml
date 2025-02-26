@@ -112,7 +112,9 @@ spec:
     - name: buildkitd
       image: moby/buildkit:master-rootless
       args:
+        - buildkitd
         - --oci-worker-no-process-sandbox
+      shell: /bin/sh
       readinessProbe:
         exec:
           command:
