@@ -113,5 +113,5 @@ spec:
       command:
         - buildkitd
       shell: /bin/sh
-      options:
-        - name: --privileged
+      securityContext:
+        privileged: true
