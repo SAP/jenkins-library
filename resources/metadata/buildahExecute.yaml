@@ -1,0 +1,130 @@
+metadata:
+  name: buildahExecute
+  description: Executes a Buildah build for creating a container image.
+  longDescription: |
+    Executes a Buildah build for creating a container image.
+    Buildah is a tool that facilitates building Open Container Initiative (OCI) container images.
+
+spec:
+  inputs:
+    secrets:
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s))
+        type: jenkins
+    params:
+      - name: buildOptions
+        type: "[]string"
+        description: Defines a list of build options for buildah
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: []
+      - name: dockerfilePath
+        type: string
+        description: Defines the location of the Dockerfile relative to the pipeline working directory.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: .
+      - name: createBOM
+        type: bool
+        description: Creates the BOM using Syft and stores it in a file
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: syftDownloadURL
+        type: string
+        description: URL to download syft from. If not specified, the default URL from pkg/syft/defaults.go will be used
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ""
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: URL of the container registry where the image should be pushed to
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` containing docker credentials
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: container/registryUrl
+          - name: container/imageNameTag
+          - name: container/imageNames
+            type: "[]string"
+          - name: container/imageNameTags
+            type: "[]string"
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom-*.xml"
+            type: sbom
+
+  containers:
+    - name: buildah
+      image: quay.io/buildah/stable:latest
+      command:
+        - /bin/sh
+      shell: /bin/sh
+      env:
+        - name: REGISTRY_AUTH_FILE
+          value: "/home/user/.docker/config.json"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: docker-config
+          mountPath: /home/user/.docker
+  volumes:
+    - name: workspace
+      emptyDir: {}
+    - name: docker-config
+      emptyDir: {}

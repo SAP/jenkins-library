@@ -231,6 +231,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
 	rootCmd.AddCommand(BuildkitExecuteCommand())
+	rootCmd.AddCommand(BuildahExecuteCommand())
 
 	addRootFlags(rootCmd)
 
