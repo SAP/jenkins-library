@@ -109,19 +109,21 @@ spec:
             type: sbom
 
   containers:
-    - image: moby/buildkit:master
+    - image: moby/buildkit:master-rootless
       command:
         - buildkitd
+        - --oci-worker-no-process-sandbox
       shell: /bin/sh
+      env:
+        - name: BUILDKIT_HOST
+          value: "unix:///run/user/1000/buildkit/buildkitd.sock"
       volumeMounts:
         - name: volume
           mountPath: /workspace
           subPath: workspace
         - name: volume
-          mountPath: /var/lib/buildkit
+          mountPath: /home/user/.local/share/buildkit
           subPath: buildkitd
-      securityContext:
-        privileged: true
   volumes:
     - name: volume
       emptyDir: {}

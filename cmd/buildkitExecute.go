@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -38,8 +39,11 @@ func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.Cus
 }
 
 func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	log.Entry().Info("Starting buildkit execution...")
+	log.Entry().Info("Starting buildkit execution in rootless mode...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
+
+	// Set environment variables for rootless buildkit
+	os.Setenv("BUILDKIT_HOST", "unix:///run/user/1000/buildkit/buildkitd.sock")
 
 	// Wait for buildkit daemon to be available
 	maxRetries := 30
@@ -51,7 +55,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		if i == maxRetries-1 {
 			return errors.Wrap(err, "Buildkit daemon not available after max retries")
 		}
-		log.Entry().Info("Waiting for buildkit daemon to be available...")
+		log.Entry().Info("Waiting for rootless buildkit daemon to be available...")
 		time.Sleep(2 * time.Second)
 	}
 
@@ -62,7 +66,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	// Handle Docker authentication
-	dockerConfigDir := "/root/.docker"
+	dockerConfigDir := "/home/user/.docker"
 	if len(config.DockerConfigJSON) > 0 {
 		dockerConfigJSON, err := fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
