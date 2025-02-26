@@ -71,4 +71,4 @@ spec:
           - name: npm/outputFormat
   containers:
     - name: node
-      image: node:lts
+      image: node:lts-bookworm

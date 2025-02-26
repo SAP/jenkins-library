@@ -26,7 +26,7 @@ func TestDummyIntegration(t *testing.T) {
 	dir = filepath.Dir(dir)
 
 	req := testcontainers.ContainerRequest{
-		Image: "node:lts",
+		Image: "node:lts-bookworm",
 		Cmd:   []string{"tail", "-f"},
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(dir, "/data"),
