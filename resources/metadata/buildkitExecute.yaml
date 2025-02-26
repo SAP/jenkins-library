@@ -113,5 +113,12 @@ spec:
       command:
         - buildkitd
       shell: /bin/sh
+      volumeMounts:
+        - name: workspace
+          readOnly: true
+          mountPath: /workspace
       securityContext:
         privileged: true
+  volumes:
+    - name: workspace
+      emptyDir: {}
