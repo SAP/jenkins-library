@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -38,27 +37,13 @@ func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.Cus
 }
 
 func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	log.Entry().Info("Starting buildkit execution in rootless mode...")
+	log.Entry().Info("Starting buildkit execution with buildctl-daemonless.sh...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Wait for buildkit daemon to be available
-	maxRetries := 30
-	for i := 0; i < maxRetries; i++ {
-		err := execRunner.RunExecutable("buildctl", "debug", "workers")
-		if err == nil {
-			break
-		}
-		if i == maxRetries-1 {
-			return errors.Wrap(err, "Buildkit daemon not available after max retries")
-		}
-		log.Entry().Info("Waiting for rootless buildkit daemon to be available...")
-		time.Sleep(2 * time.Second)
-	}
-
-	// Verify buildctl version after daemon is available
-	err := execRunner.RunExecutable("buildctl", "--version")
+	// Verify buildctl version - using daemonless script which handles daemon startup
+	err := execRunner.RunExecutable("buildctl-daemonless.sh", "--version")
 	if err != nil {
-		return errors.Wrap(err, "Failed to execute buildctl command")
+		return errors.Wrap(err, "Failed to execute buildctl-daemonless.sh command")
 	}
 
 	dockerConfigDir := "/home/user/.docker"
@@ -103,8 +88,8 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		buildOpts = append(buildOpts, "--output", "type=docker")
 	}
 
-	log.Entry().Info("Executing buildkit build...")
-	err = execRunner.RunExecutable("buildctl", buildOpts...)
+	log.Entry().Info("Executing buildkit build with daemonless script...")
+	err = execRunner.RunExecutable("buildctl-daemonless.sh", buildOpts...)
 	if err != nil {
 		return fmt.Errorf("buildkit build failed: %w", err)
 	}
