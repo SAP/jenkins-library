@@ -19,7 +19,7 @@ import (
 )
 
 func TestPythonIntegrationBuildProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	pwd, err := os.Getwd()
 	assert.NoError(t, err, "Getting current working directory failed.")

@@ -19,7 +19,7 @@ import (
 )
 
 func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
@@ -121,7 +121,7 @@ ls -l ./build/reports/ >files-list.txt 2>&1
 }
 
 func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()

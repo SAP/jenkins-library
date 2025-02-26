@@ -117,7 +117,7 @@ spec:
           - --blackduck.signature.scanner.memory=4096
           - --detect.timeout=6000
           - --blackduck.trust.cert=true
-          - --logging.level.com.synopsys.integration=DEBUG
+          - --logging.level.detect=DEBUG
           - --detect.maven.excluded.scopes=test
         scope:
           - PARAMETERS
