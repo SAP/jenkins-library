@@ -109,19 +109,9 @@ spec:
             type: sbom
 
   containers:
-    - image: moby/buildkit:latest
+    - image: moby/buildkit:master
       command:
-        - /bin/sh
-        - -c
-      args:
-        - |
-          buildkitd --addr unix:///run/buildkit/buildkitd.sock &
-          /bin/tail -f /dev/null
+        - buildkitd
       shell: /bin/sh
       options:
-        - name: -u
-          value: "0"
-        - name: --entrypoint
-          value: ""
-      securityContext:
-        privileged: true
+        - name: --privileged
