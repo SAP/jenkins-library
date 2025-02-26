@@ -109,31 +109,24 @@ spec:
             type: sbom
 
   containers:
-    - image: moby/buildkit:master-rootless
-      name: buildkitd
+    - image: moby/buildkit:rootless
       command:
+        - /usr/bin/rootlesskit
         - buildkitd
-        - --oci-worker-no-process-sandbox
       shell: /bin/sh
-      securityContext:
-        seccompProfile:
-          type: Unconfined
-        runAsUser: 1000
-        runAsGroup: 1000
+      user: rootless
       env:
         - name: BUILDKIT_HOST
-          value: "unix:///run/user/1000/buildkit/buildkitd.sock"
-      annotations:
-        container.apparmor.security.beta.kubernetes.io/buildkitd: unconfined
+          value: "unix:///run/buildkit/buildkitd.sock"
       volumeMounts:
         - name: volume
           mountPath: /workspace
           subPath: workspace
         - name: volume
-          mountPath: /home/user/.local/share/buildkit
+          mountPath: /run/buildkit
           subPath: buildkitd
         - name: volume
-          mountPath: /home/user/.docker
+          mountPath: /home/rootless/.docker
           subPath: docker-config
   volumes:
     - name: volume
