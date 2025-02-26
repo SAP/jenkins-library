@@ -111,21 +111,17 @@ spec:
   containers:
     - image: moby/buildkit:master
       command:
-        - sh
-        - -c
-        - |
-          mkdir -p /var/lib/buildkit && chmod 1777 /var/lib/buildkit
-          buildkitd --debug --oci-worker-snapshotter=overlayfs
+        - buildkitd
       shell: /bin/sh
       volumeMounts:
-        - name: workspace
+        - name: volume
           mountPath: /workspace
-        - name: buildkitd
+          subPath: workspace
+        - name: volume
           mountPath: /var/lib/buildkit
+          subPath: buildkitd
       securityContext:
         privileged: true
   volumes:
-    - name: workspace
-      emptyDir: {}
-    - name: buildkitd
+    - name: volume
       emptyDir: {}
