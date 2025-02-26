@@ -112,13 +112,18 @@ spec:
     - image: moby/buildkit:master
       command:
         - buildkitd
+        - --oci-worker-snapshotter=overlayfs
+        - --containerd-worker-snapshotter=overlayfs
       shell: /bin/sh
       volumeMounts:
         - name: workspace
-          readOnly: true
           mountPath: /workspace
+        - name: buildkitd
+          mountPath: /var/lib/buildkit
       securityContext:
         privileged: true
   volumes:
     - name: workspace
+      emptyDir: {}
+    - name: buildkitd
       emptyDir: {}
