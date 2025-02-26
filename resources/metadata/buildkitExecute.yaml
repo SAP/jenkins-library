@@ -109,25 +109,40 @@ spec:
             type: sbom
 
   containers:
-    - image: moby/buildkit:rootless
-      command:
-        - /usr/bin/rootlesskit
-        - buildkitd
-      shell: /bin/sh
-      user: rootless
-      env:
-        - name: BUILDKIT_HOST
-          value: "unix:///run/buildkit/buildkitd.sock"
+    - name: buildkitd
+      image: moby/buildkit:master-rootless
+      args:
+        - --oci-worker-no-process-sandbox
+      readinessProbe:
+        exec:
+          command:
+            - buildctl
+            - debug
+            - workers
+        initialDelaySeconds: 5
+        periodSeconds: 30
+      livenessProbe:
+        exec:
+          command:
+            - buildctl
+            - debug
+            - workers
+        initialDelaySeconds: 5
+        periodSeconds: 30
+      securityContext:
+        # Needs Kubernetes >= 1.19
+        seccompProfile:
+          type: Unconfined
+        # To change UID/GID, you need to rebuild the image
+        runAsUser: 1000
+        runAsGroup: 1000
       volumeMounts:
-        - name: volume
-          mountPath: /workspace
-          subPath: workspace
-        - name: volume
-          mountPath: /run/buildkit
-          subPath: buildkitd
-        - name: volume
-          mountPath: /home/rootless/.docker
-          subPath: docker-config
+        # Dockerfile has `VOLUME /home/user/.local/share/buildkit` by default too,
+        # but the default VOLUME does not work with rootless on Google's Container-Optimized OS
+        # as it is mounted with `nosuid,nodev`.
+        # https://github.com/moby/buildkit/issues/879#issuecomment-1240347038
+        - mountPath: /home/user/.local/share/buildkit
+          name: buildkitd
   volumes:
-    - name: volume
+    - name: buildkitd
       emptyDir: {}

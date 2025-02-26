@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -42,9 +41,6 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Info("Starting buildkit execution in rootless mode...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Set environment variables for rootless buildkit - correct socket path for rootless mode
-	os.Setenv("BUILDKIT_HOST", "unix:///run/buildkit/buildkitd.sock")
-
 	// Wait for buildkit daemon to be available
 	maxRetries := 30
 	for i := 0; i < maxRetries; i++ {
@@ -65,8 +61,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		return errors.Wrap(err, "Failed to execute buildctl command")
 	}
 
-	// Handle Docker authentication - use correct path for rootless user
-	dockerConfigDir := "/home/rootless/.docker"
+	dockerConfigDir := "/home/user/.docker"
 	if len(config.DockerConfigJSON) > 0 {
 		dockerConfigJSON, err := fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
