@@ -343,7 +343,7 @@ func buildkitExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildkitd", Image: "moby/buildkit:master-rootless"},
+				{Name: "buildkitd", Image: "moby/buildkit:v0.12.0-rootless", EnvVars: []config.EnvVar{{Name: "HOME", Value: "/home/user"}, {Name: "USER", Value: "user"}, {Name: "XDG_RUNTIME_DIR", Value: "/home/user/.local/share"}, {Name: "BUILDKIT_HOST", Value: "unix:///home/user/.local/share/buildkit/buildkitd.sock"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

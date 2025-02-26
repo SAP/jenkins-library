@@ -110,21 +110,38 @@ spec:
 
   containers:
     - name: buildkitd
-      image: moby/buildkit:master-rootless
-      entrypoint:
-        - buildctl-daemonless.sh
+      image: moby/buildkit:v0.12.0-rootless
+      command:
+        - sh
+        - -c
       args:
-        - --debug
+        - |
+          mkdir -p /home/user/.local/share/buildkit
+          buildkitd --addr=unix:///home/user/.local/share/buildkit/buildkitd.sock --oci-worker-no-process-sandbox
       shell: /bin/sh
       securityContext:
-        seccompProfile:
-          type: Unconfined
         runAsUser: 1000
         runAsGroup: 1000
+        allowPrivilegeEscalation: false
+        capabilities:
+          add:
+            - CHOWN
+            - SETUID
+            - SETGID
+            - FOWNER
+      env:
+        - name: HOME
+          value: /home/user
+        - name: USER
+          value: user
+        - name: XDG_RUNTIME_DIR
+          value: /home/user/.local/share
+        - name: BUILDKIT_HOST
+          value: "unix:///home/user/.local/share/buildkit/buildkitd.sock"
       volumeMounts:
         - name: volume
-          mountPath: /home/user/.local/share/buildkit
-          subPath: buildkitd
+          mountPath: /home/user/.local/share
+          subPath: buildkit-data
         - name: volume
           mountPath: /workspace
           subPath: workspace
