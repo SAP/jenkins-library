@@ -110,13 +110,21 @@ spec:
 
   containers:
     - image: moby/buildkit:master-rootless
+      name: buildkitd
       command:
         - buildkitd
         - --oci-worker-no-process-sandbox
       shell: /bin/sh
+      securityContext:
+        seccompProfile:
+          type: Unconfined
+        runAsUser: 1000
+        runAsGroup: 1000
       env:
         - name: BUILDKIT_HOST
           value: "unix:///run/user/1000/buildkit/buildkitd.sock"
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/buildkitd: unconfined
       volumeMounts:
         - name: volume
           mountPath: /workspace
@@ -124,6 +132,9 @@ spec:
         - name: volume
           mountPath: /home/user/.local/share/buildkit
           subPath: buildkitd
+        - name: volume
+          mountPath: /home/user/.docker
+          subPath: docker-config
   volumes:
     - name: volume
       emptyDir: {}

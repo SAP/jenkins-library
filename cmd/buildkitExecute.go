@@ -42,7 +42,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Info("Starting buildkit execution in rootless mode...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Set environment variables for rootless buildkit
+	// Set environment variables for rootless buildkit - correct socket path for rootless mode
 	os.Setenv("BUILDKIT_HOST", "unix:///run/user/1000/buildkit/buildkitd.sock")
 
 	// Wait for buildkit daemon to be available
@@ -65,7 +65,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		return errors.Wrap(err, "Failed to execute buildctl command")
 	}
 
-	// Handle Docker authentication
+	// Handle Docker authentication - use correct path for rootless user
 	dockerConfigDir := "/home/user/.docker"
 	if len(config.DockerConfigJSON) > 0 {
 		dockerConfigJSON, err := fileUtils.FileRead(config.DockerConfigJSON)
