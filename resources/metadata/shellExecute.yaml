@@ -57,5 +57,5 @@ spec:
         mandatory: false
   containers:
     - name: shell
-      image: node:lts-buster
+      image: node:lts
       workingDir: /home/node

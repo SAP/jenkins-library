@@ -100,5 +100,5 @@ spec:
             type: delivery-mapping
   containers:
     - name: newman
-      image: node:lts-buster
+      image: node:lts
       workingDir: /home/node

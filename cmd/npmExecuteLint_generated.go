@@ -223,7 +223,7 @@ func npmExecuteLintMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-buster"},
+				{Name: "node", Image: "node:lts"},
 			},
 		},
 	}
