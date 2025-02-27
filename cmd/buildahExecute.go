@@ -78,8 +78,14 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 	_ = execRunner.RunExecutable("df", "-h")
 	_ = execRunner.RunExecutable("findmnt")
 
+	// Network storage checks
+	_ = execRunner.RunExecutable("stat", "-f", "/var/lib/containers")
+	_ = execRunner.RunExecutable("ls", "-la", "/var/lib/containers/.???*")
+	_ = execRunner.RunExecutable("cat", "/proc/mounts")
+
 	// Check buildah version and info
 	_ = execRunner.RunExecutable("buildah", "info")
+	_ = execRunner.RunExecutable("ps", "aux")
 	err := execRunner.RunExecutable("buildah", "--version")
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute buildah command")
