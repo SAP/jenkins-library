@@ -55,13 +55,31 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		}
 	}
 
+	log.Entry().Info("Checking system capabilities and configuration...")
+
+	// System and runtime info
 	_ = execRunner.RunExecutable("cat", "/etc/*release")
 	_ = execRunner.RunExecutable("uname", "-a")
 	_ = execRunner.RunExecutable("cat", "/etc/containers/storage.conf")
 	_ = execRunner.RunExecutable("cat", "/proc/self/mountinfo")
-	_ = execRunner.RunExecutable("ls", "-ld", "/")
 
-	// Check buildah version
+	// User and permission checks
+	_ = execRunner.RunExecutable("id")
+	_ = execRunner.RunExecutable("ls", "-la", "/var/lib/containers")
+	_ = execRunner.RunExecutable("ls", "-la", "/")
+	_ = execRunner.RunExecutable("mount")
+
+	// Container runtime checks
+	_ = execRunner.RunExecutable("capsh", "--print")
+	_ = execRunner.RunExecutable("sysctl", "kernel.unprivileged_userns_clone")
+	_ = execRunner.RunExecutable("cat", "/proc/sys/user/max_user_namespaces")
+
+	// Storage driver info
+	_ = execRunner.RunExecutable("df", "-h")
+	_ = execRunner.RunExecutable("findmnt")
+
+	// Check buildah version and info
+	_ = execRunner.RunExecutable("buildah", "info")
 	err := execRunner.RunExecutable("buildah", "--version")
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute buildah command")
