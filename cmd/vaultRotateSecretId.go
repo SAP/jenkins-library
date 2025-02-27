@@ -131,9 +131,9 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		}
 		variables := []ado.Variable{
 			{
-				Name:     config.VaultAppRoleSecretTokenCredentialsID,
-				Value:    secretID,
-				IsSecret: true,
+				Name:          config.VaultAppRoleSecretTokenCredentialsID,
+				Value:         secretID,
+				IsSecret:      true,
 				AllowOverride: true,
 			},
 		}
