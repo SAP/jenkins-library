@@ -91,6 +91,9 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		buildOpts = append(buildOpts, "--tag", fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag))
 	}
 
+	// Add context directory as the final argument
+	buildOpts = append(buildOpts, ".")
+
 	log.Entry().Info("Executing buildah build...")
 	err = execRunner.RunExecutable("buildah", buildOpts...)
 	if err != nil {
