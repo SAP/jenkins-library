@@ -99,11 +99,21 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options for rootless operation
 	cmdOpts := []string{
-		"bud",                                // Using bud (build-using-dockerfile) for Dockerfile builds
-		"--format=docker",                    // Use Docker format for compatibility
-		"--security-opt=apparmor=unconfined", // Required for rootless operation
-		"--security-opt=seccomp=unconfined",  // Required for rootless operation
+		"bud",                                                      // Using bud (build-using-dockerfile) for Dockerfile builds
+		"--format=docker",                                          // Use Docker format for compatibility
+		"--security-opt=apparmor=unconfined",                       // Required for rootless operation
+		"--security-opt=seccomp=unconfined",                        // Required for rootless operation
+		"--storage-driver=vfs",                                     // Use vfs storage driver explicitly
+		"--userns=keep-id",                                         // Preserve user namespace mapping
+		"--volume", "/var/lib/containers:/var/lib/containers:rw,z", // Mount container storage with proper SELinux context
 	}
+
+	// Additional build arguments for troubleshooting
+	cmdOpts = append(cmdOpts,
+		"--log-level=debug",  // Enable debug logging
+		"--isolation=chroot", // Use chroot isolation
+		"--cap-add=all",      // Grant all capabilities for debugging
+	)
 
 	// Add Dockerfile location if specified and different from context
 	if config.DockerfilePath != "." && config.DockerfilePath != "" {
@@ -151,7 +161,30 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 	log.Entry().Infof("Executing buildah command: buildah %v", displayCmd)
 	err = execRunner.RunExecutable("buildah", cmdOpts...)
 	if err != nil {
-		return fmt.Errorf("buildah build failed: %w", err)
+	    log.Entry().Warn("Initial buildah attempt failed, trying fallback configuration...")
+
+	    // Fallback options with minimal settings
+	    cmdOpts = []string{
+	        "bud",
+	        "--format=docker",
+	        "--storage-driver=vfs",
+	        "--isolation=oci",  // Try OCI isolation instead of chroot
+	        "--pull-never",     // Avoid registry operations
+	        "--layers=false",   // Disable layer optimization
+	    }
+
+	    if config.DockerfilePath != "." && config.DockerfilePath != "" {
+	        cmdOpts = append(cmdOpts, fmt.Sprintf("-f=%s", config.DockerfilePath))
+	    }
+
+	    // Try with default tag
+	    cmdOpts = append(cmdOpts, "--tag=test-image:latest")
+
+	    log.Entry().Infof("Trying fallback buildah command: buildah %v", cmdOpts)
+	    err = execRunner.RunExecutable("buildah", cmdOpts...)
+	    if err != nil {
+	        return fmt.Errorf("buildah build failed with both default and fallback configurations: %w", err)
+	    }
 	}
 
 	// If registry is configured, push the image
