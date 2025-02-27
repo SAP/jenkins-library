@@ -68,6 +68,11 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		"--format=docker",      // Use Docker format for compatibility
 		"--storage-driver=vfs", // Use vfs storage driver for rootless
 		"--layers",             // Use layering for build
+		"--cap-add=all",        // Add all capabilities
+		"--security-opt=apparmor=unconfined",
+		"--security-opt=seccomp=unconfined",
+		"--isolation=chroot", // Use chroot isolation mode
+		"--tls-verify=false", // Disable TLS verification
 	}
 
 	// Add Dockerfile location if specified and different from context
