@@ -60,21 +60,24 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		return errors.Wrap(err, "Failed to execute buildah command")
 	}
 
-	// Build options for buildah
-	buildOpts := []string{
-		"build",
-		"--format=docker", // Use Docker format for compatibility
-		fmt.Sprintf("--file=%s", config.DockerfilePath),
+	// Prepare buildah command
+	buildOpts := []string{"build"}
+
+	// Add format first as it's a fundamental option
+	buildOpts = append(buildOpts, "--format", "docker")
+
+	// Add Dockerfile location if specified and different from context
+	if config.DockerfilePath != "." && config.DockerfilePath != "" {
+		buildOpts = append(buildOpts, "-f", config.DockerfilePath)
 	}
 
-	// Add build options from config
-	buildOpts = append(buildOpts, config.BuildOptions...)
-
+	// Set up image tagging
 	imageTag := "latest"
 	if config.ContainerImageTag != "" {
 		imageTag = config.ContainerImageTag
 	}
 
+	// Add authentication and registry-related options
 	if config.ContainerImageName != "" && config.ContainerRegistryURL != "" {
 		destination := fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, imageTag)
 		buildOpts = append(buildOpts, "--tag", destination)
@@ -84,17 +87,29 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag))
 		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
 
-		// Set auth file for registry authentication
 		buildOpts = append(buildOpts, "--authfile", fmt.Sprintf("%s/config.json", dockerConfigDir))
-	} else {
-		// Build without registry
+	} else if config.ContainerImageName != "" {
 		buildOpts = append(buildOpts, "--tag", fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag))
 	}
 
-	// Add context directory as the final argument
+	// Add custom build options after core options in case they override anything
+	if len(config.BuildOptions) > 0 {
+		buildOpts = append(buildOpts, config.BuildOptions...)
+	}
+
+	// Add context directory as final argument
 	buildOpts = append(buildOpts, ".")
 
-	log.Entry().Info("Executing buildah build...")
+	// Log the command being executed (with sensitive data masked)
+	cmd := []string{}
+	for i, arg := range buildOpts {
+	    if i > 0 && buildOpts[i-1] == "--authfile" {
+	        cmd = append(cmd, "****")
+	    } else {
+	        cmd = append(cmd, arg)
+	    }
+	}
+	log.Entry().Infof("Executing buildah command: buildah %v", cmd)
 	err = execRunner.RunExecutable("buildah", buildOpts...)
 	if err != nil {
 		return fmt.Errorf("buildah build failed: %w", err)
