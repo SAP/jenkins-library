@@ -66,7 +66,7 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		"bud",                  // Using bud (build-using-dockerfile) for Dockerfile builds
 		"--isolation=rootless", // Use rootless isolation mode
 		"--format=docker",      // Use Docker format for compatibility
-		"--storate-driver=vfs", // Use vfs storage driver for rootless
+		"--storage-driver=vfs", // Use vfs storage driver for rootless
 		"--layers",             // Use layering for build
 	}
 
