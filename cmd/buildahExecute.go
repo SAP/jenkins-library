@@ -74,6 +74,12 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 	_ = execRunner.RunExecutable("sysctl", "kernel.unprivileged_userns_clone")
 	_ = execRunner.RunExecutable("cat", "/proc/sys/user/max_user_namespaces")
 
+	// Security profile checks
+	_ = execRunner.RunExecutable("cat", "/proc/self/status")
+	_ = execRunner.RunExecutable("cat", "/sys/kernel/security/apparmor/profiles")
+	_ = execRunner.RunExecutable("grep", "Seccomp:", "/proc/self/status")
+	_ = execRunner.RunExecutable("cat", "/proc/self/attr/current")
+
 	// Storage driver info
 	_ = execRunner.RunExecutable("df", "-h")
 	_ = execRunner.RunExecutable("findmnt")
