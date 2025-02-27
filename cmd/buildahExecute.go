@@ -61,9 +61,12 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		return errors.Wrap(err, "Failed to execute buildah command")
 	}
 
-	// Prepare buildah command with options
+	// Prepare buildah command with options for rootless operation
 	cmdOpts := []string{
-		"bud",
+	    "bud",                     // Using bud (build-using-dockerfile) for Dockerfile builds
+	    "--storage-driver", "vfs", // Use vfs storage driver for rootless operation
+	    "--format=docker",         // Use Docker format for compatibility
+	    "--layers",                // Enable layer caching
 	}
 
 	// Add Dockerfile location if specified and different from context
