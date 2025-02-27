@@ -55,6 +55,12 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		}
 	}
 
+	_ = execRunner.RunExecutable("cat", "/etc/*release")
+	_ = execRunner.RunExecutable("uname", "-a")
+	_ = execRunner.RunExecutable("cat", "/etc/containers/storage.conf")
+	_ = execRunner.RunExecutable("cat", "/proc/self/mountinfo")
+	_ = execRunner.RunExecutable("ls", "-ld", "/")
+
 	// Check buildah version
 	err := execRunner.RunExecutable("buildah", "--version")
 	if err != nil {
