@@ -112,26 +112,32 @@ spec:
   - name: buildkitd
     image: moby/buildkit:v0.12.0-rootless
     command:
-      - /usr/bin/rootlesskit
+      - /bin/sh
     args:
-      - --net=slirp4netns
-      - --copy-up=/etc
-      - --copy-up=/run
-      - --propagation=rslave
-      - /usr/bin/buildkitd
-      - --addr=unix:///run/buildkit/buildkitd.sock
-      - --oci-worker-no-process-sandbox
-      - --containerd-worker=false
-      - --debug
-    lifecycle:
-      preStart:
-        exec:
-          command: ["/bin/sh", "-c", "mkdir -p /run/buildkit"]
+      - -ec
+      - |
+        mkdir -p /run/buildkit
+        exec /usr/bin/rootlesskit \
+          --net=slirp4netns \
+          --copy-up=/etc \
+          --copy-up=/run \
+          --propagation=rslave \
+          /usr/bin/buildkitd \
+            --addr=unix:///run/buildkit/buildkitd.sock \
+            --oci-worker-no-process-sandbox \
+            --containerd-worker=false \
+            --debug
     readinessProbe:
       exec:
-        command: ["buildctl", "debug", "workers"]
-      initialDelaySeconds: 5
-      periodSeconds: 10
+        command: ["/bin/sh", "-c", "buildctl --addr unix:///run/buildkit/buildkitd.sock debug workers"]
+      initialDelaySeconds: 2
+      periodSeconds: 5
+      timeoutSeconds: 3
+    startupProbe:
+      exec:
+        command: ["/bin/sh", "-c", "test -S /run/buildkit/buildkitd.sock"]
+      failureThreshold: 30
+      periodSeconds: 2
     env:
       - name: HOME
         value: /home/user
@@ -141,6 +147,14 @@ spec:
         value: "unix:///run/buildkit/buildkitd.sock"
       - name: XDG_RUNTIME_DIR
         value: /run/buildkit
+      - name: BUILDKIT_STEP_LOG_MAX_SIZE
+        value: "10485760"
+      - name: BUILDKIT_STEP_LOG_MAX_SPEED
+        value: "1048576"
+      - name: BUILDKIT_DEBUG
+        value: "1"
+      - name: PATH
+        value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     securityContext:
       runAsUser: 1000
       runAsGroup: 1000
@@ -157,19 +171,6 @@ spec:
       seccompProfile:
         type: RuntimeDefault
       runAsNonRoot: true
-    env:
-      - name: HOME
-        value: /home/user
-      - name: USER
-        value: user
-      - name: XDG_RUNTIME_DIR
-        value: /home/user/.local/share
-      - name: BUILDKIT_HOST
-        value: "unix:///home/user/.local/share/buildkit/buildkitd.sock"
-      - name: BUILDKIT_STEP_LOG_MAX_SIZE
-        value: "10485760"
-      - name: BUILDKIT_STEP_LOG_MAX_SPEED
-        value: "1048576"
     volumeMounts:
       - name: volume
         mountPath: /run/buildkit
