@@ -103,7 +103,7 @@
         <dependency>
             <groupId>com.lesfurets</groupId>
             <artifactId>jenkins-pipeline-unit</artifactId>
-            <version>1.1</version>
+            <version>1.26</version>
             <scope>test</scope>
         </dependency>
         <dependency>
