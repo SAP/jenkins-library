@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
