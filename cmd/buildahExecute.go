@@ -66,6 +66,7 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		"bud",                                // Using bud (build-using-dockerfile) for Dockerfile builds
 		"--format=docker",                    // Use Docker format for compatibility
 		"--security-opt=apparmor=unconfined", // Required for rootless operation
+		"--security-opt=seccomp=unconfined",  // Required for rootless operation
 	}
 
 	// Add Dockerfile location if specified and different from context
