@@ -309,7 +309,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.ScanPaths, "scanPaths", []string{`.`}, "List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.")
 	cmd.Flags().StringVar(&stepConfig.DependencyPath, "dependencyPath", `.`, "Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. If the project contains multiple pom files, provide the path to the parent pom file or the base folder of the project")
 	cmd.Flags().BoolVar(&stepConfig.Unmap, "unmap", false, "Unmap flag will unmap all previous code locations and keep only the current scan results in the specified project version. Set this parameter to true, when the project version needs to store only the latest scan results.")
-	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus)")
+	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.detect=DEBUG`, `--detect.maven.excluded.scopes=test`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus)")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server URL to the Synopsis Detect (formerly BlackDuck) Server.")
 	cmd.Flags().StringSliceVar(&stepConfig.Groups, "groups", []string{}, "Users groups to be assigned for the Project")
 	cmd.Flags().StringSliceVar(&stepConfig.FailOn, "failOn", []string{`BLOCKER`}, "Mark the current build as fail based on the policy categories applied.")
@@ -465,7 +465,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/scanProperties"}},
-						Default:     []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`},
+						Default:     []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.detect=DEBUG`, `--detect.maven.excluded.scopes=test`},
 					},
 					{
 						Name:        "serverUrl",
