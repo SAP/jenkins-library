@@ -62,9 +62,9 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Build options for buildah
 	buildOpts := []string{
-		"build-using-dockerfile",
+		"build",
 		"--format=docker", // Use Docker format for compatibility
-		"--file", config.DockerfilePath,
+		fmt.Sprintf("--file=%s", config.DockerfilePath),
 	}
 
 	// Add build options from config
