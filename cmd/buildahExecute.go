@@ -97,14 +97,15 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		return errors.Wrap(err, "Failed to execute buildah command")
 	}
 
-	// Prepare buildah command with options for rootless operation
+	// Prepare buildah command with options for container operation
 	cmdOpts := []string{
 		"bud",                                                      // Using bud (build-using-dockerfile) for Dockerfile builds
 		"--format=docker",                                          // Use Docker format for compatibility
-		"--security-opt=apparmor=unconfined",                       // Required for rootless operation
-		"--security-opt=seccomp=unconfined",                        // Required for rootless operation
+		"--security-opt=apparmor=unconfined",                       // Required for container operation
+		"--security-opt=seccomp=unconfined",                        // Required for container operation
 		"--storage-driver=vfs",                                     // Use vfs storage driver explicitly
-		"--userns=keep-id",                                         // Preserve user namespace mapping
+		"--pull=true",                                             // Allow pulling base images
+		"--layers=true",                                           // Enable layer optimization
 		"--volume", "/var/lib/containers:/var/lib/containers:rw,z", // Mount container storage with proper SELinux context
 	}
 
