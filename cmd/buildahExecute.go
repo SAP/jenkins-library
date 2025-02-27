@@ -63,9 +63,9 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options for rootless operation
 	cmdOpts := []string{
-	    "bud",                    // Using bud (build-using-dockerfile) for Dockerfile builds
-	    "--isolation=rootless",   // Use rootless isolation mode
-	    "--format=docker"         // Use Docker format for compatibility
+		"bud",                  // Using bud (build-using-dockerfile) for Dockerfile builds
+		"--isolation=rootless", // Use rootless isolation mode
+		"--format=docker",      // Use Docker format for compatibility
 	}
 
 	// Add Dockerfile location if specified and different from context
