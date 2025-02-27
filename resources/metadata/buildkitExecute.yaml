@@ -113,9 +113,21 @@ spec:
       image: moby/buildkit:latest
       env:
         - name: BUILDKITD_FLAGS
-          value: --oci-worker=true --containerd-worker=false
+          value: --oci-worker=true --containerd-worker=false --oci-worker-snapshotter=overlayfs
+        - name: BUILDKIT_STEP_LOG_MAX_SIZE
+          value: "10485760"
+        - name: BUILDKIT_STEP_LOG_MAX_SPEED
+          value: "10485760"
       securityContext:
         privileged: true
+        procMount: Unmasked
+      volumeMounts:
+        - mountPath: /home/user/.local/share/buildkit
+          name: volume
+          subPath: buildkit-storage
+        - mountPath: /tmp
+          name: volume
+          subPath: buildkit-tmp
       volumeMounts:
         - mountPath: /home/user/.local/share/buildkit
           name: volume

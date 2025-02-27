@@ -37,11 +37,24 @@ func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.Cus
 }
 
 func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	log.Entry().Info("Starting buildkit execution in rootless daemonless mode...")
+	log.Entry().Info("Starting buildkit execution in privileged daemonless mode...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Set minimal environment for privileged operation
+	// Set environment for privileged operation
 	os.Setenv("BUILDKIT_CLI_MODE", "daemonless")
+	os.Setenv("BUILDKIT_PROGRESS", "plain")
+
+	// Setup paths and create directories
+	basePath := "/home/user/.local/share/buildkit"
+	cachePath := fmt.Sprintf("%s/cache", basePath)
+	tmpPath := "/tmp"
+
+	// Create directories with proper permissions
+	for _, path := range []string{basePath, cachePath, tmpPath} {
+		if err := fileUtils.MkdirAll(path, 0777); err != nil {
+			log.Entry().Warnf("Failed to create directory %s: %v", path, err)
+		}
+	}
 
 	// Debug info collection
 	log.Entry().Info("Collecting debug information...")
@@ -91,18 +104,24 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	// Build with buildkit using direct buildctl
 	log.Entry().Info("BuildKit Configuration:")
 	log.Entry().Info("- Using privileged mode")
-	log.Entry().Info("- Cache location: /home/user/.local/share/buildkit/buildkit-storage/cache")
+	log.Entry().Infof("- Cache location: %s", cachePath)
+	log.Entry().Info("- Temp directory: /tmp")
 	log.Entry().Info("- Environment variables:")
 	for _, env := range os.Environ() {
-	    if len(env) > 9 && env[:9] == "BUILDKIT_" {
-	        log.Entry().Infof("  %s", env)
-	    }
+		if len(env) > 9 && env[:9] == "BUILDKIT_" {
+			log.Entry().Infof("  %s", env)
+		}
 	}
 
 	// Add buildkit version check
 	if err := execRunner.RunExecutable("buildctl-daemonless.sh", "--version"); err != nil {
-	    log.Entry().Warnf("Failed to get buildkit version: %v", err)
+		log.Entry().Warnf("Failed to get buildkit version: %v", err)
 	}
+
+	// Set buildkit-specific env vars for mount and cache handling
+	os.Setenv("BUILDKIT_SANDBOX_MOUNT_PATH", "/tmp")
+	os.Setenv("BUILDKIT_STEP_MOUNT_PATH", "/tmp")
+	os.Setenv("BUILDKIT_MOUNT_MODE", "0777")
 
 	buildOpts := []string{
 		"build",
@@ -110,9 +129,13 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		"--local", "context=.",
 		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
 		"--progress=plain",
-		"--export-cache", "type=inline",
-		"--import-cache", "type=local,src=/home/user/.local/share/buildkit/buildkit-storage/cache",
+		fmt.Sprintf("--export-cache=type=local,mode=max,dest=%s", cachePath),
+		fmt.Sprintf("--import-cache=type=local,src=%s", cachePath),
+		"--allow-insecure-entitlement=network.host",
+		fmt.Sprintf("--mount=type=bind,target=/tmp,source=/tmp,rw=true"),
 	}
+
+	log.Entry().Info("Using build options:", buildOpts)
 
 	// Add build options from config
 	buildOpts = append(buildOpts, config.BuildOptions...)
