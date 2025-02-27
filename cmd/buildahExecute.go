@@ -161,30 +161,30 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 	log.Entry().Infof("Executing buildah command: buildah %v", displayCmd)
 	err = execRunner.RunExecutable("buildah", cmdOpts...)
 	if err != nil {
-	    log.Entry().Warn("Initial buildah attempt failed, trying fallback configuration...")
+		log.Entry().Warn("Initial buildah attempt failed, trying fallback configuration...")
 
-	    // Fallback options with minimal settings
-	    cmdOpts = []string{
-	        "bud",
-	        "--format=docker",
-	        "--storage-driver=vfs",
-	        "--isolation=oci",  // Try OCI isolation instead of chroot
-	        "--pull-never",     // Avoid registry operations
-	        "--layers=false",   // Disable layer optimization
-	    }
+		// Fallback options with essential settings
+		cmdOpts = []string{
+			"bud",
+			"--format=docker",
+			"--storage-driver=vfs",
+			"--isolation=oci", // Try OCI isolation instead of chroot
+			"--layers=true",   // Enable layer optimization
+			"--pull=true",     // Allow pulling images when needed
+		}
 
-	    if config.DockerfilePath != "." && config.DockerfilePath != "" {
-	        cmdOpts = append(cmdOpts, fmt.Sprintf("-f=%s", config.DockerfilePath))
-	    }
+		if config.DockerfilePath != "." && config.DockerfilePath != "" {
+			cmdOpts = append(cmdOpts, fmt.Sprintf("-f=%s", config.DockerfilePath))
+		}
 
-	    // Try with default tag
-	    cmdOpts = append(cmdOpts, "--tag=test-image:latest")
+		// Try with default tag
+		cmdOpts = append(cmdOpts, "--tag=test-image:latest")
 
-	    log.Entry().Infof("Trying fallback buildah command: buildah %v", cmdOpts)
-	    err = execRunner.RunExecutable("buildah", cmdOpts...)
-	    if err != nil {
-	        return fmt.Errorf("buildah build failed with both default and fallback configurations: %w", err)
-	    }
+		log.Entry().Infof("Trying fallback buildah command: buildah %v", cmdOpts)
+		err = execRunner.RunExecutable("buildah", cmdOpts...)
+		if err != nil {
+			return fmt.Errorf("buildah build failed with both default and fallback configurations: %w", err)
+		}
 	}
 
 	// If registry is configured, push the image
