@@ -112,9 +112,6 @@ spec:
   containers:
     - name: buildah
       image: quay.io/buildah/stable:latest
-      command:
-        - /bin/sh
-      shell: /bin/sh
       env:
         - name: REGISTRY_AUTH_FILE
           value: "/home/user/.docker/config.json"
