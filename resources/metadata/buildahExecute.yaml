@@ -124,6 +124,14 @@ spec:
       securityContext:
         seLinuxOptions:
           type: spc_t
+        allowPrivilegeEscalation: true
+        capabilities:
+          add: ["SYS_ADMIN", "MKNOD", "CHOWN", "DAC_OVERRIDE"]
+        privileged: true
+      volumeMounts:
+        - name: varlibcontainers
+          mountPath: /var/lib/containers
+          mountPropagation: Bidirectional
       env:
         - name: STORAGE_DRIVER
           value: "vfs"
@@ -131,3 +139,11 @@ spec:
           value: "oci"
         - name: BUILDAH_ISOLATION
           value: "chroot"
+        - name: _BUILDAH_STARTED_IN_USERNS
+          value: ""
+        - name: BUILDAH_LAYERS
+          value: "true"
+      volumes:
+        - name: varlibcontainers
+          emptyDir:
+            medium: Memory

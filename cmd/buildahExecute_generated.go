@@ -344,7 +344,7 @@ func buildahExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildah", Image: "quay.io/buildah/stable:latest", EnvVars: []config.EnvVar{{Name: "STORAGE_DRIVER", Value: "vfs"}, {Name: "BUILDAH_FORMAT", Value: "oci"}, {Name: "BUILDAH_ISOLATION", Value: "chroot"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--privileged", Value: ""}, {Name: "--security-opt", Value: "seccomp=unconfined"}}},
+				{Name: "buildah", Image: "quay.io/buildah/stable:latest", EnvVars: []config.EnvVar{{Name: "STORAGE_DRIVER", Value: "vfs"}, {Name: "BUILDAH_FORMAT", Value: "oci"}, {Name: "BUILDAH_ISOLATION", Value: "chroot"}, {Name: "_BUILDAH_STARTED_IN_USERNS", Value: ""}, {Name: "BUILDAH_LAYERS", Value: "true"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--privileged", Value: ""}, {Name: "--security-opt", Value: "seccomp=unconfined"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
