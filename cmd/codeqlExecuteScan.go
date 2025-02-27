@@ -448,7 +448,7 @@ func checkForCompliance(scanResults []codeql.CodeqlFindings, config *codeqlExecu
 			if unaudited > config.VulnerabilityThresholdTotal {
 				msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v",
 					repoInfo.FullUrl, repoInfo.AnalyzedRef, unaudited, config.VulnerabilityThresholdTotal)
-				return errors.Errorf(msg)
+				return errors.New(msg)
 			}
 		}
 	}

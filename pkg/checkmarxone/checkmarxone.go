@@ -940,7 +940,7 @@ func (sys *SystemInstance) scanProject(scanConfig map[string]interface{}) (Scan,
 	jsonValue, err := json.Marshal(scanConfig)
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	sys.logger.Tracef("Starting scan with settings: " + string(jsonValue))
+	sys.logger.Tracef("Starting scan with settings: %s", string(jsonValue))
 
 	data, err := sendRequest(sys, http.MethodPost, "/scans/", bytes.NewBuffer(jsonValue), header, []int{})
 	if err != nil {
