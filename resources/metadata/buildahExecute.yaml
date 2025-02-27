@@ -4,8 +4,7 @@ metadata:
   longDescription: |
     Executes a Buildah build for creating a container image.
     Buildah is a tool that facilitates building Open Container Initiative (OCI) container images.
-  annotations:
-    container.apparmor.security.beta.kubernetes.io/buildah: unconfined
+
 spec:
   inputs:
     secrets:
@@ -113,19 +112,21 @@ spec:
   containers:
     - name: buildah
       image: quay.io/buildah/stable:latest
+      command:
+        - sleep
+        - infinity
+      shell: /bin/bash
+      options:
+        - name: -u
+          value: "0"
+        - name: --privileged
+          value: ""
+        - name: --security-opt
+          value: "seccomp=unconfined"
       env:
-        - name: REGISTRY_AUTH_FILE
-          value: "/home/user/.docker/config.json"
-      securityContext:
-        privileged: true
-        runAsUser: 1000
-      volumeMounts:
-        - name: workspace
-          mountPath: /workspace
-        - name: docker-config
-          mountPath: /home/user/.docker
-  volumes:
-    - name: workspace
-      emptyDir: {}
-    - name: docker-config
-      emptyDir: {}
+        - name: STORAGE_DRIVER
+          value: "overlay"
+        - name: BUILDAH_FORMAT
+          value: "oci"
+        - name: BUILDAH_ISOLATION
+          value: "chroot"

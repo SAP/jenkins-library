@@ -344,7 +344,7 @@ func buildahExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildah", Image: "quay.io/buildah/stable:latest", EnvVars: []config.EnvVar{{Name: "REGISTRY_AUTH_FILE", Value: "/home/user/.docker/config.json"}}},
+				{Name: "buildah", Image: "quay.io/buildah/stable:latest", EnvVars: []config.EnvVar{{Name: "STORAGE_DRIVER", Value: "overlay"}, {Name: "BUILDAH_FORMAT", Value: "oci"}, {Name: "BUILDAH_ISOLATION", Value: "chroot"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--privileged", Value: ""}, {Name: "--security-opt", Value: "seccomp=unconfined"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
