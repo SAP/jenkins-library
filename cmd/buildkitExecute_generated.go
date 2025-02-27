@@ -343,7 +343,7 @@ func buildkitExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildkitd", Image: "moby/buildkit:rootless"},
+				{Name: "buildkitd", Image: "moby/buildkit:latest", EnvVars: []config.EnvVar{{Name: "BUILDKITD_FLAGS", Value: "--oci-worker=true --containerd-worker=false"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

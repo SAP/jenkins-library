@@ -110,17 +110,12 @@ spec:
 
   containers:
     - name: buildkitd
-      image: moby/buildkit:rootless
-      command:
-        - buildkitd
-        - --oci-worker-no-process-sandbox
-        - --oci-worker-snapshotter=fuse-overlayfs  # Fallback to native if kernel < 4.18
+      image: moby/buildkit:latest
+      env:
+        - name: BUILDKITD_FLAGS
+          value: --oci-worker=true --containerd-worker=false
       securityContext:
-        privileged: false
-        seccompProfile:
-          type: Unconfined
-        runAsUser: 1000
-        runAsGroup: 1000
+        privileged: true
       volumeMounts:
         - mountPath: /home/user/.local/share/buildkit
           name: volume

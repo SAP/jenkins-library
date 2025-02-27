@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -11,7 +10,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) {
@@ -39,32 +37,11 @@ func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.Cus
 }
 
 func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	log.Entry().Info("Starting buildkit execution in improved rootless mode...")
+	log.Entry().Info("Starting buildkit execution in rootless daemonless mode...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Set environment variables for rootless BuildKit
-	os.Setenv("BUILDKIT_HOST", fmt.Sprintf("unix:///run/user/1000/buildkit/buildkitd.sock"))
-	os.Setenv("HOME", "/home/user")
-
-	// Wait for buildkit daemon to be available
-	maxRetries := 30
-	for i := 0; i < maxRetries; i++ {
-		err := execRunner.RunExecutable("buildctl", "debug", "workers")
-		if err == nil {
-			break
-		}
-		if i == maxRetries-1 {
-			return errors.Wrap(err, "Buildkit daemon not available after max retries")
-		}
-		log.Entry().Infof("Waiting for rootless buildkit daemon to be available (attempt %d/%d)...", i+1, maxRetries)
-		time.Sleep(2 * time.Second)
-	}
-
-	// Check buildctl version
-	err := execRunner.RunExecutable("buildctl", "--version")
-	if err != nil {
-		return errors.Wrap(err, "Failed to execute buildctl command")
-	}
+	// Set minimal environment for privileged operation
+	os.Setenv("BUILDKIT_CLI_MODE", "daemonless")
 
 	// Handle Docker authentication
 	dockerConfigDir := "/home/user/.docker"
@@ -112,9 +89,8 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		buildOpts = append(buildOpts, "--output", "type=docker")
 	}
 
-	log.Entry().Info("Executing buildkit build...")
-	err = execRunner.RunExecutable("buildctl", buildOpts...)
-	if err != nil {
+	log.Entry().Info("Executing buildkit build using daemonless mode...")
+	if err := execRunner.RunExecutable("buildctl-daemonless.sh", buildOpts...); err != nil {
 		return fmt.Errorf("buildkit build failed: %w", err)
 	}
 
