@@ -37,12 +37,14 @@ func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.Cus
 }
 
 func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	log.Entry().Info("Starting buildkit execution in privileged daemonless mode...")
+	log.Entry().Info("Starting buildkit execution in rootful daemonless mode...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Set environment for privileged operation
+	// Set environment for rootful operation
 	os.Setenv("BUILDKIT_CLI_MODE", "daemonless")
 	os.Setenv("BUILDKIT_PROGRESS", "plain")
+	os.Setenv("BUILDKIT_SNAPSHOTTER", "native") // Use native snapshotter instead of overlayfs
+	os.Setenv("BUILDKIT_DEBUG", "1")
 
 	// Setup paths and create directories
 	basePath := "/home/user/.local/share/buildkit"
@@ -50,9 +52,13 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	tmpPath := "/tmp"
 
 	// Create directories with proper permissions
-	for _, path := range []string{basePath, cachePath, tmpPath} {
+	for _, path := range []string{basePath, cachePath, tmpPath, "/var/lib/buildkit", "/var/run/buildkit"} {
 		if err := fileUtils.MkdirAll(path, 0777); err != nil {
 			log.Entry().Warnf("Failed to create directory %s: %v", path, err)
+		}
+		// Force permissions even if directory exists
+		if err := os.Chmod(path, 0777); err != nil {
+			log.Entry().Warnf("Failed to chmod directory %s: %v", path, err)
 		}
 	}
 
@@ -121,18 +127,20 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	// Set buildkit-specific env vars for mount and cache handling
 	os.Setenv("BUILDKIT_SANDBOX_MOUNT_PATH", "/tmp")
 	os.Setenv("BUILDKIT_STEP_MOUNT_PATH", "/tmp")
+	os.Setenv("BUILDKIT_SANDBOX_MODE", "0777")
+	os.Setenv("BUILDKIT_WORKDIR_MODE", "0777")
 	os.Setenv("BUILDKIT_MOUNT_MODE", "0777")
 
 	buildOpts := []string{
 		"build",
-		"--frontend=dockerfile.v0",
+		"--frontend", "dockerfile.v0",
 		"--local", "context=.",
 		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
-		"--progress=plain",
-		fmt.Sprintf("--export-cache=type=local,mode=max,dest=%s", cachePath),
-		fmt.Sprintf("--import-cache=type=local,src=%s", cachePath),
-		"--allow-insecure-entitlement=network.host",
-		fmt.Sprintf("--mount=type=bind,target=/tmp,source=/tmp,rw=true"),
+		"--progress", "plain",
+		"--export-cache", fmt.Sprintf("type=local,dest=%s", cachePath),
+		"--import-cache", fmt.Sprintf("type=local,src=%s", cachePath),
+		"--allow", "network.host",
+		"--allow", "security.insecure", // Add this for testing
 	}
 
 	log.Entry().Info("Using build options:", buildOpts)
