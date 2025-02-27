@@ -43,6 +43,36 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	// Set minimal environment for privileged operation
 	os.Setenv("BUILDKIT_CLI_MODE", "daemonless")
 
+	// Debug info collection
+	log.Entry().Info("Collecting debug information...")
+
+	debugCommands := [][]string{
+		{"id"},                              // User context
+		{"mount"},                           // Mount points
+		{"ls", "-la", "/var/lib/buildkit"},  // Buildkit permissions
+		{"ls", "-la", "/var/lib"},           // Parent dir permissions
+		{"ls", "-la", "/tmp"},               // Temp dir permissions
+		{"capsh", "--print"},                // Capabilities
+		{"cat", "/proc/self/mountinfo"},     // Mount details
+		{"cat", "/proc/self/status"},        // Process status
+		{"cat", "/proc/mounts"},             // Current mounts
+		{"cat", "/proc/self/attr/current"},  // SELinux/AppArmor context
+		{"findmnt"},                         // Filesystem hierarchy
+		{"stat", "-f", "/var/lib/buildkit"}, // Buildkit fs info
+		{"df", "-h"},                        // Disk space
+		{"ls", "-la", "/home/user/.local/share/buildkit"}, // Cache dir
+		{"stat", "/var/run"},                              // Runtime dir status
+		{"ls", "-la", "/var/run/buildkit"},                // Buildkit runtime
+		{"grep", "Seccomp:", "/proc/self/status"},         // Seccomp status
+	}
+
+	for _, cmd := range debugCommands {
+		log.Entry().Infof("running command: %v", cmd)
+		if err := execRunner.RunExecutable(cmd[0], cmd[1:]...); err != nil {
+			log.Entry().Warnf("Debug command %v failed: %v", cmd, err)
+		}
+	}
+
 	// Handle Docker authentication
 	dockerConfigDir := "/home/user/.docker"
 	if len(config.DockerConfigJSON) > 0 {
@@ -59,6 +89,21 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	// Build with buildkit using direct buildctl
+	log.Entry().Info("BuildKit Configuration:")
+	log.Entry().Info("- Using privileged mode")
+	log.Entry().Info("- Cache location: /home/user/.local/share/buildkit/buildkit-storage/cache")
+	log.Entry().Info("- Environment variables:")
+	for _, env := range os.Environ() {
+	    if len(env) > 9 && env[:9] == "BUILDKIT_" {
+	        log.Entry().Infof("  %s", env)
+	    }
+	}
+
+	// Add buildkit version check
+	if err := execRunner.RunExecutable("buildctl-daemonless.sh", "--version"); err != nil {
+	    log.Entry().Warnf("Failed to get buildkit version: %v", err)
+	}
+
 	buildOpts := []string{
 		"build",
 		"--frontend=dockerfile.v0",
