@@ -112,19 +112,20 @@ spec:
   - name: buildkitd
     image: moby/buildkit:v0.12.0-rootless
     command:
-      - /usr/bin/rootlesskit
+      - /bin/sh
     args:
-      - --net=slirp4netns
-      - --copy-up=/etc
-      - --copy-up=/run
-      - --propagation=rslave
-      - buildkitd
-      - --addr=unix:///run/buildkit/buildkitd.sock
-      - --oci-worker-no-process-sandbox
-    lifecycle:
-      preStart:
-        exec:
-          command: ["/bin/sh", "-c", "mkdir -p /run/buildkit"]
+      - -c
+      - |
+        mkdir -p /run/buildkit && \
+        /usr/bin/rootlesskit \
+          --net=slirp4netns \
+          --copy-up=/etc \
+          --copy-up=/run \
+          --propagation=rslave \
+          /usr/bin/buildkitd \
+            --addr=unix:///run/buildkit/buildkitd.sock \
+            --oci-worker-no-process-sandbox \
+            --containerd-worker=false
     env:
       - name: HOME
         value: /home/user

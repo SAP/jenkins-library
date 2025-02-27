@@ -104,8 +104,8 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		"--security-opt=apparmor=unconfined",                       // Required for container operation
 		"--security-opt=seccomp=unconfined",                        // Required for container operation
 		"--storage-driver=vfs",                                     // Use vfs storage driver explicitly
-		"--pull=true",                                             // Allow pulling base images
-		"--layers=true",                                           // Enable layer optimization
+		"--pull=true",                                              // Allow pulling base images
+		"--layers=true",                                            // Enable layer optimization
 		"--volume", "/var/lib/containers:/var/lib/containers:rw,z", // Mount container storage with proper SELinux context
 	}
 
