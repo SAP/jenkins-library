@@ -18,7 +18,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/google/go-github/v68/github"
 	"github.com/google/uuid"
