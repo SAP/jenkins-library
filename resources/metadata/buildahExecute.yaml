@@ -121,9 +121,12 @@ spec:
           value: ""
         - name: --security-opt
           value: "seccomp=unconfined"
+      securityContext:
+        seLinuxOptions:
+          type: spc_t
       env:
         - name: STORAGE_DRIVER
-          value: "overlay"
+          value: "vfs"
         - name: BUILDAH_FORMAT
           value: "oci"
         - name: BUILDAH_ISOLATION
