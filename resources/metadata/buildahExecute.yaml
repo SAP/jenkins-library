@@ -116,6 +116,9 @@ spec:
       env:
         - name: REGISTRY_AUTH_FILE
           value: "/home/user/.docker/config.json"
+      securityContext:
+        privileged: true
+        runAsUser: 1000
       volumeMounts:
         - name: workspace
           mountPath: /workspace
