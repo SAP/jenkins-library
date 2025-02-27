@@ -112,9 +112,6 @@ spec:
   containers:
     - name: buildah
       image: quay.io/buildah/stable:latest
-      command:
-        - sleep
-        - infinity
       shell: /bin/bash
       options:
         - name: -u
