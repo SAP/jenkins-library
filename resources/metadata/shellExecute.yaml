@@ -57,5 +57,5 @@ spec:
         mandatory: false
   containers:
     - name: shell
-      image: node:lts-bookworm
+      image: node:lts-bullseye
       workingDir: /home/node

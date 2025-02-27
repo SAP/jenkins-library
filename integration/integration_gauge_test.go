@@ -56,7 +56,7 @@ cd /test
 	}
 
 	if languageRunner == "js" {
-		reqNode.Image = "node:lts-bookworm"
+		reqNode.Image = "node:lts-bullseye"
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

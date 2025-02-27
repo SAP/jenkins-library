@@ -102,7 +102,7 @@ steps:
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   batsExecuteTests:
     #TODO: check wheather defaults in here are still required
-    dockerImage: 'node:lts-bookworm'
+    dockerImage: 'node:lts-bullseye'
     dockerWorkspace: '/home/node'
     envVars: {}
     outputFormat: 'junit' # tap, junit
@@ -271,7 +271,7 @@ steps:
       testOptions: '-DspecsDir=specs'
     npm:
       #TODO: check wheather defaults in here are still required
-      dockerImage: 'node:lts-bookworm'
+      dockerImage: 'node:lts-bullseye'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
       languageRunner: 'js'
@@ -306,14 +306,14 @@ steps:
     influxServer: ''
   karmaExecuteTests:
     containerPortMappings:
-      'node:lts-bookworm':
+      'node:lts-bullseye':
         - containerPort: 9876
           hostPort: 9876
     dockerEnvVars:
       NO_PROXY: 'localhost,selenium,$NO_PROXY'
       no_proxy: 'localhost,selenium,$no_proxy'
     #TODO: check wheather defaults in here are still required
-    dockerImage: 'node:lts-bookworm'
+    dockerImage: 'node:lts-bullseye'
     dockerName: 'karma'
     dockerWorkspace: '/home/node'
     installCommand: 'npm install --quiet'
@@ -355,7 +355,7 @@ steps:
     parallelExecution: false
   npmExecute:
     #TODO: check wheather defaults in here are still required
-    dockerImage: 'node:lts-bookworm'
+    dockerImage: 'node:lts-bullseye'
   npmExecuteScripts:
     install: true
   npmExecuteEndToEndTests:
@@ -435,7 +435,7 @@ steps:
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
-      dockerImage: 'node:lts-bookworm'
+      dockerImage: 'node:lts-bullseye'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
     bundler:
@@ -447,7 +447,7 @@ steps:
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
-    dockerImage: 'node:lts-bookworm'
+    dockerImage: 'node:lts-bullseye'
     exclude: []
     monitor: true
     scanType: 'npm'

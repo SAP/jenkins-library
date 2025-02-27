@@ -46,7 +46,7 @@ cd /test
 	networkName := "sidecar-" + uuid.New().String()
 
 	reqNode := testcontainers.ContainerRequest{
-		Image: "node:lts-bookworm",
+		Image: "node:lts-bullseye",
 		Cmd:   []string{"tail", "-f"},
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(pwd, "/piperbin"),
