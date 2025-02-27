@@ -35,13 +35,13 @@ func (c *kanikoMockClient) SendRequest(method, url string, body io.Reader, heade
 	c.urlsCalled = append(c.urlsCalled, url)
 	c.requestBody = body
 	if len(c.errorMessage) > 0 {
-		return nil, fmt.Errorf(c.errorMessage)
+		return nil, fmt.Errorf("%s", c.errorMessage)
 	}
 	return &http.Response{StatusCode: c.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(c.responseBody)))}, nil
 }
 func (c *kanikoMockClient) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	if len(c.errorMessage) > 0 {
-		return fmt.Errorf(c.errorMessage)
+		return fmt.Errorf("%s", c.errorMessage)
 	}
 	return nil
 }

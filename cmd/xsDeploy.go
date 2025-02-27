@@ -302,7 +302,7 @@ func printStatus(XsDeployOptions xsDeployOptions, stdout io.Writer) error {
 func handleLog(logDir string) error {
 
 	if _, e := os.Stat(logDir); !os.IsNotExist(e) {
-		log.Entry().Warningf(fmt.Sprintf("Here are the logs (%s):", logDir))
+		log.Entry().Warningf("Here are the logs (%s):", logDir)
 
 		logFiles, e := os.ReadDir(logDir)
 

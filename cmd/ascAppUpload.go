@@ -49,7 +49,7 @@ func ascAppUpload(config ascAppUploadOptions, telemetryData *telemetry.CustomDat
 func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.CustomData, utils ascAppUploadUtils, ascClient asc.System) error {
 
 	if len(config.JamfTargetSystem) == 0 {
-		return errors.Errorf("jamfTargetSystem must be set")
+		return errors.New("jamfTargetSystem must be set")
 	}
 
 	log.Entry().Infof("Collect data to create new release in ASC")
@@ -57,7 +57,7 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 	app, err := ascClient.GetAppById(config.AppID)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrapf(err, "failed to get app information")
+		return errors.Wrap(err, "failed to get app information")
 	}
 
 	log.Entry().Debugf("Found App with name %v", app.AppName)
@@ -68,7 +68,7 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrapf(err, "failed to create release")
+		return errors.Wrap(err, "failed to create release")
 	}
 
 	if releaseResponse.Status != "success" {
@@ -81,7 +81,7 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 	jamfAppInformationResponse, err := ascClient.GetJamfAppInfo(app.BundleId, config.JamfTargetSystem)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrapf(err, "failed to get jamf app info")
+		return errors.Wrap(err, "failed to get jamf app info")
 	}
 
 	jamfAppId := jamfAppInformationResponse.MobileDeviceApplication.General.Id
@@ -97,7 +97,7 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 	err = ascClient.UploadIpa(config.FilePath, jamfAppId, config.JamfTargetSystem, app.BundleId, releaseResponse.Data)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrapf(err, "failed to upload ipa")
+		return errors.Wrap(err, "failed to upload ipa")
 	}
 
 	log.Entry().Infof("Successfully uploaded %v to ASC (AppId %v) & Jamf (Id %v)", config.FilePath, app.AppId, jamfAppId)
