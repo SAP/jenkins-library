@@ -109,45 +109,66 @@ spec:
             type: sbom
 
   containers:
-    - name: buildkitd
-      image: moby/buildkit:v0.12.0-rootless
-      command:
-        - sh
-        - -c
-      args:
-        - |
-          mkdir -p /home/user/.local/share/buildkit
-          buildkitd --addr=unix:///home/user/.local/share/buildkit/buildkitd.sock --oci-worker-no-process-sandbox
-      shell: /bin/sh
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        allowPrivilegeEscalation: false
-        capabilities:
-          add:
-            - CHOWN
-            - SETUID
-            - SETGID
-            - FOWNER
-      env:
-        - name: HOME
-          value: /home/user
-        - name: USER
-          value: user
-        - name: XDG_RUNTIME_DIR
-          value: /home/user/.local/share
-        - name: BUILDKIT_HOST
-          value: "unix:///home/user/.local/share/buildkit/buildkitd.sock"
-      volumeMounts:
-        - name: volume
-          mountPath: /home/user/.local/share
-          subPath: buildkit-data
-        - name: volume
-          mountPath: /workspace
-          subPath: workspace
-        - name: volume
-          mountPath: /home/user/.docker
-          subPath: docker-config
+  - name: buildkitd
+    image: moby/buildkit:v0.12.0-rootless
+    command:
+      - buildkitd
+    args:
+      - --addr=unix:///home/user/.local/share/buildkit/buildkitd.sock
+      - --oci-worker-no-process-sandbox
+      - --containerd-worker=false
+      - --oci-worker-binary=
+    lifecycle:
+      preStart:
+        exec:
+          command: ["/bin/sh", "-c", "mkdir -p /home/user/.local/share/buildkit"]
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      allowPrivilegeEscalation: false
+      capabilities:
+        add:
+          - CHOWN
+          - SETUID
+          - SETGID
+          - FOWNER
+          - DAC_OVERRIDE
+          - SYS_CHROOT
+          - MKNOD
+      seccompProfile:
+        type: RuntimeDefault
+      runAsNonRoot: true
+    env:
+      - name: HOME
+        value: /home/user
+      - name: USER
+        value: user
+      - name: XDG_RUNTIME_DIR
+        value: /home/user/.local/share
+      - name: BUILDKIT_HOST
+        value: "unix:///home/user/.local/share/buildkit/buildkitd.sock"
+      - name: BUILDKIT_STEP_LOG_MAX_SIZE
+        value: "10485760"
+      - name: BUILDKIT_STEP_LOG_MAX_SPEED
+        value: "1048576"
+    volumeMounts:
+      - name: volume
+        mountPath: /home/user/.local/share
+        subPath: buildkit-data
+      - name: volume
+        mountPath: /workspace
+        subPath: workspace
+      - name: volume
+        mountPath: /home/user/.docker
+        subPath: docker-config
+      - name: tmp
+        mountPath: /tmp
   volumes:
     - name: volume
-      emptyDir: {}
+      emptyDir:
+        medium: Memory
+        sizeLimit: 10Gi
+    - name: tmp
+      emptyDir:
+        medium: Memory
+        sizeLimit: 1Gi

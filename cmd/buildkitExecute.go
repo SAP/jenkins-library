@@ -88,6 +88,10 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		"--frontend=dockerfile.v0",
 		"--local", "context=.",
 		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
+		"--progress=plain",
+		"--max-parallel-jobs=4",
+		"--export-cache", "type=inline",
+		"--import-cache", "type=local,src=/home/user/.local/share/buildkit/cache",
 	}
 
 	// Add build options from config
