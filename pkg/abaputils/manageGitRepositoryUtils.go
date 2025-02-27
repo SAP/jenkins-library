@@ -155,7 +155,7 @@ func calculateLenghts(results []LogResultsV2) (int, int) {
 }
 
 func printDashedLine(i int) {
-	log.Entry().Infof(strings.Repeat("-", i))
+	log.Entry().Info(strings.Repeat("-", i))
 }
 
 func printLog(logOverviewEntry LogResultsV2, api SoftwareComponentApiInterface) {

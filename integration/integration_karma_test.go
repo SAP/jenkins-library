@@ -20,7 +20,7 @@ import (
 func TestKarmaIntegration(t *testing.T) {
 	t.Skip("Skip failing test for now")
 
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()

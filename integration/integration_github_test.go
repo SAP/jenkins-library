@@ -20,7 +20,7 @@ import (
 )
 
 func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
 	if len(token) == 0 {
 		t.Fatal("No GitHub token maintained")
@@ -95,7 +95,7 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 }
 
 func TestGitHubIntegrationFetchCommitStatistics(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	// prepare
 	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
 	if len(token) == 0 {

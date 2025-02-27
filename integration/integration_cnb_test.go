@@ -36,7 +36,7 @@ func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Conta
 }
 
 func TestCNBIntegrationNPMProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -86,7 +86,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 }
 
 func TestCNBIntegrationProjectDescriptor(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -116,7 +116,7 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 	container.terminate(t)
 }
 func TestCNBIntegrationBuildSummary(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -141,7 +141,7 @@ func TestCNBIntegrationBuildSummary(t *testing.T) {
 }
 
 func TestCNBIntegrationZipPath(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -170,7 +170,7 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 }
 
 func TestCNBIntegrationNonZipPath(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -190,7 +190,7 @@ func TestCNBIntegrationNonZipPath(t *testing.T) {
 }
 
 func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -218,7 +218,7 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 }
 
 func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -245,7 +245,7 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 }
 
 func TestCNBIntegrationWrongBuilderProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "nginx:latest",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
@@ -259,7 +259,7 @@ func TestCNBIntegrationWrongBuilderProject(t *testing.T) {
 }
 
 func TestCNBIntegrationBindings(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -287,7 +287,7 @@ func TestCNBIntegrationBindings(t *testing.T) {
 }
 
 func TestCNBIntegrationMultiImage(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -321,7 +321,7 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 }
 
 func TestCNBIntegrationPreserveFiles(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -341,7 +341,7 @@ func TestCNBIntegrationPreserveFiles(t *testing.T) {
 }
 
 func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -360,7 +360,7 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 }
 
 func TestCNBIntegrationPrePostBuildpacks(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)

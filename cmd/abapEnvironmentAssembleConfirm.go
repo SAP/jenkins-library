@@ -98,7 +98,7 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 			if releasePackagesFailed == nil {
 				releasePackagesFailed = errors.New(errormessage)
 			} else {
-				releasePackagesFailed = errors.Wrapf(releasePackagesFailed, errormessage)
+				releasePackagesFailed = errors.Wrap(releasePackagesFailed, errormessage)
 			}
 		} else {
 			log.Entry().Infof("Packages %s was not assembled in this pipeline run, thus no need to confirm", repo.PackageName)
