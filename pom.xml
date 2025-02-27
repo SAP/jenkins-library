@@ -43,7 +43,7 @@
         <revision>0-SNAPSHOT</revision>
         <findbugs.skip>true</findbugs.skip>
         <jenkins.version>2.32.3</jenkins.version>
-        <pipeline.version>2.5</pipeline.version>
+        <pipeline.version>2.7</pipeline.version>
         <cps.global.lib.version>2.6</cps.global.lib.version>
         <java.level>8</java.level>
     </properties>
