@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -60,57 +61,60 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		return errors.Wrap(err, "Failed to execute buildah command")
 	}
 
-	// Prepare buildah command
-	buildOpts := []string{"build"}
-
-	// Add format first as it's a fundamental option
-	buildOpts = append(buildOpts, "--format", "docker")
+	// Prepare buildah command with options
+	cmdOpts := []string{
+		"build",
+		"--format=docker",
+	}
 
 	// Add Dockerfile location if specified and different from context
 	if config.DockerfilePath != "." && config.DockerfilePath != "" {
-		buildOpts = append(buildOpts, "-f", config.DockerfilePath)
+		cmdOpts = append(cmdOpts, fmt.Sprintf("-f=%s", config.DockerfilePath))
 	}
 
-	// Set up image tagging
+	// Set up image tag
 	imageTag := "latest"
 	if config.ContainerImageTag != "" {
 		imageTag = config.ContainerImageTag
 	}
 
-	// Add authentication and registry-related options
-	if config.ContainerImageName != "" && config.ContainerRegistryURL != "" {
-		destination := fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, imageTag)
-		buildOpts = append(buildOpts, "--tag", destination)
+	// Handle registry and tagging
+	if config.ContainerImageName != "" {
+		if config.ContainerRegistryURL != "" {
+			destination := fmt.Sprintf("%s/%s:%s", config.ContainerRegistryURL, config.ContainerImageName, imageTag)
+			cmdOpts = append(cmdOpts, fmt.Sprintf("--tag=%s", destination))
 
-		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-		commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag)
-		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag))
-		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
+			commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+			commonPipelineEnvironment.container.imageNameTag = fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag)
+			commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag))
+			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
 
-		buildOpts = append(buildOpts, "--authfile", fmt.Sprintf("%s/config.json", dockerConfigDir))
-	} else if config.ContainerImageName != "" {
-		buildOpts = append(buildOpts, "--tag", fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag))
+			// Add auth file for registry
+			cmdOpts = append(cmdOpts, fmt.Sprintf("--authfile=%s", fmt.Sprintf("%s/config.json", dockerConfigDir)))
+		} else {
+			cmdOpts = append(cmdOpts, fmt.Sprintf("--tag=%s", fmt.Sprintf("%s:%s", config.ContainerImageName, imageTag)))
+		}
 	}
 
-	// Add custom build options after core options in case they override anything
+	// Add any custom build options
 	if len(config.BuildOptions) > 0 {
-		buildOpts = append(buildOpts, config.BuildOptions...)
+		cmdOpts = append(cmdOpts, config.BuildOptions...)
 	}
 
-	// Add context directory as final argument
-	buildOpts = append(buildOpts, ".")
+	// Add context as the final argument
+	cmdOpts = append(cmdOpts, ".")
 
 	// Log the command being executed (with sensitive data masked)
-	cmd := []string{}
-	for i, arg := range buildOpts {
-	    if i > 0 && buildOpts[i-1] == "--authfile" {
-	        cmd = append(cmd, "****")
-	    } else {
-	        cmd = append(cmd, arg)
-	    }
+	displayCmd := []string{}
+	for i, arg := range cmdOpts {
+		if i > 0 && strings.Contains(arg, "--authfile=") {
+			displayCmd = append(displayCmd, "--authfile=****")
+		} else {
+			displayCmd = append(displayCmd, arg)
+		}
 	}
-	log.Entry().Infof("Executing buildah command: buildah %v", cmd)
-	err = execRunner.RunExecutable("buildah", buildOpts...)
+	log.Entry().Infof("Executing buildah command: buildah %v", displayCmd)
+	err = execRunner.RunExecutable("buildah", cmdOpts...)
 	if err != nil {
 		return fmt.Errorf("buildah build failed: %w", err)
 	}
