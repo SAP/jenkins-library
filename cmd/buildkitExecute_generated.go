@@ -343,7 +343,7 @@ func buildkitExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildkitd", Image: "moby/buildkit:v0.12.0-rootless", EnvVars: []config.EnvVar{{Name: "HOME", Value: "/home/user"}, {Name: "USER", Value: "user"}, {Name: "BUILDKIT_HOST", Value: "unix:///run/buildkit/buildkitd.sock"}, {Name: "XDG_RUNTIME_DIR", Value: "/run/buildkit"}, {Name: "BUILDKIT_STEP_LOG_MAX_SIZE", Value: "10485760"}, {Name: "BUILDKIT_STEP_LOG_MAX_SPEED", Value: "1048576"}, {Name: "BUILDKIT_DEBUG", Value: "1"}, {Name: "PATH", Value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}}},
+				{Name: "buildkitd", Image: "moby/buildkit:rootless"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

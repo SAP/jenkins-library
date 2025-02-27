@@ -43,10 +43,8 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
 	// Set environment variables for rootless BuildKit
-	os.Setenv("BUILDKIT_HOST", "unix:///run/buildkit/buildkitd.sock")
-	os.Setenv("XDG_RUNTIME_DIR", "/run/buildkit")
+	os.Setenv("BUILDKIT_HOST", fmt.Sprintf("unix:///run/user/1000/buildkit/buildkitd.sock"))
 	os.Setenv("HOME", "/home/user")
-	os.Setenv("USER", "user")
 
 	// Wait for buildkit daemon to be available
 	maxRetries := 30
@@ -90,9 +88,8 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		"--local", "context=.",
 		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
 		"--progress=plain",
-		"--max-parallel-jobs=4",
 		"--export-cache", "type=inline",
-		"--import-cache", "type=local,src=/home/user/.local/share/buildkit/cache",
+		"--import-cache", "type=local,src=/home/user/.local/share/buildkit/buildkit-storage/cache",
 	}
 
 	// Add build options from config

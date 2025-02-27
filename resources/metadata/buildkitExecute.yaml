@@ -109,83 +109,21 @@ spec:
             type: sbom
 
   containers:
-  - name: buildkitd
-    image: moby/buildkit:v0.12.0-rootless
-    command:
-      - /bin/sh
-    args:
-      - -ec
-      - |
-        mkdir -p /run/buildkit
-        exec /usr/bin/rootlesskit \
-          --net=slirp4netns \
-          --copy-up=/etc \
-          --copy-up=/run \
-          --propagation=rslave \
-          /usr/bin/buildkitd \
-            --addr=unix:///run/buildkit/buildkitd.sock \
-            --oci-worker-no-process-sandbox \
-            --containerd-worker=false \
-            --debug
-    readinessProbe:
-      exec:
-        command: ["/bin/sh", "-c", "buildctl --addr unix:///run/buildkit/buildkitd.sock debug workers"]
-      initialDelaySeconds: 2
-      periodSeconds: 5
-      timeoutSeconds: 3
-    startupProbe:
-      exec:
-        command: ["/bin/sh", "-c", "test -S /run/buildkit/buildkitd.sock"]
-      failureThreshold: 30
-      periodSeconds: 2
-    env:
-      - name: HOME
-        value: /home/user
-      - name: USER
-        value: user
-      - name: BUILDKIT_HOST
-        value: "unix:///run/buildkit/buildkitd.sock"
-      - name: XDG_RUNTIME_DIR
-        value: /run/buildkit
-      - name: BUILDKIT_STEP_LOG_MAX_SIZE
-        value: "10485760"
-      - name: BUILDKIT_STEP_LOG_MAX_SPEED
-        value: "1048576"
-      - name: BUILDKIT_DEBUG
-        value: "1"
-      - name: PATH
-        value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-    securityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      allowPrivilegeEscalation: false
-      capabilities:
-        add:
-          - CHOWN
-          - SETUID
-          - SETGID
-          - FOWNER
-          - DAC_OVERRIDE
-          - SYS_CHROOT
-          - MKNOD
-      seccompProfile:
-        type: RuntimeDefault
-      runAsNonRoot: true
-    volumeMounts:
-      - name: volume
-        mountPath: /run/buildkit
-        subPath: buildkit-data
-      - name: volume
-        mountPath: /workspace
-        subPath: workspace
-      - name: volume
-        mountPath: /home/user/.docker
-        subPath: docker-config
-      - name: volume
-        mountPath: /tmp
-        subPath: tmp-data
+    - name: buildkitd
+      image: moby/buildkit:rootless
+      command:
+        - buildkitd
+        - --oci-worker-no-process-sandbox
+        - --oci-worker-snapshotter=fuse-overlayfs  # Fallback to native if kernel < 4.18
+      securityContext:
+        privileged: false
+        seccompProfile:
+          type: Unconfined
+        runAsUser: 1000
+        runAsGroup: 1000
+      volumeMounts:
+        - mountPath: /home/user/.local/share/buildkit
+          name: volume
+          subPath: buildkit-storage
   volumes:
     - name: volume
-      emptyDir:
-        medium: Memory
-        sizeLimit: 10Gi
