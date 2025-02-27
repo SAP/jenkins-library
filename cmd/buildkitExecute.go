@@ -43,7 +43,8 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
 	// Set environment variables for rootless BuildKit
-	os.Setenv("BUILDKIT_HOST", "unix:///home/user/.local/share/buildkit/buildkitd.sock")
+	os.Setenv("BUILDKIT_HOST", "unix:///run/buildkit/buildkitd.sock")
+	os.Setenv("XDG_RUNTIME_DIR", "/run/buildkit")
 	os.Setenv("HOME", "/home/user")
 	os.Setenv("USER", "user")
 

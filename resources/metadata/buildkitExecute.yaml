@@ -112,16 +112,28 @@ spec:
   - name: buildkitd
     image: moby/buildkit:v0.12.0-rootless
     command:
-      - buildkitd
+      - /usr/bin/rootlesskit
     args:
-      - --addr=unix:///home/user/.local/share/buildkit/buildkitd.sock
+      - --net=slirp4netns
+      - --copy-up=/etc
+      - --copy-up=/run
+      - --propagation=rslave
+      - buildkitd
+      - --addr=unix:///run/buildkit/buildkitd.sock
       - --oci-worker-no-process-sandbox
-      - --containerd-worker=false
-      - --oci-worker-binary=
     lifecycle:
       preStart:
         exec:
-          command: ["/bin/sh", "-c", "mkdir -p /home/user/.local/share/buildkit"]
+          command: ["/bin/sh", "-c", "mkdir -p /run/buildkit"]
+    env:
+      - name: HOME
+        value: /home/user
+      - name: USER
+        value: user
+      - name: BUILDKIT_HOST
+        value: "unix:///run/buildkit/buildkitd.sock"
+      - name: XDG_RUNTIME_DIR
+        value: /run/buildkit
     securityContext:
       runAsUser: 1000
       runAsGroup: 1000
