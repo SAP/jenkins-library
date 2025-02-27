@@ -63,8 +63,7 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options
 	cmdOpts := []string{
-		"build",
-		"--format=docker",
+		"bud",
 	}
 
 	// Add Dockerfile location if specified and different from context
@@ -100,9 +99,6 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 	if len(config.BuildOptions) > 0 {
 		cmdOpts = append(cmdOpts, config.BuildOptions...)
 	}
-
-	// Add context as the final argument
-	cmdOpts = append(cmdOpts, ".")
 
 	// Log the command being executed (with sensitive data masked)
 	displayCmd := []string{}
