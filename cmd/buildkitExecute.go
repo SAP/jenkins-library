@@ -132,15 +132,13 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	os.Setenv("BUILDKIT_MOUNT_MODE", "0777")
 
 	buildOpts := []string{
-		"build",
-		"--frontend", "dockerfile.v0",
-		"--local", "context=.",
-		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
-		"--progress", "plain",
-		"--export-cache", fmt.Sprintf("type=local,dest=%s", cachePath),
-		"--import-cache", fmt.Sprintf("type=local,src=%s", cachePath),
-		"--allow", "network.host",
-		"--allow", "security.insecure", // Add this for testing
+	    "build",
+	    "--frontend", "dockerfile.v0",
+	    "--local", "context=.",
+	    "--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
+	    "--progress", "plain",
+	    "--export-cache", fmt.Sprintf("type=local,dest=%s", cachePath),
+	    "--import-cache", fmt.Sprintf("type=local,src=%s", cachePath),
 	}
 
 	log.Entry().Info("Using build options:", buildOpts)
