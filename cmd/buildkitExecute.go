@@ -82,6 +82,9 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	_ = execRunner.RunExecutable("sysctl", "kernel.unprivileged_userns_clone")
 	_ = execRunner.RunExecutable("cat", "/proc/sys/user/max_user_namespaces")
 
+	// Check tmp directory and mount capability
+	_ = execRunner.RunExecutable("sh", "-c", "ls -la /tmp && mkdir -p /tmp/buildkit-test && mount -t tmpfs none /tmp/buildkit-test 2>&1 || echo \"Mount failed\"")
+
 	// Security profile checks
 	_ = execRunner.RunExecutable("cat", "/proc/self/status")
 	_ = execRunner.RunExecutable("cat", "/sys/kernel/security/apparmor/profiles")
