@@ -65,32 +65,41 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	// Debug info collection
 	log.Entry().Info("Collecting debug information...")
 
-	debugCommands := [][]string{
-		{"id"},                              // User context
-		{"mount"},                           // Mount points
-		{"ls", "-la", "/var/lib/buildkit"},  // Buildkit permissions
-		{"ls", "-la", "/var/lib"},           // Parent dir permissions
-		{"ls", "-la", "/tmp"},               // Temp dir permissions
-		{"capsh", "--print"},                // Capabilities
-		{"cat", "/proc/self/mountinfo"},     // Mount details
-		{"cat", "/proc/self/status"},        // Process status
-		{"cat", "/proc/mounts"},             // Current mounts
-		{"cat", "/proc/self/attr/current"},  // SELinux/AppArmor context
-		{"findmnt"},                         // Filesystem hierarchy
-		{"stat", "-f", "/var/lib/buildkit"}, // Buildkit fs info
-		{"df", "-h"},                        // Disk space
-		{"ls", "-la", "/home/user/.local/share/buildkit"}, // Cache dir
-		{"stat", "/var/run"},                              // Runtime dir status
-		{"ls", "-la", "/var/run/buildkit"},                // Buildkit runtime
-		{"grep", "Seccomp:", "/proc/self/status"},         // Seccomp status
-	}
+	// System and runtime info
+	_ = execRunner.RunExecutable("cat", "/etc/*release")
+	_ = execRunner.RunExecutable("uname", "-a")
+	_ = execRunner.RunExecutable("cat", "/etc/containers/storage.conf")
+	_ = execRunner.RunExecutable("cat", "/proc/self/mountinfo")
 
-	for _, cmd := range debugCommands {
-		log.Entry().Infof("running command: %v", cmd)
-		if err := execRunner.RunExecutable(cmd[0], cmd[1:]...); err != nil {
-			log.Entry().Warnf("Debug command %v failed: %v", cmd, err)
-		}
-	}
+	// User and permission checks
+	_ = execRunner.RunExecutable("id")
+	_ = execRunner.RunExecutable("ls", "-la", "/var/lib/containers")
+	_ = execRunner.RunExecutable("ls", "-la", "/")
+	_ = execRunner.RunExecutable("mount")
+
+	// Container runtime checks
+	_ = execRunner.RunExecutable("capsh", "--print")
+	_ = execRunner.RunExecutable("sysctl", "kernel.unprivileged_userns_clone")
+	_ = execRunner.RunExecutable("cat", "/proc/sys/user/max_user_namespaces")
+
+	// Security profile checks
+	_ = execRunner.RunExecutable("cat", "/proc/self/status")
+	_ = execRunner.RunExecutable("cat", "/sys/kernel/security/apparmor/profiles")
+	_ = execRunner.RunExecutable("grep", "Seccomp:", "/proc/self/status")
+	_ = execRunner.RunExecutable("cat", "/proc/self/attr/current")
+
+	// Storage driver info
+	_ = execRunner.RunExecutable("df", "-h")
+	_ = execRunner.RunExecutable("findmnt")
+
+	// Network storage checks
+	_ = execRunner.RunExecutable("stat", "-f", "/var/lib/containers")
+	_ = execRunner.RunExecutable("ls", "-la", "/var/lib/containers/.???*")
+	_ = execRunner.RunExecutable("cat", "/proc/mounts")
+
+	// Check buildah version and info
+	_ = execRunner.RunExecutable("buildah", "info")
+	_ = execRunner.RunExecutable("ps", "aux")
 
 	// Handle Docker authentication
 	dockerConfigDir := "/home/user/.docker"
@@ -132,13 +141,13 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	os.Setenv("BUILDKIT_MOUNT_MODE", "0777")
 
 	buildOpts := []string{
-	    "build",
-	    "--frontend", "dockerfile.v0",
-	    "--local", "context=.",
-	    "--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
-	    "--progress", "plain",
-	    "--export-cache", fmt.Sprintf("type=local,dest=%s", cachePath),
-	    "--import-cache", fmt.Sprintf("type=local,src=%s", cachePath),
+		"build",
+		"--frontend", "dockerfile.v0",
+		"--local", "context=.",
+		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
+		"--progress", "plain",
+		"--export-cache", fmt.Sprintf("type=local,dest=%s", cachePath),
+		"--import-cache", fmt.Sprintf("type=local,src=%s", cachePath),
 	}
 
 	log.Entry().Info("Using build options:", buildOpts)
