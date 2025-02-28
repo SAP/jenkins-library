@@ -40,19 +40,19 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Info("Starting buildkit execution in rootful daemonless mode...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Set environment for rootful operation
+	// Set environment for rootful operation with optimized settings
 	os.Setenv("BUILDKIT_CLI_MODE", "daemonless")
 	os.Setenv("BUILDKIT_PROGRESS", "plain")
-	os.Setenv("BUILDKIT_SNAPSHOTTER", "native") // Use native snapshotter instead of overlayfs
+	os.Setenv("BUILDKIT_SNAPSHOTTER", "fuse-overlayfs") // Use fuse-overlayfs for better compatibility
 	os.Setenv("BUILDKIT_DEBUG", "1")
 
-	// Setup paths and create directories
+	// Use simplified paths to minimize mount requirements
 	basePath := "/home/user/.local/share/buildkit"
 	cachePath := fmt.Sprintf("%s/cache", basePath)
-	tmpPath := "/tmp"
+	tmpPath := "/tmp/buildkit"
 
-	// Create directories with proper permissions
-	for _, path := range []string{basePath, cachePath, tmpPath, "/var/lib/buildkit", "/var/run/buildkit"} {
+	// Create required directories with appropriate permissions
+	for _, path := range []string{basePath, cachePath, tmpPath} {
 		if err := fileUtils.MkdirAll(path, 0777); err != nil {
 			log.Entry().Warnf("Failed to create directory %s: %v", path, err)
 		}
@@ -84,6 +84,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 
 	// Check tmp directory and mount capability
 	_ = execRunner.RunExecutable("sh", "-c", "ls -la /tmp && mkdir -p /tmp/buildkit-test && mount -t tmpfs none /tmp/buildkit-test 2>&1 || echo \"Mount failed\"")
+	_ = execRunner.RunExecutable("sh", "-c", "capsh --print 2>/dev/null || echo \"Missing capabilities\"")
 
 	// Security profile checks
 	_ = execRunner.RunExecutable("cat", "/proc/self/status")

@@ -343,7 +343,7 @@ func buildkitExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildkitd", Image: "moby/buildkit:latest", EnvVars: []config.EnvVar{{Name: "BUILDKITD_FLAGS", Value: "--oci-worker=true --containerd-worker=false --oci-worker-snapshotter=overlayfs"}, {Name: "BUILDKIT_STEP_LOG_MAX_SIZE", Value: "10485760"}, {Name: "BUILDKIT_STEP_LOG_MAX_SPEED", Value: "10485760"}}},
+				{Name: "buildkitd", Image: "moby/buildkit:latest", EnvVars: []config.EnvVar{{Name: "BUILDKITD_FLAGS", Value: "--oci-worker=true --containerd-worker=false --oci-worker-snapshotter=fuse-overlayfs"}, {Name: "BUILDKIT_STEP_LOG_MAX_SIZE", Value: "10485760"}, {Name: "BUILDKIT_STEP_LOG_MAX_SPEED", Value: "10485760"}, {Name: "BUILDKIT_SANDBOX_MOUNT_PATH", Value: "/tmp/buildkit"}, {Name: "BUILDKIT_STEP_MOUNT_PATH", Value: "/tmp/buildkit"}, {Name: "BUILDKIT_WORKDIR_MODE", Value: "0777"}, {Name: "BUILDKIT_MOUNT_MODE", Value: "0777"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
