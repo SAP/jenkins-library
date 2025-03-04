@@ -90,9 +90,9 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	}
 
 	// TODO: remove after testing
-	log.Entry().Debugf("%T, %v", ttl, ttl)
-	log.Entry().Debugf("%T, %v", time.Duration(config.DaysBeforeExpiry)*24*time.Hour, time.Duration(config.DaysBeforeExpiry)*24*time.Hour)
-	log.Entry().Debugf("%v", ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour)
+	log.Entry().Debugf("Secret ttl:\t\t%T, %v", ttl, ttl)
+	log.Entry().Debugf("DaysBeforeExpiry:\t\t%T, %v", time.Duration(config.DaysBeforeExpiry)*24*time.Hour, time.Duration(config.DaysBeforeExpiry)*24*time.Hour)
+	log.Entry().Debugf("Secret ttl > DaysBeforeExpiry? %v", ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour)
 
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
 		log.Entry().Info("Secret ID TTL valid.")
@@ -101,6 +101,9 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	log.Entry().Info("Rotating secret ID...")
 
 	newSecretID, err := utils.GenerateNewAppRoleSecret(GeneralConfig.VaultRoleSecretID, roleName)
+
+	// TODO: remove after testing
+	log.Entry().Debugf("old VaultRoleSecretID: %v, new newSecretID: %v, roleName: %v", GeneralConfig.VaultRoleSecretID, newSecretID, roleName)
 
 	if err != nil || newSecretID == "" {
 		log.Entry().WithError(err).Warn("Generating a new secret ID failed. Secret ID rotation faield!")
@@ -120,6 +123,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 	// TODO: remove after testing
 	log.Entry().Debugf("Secret ID: %s", secretID)
 	log.Entry().Debugf("Secret Store: %s", config.SecretStore)
+	log.Entry().Debugf("VaultAppRoleSecretTokenCredentialsID: %v", config.VaultAppRoleSecretTokenCredentialsID)
 
 	switch config.SecretStore {
 	case "jenkins":
@@ -133,6 +137,8 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		credential := jenkins.StringCredentials{ID: config.VaultAppRoleSecretTokenCredentialsID, Secret: secretID}
 		return jenkins.UpdateCredential(ctx, credManager, config.JenkinsCredentialDomain, credential)
 	case "ado":
+		// TODO: remove after testing
+		log.Entry().Debugf("AdoOrganization: %v, AdoPersonalAccessToken: %v, AdoProject: %v, AdoPipelineID: %v", config.AdoOrganization, config.AdoPersonalAccessToken, config.AdoProject, config.AdoPipelineID)
 		adoBuildClient, err := ado.NewBuildClient(config.AdoOrganization, config.AdoPersonalAccessToken, config.AdoProject, config.AdoPipelineID)
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
