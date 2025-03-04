@@ -89,6 +89,11 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		log.Entry().Infof("Your secret ID is about to expire in %.0f days", ttl.Round(time.Hour*24).Hours()/24)
 	}
 
+	// TODO: remove after testing
+	log.Entry().Debugf("%T, %v", ttl, ttl)
+	log.Entry().Debugf("%T, %v", time.Duration(config.DaysBeforeExpiry)*24*time.Hour, time.Duration(config.DaysBeforeExpiry)*24*time.Hour)
+	log.Entry().Debugf("%v", ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour)
+
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
 		log.Entry().Info("Secret ID TTL valid.")
 		return nil
@@ -112,6 +117,10 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 }
 
 func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID string) error {
+	// TODO: remove after testing
+	log.Entry().Debugf("Secret ID: %s", secretID)
+	log.Entry().Debugf("Secret Store: %s", config.SecretStore)
+
 	switch config.SecretStore {
 	case "jenkins":
 		ctx := context.Background()
