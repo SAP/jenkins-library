@@ -111,7 +111,7 @@ func TestPersistReportsToGCS(t *testing.T) {
 			expected:      []Task{},
 			detectedFiles: []string{"asdf.json", "someFolder/someFile", "folder/test1", "folder1/test2", "testFolder/test3"},
 			uploadFileErr: nil,
-			expectedError: errors.New("there is no such input parameter as missingParameter"),
+			expectedError: errors.New("failed to create tasks: input parameter missingParameter not found"),
 		},
 		{
 			testName:      "failed - input parameter is empty",
@@ -122,7 +122,7 @@ func TestPersistReportsToGCS(t *testing.T) {
 			expected:      []Task{},
 			detectedFiles: []string{"asdf.json", "someFolder/someFile", "folder/test1", "folder1/test2", "testFolder/test3"},
 			uploadFileErr: nil,
-			expectedError: errors.New("the value of the parameter emptyParameter must not be empty"),
+			expectedError: errors.New("failed to create tasks: input parameter emptyParameter is empty"),
 		},
 	}
 	for _, tt := range testCases {

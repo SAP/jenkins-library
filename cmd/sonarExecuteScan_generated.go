@@ -67,10 +67,8 @@ func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions, gc
 		{FilePattern: "**/sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
 		{FilePattern: "**/sonarscan-result.json", ParamRef: "", StepResultType: "sonarqube"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return

@@ -209,10 +209,8 @@ func (p *checkmarxOneExecuteScanReports) persist(stepConfig checkmarxOneExecuteS
 		{FilePattern: "**/toolrun_checkmarxone_*.json", ParamRef: "", StepResultType: "checkmarxone"},
 		{FilePattern: "**/piper_checkmarxone_report.json", ParamRef: "", StepResultType: "checkmarxone"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
