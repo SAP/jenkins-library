@@ -138,6 +138,12 @@ func (c *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string,
 		return "", fmt.Errorf("new secret-id from approle path %s has an unexpected type %T expected 'string'", reqPath, secretIDRaw)
 	}
 
+	// TODO: remove after testing
+	log.Entry().Debugf("GenerateNewAppRoleSecret - appRolePath: %#v", appRolePath)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - secretIDData: %#v", secretIDData)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - new secret data: %#v", secret)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - new secret ID: %#v", newSecretID)
+
 	return newSecretID, nil
 }
 
