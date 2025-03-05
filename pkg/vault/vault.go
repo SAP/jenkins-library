@@ -139,6 +139,8 @@ func (c *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string,
 	}
 
 	// TODO: remove after testing
+	log.Entry().Debugf("GenerateNewAppRoleSecret - secretID: %#v", secretID)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - appRoleName: %#v", appRoleName)
 	log.Entry().Debugf("GenerateNewAppRoleSecret - appRolePath: %#v", appRolePath)
 	log.Entry().Debugf("GenerateNewAppRoleSecret - secretIDData: %#v", secretIDData)
 	log.Entry().Debugf("GenerateNewAppRoleSecret - new secret data: %#v", secret)
