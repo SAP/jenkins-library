@@ -71,9 +71,6 @@ nav:
         - abapEnvironmentPushATCSystemConfig: steps/abapEnvironmentPushATCSystemConfig.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - abapEnvironmentRunAUnitTest: steps/abapEnvironmentRunAUnitTest.md
-        - abapLandscapePortalUpdateAddOnProduct: steps/abapLandscapePortalUpdateAddOnProduct.md
-        - ansSendEvent: steps/ansSendEvent.md
-        - ascAppUpload: steps/ascAppUpload.md
         - apiKeyValueMapDownload: steps/apiKeyValueMapDownload.md
         - apiKeyValueMapUpload: steps/apiKeyValueMapUpload.md
         - apiProxyDownload: steps/apiProxyDownload.md
@@ -93,9 +90,7 @@ nav:
         - cfManifestSubstituteVariables: steps/cfManifestSubstituteVariables.md
         - cloudFoundryCreateService: steps/cloudFoundryCreateService.md
         - cloudFoundryCreateServiceKey: steps/cloudFoundryCreateServiceKey.md
-        - cloudFoundryCreateSpace: steps/cloudFoundryCreateSpace.md
         - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
-        - cloudFoundryDeleteSpace: steps/cloudFoundryDeleteSpace.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - cnbBuild: steps/cnbBuild.md
         - codeqlExecuteScan: steps/codeqlExecuteScan.md
@@ -113,7 +108,6 @@ nav:
         - fortifyExecuteScan: steps/fortifyExecuteScan.md
         - gatlingExecuteTests: steps/gatlingExecuteTests.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
-        - gcpPublishEvent: steps/gcpPublishEvent.md
         - gctsCloneRepository: steps/gctsCloneRepository.md
         - gctsCreateRepository: steps/gctsCreateRepository.md
         - gctsDeploy: steps/gctsDeploy.md
