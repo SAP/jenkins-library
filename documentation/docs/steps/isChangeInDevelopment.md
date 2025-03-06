@@ -12,7 +12,7 @@
 
 The target of the status check is a change document identified by an identifier (ID).
 
-Specify the ID by [step parameter](transportRequestUploadSOLMAN#By-Step-Parameter) or [common pipeline environment](transportRequestUploadSOLMAN#Common-Pipeline-Environment).
+Specify the ID by [step parameter](transportRequestUploadSOLMAN.md#By-Step-Parameter) or [common pipeline environment](transportRequestUploadSOLMAN.md#Common-Pipeline-Environment).
 
 ## Return Value
 
