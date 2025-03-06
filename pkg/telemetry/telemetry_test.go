@@ -31,7 +31,6 @@ func TestTelemetry_Initialize(t *testing.T) {
 		customClient         *piperhttp.Client
 		BaseURL              string
 		Endpoint             string
-		SiteID               string
 	}
 	type args struct {
 		stepName string
@@ -86,7 +85,6 @@ func TestSetData(t *testing.T) {
 					ActionName:      "",
 					EventType:       "",
 					StepName:        "TestCreateDataObject",
-					SiteID:          "",
 					PipelineURLHash: "",
 					BuildURLHash:    "",
 					Orchestrator:    "Unknown",
@@ -123,7 +121,6 @@ func TestSetData(t *testing.T) {
 				ActionName:      "",
 				EventType:       "",
 				StepName:        "TestCreateDataObject",
-				SiteID:          "",
 				PipelineURLHash: "",
 				BuildURLHash:    "",
 				Orchestrator:    "Unknown",
