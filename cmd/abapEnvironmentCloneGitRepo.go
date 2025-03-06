@@ -101,7 +101,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 
 	alreadyCloned, activeBranch, errCheckCloned, isByog := api.GetRepository()
 	if errCheckCloned != nil {
-		return errors.Wrapf(errCheckCloned, errorString)
+		return errors.Wrap(errCheckCloned, errorString)
 	}
 
 	if !alreadyCloned {
@@ -110,13 +110,13 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		}
 		errClone := api.Clone()
 		if errClone != nil {
-			return errors.Wrapf(errClone, errorString)
+			return errors.Wrap(errClone, errorString)
 		}
 		// set correct filename for archive file
 		logOutputManager.FileNameStep = "clone"
 		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
 		if errorPollEntity != nil {
-			return errors.Wrapf(errorPollEntity, errorString)
+			return errors.Wrap(errorPollEntity, errorString)
 		}
 		if status == "E" {
 			return errors.New("Clone of " + logString + " failed on the ABAP System")
@@ -124,8 +124,8 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		log.Entry().Info("The " + logString + " was cloned successfully")
 	} else {
 		abaputils.AddDefaultDashedLine(2)
-		log.Entry().Infof("%s", "The repository / software component has already been cloned on the ABAP Environment system ")
-		log.Entry().Infof("%s", "If required, a `checkout branch`, and a `pull` will be performed instead")
+		log.Entry().Info("The repository / software component has already been cloned on the ABAP Environment system ")
+		log.Entry().Info("If required, a `checkout branch`, and a `pull` will be performed instead")
 		abaputils.AddDefaultDashedLine(2)
 		var returnedError error
 		if repo.Branch != "" && !(activeBranch == repo.Branch) {

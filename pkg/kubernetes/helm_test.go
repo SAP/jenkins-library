@@ -307,7 +307,7 @@ func TestRunHelmInstall(t *testing.T) {
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug", "--dry-run", "--hide-secret"}},
 				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug"}},
 			},
 		},
@@ -324,7 +324,7 @@ func TestRunHelmInstall(t *testing.T) {
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug", "--dry-run", "--hide-secret"}},
 				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set-file", "my_script=dothings.sh", "--debug"}},
 			},
 		},
@@ -341,7 +341,7 @@ func TestRunHelmInstall(t *testing.T) {
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set", "auth=Basic user:password", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set", "auth=Basic user:password", "--debug", "--dry-run", "--hide-secret"}},
 				{Exec: "helm", Params: []string{"install", "testPackage", ".", "--namespace", "test-namespace", "--create-namespace", "--atomic", "--wait", "--timeout", "525s", "--set", "auth=Basic user:password", "--debug"}},
 			},
 		},
@@ -393,7 +393,7 @@ func TestRunHelmUninstall(t *testing.T) {
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "--wait", "--timeout", "524s", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "--wait", "--timeout", "524s", "--debug", "--dry-run", "--hide-secret"}},
 				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "--wait", "--timeout", "524s", "--debug"}},
 			},
 		},

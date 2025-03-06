@@ -72,7 +72,7 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	projectConfig, err := initializeConfig(&pConfig)
 	if err != nil {
 		log.Entry().Errorf("Failed to load project config: %v", err)
-		return errors.Wrapf(err, "Failed to load project config failed")
+		return errors.Wrap(err, "Failed to load project config failed")
 	}
 
 	stageConfigFile, err := checkStepActiveOptions.openFile(checkStepActiveOptions.stageConfigFile, GeneralConfig.GitHubAccessTokens)
