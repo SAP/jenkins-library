@@ -21,7 +21,7 @@ type onapsisExecuteScanOptions struct {
 	OnapsisUsername        string `json:"onapsisUsername,omitempty"`
 	OnapsisPassword        string `json:"onapsisPassword,omitempty"`
 	AccessToken            string `json:"accessToken,omitempty"`
-	AppType                string `json:"appType,omitempty" validate:"possible-values=abap ui5"`
+	AppType                string `json:"appType,omitempty" validate:"possible-values=ABAP SAPUI5"`
 	FailOnMandatoryFinding bool   `json:"failOnMandatoryFinding,omitempty"`
 	FailOnOptionalFinding  bool   `json:"failOnOptionalFinding,omitempty"`
 	DebugMode              bool   `json:"debugMode,omitempty"`
@@ -149,7 +149,7 @@ func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteSc
 	cmd.Flags().StringVar(&stepConfig.OnapsisUsername, "onapsisUsername", os.Getenv("PIPER_onapsisUsername"), "Onapsis username for JWT authentication")
 	cmd.Flags().StringVar(&stepConfig.OnapsisPassword, "onapsisPassword", os.Getenv("PIPER_onapsisPassword"), "Onapsis password for JWT authentication")
 	cmd.Flags().StringVar(&stepConfig.AccessToken, "accessToken", os.Getenv("PIPER_accessToken"), "Token used to authenticate with the Control Scan Service")
-	cmd.Flags().StringVar(&stepConfig.AppType, "appType", `ui5`, "Type of the application to be scanned")
+	cmd.Flags().StringVar(&stepConfig.AppType, "appType", `SAPUI5`, "Type of the application to be scanned")
 	cmd.Flags().BoolVar(&stepConfig.FailOnMandatoryFinding, "failOnMandatoryFinding", true, "Fail the build if mandatory findings are detected")
 	cmd.Flags().BoolVar(&stepConfig.FailOnOptionalFinding, "failOnOptionalFinding", false, "Fail the build if optional findings are detected")
 	cmd.Flags().BoolVar(&stepConfig.DebugMode, "debugMode", false, "Enable debug mode for the scan")
@@ -236,7 +236,7 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `ui5`,
+						Default:     `SAPUI5`,
 					},
 					{
 						Name:        "failOnMandatoryFinding",

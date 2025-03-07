@@ -61,14 +61,14 @@ spec:
       - name: appType
         type: string
         description: "Type of the application to be scanned"
-        default: "ui5"
+        default: "SAPUI5"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         possibleValues:
-          - "abap"
-          - "ui5"
+          - "ABAP"
+          - "SAPUI5"
       - name: failOnMandatoryFinding
         type: bool
         description: "Fail the build if mandatory findings are detected"

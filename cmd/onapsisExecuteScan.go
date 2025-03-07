@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -181,7 +182,6 @@ func zipProject(folderPath string, outputPath string) error {
 	return nil
 }
 
-// AuthResponse for Onapsis response
 // AuthResponse matches the Onapsis API response
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
@@ -221,13 +221,13 @@ func createSecureHTTPClient(certPath string) (*http.Client, error) {
 	return client, nil
 }
 
-func refreshJwtToken(refreshToken, scanServiceUrl string) (string, error) {
+func refreshJwtToken(refreshToken, scanServiceUrl string) (*AuthResponse, error) {
 	refreshTokenURL := scanServiceUrl + "/cca/v1.2/auth_token"
 
 	// Create HTTP request
 	req, err := http.NewRequest("GET", refreshTokenURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("error creating request: %v", err)
+		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
 	// Set and format the expected Cookie header
@@ -239,28 +239,28 @@ func refreshJwtToken(refreshToken, scanServiceUrl string) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("error making request: %v", err)
+		return nil, fmt.Errorf("error making request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	// Read response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("error reading response body: %v", err)
+		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
 
 	// Handle response
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to refresh token, status: %d, response: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("failed to refresh token, status: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	// Extract new JWT from the response (assuming JSON response)
-	var refreshJwtToken AuthResponse
-	if err := json.Unmarshal(body, &refreshJwtToken); err != nil {
-		return "", fmt.Errorf("failed to parse response: %v", err)
+	var newJwt AuthResponse
+	if err := json.Unmarshal(body, &newJwt); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
 	}
 
-	return refreshJwtToken.AccessToken, nil
+	return &newJwt, nil
 
 }
 
@@ -268,7 +268,7 @@ func refreshJwtToken(refreshToken, scanServiceUrl string) (string, error) {
 func getJWTFromService(username, password, scanServiceUrl string) (*AuthResponse, error) {
 
 	url := scanServiceUrl + "/cca/v1.2/auth_token"
-	certPath := "/home/ca.pem"
+	certPath := "/home/spirtoaca/dev/jenkins-library-onapsis-astanciu/ca.pem"
 
 	fmt.Println("This is the scan servcie url: ", scanServiceUrl)
 
@@ -312,27 +312,11 @@ func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemet
 	// It can also be used for example as a mavenExecRunner.
 	utils := newOnapsisExecuteScanUtils()
 
-	//display token and refresh token for tests purposes should be deleted after the merge
-	token, tokenErr := getJWTFromService(config.OnapsisUsername, config.OnapsisPassword, config.ScanServiceURL)
-	if tokenErr != nil {
-		log.Entry().WithError(tokenErr).Fatal("Error obtaining JWT")
-	}
-
-	fmt.Println("Received JWT:", token.AccessToken)
-	fmt.Println("Received Refresh Token:", token.RefreshToken)
-
-	newJwt, refreshTokenErr := refreshJwtToken(token.RefreshToken, config.ScanServiceURL)
-
-	if refreshTokenErr != nil {
-		log.Entry().WithError(refreshTokenErr).Fatal("Error obtaining refreshed JWT")
-	}
-
-	fmt.Println("Received refreshed JWT:", newJwt)
-
 	if config.DebugMode {
 		log.SetVerbose(true)
 	}
 
+	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err := runOnapsisExecuteScan(&config, telemetryData, utils)
 	if err != nil {
@@ -343,75 +327,113 @@ func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemet
 func runOnapsisExecuteScan(config *onapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils) error {
 	// Create a new ScanServer
 	log.Entry().Info("Creating scan server...")
-	server, err := NewScanServer(&piperHttp.Client{}, config.ScanServiceURL, config.AccessToken)
-	if err != nil {
-		return errors.Wrap(err, "failed to create scan server")
-	}
+	NewScanServer(&piperHttp.Client{}, config.ScanServiceURL, config.OnapsisUsername, config.OnapsisPassword)
+	// if err != nil {
+	// 	return errors.Wrap(err, "failed to create scan server")
+	// }
 
-	// Call the ScanProject method
-	log.Entry().Info("Scanning project...")
-	response, err := server.ScanProject(config, telemetryData, utils, config.AppType)
-	if err != nil {
-		return errors.Wrap(err, "Failed to scan project")
-	}
+	// // Call the ScanProject method
+	// log.Entry().Info("Scanning project...")
+	// response, err := server.ScanProject(config, telemetryData, utils, config.AppType)
+	// if err != nil {
+	// 	return errors.Wrap(err, "Failed to scan project")
+	// }
 
-	// Monitor Job Status
-	jobID := response.Result.JobID
-	log.Entry().Infof("Monitoring job %s status...", jobID)
-	err = server.MonitorJobStatus(jobID)
-	if err != nil {
-		return errors.Wrap(err, "Failed to scan project")
-	}
+	// // Monitor Job Status
+	// jobID := response.Result.JobID
+	// log.Entry().Infof("Monitoring job %s status...", jobID)
+	// err = server.MonitorJobStatus(jobID)
+	// if err != nil {
+	// 	return errors.Wrap(err, "Failed to scan project")
+	// }
 
-	// Get Job Reports
-	log.Entry().Info("Getting job reports...")
-	err = server.GetJobReports(jobID, "onapsis_scan_report.zip")
-	if err != nil {
-		return errors.Wrap(err, "Failed to get job reports")
-	}
+	// // Get Job Reports
+	// log.Entry().Info("Getting job reports...")
+	// err = server.GetJobReports(jobID, "onapsis_scan_report.zip")
+	// if err != nil {
+	// 	return errors.Wrap(err, "Failed to get job reports")
+	// }
 
-	// Get Job Result Metrics
-	log.Entry().Info("Getting job result metrics...")
-	metrics, err := server.GetJobResultMetrics(jobID)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get job result metrics")
-	}
+	// // Get Job Result Metrics
+	// log.Entry().Info("Getting job result metrics...")
+	// metrics, err := server.GetJobResultMetrics(jobID)
+	// if err != nil {
+	// 	return errors.Wrap(err, "Failed to get job result metrics")
+	// }
 
-	// Analyze metrics
-	loc, numMandatory, numOptional := extractMetrics(metrics)
-	// TODO: Change logging to print lines of code scanned in what amount of time
-	log.Entry().Infof("Job Metrics - Lines of Code Scanned: %s, Mandatory Findings: %s, Optional Findings: %s", loc, numMandatory, numOptional)
+	// // Analyze metrics
+	// loc, numMandatory, numOptional := extractMetrics(metrics)
+	// // TODO: Change logging to print lines of code scanned in what amount of time
+	// log.Entry().Infof("Job Metrics - Lines of Code Scanned: %s, Mandatory Findings: %s, Optional Findings: %s", loc, numMandatory, numOptional)
 
-	if config.FailOnMandatoryFinding && numMandatory != "0" {
-		return errors.Errorf("Scan failed with %s mandatory findings", numMandatory)
-	} else if config.FailOnOptionalFinding && numOptional != "0" {
-		return errors.Errorf("Scan failed with %s optional findings", numOptional)
-	}
+	// if config.FailOnMandatoryFinding && numMandatory != "0" {
+	// 	return errors.Errorf("Scan failed with %s mandatory findings", numMandatory)
+	// } else if config.FailOnOptionalFinding && numOptional != "0" {
+	// 	return errors.Errorf("Scan failed with %s optional findings", numOptional)
+	// }
 
 	return nil
 }
 
 type ScanServer struct {
-	serverUrl string
-	client    piperHttp.Uploader
+	serverUrl               string
+	client                  piperHttp.Uploader
+	authToken               *AuthResponse
+	authTokenExpirationTime time.Time
 }
 
-func NewScanServer(client piperHttp.Uploader, serverUrl string, token string) (*ScanServer, error) {
-	server := &ScanServer{serverUrl: serverUrl, client: client}
+func NewScanServer(client piperHttp.Uploader, serverUrl string, onapsisUsername string, onapsisPassword string) (*ScanServer, error) {
 
-	log.Entry().Debugf("Token: %s", token)
+	token, tokenErr := getJWTFromService(onapsisUsername, onapsisPassword, serverUrl)
+	if tokenErr != nil {
+		log.Entry().WithError(tokenErr).Fatal("Error obtaining JWT")
+	}
 
+	log.Entry().Debugf("Token: %s", token.AccessToken)
+
+	tokenExpirationTime := getJwtExpirationTime(token.ExpiresIn)
+
+	options := getHttpOptionsWithAuth(token.AccessToken)
+	client.SetOptions(options)
+
+	server := &ScanServer{serverUrl: serverUrl, client: client, authToken: token, authTokenExpirationTime: tokenExpirationTime}
+
+	return server, nil
+}
+
+func (srv *ScanServer) RefreshServerAuth() {
+	newJwt, refreshTokenErr := refreshJwtToken(srv.authToken.RefreshToken, srv.serverUrl)
+
+	if refreshTokenErr != nil {
+		log.Entry().WithError(refreshTokenErr).Fatal("Error obtaining refreshed JWT")
+	}
+
+	fmt.Println("Received refreshed JWT:", newJwt)
+
+	options := getHttpOptionsWithAuth(newJwt.AccessToken)
+	srv.client.SetOptions(options)
+
+	srv.authTokenExpirationTime = getJwtExpirationTime(newJwt.ExpiresIn)
+	srv.authToken = newJwt
+}
+
+func getHttpOptionsWithAuth(jwt string) piperHttp.ClientOptions {
 	// Set authorization token for client
-	options := piperHttp.ClientOptions{
-		Token:                     "Bearer " + token,
+	return piperHttp.ClientOptions{
+		Token:                     "Bearer " + jwt,
 		MaxRequestDuration:        60 * time.Second, // DEBUG
 		TransportSkipVerification: true,             //DEBUG
 		DoLogRequestBodyOnDebug:   true,
 		DoLogResponseBodyOnDebug:  true,
 	}
-	server.client.SetOptions(options)
+}
 
-	return server, nil
+func (srv *ScanServer) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	if time.Now().After(srv.authTokenExpirationTime) {
+		srv.RefreshServerAuth()
+	}
+
+	return srv.client.SendRequest(method, url, body, header, cookies)
 }
 
 func (srv *ScanServer) ScanProject(config *onapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils, language string) (ScanProjectResponse, error) {
@@ -422,62 +444,42 @@ func (srv *ScanServer) ScanProject(config *onapsisExecuteScanOptions, telemetryD
 		return ScanProjectResponse{}, errors.Wrap(err, "failed to get workspace path")
 	}
 
-	// Zip workspace files
-	log.Entry().Info("Zipping workspace files...") // DEBUG
-	zipFileName := "workspace.zip"
-	zipFilePath := filepath.Join(workspace, zipFileName)
-	err = zipProject(workspace, zipFilePath)
-	if err != nil {
-		return ScanProjectResponse{}, errors.Wrap(err, "failed to zip workspace files")
-	}
-
-	// Get zip file content
-	log.Entry().Info("Getting zip file content...") // DEBUG
-	fileHandle, err := utils.Open(zipFilePath)
-	if err != nil {
-		return ScanProjectResponse{}, errors.Wrapf(err, "unable to locate file %v", zipFilePath)
-	}
-	defer fileHandle.Close()
-
-	// Construct ScanConfig form field
-	log.Entry().Info("Constructing ScanConfig form field...") // DEBUG
-	scanConfig := fmt.Sprintf(`{
-		"engine_type": "FILE",
-		"scan_information": {
-			"name": "scenario",
-			"description": "a scan with extracted source"
-		},
-		"asset": {
-			"file_format": "ZIP",
-			"recursive": "true",
-			"language": "%s"
-		},
-		"configuration": {},
-		"scan_scope": {}
-	}`, language)
-
-	formFields := map[string]string{
-		"ScanConfig": scanConfig,
-	}
+	log.Entry().Info(workspace)
 
 	// Create request data
 	log.Entry().Info("Creating request data...") // DEBUG
-	requestData := piperHttp.UploadRequestData{
-		Method:        "POST",
-		URL:           srv.serverUrl + "/cca/v1.0/scan/file",
-		File:          zipFileName,
-		FileFieldName: "FileUploadContent",
-		FileContent:   fileHandle,
-		FormFields:    formFields,
-		UploadType:    "form",
+	scanRequest := fmt.Sprintf(`{
+		"engine_type": "GIT",
+		"scan_information": {
+			"name": "test-scan-piper",
+			"description": ""
+		},
+		"asset": {
+			"type": "GITURL",
+			"url": "https://gitlab.corp.onapsis.com/spirtoaca/cloud-cf-helloworld-nodejs.git"
+		},
+		"configuration": {},
+		"scan_scope": {
+			"languages": [
+				"%s"
+			],
+			"branch_name": "main",
+			"exclude_packages": []
+		}
+	}`, language)
+
+	scanRequestReader := strings.NewReader(scanRequest)
+	scanRequestHeader := http.Header{
+		"Content-Type": {"application/json"},
 	}
 
 	// Send request
 	log.Entry().Info("Sending request...") // DEBUG
-	response, err := srv.client.Upload(requestData)
+	response, err := srv.client.SendRequest("POST", srv.serverUrl+"/cca/v1.2/scan", scanRequestReader, scanRequestHeader, nil)
 	if err != nil {
 		return ScanProjectResponse{}, errors.Wrap(err, "Failed to start scan")
 	}
+	log.Entry().Info(fmt.Sprintf("err: %s", err))
 
 	// Handle response
 	var responseData ScanProjectResponse
@@ -491,7 +493,7 @@ func (srv *ScanServer) ScanProject(config *onapsisExecuteScanOptions, telemetryD
 
 func (srv *ScanServer) GetScanJobStatus(jobID string) (GetScanJobStatusResponse, error) {
 	// Send request
-	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/job/"+jobID, nil, nil, nil)
+	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID, nil, nil, nil)
 	if err != nil {
 		return GetScanJobStatusResponse{}, errors.Wrap(err, "failed to send request")
 	}
@@ -520,6 +522,7 @@ func (srv *ScanServer) MonitorJobStatus(jobID string) error {
 
 		// Check if the job is complete
 		if response.Result.Status == "SUCCESS" {
+			log.Entry().Infof("Job %s progress: %d%%. Status: %s", jobID, response.Result.Progress, response.Result.Status)
 			return nil
 		} else if response.Result.Status == "FAILURE" {
 			return errors.Errorf("Job %s failed with status: %s", jobID, response.Result.Status)
@@ -531,7 +534,7 @@ func (srv *ScanServer) MonitorJobStatus(jobID string) error {
 }
 
 func (srv *ScanServer) GetJobReports(jobID string, reportArchiveName string) error {
-	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/job/"+jobID+"/result?fileType=all", nil, nil, nil)
+	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID+"/result?format=ZIP", nil, nil, nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to retrieve job report")
 	}
@@ -554,7 +557,7 @@ func (srv *ScanServer) GetJobReports(jobID string, reportArchiveName string) err
 
 func (srv *ScanServer) GetJobResultMetrics(jobID string) (GetJobResultMetricsResponse, error) {
 	// Send request
-	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/job/"+jobID+"/result?type=metrics", nil, nil, nil)
+	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID+"/result/metrics", nil, nil, nil)
 	if err != nil {
 		return GetJobResultMetricsResponse{}, errors.Wrap(err, "failed to send request")
 	}
@@ -581,6 +584,12 @@ func extractMetrics(response GetJobResultMetricsResponse) (loc, numMandatory, nu
 	}
 
 	return loc, numMandatory, numOptional
+}
+
+func getJwtExpirationTime(expiresIn int) time.Time {
+	tokenValidityInSeconds := time.Duration(expiresIn) * time.Second
+
+	return time.Now().Add(tokenValidityInSeconds)
 }
 
 type ScanProjectResponse struct {
