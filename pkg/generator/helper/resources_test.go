@@ -133,10 +133,8 @@ func (p *testStepReports) persist(stepConfig testStepOptions, gcpJsonKeyFilePath
 		{FilePattern: "pattern2", ParamRef: "", StepResultType: ""},
 		{FilePattern: "", ParamRef: "testParam", StepResultType: ""},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
         	return
