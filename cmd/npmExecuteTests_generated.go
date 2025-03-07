@@ -47,10 +47,8 @@ func (p *npmExecuteTestsReports) persist(stepConfig npmExecuteTestsOptions, gcpJ
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/e2e-results.xml", ParamRef: "", StepResultType: "end-to-end-test"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
