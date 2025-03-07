@@ -17,7 +17,7 @@ def call(Map parameters = [:]) {
     } catch (Exception e) {
         error("An error occurred while executing the Onapsis scan: ${e.message}")
         currentBuild.result = 'FAILURE' // Mark the build as failed
-        throw e // Stop execution and fail the build immediately
+        // throw e // Stop execution and fail the build immediately
     } finally {
         archiveArtifacts('onapsis_scan_report.zip')
     }

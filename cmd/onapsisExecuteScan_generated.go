@@ -18,6 +18,7 @@ import (
 
 type onapsisExecuteScanOptions struct {
 	ScanServiceURL         string `json:"scanServiceUrl,omitempty"`
+	ScanGitURL             string `json:"scanGitUrl,omitempty"`
 	OnapsisUsername        string `json:"onapsisUsername,omitempty"`
 	OnapsisPassword        string `json:"onapsisPassword,omitempty"`
 	AccessToken            string `json:"accessToken,omitempty"`
@@ -146,6 +147,7 @@ func OnapsisExecuteScanCommand() *cobra.Command {
 
 func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.ScanServiceURL, "scanServiceUrl", os.Getenv("PIPER_scanServiceUrl"), "URL of the scan service")
+	cmd.Flags().StringVar(&stepConfig.ScanGitURL, "scanGitUrl", os.Getenv("PIPER_scanGitUrl"), "The target git repo to scan")
 	cmd.Flags().StringVar(&stepConfig.OnapsisUsername, "onapsisUsername", os.Getenv("PIPER_onapsisUsername"), "Onapsis username for JWT authentication")
 	cmd.Flags().StringVar(&stepConfig.OnapsisPassword, "onapsisPassword", os.Getenv("PIPER_onapsisPassword"), "Onapsis password for JWT authentication")
 	cmd.Flags().StringVar(&stepConfig.AccessToken, "accessToken", os.Getenv("PIPER_accessToken"), "Token used to authenticate with the Control Scan Service")
@@ -186,6 +188,15 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_scanServiceUrl"),
+					},
+					{
+						Name:        "scanGitUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scanGitUrl"),
 					},
 					{
 						Name: "onapsisUsername",

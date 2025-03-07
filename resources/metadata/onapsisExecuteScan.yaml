@@ -25,6 +25,13 @@ spec:
         resourceRef:
           - name: scanServiceUrl
             type: secret
+      - name: scanGitUrl
+        type: string
+        description: "The target git repo to scan"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: onapsisUsername
         type: string
         description: "Onapsis username for JWT authentication"

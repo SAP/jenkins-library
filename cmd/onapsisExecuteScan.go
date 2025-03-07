@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"archive/zip"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -9,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -18,7 +16,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 )
 
@@ -28,11 +25,6 @@ type onapsisExecuteScanUtils interface {
 	FileExists(filename string) (bool, error)
 	Open(name string) (io.ReadWriteCloser, error)
 	Getwd() (string, error)
-
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The onapsisExecuteScanUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 }
 
 type onapsisExecuteScanUtilsBundle struct {
@@ -56,132 +48,6 @@ func newOnapsisExecuteScanUtils() onapsisExecuteScanUtils {
 	return &utils
 }
 
-var includePatterns = []string{
-	// TODO: Add more include patterns as needed (e.g., for ABAP scans)
-	"**/*.js",
-	"**/*.json",
-}
-
-var excludePatterns = []string{
-	"**/.git/**",         // Exclude .git directory
-	"**/.pipeline/**",    // Exclude .pipeline directory
-	"**/node_modules/**", // Exclude node_modules directory
-	"**/.gitignore",      // Exclude .gitignore file
-	"**/*.log",           // Exclude all log files
-	"workspace.zip",      // Exclude the zip file itself
-}
-
-func zipProject(folderPath string, outputPath string) error {
-	log.Entry().Infof("Starting to zip folder: %s", folderPath)
-
-	// Create the output file
-	zipFile, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create zip file: %w", err)
-	}
-	defer zipFile.Close()
-
-	log.Entry().Infof("Created zip file: %s", outputPath)
-
-	// Create a new zip writer
-	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
-
-	// Track file count
-	fileCount := 0
-
-	// Walk through all the files in the folder
-	err = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			log.Entry().Errorf("Error accessing path %s: %v", path, err)
-			return err
-		}
-
-		// Check if the file matches any of the exclude patterns
-		for _, pattern := range excludePatterns {
-			matched, _ := doublestar.Match(pattern, path)
-			if matched {
-				log.Entry().Infof("Excluding: %s (matches pattern: %s)", path, pattern)
-				if info.IsDir() {
-					return filepath.SkipDir // Skip the entire directory
-				}
-				return nil // Skip the file
-			}
-		}
-
-		// Check if the file matches any of the include patterns
-		included := false
-		for _, pattern := range includePatterns {
-			matched, _ := doublestar.Match(pattern, path)
-			if matched {
-				included = true
-				break
-			}
-		}
-		if !included {
-			log.Entry().Infof("Skipping: %s (does not match include patterns)", path)
-			return nil
-		}
-
-		// Log each file being processed
-		log.Entry().Infof("Zipping file or directory: %s", path)
-
-		// Create a header based on the file info
-		header, err := zip.FileInfoHeader(info)
-		if err != nil {
-			log.Entry().Errorf("Failed to create zip header for file: %s", path)
-			return err
-		}
-
-		// Ensure the correct relative file path in the zip
-		header.Name, err = filepath.Rel(filepath.Dir(folderPath), path)
-		if err != nil {
-			log.Entry().Errorf("Failed to create relative path for file: %s", path)
-			return err
-		}
-
-		if info.IsDir() {
-			header.Name += "/"
-		} else {
-			header.Method = zip.Deflate
-		}
-
-		// Create the writer for this file
-		writer, err := zipWriter.CreateHeader(header)
-		if err != nil {
-			log.Entry().Errorf("Failed to write header for file: %s", path)
-			return err
-		}
-
-		// If it's a file, copy the content into the zip
-		if !info.IsDir() {
-			file, err := os.Open(path)
-			if err != nil {
-				log.Entry().Errorf("Failed to open file: %s", path)
-				return err
-			}
-			defer file.Close()
-
-			_, err = io.Copy(writer, file)
-			if err != nil {
-				log.Entry().Errorf("Failed to copy file content to zip for file: %s", path)
-				return err
-			}
-		}
-
-		fileCount++
-		return nil
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to zip folder: %w", err)
-	}
-
-	log.Entry().Infof("Successfully zipped %d files", fileCount)
-
-	return nil
-}
-
 // AuthResponse matches the Onapsis API response
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
@@ -197,17 +63,20 @@ type RefreshTokenRequest struct {
 // createSecureHTTPClient initializes and returns an HTTP client with a custom CA certificate
 func createSecureHTTPClient(certPath string) (*http.Client, error) {
 	// Read the CA certificate
+	fmt.Println("Reading cert from path: ", certPath)
 	caCert, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA certificate: %v", err)
 	}
 
+	fmt.Println("Creating cert pool")
 	// Create a certificate pool and append the internal CA
 	caCertPool := x509.NewCertPool()
 	if !caCertPool.AppendCertsFromPEM(caCert) {
 		return nil, fmt.Errorf("failed to append CA certificate")
 	}
 
+	fmt.Println("Creating http client with cert pool: ", caCertPool)
 	// Create and return the secure HTTP client
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -268,7 +137,7 @@ func refreshJwtToken(refreshToken, scanServiceUrl string) (*AuthResponse, error)
 func getJWTFromService(username, password, scanServiceUrl string) (*AuthResponse, error) {
 
 	url := scanServiceUrl + "/cca/v1.2/auth_token"
-	certPath := "/home/spirtoaca/dev/jenkins-library-onapsis-astanciu/ca.pem"
+	certPath := "./ca.pem"
 
 	fmt.Println("This is the scan servcie url: ", scanServiceUrl)
 
@@ -326,51 +195,52 @@ func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemet
 
 func runOnapsisExecuteScan(config *onapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils) error {
 	// Create a new ScanServer
+	fmt.Println("Input config: ", config)
 	log.Entry().Info("Creating scan server...")
-	NewScanServer(&piperHttp.Client{}, config.ScanServiceURL, config.OnapsisUsername, config.OnapsisPassword)
-	// if err != nil {
-	// 	return errors.Wrap(err, "failed to create scan server")
-	// }
+	server, err := NewScanServer(&piperHttp.Client{}, config.ScanServiceURL, config.OnapsisUsername, config.OnapsisPassword)
+	if err != nil {
+		return errors.Wrap(err, "failed to create scan server")
+	}
 
-	// // Call the ScanProject method
-	// log.Entry().Info("Scanning project...")
-	// response, err := server.ScanProject(config, telemetryData, utils, config.AppType)
-	// if err != nil {
-	// 	return errors.Wrap(err, "Failed to scan project")
-	// }
+	// Call the ScanProject method
+	log.Entry().Info("Scanning project...")
+	response, err := server.ScanProject(config, telemetryData, utils, config.AppType)
+	if err != nil {
+		return errors.Wrap(err, "Failed to scan project")
+	}
 
-	// // Monitor Job Status
-	// jobID := response.Result.JobID
-	// log.Entry().Infof("Monitoring job %s status...", jobID)
-	// err = server.MonitorJobStatus(jobID)
-	// if err != nil {
-	// 	return errors.Wrap(err, "Failed to scan project")
-	// }
+	// Monitor Job Status
+	jobID := response.Result.JobID
+	log.Entry().Infof("Monitoring job %s status...", jobID)
+	err = server.MonitorJobStatus(jobID)
+	if err != nil {
+		return errors.Wrap(err, "Failed to scan project")
+	}
 
-	// // Get Job Reports
-	// log.Entry().Info("Getting job reports...")
-	// err = server.GetJobReports(jobID, "onapsis_scan_report.zip")
-	// if err != nil {
-	// 	return errors.Wrap(err, "Failed to get job reports")
-	// }
+	// Get Job Reports
+	log.Entry().Info("Getting job reports...")
+	err = server.GetJobReports(jobID, "onapsis_scan_report.zip")
+	if err != nil {
+		return errors.Wrap(err, "Failed to get job reports")
+	}
 
-	// // Get Job Result Metrics
-	// log.Entry().Info("Getting job result metrics...")
-	// metrics, err := server.GetJobResultMetrics(jobID)
-	// if err != nil {
-	// 	return errors.Wrap(err, "Failed to get job result metrics")
-	// }
+	// Get Job Result Metrics
+	log.Entry().Info("Getting job result metrics...")
+	metrics, err := server.GetJobResultMetrics(jobID)
+	if err != nil {
+		return errors.Wrap(err, "Failed to get job result metrics")
+	}
 
-	// // Analyze metrics
-	// loc, numMandatory, numOptional := extractMetrics(metrics)
-	// // TODO: Change logging to print lines of code scanned in what amount of time
-	// log.Entry().Infof("Job Metrics - Lines of Code Scanned: %s, Mandatory Findings: %s, Optional Findings: %s", loc, numMandatory, numOptional)
+	// Analyze metrics
+	loc, numMandatory, numOptional := extractMetrics(metrics)
+	// TODO: Change logging to print lines of code scanned in what amount of time
+	log.Entry().Infof("Job Metrics - Lines of Code Scanned: %s, Mandatory Findings: %s, Optional Findings: %s", loc, numMandatory, numOptional)
 
-	// if config.FailOnMandatoryFinding && numMandatory != "0" {
-	// 	return errors.Errorf("Scan failed with %s mandatory findings", numMandatory)
-	// } else if config.FailOnOptionalFinding && numOptional != "0" {
-	// 	return errors.Errorf("Scan failed with %s optional findings", numOptional)
-	// }
+	if config.FailOnMandatoryFinding && numMandatory != "0" {
+		return errors.Errorf("Scan failed with %s mandatory findings", numMandatory)
+	} else if config.FailOnOptionalFinding && numOptional != "0" {
+		return errors.Errorf("Scan failed with %s optional findings", numOptional)
+	}
 
 	return nil
 }
@@ -456,7 +326,7 @@ func (srv *ScanServer) ScanProject(config *onapsisExecuteScanOptions, telemetryD
 		},
 		"asset": {
 			"type": "GITURL",
-			"url": "https://gitlab.corp.onapsis.com/spirtoaca/cloud-cf-helloworld-nodejs.git"
+			"url": "%s"
 		},
 		"configuration": {},
 		"scan_scope": {
@@ -466,7 +336,7 @@ func (srv *ScanServer) ScanProject(config *onapsisExecuteScanOptions, telemetryD
 			"branch_name": "main",
 			"exclude_packages": []
 		}
-	}`, language)
+	}`, config.ScanGitURL, language)
 
 	scanRequestReader := strings.NewReader(scanRequest)
 	scanRequestHeader := http.Header{
@@ -547,10 +417,13 @@ func (srv *ScanServer) GetJobReports(jobID string, reportArchiveName string) err
 	defer outFile.Close()
 
 	// Copy the response body to the file
+	log.Entry().Info("Writing report file...")
 	_, err = io.Copy(outFile, response.Body)
 	if err != nil {
 		return errors.Wrap(err, "Failed to write report archive")
 	}
+
+	log.Entry().Info("Report written.")
 
 	return nil
 }
@@ -587,9 +460,9 @@ func extractMetrics(response GetJobResultMetricsResponse) (loc, numMandatory, nu
 }
 
 func getJwtExpirationTime(expiresIn int) time.Time {
-	tokenValidityInSeconds := time.Duration(expiresIn) * time.Second
+	tokenValidity := time.Duration(expiresIn * int(time.Second))
 
-	return time.Now().Add(tokenValidityInSeconds)
+	return time.Now().Add(tokenValidity)
 }
 
 type ScanProjectResponse struct {
