@@ -1,0 +1,78 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    # Build the Docker image
+    - name: Build Docker Image
+      run: |
+        docker build -t piper:latest .
+
+    # Create Docker container from the image
+    - name: Create Docker Container
+      run: |
+        docker create --name piper piper:latest
+
+    # Copy the binary from the Docker container
+    - name: Copy Binary from Docker Container
+      run: |
+        docker cp piper:/build/piper ./piper
+
+    # Remove the Docker container
+    - name: Remove Docker Container
+      run: |
+        docker rm piper
+
+    # Get the current version tag from the repository
+    - name: Get Latest Tag across all branches
+      id: get_tag
+      run: |
+        git fetch --tags   # Fetch all tags from the repository
+        TAG=$(git tag --sort=-v:refname | head -n 1)  # Get the latest tag
+        echo "Latest tag: $TAG"
+        echo "::set-output name=TAG::$TAG"  # Set the output variable
+
+    # Create a new tag (e.g., increase patch version)
+    - name: Create New Tag
+      id: create_tag
+      run: |
+        NEW_TAG=$(echo ${{ steps.get_tag.outputs.TAG }} | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+        git tag $NEW_TAG
+        git push origin $NEW_TAG
+        echo "::set-output name=NEW_TAG::$NEW_TAG"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Create a new release
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.create_tag.outputs.NEW_TAG }}
+        release_name: ${{ steps.create_tag.outputs.NEW_TAG }}
+        draft: false
+        prerelease: false
+
+    # Upload the binary to the release
+    - name: Upload Binary to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./piper
+        asset_name: piper
+        asset_content_type: application/octet-stream

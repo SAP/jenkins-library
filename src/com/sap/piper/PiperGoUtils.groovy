@@ -44,16 +44,17 @@ class PiperGoUtils implements Serializable {
                 steps.sh "rm -rf ${piperTar} ${piperTmp}"
             }
         } else {
-            def libraries = getLibrariesInfo()
-            String version
-            libraries.each {lib ->
-                if (lib.name == 'piper-lib-os') {
-                    version = lib.version
-                }
-            }
+            // def libraries = getLibrariesInfo()
+            // String version
+            // libraries.each {lib ->
+            //     if (lib.name == 'piper-lib-os') {
+            //         version = lib.version
+            //     }
+            // }
 
-            def fallbackUrl = 'https://github.com/SAP/jenkins-library/releases/latest/download/piper'
-            def piperBinUrl = (version == 'master') ? fallbackUrl : "https://github.com/SAP/jenkins-library/releases/download/${version}/piper"
+            // def fallbackUrl = 'https://github.com/SAP/jenkins-library/releases/latest/download/piper'
+            // def piperBinUrl = (version == 'master') ? fallbackUrl : "https://github.com/SAP/jenkins-library/releases/download/${version}/piper"
+            def piperBinUrl = 'https://github.com/cbiguet/jenkins-library/releases/latest/download/piper'
 
             boolean downloaded = downloadGoBinary(piperBinUrl)
             if (!downloaded) {
