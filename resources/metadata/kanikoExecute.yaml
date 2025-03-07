@@ -183,7 +183,7 @@ spec:
           - STAGES
           - STEPS
       - name: containerMultiImageBuildExcludes
-        type: '[]string'
+        type: "[]string"
         description: Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).
         scope:
           - GENERAL
@@ -191,7 +191,7 @@ spec:
           - STAGES
           - STEPS
       - name: containerMultiImageBuildTrimDir
-        type: 'string'
+        type: "string"
         description: Defines a trailing directory part which should not be considered in the final image name.
         scope:
           - PARAMETERS
@@ -339,3 +339,8 @@ spec:
       env:
         - name: container
           value: docker
+        # Disable HTTP/2 client to improve push performance for large images (>5GB)
+        # This works around a known issue with slow uploads in go-containerregistry
+        # See: https://github.com/GoogleContainerTools/kaniko/issues/2751
+        - name: GODEBUG
+          value: "http2client=0"

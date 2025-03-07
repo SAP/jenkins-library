@@ -581,7 +581,7 @@ func kanikoExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
+				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}, {Name: "GODEBUG", Value: "http2client=0"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
