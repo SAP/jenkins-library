@@ -195,6 +195,9 @@ The leading software component is the software component that is, as opposed to 
 In the `repositories` section of the add-on descriptor file the reuse software component should be the first, whereas a leading software component would be the last in order.
 This is to make sure that that the software components are imported in the correct order, making sure to adhere to dependencies.
 
+!!! caution "Software Component Dependencies"
+    In case the involved software components have dependencies between them, define them in [software component](https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/software-component-relations) relations!
+
 The `version` of a software component influcences two aspects:
 
 - The given version will be used as part of the [target vector](#target-vector)
