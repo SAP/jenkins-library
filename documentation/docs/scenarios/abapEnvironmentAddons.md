@@ -196,7 +196,7 @@ In the `repositories` section of the add-on descriptor file the reuse software c
 This is to make sure that that the software components are imported in the correct order, making sure to adhere to dependencies.
 
 !!! caution "Software Component Dependencies"
-    In case the involved software components have dependencies between them, define them in [software component](https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/software-component-relations) relations!
+    In case the involved software components have dependencies between them, define them in [software component relations](https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/software-component-relations).
 
 The `version` of a software component influcences two aspects:
 
