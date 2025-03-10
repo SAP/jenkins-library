@@ -39,15 +39,11 @@ func TestShellRun(t *testing.T) {
 		t.Run("success case", func(t *testing.T) {
 			t.Run("stdin-stdout", func(t *testing.T) {
 				expectedOut := "Stdout: command /bin/bash - Stdin: myScript\n"
-				if oStr := o.String(); oStr != expectedOut {
-					t.Errorf("expected: %v got: %v", expectedOut, oStr)
-				}
+				assert.Equal(t, expectedOut, o.String())
 			})
 			t.Run("stderr", func(t *testing.T) {
 				expectedErr := "Stderr: command /bin/bash"
-				if !strings.Contains(e.String(), expectedErr) {
-					t.Errorf("expected: %v got: %v", expectedErr, e.String())
-				}
+				assert.Contains(t, e.String(), expectedErr)
 			})
 		})
 	})
@@ -69,15 +65,11 @@ func TestExecutableRun(t *testing.T) {
 
 			t.Run("stdin", func(t *testing.T) {
 				expectedOut := "foo bar baz\n"
-				if oStr := stdout.String(); oStr != expectedOut {
-					t.Errorf("expected: %v got: %v", expectedOut, oStr)
-				}
+				assert.Equal(t, expectedOut, stdout.String())
 			})
 			t.Run("stderr", func(t *testing.T) {
 				expectedErr := "Stderr: command echo"
-				if !strings.Contains(stderr.String(), expectedErr) {
-					t.Errorf("expected: %v got: %v", expectedErr, stderr.String())
-				}
+				assert.Contains(t, stderr.String(), expectedErr)
 			})
 		})
 
@@ -129,13 +121,8 @@ func TestPrepareOut(t *testing.T) {
 		s := Command{}
 		s.prepareOut()
 
-		if s.stdout != os.Stdout {
-			t.Errorf("expected out to be os.Stdout")
-		}
-
-		if s.stderr != os.Stderr {
-			t.Errorf("expected err to be os.Stderr")
-		}
+		assert.Equal(t, os.Stdout, s.stdout, "expected out to be os.Stdout")
+		assert.Equal(t, os.Stderr, s.stderr, "expected err to be os.Stderr")
 	})
 
 	t.Run("custom", func(t *testing.T) {
@@ -150,14 +137,10 @@ func TestPrepareOut(t *testing.T) {
 		s.stderr.Write([]byte(expectErr))
 
 		t.Run("out", func(t *testing.T) {
-			if o.String() != expectOut {
-				t.Errorf("expected: %v got: %v", expectOut, o.String())
-			}
+			assert.Equal(t, expectOut, o.String())
 		})
 		t.Run("err", func(t *testing.T) {
-			if e.String() != expectErr {
-				t.Errorf("expected: %v got: %v", expectErr, e.String())
-			}
+			assert.Equal(t, expectErr, e.String())
 		})
 	})
 }
@@ -216,23 +199,131 @@ func TestCmdPipes(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		o, e, err := cmdPipes(cmd)
 		t.Run("no error", func(t *testing.T) {
-			if err != nil {
-				t.Errorf("error occurred but no error expected")
-			}
+			assert.NoError(t, err)
 		})
 
 		t.Run("out pipe", func(t *testing.T) {
-			if o == nil {
-				t.Errorf("no pipe received")
-			}
+			assert.NotNil(t, o, "no pipe received")
 		})
 
 		t.Run("err pipe", func(t *testing.T) {
-			if e == nil {
-				t.Errorf("no pipe received")
-			}
+			assert.NotNil(t, e, "no pipe received")
 		})
 	})
+}
+
+func TestValidateExecutable(t *testing.T) {
+	tests := []struct {
+		name       string
+		executable string
+		wantErr    bool
+		errMsg     string
+	}{
+		{
+			name:       "valid executable",
+			executable: "go",
+			wantErr:    false,
+		},
+		{
+			name:       "empty executable",
+			executable: "",
+			wantErr:    true,
+			errMsg:     "executable name cannot be empty",
+		},
+		{
+			name:       "path traversal forward slash",
+			executable: "../malicious",
+			wantErr:    true,
+			errMsg:     "must not contain path separators",
+		},
+		{
+			name:       "path traversal backslash",
+			executable: "..\\malicious",
+			wantErr:    true,
+			errMsg:     "must not contain path separators",
+		},
+		{
+			name:       "shell metacharacters",
+			executable: "ls&pwd",
+			wantErr:    true,
+			errMsg:     "contains shell metacharacters",
+		},
+		{
+			name:       "too long executable",
+			executable: strings.Repeat("a", 256),
+			wantErr:    true,
+			errMsg:     "exceeds maximum length",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateExecutable(tt.executable)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSanitizeParams(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  []string
+		want    []string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:   "valid parameters",
+			params: []string{"-v", "--flag", "value"},
+			want:   []string{"-v", "--flag", "value"},
+		},
+		{
+			name:    "too many parameters",
+			params:  make([]string, 4097),
+			wantErr: true,
+			errMsg:  "too many parameters",
+		},
+		{
+			name:    "parameter too long",
+			params:  []string{strings.Repeat("a", 32769)},
+			wantErr: true,
+			errMsg:  "exceeds maximum length",
+		},
+		{
+			name:   "removes control characters",
+			params: []string{"test\x00file", "normal"},
+			want:   []string{"testfile", "normal"},
+		},
+		{
+			name:   "removes shell metacharacters",
+			params: []string{"file&pwd", "arg|ls"},
+			want:   []string{"filepwd", "argls"},
+		},
+		{
+			name:    "empty after sanitization",
+			params:  []string{"&|;<>"},
+			wantErr: true,
+			errMsg:  "empty after sanitization",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := sanitizeParams(tt.params)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
 }
 
 // based on https://golang.org/src/os/exec/exec_test.go
