@@ -3,12 +3,13 @@ package vault
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/hashicorp/vault/api"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/hashicorp/vault/api"
 )
 
 // GetSecret uses the given path to fetch a secret from vault
@@ -176,6 +177,7 @@ func (c *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration
 	if ttl < 0 {
 		return 0, nil
 	}
+	log.Entry().Debugf("GetAppRoleSecretIDTtl - secretIDData: %#v", data)
 
 	return ttl, nil
 }
