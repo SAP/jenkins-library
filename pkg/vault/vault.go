@@ -3,12 +3,13 @@ package vault
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/hashicorp/vault/api"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/hashicorp/vault/api"
 )
 
 // GetSecret uses the given path to fetch a secret from vault
@@ -138,6 +139,14 @@ func (c *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string,
 		return "", fmt.Errorf("new secret-id from approle path %s has an unexpected type %T expected 'string'", reqPath, secretIDRaw)
 	}
 
+	// TODO: remove after testing
+	log.Entry().Debugf("GenerateNewAppRoleSecret - secretID: %#v", secretID)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - appRoleName: %#v", appRoleName)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - appRolePath: %#v", appRolePath)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - secretIDData: %#v", secretIDData)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - new secret data: %#v", secret)
+	log.Entry().Debugf("GenerateNewAppRoleSecret - new secret ID: %#v", newSecretID)
+
 	return newSecretID, nil
 }
 
@@ -168,6 +177,7 @@ func (c *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration
 	if ttl < 0 {
 		return 0, nil
 	}
+	log.Entry().Debugf("GetAppRoleSecretIDTtl - secretIDData: %#v", data)
 
 	return ttl, nil
 }
