@@ -20,7 +20,7 @@ require (
 	github.com/buildpacks/lifecycle v0.18.5
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/docker/cli v27.1.0+incompatible
-	github.com/docker/docker v27.1.1+incompatible
+	github.com/docker/docker v27.5.1+incompatible
 	github.com/evanphx/json-patch v5.7.0+incompatible
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -103,6 +103,7 @@ require (
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/sys/user v0.1.0 // indirect
+	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
