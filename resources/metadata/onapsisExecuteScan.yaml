@@ -92,6 +92,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: onapsisCertificatePath
+        type: string
+        description: "The path to the Onapsis scan server certificate"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: debugMode
         type: bool
         description: "Enable debug mode for the scan"

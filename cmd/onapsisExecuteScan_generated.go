@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type onapsisExecuteScanOptions struct {
+type OnapsisExecuteScanOptions struct {
 	ScanServiceURL         string `json:"scanServiceUrl,omitempty"`
 	ScanGitURL             string `json:"scanGitUrl,omitempty"`
 	OnapsisUsername        string `json:"onapsisUsername,omitempty"`
@@ -25,6 +25,7 @@ type onapsisExecuteScanOptions struct {
 	AppType                string `json:"appType,omitempty" validate:"possible-values=ABAP SAPUI5"`
 	FailOnMandatoryFinding bool   `json:"failOnMandatoryFinding,omitempty"`
 	FailOnOptionalFinding  bool   `json:"failOnOptionalFinding,omitempty"`
+	OnapsisCertificatePath string `json:"onapsisCertificatePath,omitempty"`
 	DebugMode              bool   `json:"debugMode,omitempty"`
 }
 
@@ -33,7 +34,7 @@ func OnapsisExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "onapsisExecuteScan"
 
 	metadata := onapsisExecuteScanMetadata()
-	var stepConfig onapsisExecuteScanOptions
+	var stepConfig OnapsisExecuteScanOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
@@ -145,7 +146,7 @@ func OnapsisExecuteScanCommand() *cobra.Command {
 	return createOnapsisExecuteScanCmd
 }
 
-func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteScanOptions) {
+func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *OnapsisExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.ScanServiceURL, "scanServiceUrl", os.Getenv("PIPER_scanServiceUrl"), "URL of the scan service")
 	cmd.Flags().StringVar(&stepConfig.ScanGitURL, "scanGitUrl", os.Getenv("PIPER_scanGitUrl"), "The target git repo to scan")
 	cmd.Flags().StringVar(&stepConfig.OnapsisUsername, "onapsisUsername", os.Getenv("PIPER_onapsisUsername"), "Onapsis username for JWT authentication")
@@ -154,6 +155,7 @@ func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteSc
 	cmd.Flags().StringVar(&stepConfig.AppType, "appType", `SAPUI5`, "Type of the application to be scanned")
 	cmd.Flags().BoolVar(&stepConfig.FailOnMandatoryFinding, "failOnMandatoryFinding", true, "Fail the build if mandatory findings are detected")
 	cmd.Flags().BoolVar(&stepConfig.FailOnOptionalFinding, "failOnOptionalFinding", false, "Fail the build if optional findings are detected")
+	cmd.Flags().StringVar(&stepConfig.OnapsisCertificatePath, "onapsisCertificatePath", os.Getenv("PIPER_onapsisCertificatePath"), "The path to the Onapsis scan server certificate")
 	cmd.Flags().BoolVar(&stepConfig.DebugMode, "debugMode", false, "Enable debug mode for the scan")
 
 	cmd.MarkFlagRequired("scanServiceUrl")
@@ -266,6 +268,15 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "onapsisCertificatePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_onapsisCertificatePath"),
 					},
 					{
 						Name:        "debugMode",

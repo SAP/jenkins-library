@@ -63,20 +63,17 @@ type RefreshTokenRequest struct {
 // createSecureHTTPClient initializes and returns an HTTP client with a custom CA certificate
 func createSecureHTTPClient(certPath string) (*http.Client, error) {
 	// Read the CA certificate
-	fmt.Println("Reading cert from path: ", certPath)
 	caCert, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA certificate: %v", err)
 	}
 
-	fmt.Println("Creating cert pool")
 	// Create a certificate pool and append the internal CA
 	caCertPool := x509.NewCertPool()
 	if !caCertPool.AppendCertsFromPEM(caCert) {
 		return nil, fmt.Errorf("failed to append CA certificate")
 	}
 
-	fmt.Println("Creating http client with cert pool: ", caCertPool)
 	// Create and return the secure HTTP client
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -90,7 +87,7 @@ func createSecureHTTPClient(certPath string) (*http.Client, error) {
 	return client, nil
 }
 
-func refreshJwtToken(refreshToken, scanServiceUrl string) (*AuthResponse, error) {
+func refreshJwtToken(refreshToken, scanServiceUrl string, certificatePath string) (*AuthResponse, error) {
 	refreshTokenURL := scanServiceUrl + "/cca/v1.2/auth_token"
 
 	// Create HTTP request
@@ -102,9 +99,7 @@ func refreshJwtToken(refreshToken, scanServiceUrl string) (*AuthResponse, error)
 	// Set and format the expected Cookie header
 	req.Header.Set("Cookie", fmt.Sprintf("refresh_token=%s", refreshToken))
 
-	certPath := "/home/ca.pem"
-
-	client, err = createSecureHTTPClient(certPath)
+	client, err = createSecureHTTPClient(certificatePath)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -134,10 +129,9 @@ func refreshJwtToken(refreshToken, scanServiceUrl string) (*AuthResponse, error)
 }
 
 // getJWTFromService fetches a JWT using Basic Auth
-func getJWTFromService(username, password, scanServiceUrl string) (*AuthResponse, error) {
+func getJWTFromService(username, password, scanServiceUrl string, certificatePath string) (*AuthResponse, error) {
 
 	url := scanServiceUrl + "/cca/v1.2/auth_token"
-	certPath := "./ca.pem"
 
 	fmt.Println("This is the scan servcie url: ", scanServiceUrl)
 
@@ -150,7 +144,7 @@ func getJWTFromService(username, password, scanServiceUrl string) (*AuthResponse
 	// Set Basic Auth (Postman Authorization tab)
 	req.SetBasicAuth(username, password)
 
-	client, err = createSecureHTTPClient(certPath)
+	client, err = createSecureHTTPClient(certificatePath)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -176,7 +170,7 @@ func getJWTFromService(username, password, scanServiceUrl string) (*AuthResponse
 	return &authResp, nil
 }
 
-func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemetry.CustomData) {
+func onapsisExecuteScan(config OnapsisExecuteScanOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newOnapsisExecuteScanUtils()
@@ -187,32 +181,32 @@ func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemet
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runOnapsisExecuteScan(&config, telemetryData, utils)
+	err := runOnapsisExecuteScan(config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runOnapsisExecuteScan(config *onapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils) error {
+func runOnapsisExecuteScan(config OnapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils) error {
 	// Create a new ScanServer
 	fmt.Println("Input config: ", config)
 	log.Entry().Info("Creating scan server...")
-	server, err := NewScanServer(&piperHttp.Client{}, config.ScanServiceURL, config.OnapsisUsername, config.OnapsisPassword)
+	server, err := NewScanServer(&piperHttp.Client{}, config)
 	if err != nil {
 		return errors.Wrap(err, "failed to create scan server")
 	}
 
 	// Call the ScanProject method
 	log.Entry().Info("Scanning project...")
-	response, err := server.ScanProject(config, telemetryData, utils, config.AppType)
+	startScanResponse, err := server.ScanProject(config, telemetryData, utils)
 	if err != nil {
 		return errors.Wrap(err, "Failed to scan project")
 	}
 
 	// Monitor Job Status
-	jobID := response.Result.JobID
+	jobID := startScanResponse.Result.JobID
 	log.Entry().Infof("Monitoring job %s status...", jobID)
-	err = server.MonitorJobStatus(jobID)
+	jobStatusResponse, err := server.MonitorJobStatus(jobID)
 	if err != nil {
 		return errors.Wrap(err, "Failed to scan project")
 	}
@@ -236,6 +230,8 @@ func runOnapsisExecuteScan(config *onapsisExecuteScanOptions, telemetryData *tel
 	// TODO: Change logging to print lines of code scanned in what amount of time
 	log.Entry().Infof("Job Metrics - Lines of Code Scanned: %s, Mandatory Findings: %s, Optional Findings: %s", loc, numMandatory, numOptional)
 
+	log.Entry().Infof("The findings can be viewed here: %s/ui/#/admin/scans/%s/%s/findings", config.ScanServiceURL, jobID, jobStatusResponse.Result.Details.Children[0])
+
 	if config.FailOnMandatoryFinding && numMandatory != "0" {
 		return errors.Errorf("Scan failed with %s mandatory findings", numMandatory)
 	} else if config.FailOnOptionalFinding && numOptional != "0" {
@@ -250,11 +246,15 @@ type ScanServer struct {
 	client                  piperHttp.Uploader
 	authToken               *AuthResponse
 	authTokenExpirationTime time.Time
+	certificatePath         string
 }
 
-func NewScanServer(client piperHttp.Uploader, serverUrl string, onapsisUsername string, onapsisPassword string) (*ScanServer, error) {
+func NewScanServer(client piperHttp.Uploader, config OnapsisExecuteScanOptions) (*ScanServer, error) {
 
-	token, tokenErr := getJWTFromService(onapsisUsername, onapsisPassword, serverUrl)
+	scanServiceUrl := config.ScanServiceURL
+	certificatePath := config.OnapsisCertificatePath
+
+	token, tokenErr := getJWTFromService(config.OnapsisUsername, config.OnapsisPassword, scanServiceUrl, certificatePath)
 	if tokenErr != nil {
 		log.Entry().WithError(tokenErr).Fatal("Error obtaining JWT")
 	}
@@ -266,13 +266,13 @@ func NewScanServer(client piperHttp.Uploader, serverUrl string, onapsisUsername 
 	options := getHttpOptionsWithAuth(token.AccessToken)
 	client.SetOptions(options)
 
-	server := &ScanServer{serverUrl: serverUrl, client: client, authToken: token, authTokenExpirationTime: tokenExpirationTime}
+	server := &ScanServer{serverUrl: scanServiceUrl, client: client, authToken: token, authTokenExpirationTime: tokenExpirationTime, certificatePath: certificatePath}
 
 	return server, nil
 }
 
 func (srv *ScanServer) RefreshServerAuth() {
-	newJwt, refreshTokenErr := refreshJwtToken(srv.authToken.RefreshToken, srv.serverUrl)
+	newJwt, refreshTokenErr := refreshJwtToken(srv.authToken.RefreshToken, srv.serverUrl, srv.certificatePath)
 
 	if refreshTokenErr != nil {
 		log.Entry().WithError(refreshTokenErr).Fatal("Error obtaining refreshed JWT")
@@ -306,7 +306,7 @@ func (srv *ScanServer) SendRequest(method, url string, body io.Reader, header ht
 	return srv.client.SendRequest(method, url, body, header, cookies)
 }
 
-func (srv *ScanServer) ScanProject(config *onapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils, language string) (ScanProjectResponse, error) {
+func (srv *ScanServer) ScanProject(config OnapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils) (ScanProjectResponse, error) {
 	// Get workspace path
 	log.Entry().Info("Getting workspace path...") // DEBUG
 	workspace, err := utils.Getwd()
@@ -336,7 +336,7 @@ func (srv *ScanServer) ScanProject(config *onapsisExecuteScanOptions, telemetryD
 			"branch_name": "main",
 			"exclude_packages": []
 		}
-	}`, config.ScanGitURL, language)
+	}`, config.ScanGitURL, config.AppType)
 
 	scanRequestReader := strings.NewReader(scanRequest)
 	scanRequestHeader := http.Header{
@@ -361,30 +361,30 @@ func (srv *ScanServer) ScanProject(config *onapsisExecuteScanOptions, telemetryD
 	return responseData, nil
 }
 
-func (srv *ScanServer) GetScanJobStatus(jobID string) (GetScanJobStatusResponse, error) {
+func (srv *ScanServer) GetScanJobStatus(jobID string) (*GetScanJobStatusResponse, error) {
 	// Send request
 	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID, nil, nil, nil)
 	if err != nil {
-		return GetScanJobStatusResponse{}, errors.Wrap(err, "failed to send request")
+		return &GetScanJobStatusResponse{}, errors.Wrap(err, "failed to send request")
 	}
 
 	var responseData GetScanJobStatusResponse
 	err = handleResponse(response, &responseData)
 	if err != nil {
-		return responseData, errors.Wrap(err, "Failed to parse response")
+		return &responseData, errors.Wrap(err, "Failed to parse response")
 	}
 
-	return responseData, nil
+	return &responseData, nil
 }
 
-func (srv *ScanServer) MonitorJobStatus(jobID string) error {
+func (srv *ScanServer) MonitorJobStatus(jobID string) (*GetScanJobStatusResponse, error) {
 	// Polling interval
 	interval := time.Second * 10 // Check every 10 seconds
 	for {
 		// Get the job status
 		response, err := srv.GetScanJobStatus(jobID)
 		if err != nil {
-			return errors.Wrap(err, "Failed to get scan job status")
+			return &GetScanJobStatusResponse{}, errors.Wrap(err, "Failed to get scan job status")
 		}
 
 		// Log job progress
@@ -393,9 +393,9 @@ func (srv *ScanServer) MonitorJobStatus(jobID string) error {
 		// Check if the job is complete
 		if response.Result.Status == "SUCCESS" {
 			log.Entry().Infof("Job %s progress: %d%%. Status: %s", jobID, response.Result.Progress, response.Result.Status)
-			return nil
+			return response, nil
 		} else if response.Result.Status == "FAILURE" {
-			return errors.Errorf("Job %s failed with status: %s", jobID, response.Result.Status)
+			return &GetScanJobStatusResponse{}, errors.Errorf("Job %s failed with status: %s", jobID, response.Result.Status)
 		}
 
 		// Wait before checking again
@@ -486,6 +486,9 @@ type GetScanJobStatusResponse struct {
 		Status        string    `json:"status"`
 		Progress      int       `json:"progress"`
 		Messages      []Message `json:"messages"`
+		Details       struct {
+			Children []string `json:"children"`
+		} `json:"details"`
 	} `json:"result"`
 }
 

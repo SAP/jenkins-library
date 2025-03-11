@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type onapsisExecuteScanMockUtils struct {
@@ -25,7 +26,7 @@ func TestRunOnapsisExecuteScan(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 		// init
-		config := onapsisExecuteScanOptions{}
+		config := OnapsisExecuteScanOptions{}
 
 		utils := newOnapsisExecuteScanTestsUtils()
 		utils.AddFile("file.txt", []byte("dummy content"))
@@ -40,7 +41,7 @@ func TestRunOnapsisExecuteScan(t *testing.T) {
 	t.Run("error path", func(t *testing.T) {
 		t.Parallel()
 		// init
-		config := onapsisExecuteScanOptions{}
+		config := OnapsisExecuteScanOptions{}
 
 		utils := newOnapsisExecuteScanTestsUtils()
 
