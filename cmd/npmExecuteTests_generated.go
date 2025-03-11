@@ -23,9 +23,9 @@ import (
 type npmExecuteTestsOptions struct {
 	InstallCommand   string                   `json:"installCommand,omitempty"`
 	RunCommand       string                   `json:"runCommand,omitempty"`
-	VaultURLs        []map[string]interface{} `json:"vaultURLs,omitempty"`
-	VaultUsername    string                   `json:"vaultUsername,omitempty"`
-	VaultPassword    string                   `json:"vaultPassword,omitempty"`
+	URLs             []map[string]interface{} `json:"URLs,omitempty"`
+	Username         string                   `json:"username,omitempty"`
+	Password         string                   `json:"password,omitempty"`
 	BaseURL          string                   `json:"baseUrl,omitempty"`
 	UsernameEnvVar   string                   `json:"usernameEnvVar,omitempty"`
 	PasswordEnvVar   string                   `json:"passwordEnvVar,omitempty"`
@@ -200,8 +200,8 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm ci`, "Command to be executed for installation`.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `npm run wdi5`, "Command to be executed for running tests`.")
 
-	cmd.Flags().StringVar(&stepConfig.VaultUsername, "vaultUsername", os.Getenv("PIPER_vaultUsername"), "The base URL username.")
-	cmd.Flags().StringVar(&stepConfig.VaultPassword, "vaultPassword", os.Getenv("PIPER_vaultPassword"), "The base URL password.")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The base URL username used to authenticate")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The base URL password used to authenticate")
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `http://localhost:8080/index.html`, "Base URL of the application to be tested.")
 	cmd.Flags().StringVar(&stepConfig.UsernameEnvVar, "usernameEnvVar", `wdi5_username`, "Env var for username.")
 	cmd.Flags().StringVar(&stepConfig.PasswordEnvVar, "passwordEnvVar", `wdi5_password`, "Env var for password.")
@@ -243,7 +243,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Default:     `npm run wdi5`,
 					},
 					{
-						Name: "vaultURLs",
+						Name: "URLs",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -257,7 +257,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
-						Name: "vaultUsername",
+						Name: "username",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -269,10 +269,10 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_vaultUsername"),
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
-						Name: "vaultPassword",
+						Name: "password",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -284,7 +284,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_vaultPassword"),
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "baseUrl",
