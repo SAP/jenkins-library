@@ -101,7 +101,7 @@ withCredentials([usernamePassword(
 
 There is also the option to use [vault for test credentials](https://www.project-piper.io/infrastructure/vault/#using-vault-for-test-credentials).
 
-In a Pipeline Template, a [Stage Exit](../extensibility/#1-extend-individual-stages) can be used to fetch the credentials and store them in the environment. As the environment is passed down to uiVeri5ExecuteTests, the variables will be present there. This is an example for the stage exit `.pipeline/extensions/Acceptance.groovy` where the `credentialsId` is read from the `config.yml`:
+In a Pipeline Template, a [Stage Exit](../extensibility.md#1-extend-individual-stages) can be used to fetch the credentials and store them in the environment. As the environment is passed down to uiVeri5ExecuteTests, the variables will be present there. This is an example for the stage exit `.pipeline/extensions/Acceptance.groovy` where the `credentialsId` is read from the `config.yml`:
 
 ```groovy
 void call(Map params) {

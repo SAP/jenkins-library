@@ -30,7 +30,7 @@ spec:
           - STEPS
         mandatory: true
         default: "npm run wdi5"
-      - name: vaultURLs
+      - name: URLs
         type: "[]map[string]interface{}"
         description: |
           An array of objects, each representing an application URL with associated credentials.
@@ -46,9 +46,9 @@ spec:
           - type: vaultSecret
             default: appMetadata
             name: appMetadataVaultSecretName
-      - name: vaultUsername
+      - name: username
         type: "string"
-        description: The base URL username.
+        description: The base URL username used to authenticate
         scope:
           - PARAMETERS
           - STAGES
@@ -57,9 +57,9 @@ spec:
           - type: vaultSecret
             default: appMetadata
             name: appMetadataVaultSecretName
-      - name: vaultPassword
+      - name: password
         type: "string"
-        description: The base URL password.
+        description: The base URL password used to authenticate
         scope:
           - PARAMETERS
           - STAGES
