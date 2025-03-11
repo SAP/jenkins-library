@@ -139,14 +139,8 @@ func (c *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string,
 		return "", fmt.Errorf("new secret-id from approle path %s has an unexpected type %T expected 'string'", reqPath, secretIDRaw)
 	}
 
-	// TODO: remove after testing
-	log.Entry().Debugf("GenerateNewAppRoleSecret - secretID: %#v", secretID)
-	log.Entry().Debugf("GenerateNewAppRoleSecret - appRoleName: %#v", appRoleName)
-	log.Entry().Debugf("GenerateNewAppRoleSecret - appRolePath: %#v", appRolePath)
-	log.Entry().Debugf("GenerateNewAppRoleSecret - secretIDData: %#v", secretIDData)
-	log.Entry().Debugf("GenerateNewAppRoleSecret - new secret data: %#v", secret)
-	log.Entry().Debugf("GenerateNewAppRoleSecret - new secret ID: %#v", newSecretID)
-
+	//  secret_id_accessor is used to identify the secret-id in the vault and is unique to each secret-id
+	log.Entry().Debugf("GenerateNewAppRoleSecret - secret_id_accessor: %s ", secret.Data["secret_id_accessor"])
 	return newSecretID, nil
 }
 
@@ -177,8 +171,8 @@ func (c *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration
 	if ttl < 0 {
 		return 0, nil
 	}
-	log.Entry().Debugf("GetAppRoleSecretIDTtl - secretIDData: %#v", data)
-
+	//  secret_id_accessor is used to identify the secret-id in the vault and is unique to each secret-id
+	log.Entry().Debugf("GetAppRoleSecretIDTtl - secret_id_accessor: %s  & creation_time: %s", data["secret_id_accessor"], data["creation_time"])
 	return ttl, nil
 }
 
