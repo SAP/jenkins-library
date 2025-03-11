@@ -120,6 +120,7 @@ nav:
         - githubPublishRelease: steps/githubPublishRelease.md
         - githubSetCommitStatus: steps/githubSetCommitStatus.md
         - gitopsUpdateDeployment: steps/gitopsUpdateDeployment.md
+        - golangBuild: steps/golangBuild.md
         - gradleExecuteBuild: steps/gradleExecuteBuild.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
