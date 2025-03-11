@@ -153,7 +153,7 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils, pro
 		{Name: "forceUpdate", Value: true, Force: true},
 		{Name: "offline", Value: false, Force: true},
 		{Name: "resolveAllDependencies", Value: false, Force: false},
-		{Name: "failErrorLevel", Value: "ALL", Force: true},
+		{Name: "failErrorLevel", Value: "ALL", Force: false},
 		{Name: "case.sensitive.glob", Value: false},
 		{Name: "followSymbolicLinks", Value: true},
 	}...)

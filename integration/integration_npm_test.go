@@ -18,7 +18,7 @@ import (
 )
 
 func TestNPMIntegrationRunScriptsWithOptions(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
@@ -70,7 +70,7 @@ cd /test
 }
 
 func TestNPMIntegrationRegistrySetInFlags(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
@@ -121,7 +121,7 @@ cd /test
 }
 
 func TestNPMIntegrationRegistrySetInNpmrc(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
@@ -172,7 +172,7 @@ cd /test
 }
 
 func TestNPMIntegrationRegistryWithTwoModules(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
