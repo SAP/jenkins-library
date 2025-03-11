@@ -296,7 +296,7 @@ func (srv *ScanServer) ScanProject(config onapsisExecuteScanOptions, telemetryDa
 			"branch_name": "%s",
 			"exclude_packages": []
 		}
-	}`, config.ScanGitURL, config.ScanGitBranch, config.AppType)
+	}`, config.ScanGitURL, config.AppType, config.ScanGitBranch)
 
 	scanRequestReader := strings.NewReader(scanRequest)
 	scanRequestHeader := http.Header{
