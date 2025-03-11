@@ -24,7 +24,7 @@ import (
 type SecretData = map[string]interface{}
 
 func TestVaultIntegrationGetSecret(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
 
@@ -70,7 +70,7 @@ func TestVaultIntegrationGetSecret(t *testing.T) {
 }
 
 func TestVaultIntegrationWriteSecret(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
 
@@ -134,7 +134,7 @@ func TestVaultIntegrationWriteSecret(t *testing.T) {
 }
 
 func TestVaultIntegrationAppRole(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
 	const appRolePath = "auth/approle/role/test"
@@ -214,7 +214,7 @@ func TestVaultIntegrationAppRole(t *testing.T) {
 }
 
 func TestVaultIntegrationTokenRevocation(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
 	const appRolePath = "auth/approle/role/test"

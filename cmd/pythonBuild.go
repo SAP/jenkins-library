@@ -52,7 +52,6 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 }
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
-
 	pipInstallFlags := []string{"install", "--upgrade"}
 	virutalEnvironmentPathMap := make(map[string]string)
 
@@ -106,10 +105,11 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
-
 	var flags []string
 	flags = append(flags, config.BuildFlags...)
-	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
+	flags = append(flags, "setup.py")
+	flags = append(flags, config.SetupFlags...)
+	flags = append(flags, "sdist", "bdist_wheel")
 
 	log.Entry().Info("starting building python project:")
 	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)

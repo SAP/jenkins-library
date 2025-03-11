@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"golang.org/x/crypto/nacl/box"
 
 	"github.com/SAP/jenkins-library/pkg/log"

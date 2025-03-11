@@ -223,7 +223,7 @@ func TestStepCommand() *cobra.Command {
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = piperOsCmd.GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(piperOsCmd.GeneralConfig.CorrelationID,
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -256,7 +256,7 @@ func TestStepCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME, piperOsCmd.GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			testStep(stepConfig, &stepTelemetryData, &commonPipelineEnvironment, &influxTest)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
