@@ -16,9 +16,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type OnapsisExecuteScanOptions struct {
+type onapsisExecuteScanOptions struct {
 	ScanServiceURL         string `json:"scanServiceUrl,omitempty"`
 	ScanGitURL             string `json:"scanGitUrl,omitempty"`
+	ScanGitBranch          string `json:"scanGitBranch,omitempty"`
 	OnapsisUsername        string `json:"onapsisUsername,omitempty"`
 	OnapsisPassword        string `json:"onapsisPassword,omitempty"`
 	AccessToken            string `json:"accessToken,omitempty"`
@@ -34,7 +35,7 @@ func OnapsisExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "onapsisExecuteScan"
 
 	metadata := onapsisExecuteScanMetadata()
-	var stepConfig OnapsisExecuteScanOptions
+	var stepConfig onapsisExecuteScanOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
@@ -146,9 +147,10 @@ func OnapsisExecuteScanCommand() *cobra.Command {
 	return createOnapsisExecuteScanCmd
 }
 
-func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *OnapsisExecuteScanOptions) {
+func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.ScanServiceURL, "scanServiceUrl", os.Getenv("PIPER_scanServiceUrl"), "URL of the scan service")
 	cmd.Flags().StringVar(&stepConfig.ScanGitURL, "scanGitUrl", os.Getenv("PIPER_scanGitUrl"), "The target git repo to scan")
+	cmd.Flags().StringVar(&stepConfig.ScanGitBranch, "scanGitBranch", os.Getenv("PIPER_scanGitBranch"), "The target git branch to scan")
 	cmd.Flags().StringVar(&stepConfig.OnapsisUsername, "onapsisUsername", os.Getenv("PIPER_onapsisUsername"), "Onapsis username for JWT authentication")
 	cmd.Flags().StringVar(&stepConfig.OnapsisPassword, "onapsisPassword", os.Getenv("PIPER_onapsisPassword"), "Onapsis password for JWT authentication")
 	cmd.Flags().StringVar(&stepConfig.AccessToken, "accessToken", os.Getenv("PIPER_accessToken"), "Token used to authenticate with the Control Scan Service")
@@ -199,6 +201,15 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_scanGitUrl"),
+					},
+					{
+						Name:        "scanGitBranch",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scanGitBranch"),
 					},
 					{
 						Name: "onapsisUsername",

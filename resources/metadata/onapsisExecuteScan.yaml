@@ -5,10 +5,6 @@ metadata:
 spec:
   inputs:
     secrets:
-      # - name: onapsisTokenCredentialsId
-      #   type: jenkins
-      #   description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate with Onapsis Control Scan Service"
-      #   mandatory: true
       - name: onapsisPassword
         type: jenkins
         description: "Onapsis password for JWT authentication"
@@ -28,6 +24,13 @@ spec:
       - name: scanGitUrl
         type: string
         description: "The target git repo to scan"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scanGitBranch
+        type: string
+        description: "The target git branch to scan"
         scope:
           - PARAMETERS
           - STAGES

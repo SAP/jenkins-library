@@ -11,42 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
-
-type onapsisExecuteScanUtils interface {
-	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
-	Open(name string) (io.ReadWriteCloser, error)
-	Getwd() (string, error)
-}
-
-type onapsisExecuteScanUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-
-	// Embed more structs as necessary to implement methods or interfaces you add to onapsisExecuteScanUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// onapsisExecuteScanUtilsBundle and forward to the implementation of the dependency.
-}
-
-func newOnapsisExecuteScanUtils() onapsisExecuteScanUtils {
-	utils := onapsisExecuteScanUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
 
 // AuthResponse matches the Onapsis API response
 type AuthResponse struct {
@@ -170,10 +139,9 @@ func getJWTFromService(username, password, scanServiceUrl string, certificatePat
 	return &authResp, nil
 }
 
-func onapsisExecuteScan(config OnapsisExecuteScanOptions, telemetryData *telemetry.CustomData) {
+func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newOnapsisExecuteScanUtils()
 
 	if config.DebugMode {
 		log.SetVerbose(true)
@@ -181,13 +149,13 @@ func onapsisExecuteScan(config OnapsisExecuteScanOptions, telemetryData *telemet
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runOnapsisExecuteScan(config, telemetryData, utils)
+	err := runOnapsisExecuteScan(config, telemetryData)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runOnapsisExecuteScan(config OnapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils) error {
+func runOnapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemetry.CustomData) error {
 	// Create a new ScanServer
 	fmt.Println("Input config: ", config)
 	log.Entry().Info("Creating scan server...")
@@ -198,7 +166,7 @@ func runOnapsisExecuteScan(config OnapsisExecuteScanOptions, telemetryData *tele
 
 	// Call the ScanProject method
 	log.Entry().Info("Scanning project...")
-	startScanResponse, err := server.ScanProject(config, telemetryData, utils)
+	startScanResponse, err := server.ScanProject(config, telemetryData)
 	if err != nil {
 		return errors.Wrap(err, "Failed to scan project")
 	}
@@ -249,7 +217,7 @@ type ScanServer struct {
 	certificatePath         string
 }
 
-func NewScanServer(client piperHttp.Uploader, config OnapsisExecuteScanOptions) (*ScanServer, error) {
+func NewScanServer(client piperHttp.Uploader, config onapsisExecuteScanOptions) (*ScanServer, error) {
 
 	scanServiceUrl := config.ScanServiceURL
 	certificatePath := config.OnapsisCertificatePath
@@ -306,15 +274,7 @@ func (srv *ScanServer) SendRequest(method, url string, body io.Reader, header ht
 	return srv.client.SendRequest(method, url, body, header, cookies)
 }
 
-func (srv *ScanServer) ScanProject(config OnapsisExecuteScanOptions, telemetryData *telemetry.CustomData, utils onapsisExecuteScanUtils) (ScanProjectResponse, error) {
-	// Get workspace path
-	log.Entry().Info("Getting workspace path...") // DEBUG
-	workspace, err := utils.Getwd()
-	if err != nil {
-		return ScanProjectResponse{}, errors.Wrap(err, "failed to get workspace path")
-	}
-
-	log.Entry().Info(workspace)
+func (srv *ScanServer) ScanProject(config onapsisExecuteScanOptions, telemetryData *telemetry.CustomData) (ScanProjectResponse, error) {
 
 	// Create request data
 	log.Entry().Info("Creating request data...") // DEBUG
@@ -333,10 +293,10 @@ func (srv *ScanServer) ScanProject(config OnapsisExecuteScanOptions, telemetryDa
 			"languages": [
 				"%s"
 			],
-			"branch_name": "main",
+			"branch_name": "%s",
 			"exclude_packages": []
 		}
-	}`, config.ScanGitURL, config.AppType)
+	}`, config.ScanGitURL, config.ScanGitBranch, config.AppType)
 
 	scanRequestReader := strings.NewReader(scanRequest)
 	scanRequestHeader := http.Header{
