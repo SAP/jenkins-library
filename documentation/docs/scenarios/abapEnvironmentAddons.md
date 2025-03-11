@@ -86,6 +86,9 @@ With the following tools the add-on deliveries are created.
     The ABAP Environment platform version of the assembly system is used to determine the minimum platform version for the add-on product version that is created.
     Such a system should not be nominated for the pre-upgrade option of ABAP Environment since then the add-on production could only be installed in systems with the pre-upgrade release.
 
+!!! caution "API Snapshots"
+    During the add-on build any changes to released APIs will be checked for compatibility. The corresponding ATC check can only function properly if there is an API snapshot available in the assembly system. Therefore, make sure to use a permanent system for the assembly if you need to fulfill consistency and stability criteria for your released APIs. Refer to [Checking the Compatibility of Released APIs](https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/checking-compatibility-of-released-apis).
+
 The ABAP system responsible for building packages based on software components in the systems. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP test cockpit (ATC) or the physical build of the software components. There are two communication scenarios containing the different APIs of the ABAP environment system: [Test Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) and [Software Assembly Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
 The assembly system should be of service *abap/standard* and be provisioned with parameter `is_development_allowed = false` to prevent local changes.
 
