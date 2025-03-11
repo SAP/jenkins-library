@@ -53,7 +53,7 @@ func runApiProxyUpload(config *apiProxyUploadOptions, telemetryData *telemetry.C
 	header.Add("Accept", "application/zip")
 	fileContent, readError := fileUtils.FileRead(config.FilePath)
 	if readError != nil {
-		return errors.Wrapf(readError, "Error reading file")
+		return errors.Wrap(readError, "Error reading file")
 	}
 	if !strings.Contains(config.FilePath, "zip") {
 		return errors.New("not valid zip archive")

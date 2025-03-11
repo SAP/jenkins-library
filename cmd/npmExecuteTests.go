@@ -48,7 +48,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		return fmt.Errorf("failed to execute install command: %w", err)
 	}
 
-	parsedURLs, err := parseURLs(config.VaultURLs)
+	parsedURLs, err := parseURLs(config.URLs)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func runNpmExecuteTests(config *npmExecuteTestsOptions, c command.ExecRunner) er
 		}
 	}
 
-	if err := runTestForUrl(config.BaseURL, config.VaultUsername, config.VaultPassword, config, c); err != nil {
+	if err := runTestForUrl(config.BaseURL, config.Username, config.Password, config, c); err != nil {
 		return err
 	}
 	return nil
