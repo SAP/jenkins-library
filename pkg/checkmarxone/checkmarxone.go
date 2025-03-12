@@ -1140,11 +1140,20 @@ func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, er
 		Scans              []Scan
 	}
 
+	sortStr := "-created_at"
+
+	version, err := sys.GetVersion()
+	if err != nil {
+		sys.logger.Errorf("Failed to get version info: %s. Defaulting to -created_at for sorting.", err)
+	} else if version.CheckCxOne("3.30.0") < 0 {
+		sortStr = "+created_at"
+	}
+
 	body := url.Values{
 		"project-id": {projectID},
 		"offset":     {fmt.Sprintf("%v", 0)},
 		"limit":      {fmt.Sprintf("%v", limit)},
-		"sort":       {"+created_at"},
+		"sort":       {sortStr},
 	}
 
 	header := http.Header{}
@@ -1166,11 +1175,20 @@ func (sys *SystemInstance) GetLastScansByStatus(projectID string, limit int, sta
 		Scans              []Scan
 	}
 
+	sortStr := "-created_at"
+
+	version, err := sys.GetVersion()
+	if err != nil {
+		sys.logger.Errorf("Failed to get version info: %s. Defaulting to -created_at for sorting.", err)
+	} else if version.CheckCxOne("3.30.0") < 0 {
+		sortStr = "+created_at"
+	}
+
 	body := url.Values{
 		"project-id": {projectID},
 		"offset":     {fmt.Sprintf("%d", 0)},
 		"limit":      {fmt.Sprintf("%d", limit)},
-		"sort":       {"+created_at"},
+		"sort":       {sortStr},
 		"statuses":   status,
 	}
 
