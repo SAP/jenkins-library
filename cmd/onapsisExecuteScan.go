@@ -288,7 +288,9 @@ func (srv *ScanServer) ScanProject(config onapsisExecuteScanOptions, telemetryDa
 			"type": "GITURL",
 			"url": "%s"
 		},
-		"configuration": {},
+		"configuration": {
+			"origin": "PIPER"
+		},
 		"scan_scope": {
 			"languages": [
 				"%s"
