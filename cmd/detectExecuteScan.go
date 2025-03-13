@@ -313,7 +313,7 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 		} else {
 			// Error code mapping with more human readable text
-			err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+			err = errors.Wrap(err, exitCodeMapping(utils.GetExitCode()))
 		}
 	}
 	return err
@@ -972,7 +972,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	htmlReportPath := "piper_detect_policy_violation_report.html"
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0o666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, errors.Wrap(err, "failed to write html report")
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Policy Violation Report", Target: htmlReportPath})
 
@@ -984,7 +984,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_policy_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0o666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+		return reportPaths, errors.Wrap(err, "failed to write json report")
 	}
 
 	return reportPaths, nil
@@ -993,7 +993,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) (error, int) {
 	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
 	if err != nil {
-		return errors.Wrapf(err, "failed to get License Policy Violations"), 0
+		return errors.Wrap(err, "failed to get License Policy Violations"), 0
 	}
 
 	violationCount := getActivePolicyViolations(components)

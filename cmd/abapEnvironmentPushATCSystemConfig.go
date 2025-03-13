@@ -127,7 +127,7 @@ func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigO
 	//check if parsedConfigurationJson is not initial or Configuration Name not supplied
 	if reflect.DeepEqual(parsedConfigurationJson, emptyConfigurationJson) ||
 		parsedConfigurationJson.ConfName == "" {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: %s)", config.AtcSystemConfigFilePath)
 	}
 
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, nil
@@ -145,7 +145,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 	}
 
 	if len(filelocation) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: %s)", config.AtcSystemConfigFilePath)
 	}
 
 	filename, err = filepath.Abs(filelocation[0])
@@ -157,7 +157,7 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	if len(atcSystemConfiguartionJsonFile) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: %s)", config.AtcSystemConfigFilePath)
 	}
 
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
