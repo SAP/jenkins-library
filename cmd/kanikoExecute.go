@@ -85,6 +85,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		if err != nil {
 			return errors.Wrapf(err, "failed to read existing docker config json at '%v'", config.DockerConfigJSON)
 		}
+		log.Entry().Debugf("using user provided %s creds: %s", config.DockerConfigJSON, dockerConfig)
 	}
 
 	// if : user provided docker config json and registry credentials present then enahance the user provided docker provided json with the registry credentials
@@ -99,6 +100,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		if err != nil {
 			return errors.Wrapf(err, "failed to read enhanced file '%v'", config.DockerConfigJSON)
 		}
+
+		log.Entry().Debugf("merged creds from %s: %s", targetConfigJson, dockerConfig)
 	} else if len(config.DockerConfigJSON) == 0 && len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
 		targetConfigJson, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", "/kaniko/.docker/config.json", fileUtils)
 		if err != nil {
@@ -109,6 +112,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		if err != nil {
 			return errors.Wrapf(err, "failed to read new docker config file at /kaniko/.docker/config.json")
 		}
+
+		log.Entry().Debugf("creds created from parameters: %s", dockerConfig)
 	}
 
 	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
