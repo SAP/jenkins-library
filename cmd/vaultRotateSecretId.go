@@ -112,6 +112,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 }
 
 func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID string) error {
+
 	switch config.SecretStore {
 	case "jenkins":
 		ctx := context.Background()
