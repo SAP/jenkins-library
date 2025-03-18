@@ -63,7 +63,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 
 		jsonResult, err = json.Marshal(&jsonMap)
 		if err != nil {
-			return "", errors.Wrapf(err, "Creating build settings failed with json marshalling")
+			return "", errors.Wrap(err, "Creating build settings failed with json marshalling")
 		}
 	} else {
 		var settings []BuildOptions
@@ -111,7 +111,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			return "", nil
 		}
 		if err != nil {
-			return "", errors.Wrapf(err, "Creating build settings failed with json marshalling")
+			return "", errors.Wrap(err, "Creating build settings failed with json marshalling")
 		}
 	}
 

@@ -32,7 +32,7 @@ func (c *DownloadMock) DownloadImage(imageRef, targetDir string) (v1.Image, erro
 	}
 
 	if len(c.ReturnError) > 0 {
-		return nil, fmt.Errorf(c.ReturnError)
+		return nil, fmt.Errorf("%s", c.ReturnError)
 	}
 	return c.ReturnImage, nil
 }
@@ -47,7 +47,7 @@ func (c *DownloadMock) DownloadImageContent(imageRef, targetFile string) (v1.Ima
 	}
 
 	if len(c.ReturnError) > 0 {
-		return nil, fmt.Errorf(c.ReturnError)
+		return nil, fmt.Errorf("%s", c.ReturnError)
 	}
 	return c.ReturnImage, nil
 }
@@ -61,7 +61,7 @@ func (c *DownloadMock) GetRemoteImageInfo(imageRef string) (v1.Image, error) {
 	}
 
 	if len(c.ReturnError) > 0 {
-		return nil, fmt.Errorf(c.ReturnError)
+		return nil, fmt.Errorf("%s", c.ReturnError)
 	}
 
 	return c.RemoteImageInfo, nil

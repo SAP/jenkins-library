@@ -62,7 +62,7 @@ func runApiKeyValueMapDownload(config *apiKeyValueMapDownloadOptions, telemetryD
 		csvFilePath := config.DownloadPath
 		file, err := os.Create(csvFilePath)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create api key value map CSV file")
+			return errors.Wrap(err, "Failed to create api key value map CSV file")
 		}
 		_, err = io.Copy(file, downloadResp.Body)
 		if err != nil {
