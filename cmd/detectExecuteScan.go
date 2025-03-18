@@ -29,7 +29,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 )
 
@@ -112,6 +112,10 @@ func newDetectUtils(client *github.Client) detectUtils {
 					"FAILURE_GENERAL_ERROR - Detect encountered a known error, details of the error are provided.",
 					"FAILURE_UNKNOWN_ERROR - Detect encountered an unknown error.",
 					"FAILURE_MINIMUM_INTERVAL_NOT_MET - Detect did not wait the minimum required scan interval.",
+					"FAILURE_IAC - Detect was unable to perform IaC Scan against your source. Please check your configuration, and see logs and IaC Scanner documentation for more information.",
+					"FAILURE_ACCURACY_NOT_MET - Detect was unable to meet the required accuracy.",
+					"FAILURE_IMAGE_NOT_AVAILABLE - Image scan attempted but no return data available.",
+					"FAILURE_COMPONENT_LOCATION_ANALYSIS => Component Location Analysis failed.",
 				},
 			},
 		},
@@ -309,7 +313,7 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 		} else {
 			// Error code mapping with more human readable text
-			err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+			err = errors.Wrap(err, exitCodeMapping(utils.GetExitCode()))
 		}
 	}
 	return err
@@ -384,6 +388,16 @@ func mapErrorCategory(exitCodeKey int) {
 		log.SetErrorCategory(log.ErrorService)
 	case 12:
 		log.SetErrorCategory(log.ErrorInfrastructure)
+	case 13:
+		log.SetErrorCategory(log.ErrorService)
+	case 14:
+		log.SetErrorCategory(log.ErrorService)
+	case 15:
+		log.SetErrorCategory(log.ErrorService)
+	case 20:
+		log.SetErrorCategory(log.ErrorService)
+	case 25:
+		log.SetErrorCategory(log.ErrorService)
 	case 99:
 		log.SetErrorCategory(log.ErrorService)
 	case 100:
@@ -408,9 +422,13 @@ func exitCodeMapping(exitCodeKey int) string {
 		10:  "FAILURE_BLACKDUCK_VERSION_NOT_SUPPORTED => Detect attempted an operation that was not supported by your version of Black Duck. Ensure your Black Duck is compatible with this version of detect.",
 		11:  "FAILURE_BLACKDUCK_FEATURE_ERROR => Detect encountered an error while attempting an operation on Black Duck. Ensure your Black Duck is compatible with this version of detect.",
 		12:  "FAILURE_POLARIS_CONNECTIVITY => Detect was unable to connect to Polaris. Check your configuration and connection.",
+		13:  "FAILURE_MINIMUM_INTERVAL_NOT_MET => Detect did not wait the minimum required scan interval.",
+		14:  "FAILURE_IAC => Detect was unable to perform IaC Scan against your source. Please check your configuration, and see logs and IaC Scanner documentation for more information.",
+		15:  "FAILURE_ACCURACY_NOT_MET => Detect was unable to meet the required accuracy.",
+		20:  "FAILURE_IMAGE_NOT_AVAILABLE => Image scan attempted but no return data available.",
+		25:  "FAILURE_COMPONENT_LOCATION_ANALYSIS => Component Location Analysis failed. ",
 		99:  "FAILURE_GENERAL_ERROR => Detect encountered a known error, details of the error are provided.",
 		100: "FAILURE_UNKNOWN_ERROR => Detect encountered an unknown error.",
-		13:  "FAILURE_MINIMUM_INTERVAL_NOT_MET => Detect did not wait the minimum required scan interval.",
 	}
 
 	if _, isKeyExists := exitCodes[exitCodeKey]; isKeyExists {
@@ -429,9 +447,11 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 	downloadScript := func() error {
 		if config.UseDetect8 {
-			return utils.DownloadFile("https://detect.synopsys.com/detect8.sh", "detect.sh", nil, nil)
+			return utils.DownloadFile("https://detect.blackduck.com/detect8.sh", "detect.sh", nil, nil)
+		} else if config.UseDetect9 {
+			return utils.DownloadFile("https://detect.blackduck.com/detect9.sh", "detect.sh", nil, nil)
 		}
-		return utils.DownloadFile("https://detect.synopsys.com/detect9.sh", "detect.sh", nil, nil)
+		return utils.DownloadFile("https://detect.blackduck.com/detect10.sh", "detect.sh", nil, nil)
 
 	}
 
@@ -952,7 +972,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	htmlReportPath := "piper_detect_policy_violation_report.html"
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0o666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, errors.Wrap(err, "failed to write html report")
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Policy Violation Report", Target: htmlReportPath})
 
@@ -964,7 +984,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_policy_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0o666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+		return reportPaths, errors.Wrap(err, "failed to write json report")
 	}
 
 	return reportPaths, nil
@@ -973,7 +993,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) (error, int) {
 	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
 	if err != nil {
-		return errors.Wrapf(err, "failed to get License Policy Violations"), 0
+		return errors.Wrap(err, "failed to get License Policy Violations"), 0
 	}
 
 	violationCount := getActivePolicyViolations(components)

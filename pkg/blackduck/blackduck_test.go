@@ -31,7 +31,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 
 	if c.errorMessageForURL[url] != "" {
 		response.StatusCode = 400
-		return &response, fmt.Errorf(c.errorMessageForURL[url])
+		return &response, fmt.Errorf("%s", c.errorMessageForURL[url])
 	}
 
 	if c.responseBodyForURL[url] != "" {

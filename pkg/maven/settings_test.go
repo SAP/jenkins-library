@@ -140,9 +140,9 @@ func TestSettings(t *testing.T) {
 
 		xmlstring := []byte(xml.Header + settingsXmlString)
 
-		utilsMock.FileWrite(".pipeline/mavenProjectSettings", xmlstring, 0777)
+		utilsMock.FileWrite(defaultMavenProjectSettingsPath, xmlstring, 0777)
 
-		projectSettingsFilePath, err := UpdateProjectSettingsXML(".pipeline/mavenProjectSettings", "dummyRepoId2", "dummyRepoUser2", "dummyRepoPassword2", utilsMock)
+		projectSettingsFilePath, err := UpdateProjectSettingsXML(defaultMavenProjectSettingsPath, "dummyRepoId2", "dummyRepoUser2", "dummyRepoPassword2", utilsMock)
 		if assert.NoError(t, err) {
 			projectSettingsContent, _ := utilsMock.FileRead(projectSettingsFilePath)
 			var projectSettings Settings
@@ -162,9 +162,9 @@ func TestSettings(t *testing.T) {
 
 		utilsMock := newSettingsDownloadTestUtilsBundle()
 		xmlstring := []byte("well this is obviously invalid")
-		utilsMock.FileWrite(".pipeline/mavenProjectSettings", xmlstring, 0777)
+		utilsMock.FileWrite(defaultMavenProjectSettingsPath, xmlstring, 0777)
 
-		_, err := UpdateProjectSettingsXML(".pipeline/mavenProjectSettings", "dummyRepoId2", "dummyRepoUser2", "dummyRepoPassword2", utilsMock)
+		_, err := UpdateProjectSettingsXML(defaultMavenProjectSettingsPath, "dummyRepoId2", "dummyRepoUser2", "dummyRepoPassword2", utilsMock)
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "failed to unmarshal settings xml file")
 		}

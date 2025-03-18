@@ -27,7 +27,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 )
 
 type checkmarxExecuteScanUtils interface {

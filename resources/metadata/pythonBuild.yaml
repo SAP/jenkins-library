@@ -18,7 +18,14 @@ spec:
     params:
       - name: buildFlags
         type: "[]string"
-        description: Defines list of build flags to be used.
+        description: Defines list of build flags passed to python binary.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: setupFlags
+        type: "[]string"
+        description: Defines list of flags passed to setup.py.
         scope:
           - PARAMETERS
           - STAGES

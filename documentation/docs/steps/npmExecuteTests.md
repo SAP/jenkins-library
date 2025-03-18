@@ -1,7 +1,7 @@
 # ${docGenStepName}
 
-> [!WARNING]
-> Please note, that the npmExecuteTests step is in beta state, and there could be breaking changes before we remove the beta notice.
+!!! note
+    Please note, that the npmExecuteTests step is in beta state, and there could be breaking changes before we remove the beta notice.
 
 ## ${docGenDescription}
 
@@ -46,7 +46,7 @@ and Vault configuration in PIPELINE-GROUP-<id>/PIPELINE-<id>/appMetadata
 
 ```json
 {
-  "vaultURLs": [
+  "URLs": [
     {
       "url": "http://one.example.com/index.html",
       "username": "some-username1",
@@ -58,8 +58,8 @@ and Vault configuration in PIPELINE-GROUP-<id>/PIPELINE-<id>/appMetadata
       "password": "some-password2"
     }
   ],
-  "vaultUsername": "base-url-username",
-  "vaultPassword": "base-url-password"
+  "username": "base-url-username",
+  "password": "base-url-password"
 }
 ```
 

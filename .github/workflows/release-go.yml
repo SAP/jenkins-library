@@ -2,19 +2,40 @@ name: Create new Release
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Test integration without publishing (dry run)'
+        type: boolean
+        required: false
+        default: false
   repository_dispatch:
     types: perform-release
   schedule:
     - cron: '0 9 * * 1'
 
 jobs:
-  build:
+  run_integration_tests:
+    name: Run Integration Tests
+    uses: ./.github/workflows/integration-tests.yml
+    permissions:
+      contents: read
+      actions: read
+    secrets:
+      INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
+      PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
+      PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
+      PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
+
+  publish:
+    needs: run_integration_tests
+    if: |
+      needs.run_integration_tests.outputs.test_status == 'success' &&
+      github.event.inputs.dry_run != 'true'
     permissions: write-all
-    name: Publish
+    name: Publish Release
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
-
       - uses: actions/checkout@v4
 
       - name: Prepare assets and increment version
@@ -26,7 +47,9 @@ jobs:
           cp ./piper_master-darwin.x86_64 ./piper-darwin.x86_64
           cp ./piper_master-darwin.arm64 ./piper-darwin.arm64
           npm install semver --quiet
-          echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
+          VERSION="v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))"
+          echo "PIPER_version=$VERSION" >> $GITHUB_ENV
+          echo "piper_version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - uses: SAP/project-piper-action@master
         name: Publish prerelease
@@ -67,7 +90,7 @@ jobs:
 
           echo "release_id=$(jq 'first(.[] | select(.tag_name == "${{ env.PIPER_version }}")).id' resp.json)" >> "$GITHUB_OUTPUT"
 
-      - name: Convert prereleae to Release
+      - name: Convert prerelease to Release
         run: >
           curl --fail-with-body -L -X PATCH
           -H "Accept: application/vnd.github+json"
@@ -92,10 +115,10 @@ jobs:
   post:
     name: Post Action
     runs-on: ubuntu-latest
-    needs: [build]
-    if: always()
+    needs: [publish]
+    if: always() && github.event.inputs.dry_run != 'true'
     steps:
-      # Check status of the worklfow
+      # Check status of the workflow
       - uses: martialonline/workflow-status@v4
         id: check
 

@@ -83,12 +83,17 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		return nil
 	}
 
-	log.Entry().Infof("Your secret ID is about to expire in %.0f", ttl.Round(time.Hour*24).Hours()/24)
+	if ttl == 0 {
+		log.Entry().Warn("Secret ID expired")
+	} else {
+		log.Entry().Infof("Your secret ID is about to expire in %.0f days", ttl.Round(time.Hour*24).Hours()/24)
+	}
 
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
+		log.Entry().Info("Secret ID TTL valid.")
 		return nil
 	}
-	log.Entry().Info("Rotating...")
+	log.Entry().Info("Rotating secret ID...")
 
 	newSecretID, err := utils.GenerateNewAppRoleSecret(GeneralConfig.VaultRoleSecretID, roleName)
 
@@ -107,6 +112,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 }
 
 func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID string) error {
+
 	switch config.SecretStore {
 	case "jenkins":
 		ctx := context.Background()

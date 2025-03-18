@@ -78,6 +78,7 @@ type detectExecuteScanOptions struct {
 	RepositoryUsername              string   `json:"repositoryUsername,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	RepositoryPassword              string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	UseDetect8                      bool     `json:"useDetect8,omitempty"`
+	UseDetect9                      bool     `json:"useDetect9,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -150,10 +151,8 @@ func (p *detectExecuteScanReports) persist(stepConfig detectExecuteScanOptions, 
 		{FilePattern: "**/piper_detect_vulnerability.sarif", ParamRef: "", StepResultType: "blackduck-security"},
 		{FilePattern: "**/piper_hub_detect_sbom.xml", ParamRef: "", StepResultType: "blackduck-security"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -258,7 +257,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -291,7 +290,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			detectExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -310,7 +309,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.ScanPaths, "scanPaths", []string{`.`}, "List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.")
 	cmd.Flags().StringVar(&stepConfig.DependencyPath, "dependencyPath", `.`, "Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. If the project contains multiple pom files, provide the path to the parent pom file or the base folder of the project")
 	cmd.Flags().BoolVar(&stepConfig.Unmap, "unmap", false, "Unmap flag will unmap all previous code locations and keep only the current scan results in the specified project version. Set this parameter to true, when the project version needs to store only the latest scan results.")
-	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus)")
+	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.detect=DEBUG`, `--detect.maven.excluded.scopes=test`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus)")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server URL to the Synopsis Detect (formerly BlackDuck) Server.")
 	cmd.Flags().StringSliceVar(&stepConfig.Groups, "groups", []string{}, "Users groups to be assigned for the Project")
 	cmd.Flags().StringSliceVar(&stepConfig.FailOn, "failOn", []string{`BLOCKER`}, "Mark the current build as fail based on the policy categories applied.")
@@ -357,7 +356,8 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.RegistryURL, "registryUrl", os.Getenv("PIPER_registryUrl"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "This flag enables the use of the supported version 8 of the Detect Script instead of v9")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "This flag enables the use of the supported version 8 of the Detect script instead of default version 10")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect9, "useDetect9", false, "This flag enables the use of the supported version 9 of the Detect script instead of default version 10")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -465,7 +465,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/scanProperties"}},
-						Default:     []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`},
+						Default:     []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.detect=DEBUG`, `--detect.maven.excluded.scopes=test`},
 					},
 					{
 						Name:        "serverUrl",
@@ -956,6 +956,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/useDetect8"}},
+						Default:     false,
+					},
+					{
+						Name:        "useDetect9",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/useDetect9"}},
 						Default:     false,
 					},
 				},

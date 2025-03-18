@@ -42,14 +42,14 @@ func (a *artifactVersioningMock) VersioningScheme() string {
 
 func (a *artifactVersioningMock) GetVersion() (string, error) {
 	if len(a.getVersionError) > 0 {
-		return "", fmt.Errorf(a.getVersionError)
+		return "", fmt.Errorf("%s", a.getVersionError)
 	}
 	return a.originalVersion, nil
 }
 
 func (a *artifactVersioningMock) SetVersion(version string) error {
 	if len(a.setVersionError) > 0 {
-		return fmt.Errorf(a.setVersionError)
+		return fmt.Errorf("%s", a.setVersionError)
 	}
 	a.newVersion = version
 	return nil
@@ -92,7 +92,7 @@ func (r *gitRepositoryMock) CommitObject(hash plumbing.Hash) (*object.Commit, er
 
 func (r *gitRepositoryMock) CreateTag(name string, hash plumbing.Hash, opts *git.CreateTagOptions) (*plumbing.Reference, error) {
 	if len(r.tagError) > 0 {
-		return nil, fmt.Errorf(r.tagError)
+		return nil, fmt.Errorf("%s", r.tagError)
 	}
 	r.tag = name
 	r.tagHash = hash
@@ -102,7 +102,7 @@ func (r *gitRepositoryMock) CreateTag(name string, hash plumbing.Hash, opts *git
 func (r *gitRepositoryMock) CreateRemote(config *gitConfig.RemoteConfig) (*git.Remote, error) {
 	r.createRemoteCalls++
 	if len(r.createRemoteError) >= r.createRemoteCalls && len(r.createRemoteError[r.createRemoteCalls-1]) > 0 {
-		return nil, fmt.Errorf(r.createRemoteError[r.createRemoteCalls-1])
+		return nil, fmt.Errorf("%s", r.createRemoteError[r.createRemoteCalls-1])
 	}
 	r.createRemoteConfigs = append(r.createRemoteConfigs, config)
 	return nil, nil
@@ -111,7 +111,7 @@ func (r *gitRepositoryMock) CreateRemote(config *gitConfig.RemoteConfig) (*git.R
 func (r *gitRepositoryMock) DeleteRemote(name string) error {
 	r.deleteRemoteCalls++
 	if len(r.deleteRemoteError) >= r.deleteRemoteCalls && len(r.deleteRemoteError[r.deleteRemoteCalls-1]) > 0 {
-		return fmt.Errorf(r.deleteRemoteError[r.deleteRemoteCalls-1])
+		return fmt.Errorf("%s", r.deleteRemoteError[r.deleteRemoteCalls-1])
 	}
 	r.deleteRemoteNames = append(r.deleteRemoteNames, name)
 	return nil
@@ -119,7 +119,7 @@ func (r *gitRepositoryMock) DeleteRemote(name string) error {
 
 func (r *gitRepositoryMock) Push(o *git.PushOptions) error {
 	if len(r.pushError) > 0 {
-		return fmt.Errorf(r.pushError)
+		return fmt.Errorf("%s", r.pushError)
 	}
 	r.pushCalled = true
 	r.pushOptions = o
@@ -128,14 +128,14 @@ func (r *gitRepositoryMock) Push(o *git.PushOptions) error {
 
 func (r *gitRepositoryMock) Remote(name string) (*git.Remote, error) {
 	if len(r.remoteError) > 0 {
-		return &git.Remote{}, fmt.Errorf(r.remoteError)
+		return &git.Remote{}, fmt.Errorf("%s", r.remoteError)
 	}
 	return r.remote, nil
 }
 
 func (r *gitRepositoryMock) ResolveRevision(rev plumbing.Revision) (*plumbing.Hash, error) {
 	if len(r.revisionError) > 0 {
-		return nil, fmt.Errorf(r.revisionError)
+		return nil, fmt.Errorf("%s", r.revisionError)
 	}
 	r.revision = rev.String()
 	return &r.revisionHash, nil
@@ -143,7 +143,7 @@ func (r *gitRepositoryMock) ResolveRevision(rev plumbing.Revision) (*plumbing.Ha
 
 func (r *gitRepositoryMock) Worktree() (*git.Worktree, error) {
 	if len(r.worktreeError) > 0 {
-		return nil, fmt.Errorf(r.worktreeError)
+		return nil, fmt.Errorf("%s", r.worktreeError)
 	}
 	return r.worktree, nil
 }
@@ -159,14 +159,14 @@ type gitWorktreeMock struct {
 
 func (w *gitWorktreeMock) Checkout(opts *git.CheckoutOptions) error {
 	if len(w.checkoutError) > 0 {
-		return fmt.Errorf(w.checkoutError)
+		return fmt.Errorf("%s", w.checkoutError)
 	}
 	w.checkoutOpts = opts
 	return nil
 }
 func (w *gitWorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
 	if len(w.commitError) > 0 {
-		return plumbing.Hash{}, fmt.Errorf(w.commitError)
+		return plumbing.Hash{}, fmt.Errorf("%s", w.commitError)
 	}
 	w.commitMsg = msg
 	w.commitOpts = opts
@@ -624,7 +624,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{All: true, AllowEmptyCommits: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
@@ -644,7 +644,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{All: true, AllowEmptyCommits: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}, CABundle: customCerts}, repo.pushOptions)

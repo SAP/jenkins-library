@@ -23,9 +23,9 @@ import (
 type npmExecuteTestsOptions struct {
 	InstallCommand   string                   `json:"installCommand,omitempty"`
 	RunCommand       string                   `json:"runCommand,omitempty"`
-	VaultURLs        []map[string]interface{} `json:"vaultURLs,omitempty"`
-	VaultUsername    string                   `json:"vaultUsername,omitempty"`
-	VaultPassword    string                   `json:"vaultPassword,omitempty"`
+	URLs             []map[string]interface{} `json:"URLs,omitempty"`
+	Username         string                   `json:"username,omitempty"`
+	Password         string                   `json:"password,omitempty"`
 	BaseURL          string                   `json:"baseUrl,omitempty"`
 	UsernameEnvVar   string                   `json:"usernameEnvVar,omitempty"`
 	PasswordEnvVar   string                   `json:"passwordEnvVar,omitempty"`
@@ -47,10 +47,8 @@ func (p *npmExecuteTestsReports) persist(stepConfig npmExecuteTestsOptions, gcpJ
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/e2e-results.xml", ParamRef: "", StepResultType: "end-to-end-test"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -154,7 +152,7 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -187,7 +185,7 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			npmExecuteTests(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -202,8 +200,8 @@ func addNpmExecuteTestsFlags(cmd *cobra.Command, stepConfig *npmExecuteTestsOpti
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm ci`, "Command to be executed for installation`.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `npm run wdi5`, "Command to be executed for running tests`.")
 
-	cmd.Flags().StringVar(&stepConfig.VaultUsername, "vaultUsername", os.Getenv("PIPER_vaultUsername"), "The base URL username.")
-	cmd.Flags().StringVar(&stepConfig.VaultPassword, "vaultPassword", os.Getenv("PIPER_vaultPassword"), "The base URL password.")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The base URL username used to authenticate")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The base URL password used to authenticate")
 	cmd.Flags().StringVar(&stepConfig.BaseURL, "baseUrl", `http://localhost:8080/index.html`, "Base URL of the application to be tested.")
 	cmd.Flags().StringVar(&stepConfig.UsernameEnvVar, "usernameEnvVar", `wdi5_username`, "Env var for username.")
 	cmd.Flags().StringVar(&stepConfig.PasswordEnvVar, "passwordEnvVar", `wdi5_password`, "Env var for password.")
@@ -245,7 +243,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Default:     `npm run wdi5`,
 					},
 					{
-						Name: "vaultURLs",
+						Name: "URLs",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -259,7 +257,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
-						Name: "vaultUsername",
+						Name: "username",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -271,10 +269,10 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_vaultUsername"),
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
-						Name: "vaultPassword",
+						Name: "password",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "appMetadataVaultSecretName",
@@ -286,7 +284,7 @@ func npmExecuteTestsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_vaultPassword"),
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "baseUrl",

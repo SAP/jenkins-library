@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"dario.cat/mergo"
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -22,7 +23,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
@@ -483,7 +483,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "could not resolve path")
+		return errors.Wrap(err, "could not resolve path")
 	}
 
 	target := "/workspace"
