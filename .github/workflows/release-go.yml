@@ -51,6 +51,11 @@ jobs:
           echo "PIPER_version=$VERSION" >> $GITHUB_ENV
           echo "piper_version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Remove files that should not be published
+        run: |
+          rm -f README.md
+          rm -f CONTRIBUTING.md
+
       - uses: SAP/project-piper-action@master
         name: Publish prerelease
         with:
