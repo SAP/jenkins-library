@@ -5,9 +5,9 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: onapsisPassword
+      - name: onapsisSecretTokenId
         type: jenkins
-        description: "Onapsis password for JWT authentication"
+        description: "Onapsis JWT"
         mandatory: true
     params:
       - name: scanServiceUrl
@@ -35,38 +35,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: onapsisUsername
+      - name: onapsisSecretToken
         type: string
-        description: "Onapsis username for JWT authentication"
+        description: "Onapsis JWT"
         mandatory: true
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         resourceRef:
-          - name: onapsisUsername
-            type: secret
-      - name: onapsisPassword
-        type: string
-        description: "Onapsis password for JWT authentication"
-        mandatory: true
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: onapsisPassword
-            type: secret
-      - name: accessToken
-        type: string
-        description: "Token used to authenticate with the Control Scan Service"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        resourceRef:
-          - name: onapsisTokenCredentialsId
+          - name: onapsisSecretTokenId
             type: secret
       - name: appType
         type: string

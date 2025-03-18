@@ -15,6 +15,62 @@ import (
 	"github.com/pkg/errors"
 )
 
+type ScanServer struct {
+	serverUrl                  string
+	client                     piperHttp.Sender
+	scanServiceCertificatePath string
+}
+
+type ScanProjectResponse struct {
+	Success bool `json:"success"`
+	Result  struct {
+		JobID      string    `json:"job_id"`      // present only on success
+		ResultCode int       `json:"result_code"` // present only on failure
+		Timestamp  string    `json:"timestamp"`   // present only on success
+		Messages   []Message `json:"messages"`
+	} `json:"result"`
+}
+
+type GetScanJobStatusResponse struct {
+	Success bool `json:"success"`
+	Result  struct {
+		JobID         string    `json:"job_id"`
+		ReqRecvTime   string    `json:"req_recv_time"`
+		ScanStartTime string    `json:"scan_start_time"`
+		ScanEndTime   string    `json:"scan_end_time"`
+		EngineType    string    `json:"engine_type"`
+		Status        string    `json:"status"`
+		Progress      int       `json:"progress"`
+		Messages      []Message `json:"messages"`
+		Details       struct {
+			Children []string `json:"children"`
+		} `json:"details"`
+	} `json:"result"`
+}
+
+type GetJobResultMetricsResponse struct {
+	Success bool `json:"success"`
+	Result  struct {
+		Metrics []struct {
+			Name  string `json:"name"`
+			Value string `json:"value"`
+		} `json:"metrics"`
+	} `json:"result"`
+}
+
+type Message struct {
+	Sequence  int    `json:"sequence"`
+	Timestamp string `json:"timestamp"`
+	Level     string `json:"level"`
+	MessageID string `json:"message_id"`
+	Param1    string `json:"param1"`
+	Param2    string `json:"param2"`
+	Param3    string `json:"param3"`
+	Param4    string `json:"param4"`
+}
+
+var debugMode bool = false
+
 func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemetry.CustomData) {
 
 	debugMode = config.DebugMode
@@ -69,7 +125,7 @@ func runOnapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *tele
 
 	// Analyze metrics
 	loc, numMandatory, numOptional, totalTime := extractMetrics(metrics)
-	log.Entry().Infof("Job Metrics - Lines of Code Scanned: %s, Mandatory Findings: %s, Optional Findings: %s, Total Time: %s seconds", loc, numMandatory, numOptional, totalTime)
+	log.Entry().Infof("Job Metrics - Lines of Code Scanned: %s, Mandatory Findings: %s, Optional Findings: %s, Total Time: %sms", loc, numMandatory, numOptional, totalTime)
 
 	log.Entry().Infof("The findings can be viewed here: %s/ui/#/admin/scans/%s/%s/findings", config.ScanServiceURL, jobID, jobStatusResponse.Result.Details.Children[0])
 
@@ -82,155 +138,31 @@ func runOnapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *tele
 	return nil
 }
 
-type ScanServer struct {
-	serverUrl                   string
-	client                      piperHttp.Sender
-	authToken                   *AuthResponse
-	authTokenExpirationTime     time.Time
-	scanServiceCertificatePath  string
-}
-
 func NewScanServer(config onapsisExecuteScanOptions) (*ScanServer, error) {
 
 	scanServiceUrl := config.ScanServiceURL
 
 	scanServiceCertificatePath := config.OnapsisCertificatePath
-	options := getHttpOptionsWithBasicAuth(config.OnapsisUsername, config.OnapsisPassword, scanServiceCertificatePath)
 
+	options := getHttpOptionsWithJwt(config.OnapsisSecretToken, "Bearer", scanServiceCertificatePath)
 	client := &piperHttp.Client{}
 	client.SetOptions(options)
 
-	token, tokenErr := getJWTFromService(client, scanServiceUrl)
-	if tokenErr != nil {
-		log.Entry().WithError(tokenErr).Fatal("Error obtaining JWT")
-	}
-	tokenExpirationTime := getJwtExpirationTime(token.ExpiresIn)
-
-	options = getHttpOptionsWithJwt(token.AccessToken, token.TokenType, scanServiceCertificatePath)
-	client.SetOptions(options)
-
-	server := &ScanServer{serverUrl: scanServiceUrl, client: client, authToken: token, authTokenExpirationTime: tokenExpirationTime, scanServiceCertificatePath: scanServiceCertificatePath}
+	server := &ScanServer{serverUrl: scanServiceUrl, client: client, scanServiceCertificatePath: scanServiceCertificatePath}
 
 	return server, nil
-}
-
-func (srv *ScanServer) RefreshServerAuth() {
-	newJwt, refreshTokenErr := refreshJwtToken(srv.client, srv.authToken.RefreshToken, srv.serverUrl)
-
-	if refreshTokenErr != nil {
-		log.Entry().WithError(refreshTokenErr).Fatal("Error obtaining refreshed JWT")
-	}
-
-	options := getHttpOptionsWithJwt(newJwt.AccessToken, newJwt.TokenType, srv.scanServiceCertificatePath)
-	srv.client.SetOptions(options)
-
-	srv.authTokenExpirationTime = getJwtExpirationTime(newJwt.ExpiresIn)
-	srv.authToken = newJwt
-}
-
-func getHttpOptionsWithBasicAuth(username string, password string, caCert string) piperHttp.ClientOptions {
-	// Set BasicAuth for http client
-	return piperHttp.ClientOptions{
-		Username:                   username,
-		Password:                   password,
-		MaxRequestDuration:         60 * time.Second,
-		DoLogRequestBodyOnDebug:    debugMode,
-		DoLogResponseBodyOnDebug:   debugMode,
-		TrustedCerts:               []string{caCert},
-	}
 }
 
 // Obtain http.ClientOptions with JWT and tokenType "Bearer". caCert is the self-signed scan server certificate.
 func getHttpOptionsWithJwt(jwt string, tokenType string, caCert string) piperHttp.ClientOptions {
 	// Set authorization token for client
 	return piperHttp.ClientOptions{
-		Token:                      fmt.Sprintf("%s %s",tokenType, jwt),
-		MaxRequestDuration:         60 * time.Second,
-		DoLogRequestBodyOnDebug:    debugMode,
-		DoLogResponseBodyOnDebug:   debugMode,
-		TrustedCerts:               []string{caCert},
+		Token:                    fmt.Sprintf("%s %s", tokenType, jwt),
+		MaxRequestDuration:       60 * time.Second,
+		DoLogRequestBodyOnDebug:  debugMode,
+		DoLogResponseBodyOnDebug: debugMode,
+		TrustedCerts:             []string{caCert},
 	}
-}
-
-func (srv *ScanServer) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	if time.Now().After(srv.authTokenExpirationTime) {
-		srv.RefreshServerAuth()
-	}
-
-	return srv.client.SendRequest(method, url, body, header, cookies)
-}
-
-// AuthResponse matches the Onapsis API response
-type AuthResponse struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresIn    int    `json:"expires_in"`
-	RefreshToken string `json:"refresh_token"`
-}
-
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token"`
-}
-
-// getJWTFromService fetches a JWT using Basic Auth
-func getJWTFromService(client piperHttp.Sender, scanServiceUrl string) (*AuthResponse, error) {
-
-	jwtUrl := scanServiceUrl + "/cca/v1.2/auth_token"
-
-	resp, err := client.SendRequest("GET", jwtUrl, nil, nil, nil)
-	if err != nil {
-		return nil, fmt.Errorf("request to JWT service failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to obtain JWT, status code: %d, response: %s", resp.StatusCode, body)
-	}
-
-	var authResp AuthResponse
-	if err := json.Unmarshal(body, &authResp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %v", err)
-	}
-
-	return &authResp, nil
-}
-
-func refreshJwtToken(client piperHttp.Sender, refreshToken, scanServiceUrl string) (*AuthResponse, error) {
-	refreshTokenURL := scanServiceUrl + "/cca/v1.2/auth_token"
-
-	// Create the refresh Cookie
-	refreshCookie := http.Cookie{Name: "refresh_token", Value: refreshToken}
-
-	resp, err := client.SendRequest("GET", refreshTokenURL, nil, nil, []*http.Cookie {&refreshCookie})
-	if err != nil {
-		return nil, fmt.Errorf("error making request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Read response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %v", err)
-	}
-
-	// Handle response
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to refresh token, status: %d, response: %s", resp.StatusCode, string(body))
-	}
-
-	// Extract new JWT from the response (assuming JSON response)
-	var newJwt AuthResponse
-	if err := json.Unmarshal(body, &newJwt); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %v", err)
-	}
-
-	return &newJwt, nil
 }
 
 func (srv *ScanServer) ScanProject(config onapsisExecuteScanOptions, telemetryData *telemetry.CustomData) (ScanProjectResponse, error) {
@@ -273,7 +205,7 @@ func (srv *ScanServer) ScanProject(config onapsisExecuteScanOptions, telemetryDa
 
 	// Send request
 	log.Entry().Info("Sending scan request...")
-	response, err := srv.SendRequest("POST", srv.serverUrl+"/cca/v1.2/scan", scanRequestReader, scanRequestHeader, nil)
+	response, err := srv.client.SendRequest("POST", srv.serverUrl+"/cca/v1.2/scan", scanRequestReader, scanRequestHeader, nil)
 	if err != nil {
 		return ScanProjectResponse{}, errors.Wrap(err, "Failed to start scan")
 	}
@@ -290,7 +222,7 @@ func (srv *ScanServer) ScanProject(config onapsisExecuteScanOptions, telemetryDa
 
 func (srv *ScanServer) GetScanJobStatus(jobID string) (*GetScanJobStatusResponse, error) {
 	// Send request
-	response, err := srv.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID, nil, nil, nil)
+	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID, nil, nil, nil)
 	if err != nil {
 		return &GetScanJobStatusResponse{}, errors.Wrap(err, "failed to send request")
 	}
@@ -331,7 +263,7 @@ func (srv *ScanServer) MonitorJobStatus(jobID string) (*GetScanJobStatusResponse
 }
 
 func (srv *ScanServer) GetJobReports(jobID string, reportArchiveName string) error {
-	response, err := srv.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID+"/result?format=ZIP", nil, nil, nil)
+	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID+"/result?format=ZIP", nil, nil, nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to retrieve job report")
 	}
@@ -357,7 +289,7 @@ func (srv *ScanServer) GetJobReports(jobID string, reportArchiveName string) err
 
 func (srv *ScanServer) GetJobResultMetrics(jobID string) (GetJobResultMetricsResponse, error) {
 	// Send request
-	response, err := srv.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID+"/result/metrics", nil, nil, nil)
+	response, err := srv.client.SendRequest("GET", srv.serverUrl+"/cca/v1.2/jobs/"+jobID+"/result/metrics", nil, nil, nil)
 	if err != nil {
 		return GetJobResultMetricsResponse{}, errors.Wrap(err, "failed to send request")
 	}
@@ -388,62 +320,6 @@ func extractMetrics(response GetJobResultMetricsResponse) (loc, numMandatory, nu
 
 	return loc, numMandatory, numOptional, totalTime
 }
-
-func getJwtExpirationTime(expiresIn int) time.Time {
-	tokenValidity := time.Duration(expiresIn * int(time.Second))
-
-	return time.Now().Add(tokenValidity)
-}
-
-type ScanProjectResponse struct {
-	Success bool `json:"success"`
-	Result  struct {
-		JobID      string    `json:"job_id"`      // present only on success
-		ResultCode int       `json:"result_code"` // present only on failure
-		Timestamp  string    `json:"timestamp"`   // present only on success
-		Messages   []Message `json:"messages"`
-	} `json:"result"`
-}
-
-type GetScanJobStatusResponse struct {
-	Success bool `json:"success"`
-	Result  struct {
-		JobID         string    `json:"job_id"`
-		ReqRecvTime   string    `json:"req_recv_time"`
-		ScanStartTime string    `json:"scan_start_time"`
-		ScanEndTime   string    `json:"scan_end_time"`
-		EngineType    string    `json:"engine_type"`
-		Status        string    `json:"status"`
-		Progress      int       `json:"progress"`
-		Messages      []Message `json:"messages"`
-		Details       struct {
-			Children []string `json:"children"`
-		} `json:"details"`
-	} `json:"result"`
-}
-
-type GetJobResultMetricsResponse struct {
-	Success bool `json:"success"`
-	Result  struct {
-		Metrics []struct {
-			Name  string `json:"name"`
-			Value string `json:"value"`
-		} `json:"metrics"`
-	} `json:"result"`
-}
-
-type Message struct {
-	Sequence  int    `json:"sequence"`
-	Timestamp string `json:"timestamp"`
-	Level     string `json:"level"`
-	MessageID string `json:"message_id"`
-	Param1    string `json:"param1"`
-	Param2    string `json:"param2"`
-	Param3    string `json:"param3"`
-	Param4    string `json:"param4"`
-}
-
-var debugMode bool = false
 
 func handleResponse(response *http.Response, responseData interface{}) error {
 	err := piperHttp.ParseHTTPResponseBodyJSON(response, &responseData)

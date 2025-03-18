@@ -20,9 +20,7 @@ type onapsisExecuteScanOptions struct {
 	ScanServiceURL         string `json:"scanServiceUrl,omitempty"`
 	ScanGitURL             string `json:"scanGitUrl,omitempty"`
 	ScanGitBranch          string `json:"scanGitBranch,omitempty"`
-	OnapsisUsername        string `json:"onapsisUsername,omitempty"`
-	OnapsisPassword        string `json:"onapsisPassword,omitempty"`
-	AccessToken            string `json:"accessToken,omitempty"`
+	OnapsisSecretToken     string `json:"onapsisSecretToken,omitempty"`
 	AppType                string `json:"appType,omitempty" validate:"possible-values=ABAP SAPUI5"`
 	FailOnMandatoryFinding bool   `json:"failOnMandatoryFinding,omitempty"`
 	FailOnOptionalFinding  bool   `json:"failOnOptionalFinding,omitempty"`
@@ -61,7 +59,6 @@ func OnapsisExecuteScanCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.AccessToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -151,9 +148,7 @@ func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteSc
 	cmd.Flags().StringVar(&stepConfig.ScanServiceURL, "scanServiceUrl", os.Getenv("PIPER_scanServiceUrl"), "URL of the scan service")
 	cmd.Flags().StringVar(&stepConfig.ScanGitURL, "scanGitUrl", os.Getenv("PIPER_scanGitUrl"), "The target git repo to scan")
 	cmd.Flags().StringVar(&stepConfig.ScanGitBranch, "scanGitBranch", os.Getenv("PIPER_scanGitBranch"), "The target git branch to scan")
-	cmd.Flags().StringVar(&stepConfig.OnapsisUsername, "onapsisUsername", os.Getenv("PIPER_onapsisUsername"), "Onapsis username for JWT authentication")
-	cmd.Flags().StringVar(&stepConfig.OnapsisPassword, "onapsisPassword", os.Getenv("PIPER_onapsisPassword"), "Onapsis password for JWT authentication")
-	cmd.Flags().StringVar(&stepConfig.AccessToken, "accessToken", os.Getenv("PIPER_accessToken"), "Token used to authenticate with the Control Scan Service")
+	cmd.Flags().StringVar(&stepConfig.OnapsisSecretToken, "onapsisSecretToken", os.Getenv("PIPER_onapsisSecretToken"), "Onapsis JWT")
 	cmd.Flags().StringVar(&stepConfig.AppType, "appType", `SAPUI5`, "Type of the application to be scanned")
 	cmd.Flags().BoolVar(&stepConfig.FailOnMandatoryFinding, "failOnMandatoryFinding", true, "Fail the build if mandatory findings are detected")
 	cmd.Flags().BoolVar(&stepConfig.FailOnOptionalFinding, "failOnOptionalFinding", false, "Fail the build if optional findings are detected")
@@ -161,8 +156,7 @@ func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.DebugMode, "debugMode", false, "Enable debug mode for the scan")
 
 	cmd.MarkFlagRequired("scanServiceUrl")
-	cmd.MarkFlagRequired("onapsisUsername")
-	cmd.MarkFlagRequired("onapsisPassword")
+	cmd.MarkFlagRequired("onapsisSecretToken")
 }
 
 // retrieve step metadata
@@ -176,7 +170,7 @@ func onapsisExecuteScanMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "onapsisPassword", Description: "Onapsis password for JWT authentication", Type: "jenkins"},
+					{Name: "onapsisSecretTokenId", Description: "Onapsis JWT", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -212,10 +206,10 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_scanGitBranch"),
 					},
 					{
-						Name: "onapsisUsername",
+						Name: "onapsisSecretToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "onapsisUsername",
+								Name: "onapsisSecretTokenId",
 								Type: "secret",
 							},
 						},
@@ -223,35 +217,7 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_onapsisUsername"),
-					},
-					{
-						Name: "onapsisPassword",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "onapsisPassword",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_onapsisPassword"),
-					},
-					{
-						Name: "accessToken",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "onapsisTokenCredentialsId",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_accessToken"),
+						Default:   os.Getenv("PIPER_onapsisSecretToken"),
 					},
 					{
 						Name:        "appType",
