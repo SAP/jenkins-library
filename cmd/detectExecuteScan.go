@@ -270,7 +270,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
+	err = mapDetectError(utils.RunShell("bash", script), config, utils)
 	if config.ScanContainerDistro != "" {
 		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
 		if imageError != nil {
@@ -348,7 +348,7 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 		}
 		script := strings.Join(args, " ")
 
-		err = utils.RunShell("/bin/bash", script)
+		err = utils.RunShell("bash", script)
 		err = mapDetectError(err, config, utils)
 
 		if err != nil {
