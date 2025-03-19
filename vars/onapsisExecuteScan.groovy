@@ -7,8 +7,8 @@ import groovy.transform.Field
 def call(Map parameters = [:]) {
 
     List credentials = [
-        [type: 'secret', id: 'onapsisSecretTokenId', env: ['PIPER_onapsisSecretToken']],
-        [type: 'secret', id: 'onapsisCertificate', env: ['PIPER_onapsisCertificate']]
+        [type: 'token', id: 'onapsisSecretTokenId', env: ['PIPER_onapsisSecretToken']],
+        [type: 'file', id: 'onapsisCertificate', env: ['PIPER_onapsisCertificate']]
     ]
 
     try {

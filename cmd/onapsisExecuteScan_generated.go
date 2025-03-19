@@ -59,6 +59,8 @@ func OnapsisExecuteScanCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.OnapsisSecretToken)
+			log.RegisterSecret(stepConfig.OnapsisCertificatePath)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -156,7 +158,10 @@ func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteSc
 	cmd.Flags().StringVar(&stepConfig.OnapsisCertificatePath, "onapsisCertificatePath", os.Getenv("PIPER_onapsisCertificatePath"), "The path to the Onapsis scan server certificate")
 
 	cmd.MarkFlagRequired("scanServiceUrl")
+	cmd.MarkFlagRequired("scanGitUrl")
+	cmd.MarkFlagRequired("scanGitBranch")
 	cmd.MarkFlagRequired("onapsisSecretToken")
+	cmd.MarkFlagRequired("onapsisCertificatePath")
 }
 
 // retrieve step metadata
@@ -175,25 +180,20 @@ func onapsisExecuteScanMetadata() config.StepData {
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "scanServiceUrl",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "scanServiceUrl",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_scanServiceUrl"),
+						Name:        "scanServiceUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scanServiceUrl"),
 					},
 					{
 						Name:        "scanGitUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_scanGitUrl"),
 					},
@@ -202,7 +202,7 @@ func onapsisExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_scanGitBranch"),
 					},
@@ -266,7 +266,7 @@ func onapsisExecuteScanMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_onapsisCertificatePath"),
 					},

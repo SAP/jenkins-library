@@ -22,12 +22,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: scanServiceUrl
-            type: secret
       - name: scanGitUrl
         type: string
         description: "The target git repo to scan"
+        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
@@ -35,6 +33,7 @@ spec:
       - name: scanGitBranch
         type: string
         description: "The target git branch to scan"
+        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
@@ -78,6 +77,7 @@ spec:
         type: string
         description: "Onapsis JWT, used to authenticate with the Onapsis scan service"
         mandatory: true
+        secret: true
         scope:
           - PARAMETERS
           - STAGES
@@ -88,6 +88,8 @@ spec:
       - name: onapsisCertificatePath
         type: string
         description: "The path to the Onapsis scan server certificate"
+        mandatory: true
+        secret: true
         scope:
           - PARAMETERS
           - STAGES
