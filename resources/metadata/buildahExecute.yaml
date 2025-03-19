@@ -113,37 +113,17 @@ spec:
   containers:
     - name: buildah
       image: quay.io/buildah/stable:latest
-      shell: /bin/bash
-      options:
-        - name: -u
-          value: "0"
-        - name: --privileged
-          value: ""
-        - name: --security-opt
-          value: "seccomp=unconfined"
       securityContext:
-        seLinuxOptions:
-          type: spc_t
-        allowPrivilegeEscalation: true
+        runAsUser: 0
+        privileged: false
         capabilities:
-          add: ["SYS_ADMIN", "MKNOD", "CHOWN", "DAC_OVERRIDE"]
-        privileged: true
-      volumeMounts:
-        - name: varlibcontainers
-          mountPath: /var/lib/containers
-          mountPropagation: Bidirectional
+          add:
+            - SETUID
+            - SETGID
       env:
-        - name: STORAGE_DRIVER
-          value: "vfs"
-        - name: BUILDAH_FORMAT
-          value: "oci"
         - name: BUILDAH_ISOLATION
           value: "chroot"
-        - name: _BUILDAH_STARTED_IN_USERNS
+        - name: STORAGE_DRIVER
+          value: "vfs"
+        - name: STORAGE_OPTS
           value: ""
-        - name: BUILDAH_LAYERS
-          value: "true"
-      volumes:
-        - name: varlibcontainers
-          emptyDir:
-            medium: Memory
