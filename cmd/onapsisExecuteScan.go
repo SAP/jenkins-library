@@ -13,12 +13,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 type ScanServer struct {
-	serverUrl                  string
-	client                     piperHttp.Sender
-	scanServiceCertificatePath string
+	serverUrl string
+	client    piperHttp.Sender
 }
 
 type ScanProjectResponse struct {
@@ -78,11 +79,21 @@ func onapsisExecuteScan(config onapsisExecuteScanOptions, telemetryData *telemet
 		log.SetVerbose(true)
 	}
 
+	err := setupOnapsisCertificate(config.OnapsisCertificatePath)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Could not set up Onapsis Certificate")
+	}
+
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runOnapsisExecuteScan(config, telemetryData)
+	err = runOnapsisExecuteScan(config, telemetryData)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+
+	err = cleanupOnapsisCertificate()
+	if err != nil {
+		log.Entry().WithError(err).Info("Could not delete temporary Onapsis certificate")
 	}
 }
 
@@ -142,13 +153,11 @@ func NewScanServer(config onapsisExecuteScanOptions) (*ScanServer, error) {
 
 	scanServiceUrl := config.ScanServiceURL
 
-	scanServiceCertificatePath := config.OnapsisCertificatePath
-
-	options := getHttpOptionsWithJwt(config.OnapsisSecretToken, "Bearer", scanServiceCertificatePath)
+	options := getHttpOptionsWithJwt(config.OnapsisSecretToken, "Bearer", tempCertificatePath)
 	client := &piperHttp.Client{}
 	client.SetOptions(options)
 
-	server := &ScanServer{serverUrl: scanServiceUrl, client: client, scanServiceCertificatePath: scanServiceCertificatePath}
+	server := &ScanServer{serverUrl: scanServiceUrl, client: client}
 
 	return server, nil
 }
@@ -163,6 +172,43 @@ func getHttpOptionsWithJwt(jwt string, tokenType string, caCert string) piperHtt
 		DoLogResponseBodyOnDebug: debugMode,
 		TrustedCerts:             []string{caCert},
 	}
+}
+
+const tempCertificatePath = piperHttp.TrustStoreDirectory + "/onapsisCert.pem"
+
+func setupOnapsisCertificate(certificatePath string) error {
+	fileUtils := piperutils.Files{}
+
+	if exists, _ := fileUtils.FileExists(certificatePath); !exists {
+		return errors.Errorf("Onapsis certificate was not found at path: %s", certificatePath)
+	}
+
+	err := fileUtils.MkdirAll(piperHttp.TrustStoreDirectory, 0755)
+	if err != nil {
+		return errors.Wrapf(err, "Could not create dir: %s", piperHttp.TrustStoreDirectory)
+	}
+	_, err = fileUtils.Copy(certificatePath, tempCertificatePath)
+	if err != nil {
+		return errors.Wrap(err, "Could not copy Onapsis Certificate.")
+	}
+
+    err = fileUtils.Chmod(tempCertificatePath, 0600)
+    if err != nil {
+		return errors.Wrap(err, "Could not set write permissions Onapsis Certificate.")
+	}
+
+	return nil
+}
+
+func cleanupOnapsisCertificate() error {
+	fileUtils := piperutils.Files{}
+
+	if exists, _ := fileUtils.FileExists(tempCertificatePath); !exists {
+		log.Entry().Infof("Onapsis certificate was not found at path: %s", tempCertificatePath)
+		return nil
+	}
+
+	return fileUtils.FileRemove(tempCertificatePath)
 }
 
 func (srv *ScanServer) ScanProject(config onapsisExecuteScanOptions, telemetryData *telemetry.CustomData) (ScanProjectResponse, error) {
