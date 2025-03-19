@@ -20,12 +20,12 @@ type onapsisExecuteScanOptions struct {
 	ScanServiceURL         string `json:"scanServiceUrl,omitempty"`
 	ScanGitURL             string `json:"scanGitUrl,omitempty"`
 	ScanGitBranch          string `json:"scanGitBranch,omitempty"`
-	OnapsisSecretToken     string `json:"onapsisSecretToken,omitempty"`
 	AppType                string `json:"appType,omitempty" validate:"possible-values=ABAP SAPUI5"`
 	FailOnMandatoryFinding bool   `json:"failOnMandatoryFinding,omitempty"`
 	FailOnOptionalFinding  bool   `json:"failOnOptionalFinding,omitempty"`
-	OnapsisCertificatePath string `json:"onapsisCertificatePath,omitempty"`
 	DebugMode              bool   `json:"debugMode,omitempty"`
+	OnapsisSecretToken     string `json:"onapsisSecretToken,omitempty"`
+	OnapsisCertificatePath string `json:"onapsisCertificatePath,omitempty"`
 }
 
 // OnapsisExecuteScanCommand Execute a scan with Onapsis Control
@@ -148,12 +148,12 @@ func addOnapsisExecuteScanFlags(cmd *cobra.Command, stepConfig *onapsisExecuteSc
 	cmd.Flags().StringVar(&stepConfig.ScanServiceURL, "scanServiceUrl", os.Getenv("PIPER_scanServiceUrl"), "URL of the scan service")
 	cmd.Flags().StringVar(&stepConfig.ScanGitURL, "scanGitUrl", os.Getenv("PIPER_scanGitUrl"), "The target git repo to scan")
 	cmd.Flags().StringVar(&stepConfig.ScanGitBranch, "scanGitBranch", os.Getenv("PIPER_scanGitBranch"), "The target git branch to scan")
-	cmd.Flags().StringVar(&stepConfig.OnapsisSecretToken, "onapsisSecretToken", os.Getenv("PIPER_onapsisSecretToken"), "Onapsis JWT")
 	cmd.Flags().StringVar(&stepConfig.AppType, "appType", `SAPUI5`, "Type of the application to be scanned")
 	cmd.Flags().BoolVar(&stepConfig.FailOnMandatoryFinding, "failOnMandatoryFinding", true, "Fail the build if mandatory findings are detected")
 	cmd.Flags().BoolVar(&stepConfig.FailOnOptionalFinding, "failOnOptionalFinding", false, "Fail the build if optional findings are detected")
-	cmd.Flags().StringVar(&stepConfig.OnapsisCertificatePath, "onapsisCertificatePath", os.Getenv("PIPER_onapsisCertificatePath"), "The path to the Onapsis scan server certificate")
 	cmd.Flags().BoolVar(&stepConfig.DebugMode, "debugMode", false, "Enable debug mode for the scan")
+	cmd.Flags().StringVar(&stepConfig.OnapsisSecretToken, "onapsisSecretToken", os.Getenv("PIPER_onapsisSecretToken"), "Onapsis JWT, used to authenticate with the Onapsis scan service")
+	cmd.Flags().StringVar(&stepConfig.OnapsisCertificatePath, "onapsisCertificatePath", os.Getenv("PIPER_onapsisCertificatePath"), "The path to the Onapsis scan server certificate")
 
 	cmd.MarkFlagRequired("scanServiceUrl")
 	cmd.MarkFlagRequired("onapsisSecretToken")
@@ -170,7 +170,8 @@ func onapsisExecuteScanMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "onapsisSecretTokenId", Description: "Onapsis JWT", Type: "jenkins"},
+					{Name: "onapsisSecretTokenId", Description: "Jenkins 'Secret text' for the Onapsis JWT, used to authenticate with the Onapsis scan service", Type: "jenkins"},
+					{Name: "onapsisCertificate", Description: "Jenkins 'Secret file' self-signed certificate of the Onapsis scan service", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -206,20 +207,6 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_scanGitBranch"),
 					},
 					{
-						Name: "onapsisSecretToken",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "onapsisSecretTokenId",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_onapsisSecretToken"),
-					},
-					{
 						Name:        "appType",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -247,15 +234,6 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Default:     false,
 					},
 					{
-						Name:        "onapsisCertificatePath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_onapsisCertificatePath"),
-					},
-					{
 						Name:        "debugMode",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -263,6 +241,34 @@ func onapsisExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name: "onapsisSecretToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "onapsisSecretTokenId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_onapsisSecretToken"),
+					},
+					{
+						Name: "onapsisCertificatePath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "onapsisCertificate",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_onapsisCertificatePath"),
 					},
 				},
 			},

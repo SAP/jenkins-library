@@ -7,7 +7,11 @@ spec:
     secrets:
       - name: onapsisSecretTokenId
         type: jenkins
-        description: "Onapsis JWT"
+        description: "Jenkins 'Secret text' for the Onapsis JWT, used to authenticate with the Onapsis scan service"
+        mandatory: true
+      - name: onapsisCertificate
+        type: jenkins
+        description: "Jenkins 'Secret file' self-signed certificate of the Onapsis scan service"
         mandatory: true
     params:
       - name: scanServiceUrl
@@ -35,17 +39,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: onapsisSecretToken
-        type: string
-        description: "Onapsis JWT"
-        mandatory: true
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: onapsisSecretTokenId
-            type: secret
       - name: appType
         type: string
         description: "Type of the application to be scanned"
@@ -73,13 +66,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: onapsisCertificatePath
-        type: string
-        description: "The path to the Onapsis scan server certificate"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: debugMode
         type: bool
         description: "Enable debug mode for the scan"
@@ -88,3 +74,24 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: onapsisSecretToken
+        type: string
+        description: "Onapsis JWT, used to authenticate with the Onapsis scan service"
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: onapsisSecretTokenId
+            type: secret
+      - name: onapsisCertificatePath
+        type: string
+        description: "The path to the Onapsis scan server certificate"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: onapsisCertificate
+            type: secret
