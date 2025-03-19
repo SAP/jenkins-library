@@ -10,7 +10,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func buildahExecute(config buildahExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildahExecuteCommonPipelineEnvironment) {
@@ -55,66 +54,12 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		}
 	}
 
-	log.Entry().Info("Checking system capabilities and configuration...")
-
-	// System and runtime info
-	_ = execRunner.RunExecutable("cat", "/etc/*release")
-	_ = execRunner.RunExecutable("uname", "-a")
-	_ = execRunner.RunExecutable("cat", "/etc/containers/storage.conf")
-	_ = execRunner.RunExecutable("cat", "/proc/self/mountinfo")
-
-	// User and permission checks
-	_ = execRunner.RunExecutable("id")
-	_ = execRunner.RunExecutable("ls", "-la", "/var/lib/containers")
-	_ = execRunner.RunExecutable("ls", "-la", "/")
-	_ = execRunner.RunExecutable("mount")
-
-	// Container runtime checks
-	_ = execRunner.RunExecutable("capsh", "--print")
-	_ = execRunner.RunExecutable("sysctl", "kernel.unprivileged_userns_clone")
-	_ = execRunner.RunExecutable("cat", "/proc/sys/user/max_user_namespaces")
-
-	// Security profile checks
-	_ = execRunner.RunExecutable("cat", "/proc/self/status")
-	_ = execRunner.RunExecutable("cat", "/sys/kernel/security/apparmor/profiles")
-	_ = execRunner.RunExecutable("grep", "Seccomp:", "/proc/self/status")
-	_ = execRunner.RunExecutable("cat", "/proc/self/attr/current")
-
-	// Storage driver info
-	_ = execRunner.RunExecutable("df", "-h")
-	_ = execRunner.RunExecutable("findmnt")
-
-	// Network storage checks
-	_ = execRunner.RunExecutable("stat", "-f", "/var/lib/containers")
-	_ = execRunner.RunExecutable("ls", "-la", "/var/lib/containers/.???*")
-	_ = execRunner.RunExecutable("cat", "/proc/mounts")
-
-	// Check buildah version and info
-	_ = execRunner.RunExecutable("buildah", "info")
-	_ = execRunner.RunExecutable("ps", "aux")
-	err := execRunner.RunExecutable("buildah", "--version")
-	if err != nil {
-		return errors.Wrap(err, "Failed to execute buildah command")
-	}
-
 	// Prepare buildah command with options for container operation
 	cmdOpts := []string{
-		"bud",                                                      // Using bud (build-using-dockerfile) for Dockerfile builds
-		"--format=docker",                                          // Use Docker format for compatibility
-		"--security-opt=apparmor=unconfined",                       // Required for container operation
-		"--security-opt=seccomp=unconfined",                        // Required for container operation
-		"--storage-driver=vfs",                                     // Use vfs storage driver explicitly
-		"--pull=true",                                              // Allow pulling base images
-		"--layers=true",                                            // Enable layer optimization
-		"--volume", "/var/lib/containers:/var/lib/containers:rw,z", // Mount container storage with proper SELinux context
+		"bud",               // Using bud (build-using-dockerfile) for Dockerfile builds
+		"--format=docker",   // Use Docker format for compatibility
+		"--log-level=debug", // Enable debug logging
 	}
-
-	// Additional build arguments for troubleshooting
-	cmdOpts = append(cmdOpts,
-		"--log-level=debug",  // Enable debug logging
-		"--isolation=chroot", // Use chroot isolation
-		"--cap-add=all",      // Grant all capabilities for debugging
-	)
 
 	// Add Dockerfile location if specified and different from context
 	if config.DockerfilePath != "." && config.DockerfilePath != "" {
@@ -160,32 +105,10 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		}
 	}
 	log.Entry().Infof("Executing buildah command: buildah %v", displayCmd)
-	err = execRunner.RunExecutable("buildah", cmdOpts...)
+	err := execRunner.RunExecutable("buildah", cmdOpts...)
 	if err != nil {
 		log.Entry().Warn("Initial buildah attempt failed, trying fallback configuration...")
-
-		// Fallback options with essential settings
-		cmdOpts = []string{
-			"bud",
-			"--format=docker",
-			"--storage-driver=vfs",
-			"--isolation=oci", // Try OCI isolation instead of chroot
-			"--layers=true",   // Enable layer optimization
-			"--pull=true",     // Allow pulling images when needed
-		}
-
-		if config.DockerfilePath != "." && config.DockerfilePath != "" {
-			cmdOpts = append(cmdOpts, fmt.Sprintf("-f=%s", config.DockerfilePath))
-		}
-
-		// Try with default tag
-		cmdOpts = append(cmdOpts, "--tag=test-image:latest")
-
-		log.Entry().Infof("Trying fallback buildah command: buildah %v", cmdOpts)
-		err = execRunner.RunExecutable("buildah", cmdOpts...)
-		if err != nil {
-			return fmt.Errorf("buildah build failed with both default and fallback configurations: %w", err)
-		}
+		return fmt.Errorf("failed to execute buildah: %w", err)
 	}
 
 	// If registry is configured, push the image
