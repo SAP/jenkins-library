@@ -116,6 +116,11 @@ spec:
       securityContext:
         privileged: true
         runAsUser: 1000
+      env:
+        - name: BUILDAH_ISOLATION
+          value: "chroot"
+        - name: STORAGE_DRIVER
+          value: "vfs"
       volumeMounts:
         - mountPath: /var/lib/containers
           name: volume
