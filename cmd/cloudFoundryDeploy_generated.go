@@ -26,6 +26,7 @@ type cloudFoundryDeployOptions struct {
 	CfHome                   string                 `json:"cfHome,omitempty"`
 	CfNativeDeployParameters string                 `json:"cfNativeDeployParameters,omitempty"`
 	CfPluginHome             string                 `json:"cfPluginHome,omitempty"`
+	CfTrace                  string                 `json:"cfTrace,omitempty"`
 	DeployDockerImage        string                 `json:"deployDockerImage,omitempty"`
 	DeployTool               string                 `json:"deployTool,omitempty"`
 	BuildTool                string                 `json:"buildTool,omitempty"`
@@ -239,6 +240,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.CfHome, "cfHome", os.Getenv("PIPER_cfHome"), "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
 	cmd.Flags().StringVar(&stepConfig.CfNativeDeployParameters, "cfNativeDeployParameters", os.Getenv("PIPER_cfNativeDeployParameters"), "Additional parameters passed to cf native deployment command")
 	cmd.Flags().StringVar(&stepConfig.CfPluginHome, "cfPluginHome", os.Getenv("PIPER_cfPluginHome"), "The cf plugin home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
+	cmd.Flags().StringVar(&stepConfig.CfTrace, "cfTrace", `cf.log`, "Append CF CLI API request diagnostics to a log file. If set to 'true', prints API request diagnostics to stdout.")
 	cmd.Flags().StringVar(&stepConfig.DeployDockerImage, "deployDockerImage", os.Getenv("PIPER_deployDockerImage"), "Docker image deployments are supported [via manifest file in general](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker). If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See [cf CLI documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html)x`x` for details. Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", os.Getenv("PIPER_deployTool"), "Defines the tool which should be used for deployment. Mandatory if `buildTool` is not found in pipeline environment")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact. If provided, `deployTool` is automatically derived from it. For MTA projects, `deployTool` defaults to `mtaDeployPlugin`. For other projects `cf_native` will be used.")
@@ -353,6 +355,15 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_cfPluginHome"),
+					},
+					{
+						Name:        "cfTrace",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `cf.log`,
 					},
 					{
 						Name:        "deployDockerImage",
