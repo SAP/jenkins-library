@@ -98,9 +98,6 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		cmdOpts = append(cmdOpts, config.BuildOptions...)
 	}
 
-	// Add build context directory at the end of the command
-	cmdOpts = append(cmdOpts, ".")
-
 	// Log the command being executed (with sensitive data masked)
 	displayCmd := []string{}
 	for i, arg := range cmdOpts {
