@@ -14,8 +14,8 @@ def call(Map parameters = [:]) {
     try {
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
     } finally {
-        def artifact = new File(ONAPSIS_REPORT_NAME)
-        if (artifact.exists())
+        if (fileExists(ONAPSIS_REPORT_NAME)) {
             archiveArtifacts(ONAPSIS_REPORT_NAME)
+        }
     }
 }
