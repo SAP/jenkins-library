@@ -113,17 +113,3 @@ spec:
   containers:
     - name: buildah
       image: quay.io/buildah/stable:latest
-      securityContext:
-        privileged: true
-        runAsUser: 1000
-      env:
-        - name: BUILDAH_ISOLATION
-          value: "chroot"
-        - name: STORAGE_DRIVER
-          value: "vfs"
-      volumeMounts:
-        - mountPath: /var/lib/containers
-          name: volume
-  volumes:
-    - name: volume
-      emptyDir: {}

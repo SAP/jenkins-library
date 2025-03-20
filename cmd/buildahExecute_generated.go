@@ -344,7 +344,7 @@ func buildahExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "buildah", Image: "quay.io/buildah/stable:latest", EnvVars: []config.EnvVar{{Name: "BUILDAH_ISOLATION", Value: "chroot"}, {Name: "STORAGE_DRIVER", Value: "vfs"}}},
+				{Name: "buildah", Image: "quay.io/buildah/stable:latest"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
