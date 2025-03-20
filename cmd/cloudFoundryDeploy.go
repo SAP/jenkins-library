@@ -636,7 +636,7 @@ func cfDeploy(
 	if err != nil || GeneralConfig.Verbose {
 		if config.CfTrace != "" && config.CfTrace != "true" {
 			if e := handleCfCliLog(config.CfTrace); e != nil {
-				log.Entry().WithError(err).Errorf("Error reading cf log file '%s'.", config.CfTrace)
+				log.Entry().WithError(err).Errorf("Error reading cf log file '%s': %v", config.CfTrace, e)
 			}
 		}
 	}
