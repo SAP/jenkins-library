@@ -56,12 +56,12 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options for container operation
 	cmdOpts := []string{
-		"--storage-driver=vfs",
-		"--isolation=oci",   // Try OCI isolation instead
-		"--userns=host",     // Use host user namespace
-		"bud",               // Using bud (build-using-dockerfile) for Dockerfile builds
-		"--format=docker",   // Use Docker format for compatibility
-		"--log-level=debug", // Enable debug logging
+		"--storage-driver=vfs", // Keep vfs storage driver
+		"bud",                  // Using build-using-dockerfile
+		"--format=docker",      // Use Docker format for compatibility
+		"--log-level=debug",    // Enable debug logging
+		"--force-rm",           // Remove intermediate containers
+		"--layers",             // Enable layer caching
 	}
 
 	// Add Dockerfile location if specified and different from context
@@ -98,6 +98,9 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		cmdOpts = append(cmdOpts, config.BuildOptions...)
 	}
 
+	// Add build context directory at the end of the command
+	cmdOpts = append(cmdOpts, ".")
+
 	// Log the command being executed (with sensitive data masked)
 	displayCmd := []string{}
 	for i, arg := range cmdOpts {
@@ -110,7 +113,6 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 	log.Entry().Infof("Executing buildah command: buildah %v", displayCmd)
 	err := execRunner.RunExecutable("buildah", cmdOpts...)
 	if err != nil {
-		log.Entry().Warn("Initial buildah attempt failed, trying fallback configuration...")
 		return fmt.Errorf("failed to execute buildah: %w", err)
 	}
 
