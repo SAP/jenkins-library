@@ -56,8 +56,7 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options for container operation
 	cmdOpts := []string{
-		"--storage-driver=vfs", // Global option must come before the command
-		"bud",                  // The command (build-using-dockerfile)
+		"bud", // The command (build-using-dockerfile)
 	}
 
 	// Now add all the command-specific options
