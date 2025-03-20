@@ -56,6 +56,7 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options for container operation
 	cmdOpts := []string{
+		"--storage-driver=vfs",
 		"bud",               // Using bud (build-using-dockerfile) for Dockerfile builds
 		"--format=docker",   // Use Docker format for compatibility
 		"--log-level=debug", // Enable debug logging

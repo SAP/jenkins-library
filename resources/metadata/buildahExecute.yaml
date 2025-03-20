@@ -116,3 +116,9 @@ spec:
       securityContext:
         privileged: true
         runAsUser: 1000
+      volumeMounts:
+        - mountPath: /var/lib/containers
+          name: volume
+  volumes:
+    - name: volume
+      emptyDir: {}
