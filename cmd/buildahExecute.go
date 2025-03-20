@@ -56,13 +56,19 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options for container operation
 	cmdOpts := []string{
-		"--storage-driver=vfs", // Keep vfs storage driver
-		"bud",                  // Using build-using-dockerfile
-		"--format=docker",      // Use Docker format for compatibility
-		"--log-level=debug",    // Enable debug logging
-		"--force-rm",           // Remove intermediate containers
-		"--layers",             // Enable layer caching
+		"--storage-driver=vfs", // Global option must come before the command
+		"bud",                  // The command (build-using-dockerfile)
 	}
+
+	// Now add all the command-specific options
+	budOpts := []string{
+		"--format=docker",   // Use Docker format for compatibility
+		"--log-level=debug", // Enable debug logging
+		"--force-rm",        // Remove intermediate containers
+		"--layers",          // Enable layer caching
+	}
+
+	cmdOpts = append(cmdOpts, budOpts...)
 
 	// Add Dockerfile location if specified and different from context
 	if config.DockerfilePath != "." && config.DockerfilePath != "" {
@@ -97,6 +103,9 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 	if len(config.BuildOptions) > 0 {
 		cmdOpts = append(cmdOpts, config.BuildOptions...)
 	}
+
+	// Add the build context directory as the final argument
+	cmdOpts = append(cmdOpts, ".")
 
 	// Log the command being executed (with sensitive data masked)
 	displayCmd := []string{}
