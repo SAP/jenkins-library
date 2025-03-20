@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -40,71 +39,6 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	log.Entry().Info("Starting buildkit execution in rootful daemonless mode...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Set environment for rootful operation with optimized settings
-	os.Setenv("BUILDKIT_CLI_MODE", "daemonless")
-	os.Setenv("BUILDKIT_PROGRESS", "plain")
-	os.Setenv("BUILDKIT_SNAPSHOTTER", "fuse-overlayfs") // Use fuse-overlayfs for better compatibility
-	os.Setenv("BUILDKIT_DEBUG", "1")
-
-	// Use simplified paths to minimize mount requirements
-	basePath := "/home/user/.local/share/buildkit"
-	cachePath := fmt.Sprintf("%s/cache", basePath)
-	tmpPath := "/tmp/buildkit"
-
-	// Create required directories with appropriate permissions
-	for _, path := range []string{basePath, cachePath, tmpPath} {
-		if err := fileUtils.MkdirAll(path, 0777); err != nil {
-			log.Entry().Warnf("Failed to create directory %s: %v", path, err)
-		}
-		// Force permissions even if directory exists
-		if err := os.Chmod(path, 0777); err != nil {
-			log.Entry().Warnf("Failed to chmod directory %s: %v", path, err)
-		}
-	}
-
-	// Debug info collection
-	log.Entry().Info("Collecting debug information...")
-
-	// System and runtime info
-	_ = execRunner.RunExecutable("cat", "/etc/*release")
-	_ = execRunner.RunExecutable("uname", "-a")
-	_ = execRunner.RunExecutable("cat", "/etc/containers/storage.conf")
-	_ = execRunner.RunExecutable("cat", "/proc/self/mountinfo")
-
-	// User and permission checks
-	_ = execRunner.RunExecutable("id")
-	_ = execRunner.RunExecutable("ls", "-la", "/var/lib/containers")
-	_ = execRunner.RunExecutable("ls", "-la", "/")
-	_ = execRunner.RunExecutable("mount")
-
-	// Container runtime checks
-	_ = execRunner.RunExecutable("capsh", "--print")
-	_ = execRunner.RunExecutable("sysctl", "kernel.unprivileged_userns_clone")
-	_ = execRunner.RunExecutable("cat", "/proc/sys/user/max_user_namespaces")
-
-	// Check tmp directory and mount capability
-	_ = execRunner.RunExecutable("sh", "-c", "ls -la /tmp && mkdir -p /tmp/buildkit-test && mount -t tmpfs none /tmp/buildkit-test 2>&1 || echo \"Mount failed\"")
-	_ = execRunner.RunExecutable("sh", "-c", "capsh --print 2>/dev/null || echo \"Missing capabilities\"")
-
-	// Security profile checks
-	_ = execRunner.RunExecutable("cat", "/proc/self/status")
-	_ = execRunner.RunExecutable("cat", "/sys/kernel/security/apparmor/profiles")
-	_ = execRunner.RunExecutable("grep", "Seccomp:", "/proc/self/status")
-	_ = execRunner.RunExecutable("cat", "/proc/self/attr/current")
-
-	// Storage driver info
-	_ = execRunner.RunExecutable("df", "-h")
-	_ = execRunner.RunExecutable("findmnt")
-
-	// Network storage checks
-	_ = execRunner.RunExecutable("stat", "-f", "/var/lib/containers")
-	_ = execRunner.RunExecutable("ls", "-la", "/var/lib/containers/.???*")
-	_ = execRunner.RunExecutable("cat", "/proc/mounts")
-
-	// Check buildah version and info
-	_ = execRunner.RunExecutable("buildah", "info")
-	_ = execRunner.RunExecutable("ps", "aux")
-
 	// Handle Docker authentication
 	dockerConfigDir := "/home/user/.docker"
 	if len(config.DockerConfigJSON) > 0 {
@@ -120,41 +54,17 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		}
 	}
 
-	// Build with buildkit using direct buildctl
-	log.Entry().Info("BuildKit Configuration:")
-	log.Entry().Info("- Using privileged mode")
-	log.Entry().Infof("- Cache location: %s", cachePath)
-	log.Entry().Info("- Temp directory: /tmp")
-	log.Entry().Info("- Environment variables:")
-	for _, env := range os.Environ() {
-		if len(env) > 9 && env[:9] == "BUILDKIT_" {
-			log.Entry().Infof("  %s", env)
-		}
-	}
-
 	// Add buildkit version check
 	if err := execRunner.RunExecutable("buildctl-daemonless.sh", "--version"); err != nil {
 		log.Entry().Warnf("Failed to get buildkit version: %v", err)
 	}
-
-	// Set buildkit-specific env vars for mount and cache handling
-	os.Setenv("BUILDKIT_SANDBOX_MOUNT_PATH", "/tmp")
-	os.Setenv("BUILDKIT_STEP_MOUNT_PATH", "/tmp")
-	os.Setenv("BUILDKIT_SANDBOX_MODE", "0777")
-	os.Setenv("BUILDKIT_WORKDIR_MODE", "0777")
-	os.Setenv("BUILDKIT_MOUNT_MODE", "0777")
 
 	buildOpts := []string{
 		"build",
 		"--frontend", "dockerfile.v0",
 		"--local", "context=.",
 		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
-		"--progress", "plain",
-		"--export-cache", fmt.Sprintf("type=local,dest=%s", cachePath),
-		"--import-cache", fmt.Sprintf("type=local,src=%s", cachePath),
 	}
-
-	log.Entry().Info("Using build options:", buildOpts)
 
 	// Add build options from config
 	buildOpts = append(buildOpts, config.BuildOptions...)

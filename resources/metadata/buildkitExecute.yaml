@@ -111,41 +111,5 @@ spec:
   containers:
     - name: buildkitd
       image: moby/buildkit:latest
-      env:
-        - name: BUILDKITD_FLAGS
-          value: --oci-worker=true --containerd-worker=false --oci-worker-snapshotter=fuse-overlayfs
-        - name: BUILDKIT_STEP_LOG_MAX_SIZE
-          value: "10485760"
-        - name: BUILDKIT_STEP_LOG_MAX_SPEED
-          value: "10485760"
-        - name: BUILDKIT_SANDBOX_MOUNT_PATH
-          value: /tmp/buildkit
-        - name: BUILDKIT_STEP_MOUNT_PATH
-          value: /tmp/buildkit
-        - name: BUILDKIT_WORKDIR_MODE
-          value: "0777"
-        - name: BUILDKIT_MOUNT_MODE
-          value: "0777"
       securityContext:
         privileged: true
-        procMount: Unmasked
-        capabilities:
-          add:
-            - SYS_ADMIN
-            - DAC_OVERRIDE
-        seccompProfile:
-          type: Unconfined
-      volumeMounts:
-        - mountPath: /home/user/.local/share/buildkit
-          name: volume
-          subPath: buildkit-storage
-        - mountPath: /tmp/buildkit
-          name: volume
-          subPath: buildkit-tmp
-        - mountPath: /var/cache/buildkit
-          name: volume
-          subPath: buildkit-cache
-  volumes:
-    - name: volume
-      emptyDir:
-        sizeLimit: 20Gi
