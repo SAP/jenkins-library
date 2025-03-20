@@ -113,3 +113,16 @@ spec:
   containers:
     - name: podman
       image: quay.io/podman/stable:latest
+      securityContext:
+        privileged: true
+        seLinuxOptions:
+          type: "unconfined"  # Equivalent to --security-opt label=disable
+        seccompProfile:
+          type: "Unconfined"  # Equivalent to --security-opt seccomp=unconfined
+      env:
+        - name: STORAGE_DRIVER
+          value: "vfs"
+        - name: PODMAN_USERNS
+          value: "keep-id"
+        - name: PODMAN_IGNORE_CGROUPSV1_WARNING
+          value: "1"
