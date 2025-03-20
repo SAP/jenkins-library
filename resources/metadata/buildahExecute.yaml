@@ -111,22 +111,5 @@ spec:
             type: sbom
 
   containers:
-    - name: buildah
-      image: quay.io/buildah/stable:latest
-      securityContext:
-        privileged: true
-        seccompProfile:
-          type: Localhost
-          localhostProfile: /usr/share/containers/seccomp.json
-      volumeMounts:
-        - name: volume
-          mountPath: /rootfs
-      env:
-        - name: BUILDAH_ISOLATION
-          value: "chroot"
-        - name: STORAGE_DRIVER
-          value: "vfs"
-  volumes:
-    - name: volume
-      hostPath:
-        path: $(workspaceRoot)
+    - name: podman
+      image: quay.io/podman/stable:latest

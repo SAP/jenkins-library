@@ -56,11 +56,9 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options for container operation
 	cmdOpts := []string{
-		"--storage-driver=vfs",
-		"--isolation=chroot", // Explicitly set isolation mode to chroot
-		"bud",                // Using bud (build-using-dockerfile) for Dockerfile builds
-		"--format=docker",    // Use Docker format for compatibility
-		"--log-level=debug",  // Enable debug logging
+		"build",             // Using bud (build-using-dockerfile) for Dockerfile builds
+		"--format=docker",   // Use Docker format for compatibility
+		"--log-level=debug", // Enable debug logging
 	}
 
 	// Add Dockerfile location if specified and different from context
@@ -107,7 +105,7 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		}
 	}
 	log.Entry().Infof("Executing buildah command: buildah %v", displayCmd)
-	err := execRunner.RunExecutable("buildah", cmdOpts...)
+	err := execRunner.RunExecutable("podman", cmdOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to execute buildah: %w", err)
 	}
