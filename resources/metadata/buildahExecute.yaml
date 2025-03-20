@@ -113,6 +113,9 @@ spec:
   containers:
     - name: podman
       image: quay.io/podman/stable:latest
+      args:
+        - sleep
+        - "1000000"
       securityContext:
         privileged: true
         seLinuxOptions:
