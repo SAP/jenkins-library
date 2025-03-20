@@ -114,16 +114,5 @@ spec:
     - name: buildah
       image: quay.io/buildah/stable:latest
       securityContext:
-        runAsUser: 0
-        privileged: false
-        capabilities:
-          add:
-            - SETUID
-            - SETGID
-      env:
-        - name: BUILDAH_ISOLATION
-          value: "chroot"
-        - name: STORAGE_DRIVER
-          value: "vfs"
-        - name: STORAGE_OPTS
-          value: ""
+        privileged: true
+        runAsUser: 1000
