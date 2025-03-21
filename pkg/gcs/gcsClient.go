@@ -63,13 +63,12 @@ func (cl *gcsClient) UploadFile(ctx context.Context, bucketID string, sourcePath
 	defer sourceFile.Close()
 
 	target := cl.gcs.Bucket(bucketID).Object(targetPath).NewWriter(ctx)
-	defer target.Close()
-
 	task := func(ctx context.Context) error {
 		if _, err = io.Copy(target, sourceFile); err != nil {
 			return fmt.Errorf("upload failed: %w", err)
 		}
-		return nil
+		// Google API errors (like 401, 403 and etc) are returned by Close() method, for some reason.
+		return target.Close()
 	}
 
 	return retryWithLogging(ctx, log.Entry(), task, initialBackoff, maxRetries, retryMultiplier)
@@ -90,13 +89,14 @@ func (cl *gcsClient) DownloadFile(ctx context.Context, bucketID, sourcePath, tar
 	if err != nil {
 		return fmt.Errorf("failed to open source file: %w", err)
 	}
-	defer source.Close()
 
 	task := func(ctx context.Context) error {
 		if _, err = io.Copy(target, source); err != nil {
 			return fmt.Errorf("download failed: %w", err)
 		}
-		return nil
+
+		// Google API errors (like 401, 403 and etc) are returned by Close() method, for some reason.
+		return source.Close()
 	}
 
 	return retryWithLogging(ctx, log.Entry(), task, initialBackoff, maxRetries, retryMultiplier)
