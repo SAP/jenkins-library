@@ -577,6 +577,10 @@ func cfDeploy(
 	var err error
 	var loginPerformed bool
 
+	// TODO: remove after testing?
+	log.Entry().Infof("additionalEnvironment '%s'", additionalEnvironment)
+	log.Entry().Infof("config.CfTrace '%s'", config.CfTrace)
+
 	if config.CfTrace {
 		additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
 	} else {
@@ -618,7 +622,10 @@ func cfDeploy(
 	}
 
 	// TODO: remove after testing?
-	if fileExists, _ := piperutils.FileExists(cfLogFile); fileExists && !config.CfTrace {
+	fileExists, _ := piperutils.FileExists(cfLogFile);
+	log.Entry().Infof("cfLogFile fileExists? '%s'", fileExists)
+
+	if fileExists && !config.CfTrace {
 		log.Entry().Infof("Removing existing cf log file '%s'", cfLogFile)
 		err = os.Remove(cfLogFile)
 		if err != nil {
