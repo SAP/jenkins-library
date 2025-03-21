@@ -617,6 +617,15 @@ func cfDeploy(
 		}
 	}
 
+	// TODO: remove after testing?
+	if fileExists, _ := piperutils.FileExists(cfLogFile); fileExists && !config.CfTrace {
+		log.Entry().Infof("Removing existing cf log file '%s'", cfLogFile)
+		err = os.Remove(cfLogFile)
+		if err != nil {
+			log.Entry().WithError(err).Errorf("Cannot remove existing cf log file '%s'", cfLogFile)
+		}
+	}
+
 	if err == nil {
 		err = command.RunExecutable("cf", cfDeployParams...)
 		if err != nil {
