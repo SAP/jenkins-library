@@ -39,24 +39,6 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 	log.Entry().Info("Starting buildah execution...")
 	log.Entry().Infof("Using Dockerfile at: %s", config.DockerfilePath)
 
-	// Debug security profiles before build
-	log.Entry().Info("Debugging security profiles...")
-
-	// Debug AppArmor
-	log.Entry().Info("AppArmor status:")
-	execRunner.RunExecutable("bash", "-c", "if command -v aa-status &> /dev/null; then aa-status; else echo 'aa-status not available'; fi")
-	execRunner.RunExecutable("bash", "-c", "if [ -f /sys/kernel/security/apparmor/profiles ]; then cat /sys/kernel/security/apparmor/profiles; else echo 'AppArmor profiles file not available'; fi")
-	execRunner.RunExecutable("bash", "-c", "cat /proc/self/attr/current 2>/dev/null || echo 'Cannot read AppArmor current profile'")
-
-	// Debug Seccomp
-	log.Entry().Info("Seccomp status:")
-	execRunner.RunExecutable("bash", "-c", "grep Seccomp /proc/self/status || echo 'No Seccomp info in process status'")
-	execRunner.RunExecutable("bash", "-c", "sysctl -a 2>/dev/null | grep seccomp || echo 'No seccomp sysctl settings found'")
-
-	// Check for capabilities
-	log.Entry().Info("Capabilities:")
-	execRunner.RunExecutable("bash", "-c", "capsh --print || echo 'capsh not available'")
-
 	// Handle Docker authentication
 	dockerConfigDir := "/home/user/.docker"
 	if len(config.DockerConfigJSON) > 0 {
@@ -74,7 +56,7 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 
 	// Prepare buildah command with options for container operation
 	cmdOpts := []string{
-		"build",             // Using bud (build-using-dockerfile) for Dockerfile builds
+		"bud",               // Using bud (build-using-dockerfile) for Dockerfile builds
 		"--format=docker",   // Use Docker format for compatibility
 		"--log-level=debug", // Enable debug logging
 	}
@@ -123,7 +105,7 @@ func runBuildahExecute(config *buildahExecuteOptions, telemetryData *telemetry.C
 		}
 	}
 	log.Entry().Infof("Executing buildah command: buildah %v", displayCmd)
-	err := execRunner.RunExecutable("podman", cmdOpts...)
+	err := execRunner.RunExecutable("buildah", cmdOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to execute buildah: %w", err)
 	}

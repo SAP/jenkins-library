@@ -344,7 +344,7 @@ func buildahExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "podman", Image: "quay.io/podman/stable:latest", EnvVars: []config.EnvVar{{Name: "STORAGE_DRIVER", Value: "vfs"}, {Name: "PODMAN_USERNS", Value: "keep-id"}, {Name: "PODMAN_IGNORE_CGROUPSV1_WARNING", Value: "1"}}},
+				{Name: "podman", Image: "quay.io/buildah/stable:latest"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
