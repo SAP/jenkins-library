@@ -622,7 +622,7 @@ func cfDeploy(
 	}
 
 	// TODO: remove after testing?
-	fileExists, _ := piperutils.FileExists(cfLogFile);
+	fileExists, _ := piperutils.FileExists(cfLogFile)
 	log.Entry().Infof("cfLogFile fileExists? '%s'", fileExists)
 
 	if fileExists && !config.CfTrace {
