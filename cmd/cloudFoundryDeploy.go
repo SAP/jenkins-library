@@ -577,7 +577,15 @@ func cfDeploy(
 	var err error
 	var loginPerformed bool
 
-	additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
+	// TODO: remove after testing?
+	log.Entry().Infof("additionalEnvironment '%s'", additionalEnvironment)
+	log.Entry().Infof("config.CfTrace '%v'", config.CfTrace)
+
+	if config.CfTrace {
+		additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
+	} else {
+		additionalEnvironment = append(additionalEnvironment, "CF_TRACE=true") // Print API request diagnostics to stdout
+	}
 
 	if len(config.CfHome) > 0 {
 		additionalEnvironment = append(additionalEnvironment, "CF_HOME="+config.CfHome)
@@ -613,6 +621,18 @@ func cfDeploy(
 		}
 	}
 
+	// TODO: remove after testing?
+	fileExists, _ := piperutils.FileExists(cfLogFile)
+	log.Entry().Infof("cfLogFile fileExists? '%v'", fileExists)
+
+	if fileExists && !config.CfTrace {
+		log.Entry().Infof("Removing existing cf log file '%s'", cfLogFile)
+		err = os.Remove(cfLogFile)
+		if err != nil {
+			log.Entry().WithError(err).Errorf("Cannot remove existing cf log file '%s'", cfLogFile)
+		}
+	}
+
 	if err == nil {
 		err = command.RunExecutable("cf", cfDeployParams...)
 		if err != nil {
@@ -633,9 +653,10 @@ func cfDeploy(
 	}
 
 	if err != nil || GeneralConfig.Verbose {
-		e := handleCfCliLog(cfLogFile)
-		if e != nil {
-			log.Entry().WithError(err).Errorf("Error reading cf log file '%s'.", cfLogFile)
+		if config.CfTrace {
+			if e := handleCfCliLog(cfLogFile); e != nil {
+				log.Entry().WithError(err).Errorf("Error reading cf log file '%s': %v", cfLogFile, e)
+			}
 		}
 	}
 
