@@ -573,11 +573,14 @@ func cfDeploy(
 	additionalEnvironment []string,
 	command command.ExecRunner) error {
 
+	const cfLogFile = "cf.log"
 	var err error
 	var loginPerformed bool
 
-	if config.CfTrace != "" {
-		additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+config.CfTrace)
+	if config.CfTrace {
+		additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
+	} else {
+		additionalEnvironment = append(additionalEnvironment, "CF_TRACE=true") // Print API request diagnostics to stdout
 	}
 
 	if len(config.CfHome) > 0 {
@@ -634,9 +637,9 @@ func cfDeploy(
 	}
 
 	if err != nil || GeneralConfig.Verbose {
-		if config.CfTrace != "" && config.CfTrace != "true" {
-			if e := handleCfCliLog(config.CfTrace); e != nil {
-				log.Entry().WithError(err).Errorf("Error reading cf log file '%s': %v", config.CfTrace, e)
+		if config.CfTrace {
+			if e := handleCfCliLog(cfLogFile); e != nil {
+				log.Entry().WithError(err).Errorf("Error reading cf log file '%s': %v", cfLogFile, e)
 			}
 		}
 	}

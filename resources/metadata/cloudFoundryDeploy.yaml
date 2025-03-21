@@ -104,15 +104,15 @@ spec:
           - GENERAL
         mandatory: false
       - name: cfTrace
-        type: string
-        description: "Append CF CLI API request diagnostics to a log file. If set to 'true', prints API request diagnostics to stdout."
+        type: bool
+        description: "Append CF CLI API request diagnostics to a 'cf.log' file. If set to false, just prints API request diagnostics to stdout."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
           - GENERAL
         mandatory: false
-        default: "cf.log"
+        default: true
       - name: deployDockerImage
         type: string
         description: "Docker image deployments are supported
