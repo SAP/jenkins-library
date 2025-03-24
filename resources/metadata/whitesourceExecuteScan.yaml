@@ -796,7 +796,7 @@ spec:
           params:
             - name: buildTool
               value: maven
-    - image: node:lts-bullseye
+    - image: node:lts-bookworm
       workingDir: /home/node
       env: []
       conditions:
@@ -812,7 +812,7 @@ spec:
           params:
             - name: buildTool
               value: pip
-    - image: node:lts-bullseye
+    - image: node:lts-bookworm
       workingDir: /home/node
       env: []
       conditions:

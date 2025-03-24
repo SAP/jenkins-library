@@ -44,8 +44,8 @@ class NpmExecuteTest extends BasePiperTest {
 
     @Test
     void testNpmExecute() {
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-bullseye')
-        assertEquals 'node:lts-bullseye', dockerExecuteRule.dockerParams.dockerImage
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-bookworm')
+        assertEquals 'node:lts-bookworm', dockerExecuteRule.dockerParams.dockerImage
     }
 
     @Test
@@ -76,7 +76,7 @@ class NpmExecuteTest extends BasePiperTest {
 
     @Test
     void testNpmExecuteWithClosure() {
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-bullseye', npmCommand: 'run build') { }
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-bookworm', npmCommand: 'run build') { }
         assert shellRule.shell.find { c -> c.contains('npm run build') }
     }
 
@@ -85,6 +85,6 @@ class NpmExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod 'fileExists', [String], { false }
         thrown.expect AbortException
         thrown.expectMessage '[npmExecute] package.json is not found.'
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-bullseye', npmCommand: 'run build')
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-bookworm', npmCommand: 'run build')
     }
 }

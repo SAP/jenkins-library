@@ -6,7 +6,7 @@ metadata:
 
 #    The step is using `dockerExecute` step to spin up two containers in a Docker network:
 #    * a Selenium/Chrome container (`selenium/standalone-chrome`)
-#    * a NodeJS container (`node:lts-bullseye`)
+#    * a NodeJS container (`node:lts-bookworm`)
 #    In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `uiVeri5` and `selenium`.
 #   !!! note
 #        In a Kubernetes environment, the containers both need to be referenced with `localhost`.
@@ -74,7 +74,7 @@ spec:
             type: delivery-mapping
   containers:
     - name: uiVeri5
-      image: node:lts-bullseye
+      image: node:lts-bookworm
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy

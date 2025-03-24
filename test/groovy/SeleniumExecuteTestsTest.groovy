@@ -72,7 +72,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         }
         assertThat(bodyExecuted, is(true))
         assertThat(dockerExecuteRule.dockerParams.containerPortMappings, is(['selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]]))
-        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:lts-bullseye'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:lts-bookworm'))
         assertThat(dockerExecuteRule.dockerParams.dockerName, is('npm'))
         assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
         assertThat(dockerExecuteRule.dockerParams.sidecarEnvVars, is(null))

@@ -16,7 +16,7 @@ spec:
           - STAGES
           - STEPS
         type: string
-        default: '**/*.postman_collection.json'
+        default: "**/*.postman_collection.json"
       - name: newmanRunCommand
         description: +++ Deprecated +++ Please use list parameter `runOptions` instead.
         scope:
@@ -100,5 +100,5 @@ spec:
             type: delivery-mapping
   containers:
     - name: newman
-      image: node:lts-bullseye
+      image: node:lts-bookworm
       workingDir: /home/node
