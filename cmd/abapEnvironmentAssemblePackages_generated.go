@@ -76,8 +76,12 @@ func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Assembly of installation, support package or patch in SAP BTP ABAP Environment system",
-		Long: `This step runs the assembly of a list of provided [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in SAP Cloud
-Platform ABAP Environment system and saves the corresponding [SAR archive](https://launchpad.support.sap.com/#/notes/212876) to the filesystem.`,
+		Long: `This step runs the assembly of a list of provided [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in SAP BTP ABAP Environment system and saves the corresponding [SAR archive](https://launchpad.support.sap.com/#/notes/212876) to the filesystem.
+<br />
+Among others a semantic version [API snapshot](https://help.sap.com/docs/btp/sap-business-technology-platform/creating-api-snapshots?version=Cloud) will be
+searched and marked as check-relevant in the assembly system, ATC checks for [consistency of software component dependencies](https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/software-component-relations) as well as [API compatibility](https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/checking-compatibility-of-released-apis) will run, and a new semantic version API snapshot will be created as well.
+<br />
+Refer to [Software Assembly Integration (SAP_COM_0582)](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
