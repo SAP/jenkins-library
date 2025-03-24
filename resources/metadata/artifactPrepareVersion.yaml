@@ -117,10 +117,10 @@ spec:
           - yarn
       - name: additionalTargetDescriptors
         type: "[]string"
-        description: Defines patterns for build descriptors which should be used for option [`additionalTargetTools`](additionaltargettools).
+        description: Defines patterns for build descriptors which should be used for option additionalTargetTools.
         longDescription: |
-          **Only for versioning types `cloud` and `cloud_noTag`.** In case default build descriptors cannot be used for [`additionalTargetTools`](additionaltargettools) this parameter allows to define a dedicated search pattern per build tool.
-          For each entry in [`additionalTargetTools`](additionaltargettools) a dedicated entry has to be maintained.
+          **Only for versioning types `cloud` and `cloud_noTag`.** In case default build descriptors cannot be used for [`additionalTargetTools`](#additionaltargettools) this parameter allows to define a dedicated search pattern per build tool.
+          For each entry in [`additionalTargetTools`](#additionaltargettools) a dedicated entry has to be maintained.
 
           You can use either a file name or a glob pattern like `**/package.json`.
 

@@ -3,12 +3,13 @@ package vault
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/hashicorp/vault/api"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/hashicorp/vault/api"
 )
 
 // GetSecret uses the given path to fetch a secret from vault
@@ -138,6 +139,8 @@ func (c *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string,
 		return "", fmt.Errorf("new secret-id from approle path %s has an unexpected type %T expected 'string'", reqPath, secretIDRaw)
 	}
 
+	//  secret_id_accessor is used to identify the secret-id in the vault and is unique to each secret-id
+	log.Entry().Debugf("GenerateNewAppRoleSecret - secret_id_accessor: %s ", secret.Data["secret_id_accessor"])
 	return newSecretID, nil
 }
 
@@ -168,7 +171,8 @@ func (c *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration
 	if ttl < 0 {
 		return 0, nil
 	}
-
+	//  secret_id_accessor is used to identify the secret-id in the vault and is unique to each secret-id
+	log.Entry().Debugf("GetAppRoleSecretIDTtl - secret_id_accessor: %s  & creation_time: %s", data["secret_id_accessor"], data["creation_time"])
 	return ttl, nil
 }
 
