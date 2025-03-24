@@ -11,10 +11,6 @@ import groovy.transform.Field
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/karmaExecuteTests.yaml'
 
-/**
- * Executes the Karma tests.
- */
-@GenerateDocumentation
 void call(Map parameters = [:]) {
     List credentials = [
         [type: 'usernamePassword', id: 'seleniumHubCredentialsId', env: ['PIPER_SELENIUM_HUB_USER', 'PIPER_SELENIUM_HUB_PASSWORD']],
