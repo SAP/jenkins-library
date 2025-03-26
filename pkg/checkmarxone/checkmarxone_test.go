@@ -119,7 +119,7 @@ func TestGetOAuthToken(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
-		sys, _ := NewSystemInstance(&myTestClient, "https://cx1.server.com", "https://cx1iam.server.com", "tenant", "", "client", "secret")
+		sys, _ := NewSystemInstance(&myTestClient, "https://cx1.server.com", "https://cx1iam.server.com", "tenant", "", "client", "secret", "accessToken")
 		myTestClient.SetOptions(opts)
 
 		token, err := sys.getOAuth2Token()
@@ -143,7 +143,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 	t.Run("test new system", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
-		_, err := NewSystemInstance(&myTestClient, "https://cx1.server.com", "https://cx1iam.server.com", "tenant", "", "client", "secret")
+		_, err := NewSystemInstance(&myTestClient, "https://cx1.server.com", "https://cx1iam.server.com", "tenant", "", "client", "secret", "accessToken")
 
 		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx1iam.server.com/auth/realms/tenant/protocol/openid-connect/token", myTestClient.urlCalled, "Called url incorrect")
