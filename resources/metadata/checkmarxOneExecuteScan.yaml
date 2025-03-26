@@ -170,6 +170,17 @@ spec:
           - type: vaultSecret
             name: checkmarxOneVaultSecretName
             default: checkmarxOne
+      - name: accessToken
+        type: string
+        description: Token for APIs access. This parameter is used uniquely for the integration with Trust Engine API and the value will be filled automatically by the system. Outside this usecase, OAuth client (clientId/clientSecret) or APIKey must be used for authentication.
+        mandatory: true
+        scope:
+          - PARAMETERS
+        secret: true
+        resourceRef:
+          - type: systemTrustSecret
+            name: cxoneSystemtrustSecretName
+            default: cxone
       - name: preset
         type: string
         description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`

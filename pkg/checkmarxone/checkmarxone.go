@@ -283,6 +283,7 @@ type SystemInstance struct {
 	APIKey              string // New for Cx1
 	oauth_client_id     string // separate from APIKey
 	oauth_client_secret string //separate from APIKey
+	accessToken         string
 	client              piperHttp.Uploader
 	logger              *logrus.Entry
 }
@@ -338,7 +339,7 @@ type System interface {
 
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
 // Updated for Cx1
-func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, APIKey, client_id, client_secret string) (*SystemInstance, error) {
+func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, APIKey, client_id, client_secret, accessToken string) (*SystemInstance, error) {
 	loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne")
 	sys := &SystemInstance{
 		serverURL:           serverURL,
@@ -347,27 +348,36 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 		APIKey:              APIKey,
 		oauth_client_id:     client_id,
 		oauth_client_secret: client_secret,
+		accessToken:         accessToken,
 		client:              client,
 		logger:              loggerInstance,
 	}
 
 	var token string
 	var err error
+	var authModel string
 
-	if APIKey != "" {
+	if accessToken != "" { // use access token if provided by the system trust API
+		authModel = "SystemTrust"
+		tokenType := "Bearer "
+		token = tokenType + accessToken
+	} else if APIKey != "" {
+		authModel = "APIKey"
 		token, err = sys.getAPIToken()
 		if err != nil {
 			return sys, errors.Wrap(err, fmt.Sprintf("Error fetching oAuth token using API Key: %v", shortenGUID(APIKey)))
 		}
 	} else if client_id != "" && client_secret != "" {
+		authModel = "OAuth2"
 		token, err = sys.getOAuth2Token()
 		if err != nil {
 			return sys, errors.Wrap(err, fmt.Sprintf("Error fetching oAuth token using OIDC client: %v/%v", shortenGUID(client_id), shortenGUID(client_secret)))
 		}
 	} else {
-		return sys, errors.New("No APIKey or client_id/client_secret provided.")
+		return sys, errors.New("No APIKey or client_id/client_secret or system trust token provided.")
 	}
 
+	sys.logger.Debugf("Created access token from %v", authModel)
 	log.RegisterSecret(token)
 
 	options := piperHttp.ClientOptions{

@@ -202,7 +202,7 @@ func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExe
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
-	sys, err := checkmarxOne.NewSystemInstance(client, config.ServerURL, config.IamURL, config.Tenant, config.APIKey, config.ClientID, config.ClientSecret)
+	sys, err := checkmarxOne.NewSystemInstance(client, config.ServerURL, config.IamURL, config.Tenant, config.APIKey, config.ClientID, config.ClientSecret, config.AccessToken)
 	if err != nil {
 		return checkmarxOneExecuteScanHelper{}, fmt.Errorf("failed to create Checkmarx One client talking to URLs %v and %v with tenant %v: %s", config.ServerURL, config.IamURL, config.Tenant, err)
 	}
