@@ -75,7 +75,7 @@ spec:
             type: delivery-mapping
   containers:
     - name: gauge
-      image: node:lts-buster
+      image: node:lts-bookworm
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy
