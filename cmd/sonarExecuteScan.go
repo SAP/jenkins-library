@@ -288,6 +288,19 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Info:     influx.sonarqube_data.fields.info_issues,
 		}}
 
+	// reportFc1 := SonarUtils.ReportData{
+	// 	ServerURL:    taskReport.ServerURL,
+	// 	ProjectKey:   taskReport.ProjectKey,
+	// 	TaskID:       taskReport.TaskID,
+	// 	ChangeID:     config.ChangeID,
+	// 	BranchName:   config.BranchName,
+	// 	Organization: config.Organization,
+	// 	Issues: IssueSearchObject.Issues[
+	// 		Type: Issue.Type,
+	// 		Severity: Issue.Severity
+	// 	]
+	// 	}
+
 	componentService := SonarUtils.NewMeasuresComponentService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	cov, err := componentService.GetCoverage()
 	if err != nil {

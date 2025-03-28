@@ -44,6 +44,48 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 	return result, response, nil
 }
 
+// return results with filtering issues by error types and severities,
+func (service *IssueService) SearchIssuesByErrorType(options *IssuesSearchOption) (*sonargo.IssuesSearchObject, *http.Response, error) {
+	request, err := service.apiClient.create("GET", EndpointIssuesSearch, options)
+	if err != nil {
+		return nil, nil, err
+	}
+	// use custom HTTP client to send request
+	response, err := service.apiClient.send(request)
+	if err != nil {
+		return nil, nil, err
+	}
+	// reuse response verrification from sonargo
+	err = sonargo.CheckResponse(response)
+	if err != nil {
+		return nil, response, err
+	}
+	// decode JSON response
+	result := new(sonargo.IssuesSearchObject)
+	err = service.apiClient.decode(response, result)
+	if err != nil {
+		return nil, response, err
+	}
+	//filter issues
+	aggregateCategoriesByErrorType(result)
+	return result, response, nil
+}
+
+// filter issues by error type and severity
+func aggregateCategoriesByErrorType(all *sonargo.IssuesSearchObject) []*sonargo.Issue {
+	errors := all.Issues
+	var result = []*sonargo.Issue{}
+
+	for _, err := range errors {
+		if err.Type == "VULNERABILITY" || err.Type == "BUG" || err.Type == "SECURITY_HOTSPOT" {
+			if err.Severity == "MAJOR" || err.Severity == "BLOCKER" || err.Severity == "CRITICAL" {
+				result = append(result, err)
+			}
+		}
+	}
+	return result
+}
+
 func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) {
 	options := &IssuesSearchOption{
 		ComponentKeys: service.Project,

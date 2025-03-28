@@ -53,3 +53,4 @@ cmd/checkmarx/piper_checkmarx_report.html
 cmd/fortify/piper_fortify_report.html
 cmd/fortify/piper_fortify_report.json
 cmd/toolruns
+go.mod
