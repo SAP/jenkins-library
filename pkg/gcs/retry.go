@@ -9,7 +9,6 @@ import (
 const (
 	maxRetries      = 5
 	initialBackoff  = 5 * time.Second
-	maxRetryPeriod  = 22 * time.Second
 	retryMultiplier = 2
 )
 
