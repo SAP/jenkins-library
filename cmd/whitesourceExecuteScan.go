@@ -635,7 +635,7 @@ func checkPolicyViolations(ctx context.Context, config *ScanOptions, scan *ws.Sc
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", ws.ReportSha(config.ProductName, scan))), jsonReport, 0o666); err != nil {
-		return policyReport, errors.Wrapf(err, "failed to write json report")
+		return policyReport, errors.Wrap(err, "failed to write json report")
 	}
 	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later

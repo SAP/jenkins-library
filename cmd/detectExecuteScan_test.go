@@ -77,7 +77,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 
 	if c.errorMessageForURL[url] != "" {
 		response.StatusCode = 400
-		return &response, fmt.Errorf(c.errorMessageForURL[url])
+		return &response, fmt.Errorf("%s", c.errorMessageForURL[url])
 	}
 
 	if c.responseBodyForURL[url] != "" {
@@ -314,7 +314,7 @@ func TestRunDetect(t *testing.T) {
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
+		assert.Equal(t, "bash", utilsMock.Shell[0], "Bash shell expected")
 		expectedScript := "./detect.sh --detect.excluded.directories=.pipeline/* --blackduck.url= --blackduck.api.token= \"--detect.project.name=\" \"--detect.project.version.name=\" \"--detect.code.location.name=\" \"--detect.force.success.on.skip=true\" --detect.source.path='.'"
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
@@ -346,7 +346,7 @@ func TestRunDetect(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
+		assert.Equal(t, "bash", utilsMock.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
 		dir, _ := os.Getwd()
 		globalSettingsPath := filepath.Join(dir, "global-settings.xml")
