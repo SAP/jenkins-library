@@ -79,6 +79,7 @@ type detectExecuteScanOptions struct {
 	RepositoryPassword              string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	UseDetect8                      bool     `json:"useDetect8,omitempty"`
 	UseDetect9                      bool     `json:"useDetect9,omitempty"`
+	ContainerScan                   bool     `json:"containerScan,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -358,6 +359,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "This flag enables the use of the supported version 8 of the Detect script instead of default version 10")
 	cmd.Flags().BoolVar(&stepConfig.UseDetect9, "useDetect9", false, "This flag enables the use of the supported version 9 of the Detect script instead of default version 10")
+	cmd.Flags().BoolVar(&stepConfig.ContainerScan, "containerScan", false, "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -965,6 +967,15 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/useDetect9"}},
+						Default:     false,
+					},
+					{
+						Name:        "containerScan",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/containerScan"}},
 						Default:     false,
 					},
 				},
