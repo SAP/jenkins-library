@@ -20,6 +20,17 @@ import (
 	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
+
+	"context"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type buildkitExecuteOptions struct {
@@ -31,6 +42,10 @@ type buildkitExecuteOptions struct {
 	ContainerImageTag    string   `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL string   `json:"containerRegistryUrl,omitempty"`
 	DockerConfigJSON     string   `json:"dockerConfigJSON,omitempty"`
+
+	// Internal fields for runtime context and tracing
+	ctx    context.Context
+	tracer trace.Tracer
 }
 
 type buildkitExecuteCommonPipelineEnvironment struct {
@@ -115,6 +130,8 @@ func BuildkitExecuteCommand() *cobra.Command {
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
+	// OTel Tracer provider is initialized in PreRunE and used in Run/handler
+	var tracerProvider *sdktrace.TracerProvider
 
 	var createBuildkitExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -165,6 +182,65 @@ func BuildkitExecuteCommand() *cobra.Command {
 				return err
 			}
 
+			// Initialize OpenTelemetry if enabled
+			otelConfig := GeneralConfig.HookConfig.OpenTelemetryConfig
+			if otelConfig.Enable {
+				log.Entry().Info("OpenTelemetry tracing enabled.")
+
+				var exporter sdktrace.SpanExporter
+				var errExporter error
+
+				// Determine protocol (default to grpc)
+				protocol := otelConfig.Protocol
+				if protocol == "" {
+					protocol = "grpc"
+				}
+				log.Entry().Debugf("Using OTLP protocol: %s", protocol)
+
+				// Create exporter based on protocol
+				switch protocol {
+				case "grpc":
+					opts := []otlptracegrpc.Option{
+						otlptracegrpc.WithEndpoint(otelConfig.Endpoint),
+						otlptracegrpc.WithInsecure(), // TODO: Add TLS configuration option
+					}
+					if len(otelConfig.Headers) > 0 {
+						opts = append(opts, otlptracegrpc.WithHeaders(otelConfig.Headers))
+					}
+					exporter, errExporter = otlptracegrpc.New(context.Background(), opts...)
+				case "http/protobuf":
+					opts := []otlptracehttp.Option{
+						otlptracehttp.WithEndpoint(otelConfig.Endpoint),
+						otlptracehttp.WithInsecure(), // TODO: Add TLS configuration option
+					}
+					if len(otelConfig.Headers) > 0 {
+						opts = append(opts, otlptracehttp.WithHeaders(otelConfig.Headers))
+					}
+					exporter, errExporter = otlptracehttp.New(context.Background(), opts...)
+				default:
+					log.Entry().Warnf("Unsupported OTLP protocol '%s', disabling OpenTelemetry.", protocol)
+				}
+
+				if errExporter != nil {
+					log.Entry().WithError(errExporter).Warn("Failed to create OTLP exporter, disabling OpenTelemetry.")
+				} else if exporter != nil {
+					serviceName := otelConfig.ServiceName
+					if serviceName == "" {
+						serviceName = "piper" // Default service name
+					}
+					res := resource.NewWithAttributes(
+						semconv.SchemaURL,
+						semconv.ServiceName(serviceName),
+						semconv.ServiceVersion(GitCommit),
+						attribute.String("correlation_id", GeneralConfig.CorrelationID),
+					)
+					tracerProvider = sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter), sdktrace.WithResource(res))
+					otel.SetTracerProvider(tracerProvider)
+					otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+					log.Entry().Info("OpenTelemetry initialized.")
+				}
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -173,10 +249,31 @@ func BuildkitExecuteCommand() *cobra.Command {
 				defer vaultClient.MustRevokeToken()
 			}
 
+			// Initialize OTel context and tracer (will be NoOp if not enabled)
+			ctx := context.Background()
+			var tracer trace.Tracer = trace.NewNoopTracerProvider().Tracer(STEP_NAME) // Use const STEP_NAME
+			var rootSpan trace.Span
+
+			// If OTel is enabled, get the real tracer and start the root span
+			if tracerProvider != nil {
+				tracer = tracerProvider.Tracer("buildkitExecute")
+				ctx, rootSpan = tracer.Start(ctx, STEP_NAME, trace.WithAttributes(
+					attribute.String("stepName", STEP_NAME),
+					attribute.String("correlationID", GeneralConfig.CorrelationID),
+					// Add other relevant root attributes here if needed
+				))
+				defer rootSpan.End() // Ensure root span is ended
+			}
+
+			// Assign context and tracer to the step config
+			stepConfig.ctx = ctx
+			stepConfig.tracer = tracer
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
-				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				commonPipelineEnvironment.persist(
+					GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -213,10 +310,19 @@ func BuildkitExecuteCommand() *cobra.Command {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
 				}
+				// Shutdown OpenTelemetry tracer provider if it was initialized
+				if tracerProvider != nil {
+					log.Entry().Debug("Shutting down OpenTelemetry tracer provider.")
+					if err := tracerProvider.Shutdown(context.Background()); err != nil {
+						log.Entry().WithError(err).Warn("failed to shutdown OpenTelemetry tracer provider")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(STEP_NAME)
+
+			// Call the step implementation function, passing config (which now includes ctx/tracer), telemetry, and output resources (skipping reports)
 			buildkitExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

@@ -64,6 +64,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		"--frontend", "dockerfile.v0",
 		"--local", "context=.",
 		"--local", fmt.Sprintf("dockerfile=%s", config.DockerfilePath),
+		"--progress=plain",
 	}
 
 	// Add build options from config
@@ -83,7 +84,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
 	} else {
 		// Build without pushing if no registry/name provided
-		buildOpts = append(buildOpts, "--output", "type=docker")
+		buildOpts = append(buildOpts, "--output", "type=oci,dest=output.tar")
 	}
 
 	log.Entry().Info("Executing buildkit build using daemonless mode...")
