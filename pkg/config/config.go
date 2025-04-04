@@ -295,7 +295,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	// hooks need to have been loaded from the defaults before the server URL is known
-	log.Entry().Debugf("DEBUG1234: SYSTEMTRUSTURL: %s", stepConfig.HookConfig["systemtrust"])
 	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
 	if err != nil {
 		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
