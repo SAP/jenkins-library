@@ -952,10 +952,10 @@ func TestAddDetectArgsImages(t *testing.T) {
 	t.Run("with docker inspector", func(t *testing.T) {
 		args := []string{"./detect.sh"}
 		config := detectExecuteScanOptions{
-			ServerURL:          "https://server.url",
-			Token:              "apiToken",
-			ProjectName:        "testProject",
-			Version:            "1.0",
+			ServerURL:           "https://server.url",
+			Token:               "apiToken",
+			ProjectName:         "testProject",
+			Version:             "1.0",
 			ScanContainerDistro: "ubuntu",
 		}
 		utils := newDetectTestUtilsBundle(false)
@@ -972,10 +972,10 @@ func TestAddDetectArgsImages(t *testing.T) {
 	t.Run("with container scan", func(t *testing.T) {
 		args := []string{"./detect.sh"}
 		config := detectExecuteScanOptions{
-			ServerURL:    "https://server.url",
-			Token:        "apiToken",
-			ProjectName:  "testProject",
-			Version:      "1.0",
+			ServerURL:     "https://server.url",
+			Token:         "apiToken",
+			ProjectName:   "testProject",
+			Version:       "1.0",
 			ContainerScan: true,
 		}
 		utils := newDetectTestUtilsBundle(false)
@@ -998,9 +998,9 @@ func TestRunDetectWithContainerScanAndDistro(t *testing.T) {
 		utilsMock := newDetectTestUtilsBundle(false)
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(ctx, detectExecuteScanOptions{
-			ContainerScan:      true,
+			ContainerScan:       true,
 			ScanContainerDistro: "ubuntu",
-			ImageNameTags:      []string{"foo/bar:latest"},
+			ImageNameTags:       []string{"foo/bar:latest"},
 		}, utilsMock, &detectExecuteScanInflux{})
 
 		assert.NoError(t, err)
