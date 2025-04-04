@@ -573,7 +573,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.maven.excluded.scopes=%v", strings.ToLower(strings.Join(config.MavenExcludedScopes, ","))))
 	}
 
-	//To be discussed: Utilizing this parameter or adding containerScan? If containerScan is set, this parameter will be ignored or not?
 	if len(config.DetectTools) > 0 {
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
