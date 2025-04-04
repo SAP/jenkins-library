@@ -110,6 +110,4 @@ spec:
 
   containers:
     - name: buildkitd
-      image: moby/buildkit:latest
-      securityContext:
-        privileged: true
+      image: moby/buildkit:rootless
