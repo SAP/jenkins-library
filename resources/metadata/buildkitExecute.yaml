@@ -111,3 +111,4 @@ spec:
   containers:
     - name: buildkitd
       image: moby/buildkit:rootless
+      entrypoint: "bin/sh"
