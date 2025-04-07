@@ -114,7 +114,7 @@ func GaugeExecuteTestsCommand() *cobra.Command {
 	var createGaugeExecuteTestsCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Installs gauge and executes specified gauge tests.",
-		Long: `In this step Gauge ([getgauge.io](https://getgauge.io)) acceptance tests are executed. Using Gauge it will be possible to have a three-tier test layout:
+		Long: `In this step Gauge ([gauge.org](https://gauge.org)) acceptance tests are executed. Using Gauge it will be possible to have a three-tier test layout:
 
 Acceptance Criteria
 Test implemenation layer
