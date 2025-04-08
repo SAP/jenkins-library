@@ -191,4 +191,4 @@ spec:
             type: cucumber
   containers:
     - name: node
-      image: node:lts-buster
+      image: node:lts-bookworm
