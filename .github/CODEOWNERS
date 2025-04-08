@@ -52,9 +52,6 @@
 cnbBuild*                                       @SAP/jenkins-library-cnb
 CnbBuild*                                       @SAP/jenkins-library-cnb
 
-sonarExecuteScan*                               @CCFenner
-SonarExecuteScan*                               @CCFenner
-
 abapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 abapEnvironment*                                @SAP/jenkins-library-abap
@@ -79,8 +76,6 @@ integration/testdata/TestCnbIntegration/        @SAP/jenkins-library-cnb
 ####################
 
 /pkg/cnbutils/                                  @SAP/jenkins-library-cnb
-
-/pkg/sonar/                                     @CCFenner
 
 /pkg/jenkins/                                   @CCFenner
 
