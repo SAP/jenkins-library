@@ -675,6 +675,16 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: containerScan
+        description: "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images, and all other detect tools will be ignored in the scan"
+        aliases:
+          - name: detect/containerScan
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   outputs:
     resources:
       - name: influx
