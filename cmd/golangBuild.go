@@ -194,12 +194,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
-	if config.CreateBOM {
-		if err := runBOMCreation(utils, sbomFilename); err != nil {
-			return err
-		}
-	}
-
 	ldflags := ""
 
 	if len(config.LdflagsTemplate) > 0 {
@@ -246,6 +240,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
+	if config.CreateBOM {
+		if err := runBOMCreation(utils, sbomFilename); err != nil {
+			return err
+		}
+	}
 
 	if config.Publish {
 		if len(config.TargetRepositoryURL) == 0 {
