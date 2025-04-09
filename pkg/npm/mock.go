@@ -1,10 +1,10 @@
 //go:build !release
-// +build !release
 
 package npm
 
 import (
 	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
