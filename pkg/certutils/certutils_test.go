@@ -101,7 +101,7 @@ func TestDownloadCACertbunde(t *testing.T) {
 		{
 			name:        "bad link",
 			certsLinks:  []string{badCaseLink},
-			expectedErr: fmt.Sprintf("failed to load certificate from url: request to %s returned with response 404", badCaseLink),
+			expectedErr: fmt.Sprintf("failed to load certificate from url: request to %s returned with response 404 Not Found", badCaseLink),
 		},
 	}
 

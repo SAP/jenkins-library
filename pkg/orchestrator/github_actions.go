@@ -107,9 +107,9 @@ func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 	wg := errgroup.Group{}
 	wg.SetLimit(10)
 	for i := range jobs {
-		i := i // https://golang.org/doc/faq#closures_and_goroutines
+		jobEntry := jobs[i]
 		wg.Go(func() error {
-			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, 1)
+			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobEntry.ID, 1)
 			if err != nil {
 				// GetWorkflowJobLogs returns "200 OK" as error when log download is successful.
 				// Therefore, ignore this error.
