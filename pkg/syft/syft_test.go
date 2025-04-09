@@ -83,7 +83,7 @@ func TestGenerateSBOM(t *testing.T) {
 	t.Run("error case: failed to download archive (not found)", func(t *testing.T) {
 		err := syft.GenerateSBOM("http://not-found.com/syft.tar.gz", "", &execMock, &fileMock, client, "my-registry", []string{"img"})
 		assert.Error(t, err)
-		assert.Equal(t, "failed to install syft: failed to download syft binary: request to http://not-found.com/syft.tar.gz returned with response 404", err.Error())
+		assert.Equal(t, "failed to install syft: failed to download syft binary: request to http://not-found.com/syft.tar.gz returned with response 404 Not Found", err.Error())
 	})
 
 	t.Run("error case: failed to download archive (network error)", func(t *testing.T) {
