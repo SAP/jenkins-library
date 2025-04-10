@@ -100,7 +100,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 			// Return nil to indicate the step did not succeed but is not a failure
 			return nil
 		}
-		
+
 	}
 
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
