@@ -125,6 +125,12 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		credential := jenkins.StringCredentials{ID: config.VaultAppRoleSecretTokenCredentialsID, Secret: secretID}
 		return jenkins.UpdateCredential(ctx, credManager, config.JenkinsCredentialDomain, credential)
 	case "ado":
+		// Check if ADO Personal Access Token is provided
+        if config.AdoPersonalAccessToken == "" {
+            log.Entry().Warn("ADO Personal Access Token is not provided. Skipping ADO secret update.\n" +
+                "Note: In Azure DevOps, Vault secrets are rotated automatically by the 'automaticd' service when the TTL is 18 days or less.")
+            return nil
+        }
 		adoBuildClient, err := ado.NewBuildClient(config.AdoOrganization, config.AdoPersonalAccessToken, config.AdoProject, config.AdoPipelineID)
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
