@@ -77,7 +77,6 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	}
 
 	ttl, err := utils.GetAppRoleSecretIDTtl(GeneralConfig.VaultRoleSecretID, roleName)
-
 	if err != nil {
 		log.Entry().WithError(err).Warn("Could not fetch secret ID TTL. Secret ID rotation failed!")
 		return nil
@@ -89,16 +88,23 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		log.Entry().Infof("Your secret ID is about to expire in %.0f days", ttl.Round(time.Hour*24).Hours()/24)
 	}
 
+	// Check if the secret store is ADO and apply the TTL condition
+	if config.SecretStore == "ado" {
+		if ttl < 18*24*time.Hour && ttl >= time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
+			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret manually.")
+		}
+	}
+
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
 		log.Entry().Info("Secret ID TTL valid.")
 		return nil
 	}
+
 	log.Entry().Info("Rotating secret ID...")
 
 	newSecretID, err := utils.GenerateNewAppRoleSecret(GeneralConfig.VaultRoleSecretID, roleName)
-
 	if err != nil || newSecretID == "" {
-		log.Entry().WithError(err).Warn("Generating a new secret ID failed. Secret ID rotation faield!")
+		log.Entry().WithError(err).Warn("Generating a new secret ID failed. Secret ID rotation failed!")
 		return nil
 	}
 
@@ -106,9 +112,9 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		log.Entry().WithError(err).Warnf("Could not write secret back to secret store %s", config.SecretStore)
 		return err
 	}
+
 	log.Entry().Infof("Secret has been successfully updated in secret store %s", config.SecretStore)
 	return nil
-
 }
 
 func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID string) error {
