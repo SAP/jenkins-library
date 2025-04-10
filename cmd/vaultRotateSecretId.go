@@ -88,8 +88,15 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		log.Entry().Infof("Your secret ID is about to expire in %.0f days", ttl.Round(time.Hour*24).Hours()/24)
 	}
 
-	// Check if the secret store is ADO and apply the TTL condition
+	// Check if ADO Personal Access Token is required but not provided
 	if config.SecretStore == "ado" {
+		if config.AdoPersonalAccessToken == "" {
+			log.Entry().Warn("ADO Personal Access Token is not provided. Secret ID rotation cannot proceed for Azure DevOps.\n" +
+				"Note: In Azure DevOps, Vault secrets are rotated automatically by the 'automaticd' service when the TTL is 18 days or less.")
+			// Return nil to indicate the step did not succeed but is not a failure
+			return nil
+		}
+		// Check if the secret store is ADO and apply the TTL condition
 		if ttl < 18*24*time.Hour && ttl >= time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
 			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
 		}
@@ -131,12 +138,6 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		credential := jenkins.StringCredentials{ID: config.VaultAppRoleSecretTokenCredentialsID, Secret: secretID}
 		return jenkins.UpdateCredential(ctx, credManager, config.JenkinsCredentialDomain, credential)
 	case "ado":
-		// Check if ADO Personal Access Token is provided
-        if config.AdoPersonalAccessToken == "" {
-            log.Entry().Warn("ADO Personal Access Token is not provided. Skipping ADO secret update.\n" +
-                "Note: In Azure DevOps, Vault secrets are rotated automatically by the 'automaticd' service when the TTL is 18 days or less.")
-            return nil
-        }
 		adoBuildClient, err := ado.NewBuildClient(config.AdoOrganization, config.AdoPersonalAccessToken, config.AdoProject, config.AdoPipelineID)
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
