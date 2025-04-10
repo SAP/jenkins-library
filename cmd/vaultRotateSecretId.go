@@ -91,7 +91,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	// Check if the secret store is ADO and apply the TTL condition
 	if config.SecretStore == "ado" {
 		if ttl < 18*24*time.Hour && ttl >= time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
-			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret manually.")
+			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
 		}
 	}
 
