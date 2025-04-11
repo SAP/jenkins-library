@@ -91,16 +91,23 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	if config.SecretStore == "ado" {
 		// Check if the secret store is ADO and apply the TTL condition
 		if ttl < 18*24*time.Hour && ttl >= time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
+			// check if ADO Personal Access Token is missing
+			if config.AdoPersonalAccessToken == "" {
+				log.Entry().Warn("ADO Personal Access Token is required but not provided. Secret ID rotation cannot proceed for Azure DevOps.\n" +
+					"Note: In Azure DevOps, Vault secrets are rotated automatically by the 'automaticd' service when the TTL is 18 days or less.")
+				// Return nil to indicate the step did not succeed but is not a failure	
+				return nil
+			}
 			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
 		}
-		// Check if ADO Personal Access Token is required but not provided
-		if config.AdoPersonalAccessToken == "" {
-			log.Entry().Warn("ADO Personal Access Token is not provided. Secret ID rotation cannot proceed for Azure DevOps.\n" +
+		// Check if ADO Personal Access Token is required but not provided and ttl is less than 15 days
+		if ttl < time.Duration(config.DaysBeforeExpiry)*24*time.Hour && config.AdoPersonalAccessToken == "" {
+			_, err := ado.NewBuildClient(config.AdoOrganization, config.AdoPersonalAccessToken, config.AdoProject, config.AdoPipelineID)
+			log.Entry().WithError(err).Warn("ADO Personal Access Token is required but not provided. Secret ID rotation cannot proceed for Azure DevOps.\n" +
 				"Note: In Azure DevOps, Vault secrets are rotated automatically by the 'automaticd' service when the TTL is 18 days or less.")
 			// Return nil to indicate the step did not succeed but is not a failure
-			return nil
+			return err
 		}
-
 	}
 
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
