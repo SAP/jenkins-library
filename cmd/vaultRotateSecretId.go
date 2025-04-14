@@ -95,7 +95,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 			if config.AdoPersonalAccessToken == "" {
 				log.Entry().Warn("ADO Personal Access Token is required but not provided. Secret ID rotation cannot proceed for Azure DevOps.\n" +
 					"Note: In Azure DevOps, Vault secrets are rotated automatically by the 'automaticd' service when the TTL is 18 days or less.")
-				// Return nil to indicate the step did not succeed but is not a failure	
+				// Return nil to indicate the step did not succeed but is not a failure
 				return nil
 			}
 			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
