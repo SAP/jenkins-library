@@ -168,6 +168,8 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting stage config failed")
 		}
+		// add hooks (defaults + custom defaults) to stage-config.json output
+		stepConfig.Config["hooks"] = stepConfig.HookConfig
 	} else {
 		log.Entry().Infof("Printing stepName %s", configOptions.StepName)
 		if GeneralConfig.MetaDataResolver == nil {
