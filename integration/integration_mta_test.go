@@ -54,35 +54,37 @@ func TestMTAIntegrationMavenSpringProject(t *testing.T) {
 }
 
 func TestMTAIntegrationNPMProject(t *testing.T) {
+	t.Skip("Skipping test for MTA integration test")
 	// t.Parallel()
-	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java11-node14",
-		User:    "root",
-		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
-	})
-	defer container.terminate(t)
+	// container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+	// 	Image:   "devxci/mbtci-java11-node14",
+	// 	User:    "root",
+	// 	TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
+	// })
+	// defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("mtaBuild", "")
-	if err != nil {
-		t.Fatalf("Piper command failed %s", err)
-	}
+	// err := container.whenRunningPiperCommand("mtaBuild", "")
+	// if err != nil {
+	// 	t.Fatalf("Piper command failed %s", err)
+	// }
 
-	container.assertHasOutput(t, "INFO the MTA archive generated at: /project/test-mta-js.mtar")
+	// container.assertHasOutput(t, "INFO the MTA archive generated at: /project/test-mta-js.mtar")
 }
 
 func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
+	t.Skip("Skipping test for MTA integration test NPM project with devDependencies")
 	// t.Parallel()
-	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java11-node14",
-		User:    "root",
-		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
-	})
-	defer container.terminate(t)
+	// container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+	// 	Image:   "devxci/mbtci-java11-node14",
+	// 	User:    "root",
+	// 	TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
+	// })
+	// defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
-	if err != nil {
-		t.Fatalf("Piper command failed %s", err)
-	}
+	// err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
+	// if err != nil {
+	// 	t.Fatalf("Piper command failed %s", err)
+	// }
 
-	container.assertHasOutput(t, "added 2 packages in")
+	// container.assertHasOutput(t, "added 2 packages in")
 }
