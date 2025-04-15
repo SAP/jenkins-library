@@ -108,27 +108,6 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 				SecretStore:      "jenkins",
 			},
 			updateFuncCalled: false,
-			UpdateSecretFunc: func(config *vaultRotateSecretIdOptions, secretID string) error {
-				return fmt.Errorf("failed to update secret in store")
-			}, // Override the behavior
-		}
-	
-		err := runVaultRotateSecretID(mock)
-		assert.Error(t, err)
-		assert.EqualError(t, err, "failed to update secret in store")
-		assert.True(t, mock.updateFuncCalled)
-	})
-
-	t.Run("Error updating secret in store", func(t *testing.T) {
-		mock := &mockVaultRotateSecretIDUtilsBundle{
-			t:         t,
-			newSecret: "new-secret-id",
-			ttl:       time.Hour * 24 * 3, // 3 days
-			config: &vaultRotateSecretIdOptions{
-				DaysBeforeExpiry: 5,
-				SecretStore:      "jenkins",
-			},
-			updateFuncCalled: false,
 		}
 
 		// Override UpdateSecretInStore to simulate an error
