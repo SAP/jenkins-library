@@ -13,7 +13,6 @@ import (
 )
 
 func TestTmsExportIntegrationYaml(t *testing.T) {
-	t.Skip("Skipping test for TMS export integration test")
 	// success case: run with custom config
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -36,7 +35,6 @@ func TestTmsExportIntegrationYaml(t *testing.T) {
 }
 
 func TestTmsExportIntegrationBinFailDescription(t *testing.T) {
-	t.Skip("Skipping test for TMS export integration test error case")
 	// error case: run cmd with invalid description
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
