@@ -4,10 +4,10 @@
 package cmd
 
 import (
-	"testing"
-	"time"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
 )
 
 type mockVaultRotateSecretIDUtilsBundle struct {
