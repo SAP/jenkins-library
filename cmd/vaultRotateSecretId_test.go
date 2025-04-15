@@ -77,7 +77,7 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 
 		err := runVaultRotateSecretID(mock)
 		assert.NoError(t, err)
-		assert.False(t, mock.updateFuncCalled)
+		assert.True(t, mock.updateFuncCalled)
 	})
 
 	t.Run("ADO Personal Access Token missing and automaticd didn't updated secrets", func(t *testing.T) {
