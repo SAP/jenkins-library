@@ -17,6 +17,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+const automaticdTTLThreshold = 18 * 24 * time.Hour // Threshold for automaticd service to rotate secrets
+
 type vaultRotateSecretIDUtils interface {
 	GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration, error)
 	GetAppRoleName() (string, error)
@@ -93,19 +95,13 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		warnMessage := "ADO Personal Access Token is required but not provided. Secret ID rotation cannot proceed for Azure DevOps.\n" +
 			"Note: In Azure DevOps, Vault secrets are rotated automatically by the 'automaticd' service when the TTL is 18 days or less."
 		// Check if the secret ID TTL is less than 18 days and greater than or equal to the configured days before expiry
-		if ttl < 18*24*time.Hour && ttl >= time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
+		if ttl < automaticdTTLThreshold && ttl >= time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
 			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
 			// check if ADO Personal Access Token is missing
 			if config.AdoPersonalAccessToken == "" {
 				log.Entry().Warn(warnMessage)
 				return fmt.Errorf("ADO Personal Access Token is missing")
 			}
-		}
-		// Check if ADO Personal Access Token is required but not provided and ttl is less than defined days before expiry
-		if ttl < time.Duration(config.DaysBeforeExpiry)*24*time.Hour && config.AdoPersonalAccessToken == "" {
-			_, err := ado.NewBuildClient(config.AdoOrganization, config.AdoPersonalAccessToken, config.AdoProject, config.AdoPipelineID)
-			log.Entry().WithError(err).Warn(warnMessage)
-			return fmt.Errorf("ADO Personal Access Token is missing")
 		}
 	}
 
