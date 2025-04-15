@@ -133,15 +133,15 @@ func (v *mockVaultRotateSecretIDUtilsBundle) GetAppRoleName() (string, error) {
 }
 func (v *mockVaultRotateSecretIDUtilsBundle) UpdateSecretInStore(config *vaultRotateSecretIdOptions, secretID string) error {
 	v.updateFuncCalled = true
-    assert.Equal(v.t, v.newSecret, secretID)
+	assert.Equal(v.t, v.newSecret, secretID)
 
-    // Call the overridden function if it is set
-    if v.UpdateSecretFunc != nil {
-        return v.UpdateSecretFunc(config, secretID)
-    }
+	// Call the overridden function if it is set
+	if v.UpdateSecretFunc != nil {
+		return v.UpdateSecretFunc(config, secretID)
+	}
 
-    // Default behavior
-    return nil
+	// Default behavior
+	return nil
 }
 func (v *mockVaultRotateSecretIDUtilsBundle) GetConfig() *vaultRotateSecretIdOptions {
 	return v.config
