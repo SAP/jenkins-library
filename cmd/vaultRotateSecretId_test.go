@@ -80,13 +80,13 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 		assert.False(t, mock.updateFuncCalled)
 	})
 
-	t.Run("ADO Personal Access Token missing", func(t *testing.T) {
+	t.Run("ADO Personal Access Token missing and automaticd didn't updated secrets", func(t *testing.T) {
 		mock := &mockVaultRotateSecretIDUtilsBundle{
 			t:         t,
 			newSecret: "new-secret-id",
-			ttl:       time.Hour * 24 * 3, // 3 days
+			ttl:       time.Hour * 24 * 16, // 16 days
 			config: &vaultRotateSecretIdOptions{
-				DaysBeforeExpiry:       5,
+				DaysBeforeExpiry:       15,
 				SecretStore:            "ado",
 				AdoPersonalAccessToken: "",
 			},
@@ -105,7 +105,7 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 			newSecret: "new-secret-id",
 			ttl:       time.Hour * 24 * 3, // 3 days
 			config: &vaultRotateSecretIdOptions{
-				DaysBeforeExpiry: 5,
+				DaysBeforeExpiry: 15,
 				SecretStore:      "jenkins",
 			},
 			updateFuncCalled: false,
@@ -117,7 +117,7 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 		err := runVaultRotateSecretID(mock)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to update secret in store")
-		assert.False(t, mock.updateFuncCalled)
+		assert.True(t, mock.updateFuncCalled)
 	})
 }
 
