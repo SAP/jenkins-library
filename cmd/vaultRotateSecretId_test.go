@@ -6,7 +6,7 @@ package cmd
 import (
 	"testing"
 	"time"
-
+	"fmt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -98,21 +98,25 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 		assert.False(t, mock.updateFuncCalled)
 	})
 
-	t.Run("Error generating new secret ID", func(t *testing.T) {
+	t.Run("Error updating secret in store", func(t *testing.T) {
 		mock := &mockVaultRotateSecretIDUtilsBundle{
 			t:         t,
-			newSecret: "",                 // Simulate failure to generate new secret ID
+			newSecret: "new-secret-id",
 			ttl:       time.Hour * 24 * 3, // 3 days
 			config: &vaultRotateSecretIdOptions{
 				DaysBeforeExpiry: 5,
 				SecretStore:      "jenkins",
 			},
 			updateFuncCalled: false,
+			UpdateSecretFunc: func(config *vaultRotateSecretIdOptions, secretID string) error {
+				return fmt.Errorf("failed to update secret in store")
+			}, // Override the behavior
 		}
-
+	
 		err := runVaultRotateSecretID(mock)
-		assert.NoError(t, err)
-		assert.False(t, mock.updateFuncCalled)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "failed to update secret in store")
+		assert.True(t, mock.updateFuncCalled)
 	})
 
 	t.Run("Error updating secret in store", func(t *testing.T) {
