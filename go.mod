@@ -64,7 +64,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.17.3
-	mvdan.cc/xurls/v2 v2.4.0
+	mvdan.cc/xurls/v2 v2.6.0
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3
 )
 
