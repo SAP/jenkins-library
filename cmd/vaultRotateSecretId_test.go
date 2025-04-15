@@ -102,7 +102,7 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 	t.Run("Error generating new secret ID", func(t *testing.T) {
 		mock := &mockVaultRotateSecretIDUtilsBundle{
 			t:         t,
-			newSecret: "", // Simulate failure to generate new secret ID
+			newSecret: "",                 // Simulate failure to generate new secret ID
 			ttl:       time.Hour * 24 * 3, // 3 days
 			config: &vaultRotateSecretIdOptions{
 				DaysBeforeExpiry: 5,
