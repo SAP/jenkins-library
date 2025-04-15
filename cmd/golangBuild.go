@@ -570,7 +570,7 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	utils.Stderr(outBuffer)
 	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
 	}
 
 	if outBuffer.String() != "main" {
