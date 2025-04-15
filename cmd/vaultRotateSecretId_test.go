@@ -16,6 +16,7 @@ type mockVaultRotateSecretIDUtilsBundle struct {
 	ttl              time.Duration
 	config           *vaultRotateSecretIdOptions
 	updateFuncCalled bool
+	UpdateSecretFunc func(config *vaultRotateSecretIdOptions, secretID string) error // Function field
 }
 
 // func TestRunVaultRotateSecretId(t *testing.T) {
@@ -108,11 +109,9 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 				SecretStore:      "jenkins",
 			},
 			updateFuncCalled: false,
-		}
-
-		// Override UpdateSecretInStore to simulate an error
-		mock.UpdateSecretInStore = func(config *vaultRotateSecretIdOptions, secretID string) error {
-			return fmt.Errorf("failed to update secret in store")
+			UpdateSecretFunc: func(config *vaultRotateSecretIdOptions, secretID string) error {
+				return fmt.Errorf("failed to update secret in store")
+			}, // Override the behavior
 		}
 
 		err := runVaultRotateSecretID(mock)
@@ -134,8 +133,15 @@ func (v *mockVaultRotateSecretIDUtilsBundle) GetAppRoleName() (string, error) {
 }
 func (v *mockVaultRotateSecretIDUtilsBundle) UpdateSecretInStore(config *vaultRotateSecretIdOptions, secretID string) error {
 	v.updateFuncCalled = true
-	assert.Equal(v.t, v.newSecret, secretID)
-	return nil
+    assert.Equal(v.t, v.newSecret, secretID)
+
+    // Call the overridden function if it is set
+    if v.UpdateSecretFunc != nil {
+        return v.UpdateSecretFunc(config, secretID)
+    }
+
+    // Default behavior
+    return nil
 }
 func (v *mockVaultRotateSecretIDUtilsBundle) GetConfig() *vaultRotateSecretIdOptions {
 	return v.config
