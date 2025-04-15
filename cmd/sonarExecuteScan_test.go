@@ -421,15 +421,15 @@ func TestSonarLoadScanner(t *testing.T) {
 
 	t.Run("use downloaded sonar-scanner", func(t *testing.T) {
 		// init
-		url := "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip"
+		url := "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.1.0.4889-linux-x64.zip"
 		sonar = sonarSettings{
 			binary:      "sonar-scanner",
 			environment: []string{},
 			options:     []string{},
 		}
 		execLookPath = mockExecLookPath
-		fileUtilsUnzip = mockFileUtilsUnzip(t, "sonar-scanner-cli-4.6.2.2472-linux.zip")
-		osRename = mockOsRename(t, "sonar-scanner-4.6.2.2472-linux", ".sonar-scanner")
+		fileUtilsUnzip = mockFileUtilsUnzip(t, "sonar-scanner-cli-7.1.0.4889-linux-x64.zip")
+		osRename = mockOsRename(t, "sonar-scanner-cli-7.1.0.4889-linux-x64", ".sonar-scanner")
 		defer func() {
 			execLookPath = exec.LookPath
 			fileUtilsUnzip = piperutils.Unzip
@@ -440,7 +440,7 @@ func TestSonarLoadScanner(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, url, mockClient.requestedURL[0])
-		assert.Regexp(t, "sonar-scanner-cli-4.6.2.2472-linux.zip$", mockClient.requestedFile[0])
+		assert.Regexp(t, "sonar-scanner-cli-7.1.0.4889-linux-x64.zip$", mockClient.requestedFile[0])
 		assert.Equal(t, filepath.Join(getWorkingDir(), ".sonar-scanner", "bin", "sonar-scanner"), sonar.binary)
 	})
 }
