@@ -26,6 +26,97 @@ func TestRunVaultRotateSecretId(t *testing.T) {
 
 }
 
+func TestRunVaultRotateSecretID(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Secret ID rotation successful", func(t *testing.T) {
+		mock := &mockVaultRotateSecretIDUtilsBundle{
+			t:         t,
+			newSecret: "new-secret-id",
+			ttl:       time.Hour * 24 * 3, // 3 days
+			config: &vaultRotateSecretIdOptions{
+				DaysBeforeExpiry: 5,
+				SecretStore:      "jenkins",
+			},
+			updateFuncCalled: false,
+		}
+
+		err := runVaultRotateSecretID(mock)
+		assert.NoError(t, err)
+		assert.True(t, mock.updateFuncCalled)
+	})
+
+	t.Run("Secret ID TTL valid, no rotation needed", func(t *testing.T) {
+		mock := &mockVaultRotateSecretIDUtilsBundle{
+			t:         t,
+			newSecret: "new-secret-id",
+			ttl:       time.Hour * 24 * 10, // 10 days
+			config: &vaultRotateSecretIdOptions{
+				DaysBeforeExpiry: 5,
+				SecretStore:      "jenkins",
+			},
+			updateFuncCalled: false,
+		}
+
+		err := runVaultRotateSecretID(mock)
+		assert.NoError(t, err)
+		assert.False(t, mock.updateFuncCalled)
+	})
+
+	t.Run("Secret ID expired", func(t *testing.T) {
+		mock := &mockVaultRotateSecretIDUtilsBundle{
+			t:         t,
+			newSecret: "new-secret-id",
+			ttl:       0, // expired
+			config: &vaultRotateSecretIdOptions{
+				DaysBeforeExpiry: 5,
+				SecretStore:      "jenkins",
+			},
+			updateFuncCalled: false,
+		}
+
+		err := runVaultRotateSecretID(mock)
+		assert.NoError(t, err)
+		assert.False(t, mock.updateFuncCalled)
+	})
+
+	t.Run("ADO Personal Access Token missing", func(t *testing.T) {
+		mock := &mockVaultRotateSecretIDUtilsBundle{
+			t:         t,
+			newSecret: "new-secret-id",
+			ttl:       time.Hour * 24 * 3, // 3 days
+			config: &vaultRotateSecretIdOptions{
+				DaysBeforeExpiry:       5,
+				SecretStore:            "ado",
+				AdoPersonalAccessToken: "",
+			},
+			updateFuncCalled: false,
+		}
+
+		err := runVaultRotateSecretID(mock)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "ADO Personal Access Token is missing")
+		assert.False(t, mock.updateFuncCalled)
+	})
+
+	t.Run("Error generating new secret ID", func(t *testing.T) {
+		mock := &mockVaultRotateSecretIDUtilsBundle{
+			t:         t,
+			newSecret: "", // Simulate failure to generate new secret ID
+			ttl:       time.Hour * 24 * 3, // 3 days
+			config: &vaultRotateSecretIdOptions{
+				DaysBeforeExpiry: 5,
+				SecretStore:      "jenkins",
+			},
+			updateFuncCalled: false,
+		}
+
+		err := runVaultRotateSecretID(mock)
+		assert.NoError(t, err)
+		assert.False(t, mock.updateFuncCalled)
+	})
+}
+
 func (v *mockVaultRotateSecretIDUtilsBundle) GenerateNewAppRoleSecret(secretID string, roleName string) (string, error) {
 	return v.newSecret, nil
 }
