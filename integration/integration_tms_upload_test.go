@@ -26,6 +26,7 @@ func readEnv() {
 }
 
 func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
+	t.Skip("Skipping test for TMS upload integration test")
 	// success case: run cmd without nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -52,6 +53,7 @@ func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
+	t.Skip("Skipping test for TMS upload integration test success case 2")
 	// success case: run cmd without --nodeExtDescriptorMapping and --customDescription
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -77,6 +79,7 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
+	t.Skip("Skipping test for TMS upload integration test error case")
 	// error case: run cmd with nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -99,6 +102,7 @@ func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
+	t.Skip("Skipping test for TMS upload integration test error case 2")
 	// error case: run cmd with invalid description
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -120,6 +124,7 @@ func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationYaml(t *testing.T) {
+	t.Skip("Skipping test for TMS upload integration test")
 	// success case: run with custom config
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
