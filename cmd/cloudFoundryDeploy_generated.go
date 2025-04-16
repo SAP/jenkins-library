@@ -19,32 +19,33 @@ import (
 )
 
 type cloudFoundryDeployOptions struct {
-	APIEndpoint              string                 `json:"apiEndpoint,omitempty"`
-	AppName                  string                 `json:"appName,omitempty"`
-	ArtifactVersion          string                 `json:"artifactVersion,omitempty"`
-	CommitHash               string                 `json:"commitHash,omitempty"`
-	CfHome                   string                 `json:"cfHome,omitempty"`
-	CfNativeDeployParameters string                 `json:"cfNativeDeployParameters,omitempty"`
-	CfPluginHome             string                 `json:"cfPluginHome,omitempty"`
-	DeployDockerImage        string                 `json:"deployDockerImage,omitempty"`
-	DeployTool               string                 `json:"deployTool,omitempty"`
-	BuildTool                string                 `json:"buildTool,omitempty"`
-	DeployType               string                 `json:"deployType,omitempty"`
-	DockerPassword           string                 `json:"dockerPassword,omitempty"`
-	DockerUsername           string                 `json:"dockerUsername,omitempty"`
-	KeepOldInstance          bool                   `json:"keepOldInstance,omitempty"`
-	LoginParameters          string                 `json:"loginParameters,omitempty"`
-	Manifest                 string                 `json:"manifest,omitempty"`
-	ManifestVariables        []string               `json:"manifestVariables,omitempty"`
-	ManifestVariablesFiles   []string               `json:"manifestVariablesFiles,omitempty"`
-	MtaDeployParameters      string                 `json:"mtaDeployParameters,omitempty"`
-	MtaExtensionDescriptor   string                 `json:"mtaExtensionDescriptor,omitempty"`
-	MtaExtensionCredentials  map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
-	MtaPath                  string                 `json:"mtaPath,omitempty"`
-	Org                      string                 `json:"org,omitempty"`
-	Password                 string                 `json:"password,omitempty"`
-	Space                    string                 `json:"space,omitempty"`
-	Username                 string                 `json:"username,omitempty"`
+	APIEndpoint               string                 `json:"apiEndpoint,omitempty"`
+	AppName                   string                 `json:"appName,omitempty"`
+	ArtifactVersion           string                 `json:"artifactVersion,omitempty"`
+	CommitHash                string                 `json:"commitHash,omitempty"`
+	CfHome                    string                 `json:"cfHome,omitempty"`
+	CfNativeDeployParameters  string                 `json:"cfNativeDeployParameters,omitempty"`
+	CfPluginHome              string                 `json:"cfPluginHome,omitempty"`
+	DeployDockerImage         string                 `json:"deployDockerImage,omitempty"`
+	DeployTool                string                 `json:"deployTool,omitempty"`
+	BuildTool                 string                 `json:"buildTool,omitempty"`
+	CustomTLSCertificateLinks []string               `json:"customTlsCertificateLinks,omitempty"`
+	DeployType                string                 `json:"deployType,omitempty"`
+	DockerPassword            string                 `json:"dockerPassword,omitempty"`
+	DockerUsername            string                 `json:"dockerUsername,omitempty"`
+	KeepOldInstance           bool                   `json:"keepOldInstance,omitempty"`
+	LoginParameters           string                 `json:"loginParameters,omitempty"`
+	Manifest                  string                 `json:"manifest,omitempty"`
+	ManifestVariables         []string               `json:"manifestVariables,omitempty"`
+	ManifestVariablesFiles    []string               `json:"manifestVariablesFiles,omitempty"`
+	MtaDeployParameters       string                 `json:"mtaDeployParameters,omitempty"`
+	MtaExtensionDescriptor    string                 `json:"mtaExtensionDescriptor,omitempty"`
+	MtaExtensionCredentials   map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
+	MtaPath                   string                 `json:"mtaPath,omitempty"`
+	Org                       string                 `json:"org,omitempty"`
+	Password                  string                 `json:"password,omitempty"`
+	Space                     string                 `json:"space,omitempty"`
+	Username                  string                 `json:"username,omitempty"`
 }
 
 type cloudFoundryDeployInflux struct {
@@ -242,6 +243,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.DeployDockerImage, "deployDockerImage", os.Getenv("PIPER_deployDockerImage"), "Docker image deployments are supported [via manifest file in general](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker). If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See [cf CLI documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html)x`x` for details. Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", os.Getenv("PIPER_deployTool"), "Defines the tool which should be used for deployment. Mandatory if `buildTool` is not found in pipeline environment")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact. If provided, `deployTool` is automatically derived from it. For MTA projects, `deployTool` defaults to `mtaDeployPlugin`. For other projects `cf_native` will be used.")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.DeployType, "deployType", `standard`, "Defines the type of deployment -`standard` or `blue-green` deployment. For mta build tool, possible values are `standard`, `blue-green` or `bg-deploy`. For cf native build tools, possible value is `standard`. To eliminate system downtime, an alternative is to pass '--strategy rolling' to the parameter `cfNativeDeployParameters`.")
 	cmd.Flags().StringVar(&stepConfig.DockerPassword, "dockerPassword", os.Getenv("PIPER_dockerPassword"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the password to be used.")
 	cmd.Flags().StringVar(&stepConfig.DockerUsername, "dockerUsername", os.Getenv("PIPER_dockerUsername"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the username to be used.")
@@ -385,6 +387,15 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildTool"),
+					},
+					{
+						Name:        "customTlsCertificateLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "deployType",
