@@ -101,6 +101,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 				log.Entry().Warn(warnMessage)
 				return fmt.Errorf("ADO Personal Access Token is missing")
 			}
+		}
 		// Check if the secret ID TTL is less than 18 days and greater than or equal to the configured days before expiry
 		if ttl < automaticdTTLThreshold && ttl >= time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
 			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
