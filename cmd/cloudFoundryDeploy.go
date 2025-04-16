@@ -11,8 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -64,7 +66,6 @@ func cloudFoundryDeploy(config cloudFoundryDeployOptions, telemetryData *telemet
 	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go
-
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runCloudFoundryDeploy(&config, telemetryData, influxData, &c)
 	if err != nil {
@@ -577,6 +578,9 @@ func cfDeploy(
 	var err error
 	var loginPerformed bool
 
+	client := &piperhttp.Client{}
+	fileUtils := &piperutils.Files{}
+
 	additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
 
 	if len(config.CfHome) > 0 {
@@ -595,6 +599,16 @@ func cfDeploy(
 	err = command.RunExecutable("cf", "version")
 
 	if err == nil {
+		if len(config.CustomTLSCertificateLinks) > 0 {
+			log.Entry().Info("Add custom certificates to truststore")
+			err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, client, fileUtils, "/etc/ssl/certs/ca-certificates.crt")
+			if err != nil {
+				return errors.Wrap(err, "failed to update certificates")
+			}
+		} else {
+			log.Entry().Info("skipping updation of certificates")
+		}
+
 		err = _cfLogin(command, cloudfoundry.LoginOptions{
 			CfAPIEndpoint: config.APIEndpoint,
 			CfOrg:         config.Org,
