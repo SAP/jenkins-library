@@ -192,4 +192,4 @@ spec:
         default: false
   containers:
     - name: cf
-      image: ppiper/cf-cli:v12
+      image: ppiper/cf-cli:latest
