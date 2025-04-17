@@ -93,7 +93,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	// Check if the secret store is ADO and apply the TTL condition
 	if config.SecretStore == "ado" {
 		warnMessage := "ADO Personal Access Token is required but not provided. Secret ID rotation cannot proceed for Azure DevOps."
-	
+
 		// Check if ADO Personal Access Token is missing
 		checkMissingPAT := func() error {
 			if config.AdoPersonalAccessToken == "" {
@@ -102,7 +102,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 			}
 			return nil
 		}
-	
+
 		// Handle TTL conditions
 		switch {
 		case ttl > automaticdTTLThreshold && ttl < time.Duration(config.DaysBeforeExpiry)*24*time.Hour:
@@ -110,7 +110,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 			if err := checkMissingPAT(); err != nil {
 				return err
 			}
-	
+
 		case ttl < automaticdTTLThreshold && ttl >= time.Duration(config.DaysBeforeExpiry)*24*time.Hour:
 			// Secret TTL is less than 18 days but greater than or equal to the configured days before expiry
 			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
