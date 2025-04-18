@@ -86,7 +86,7 @@ func TestRunVaultRotateSecretID(t *testing.T) {
 			newSecret: "new-secret-id",
 			ttl:       time.Hour * 24 * 16, // 16 days
 			config: &vaultRotateSecretIdOptions{
-				DaysBeforeExpiry:       15,
+				DaysBeforeExpiry:       20,
 				SecretStore:            "ado",
 				AdoPersonalAccessToken: "",
 			},
