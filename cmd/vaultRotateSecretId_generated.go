@@ -27,7 +27,7 @@ type vaultRotateSecretIdOptions struct {
 	VaultNamespace                       string `json:"vaultNamespace,omitempty"`
 	DaysBeforeExpiry                     int    `json:"daysBeforeExpiry,omitempty"`
 	AdoOrganization                      string `json:"adoOrganization,omitempty"`
-	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty" validate:"required_if=SecretStore ado"`
+	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty"`
 	AdoProject                           string `json:"adoProject,omitempty"`
 	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
 	GithubToken                          string `json:"githubToken,omitempty" validate:"required_if=SecretStore github"`
