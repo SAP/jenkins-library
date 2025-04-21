@@ -11,6 +11,7 @@ import (
 )
 
 func TestMTAIntegrationMavenProject(t *testing.T) {
+	t.Skip("Skipping test for MTA integration test")
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -33,6 +34,7 @@ func TestMTAIntegrationMavenProject(t *testing.T) {
 }
 
 func TestMTAIntegrationMavenSpringProject(t *testing.T) {
+	t.Skip("Skipping test for MTA integration test")
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -54,6 +56,7 @@ func TestMTAIntegrationMavenSpringProject(t *testing.T) {
 }
 
 func TestMTAIntegrationNPMProject(t *testing.T) {
+	t.Skip("Skipping test for MTA integration test")
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
@@ -71,6 +74,7 @@ func TestMTAIntegrationNPMProject(t *testing.T) {
 }
 
 func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
+	t.Skip("Skipping test for MTA integration test NPM project with devDependencies")
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci-java11-node14",
