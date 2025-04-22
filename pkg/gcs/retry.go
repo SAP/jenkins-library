@@ -2,6 +2,7 @@ package gcs
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -11,6 +12,8 @@ const (
 	initialBackoff  = 5 * time.Second
 	retryMultiplier = 2
 )
+
+const noRetryError = "is under active Temporary hold and cannot be deleted, overwritten or archived until hold is removed"
 
 type debugLogger interface {
 	Debugf(format string, args ...interface{})
@@ -30,6 +33,10 @@ func retryWithLogging(
 		log.Debugf("Attempt %d/%d", attempt, maxRetries)
 		if err = taskFn(ctx); err == nil {
 			return nil
+		}
+
+		if strings.Contains(err.Error(), noRetryError) {
+			return err
 		}
 
 		log.Debugf("GCS client operation failed: %v", err)
