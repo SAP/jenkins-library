@@ -257,21 +257,24 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 
 	blackduckSystem := newBlackduckSystem(config)
 
-	args := []string{"./detect.sh"}
-	args, err = addDetectArgs(args, config, utils, blackduckSystem, NO_VERSION_SUFFIX, NO_VERSION_SUFFIX)
-	if err != nil {
-		return err
-	}
-	script := strings.Join(args, " ")
-
 	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
 	envs = append(envs, config.CustomEnvironmentVariables...)
 
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
-	if config.ScanContainerDistro != "" {
+	// When containerScan is set to true, only the container scan will be executed
+	if !config.ContainerScan {
+		args := []string{"./detect.sh"}
+		args, err = addDetectArgs(args, config, utils, blackduckSystem, NO_VERSION_SUFFIX, NO_VERSION_SUFFIX)
+		if err != nil {
+			return err
+		}
+		script := strings.Join(args, " ")
+		err = mapDetectError(utils.RunShell("bash", script), config, utils)
+	}
+
+	if config.ScanContainerDistro != "" || config.ContainerScan {
 		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
 		if imageError != nil {
 			if err != nil {
@@ -348,7 +351,7 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 		}
 		script := strings.Join(args, " ")
 
-		err = utils.RunShell("/bin/bash", script)
+		err = utils.RunShell("bash", script)
 		err = mapDetectError(err, config, utils)
 
 		if err != nil {
@@ -621,6 +624,11 @@ func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils d
 	args, err := addDetectArgs(args, config, utils, sys, NO_VERSION_SUFFIX, fmt.Sprintf("image-%s", strings.Split(imageTar, ".")[0]))
 	if err != nil {
 		return []string{}, err
+	}
+	if config.ContainerScan {
+		args = append(args, "--detect.tools=CONTAINER_SCAN")
+		args = append(args, fmt.Sprintf("--detect.container.scan.file.path=./%s", imageTar))
+		return args, nil
 	}
 
 	args = append(args, fmt.Sprintf("--detect.docker.tar=./%s", imageTar))
