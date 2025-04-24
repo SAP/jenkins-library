@@ -44,7 +44,7 @@ func TestCloudFoundryDeleteSpace(t *testing.T) {
 			s.ShouldFailOnCommand = nil
 		}()
 
-		s.ShouldFailOnCommand = map[string]error{"yes '' | cf login -a https://api.endpoint.com -u testUser -p testPassword ": fmt.Errorf(errorMessage)}
+		s.ShouldFailOnCommand = map[string]error{"yes '' | cf login -a https://api.endpoint.com -u testUser -p testPassword ": fmt.Errorf("%s", errorMessage)}
 
 		e := runCloudFoundryDeleteSpace(&config, &telemetryData, cf, &s)
 		assert.EqualError(t, e, "Error while logging in occured: "+errorMessage)
@@ -63,7 +63,7 @@ func TestCloudFoundryDeleteSpace(t *testing.T) {
 
 		errorMessage := "cf space creation error"
 
-		m.ShouldFailOnCommand = map[string]error{"cf delete-space testSpace -o testOrg -f": fmt.Errorf(errorMessage)}
+		m.ShouldFailOnCommand = map[string]error{"cf delete-space testSpace -o testOrg -f": fmt.Errorf("%s", errorMessage)}
 
 		gotError := runCloudFoundryDeleteSpace(&config, &telemetryData, cf, &s)
 		assert.EqualError(t, gotError, "Deletion of cf space has failed: "+errorMessage, "Wrong error message")

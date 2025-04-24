@@ -176,7 +176,7 @@ spec:
           - STEPS
       - name: containerMultiImageBuild
         type: bool
-        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).
+        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexcludes).
         scope:
           - GENERAL
           - PARAMETERS
@@ -305,7 +305,7 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        default: "https://github.com/anchore/syft/releases/download/v1.4.1/syft_1.4.1_linux_amd64.tar.gz"
+        default: "https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz"
   outputs:
     resources:
       - name: commonPipelineEnvironment

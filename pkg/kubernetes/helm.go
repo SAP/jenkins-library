@@ -269,9 +269,9 @@ func (h *HelmExecute) RunHelmInstall() error {
 
 	if h.verbose {
 		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+		helmParamsDryRun = append(helmParamsDryRun, "--dry-run", "--hide-secret")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Error("Helm install --dry-run call failed")
+			log.Entry().WithError(err).Error("Helm install --dry-run --hide-secret call failed")
 		}
 	}
 
@@ -309,9 +309,9 @@ func (h *HelmExecute) RunHelmUninstall() error {
 
 	if h.verbose {
 		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+		helmParamsDryRun = append(helmParamsDryRun, "--dry-run", "--hide-secret")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Error("Helm uninstall --dry-run call failed")
+			log.Entry().WithError(err).Error("Helm uninstall --dry-run --hide-secret call failed")
 		}
 	}
 

@@ -30,12 +30,12 @@ func (u *UnknownOrchestratorConfigProvider) BuildStatus() string {
 }
 
 func (u *UnknownOrchestratorConfigProvider) ChangeSets() []ChangeSet {
-	log.Entry().Infof(unknownOrchestratorWarning)
+	log.Entry().Info(unknownOrchestratorWarning)
 	return []ChangeSet{}
 }
 
 func (u *UnknownOrchestratorConfigProvider) BuildReason() string {
-	log.Entry().Infof(unknownOrchestratorWarning)
+	log.Entry().Info(unknownOrchestratorWarning)
 	return "n/a"
 }
 

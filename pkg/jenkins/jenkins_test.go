@@ -30,7 +30,7 @@ func TestTriggerJob(t *testing.T) {
 		job := &mocks.Job{}
 		job.Test(t)
 		job.
-			On("Poll", ctx).Return(404, fmt.Errorf(mock.Anything))
+			On("Poll", ctx).Return(404, fmt.Errorf("%s", mock.Anything))
 		// test
 		build, err := TriggerJob(ctx, jenkins, job, jobParameters)
 		// asserts
@@ -49,7 +49,7 @@ func TestTriggerJob(t *testing.T) {
 		job.
 			On("Poll", ctx).Return(200, nil).
 			On("InvokeSimple", ctx, map[string]string{}).
-			Return(queueID, fmt.Errorf(mock.Anything))
+			Return(queueID, fmt.Errorf("%s", mock.Anything))
 		// test
 		build, err := TriggerJob(ctx, jenkins, job, jobParameters)
 		// asserts
@@ -92,7 +92,7 @@ func TestTriggerJob(t *testing.T) {
 			Return(&gojenkins.Job{})
 		jenkins.
 			On("GetBuildFromQueueID", ctx, mock.Anything, queueID).
-			Return(nil, fmt.Errorf(mock.Anything))
+			Return(nil, fmt.Errorf("%s", mock.Anything))
 		// test
 		build, err := TriggerJob(ctx, jenkins, job, jobParameters)
 		// asserts

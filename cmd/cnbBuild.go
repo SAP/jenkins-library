@@ -353,7 +353,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 			return errors.Wrap(err, "failed to create syft scanner file")
 		}
 		// images produces with cnb have sboms
-		syftScanner.AddArgument("--override-default-catalogers=sbom-cataloger")
+		syftScanner.AddArgument("--override-default-catalogers=sbom-cataloger,go-module-binary-cataloger,apk-db-cataloger,dpkg-db-cataloger,rpm-db-cataloger")
 		err = syftScanner.ScanImages(filepath.Dir(config.DockerConfigJSON), utils, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
@@ -483,7 +483,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "could not resolve path")
+		return errors.Wrap(err, "could not resolve path")
 	}
 
 	target := "/workspace"

@@ -257,21 +257,24 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 
 	blackduckSystem := newBlackduckSystem(config)
 
-	args := []string{"./detect.sh"}
-	args, err = addDetectArgs(args, config, utils, blackduckSystem, NO_VERSION_SUFFIX, NO_VERSION_SUFFIX)
-	if err != nil {
-		return err
-	}
-	script := strings.Join(args, " ")
-
 	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
 	envs = append(envs, config.CustomEnvironmentVariables...)
 
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
-	if config.ScanContainerDistro != "" {
+	// When containerScan is set to true, only the container scan will be executed
+	if !config.ContainerScan {
+		args := []string{"./detect.sh"}
+		args, err = addDetectArgs(args, config, utils, blackduckSystem, NO_VERSION_SUFFIX, NO_VERSION_SUFFIX)
+		if err != nil {
+			return err
+		}
+		script := strings.Join(args, " ")
+		err = mapDetectError(utils.RunShell("bash", script), config, utils)
+	}
+
+	if config.ScanContainerDistro != "" || config.ContainerScan {
 		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
 		if imageError != nil {
 			if err != nil {
@@ -313,7 +316,7 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 		} else {
 			// Error code mapping with more human readable text
-			err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+			err = errors.Wrap(err, exitCodeMapping(utils.GetExitCode()))
 		}
 	}
 	return err
@@ -348,7 +351,7 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 		}
 		script := strings.Join(args, " ")
 
-		err = utils.RunShell("/bin/bash", script)
+		err = utils.RunShell("bash", script)
 		err = mapDetectError(err, config, utils)
 
 		if err != nil {
@@ -621,6 +624,11 @@ func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils d
 	args, err := addDetectArgs(args, config, utils, sys, NO_VERSION_SUFFIX, fmt.Sprintf("image-%s", strings.Split(imageTar, ".")[0]))
 	if err != nil {
 		return []string{}, err
+	}
+	if config.ContainerScan {
+		args = append(args, "--detect.tools=CONTAINER_SCAN")
+		args = append(args, fmt.Sprintf("--detect.container.scan.file.path=./%s", imageTar))
+		return args, nil
 	}
 
 	args = append(args, fmt.Sprintf("--detect.docker.tar=./%s", imageTar))
@@ -972,7 +980,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	htmlReportPath := "piper_detect_policy_violation_report.html"
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0o666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, errors.Wrap(err, "failed to write html report")
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Policy Violation Report", Target: htmlReportPath})
 
@@ -984,7 +992,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_policy_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0o666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+		return reportPaths, errors.Wrap(err, "failed to write json report")
 	}
 
 	return reportPaths, nil
@@ -993,7 +1001,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) (error, int) {
 	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
 	if err != nil {
-		return errors.Wrapf(err, "failed to get License Policy Violations"), 0
+		return errors.Wrap(err, "failed to get License Policy Violations"), 0
 	}
 
 	violationCount := getActivePolicyViolations(components)

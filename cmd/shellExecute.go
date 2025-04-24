@@ -58,7 +58,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		if strings.Contains(source, "https") {
 			scriptLocation, err := piperhttp.DownloadExecutable(config.GithubToken, utils, utils, source)
 			if err != nil {
-				return errors.Wrapf(err, "script download error")
+				return errors.Wrap(err, "script download error")
 			}
 			source = scriptLocation
 		}

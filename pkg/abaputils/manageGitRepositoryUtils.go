@@ -155,7 +155,7 @@ func calculateLenghts(results []LogResultsV2) (int, int) {
 }
 
 func printDashedLine(i int) {
-	log.Entry().Infof(strings.Repeat("-", i))
+	log.Entry().Info(strings.Repeat("-", i))
 }
 
 func printLog(logOverviewEntry LogResultsV2, api SoftwareComponentApiInterface) {
@@ -179,11 +179,11 @@ func printLogProtocolEntries(logEntry LogResultsV2, logProtocols []LogProtocol) 
 	})
 	if logEntry.Status == `Error` {
 		for _, entry := range logProtocols {
-			log.Entry().Info(entry.Description)
+			log.Entry().Infof("%s %s", entry.Type, entry.Description)
 		}
 	} else {
 		for _, entry := range logProtocols {
-			log.Entry().Debug(entry.Description)
+			log.Entry().Debugf("%s %s", entry.Type, entry.Description)
 		}
 	}
 }

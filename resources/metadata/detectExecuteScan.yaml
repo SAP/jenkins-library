@@ -117,7 +117,7 @@ spec:
           - --blackduck.signature.scanner.memory=4096
           - --detect.timeout=6000
           - --blackduck.trust.cert=true
-          - --logging.level.com.synopsys.integration=DEBUG
+          - --logging.level.detect=DEBUG
           - --detect.maven.excluded.scopes=test
         scope:
           - PARAMETERS
@@ -669,6 +669,16 @@ spec:
           "This flag enables the use of the supported version 9 of the Detect script instead of default version 10"
         aliases:
           - name: detect/useDetect9
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: containerScan
+        description: "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images, and all other detect tools will be ignored in the scan"
+        aliases:
+          - name: detect/containerScan
         type: bool
         scope:
           - PARAMETERS

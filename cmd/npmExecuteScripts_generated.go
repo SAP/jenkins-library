@@ -86,10 +86,8 @@ func (p *npmExecuteScriptsReports) persist(stepConfig npmExecuteScriptsOptions, 
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 		{FilePattern: "**/e2e/*.json", ParamRef: "", StepResultType: "cucumber"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -466,7 +464,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-buster"},
+				{Name: "node", Image: "node:lts-bookworm"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

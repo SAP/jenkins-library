@@ -80,10 +80,8 @@ func (p *newmanExecuteReports) persist(stepConfig newmanExecuteOptions, gcpJsonK
 		{FilePattern: "**/requirement.mapping", ParamRef: "", StepResultType: "requirement-mapping"},
 		{FilePattern: "**/delivery.mapping", ParamRef: "", StepResultType: "delivery-mapping"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -328,7 +326,7 @@ func newmanExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "newman", Image: "node:lts-buster", WorkingDir: "/home/node"},
+				{Name: "newman", Image: "node:lts-bookworm", WorkingDir: "/home/node"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

@@ -168,8 +168,6 @@ spec:
             param: custom/mavenRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
-          - name: mtaDeploymentRepositoryPasswordId
-            type: secret
           - type: vaultSecretFile
             name: mtaDeploymentRepositoryPasswordFileVaultSecretName
             default: mta-deployment-repository-passowrd
