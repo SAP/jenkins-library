@@ -16,7 +16,7 @@ func TestTmsExportIntegrationYaml(t *testing.T) {
 	// success case: run with custom config
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
@@ -38,7 +38,7 @@ func TestTmsExportIntegrationBinFailDescription(t *testing.T) {
 	// error case: run cmd with invalid description
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
