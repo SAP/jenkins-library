@@ -17,6 +17,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+const automaticdTTLThreshold = 18 * 24 * time.Hour // Threshold for automaticd service to rotate secrets
+
 type vaultRotateSecretIDUtils interface {
 	GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration, error)
 	GetAppRoleName() (string, error)
@@ -77,7 +79,6 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	}
 
 	ttl, err := utils.GetAppRoleSecretIDTtl(GeneralConfig.VaultRoleSecretID, roleName)
-
 	if err != nil {
 		log.Entry().WithError(err).Warn("Could not fetch secret ID TTL. Secret ID rotation failed!")
 		return nil
@@ -93,12 +94,24 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		log.Entry().Info("Secret ID TTL valid.")
 		return nil
 	}
+
+	// Check if the secret store is ADO and apply the TTL condition
+	if config.SecretStore == "ado" {
+		if ttl < automaticdTTLThreshold {
+			// Secret TTL is less than 18 days but greater than or equal to the configured days before expiry
+			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
+			if config.AdoPersonalAccessToken == "" {
+				log.Entry().Warn("ADO Personal Access Token is required but not provided. Secret ID rotation cannot proceed for Azure DevOps.")
+				return fmt.Errorf("ADO Personal Access Token is missing")
+			}
+		}
+	}
+
 	log.Entry().Info("Rotating secret ID...")
 
 	newSecretID, err := utils.GenerateNewAppRoleSecret(GeneralConfig.VaultRoleSecretID, roleName)
-
 	if err != nil || newSecretID == "" {
-		log.Entry().WithError(err).Warn("Generating a new secret ID failed. Secret ID rotation faield!")
+		log.Entry().WithError(err).Warn("Generating a new secret ID failed. Secret ID rotation failed!")
 		return nil
 	}
 
@@ -106,9 +119,9 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 		log.Entry().WithError(err).Warnf("Could not write secret back to secret store %s", config.SecretStore)
 		return err
 	}
+
 	log.Entry().Infof("Secret has been successfully updated in secret store %s", config.SecretStore)
 	return nil
-
 }
 
 func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID string) error {
