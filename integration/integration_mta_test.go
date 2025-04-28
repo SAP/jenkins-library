@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-const mtaTestDockerImage = "devxci/mbtci-java21-node22"
+const mtaTestDockerImage = "devxci/mbtci-java11-node20"
 
 func TestMTAIntegrationMavenProject(t *testing.T) {
 	// t.Parallel()
