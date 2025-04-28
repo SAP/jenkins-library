@@ -10,7 +10,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	m := &mock.BtpExecuterMock{
+	m := &mock.BtpExecutorMock{
 		StdoutReturn: map[string]string{
 			"btp login": "Login successful",
 		},
@@ -33,7 +33,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunSync_Success(t *testing.T) {
-	m := &mock.BtpExecuterMock{
+	m := &mock.BtpExecutorMock{
 		StdoutReturn: map[string]string{
 			"btp check": `dummy
 							dummy
@@ -49,8 +49,8 @@ func TestRunSync_Success(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRunSync_Timeout(t *testing.T) {
-	m := &mock.BtpExecuterMock{
+func TestRunSync_Erro_On_Check(t *testing.T) {
+	m := &mock.BtpExecutorMock{
 		ShouldFailOnCommand: map[string]error{
 			"btp check": errors.New("Bad Request"),
 		},

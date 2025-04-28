@@ -183,6 +183,12 @@ func (b *BTPCommandBuilder) WithConfirm() *BTPCommandBuilder {
 	return b
 }
 
+// Method to set format of response
+func (b *BTPCommandBuilder) WithFormat(format string) *BTPCommandBuilder {
+	b.params = append(b.params, "--format", format)
+	return b
+}
+
 // Build the final command string
 func (b *BTPCommandBuilder) Build() (string, error) {
 	if b.action == "" {

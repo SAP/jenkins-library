@@ -9,50 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func loginMockCleanup(m *mock.BtpExecuterMock) {
+func loginMockCleanup(m *mock.BtpExecutorMock) {
 	m.ShouldFailOnCommand = map[string]error{}
 	m.StdoutReturn = map[string]string{}
 	m.Calls = []mock.BtpExecCall{}
 }
 
-func TestBTPLoginCheck(t *testing.T) {
-
-	m := &mock.BtpExecuterMock{
-		StdoutReturn: map[string]string{
-			"btp login": "Login successful",
-		},
-	}
-
-	m.Stdout(new(bytes.Buffer))
-
-	t.Run("CF Login check: logged in", func(t *testing.T) {
-
-		defer loginMockCleanup(m)
-
-		btp := BTPUtils{Exec: m, loggedIn: true}
-
-		loggedIn, err := btp.LoginCheck()
-		if assert.NoError(t, err) {
-			assert.True(t, loggedIn)
-		}
-	})
-
-	t.Run("CF Login check: not logged in", func(t *testing.T) {
-
-		defer loginMockCleanup(m)
-
-		cf := BTPUtils{Exec: m, loggedIn: false}
-
-		loggedIn, err := cf.LoginCheck()
-		if assert.NoError(t, err) {
-			assert.False(t, loggedIn)
-		}
-	})
-}
-
 func TestBTPLogin(t *testing.T) {
 
-	m := &mock.BtpExecuterMock{
+	m := &mock.BtpExecutorMock{
 		StdoutReturn: map[string]string{},
 	}
 
@@ -62,9 +27,9 @@ func TestBTPLogin(t *testing.T) {
 
 		defer loginMockCleanup(m)
 
-		cfconfig := LoginOptions{}
+		btpConfig := LoginOptions{}
 		btp := BTPUtils{Exec: m}
-		err := btp.Login(cfconfig)
+		err := btp.Login(btpConfig)
 		assert.EqualError(t, err, "Failed to login to BTP: Parameters missing. Please provide the CLI URL, Subdomain, Space, User and Password")
 	})
 	t.Run("BTP Login: failure", func(t *testing.T) {
@@ -111,7 +76,7 @@ func TestBTPLogin(t *testing.T) {
 
 func TestBTPLogout(t *testing.T) {
 
-	m := &mock.BtpExecuterMock{}
+	m := &mock.BtpExecutorMock{}
 
 	t.Run("BTP Logout", func(t *testing.T) {
 		btp := BTPUtils{Exec: m}

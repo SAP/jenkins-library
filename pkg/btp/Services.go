@@ -45,7 +45,7 @@ type CreateServiceInstanceOptions struct {
 	Parameters      string
 }
 
-type ServiceInstanceOptions struct {
+type GetServiceInstanceOptions struct {
 	Url          string
 	Subdomain    string
 	User         string
@@ -60,7 +60,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	_b := btp.Exec
 
 	if _b == nil {
-		_b = &Executer{}
+		_b = &Executor{}
 	}
 	loginOptions := LoginOptions{
 		Url:       options.Url,
@@ -103,7 +103,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	}
 
 	// parse and return service binding
-	serviceBindingJSON, err := GetServiceBindingJSON(serviceBindingBytes.String())
+	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
 
 	if err != nil {
 		return "", err
@@ -122,7 +122,7 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 	_b := btp.Exec
 
 	if _b == nil {
-		_b = &Executer{}
+		_b = &Executor{}
 	}
 	loginOptions := LoginOptions{
 		Url:       options.Url,
@@ -159,7 +159,7 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 	}
 
 	// parse and return service binding
-	serviceBindingJSON, err := GetServiceBindingJSON(serviceBindingBytes.String())
+	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
 
 	if err != nil {
 		return "", err
@@ -178,7 +178,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options GetServiceBindingOptions) erro
 	_b := btp.Exec
 
 	if _b == nil {
-		_b = &Executer{}
+		_b = &Executor{}
 	}
 	loginOptions := LoginOptions{
 		Url:       options.Url,
@@ -232,7 +232,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	_b := btp.Exec
 
 	if _b == nil {
-		_b = &Executer{}
+		_b = &Executor{}
 	}
 	loginOptions := LoginOptions{
 		Url:       options.Url,
@@ -281,7 +281,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	}
 
 	// parse and return service instance
-	serviceInstanceJSON, err := GetServiceInstanceJSON(serviceInstanceBytes.String())
+	serviceInstanceJSON, err := GetJSON(serviceInstanceBytes.String())
 
 	if err != nil {
 		return "", err
@@ -295,12 +295,12 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	return serviceInstanceJSON, err
 }
 
-func (btp *BTPUtils) GetServiceInstance(options ServiceInstanceOptions) (string, error) {
+func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (string, error) {
 
 	_b := btp.Exec
 
 	if _b == nil {
-		_b = &Executer{}
+		_b = &Executor{}
 	}
 	loginOptions := LoginOptions{
 		Url:       options.Url,
@@ -337,7 +337,7 @@ func (btp *BTPUtils) GetServiceInstance(options ServiceInstanceOptions) (string,
 	}
 
 	// parse and return service instance
-	serviceInstanceJSON, err := GetServiceInstanceJSON(serviceInstanceBytes.String())
+	serviceInstanceJSON, err := GetJSON(serviceInstanceBytes.String())
 
 	if err != nil {
 		return "", err
@@ -351,12 +351,12 @@ func (btp *BTPUtils) GetServiceInstance(options ServiceInstanceOptions) (string,
 	return serviceInstanceJSON, err
 }
 
-func (btp *BTPUtils) DeleteServiceInstance(options ServiceInstanceOptions) error {
+func (btp *BTPUtils) DeleteServiceInstance(options GetServiceInstanceOptions) error {
 
 	_b := btp.Exec
 
 	if _b == nil {
-		_b = &Executer{}
+		_b = &Executor{}
 	}
 	loginOptions := LoginOptions{
 		Url:       options.Url,
@@ -406,154 +406,16 @@ func (btp *BTPUtils) DeleteServiceInstance(options ServiceInstanceOptions) error
 	return err
 }
 
-func GetServiceBindingJSON(value string) (string, error) {
+func GetJSON(value string) (string, error) {
+	var serviceBindingJSON string
+
 	if len(value) > 0 {
+		// parse and return service key
 		var lines []string = strings.Split(value, "\n")
+		serviceBindingJSON = strings.Join(lines, "")
 
-		var data BindingResponseData
-		serviceBindingJSON, err := ConvertYAMLToJSON(strings.Join(lines[:len(lines)-2], "\n"), &data)
-
-		if err != nil {
-			return "", err
-		}
 		return serviceBindingJSON, nil
 	}
 
 	return "", errors.New("The returned value is empty")
-}
-
-func GetServiceInstanceJSON(value string) (string, error) {
-	if len(value) > 0 {
-		var lines []string = strings.Split(value, "\n")
-
-		var data InstanceResponseData
-		serviceInstanceJSON, err := ConvertYAMLToJSON(strings.Join(lines[:len(lines)-2], "\n"), &data)
-
-		if err != nil {
-			return "", err
-		}
-		return serviceInstanceJSON, nil
-	}
-
-	return "", errors.New("The returned value is empty")
-}
-
-type BindingResponseData struct {
-	Context struct {
-		CrmCustomerID     interface{} `yaml:"crm_customer_id"`
-		EnvType           string      `yaml:"env_type"`
-		GlobalAccountID   string      `yaml:"global_account_id"`
-		InstanceName      string      `yaml:"instance_name"`
-		LicenseType       string      `yaml:"license_type"`
-		Origin            string      `yaml:"origin"`
-		Platform          string      `yaml:"platform"`
-		Region            string      `yaml:"region"`
-		ServiceInstanceID string      `yaml:"service_instance_id"`
-		SubaccountID      string      `yaml:"subaccount_id"`
-		Subdomain         string      `yaml:"subdomain"`
-		ZoneID            string      `yaml:"zone_id"`
-	} `yaml:"context"`
-	CreatedAt struct {
-	} `yaml:"created_at"`
-	CreatedBy   string `yaml:"created_by"`
-	Credentials struct {
-		Abap struct {
-			CommunicationArrangementID       string `yaml:"communication_arrangement_id"`
-			CommunicationInboundUserAuthMode int    `yaml:"communication_inbound_user_auth_mode"`
-			CommunicationInboundUserID       string `yaml:"communication_inbound_user_id"`
-			CommunicationScenarioID          string `yaml:"communication_scenario_id"`
-			CommunicationSystemID            string `yaml:"communication_system_id"`
-			CommunicationType                string `yaml:"communication_type"`
-			Password                         string `yaml:"password"`
-			Username                         string `yaml:"username"`
-		} `yaml:"abap"`
-		Binding struct {
-			Env     string `yaml:"env"`
-			ID      string `yaml:"id"`
-			Type    string `yaml:"type"`
-			Version string `yaml:"version"`
-		} `yaml:"binding"`
-		PreserveHostHeader bool   `yaml:"preserve_host_header"`
-		SapCloudService    string `yaml:"sap.cloud.service"`
-		Systemid           string `yaml:"systemid"`
-		URL                string `yaml:"url"`
-	} `yaml:"credentials"`
-	ID            string `yaml:"id"`
-	Labels        string `yaml:"labels"`
-	LastOperation struct {
-		CorrelationID string `yaml:"correlation_id"`
-		CreatedAt     struct {
-		} `yaml:"created_at"`
-		DeletionScheduled struct {
-		} `yaml:"deletion_scheduled"`
-		ID                  string `yaml:"id"`
-		PlatformID          string `yaml:"platform_id"`
-		Ready               bool   `yaml:"ready"`
-		Reschedule          bool   `yaml:"reschedule"`
-		RescheduleTimestamp struct {
-		} `yaml:"reschedule_timestamp"`
-		ResourceID   string `yaml:"resource_id"`
-		ResourceType string `yaml:"resource_type"`
-		State        string `yaml:"state"`
-		Type         string `yaml:"type"`
-		UpdatedAt    struct {
-		} `yaml:"updated_at"`
-	} `yaml:"last_operation"`
-	Name              string `yaml:"name"`
-	Ready             bool   `yaml:"ready"`
-	ServiceInstanceID string `yaml:"service_instance_id"`
-	SubaccountID      string `yaml:"subaccount_id"`
-	UpdatedAt         struct {
-	} `yaml:"updated_at"`
-}
-
-type InstanceResponseData struct {
-	Context struct {
-		CrmCustomerID   interface{} `yaml:"crm_customer_id"`
-		EnvType         string      `yaml:"env_type"`
-		GlobalAccountID string      `yaml:"global_account_id"`
-		InstanceName    string      `yaml:"instance_name"`
-		LicenseType     string      `yaml:"license_type"`
-		Origin          string      `yaml:"origin"`
-		Platform        string      `yaml:"platform"`
-		Region          string      `yaml:"region"`
-		SubaccountID    string      `yaml:"subaccount_id"`
-		Subdomain       string      `yaml:"subdomain"`
-		ZoneID          string      `yaml:"zone_id"`
-	} `yaml:"context"`
-	CreatedAt struct {
-	} `yaml:"created_at"`
-	CreatedBy     string `yaml:"created_by"`
-	DashboardURL  string `yaml:"dashboard_url"`
-	ID            string `yaml:"id"`
-	Labels        string `yaml:"labels"`
-	LastOperation struct {
-		CorrelationID string `yaml:"correlation_id"`
-		CreatedAt     struct {
-		} `yaml:"created_at"`
-		DeletionScheduled struct {
-		} `yaml:"deletion_scheduled"`
-		Description         string `yaml:"description"`
-		ID                  string `yaml:"id"`
-		PlatformID          string `yaml:"platform_id"`
-		Ready               bool   `yaml:"ready"`
-		Reschedule          bool   `yaml:"reschedule"`
-		RescheduleTimestamp struct {
-		} `yaml:"reschedule_timestamp"`
-		ResourceID   string `yaml:"resource_id"`
-		ResourceType string `yaml:"resource_type"`
-		State        string `yaml:"state"`
-		Type         string `yaml:"type"`
-		UpdatedAt    struct {
-		} `yaml:"updated_at"`
-	} `yaml:"last_operation"`
-	Name          string `yaml:"name"`
-	PlatformID    string `yaml:"platform_id"`
-	Protected     string `yaml:"protected"`
-	Ready         bool   `yaml:"ready"`
-	ServicePlanID string `yaml:"service_plan_id"`
-	SubaccountID  string `yaml:"subaccount_id"`
-	UpdatedAt     struct {
-	} `yaml:"updated_at"`
-	Usable bool `yaml:"usable"`
 }

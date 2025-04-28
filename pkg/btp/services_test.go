@@ -9,7 +9,55 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBTPReadServiceBinding(t *testing.T) {
+func TestBTPCreateServiceBinding(t *testing.T) {
+	t.Run("BTP CreateServiceBinding", func(t *testing.T) {
+		//given
+		const testURL = "testurl.com"
+		btpConfig := CreateServiceBindingOptions{
+			Url:         "https://api.endpoint.com",
+			Subdomain:   "xxxxxxx",
+			Subaccount:  "yyyyyyy",
+			BindingName: "testServiceBindingName",
+			User:        "test_user",
+			Password:    "test_password",
+		}
+
+		m := &mock.BtpExecutorMock{
+			StdoutReturn: map[string]string{
+				"btp login .*": "Authentication successful",
+				"btp get services/binding": fmt.Sprintf(`
+{
+  "id": "xxxx",
+  "name": "%s",
+  "service_instance_id": "yyy",
+  "context": {
+    "subaccount_id": "%s",
+    "subdomain": "%s",
+  },
+  "created_by": "%s",
+}`, btpConfig.BindingName, btpConfig.Subaccount, btpConfig.Subdomain, btpConfig.User),
+			},
+		}
+
+		m.Stdout(new(bytes.Buffer))
+
+		defer loginMockCleanup(m)
+
+		//when
+		var err error
+		var btpServiceBinding string
+		btp := NewBTPUtils(m)
+
+		btpServiceBinding, err = btp.CreateServiceBinding(btpConfig)
+
+		//then
+		if assert.NoError(t, err) {
+			assert.NotEmpty(t, btpServiceBinding)
+		}
+	})
+}
+
+func TestBTPGetServiceBinding(t *testing.T) {
 	t.Run("BTP GetServiceBinding", func(t *testing.T) {
 		//given
 		const testURL = "testurl.com"
@@ -22,26 +70,20 @@ func TestBTPReadServiceBinding(t *testing.T) {
 			Password:    "test_password",
 		}
 
-		m := &mock.BtpExecuterMock{
+		m := &mock.BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/binding": fmt.Sprintf(`
-credentials:
-  abap:
-    communication_arrangement_id: SK-072EA3BC-778A-43CE-86D2-046BC208EFE3
-    communication_inbound_user_auth_mode: 2
-    communication_inbound_user_id: CC0000000001
-    communication_scenario_id: SAP_COM_0948
-    communication_system_id: SK-072EA3BC-778A-43CE-86D2-046BC208EFE3
-    communication_type: inbound
-    password: %s
-    username: %s
-  sap.cloud.service: com.sap.cloud.abap
-  systemid: H01
-  url: %s
-name: %s
-
-OK`, btpConfig.Password, btpConfig.User, testURL, btpConfig.BindingName),
+{
+  "id": "xxxx",
+  "name": "%s",
+  "service_instance_id": "yyy",
+  "context": {
+    "subaccount_id": "%s",
+    "subdomain": "%s",
+  },
+  "created_by": "%s",
+}`, btpConfig.BindingName, btpConfig.Subaccount, btpConfig.Subdomain, btpConfig.User),
 			},
 		}
 
@@ -52,7 +94,7 @@ OK`, btpConfig.Password, btpConfig.User, testURL, btpConfig.BindingName),
 		//when
 		var err error
 		var btpServiceBinding string
-		btp := BTPUtils{Exec: m}
+		btp := NewBTPUtils(m)
 
 		btpServiceBinding, err = btp.GetServiceBinding(btpConfig)
 
@@ -60,132 +102,6 @@ OK`, btpConfig.Password, btpConfig.User, testURL, btpConfig.BindingName),
 		if assert.NoError(t, err) {
 			assert.NotEmpty(t, btpServiceBinding)
 		}
-	})
-}
-
-func TestBTPGetServiceInstance(t *testing.T) {
-	t.Run("BTP GetServiceInstance", func(t *testing.T) {
-		//given
-		const testURL = "testurl.com"
-		btpConfig := ServiceInstanceOptions{
-			Url:          "https://api.endpoint.com",
-			Subdomain:    "xxxxxxx",
-			Subaccount:   "yyyyyyy",
-			InstanceName: "testServiceInstanceName",
-			User:         "test_user",
-			Password:     "test_password",
-		}
-
-		m := &mock.BtpExecuterMock{
-			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
-				"btp get services/instance": fmt.Sprintf(`
-context:
-  crm_customer_id:
-  env_type: sapcp
-id: 005cc00a-6c85-4e01-a5b8-7dd944ff26fb
-labels: subaccount_id = f57f211e-2733-4cc6-b645-74f02d034a58
-name: %s
-
-OK`, btpConfig.InstanceName),
-			},
-		}
-
-		m.Stdout(new(bytes.Buffer))
-
-		defer loginMockCleanup(m)
-
-		//when
-		var err error
-		var btpServiceInstance string
-		btp := BTPUtils{Exec: m}
-
-		btpServiceInstance, err = btp.GetServiceInstance(btpConfig)
-
-		//then
-		if assert.NoError(t, err) {
-			assert.NotEmpty(t, btpServiceInstance)
-		}
-	})
-}
-
-func TestBTPDeleteServiceInstance(t *testing.T) {
-	t.Run("BTP DeleteServiceInstance not working", func(t *testing.T) {
-		//given
-		const testURL = "testurl.com"
-		btpConfig := ServiceInstanceOptions{
-			Url:          "https://api.endpoint.com",
-			Subdomain:    "xxxxxxx",
-			Subaccount:   "yyyyyyy",
-			InstanceName: "testServiceInstanceName",
-			User:         "test_user",
-			Password:     "test_password",
-		}
-
-		m := &mock.BtpExecuterMock{
-			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
-				"btp get services/instance": fmt.Sprintf(`
-context:
-  crm_customer_id:
-  env_type: sapcp
-id: 005cc00a-6c85-4e01-a5b8-7dd944ff26fb
-labels: subaccount_id = f57f211e-2733-4cc6-b645-74f02d034a58
-name: %s
-
-OK`, btpConfig.InstanceName),
-			},
-		}
-
-		m.Stdout(new(bytes.Buffer))
-
-		defer loginMockCleanup(m)
-
-		//when
-		var err error
-		btp := BTPUtils{Exec: m}
-
-		err = btp.DeleteServiceInstance(btpConfig)
-
-		//then
-		assert.Error(t, err)
-	})
-
-	t.Run("BTP DeleteServiceInstance working", func(t *testing.T) {
-		//given
-		const testURL = "testurl.com"
-		btpConfig := ServiceInstanceOptions{
-			Url:          "https://api.endpoint.com",
-			Subdomain:    "xxxxxxx",
-			Subaccount:   "yyyyyyy",
-			InstanceName: "testServiceInstanceName",
-			User:         "test_user",
-			Password:     "test_password",
-		}
-
-		m := &mock.BtpExecuterMock{
-			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
-				"btp get services/instance": `
-error: BadRequest
-description: Could not find such instance
-
-FAILED`,
-			},
-		}
-
-		m.Stdout(new(bytes.Buffer))
-
-		defer loginMockCleanup(m)
-
-		//when
-		var err error
-		btp := BTPUtils{Exec: m}
-
-		err = btp.DeleteServiceInstance(btpConfig)
-
-		//then
-		assert.NoError(t, err)
 	})
 }
 
@@ -202,26 +118,16 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 			Password:    "test_password",
 		}
 
-		m := &mock.BtpExecuterMock{
+		m := &mock.BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
-				"btp get services/binding": fmt.Sprintf(`
-credentials:
-  abap:
-    communication_arrangement_id: SK-072EA3BC-778A-43CE-86D2-046BC208EFE3
-    communication_inbound_user_auth_mode: 2
-    communication_inbound_user_id: CC0000000001
-    communication_scenario_id: SAP_COM_0948
-    communication_system_id: SK-072EA3BC-778A-43CE-86D2-046BC208EFE3
-    communication_type: inbound
-    password: %s
-    username: %s
-  sap.cloud.service: com.sap.cloud.abap
-  systemid: H01
-  url: %s
-name: %s
-
-OK`, btpConfig.Password, btpConfig.User, testURL, btpConfig.BindingName),
+			},
+			ShouldFailOnCommand: map[string]error{
+				"btp delete services/binding": fmt.Errorf(`
+{
+  "error": "BadRequest",
+  "description": "Could not find such binding"
+}`),
 			},
 		}
 
@@ -231,7 +137,7 @@ OK`, btpConfig.Password, btpConfig.User, testURL, btpConfig.BindingName),
 
 		//when
 		var err error
-		btp := BTPUtils{Exec: m}
+		btp := NewBTPUtils(m)
 
 		err = btp.DeleteServiceBinding(btpConfig)
 
@@ -251,14 +157,16 @@ OK`, btpConfig.Password, btpConfig.User, testURL, btpConfig.BindingName),
 			Password:    "test_password",
 		}
 
-		m := &mock.BtpExecuterMock{
+		m := &mock.BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
-				"btp get services/binding": `
-error: BadRequest
-description: Could not find such binding
-
-FAILED`,
+			},
+			ShouldFailOnCommand: map[string]error{
+				"btp get services/binding": fmt.Errorf(`
+{
+  "error": "BadRequest",
+  "description": "Could not find such binding"
+}`),
 			},
 		}
 
@@ -268,9 +176,188 @@ FAILED`,
 
 		//when
 		var err error
-		btp := BTPUtils{Exec: m}
+		btp := NewBTPUtils(m)
 
 		err = btp.DeleteServiceBinding(btpConfig)
+
+		//then
+		assert.NoError(t, err)
+	})
+}
+
+func TestBTPCreateServiceInstance(t *testing.T) {
+	t.Run("BTP CreateServiceInstance", func(t *testing.T) {
+		//given
+		const testURL = "testurl.com"
+		btpConfig := CreateServiceInstanceOptions{
+			Url:             "https://api.endpoint.com",
+			Subdomain:       "xxxxxxx",
+			Subaccount:      "yyyyyyy",
+			User:            "test_user",
+			Password:        "test_password",
+			ServiceInstance: "test_instance",
+			Tenant:          "test_tenant",
+			PlanName:        "test_plan",
+			OfferingName:    "test_offering",
+			InstanceName:    "test_instance",
+			Parameters:      "test_parameter",
+		}
+
+		m := &mock.BtpExecutorMock{
+			StdoutReturn: map[string]string{
+				"btp login .*": "Authentication successful",
+				"btp get services/instance": fmt.Sprintf(`
+{
+	"id": "xxx",
+	"name": "%s",
+	"context": {
+	"subdomain": "%s",
+	},
+	"subaccount_id": "%s",
+	"created_by": "%s"
+}`, btpConfig.InstanceName, btpConfig.Subdomain, btpConfig.Subaccount, btpConfig.User),
+			},
+		}
+
+		m.Stdout(new(bytes.Buffer))
+
+		defer loginMockCleanup(m)
+
+		//when
+		var err error
+		var btpServiceBinding string
+		btp := NewBTPUtils(m)
+
+		btpServiceBinding, err = btp.CreateServiceInstance(btpConfig)
+
+		//then
+		if assert.NoError(t, err) {
+			assert.NotEmpty(t, btpServiceBinding)
+		}
+	})
+}
+
+func TestBTPGetServiceInstance(t *testing.T) {
+	t.Run("BTP GetServiceInstance", func(t *testing.T) {
+		//given
+		const testURL = "testurl.com"
+		btpConfig := GetServiceInstanceOptions{
+			Url:          "https://api.endpoint.com",
+			Subdomain:    "xxxxxxx",
+			Subaccount:   "yyyyyyy",
+			InstanceName: "testServiceInstanceName",
+			User:         "test_user",
+			Password:     "test_password",
+		}
+
+		m := &mock.BtpExecutorMock{
+			StdoutReturn: map[string]string{
+				"btp login .*": "Authentication successful",
+				"btp get services/instance": fmt.Sprintf(`
+{
+  "id": "xxx",
+  "name": "%s",
+  "context": {
+    "subdomain": "%s",
+  },
+  "subaccount_id": "%s",
+  "created_by": "%s"
+}`, btpConfig.InstanceName, btpConfig.Subdomain, btpConfig.Subaccount, btpConfig.User),
+			},
+		}
+
+		m.Stdout(new(bytes.Buffer))
+
+		defer loginMockCleanup(m)
+
+		//when
+		var err error
+		var btpServiceInstance string
+		btp := NewBTPUtils(m)
+
+		btpServiceInstance, err = btp.GetServiceInstance(btpConfig)
+
+		//then
+		if assert.NoError(t, err) {
+			assert.NotEmpty(t, btpServiceInstance)
+		}
+	})
+}
+
+func TestBTPDeleteServiceInstance(t *testing.T) {
+	t.Run("BTP DeleteServiceInstance not working", func(t *testing.T) {
+		//given
+		const testURL = "testurl.com"
+		btpConfig := GetServiceInstanceOptions{
+			Url:          "https://api.endpoint.com",
+			Subdomain:    "xxxxxxx",
+			Subaccount:   "yyyyyyy",
+			InstanceName: "testServiceInstanceName",
+			User:         "test_user",
+			Password:     "test_password",
+		}
+
+		m := &mock.BtpExecutorMock{
+			StdoutReturn: map[string]string{
+				"btp login .*": "Authentication successful",
+			},
+			ShouldFailOnCommand: map[string]error{
+				"btp delete services/instance": fmt.Errorf(`
+{
+  "error": "BadRequest",
+  "description": "Could not find such instance"
+}`),
+			},
+		}
+
+		m.Stdout(new(bytes.Buffer))
+
+		defer loginMockCleanup(m)
+
+		//when
+		var err error
+		btp := NewBTPUtils(m)
+
+		err = btp.DeleteServiceInstance(btpConfig)
+
+		//then
+		assert.Error(t, err)
+	})
+
+	t.Run("BTP DeleteServiceInstance working", func(t *testing.T) {
+		//given
+		const testURL = "testurl.com"
+		btpConfig := GetServiceInstanceOptions{
+			Url:          "https://api.endpoint.com",
+			Subdomain:    "xxxxxxx",
+			Subaccount:   "yyyyyyy",
+			InstanceName: "testServiceInstanceName",
+			User:         "test_user",
+			Password:     "test_password",
+		}
+
+		m := &mock.BtpExecutorMock{
+			StdoutReturn: map[string]string{
+				"btp login .*": "Authentication successful",
+			},
+			ShouldFailOnCommand: map[string]error{
+				"btp get services/instance": fmt.Errorf(`
+{
+  "error": "BadRequest",
+  "description": "Could not find such instance"
+}`),
+			},
+		}
+
+		m.Stdout(new(bytes.Buffer))
+
+		defer loginMockCleanup(m)
+
+		//when
+		var err error
+		btp := NewBTPUtils(m)
+
+		err = btp.DeleteServiceInstance(btpConfig)
 
 		//then
 		assert.NoError(t, err)
