@@ -36,10 +36,8 @@ func NewBTPUtils(exec ExecRunner) *BTPUtils {
 }
 
 func (btp *BTPUtils) Login(options LoginOptions) error {
-	_r := btp.Exec
-
-	if _r == nil {
-		_r = &Executor{}
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
 	}
 
 	if options.Url == "" || options.Subdomain == "" || options.User == "" || options.Password == "" {
@@ -59,7 +57,7 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 
 	log.Entry().WithField("CLI URL:", options.Url).WithField("Subdomain", options.Subdomain).WithField("User", options.User).WithField("Password", options.Password).WithField("Tenant", options.Tenant)
 
-	err := _r.Run(btpLoginScript)
+	err := btp.Exec.Run(btpLoginScript)
 
 	if err != nil {
 		return fmt.Errorf("Failed to login to BTP: %w", err)
@@ -70,11 +68,8 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 }
 
 func (btp *BTPUtils) Logout() error {
-
-	_r := btp.Exec
-
-	if _r == nil {
-		_r = &Executor{}
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
 	}
 
 	log.Entry().Info("Logout of BTP")
@@ -84,7 +79,7 @@ func (btp *BTPUtils) Logout() error {
 
 	btpLogoutScript, _ := builder.Build()
 
-	err := _r.Run(btpLogoutScript)
+	err := btp.Exec.Run(btpLogoutScript)
 
 	if err != nil {
 		return fmt.Errorf("Failed to Logout of BTP: %w", err)
@@ -95,10 +90,8 @@ func (btp *BTPUtils) Logout() error {
 }
 
 func (btp *BTPUtils) SetConfig(options ConfigOptions) error {
-	_r := btp.Exec
-
-	if _r == nil {
-		_r = &Executor{}
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
 	}
 
 	if options.Format == "" {
@@ -113,7 +106,7 @@ func (btp *BTPUtils) SetConfig(options ConfigOptions) error {
 
 	log.Entry().WithField("Format:", options.Format)
 
-	err := _r.Run(btpConfigScript)
+	err := btp.Exec.Run(btpConfigScript)
 
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
