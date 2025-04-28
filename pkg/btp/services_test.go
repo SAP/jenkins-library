@@ -14,12 +14,16 @@ func TestBTPCreateServiceBinding(t *testing.T) {
 		//given
 		const testURL = "testurl.com"
 		btpConfig := CreateServiceBindingOptions{
-			Url:         "https://api.endpoint.com",
-			Subdomain:   "xxxxxxx",
-			Subaccount:  "yyyyyyy",
-			BindingName: "testServiceBindingName",
-			User:        "test_user",
-			Password:    "test_password",
+			Url:             "https://api.endpoint.com",
+			Subdomain:       "xxxxxxx",
+			Subaccount:      "yyyyyyy",
+			BindingName:     "testServiceBindingName",
+			User:            "test_user",
+			Password:        "test_password",
+			ServiceInstance: "test_instance",
+			Parameters:      "test.json",
+			Timeout:         3600,
+			PollInterval:    600,
 		}
 
 		m := &mock.BtpExecutorMock{
@@ -109,13 +113,15 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 	t.Run("BTP DeleteServiceBinding not working", func(t *testing.T) {
 		//given
 		const testURL = "testurl.com"
-		btpConfig := GetServiceBindingOptions{
-			Url:         "https://api.endpoint.com",
-			Subdomain:   "xxxxxxx",
-			Subaccount:  "yyyyyyy",
-			BindingName: "testServiceBindingName",
-			User:        "test_user",
-			Password:    "test_password",
+		btpConfig := DeleteServiceBindingOptions{
+			Url:          "https://api.endpoint.com",
+			Subdomain:    "xxxxxxx",
+			Subaccount:   "yyyyyyy",
+			BindingName:  "testServiceBindingName",
+			User:         "test_user",
+			Password:     "test_password",
+			Timeout:      3600,
+			PollInterval: 600,
 		}
 
 		m := &mock.BtpExecutorMock{
@@ -148,13 +154,15 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 	t.Run("BTP DeleteServiceBinding working", func(t *testing.T) {
 		//given
 		const testURL = "testurl.com"
-		btpConfig := GetServiceBindingOptions{
-			Url:         "https://api.endpoint.com",
-			Subdomain:   "xxxxxxx",
-			Subaccount:  "yyyyyyy",
-			BindingName: "testServiceBindingName",
-			User:        "test_user",
-			Password:    "test_password",
+		btpConfig := DeleteServiceBindingOptions{
+			Url:          "https://api.endpoint.com",
+			Subdomain:    "xxxxxxx",
+			Subaccount:   "yyyyyyy",
+			BindingName:  "testServiceBindingName",
+			User:         "test_user",
+			Password:     "test_password",
+			Timeout:      3600,
+			PollInterval: 600,
 		}
 
 		m := &mock.BtpExecutorMock{
@@ -201,6 +209,8 @@ func TestBTPCreateServiceInstance(t *testing.T) {
 			OfferingName:    "test_offering",
 			InstanceName:    "test_instance",
 			Parameters:      "test_parameter",
+			Timeout:         3600,
+			PollInterval:    600,
 		}
 
 		m := &mock.BtpExecutorMock{
@@ -288,13 +298,15 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 	t.Run("BTP DeleteServiceInstance not working", func(t *testing.T) {
 		//given
 		const testURL = "testurl.com"
-		btpConfig := GetServiceInstanceOptions{
+		btpConfig := DeleteServiceInstanceOptions{
 			Url:          "https://api.endpoint.com",
 			Subdomain:    "xxxxxxx",
 			Subaccount:   "yyyyyyy",
 			InstanceName: "testServiceInstanceName",
 			User:         "test_user",
 			Password:     "test_password",
+			Timeout:      3600,
+			PollInterval: 600,
 		}
 
 		m := &mock.BtpExecutorMock{
@@ -327,13 +339,15 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 	t.Run("BTP DeleteServiceInstance working", func(t *testing.T) {
 		//given
 		const testURL = "testurl.com"
-		btpConfig := GetServiceInstanceOptions{
+		btpConfig := DeleteServiceInstanceOptions{
 			Url:          "https://api.endpoint.com",
 			Subdomain:    "xxxxxxx",
 			Subaccount:   "yyyyyyy",
 			InstanceName: "testServiceInstanceName",
 			User:         "test_user",
 			Password:     "test_password",
+			Timeout:      3600,
+			PollInterval: 600,
 		}
 
 		m := &mock.BtpExecutorMock{

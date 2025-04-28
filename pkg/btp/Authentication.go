@@ -8,8 +8,7 @@ import (
 )
 
 type BTPUtils struct {
-	Exec     ExecRunner
-	loggedIn bool
+	Exec ExecRunner
 }
 
 type LoginOptions struct {
@@ -21,7 +20,8 @@ type LoginOptions struct {
 }
 
 type ConfigOptions struct {
-	Format string
+	Format  string
+	Verbose bool
 }
 
 func NewBTPUtils(exec ExecRunner) *BTPUtils {
@@ -53,6 +53,10 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 		WithUser(options.User).
 		WithPassword(options.Password)
 
+	if options.Tenant != "" {
+		builder = builder.WithTenant(options.Tenant)
+	}
+
 	btpLoginScript, _ := builder.Build()
 
 	log.Entry().WithField("CLI URL:", options.Url).WithField("Subdomain", options.Subdomain).WithField("User", options.User).WithField("Password", options.Password).WithField("Tenant", options.Tenant)
@@ -62,8 +66,7 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 	if err != nil {
 		return fmt.Errorf("Failed to login to BTP: %w", err)
 	}
-	log.Entry().Info("Logged in successfully to BTP..")
-	btp.loggedIn = true
+	log.Entry().Info("Logged in successfully to BTP.")
 	return nil
 }
 
@@ -85,7 +88,6 @@ func (btp *BTPUtils) Logout() error {
 		return fmt.Errorf("Failed to Logout of BTP: %w", err)
 	}
 	log.Entry().Info("Logged out successfully")
-	btp.loggedIn = false
 	return nil
 }
 
@@ -100,7 +102,8 @@ func (btp *BTPUtils) SetConfig(options ConfigOptions) error {
 
 	builder := NewBTPCommandBuilder().
 		WithAction("set config").
-		WithFormat(options.Format)
+		WithFormat(options.Format).
+		WithVerbose()
 
 	btpConfigScript, _ := builder.Build()
 
@@ -112,7 +115,6 @@ func (btp *BTPUtils) SetConfig(options ConfigOptions) error {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return fmt.Errorf("Failed to define the configuration of the BTP CLI: %w", err)
 	}
-	log.Entry().Info("Configuration successfully defined..")
-	btp.loggedIn = true
+	log.Entry().Info("Configuration successfully defined.")
 	return nil
 }

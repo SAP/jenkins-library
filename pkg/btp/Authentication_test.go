@@ -47,9 +47,7 @@ func TestBTPLogin(t *testing.T) {
 
 		btp := BTPUtils{Exec: m}
 		err := btp.Login(btpConfig)
-		if assert.EqualError(t, err, "Failed to login to BTP: wrong password or account does not exist") {
-			assert.False(t, btp.loggedIn)
-		}
+		assert.EqualError(t, err, "Failed to login to BTP: wrong password or account does not exist")
 	})
 
 	t.Run("BTP Login: success", func(t *testing.T) {
@@ -68,9 +66,7 @@ func TestBTPLogin(t *testing.T) {
 		btp := BTPUtils{Exec: m}
 		err := btp.Login(btpConfig)
 
-		if assert.NoError(t, err) {
-			assert.True(t, btp.loggedIn)
-		}
+		assert.NoError(t, err)
 	})
 }
 
@@ -82,8 +78,6 @@ func TestBTPLogout(t *testing.T) {
 		btp := BTPUtils{Exec: m}
 		err := btp.Logout()
 
-		if assert.NoError(t, err) {
-			assert.False(t, btp.loggedIn)
-		}
+		assert.NoError(t, err)
 	})
 }

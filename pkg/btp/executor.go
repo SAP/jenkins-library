@@ -48,12 +48,17 @@ func (e *Executor) Run(cmdScript string) (err error) {
 	return nil
 }
 
-func (e *Executor) RunSync(cmdScript string, cmdCheck string, timeoutMin int, pollIntervalSec int, negativeCheck bool) (err error) {
+/*
+@param timeout : in seconds
+@param pollInterval : in seconds
+@param negativeCheck : set to false if you whant to check the negation of the response of `cmdCheck`
+*/
+func (e *Executor) RunSync(cmdScript string, cmdCheck string, timeout int, pollInterval int, negativeCheck bool) (err error) {
 	err = e.Run(cmdScript)
 
 	// Poll to check completion
-	timeoutDuration := time.Duration(timeoutMin) * time.Minute
-	pollIntervall := time.Duration(pollIntervalSec) * time.Second
+	timeoutDuration := time.Duration(timeout) * time.Second
+	pollIntervall := time.Duration(pollInterval) * time.Second
 	startTime := time.Now()
 
 	fmt.Println("Checking command completion...")
