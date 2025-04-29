@@ -27,7 +27,7 @@ func TestIssueService(t *testing.T) {
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
-		count, err := serviceUnderTest.GetNumberOfBlockerIssues()
+		count, _, err := serviceUnderTest.GetNumberOfBlockerIssues()
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, 111, count)
@@ -44,7 +44,7 @@ func TestIssueService(t *testing.T) {
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
-		count, err := serviceUnderTest.GetNumberOfCriticalIssues()
+		count, _, err := serviceUnderTest.GetNumberOfCriticalIssues()
 		// assert
 		assert.Error(t, err)
 		assert.Equal(t, -1, count)
@@ -61,9 +61,9 @@ func TestIssueService(t *testing.T) {
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
-		countMajor, err := serviceUnderTest.GetNumberOfMajorIssues()
-		countMinor, err := serviceUnderTest.GetNumberOfMinorIssues()
-		countInfo, err := serviceUnderTest.GetNumberOfInfoIssues()
+		countMajor, _, err := serviceUnderTest.GetNumberOfMajorIssues()
+		countMinor, _, err := serviceUnderTest.GetNumberOfMinorIssues()
+		countInfo, _, err := serviceUnderTest.GetNumberOfInfoIssues()
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, 111, countMajor)
