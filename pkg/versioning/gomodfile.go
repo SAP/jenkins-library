@@ -90,7 +90,7 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 	}
 
 	if parsed.Module == nil {
-		return result, errors.Wrap(err, "failed to parse go.mod file")
+		return result, errors.New("failed to parse go.mod file: no module found")
 	}
 
 	// validate module path as defined by golang
