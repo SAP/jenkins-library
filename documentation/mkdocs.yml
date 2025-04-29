@@ -190,11 +190,23 @@ nav:
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
+        - debugReportArchive: steps/debugReportArchive.md
+        - dubExecute: steps/dubExecute.md
+        - gatlingExecuteTests: steps/gatlingExecuteTests.md
+        - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
+        - mavenExecute: steps/mavenExecute.md
+        - multicloudDeploy: steps/multicloudDeploy.md
+        - nexusUpload: steps/nexusUpload.md
         - npmExecute: steps/npmExecute.md
+        - piperLoadGlobalExtensions: steps/piperLoadGlobalExtensions.md
+        - piperPublishWarnings: steps/piperPublishWarnings.md
+        - slackSendNotification: steps/slackSendNotification.md
+        - snykExecute: steps/snykExecute.md
+        - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
-        - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
+        - writeTemporaryCredentials: steps/writeTemporaryCredentials.md
     - 'Command line tool': cli/index.md
 
 theme:
