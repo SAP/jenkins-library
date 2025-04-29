@@ -1,9 +1,7 @@
-//go:build unit
-// +build unit
-
 package versioning
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,54 +10,37 @@ import (
 )
 
 func TestGoModGetCoordinates(t *testing.T) {
-	t.Run("with full module name", func(t *testing.T) {
-		// prepare
-		gomod := createTestGoModFile(t, "module github.com/path-to/moduleName\n\ngo 1.24.0")
-		// test
-		coordinates, err := gomod.GetCoordinates()
-		// assert
-		assert.NoError(t, err)
-		assert.Equal(t, "moduleName", coordinates.ArtifactID)
-		assert.Equal(t, "github.com/path-to", coordinates.GroupID)
-	})
-	t.Run("with module name without path", func(t *testing.T) {
-		// prepare
-		gomod := createTestGoModFile(t, "module github.com/moduleName\n\ngo 1.24.0")
-		// test
-		coordinates, err := gomod.GetCoordinates()
-		// assert
-		assert.NoError(t, err)
-		assert.Equal(t, "moduleName", coordinates.ArtifactID)
-		assert.Equal(t, "github.com", coordinates.GroupID)
-	})
-	t.Run("with invalid simple module name", func(t *testing.T) {
-		// prepare
-		gomod := createTestGoModFile(t, "module moduleName\n\ngo 1.24.0")
-		// test
-		coordinates, err := gomod.GetCoordinates()
-		// assert
-		assert.ErrorContains(t, err, "missing dot in first path element")
-		assert.Empty(t, coordinates.ArtifactID)
-		assert.Empty(t, coordinates.GroupID)
-	})
-	t.Run("with invalid full module name", func(t *testing.T) {
-		// prepare
-		gomod := createTestGoModFile(t, "module path/to/test\n\ngo 1.24.0")
-		// test
-		coordinates, err := gomod.GetCoordinates()
-		// assert
-		assert.ErrorContains(t, err, "missing dot in first path element")
-		assert.Empty(t, coordinates.ArtifactID)
-		assert.Empty(t, coordinates.GroupID)
-	})
-}
-
-func createTestGoModFile(t *testing.T, content string) *GoMod {
-	tmpFolder := t.TempDir()
-	goModFilePath := filepath.Join(tmpFolder, "go.mod")
-	os.WriteFile(goModFilePath, []byte(content), 0666)
-	gomod := &GoMod{
-		path: goModFilePath,
+	testCases := []struct {
+		name       string
+		moduleName string
+		artifact   string
+		group      string
+		err        string
+	}{
+		{"with full module name", "github.com/path-to/moduleName", "moduleName", "github.com/path-to", ""},
+		{"with module name without path", "github.com/moduleName", "moduleName", "github.com", ""},
+		{"with invalid simple module name", "moduleName", "", "", "missing dot in first path element"},
+		{"with invalid full module name", "path/to/module", "", "", "missing dot in first path element"},
 	}
-	return gomod
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// prepare
+			tmpFolder := t.TempDir()
+			goModFilePath := filepath.Join(tmpFolder, "go.mod")
+			os.WriteFile(goModFilePath, []byte(fmt.Sprintf("module %s\n\ngo 1.24.0", tc.moduleName)), 0666)
+			gomod := &GoMod{
+				path: goModFilePath,
+			}
+			// test
+			coordinates, err := gomod.GetCoordinates()
+			// assert
+			if tc.err != "" {
+				assert.ErrorContains(t, err, tc.err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tc.artifact, coordinates.ArtifactID)
+			assert.Equal(t, tc.group, coordinates.GroupID)
+		})
+	}
 }
