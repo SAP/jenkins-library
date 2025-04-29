@@ -44,7 +44,7 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 	return result, response, nil
 }
 
-func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) {
+func (service *IssueService) getIssueCount(severity issueSeverity) (int, Severity, error) {
 	options := &IssuesSearchOption{
 		ComponentKeys: service.Project,
 		Severities:    severity.ToString(),
@@ -62,33 +62,42 @@ func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) 
 	}
 	result, _, err := service.SearchIssues(options)
 	if err != nil {
-		return -1, errors.Wrapf(err, "failed to fetch the numer of '%s' issues", severity)
+		return -1, Severity{}, errors.Wrapf(err, "failed to fetch the numer of '%s' issues", severity)
 	}
-	return result.Total, nil
+
+	var severityResult Severity
+	if len(result.Issues) > 0 {
+		severityResult.SeverityType = severity.ToString()
+		severityResult.IssueType = result.Issues[0].Type
+		severityResult.Count = result.Total
+	} else {
+		severityResult.SeverityType = severity.ToString()
+	}
+	return result.Total, severityResult, nil
 }
 
 // GetNumberOfBlockerIssues returns the number of issue with BLOCKER severity.
-func (service *IssueService) GetNumberOfBlockerIssues() (int, error) {
+func (service *IssueService) GetNumberOfBlockerIssues() (int, Severity, error) {
 	return service.getIssueCount(blocker)
 }
 
 // GetNumberOfCriticalIssues returns the number of issue with CRITICAL severity.
-func (service *IssueService) GetNumberOfCriticalIssues() (int, error) {
+func (service *IssueService) GetNumberOfCriticalIssues() (int, Severity, error) {
 	return service.getIssueCount(critical)
 }
 
 // GetNumberOfMajorIssues returns the number of issue with MAJOR severity.
-func (service *IssueService) GetNumberOfMajorIssues() (int, error) {
+func (service *IssueService) GetNumberOfMajorIssues() (int, Severity, error) {
 	return service.getIssueCount(major)
 }
 
 // GetNumberOfMinorIssues returns the number of issue with MINOR severity.
-func (service *IssueService) GetNumberOfMinorIssues() (int, error) {
+func (service *IssueService) GetNumberOfMinorIssues() (int, Severity, error) {
 	return service.getIssueCount(minor)
 }
 
 // GetNumberOfInfoIssues returns the number of issue with INFO severity.
-func (service *IssueService) GetNumberOfInfoIssues() (int, error) {
+func (service *IssueService) GetNumberOfInfoIssues() (int, Severity, error) {
 	return service.getIssueCount(info)
 }
 
