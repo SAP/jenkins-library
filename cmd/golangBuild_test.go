@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -868,6 +869,19 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
+}
+
+func TestIsMainPackageError(t *testing.T) {
+	utils := newGolangBuildTestsUtils()
+	utils.ShouldFailOnCommand = map[string]error{
+		"go list -f {{ .Name }} package/foo": errors.New("some error"),
+	}
+	utils.StdoutReturn = map[string]string{
+		"go list -f {{ .Name }} package/foo": "some specific error log",
+	}
+	ok, err := isMainPackage(utils, "package/foo")
+	assert.False(t, ok)
+	assert.EqualError(t, err, "some error: some specific error log")
 }
 
 func TestPrepareGolangEnvironment(t *testing.T) {
