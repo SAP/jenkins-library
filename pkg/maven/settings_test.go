@@ -17,6 +17,22 @@ import (
 )
 
 func TestSettings(t *testing.T) {
+	t.Run("Test maven parameters with spaces in paths", func(t *testing.T) {
+		utilsMock := newSettingsDownloadTestUtilsBundle()
+		globalSettingsPath := "/path/with spaces/global-settings.xml"
+		projectSettingsPath := "/other path/project-settings.xml"
+
+		utilsMock.AddFile(globalSettingsPath, []byte(""))
+		utilsMock.AddFile(projectSettingsPath, []byte(""))
+
+		params, err := DownloadAndGetMavenParameters(globalSettingsPath, projectSettingsPath, utilsMock)
+
+		assert.NoError(t, err)
+		assert.Contains(t, params, "--global-settings")
+		assert.Contains(t, params, strings.ReplaceAll(globalSettingsPath, " ", `\ `))
+		assert.Contains(t, params, "--settings")
+		assert.Contains(t, params, strings.ReplaceAll(projectSettingsPath, " ", `\ `))
+	})
 
 	defer func() {
 		getenv = os.Getenv
