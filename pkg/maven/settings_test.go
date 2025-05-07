@@ -29,9 +29,9 @@ func TestSettings(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Contains(t, params, "--global-settings")
-		assert.Contains(t, params, strings.ReplaceAll(globalSettingsPath, " ", `\ `))
+		assert.Contains(t, params, fmt.Sprintf(`"%s"`, globalSettingsPath))
 		assert.Contains(t, params, "--settings")
-		assert.Contains(t, params, strings.ReplaceAll(projectSettingsPath, " ", `\ `))
+		assert.Contains(t, params, fmt.Sprintf(`"%s"`, projectSettingsPath))
 	})
 
 	defer func() {

@@ -27,7 +27,10 @@ type SettingsDownloadUtils interface {
 }
 
 func escapeMavenPath(path string) string {
-	return strings.ReplaceAll(path, " ", `\ `)
+	if strings.Contains(path, " ") {
+		return fmt.Sprintf(`"%s"`, path)
+	}
+	return path
 }
 
 // DownloadAndGetMavenParameters downloads the global or project settings file if the strings contain URLs.
