@@ -37,6 +37,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		}
 		mavenArgs = append(mavenArgs, "--global-settings", globalSettingsFileName)
 	} else {
+
 		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
 
@@ -45,9 +46,9 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		if err != nil {
 			return nil, err
 		}
-		// Quote paths to handle spaces correctly
 		mavenArgs = append(mavenArgs, "--settings", projectSettingsFileName)
 	} else {
+
 		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 	return mavenArgs, nil

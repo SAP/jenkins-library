@@ -17,6 +17,7 @@ import (
 )
 
 func TestSettings(t *testing.T) {
+
 	defer func() {
 		getenv = os.Getenv
 	}()
