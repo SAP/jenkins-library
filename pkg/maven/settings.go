@@ -26,13 +26,6 @@ type SettingsDownloadUtils interface {
 	FileRead(path string) ([]byte, error)
 }
 
-func escapeMavenPath(path string) string {
-	if strings.Contains(path, " ") {
-		return fmt.Sprintf("'%s'", path)
-	}
-	return path
-}
-
 // DownloadAndGetMavenParameters downloads the global or project settings file if the strings contain URLs.
 // It then constructs the arguments that need to be passed to maven in order to point to use these settings files.
 func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, utils SettingsDownloadUtils) ([]string, error) {
@@ -42,7 +35,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		if err != nil {
 			return nil, err
 		}
-		mavenArgs = append(mavenArgs, "--global-settings", escapeMavenPath(globalSettingsFileName))
+		mavenArgs = append(mavenArgs, "--global-settings", globalSettingsFileName)
 	} else {
 		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
@@ -52,7 +45,8 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		if err != nil {
 			return nil, err
 		}
-		mavenArgs = append(mavenArgs, "--settings", escapeMavenPath(projectSettingsFileName))
+		// Quote paths to handle spaces correctly
+		mavenArgs = append(mavenArgs, "--settings", projectSettingsFileName)
 	} else {
 		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
