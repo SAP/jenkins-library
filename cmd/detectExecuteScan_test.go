@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
 	"io"
 	"net/http"
 	"os"
@@ -1010,4 +1009,43 @@ func TestRunDetectWithContainerScanAndDistro(t *testing.T) {
 		assert.NotContains(t, utilsMock.Calls[0], "--detect.docker.passthrough.imageinspector.service.distro.default=ubuntu",
 			"Docker inspector parameters should not be included when containerScan is true")
 	})
+}
+
+func TestQuoteMavenArgs(t *testing.T) {
+	t.Parallel()
+	tt := []struct {
+		name     string
+		args     []string
+		expected string
+	}{
+		{
+			name:     "no spaces in arguments",
+			args:     []string{"--global-settings", "/path/without/spaces.xml"},
+			expected: "--global-settings /path/without/spaces.xml",
+		},
+		{
+			name:     "arguments with spaces",
+			args:     []string{"--global-settings", "/path with spaces/settings.xml"},
+			expected: "--global-settings '/path with spaces/settings.xml'",
+		},
+		{
+			name:     "mixed arguments",
+			args:     []string{"--global-settings", "/path with spaces/settings.xml", "--settings", "/normal/path.xml"},
+			expected: "--global-settings '/path with spaces/settings.xml' --settings /normal/path.xml",
+		},
+		{
+			name:     "multiple arguments with spaces",
+			args:     []string{"--global-settings", "/path with spaces/settings.xml", "--settings", "/another path/with spaces.xml"},
+			expected: "--global-settings '/path with spaces/settings.xml' --settings '/another path/with spaces.xml'",
+		},
+	}
+
+	for _, test := range tt {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			result := quoteMavenArgs(test.args)
+			assert.Equal(t, test.expected, result)
+		})
+	}
 }
