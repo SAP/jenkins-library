@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 
 	"github.com/pkg/errors"
 )
@@ -89,18 +90,25 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 	}
 
 	if parsed.Module == nil {
+		return result, errors.New("failed to parse go.mod file: no module found")
+	}
+
+	// validate module path as defined by golang
+	if err = module.CheckPath(parsed.Module.Mod.Path); err != nil {
 		return result, errors.Wrap(err, "failed to parse go.mod file")
 	}
-	if parsed.Module.Mod.Path != "" {
-		artifactSplit := strings.Split(parsed.Module.Mod.Path, "/")
-		artifactID := artifactSplit[len(artifactSplit)-1]
-		result.ArtifactID = artifactID
 
-		goModPath := parsed.Module.Mod.Path
-		lastIndex := strings.LastIndex(goModPath, "/")
-		groupID := goModPath[0:lastIndex]
-		result.GroupID = groupID
+	if parsed.Module.Mod.Path != "" {
+		modulePath := parsed.Module.Mod.Path
+		separatorIndex := strings.LastIndex(modulePath, "/")
+		result.ArtifactID = modulePath[separatorIndex+1:]
+
+		// extract groupID from module path
+		if separatorIndex >= 0 {
+			result.GroupID = modulePath[0:separatorIndex]
+		}
 	}
+
 	result.Version = parsed.Module.Mod.Version
 	if result.Version == "" {
 		result.Version = "unspecified"
