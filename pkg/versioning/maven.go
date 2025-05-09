@@ -123,7 +123,7 @@ func (m *Maven) SetVersion(version string) error {
 		ProjectSettingsFile: m.options.ProjectSettingsFile,
 		GlobalSettingsFile:  m.options.GlobalSettingsFile,
 		M2Path:              m.options.M2Path,
-		Goals:               []string{"org.codehaus.mojo:versions-maven-plugin:2.7:set"},
+		Goals:               []string{"org.codehaus.mojo:versions-maven-plugin:2.18.0:set"},
 		Defines: []string{
 			fmt.Sprintf("-DnewVersion=%v", version),
 			fmt.Sprintf("-DgroupId=%v", groupID),
