@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const tmsTestDockerImage = "alpine:latest"
+
 var tmsServiceKey string
 
 func readEnv() {
@@ -26,11 +28,10 @@ func readEnv() {
 }
 
 func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
-	t.Skip("Skipping test for TMS upload integration test")
 	// success case: run cmd without nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
@@ -53,11 +54,10 @@ func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
-	t.Skip("Skipping test for TMS upload integration test success case 2")
 	// success case: run cmd without --nodeExtDescriptorMapping and --customDescription
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
@@ -79,11 +79,10 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
-	t.Skip("Skipping test for TMS upload integration test error case")
 	// error case: run cmd with nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java11-node14",
+		Image:   tmsTestDockerImage,
 		User:    "root",
 		TestDir: []string{"testdata", "TestTmsIntegration"},
 	})
@@ -102,11 +101,10 @@ func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
-	t.Skip("Skipping test for TMS upload integration test error case 2")
 	// error case: run cmd with invalid description
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
@@ -124,11 +122,10 @@ func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationYaml(t *testing.T) {
-	t.Skip("Skipping test for TMS upload integration test")
 	// success case: run with custom config
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},

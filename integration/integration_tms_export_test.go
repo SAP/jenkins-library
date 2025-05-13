@@ -13,11 +13,10 @@ import (
 )
 
 func TestTmsExportIntegrationYaml(t *testing.T) {
-	t.Skip("Skipping test for TMS export integration test")
 	// success case: run with custom config
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
@@ -36,11 +35,10 @@ func TestTmsExportIntegrationYaml(t *testing.T) {
 }
 
 func TestTmsExportIntegrationBinFailDescription(t *testing.T) {
-	t.Skip("Skipping test for TMS export integration test error case")
 	// error case: run cmd with invalid description
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
 		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
