@@ -441,19 +441,18 @@ type DeleteServiceBindingOptions struct {
 }
 
 type CreateServiceInstanceOptions struct {
-	Url             string
-	Subdomain       string
-	ServiceInstance string
-	User            string
-	Password        string
-	Tenant          string
-	Subaccount      string
-	PlanName        string
-	OfferingName    string
-	InstanceName    string
-	Parameters      string
-	Timeout         int
-	PollInterval    int
+	Url          string
+	Subdomain    string
+	User         string
+	Password     string
+	Tenant       string
+	Subaccount   string
+	PlanName     string
+	OfferingName string
+	InstanceName string
+	Parameters   string
+	Timeout      int
+	PollInterval int
 }
 
 type GetServiceInstanceOptions struct {

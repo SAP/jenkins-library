@@ -198,19 +198,18 @@ func TestBTPCreateServiceInstance(t *testing.T) {
 		//given
 		const testURL = "testurl.com"
 		btpConfig := CreateServiceInstanceOptions{
-			Url:             "https://api.endpoint.com",
-			Subdomain:       "xxxxxxx",
-			Subaccount:      "yyyyyyy",
-			User:            "test_user",
-			Password:        "test_password",
-			ServiceInstance: "test_instance",
-			Tenant:          "test_tenant",
-			PlanName:        "test_plan",
-			OfferingName:    "test_offering",
-			InstanceName:    "test_instance",
-			Parameters:      "test_parameter",
-			Timeout:         3600,
-			PollInterval:    600,
+			Url:          "https://api.endpoint.com",
+			Subdomain:    "xxxxxxx",
+			Subaccount:   "yyyyyyy",
+			User:         "test_user",
+			Password:     "test_password",
+			Tenant:       "test_tenant",
+			PlanName:     "test_plan",
+			OfferingName: "test_offering",
+			InstanceName: "test_instance",
+			Parameters:   "test_parameter",
+			Timeout:      3600,
+			PollInterval: 600,
 		}
 
 		m := &mock.BtpExecutorMock{
