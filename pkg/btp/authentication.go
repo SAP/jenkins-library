@@ -7,23 +7,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type BTPUtils struct {
-	Exec ExecRunner
-}
-
-type LoginOptions struct {
-	Url       string
-	Subdomain string
-	User      string
-	Password  string
-	Tenant    string
-}
-
-type ConfigOptions struct {
-	Format  string
-	Verbose bool
-}
-
 func NewBTPUtils(exec ExecRunner) *BTPUtils {
 	b := new(BTPUtils)
 	b.Exec = exec
@@ -117,4 +100,21 @@ func (btp *BTPUtils) SetConfig(options ConfigOptions) error {
 	}
 	log.Entry().Info("Configuration successfully defined.")
 	return nil
+}
+
+type BTPUtils struct {
+	Exec ExecRunner
+}
+
+type LoginOptions struct {
+	Url       string
+	Subdomain string
+	User      string
+	Password  string
+	Tenant    string
+}
+
+type ConfigOptions struct {
+	Format  string
+	Verbose bool
 }

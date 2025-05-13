@@ -10,22 +10,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 )
 
-type Executor struct {
-	Cmd command.Command
-}
-
-type btpRunner interface {
-	Stdin(in io.Reader)
-	Stdout(out io.Writer)
-	GetStdoutValue() string
-}
-
-type ExecRunner interface {
-	btpRunner
-	Run(cmdScript string) error
-	RunSync(cmdScript string, cmdCheck string, timeoutMin int, pollIntervalSec int, negativeCheck bool) error
-}
-
 // Stdin ..
 func (e *Executor) Stdin(stdin io.Reader) {
 	e.Cmd.Stdin(stdin)
@@ -77,4 +61,20 @@ func (e *Executor) RunSync(cmdScript string, cmdCheck string, timeout int, pollI
 	}
 
 	return fmt.Errorf("Command did not completed within the timeout period")
+}
+
+type Executor struct {
+	Cmd command.Command
+}
+
+type btpRunner interface {
+	Stdin(in io.Reader)
+	Stdout(out io.Writer)
+	GetStdoutValue() string
+}
+
+type ExecRunner interface {
+	btpRunner
+	Run(cmdScript string) error
+	RunSync(cmdScript string, cmdCheck string, timeoutMin int, pollIntervalSec int, negativeCheck bool) error
 }

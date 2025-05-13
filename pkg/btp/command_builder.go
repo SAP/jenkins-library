@@ -6,13 +6,6 @@ import (
 	"strings"
 )
 
-type BTPCommandBuilder struct {
-	options []string
-	action  string
-	target  string
-	params  []string
-}
-
 // Initialize a new builder
 func NewBTPCommandBuilder() *BTPCommandBuilder {
 	return &BTPCommandBuilder{}
@@ -219,4 +212,11 @@ func (b *BTPCommandBuilder) Build() (string, error) {
 		cmd += " " + strings.Join(b.params, " ")
 	}
 	return cmd, nil
+}
+
+type BTPCommandBuilder struct {
+	options []string
+	action  string
+	target  string
+	params  []string
 }

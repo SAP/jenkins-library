@@ -10,23 +10,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 )
 
-type BtpExecutorMock struct {
-	Cmd                 command.Command
-	Calls               []BtpExecCall
-	StdoutReturn        map[string]string
-	ShouldFailOnCommand map[string]error
-	ExitCode            int
-	stdin               io.Reader
-	stdout              io.Writer
-	stderr              io.Writer
-}
-
-// Stores information about executed commands.
-type BtpExecCall struct {
-	Exec   string
-	Params []string
-}
-
 func (b *BtpExecutorMock) Stdin(in io.Reader) {
 	b.stdin = in
 }
@@ -98,4 +81,21 @@ func matchCommand(pattern, command string) bool {
 	}
 	r, err := regexp.Compile(pattern)
 	return err == nil && r.MatchString(command)
+}
+
+type BtpExecutorMock struct {
+	Cmd                 command.Command
+	Calls               []BtpExecCall
+	StdoutReturn        map[string]string
+	ShouldFailOnCommand map[string]error
+	ExitCode            int
+	stdin               io.Reader
+	stdout              io.Writer
+	stderr              io.Writer
+}
+
+// Stores information about executed commands.
+type BtpExecCall struct {
+	Exec   string
+	Params []string
 }

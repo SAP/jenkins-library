@@ -9,80 +9,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type CreateServiceBindingOptions struct {
-	Url             string
-	Subdomain       string
-	Subaccount      string
-	ServiceInstance string
-	BindingName     string
-	Parameters      string
-	User            string
-	Password        string
-	Tenant          string
-	Timeout         int
-	PollInterval    int
-}
-
-type GetServiceBindingOptions struct {
-	Url         string
-	Subdomain   string
-	Subaccount  string
-	BindingName string
-	User        string
-	Password    string
-	Tenant      string
-}
-
-type DeleteServiceBindingOptions struct {
-	Url          string
-	Subdomain    string
-	Subaccount   string
-	BindingName  string
-	User         string
-	Password     string
-	Tenant       string
-	Timeout      int
-	PollInterval int
-}
-
-type CreateServiceInstanceOptions struct {
-	Url             string
-	Subdomain       string
-	ServiceInstance string
-	User            string
-	Password        string
-	Tenant          string
-	Subaccount      string
-	PlanName        string
-	OfferingName    string
-	InstanceName    string
-	Parameters      string
-	Timeout         int
-	PollInterval    int
-}
-
-type GetServiceInstanceOptions struct {
-	Url          string
-	Subdomain    string
-	User         string
-	Password     string
-	Tenant       string
-	Subaccount   string
-	InstanceName string
-}
-
-type DeleteServiceInstanceOptions struct {
-	Url          string
-	Subdomain    string
-	User         string
-	Password     string
-	Tenant       string
-	Subaccount   string
-	InstanceName string
-	Timeout      int
-	PollInterval int
-}
-
 func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (string, error) {
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
@@ -476,4 +402,78 @@ func GetJSON(value string) (string, error) {
 	}
 
 	return "", errors.New("The returned value is empty")
+}
+
+type CreateServiceBindingOptions struct {
+	Url             string
+	Subdomain       string
+	Subaccount      string
+	ServiceInstance string
+	BindingName     string
+	Parameters      string
+	User            string
+	Password        string
+	Tenant          string
+	Timeout         int
+	PollInterval    int
+}
+
+type GetServiceBindingOptions struct {
+	Url         string
+	Subdomain   string
+	Subaccount  string
+	BindingName string
+	User        string
+	Password    string
+	Tenant      string
+}
+
+type DeleteServiceBindingOptions struct {
+	Url          string
+	Subdomain    string
+	Subaccount   string
+	BindingName  string
+	User         string
+	Password     string
+	Tenant       string
+	Timeout      int
+	PollInterval int
+}
+
+type CreateServiceInstanceOptions struct {
+	Url             string
+	Subdomain       string
+	ServiceInstance string
+	User            string
+	Password        string
+	Tenant          string
+	Subaccount      string
+	PlanName        string
+	OfferingName    string
+	InstanceName    string
+	Parameters      string
+	Timeout         int
+	PollInterval    int
+}
+
+type GetServiceInstanceOptions struct {
+	Url          string
+	Subdomain    string
+	User         string
+	Password     string
+	Tenant       string
+	Subaccount   string
+	InstanceName string
+}
+
+type DeleteServiceInstanceOptions struct {
+	Url          string
+	Subdomain    string
+	User         string
+	Password     string
+	Tenant       string
+	Subaccount   string
+	InstanceName string
+	Timeout      int
+	PollInterval int
 }
