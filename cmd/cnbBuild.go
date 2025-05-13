@@ -401,7 +401,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	config.BuildEnvVars["TMPDIR"] = tempdir
 
 	include := ignore.CompileIgnoreLines("**/*")
-	exclude := ignore.CompileIgnoreLines("piper", ".pipeline", ".git")
+	exclude := ignore.CompileIgnoreLines("*/*piper", "*piper", ".pipeline", ".git")
 
 	projDescPath, err := project.ResolvePath(config.ProjectDescriptor, config.Path, utils)
 	if err != nil {
