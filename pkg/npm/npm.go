@@ -371,14 +371,14 @@ func (exec *Execute) install(packageJSON string) error {
 // detectToolFromLockfile checks if yarn/npm/pnpm lock file exist and returns the name of the tool
 func (exec *Execute) detectToolFromLockfile() (string, error) {
 	if exec.Options.Tool == "auto" {
-
 		yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
 		if err != nil {
 			return "", err
 		} else if yarnLockExists {
 			err := exec.autoInstallTool("yarn")
 			if err != nil {
-				return "npm", fmt.Errorf("fallback to 'npm'. %w", err)
+				log.Entry().Warn("Could not install yarn, falling back to npm: %w", err)
+				return "npm", nil
 			}
 			return "yarn", nil
 		}
@@ -389,7 +389,8 @@ func (exec *Execute) detectToolFromLockfile() (string, error) {
 		} else if pnpmLockExists {
 			err := exec.autoInstallTool("pnpm")
 			if err != nil {
-				return "npm", fmt.Errorf("fallback to 'npm'. %w", err)
+				log.Entry().Warn("Could not install pnpm, falling back to npm: %w", err)
+				return "npm", nil
 			}
 			return "pnpm", nil
 		}
