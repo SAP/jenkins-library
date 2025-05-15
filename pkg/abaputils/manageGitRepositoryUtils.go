@@ -1,75 +1,132 @@
 package abaputils
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
-const failureMessageClonePull = "Could not pull the Repository / Software Component "
 const numberOfEntriesPerPage = 100000
 const logOutputStatusLength = 10
 const logOutputTimestampLength = 29
 
-// PollEntity periodically polls the pull/import entity to get the status. Check if the import is still running
-func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
+// Specifies which output option is used for logs
+type LogOutputManager struct {
+	LogOutput    string
+	PiperStep    string
+	FileNameStep string
+	StepReports  []piperutils.Path
+}
+
+func PersistArchiveLogsForPiperStep(logOutputManager *LogOutputManager) {
+	fileUtils := piperutils.Files{}
+	switch logOutputManager.PiperStep {
+	case "clone":
+		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, logOutputManager.StepReports, nil)
+	case "pull":
+		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, logOutputManager.StepReports, nil)
+	case "checkoutBranch":
+		piperutils.PersistReportsAndLinks("abapEnvironmentCheckoutBranch", "", fileUtils, logOutputManager.StepReports, nil)
+	default:
+		log.Entry().Info("Cannot save log archive because no piper step was defined.")
+	}
+}
+
+// PollEntity periodically polls the action entity to get the status. Check if the import is still running
+func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, logOutputManager *LogOutputManager) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
-	var status string = "R"
+	var statusCode string = "R"
+	var err error
+
+	api.initialRequest()
 
 	for {
-		pullEntity, responseStatus, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
+		// pullEntity, responseStatus, err := api.GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
+		statusCode, err = api.GetAction()
 		if err != nil {
-			return status, err
+			return statusCode, err
 		}
-		status = pullEntity.Status
-		log.Entry().WithField("StatusCode", responseStatus).Info("Status: " + pullEntity.StatusDescription)
-		if pullEntity.Status != "R" {
 
-			PrintLogs(repositoryName, connectionDetails, client)
+		if statusCode != "R" && statusCode != "Q" {
+
+			PrintLogs(api, logOutputManager)
 			break
 		}
 		time.Sleep(pollIntervall)
 	}
-	return status, nil
+	return statusCode, nil
 }
 
-func PrintLogs(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
-	connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
-	entity, _, err := GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
-	if err != nil || len(entity.ToLogOverview.Results) == 0 {
-		// return if no logs are available
+func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputManager) {
+
+	// Get Execution Logs
+	executionLogs, err := api.GetExecutionLog()
+	if err == nil {
+		printExecutionLogs(executionLogs)
+	}
+
+	results, _ := api.GetLogOverview()
+
+	// Sort logs
+	sort.SliceStable(results, func(i, j int) bool {
+		return results[i].Index < results[j].Index
+	})
+
+	printOverview(results, api)
+
+	if logOutputManager.LogOutput == "ZIP" {
+		// get zip file as byte array
+		zipfile, err := api.GetLogArchive()
+		// Saving logs in file and adding to piperutils to archive file
+		if err == nil {
+			fileName := "LogArchive-" + logOutputManager.FileNameStep + "-" + strings.Replace(api.getRepositoryName(), "/", "_", -1) + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05") + ".zip"
+
+			err = os.WriteFile(fileName, zipfile, 0o644)
+
+			if err == nil {
+				log.Entry().Infof("Writing %s file was successful", fileName)
+				logOutputManager.StepReports = append(logOutputManager.StepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
+			}
+		}
+
+	} else {
+		// Print Details
+		if len(results) != 0 {
+			for _, logEntryForDetails := range results {
+				printLog(logEntryForDetails, api)
+			}
+		}
+		AddDefaultDashedLine(1)
+	}
+
+}
+
+func printExecutionLogs(executionLogs ExecutionLog) {
+	log.Entry().Infof("\n")
+	AddDefaultDashedLine(1)
+	log.Entry().Infof("Execution Logs")
+	AddDefaultDashedLine(1)
+	for _, entry := range executionLogs.Value {
+		log.Entry().Infof("%7s - %s", entry.Type, entry.Descr)
+	}
+	AddDefaultDashedLine(1)
+}
+
+func printOverview(results []LogResultsV2, api SoftwareComponentApiInterface) {
+
+	if len(results) == 0 {
 		return
 	}
 
-	// Sort logs
-	sort.SliceStable(entity.ToLogOverview.Results, func(i, j int) bool {
-		return entity.ToLogOverview.Results[i].Index < entity.ToLogOverview.Results[j].Index
-	})
-
-	printOverview(entity)
-
-	// Print Details
-	for _, logEntryForDetails := range entity.ToLogOverview.Results {
-		printLog(logEntryForDetails, connectionDetails, client)
-	}
-	log.Entry().Infof("-------------------------")
-
-	return
-}
-
-func printOverview(entity PullEntity) {
-
-	logOutputPhaseLength, logOutputLineLength := calculateLenghts(entity)
+	logOutputPhaseLength, logOutputLineLength := calculateLenghts(results)
 
 	log.Entry().Infof("\n")
 
@@ -79,15 +136,15 @@ func printOverview(entity PullEntity) {
 
 	printDashedLine(logOutputLineLength)
 
-	for _, logEntry := range entity.ToLogOverview.Results {
-		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+	for _, logEntry := range results {
+		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, api.ConvertTime(logEntry.Timestamp))
 	}
 	printDashedLine(logOutputLineLength)
 }
 
-func calculateLenghts(entity PullEntity) (int, int) {
+func calculateLenghts(results []LogResultsV2) (int, int) {
 	phaseLength := 22
-	for _, logEntry := range entity.ToLogOverview.Results {
+	for _, logEntry := range results {
 		if l := len(logEntry.Name); l > phaseLength {
 			phaseLength = l
 		}
@@ -98,137 +155,59 @@ func calculateLenghts(entity PullEntity) (int, int) {
 }
 
 func printDashedLine(i int) {
-	log.Entry().Infof(strings.Repeat("-", i))
+	log.Entry().Info(strings.Repeat("-", i))
 }
 
-func printLog(logOverviewEntry LogResultsV2, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) {
+func printLog(logOverviewEntry LogResultsV2, api SoftwareComponentApiInterface) {
 
 	page := 0
-
-	printHeader(logOverviewEntry)
-
+	printHeader(logOverviewEntry, api)
 	for {
-		connectionDetails.URL = logOverviewEntry.ToLogProtocol.Deferred.URI + getLogProtocolQuery(page)
-		entity, err := GetProtocol(failureMessageClonePull, connectionDetails, client)
-
-		printLogProtocolEntries(logOverviewEntry, entity)
-
+		logProtocols, count, err := api.GetLogProtocol(logOverviewEntry, page)
+		printLogProtocolEntries(logOverviewEntry, logProtocols)
 		page += 1
-		if allLogsHaveBeenPrinted(entity, page, err) {
+		if allLogsHaveBeenPrinted(logProtocols, page, count, err) {
 			break
 		}
 	}
-
 }
 
-func printLogProtocolEntries(logEntry LogResultsV2, entity LogProtocolResults) {
+func printLogProtocolEntries(logEntry LogResultsV2, logProtocols []LogProtocol) {
 
-	sort.SliceStable(entity.Results, func(i, j int) bool {
-		return entity.Results[i].ProtocolLine < entity.Results[j].ProtocolLine
+	sort.SliceStable(logProtocols, func(i, j int) bool {
+		return logProtocols[i].ProtocolLine < logProtocols[j].ProtocolLine
 	})
-
-	if logEntry.Status != `Success` {
-		for _, entry := range entity.Results {
-			log.Entry().Info(entry.Description)
+	if logEntry.Status == `Error` {
+		for _, entry := range logProtocols {
+			log.Entry().Infof("%s %s", entry.Type, entry.Description)
 		}
-
 	} else {
-		for _, entry := range entity.Results {
-			log.Entry().Debug(entry.Description)
+		for _, entry := range logProtocols {
+			log.Entry().Debugf("%s %s", entry.Type, entry.Description)
 		}
 	}
 }
 
-func allLogsHaveBeenPrinted(entity LogProtocolResults, page int, err error) bool {
-	allPagesHaveBeenRead := false
-	numberOfProtocols, errConversion := strconv.Atoi(entity.Count)
-	if errConversion == nil {
-		allPagesHaveBeenRead = numberOfProtocols <= page*numberOfEntriesPerPage
-	}
-	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(entity.Results, LogProtocolResults{}))
+func allLogsHaveBeenPrinted(protocols []LogProtocol, page int, count int, err error) bool {
+	allPagesHaveBeenRead := count <= page*numberOfEntriesPerPage
+	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(protocols, []LogProtocol{}))
 }
 
-func printHeader(logEntry LogResultsV2) {
-	if logEntry.Status != `Success` {
+func printHeader(logEntry LogResultsV2, api SoftwareComponentApiInterface) {
+	if logEntry.Status == `Error` {
 		log.Entry().Infof("\n")
-		log.Entry().Infof("-------------------------")
-		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
-		log.Entry().Infof("-------------------------")
+		AddDefaultDashedLine(1)
+		log.Entry().Infof("%s (%v)", logEntry.Name, api.ConvertTime(logEntry.Timestamp))
+		AddDefaultDashedLine(1)
 	} else {
 		log.Entry().Debugf("\n")
-		log.Entry().Debugf("-------------------------")
-		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
-		log.Entry().Debugf("-------------------------")
+		AddDebugDashedLine()
+		log.Entry().Debugf("%s (%v)", logEntry.Name, api.ConvertTime(logEntry.Timestamp))
+		AddDebugDashedLine()
 	}
 }
 
-func getLogProtocolQuery(page int) string {
-	skip := page * numberOfEntriesPerPage
-	top := numberOfEntriesPerPage
-
-	return fmt.Sprintf("?$skip=%s&$top=%s&$inlinecount=allpages", fmt.Sprint(skip), fmt.Sprint(top))
-}
-
-func GetStatus(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body PullEntity, status string, err error) {
-	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, failureMessage, connectionDetails)
-		if resp != nil {
-			status = resp.Status
-		}
-		return body, status, err
-	}
-	defer resp.Body.Close()
-
-	// Parse response
-	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
-
-	marshallError := json.Unmarshal(bodyText, &abapResp)
-	if marshallError != nil {
-		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-	marshallError = json.Unmarshal(*abapResp["d"], &body)
-	if marshallError != nil {
-		return body, status, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-
-	if reflect.DeepEqual(PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).Error(failureMessage)
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		var err = errors.New("Request to ABAP System not successful")
-		return body, resp.Status, err
-	}
-	return body, resp.Status, nil
-}
-
-func GetProtocol(failureMessage string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender) (body LogProtocolResults, err error) {
-	resp, err := GetHTTPResponse("GET", connectionDetails, nil, client)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorInfrastructure)
-		err = HandleHTTPError(resp, err, failureMessage, connectionDetails)
-		return body, err
-	}
-	defer resp.Body.Close()
-
-	// Parse response
-	var abapResp map[string]*json.RawMessage
-	bodyText, _ := ioutil.ReadAll(resp.Body)
-
-	marshallError := json.Unmarshal(bodyText, &abapResp)
-	if marshallError != nil {
-		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-	marshallError = json.Unmarshal(*abapResp["d"], &body)
-	if marshallError != nil {
-		return body, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
-	}
-
-	return body, nil
-}
-
-// GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
+// GetRepositories for parsing one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
 func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
 	if reflect.DeepEqual(RepositoriesConfig{}, config) {
@@ -258,6 +237,7 @@ func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Reposit
 	if config.RepositoryName != "" && !branchRequired {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, CommitID: config.CommitID})
 	}
+
 	if len(config.RepositoryNames) > 0 {
 		for _, repository := range config.RepositoryNames {
 			repositories = append(repositories, Repository{Name: repository})
@@ -275,6 +255,25 @@ func (repo *Repository) GetRequestBodyForCommitOrTag() (requestBodyString string
 	return requestBodyString
 }
 
+func (repo *Repository) GetRequestBodyForBYOGCredentials() (string, error) {
+	var byogBodyString string
+
+	if repo.ByogAuthMethod != "" {
+		byogBodyString += `, "auth_method":"` + repo.ByogAuthMethod + `"`
+	}
+	if repo.ByogUsername != "" {
+		byogBodyString += `, "username":"` + repo.ByogUsername + `"`
+	} else {
+		return "", fmt.Errorf("Failed to get BYOG credentials: %w", errors.New("Username for BYOG is missing, please provide git username to authenticate"))
+	}
+	if repo.ByogPassword != "" {
+		byogBodyString += `, "password":"` + repo.ByogPassword + `"`
+	} else {
+		return "", fmt.Errorf("Failed to get BYOG credentials: %w", errors.New("Password/Token for BYOG is missing, please provide git password or token to authenticate"))
+	}
+	return byogBodyString, nil
+}
+
 func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
 	if repo.CommitID != "" {
 		logString = ", commit '" + repo.CommitID + "'"
@@ -284,13 +283,30 @@ func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
 	return logString
 }
 
-func (repo *Repository) GetCloneRequestBody() (body string) {
+func (repo *Repository) GetCloneRequestBodyWithSWC() (body string) {
 	if repo.CommitID != "" && repo.Tag != "" {
 		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
 	}
 	requestBodyString := repo.GetRequestBodyForCommitOrTag()
 	body = `{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
 	return body
+}
+
+func (repo *Repository) GetCloneRequestBody() (body string, err error) {
+	if repo.CommitID != "" && repo.Tag != "" {
+		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
+	}
+	requestBodyString := repo.GetRequestBodyForCommitOrTag()
+	var byogBodyString = ""
+	if repo.IsByog {
+		byogBodyString, err = repo.GetRequestBodyForBYOGCredentials()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	body = `{"branch_name":"` + repo.Branch + `"` + requestBodyString + byogBodyString + `}`
+	return body, nil
 }
 
 func (repo *Repository) GetCloneLogString() (logString string) {
@@ -308,123 +324,12 @@ func (repo *Repository) GetPullRequestBody() (body string) {
 	return body
 }
 
+func (repo *Repository) GetPullActionRequestBody() (body string) {
+	return `{` + `"commit_id":"` + repo.CommitID + `", ` + `"tag_name":"` + repo.Tag + `"` + `}`
+}
+
 func (repo *Repository) GetPullLogString() (logString string) {
 	commitOrTag := repo.GetLogStringForCommitOrTag()
 	logString = "repository / software component '" + repo.Name + "'" + commitOrTag
 	return logString
-}
-
-/****************************************
- *	Structs for the A4C_A2G_GHA service *
- ****************************************/
-
-// PullEntity struct for the Pull/Import entity A4C_A2G_GHA_SC_IMP
-type PullEntity struct {
-	Metadata          AbapMetadata `json:"__metadata"`
-	UUID              string       `json:"uuid"`
-	Namespace         string       `json:"namepsace"`
-	ScName            string       `json:"sc_name"`
-	ImportType        string       `json:"import_type"`
-	BranchName        string       `json:"branch_name"`
-	StartedByUser     string       `json:"user_name"`
-	Status            string       `json:"status"`
-	StatusDescription string       `json:"status_descr"`
-	CommitID          string       `json:"commit_id"`
-	StartTime         string       `json:"start_time"`
-	ChangeTime        string       `json:"change_time"`
-	ToExecutionLog    AbapLogs     `json:"to_Execution_log"`
-	ToTransportLog    AbapLogs     `json:"to_Transport_log"`
-	ToLogOverview     AbapLogsV2   `json:"to_Log_Overview"`
-}
-
-// BranchEntity struct for the Branch entity A4C_A2G_GHA_SC_BRANCH
-type BranchEntity struct {
-	Metadata      AbapMetadata `json:"__metadata"`
-	ScName        string       `json:"sc_name"`
-	Namespace     string       `json:"namepsace"`
-	BranchName    string       `json:"branch_name"`
-	ParentBranch  string       `json:"derived_from"`
-	CreatedBy     string       `json:"created_by"`
-	CreatedOn     string       `json:"created_on"`
-	IsActive      bool         `json:"is_active"`
-	CommitID      string       `json:"commit_id"`
-	CommitMessage string       `json:"commit_message"`
-	LastCommitBy  string       `json:"last_commit_by"`
-	LastCommitOn  string       `json:"last_commit_on"`
-}
-
-// CloneEntity struct for the Clone entity A4C_A2G_GHA_SC_CLONE
-type CloneEntity struct {
-	Metadata          AbapMetadata `json:"__metadata"`
-	UUID              string       `json:"uuid"`
-	ScName            string       `json:"sc_name"`
-	BranchName        string       `json:"branch_name"`
-	ImportType        string       `json:"import_type"`
-	Namespace         string       `json:"namepsace"`
-	Status            string       `json:"status"`
-	StatusDescription string       `json:"status_descr"`
-	StartedByUser     string       `json:"user_name"`
-	StartTime         string       `json:"start_time"`
-	ChangeTime        string       `json:"change_time"`
-}
-
-// AbapLogs struct for ABAP logs
-type AbapLogs struct {
-	Results []LogResults `json:"results"`
-}
-
-type AbapLogsV2 struct {
-	Results []LogResultsV2 `json:"results"`
-}
-
-type LogResultsV2 struct {
-	Metadata      AbapMetadata        `json:"__metadata"`
-	Index         int                 `json:"log_index"`
-	Name          string              `json:"log_name"`
-	Status        string              `json:"type_of_found_issues"`
-	Timestamp     string              `json:"timestamp"`
-	ToLogProtocol LogProtocolDeferred `json:"to_Log_Protocol"`
-}
-
-type LogProtocolDeferred struct {
-	Deferred URI `json:"__deferred"`
-}
-
-type URI struct {
-	URI string `json:"uri"`
-}
-
-type LogProtocolResults struct {
-	Results []LogProtocol `json:"results"`
-	Count   string        `json:"__count"`
-}
-
-type LogProtocol struct {
-	Metadata      AbapMetadata `json:"__metadata"`
-	OverviewIndex int          `json:"log_index"`
-	ProtocolLine  int          `json:"index_no"`
-	Type          string       `json:"type"`
-	Description   string       `json:"descr"`
-	Timestamp     string       `json:"timestamp"`
-}
-
-// LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
-type LogResults struct {
-	Index       string `json:"index_no"`
-	Type        string `json:"type"`
-	Description string `json:"descr"`
-	Timestamp   string `json:"timestamp"`
-}
-
-// RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
-type RepositoriesConfig struct {
-	BranchName      string
-	CommitID        string
-	RepositoryName  string
-	RepositoryNames []string
-	Repositories    string
-}
-
-type EntitySetsForManageGitRepository struct {
-	EntitySets []string `json:"EntitySets"`
 }

@@ -2,7 +2,7 @@ package npm
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -15,8 +15,8 @@ const (
 )
 
 var (
-	propertiesLoadFile  = ioutil.ReadFile
-	propertiesWriteFile = ioutil.WriteFile
+	propertiesLoadFile  = os.ReadFile
+	propertiesWriteFile = os.WriteFile
 )
 
 func NewNPMRC(path string) NPMRC {

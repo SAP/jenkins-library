@@ -10,6 +10,7 @@ import com.sap.piper.tools.neo.WarAction
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -207,16 +208,6 @@ void call(parameters = [:]) {
         if(deployMode != DeployMode.MTA && ! extensionFileNames.isEmpty())
             error "Extensions (${extensionFileNames} found for deploy mode ${deployMode}. Extensions are only supported for deploy mode '${DeployMode.MTA}')"
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'deployMode',
-            stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
-            stepParamKey2: 'warAction',
-            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
-            stepParamKey3: 'scriptMissing',
-            stepParam3: parameters?.script == null,
-        ], configuration)
-
         if(configuration.neo.credentialType == 'UsernamePassword'){
             withCredentials([usernamePassword(
                 credentialsId: configuration.neo.credentialsId,
@@ -227,6 +218,7 @@ void call(parameters = [:]) {
 
                 dockerExecute(
                     script: script,
+                    juStabUtils: parameters.utils ?: null,
                     dockerImage: configuration.dockerImage,
                     dockerEnvVars: configuration.dockerEnvVars,
                     dockerOptions: configuration.dockerOptions
@@ -422,7 +414,7 @@ private deployWithBearerToken(def credentialFilePath, Map configuration, Script 
     def myCurl = "curl --fail --silent --show-error --retry 12"
     def token_json = sh(
         script: """#!/bin/bash
-                    ${myCurl} -XPOST -u \"${oauthClientId}:${oauthClientSecret}\" \"${oauthUrl}/apitoken/v1?grant_type=client_credentials"
+                    ${myCurl} -XPOST -u ${q(oauthClientId)}:${q(oauthClientSecret)} ${q(oauthUrl)}/apitoken/v1?grant_type=client_credentials
                 """,
         returnStdout: true
     )
@@ -433,7 +425,7 @@ private deployWithBearerToken(def credentialFilePath, Map configuration, Script 
 
     def deploymentContentResponse = sh(
         script: """#!/bin/bash
-                    ${myCurl} -XPOST -H \"Authorization: Bearer ${token}\" -F file=@\"${deployArchive}\" \"https://slservice.${host}/slservice/v1/oauth/accounts/${account}/mtars\"
+                    ${myCurl} -XPOST -H "Authorization: Bearer ${token}" -F file=@${q(deployArchive)} https://slservice.${q(host)}/slservice/v1/oauth/accounts/${q(account)}/mtars
                 """,
         returnStdout: true
     )
@@ -443,7 +435,7 @@ private deployWithBearerToken(def credentialFilePath, Map configuration, Script 
     echo "[${STEP_NAME}] Deployment Id is '${deploymentId}'."
 
     def statusPollScript = """#!/bin/bash
-                                ${myCurl} -XGET -H \"Authorization: Bearer ${token}\" \"https://slservice.${host}/slservice/v1/oauth/accounts/${account}/mtars/${deploymentId}\"
+                                ${myCurl} -XGET -H "Authorization: Bearer ${token}" https://slservice.${q(host)}/slservice/v1/oauth/accounts/${q(account)}/mtars/${deploymentId}
                             """
     def statusResponse = sh(script: statusPollScript, returnStdout: true)
     def statusJson = readJSON text: statusResponse

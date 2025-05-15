@@ -4,7 +4,6 @@
 package versioning
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,7 +16,7 @@ func TestGradleGetVersion(t *testing.T) {
 		tmpFolder := t.TempDir()
 
 		gradlePropsFilePath := filepath.Join(tmpFolder, "gradle.properties")
-		ioutil.WriteFile(gradlePropsFilePath, []byte("version = 1.2.3"), 0666)
+		os.WriteFile(gradlePropsFilePath, []byte("version = 1.2.3"), 0666)
 		gradle := &Gradle{
 			path: gradlePropsFilePath,
 		}
@@ -34,7 +33,7 @@ func TestGradleSetVersion(t *testing.T) {
 		tmpFolder := t.TempDir()
 
 		gradlePropsFilePath := filepath.Join(tmpFolder, "gradle.properties")
-		ioutil.WriteFile(gradlePropsFilePath, []byte("version = 0.0.1"), 0666)
+		os.WriteFile(gradlePropsFilePath, []byte("version = 0.0.1"), 0666)
 
 		var content []byte
 		gradle := &Gradle{

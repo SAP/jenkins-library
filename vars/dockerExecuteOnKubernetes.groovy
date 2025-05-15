@@ -59,7 +59,10 @@ import hudson.AbortException
      * as key and the corresponding value as value. The value can also be
      * a nested structure.
      * The properties will be added to the pod spec inside node `spec` at the
-     * same level like e.g. `containers`.
+     * same level like e.g. `containers`
+     * for eg., additionalPodProperties: [
+     *               imagePullSecrets: ['secret-name']
+     *        ]
      * This property provides some kind of an expert mode. Any property
      * which is not handled otherwise by the step can be set. It is not
      * possible to overwrite e.g. the `containers` property or to
@@ -252,12 +255,6 @@ void call(Map parameters = [:], body) {
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
             .use()
 
-        utils.pushToSWA([
-            step         : STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1   : parameters?.script == null
-        ], config)
-
         if (!config.containerMap && config.dockerImage) {
             config.containerName = 'container-exec'
             config.containerMap = [(config.get('dockerImage')): config.containerName]
@@ -307,7 +304,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
         def stashContent = config.stashContent
         boolean defaultStashCreated = false
         if (config.containerName && stashContent.isEmpty()) {
-            stashContent = [stashWorkspace(config, 'workspace')]
+            stashContent = [stashWorkspace(config, utils, 'workspace')]
             defaultStashCreated = true
         }
         podTemplate(getOptions(config)) {
@@ -328,8 +325,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                                 lsDir('Directory content before body execution')
                             }
                             if (defaultStashCreated) {
-                                echo "invalidate stash workspace-${config.uniqueId}"
-                                stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+                                invalidateStash(config, 'workspace', utils)
                             }
                             def result = body()
                             if (config.verbose) {
@@ -337,7 +333,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                             }
                             return result
                         } finally {
-                            stashWorkspace(config, 'container', true, true)
+                            stashWorkspace(config, utils, 'container', true, true)
                         }
                     }
                 } else {
@@ -347,7 +343,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
         }
     } finally {
         if (config.containerName)
-            unstashWorkspace(config, 'container')
+            unstashWorkspace(config, utils, 'container')
     }
 }
 
@@ -387,7 +383,7 @@ private String generatePodSpec(Map config) {
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
 
-private String stashWorkspace(config, prefix, boolean chown = false, boolean stashBack = false) {
+private String stashWorkspace(config, utils, prefix, boolean chown = false, boolean stashBack = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
         if (chown) {
@@ -418,7 +414,7 @@ chown -R ${runAsUser}:${fsGroup} ."""
             echo "stash effective (excludes): ${excludes}"
         }
 
-        stash(
+        utils.stash(
             name: stashName,
             includes: includes,
             excludes: excludes,
@@ -455,17 +451,16 @@ private Map getSecurityContext(Map config) {
     return config.securityContext ?: config.jenkinsKubernetes.securityContext ?: [:]
 }
 
-private void unstashWorkspace(config, prefix) {
+private void unstashWorkspace(config, utils, prefix) {
     try {
-        unstash "${prefix}-${config.uniqueId}"
+        utils.unstash "${prefix}-${config.uniqueId}"
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}\n${e.getCause()}"
     } catch (Throwable e) {
         echo "Unstash workspace failed with throwable ${e.getMessage()}"
         throw e
     } finally {
-        echo "invalidate stash ${prefix}-${config.uniqueId}"
-        stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
+        invalidateStash(config, prefix, utils)
     }
 }
 
@@ -581,8 +576,11 @@ private List getContainerList(config) {
             command        : []
         ]
         def resources = getResources(sideCarContainerName, config)
-        if(resources) {
+        if (resources) {
             containerSpec.resources = resources
+        }
+        if (config.containerMountPath) {
+            containerSpec.volumeMounts = [[name: "volume", mountPath: config.containerMountPath]]
         }
         result.push(containerSpec)
     }
@@ -639,4 +637,10 @@ private List getContainerEnvs(config, imageName, defaultEnvVars, defaultConfig) 
     }
 
     return containerEnv
+}
+
+private void invalidateStash(def config, String prefix, def utils) {
+    String name = "${prefix}-${config.uniqueId}"
+    echo "invalidate stash ${name}"
+    utils.stash name: name, excludes: '**/*', allowEmpty: true
 }

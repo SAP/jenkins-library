@@ -3,7 +3,7 @@ package whitesource
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -66,6 +66,7 @@ func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils Utils, devD
 		setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
 	}
 	setValueAndLogChange(npmConfig, "devDep", devDep)
+	setValueAndLogChange(npmConfig, "includeDevDependencies", config.NpmIncludeDevDependencies)
 	setValueAndLogChange(npmConfig, "ignoreNpmLsErrors", ignoreLsErrors)
 
 	jsonBuffer, err := json.Marshal(npmConfig)
@@ -179,7 +180,7 @@ func getNpmProjectName(modulePath string, utils Utils) (string, error) {
 // is used for whitesourceExecuteScan due to a different docker image being used compared to the build stage.
 func reinstallNodeModulesIfLsFails(config *ScanOptions, utils Utils) error {
 	// No need to have output from "npm ls" in the log
-	utils.Stdout(ioutil.Discard)
+	utils.Stdout(io.Discard)
 	defer utils.Stdout(log.Writer())
 
 	err := utils.RunExecutable("npm", "ls")

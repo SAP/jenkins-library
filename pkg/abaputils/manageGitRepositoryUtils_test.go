@@ -6,12 +6,11 @@ package abaputils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,24 +46,11 @@ func TestPollEntity(t *testing.T) {
 				logResultSuccess,
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "Q" } }`,
+				`{}`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,
-		}
-
-		options := AbapEnvironmentOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-		}
-
-		config := AbapEnvironmentCheckoutBranchOptions{
-			AbapEnvOptions: options,
-			RepositoryName: "testRepo1",
 		}
 
 		con := ConnectionDetailsHTTP{
@@ -73,7 +59,19 @@ func TestPollEntity(t *testing.T) {
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := PollEntity(config.RepositoryName, con, client, 0)
+
+		swcManager := SoftwareComponentApiManager{Client: client, Force0510: true}
+		repo := Repository{Name: "testRepo1"}
+		api, _ := swcManager.GetAPI(con, repo)
+
+		var reports []piperutils.Path
+		logOutputManager := LogOutputManager{
+			LogOutput:   "STANDARD",
+			PiperStep:   "pull",
+			StepReports: reports,
+		}
+
+		status, _ := PollEntity(api, 0, &logOutputManager)
 		assert.Equal(t, "S", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -87,24 +85,11 @@ func TestPollEntity(t *testing.T) {
 				logResultError,
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "Q" } }`,
+				`{}`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,
-		}
-
-		options := AbapEnvironmentOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-		}
-
-		config := AbapEnvironmentCheckoutBranchOptions{
-			AbapEnvOptions: options,
-			RepositoryName: "testRepo1",
 		}
 
 		con := ConnectionDetailsHTTP{
@@ -113,7 +98,19 @@ func TestPollEntity(t *testing.T) {
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := PollEntity(config.RepositoryName, con, client, 0)
+
+		swcManager := SoftwareComponentApiManager{Client: client, Force0510: true}
+		repo := Repository{Name: "testRepo1"}
+		api, _ := swcManager.GetAPI(con, repo)
+
+		var reports []piperutils.Path
+		logOutputManager := LogOutputManager{
+			LogOutput:   "STANDARD",
+			PiperStep:   "pull",
+			StepReports: reports,
+		}
+
+		status, _ := PollEntity(api, 0, &logOutputManager)
 		assert.Equal(t, "E", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -154,7 +151,7 @@ repositories:
 - name: 'testRepo3'
   branch: 'testBranch3'`
 
-		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			BranchName:      "testBranch",
@@ -185,7 +182,7 @@ repositories:
 - repo: 'testRepo'
 - repo: 'testRepo2'`
 
-		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			Repositories: "repositoriesTest.yml",
@@ -213,7 +210,7 @@ repositories:
 - repo: 'testRepo'
 - repo: 'testRepo2'`
 
-		err := ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err := os.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
 
 		config := RepositoriesConfig{
 			Repositories: "repositoriesTest.yml",
@@ -286,8 +283,8 @@ func TestCreateRequestBodies(t *testing.T) {
 			CommitID: "1234567",
 			Tag:      "myTag",
 		}
-		body := repo.GetCloneRequestBody()
-		assert.Equal(t, `{"sc_name":"/DMO/REPO", "branch_name":"main", "commit_id":"1234567"}`, body, "Expected different body")
+		body, _ := repo.GetCloneRequestBody()
+		assert.Equal(t, `{"branch_name":"main", "commit_id":"1234567"}`, body, "Expected different body")
 	})
 	t.Run("Clone Body Tag", func(t *testing.T) {
 		repo := Repository{
@@ -295,7 +292,7 @@ func TestCreateRequestBodies(t *testing.T) {
 			Branch: "main",
 			Tag:    "myTag",
 		}
-		body := repo.GetCloneRequestBody()
+		body := repo.GetCloneRequestBodyWithSWC()
 		assert.Equal(t, `{"sc_name":"/DMO/REPO", "branch_name":"main", "tag_name":"myTag"}`, body, "Expected different body")
 	})
 	t.Run("Pull Body Tag and Commit", func(t *testing.T) {
@@ -319,21 +316,17 @@ func TestCreateRequestBodies(t *testing.T) {
 	})
 }
 
-func TestGetStatus(t *testing.T) {
-	t.Run("Graceful Exit", func(t *testing.T) {
+func TestExecutionLogOutput(t *testing.T) {
+	t.Run("Test execution log output", func(t *testing.T) {
 
-		client := &ClientMock{
-			NilResponse: true,
-			Error:       errors.New("Backend Error"),
-			StatusCode:  500,
+		executionLogValue := []ExecutionLogValue{
+			{IndexNo: 1, Type: "Success", Descr: "Something went well", Timestamp: "/Date(1644332299000+0000)/"},
+			{IndexNo: 2, Type: "Error", Descr: "Something went wrong", Timestamp: "/Date(1644332299000+0000)/"},
 		}
-		connectionDetails := ConnectionDetailsHTTP{
-			URL: "example.com",
+		executionLog := ExecutionLog{
+			Value: executionLogValue,
 		}
+		printExecutionLogs(executionLog)
 
-		_, status, err := GetStatus("failure message", connectionDetails, client)
-
-		assert.Error(t, err, "Expected Error")
-		assert.Equal(t, "", status)
 	})
 }

@@ -203,9 +203,6 @@ void call(Map parameters = [:]) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
         }
 
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
-
         piperInitRunStageConfiguration script: script, stageConfigResource: config.stageConfigResource
 
         // CHANGE_ID is set only for pull requests

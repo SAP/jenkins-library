@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -42,6 +43,9 @@ type mtaBuildOptions struct {
 	Publish                         bool     `json:"publish,omitempty"`
 	Profiles                        []string `json:"profiles,omitempty"`
 	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
+	CreateBOM                       bool     `json:"createBOM,omitempty"`
+	EnableSetTimestamp              bool     `json:"enableSetTimestamp,omitempty"`
+	CreateBuildArtifactsMetadata    bool     `json:"createBuildArtifactsMetadata,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
@@ -50,6 +54,7 @@ type mtaBuildCommonPipelineEnvironment struct {
 		mtaBuildToolDesc  string
 		mtarPublishedURL  string
 		buildSettingsInfo string
+		mtaBuildArtifacts string
 	}
 }
 
@@ -63,6 +68,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		{category: "custom", name: "mtaBuildToolDesc", value: p.custom.mtaBuildToolDesc},
 		{category: "custom", name: "mtarPublishedUrl", value: p.custom.mtarPublishedURL},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "mtaBuildArtifacts", value: p.custom.mtaBuildArtifacts},
 	}
 
 	errCount := 0
@@ -92,10 +98,8 @@ func (p *mtaBuildReports) persist(stepConfig mtaBuildOptions, gcpJsonKeyFilePath
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -143,11 +147,14 @@ func MtaBuildCommand() *cobra.Command {
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -159,7 +166,7 @@ func MtaBuildCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -181,6 +188,11 @@ func MtaBuildCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -191,21 +203,40 @@ func MtaBuildCommand() *cobra.Command {
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
+			telemetryClient.Initialize(STEP_NAME)
 			mtaBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -237,6 +268,9 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build . This information is typically used for compliance related processes.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
+	cmd.Flags().BoolVar(&stepConfig.EnableSetTimestamp, "enableSetTimestamp", true, "Enables setting the timestamp in the `mta.yaml` when it contains `${timestamp}`. Disable this when you want the MTA Deploy Service to do this instead.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline")
 
 }
 
@@ -396,11 +430,6 @@ func mtaBuildMetadata() config.StepData {
 							},
 
 							{
-								Name: "mtaDeploymentRepositoryPasswordId",
-								Type: "secret",
-							},
-
-							{
 								Name:    "mtaDeploymentRepositoryPasswordFileVaultSecretName",
 								Type:    "vaultSecretFile",
 								Default: "mta-deployment-repository-passowrd",
@@ -482,6 +511,33 @@ func mtaBuildMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
+					{
+						Name:        "createBOM",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "enableSetTimestamp",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -497,6 +553,7 @@ func mtaBuildMetadata() config.StepData {
 							{"name": "custom/mtaBuildToolDesc"},
 							{"name": "custom/mtarPublishedUrl"},
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/mtaBuildArtifacts"},
 						},
 					},
 					{

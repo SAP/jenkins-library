@@ -5,8 +5,8 @@ metadata:
     Clones a git repository (Software Component) to a SAP BTP ABAP Environment system. If the repository is already cloned, the step will checkout the configured branch and pull the specified commit, instead.
     Please provide either of the following options:
 
-    * The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
-    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+    * The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0948](https://help.sap.com/docs/sap-btp-abap-environment/abap-environment/api-for-managing-software-components-61f4d47af1394b1c8ad684b71d3ad6a0?locale=en-US).
+    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0948.
     * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
 spec:
@@ -18,10 +18,13 @@ spec:
         aliases:
           - name: cfCredentialsId
           - name: credentialsId
+      - name: byogCredentialsId
+        description: Jenkins credentials ID containing ByogUsername and ByogPassword to authenticate to a software component which is used in a BYOG scenario. (https://help.sap.com/docs/btp/sap-business-technology-platform/cloning-software-components-to-abap-environment-system-383ce2f9e2eb40f1b8ad538ddf79e656)
+        type: jenkins
     params:
       - name: username
         type: string
-        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0948
         scope:
           - PARAMETERS
           - STAGES
@@ -34,7 +37,7 @@ spec:
             param: username
       - name: password
         type: string
-        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0948
         scope:
           - PARAMETERS
           - STAGES
@@ -45,6 +48,46 @@ spec:
           - name: abapCredentialsId
             type: secret
             param: password
+      - name: byogUsername
+        type: string
+        description: Username for bring your own git (BYOG) authentication
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: byogCredentialsId
+            type: secret
+            param: username
+      - name: byogPassword
+        type: string
+        description: Password for bring your own git (BYOG) authentication
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: byogCredentialsId
+            type: secret
+            param: password
+      - name: byogAuthMethod
+        type: string
+        description: Specifies which authentication method is used for bring your own git (BYOG) repositories
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        possibleValues:
+          - TOKEN
+          - BASIC
+        default: TOKEN
       - name: repositories
         type: string
         description: Specifies a YAML file containing the repositories configuration
@@ -75,6 +118,18 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: logOutput
+        type: string
+        description: Specifies how the clone logs from the Manage Software Components App are displayed or saved
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        possibleValues:
+          - ZIP
+          - STANDARD
+        default: STANDARD
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API Enpoint
@@ -127,6 +182,15 @@ spec:
           - name: cloudFoundry/serviceKey
           - name: cloudFoundry/serviceKeyName
           - name: cfServiceKey
+      - name: certificateNames
+        type: "[]string"
+        description: "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore"
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
   containers:
     - name: cf
-      image: ppiper/cf-cli:v12
+      image: ppiper/cf-cli:latest

@@ -18,29 +18,27 @@ import (
 
 // RunState : Current Status of the Build
 type RunState string
-type resultState string
+type ResultState string
 type msgty string
 
 const (
-	successful resultState = "SUCCESSFUL"
-	warning    resultState = "WARNING"
-	erroneous  resultState = "ERRONEOUS"
-	aborted    resultState = "ABORTED"
-	// Initializing : Build Framework prepared
-	Initializing RunState = "INITIALIZING"
-	// Accepted : Build Framework triggered
-	Accepted RunState = "ACCEPTED"
-	// Running : Build Framework performs build
-	Running RunState = "RUNNING"
-	// Finished : Build Framework ended successful
-	Finished RunState = "FINISHED"
-	// Failed : Build Framework endded with error
-	Failed          RunState = "FAILED"
-	loginfo         msgty    = "I"
-	logwarning      msgty    = "W"
-	logerror        msgty    = "E"
-	logaborted      msgty    = "A"
-	dummyResultName string   = "Dummy"
+	Successful ResultState = "SUCCESSFUL"
+	Warning    ResultState = "WARNING"
+	Erroneous  ResultState = "ERRONEOUS"
+	Aborted    ResultState = "ABORTED"
+
+	Initializing RunState = "INITIALIZING" // Initializing : Build Framework prepared
+	Accepted     RunState = "ACCEPTED"     // Accepted : Build Framework triggered
+	Running      RunState = "RUNNING"      // Running : Build Framework performs build
+	Finished     RunState = "FINISHED"     // Finished : Build Framework ended successful
+	Failed       RunState = "FAILED"       // Failed : Build Framework endded with error
+
+	loginfo    msgty = "I"
+	logwarning msgty = "W"
+	logerror   msgty = "E"
+	logaborted msgty = "A"
+
+	dummyResultName string = "Dummy"
 )
 
 // ******** structs needed for json convertion ********
@@ -48,7 +46,7 @@ type jsonBuild struct {
 	Build struct {
 		BuildID     string      `json:"build_id"`
 		RunState    RunState    `json:"run_state"`
-		ResultState resultState `json:"result_state"`
+		ResultState ResultState `json:"result_state"`
 		Phase       string      `json:"phase"`
 		Entitytype  string      `json:"entitytype"`
 		Startedby   string      `json:"startedby"`
@@ -70,7 +68,7 @@ type jsonTask struct {
 	PluginClass string      `json:"plugin_class"`
 	StartedAt   string      `json:"started_at"`
 	FinishedAt  string      `json:"finished_at"`
-	ResultState resultState `json:"result_state"`
+	ResultState ResultState `json:"result_state"`
 }
 
 type jsonLogs struct {
@@ -98,7 +96,7 @@ type Build struct {
 	Connector   Connector
 	BuildID     string      `json:"build_id"`
 	RunState    RunState    `json:"run_state"`
-	ResultState resultState `json:"result_state"`
+	ResultState ResultState `json:"result_state"`
 	Phase       string      `json:"phase"`
 	Entitytype  string      `json:"entitytype"`
 	Startedby   string      `json:"startedby"`
@@ -116,7 +114,7 @@ type task struct {
 	PluginClass string      `json:"plugin_class"`
 	StartedAt   string      `json:"started_at"`
 	FinishedAt  string      `json:"finished_at"`
-	ResultState resultState `json:"result_state"`
+	ResultState ResultState `json:"result_state"`
 	Logs        []logStruct
 	Results     []Result
 }
@@ -223,11 +221,11 @@ func (b *Build) EvaluteIfBuildSuccessful(treatWarningsAsError bool) error {
 	if b.RunState == Failed {
 		return errors.Errorf("Build ended with runState failed")
 	}
-	if treatWarningsAsError && b.ResultState == warning {
-		return errors.Errorf("Build ended with resultState warning, setting to failed as configured")
+	if treatWarningsAsError && b.ResultState == Warning {
+		return errors.Errorf("Build ended with ResultState warning, setting to failed as configured")
 	}
-	if (b.ResultState == aborted) || (b.ResultState == erroneous) {
-		return errors.Errorf("Build ended with resultState %s", b.ResultState)
+	if (b.ResultState == Aborted) || (b.ResultState == Erroneous) {
+		return errors.Errorf("Build ended with ResultState %s", b.ResultState)
 	}
 	return nil
 }
@@ -314,6 +312,33 @@ func (b *Build) PrintLogs() error {
 		}
 	}
 	return nil
+}
+
+func (b *Build) DetermineFailureCause() (string, error) {
+	if err := b.getTasks(); err != nil {
+		return "", err
+	}
+	//The errors of the last executed task should contain some hints about the cause of the failure
+	lastTaskIndex := len(b.Tasks) - 1
+	if lastTaskIndex < 0 {
+		return "", errors.New("No Tasks to evaluate")
+	}
+	failedTask := b.Tasks[lastTaskIndex]
+	if err := failedTask.getLogs(); err != nil {
+		return "", err
+	}
+	return failedTask.determineFailureCause(), nil
+}
+
+func (t *task) determineFailureCause() string {
+	var cause strings.Builder
+	for _, logLine := range t.Logs {
+		if logLine.Msgty == logaborted || logLine.Msgty == logerror {
+			cause.WriteString(logLine.Logline + "\n")
+		}
+	}
+	causeString := cause.String()
+	return causeString
 }
 
 // GetResults : Gets all Build results

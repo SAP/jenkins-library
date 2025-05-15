@@ -18,7 +18,7 @@ import (
 )
 
 func TestSonarIntegrationIssueSearch(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
 	require.NotEmpty(t, token, "SonarQube API Token is missing")
@@ -52,7 +52,7 @@ func TestSonarIntegrationIssueSearch(t *testing.T) {
 }
 
 func TestSonarIntegrationMeasuresComponentSearch(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
 	require.NotEmpty(t, token, "SonarQube API Token is missing")
@@ -77,7 +77,7 @@ func TestSonarIntegrationMeasuresComponentSearch(t *testing.T) {
 }
 
 func TestSonarIntegrationGetLinesOfCode(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
 	require.NotEmpty(t, token, "SonarQube API Token is missing")

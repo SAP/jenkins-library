@@ -2,18 +2,20 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/syft"
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -25,6 +27,7 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 				"unsupported status code 401",
 			},
 		},
+		StepName: "kanikoExecute",
 	}
 
 	// reroute command output to logging framework
@@ -52,8 +55,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
 		log.Entry().Warning("Parameter containerBuildOptions is deprecated, please use buildOptions instead.")
-		telemetryData.Custom1Label = "ContainerBuildOptions"
-		telemetryData.Custom1 = config.ContainerBuildOptions
+		telemetryData.ContainerBuildOptions = config.ContainerBuildOptions
 	}
 
 	// prepare kaniko container for running with proper Docker config.json and custom certificates
@@ -133,117 +135,237 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
-	if !piperutils.ContainsString(config.BuildOptions, "--destination") {
-		dest := []string{"--no-push"}
-		if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-			containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
-			}
+	switch {
+	case config.ContainerMultiImageBuild:
+		log.Entry().Debugf("Multi-image build activated for image name '%v'", config.ContainerImageName)
 
-			commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
-
-			// Docker image tags don't allow plus signs in tags, thus replacing with dash
-			containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-
-			if config.ContainerMultiImageBuild {
-				log.Entry().Debugf("Multi-image build activated for image name '%v'", config.ContainerImageName)
-				imageListWithFilePath, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, config.ContainerMultiImageBuildTrimDir, fileUtils)
-				if err != nil {
-					return fmt.Errorf("failed to identify image list for multi image build: %w", err)
-				}
-				if len(imageListWithFilePath) == 0 {
-					return fmt.Errorf("no docker files to process, please check exclude list")
-				}
-				for image, file := range imageListWithFilePath {
-					log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
-					containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
-					dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
-					buildOpts := append(config.BuildOptions, dest...)
-					err = runKaniko(file, buildOpts, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment)
-					if err != nil {
-						return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
-					}
-					commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, image)
-					commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameAndTag)
-				}
-
-				// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
-				// only consider if it has been built
-				// ToDo: reconsider and possibly remove at a later point
-				if len(imageListWithFilePath[config.ContainerImageName]) > 0 {
-					containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
-					commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
-				}
-				if config.CreateBOM {
-					//Syft for multi image, generates bom-docker-(1/2/3).xml
-					return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
-				}
-				return nil
-			} else {
-				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
-				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag))
-			}
-
-			log.Entry().Debugf("Single image build for image name '%v'", config.ContainerImageName)
-			containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
-			dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)}
-			commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
-		} else if len(config.ContainerImage) > 0 {
-			log.Entry().Debugf("Single image build for image '%v'", config.ContainerImage)
-			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
-			}
-			// errors are already caught with previous call to docker.ContainerRegistryFromImage
-			containerImageName, _ := docker.ContainerImageNameFromImage(config.ContainerImage)
-			containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
-			dest = []string{"--destination", config.ContainerImage}
-			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
-			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
-			commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
-			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
+		if config.ContainerRegistryURL == "" {
+			return fmt.Errorf("empty ContainerRegistryURL")
 		}
-		config.BuildOptions = append(config.BuildOptions, dest...)
-	} else {
-		log.Entry().Infof("Running Kaniko build with destination defined via buildOptions: %v", config.BuildOptions)
+		if config.ContainerImageName == "" {
+			return fmt.Errorf("empty ContainerImageName")
+		}
+		if config.ContainerImageTag == "" {
+			return fmt.Errorf("empty ContainerImageTag")
+		}
 
-		destination := ""
+		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
+		}
+
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+
+		// Docker image tags don't allow plus signs in tags, thus replacing with dash
+		containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+
+		imageListWithFilePath, err := docker.ImageListWithFilePath(config.ContainerImageName, config.ContainerMultiImageBuildExcludes, config.ContainerMultiImageBuildTrimDir, fileUtils)
+		if err != nil {
+			return fmt.Errorf("failed to identify image list for multi image build: %w", err)
+		}
+		if len(imageListWithFilePath) == 0 {
+			return fmt.Errorf("no docker files to process, please check exclude list")
+		}
+		for image, file := range imageListWithFilePath {
+			log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
+			containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
+			buildOpts := append(config.BuildOptions, "--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag))
+			if err = runKaniko(file, buildOpts, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+				return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
+			}
+			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, image)
+			commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameAndTag)
+		}
+
+		// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
+		// only consider if it has been built
+		// ToDo: reconsider and possibly remove at a later point
+		if len(imageListWithFilePath[config.ContainerImageName]) > 0 {
+			containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
+			commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
+		}
+		if config.CreateBOM {
+			// Syft for multi image, generates bom-docker-(1/2/3).xml
+			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		}
+		return nil
+
+	case config.MultipleImages != nil:
+		log.Entry().Debugf("multipleImages build activated")
+		parsedMultipleImages, err := parseMultipleImages(config.MultipleImages)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrap(err, "failed to parse multipleImages param")
+		}
+
+		for _, entry := range parsedMultipleImages {
+			switch {
+			case entry.ContextSubPath == "":
+				return fmt.Errorf("multipleImages: empty contextSubPath")
+			case entry.ContainerImageName != "":
+				containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorConfiguration)
+					return errors.Wrapf(err, "multipleImages: failed to read registry url %v", config.ContainerRegistryURL)
+				}
+
+				if entry.ContainerImageTag == "" {
+					if config.ContainerImageTag == "" {
+						return fmt.Errorf("both multipleImages containerImageTag and config.containerImageTag are empty")
+					}
+					entry.ContainerImageTag = config.ContainerImageTag
+				}
+				// Docker image tags don't allow plus signs in tags, thus replacing with dash
+				containerImageTag := strings.ReplaceAll(entry.ContainerImageTag, "+", "-")
+				containerImageNameAndTag := fmt.Sprintf("%v:%v", entry.ContainerImageName, containerImageTag)
+
+				log.Entry().Debugf("multipleImages: image build '%v'", entry.ContainerImageName)
+
+				buildOptions := append(config.BuildOptions,
+					"--context-sub-path", entry.ContextSubPath,
+					"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag),
+				)
+
+				dockerfilePath := config.DockerfilePath
+				if entry.DockerfilePath != "" {
+					dockerfilePath = entry.DockerfilePath
+				}
+
+				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", entry.ContainerImageName, config.DockerfilePath, err)
+				}
+
+				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameAndTag)
+				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, entry.ContainerImageName)
+
+			case entry.ContainerImage != "":
+				containerImageName, err := docker.ContainerImageNameFromImage(entry.ContainerImage)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorConfiguration)
+					return errors.Wrapf(err, "invalid name part in image %v", entry.ContainerImage)
+				}
+				containerImageNameTag, err := docker.ContainerImageNameTagFromImage(entry.ContainerImage)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorConfiguration)
+					return errors.Wrapf(err, "invalid tag part in image %v", entry.ContainerImage)
+				}
+
+				log.Entry().Debugf("multipleImages: image build '%v'", containerImageName)
+
+				buildOptions := append(config.BuildOptions,
+					"--context-sub-path", entry.ContextSubPath,
+					"--destination", entry.ContainerImage,
+				)
+
+				dockerfilePath := config.DockerfilePath
+				if entry.DockerfilePath != "" {
+					dockerfilePath = entry.DockerfilePath
+				}
+
+				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", containerImageName, config.DockerfilePath, err)
+				}
+
+				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
+				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
+			default:
+				return fmt.Errorf("multipleImages: either containerImageName or containerImage must be filled")
+			}
+		}
+
+		// Docker image tags don't allow plus signs in tags, thus replacing with dash
+		containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+
+		// for compatibility reasons also fill single imageNameTag field with "root" image in commonPipelineEnvironment
+		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
+		commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+
+		if config.CreateBOM {
+			// Syft for multi image, generates bom-docker-(1/2/3).xml
+			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		}
+		return nil
+
+	case slices.Contains(config.BuildOptions, "--destination"):
+		log.Entry().Infof("Running Kaniko build with destination defined via buildOptions: %v", config.BuildOptions)
 
 		for i, o := range config.BuildOptions {
 			if o == "--destination" && i+1 < len(config.BuildOptions) {
-				destination = config.BuildOptions[i+1]
-				break
+				destination := config.BuildOptions[i+1]
+
+				containerRegistry, err := docker.ContainerRegistryFromImage(destination)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorConfiguration)
+					return errors.Wrapf(err, "invalid registry part in image %v", destination)
+				}
+				if commonPipelineEnvironment.container.registryURL == "" {
+					commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
+				}
+
+				// errors are already caught with previous call to docker.ContainerRegistryFromImage
+				containerImageName, _ := docker.ContainerImageNameFromImage(destination)
+				containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(destination)
+
+				if commonPipelineEnvironment.container.imageNameTag == "" {
+					commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
+				}
+				commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
+				commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
 			}
 		}
 
-		containerRegistry, err := docker.ContainerRegistryFromImage(destination)
+	case config.ContainerRegistryURL != "" && config.ContainerImageName != "" && config.ContainerImageTag != "":
+		log.Entry().Debugf("Single image build for image name '%v'", config.ContainerImageName)
 
+		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "invalid registry part in image %v", destination)
+			return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
 		}
 
-		containerImageName, _ := docker.ContainerImageNameFromImage(destination)
-		containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(destination)
+		// Docker image tags don't allow plus signs in tags, thus replacing with dash
+		containerImageTag := strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+		containerImageNameAndTag := fmt.Sprintf("%v:%v", config.ContainerImageName, containerImageTag)
+
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+		commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
+		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameAndTag)
+		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
+		config.BuildOptions = append(config.BuildOptions, "--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag))
+
+	case config.ContainerImage != "":
+		log.Entry().Debugf("Single image build for image '%v'", config.ContainerImage)
+
+		containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
+		}
+
+		// errors are already caught with previous call to docker.ContainerRegistryFromImage
+		containerImageName, _ := docker.ContainerImageNameFromImage(config.ContainerImage)
+		containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
 
 		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
 		commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
 		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
+		config.BuildOptions = append(config.BuildOptions, "--destination", config.ContainerImage)
+	default:
+		config.BuildOptions = append(config.BuildOptions, "--no-push")
 	}
 
-	// no support for building multiple containers
-	kanikoErr := runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment)
-	if kanikoErr != nil {
-		return kanikoErr
+	if err = runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+		return err
 	}
+
 	if config.CreateBOM {
 		// Syft for single image, generates bom-docker-0.xml
 		return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 	}
+
 	return nil
 }
 
@@ -253,7 +375,9 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", cwd}
+	// kaniko build context needs a proper prefix, for local directory it is 'dir://'
+	// for more details see https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts
+	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", "dir://" + cwd}
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
 	tmpDir, err := fileUtils.TempDir("", "*-kanikoExecute")
@@ -267,6 +391,10 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 		kanikoOpts = append(kanikoOpts, "--digest-file", digestFilePath)
 	}
 
+	if GeneralConfig.Verbose {
+		kanikoOpts = append(kanikoOpts, "--verbosity=debug")
+	}
+
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -275,7 +403,6 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 
 	if b, err := fileUtils.FileExists(digestFilePath); err == nil && b {
 		digest, err := fileUtils.FileRead(digestFilePath)
-
 		if err != nil {
 			return errors.Wrap(err, "error while reading image digest")
 		}
@@ -284,9 +411,32 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 
 		log.Entry().Debugf("image digest: %s", digestStr)
 
-		commonPipelineEnvironment.container.imageDigest = string(digestStr)
+		commonPipelineEnvironment.container.imageDigest = digestStr
 		commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digestStr)
 	}
 
 	return nil
+}
+
+type multipleImageConf struct {
+	ContextSubPath     string `json:"contextSubPath,omitempty"`
+	DockerfilePath     string `json:"dockerfilePath,omitempty"`
+	ContainerImageName string `json:"containerImageName,omitempty"`
+	ContainerImageTag  string `json:"containerImageTag,omitempty"`
+	ContainerImage     string `json:"containerImage,omitempty"`
+}
+
+func parseMultipleImages(src []map[string]interface{}) ([]multipleImageConf, error) {
+	var result []multipleImageConf
+
+	for _, conf := range src {
+		var structuredConf multipleImageConf
+		if err := mapstructure.Decode(conf, &structuredConf); err != nil {
+			return nil, err
+		}
+
+		result = append(result, structuredConf)
+	}
+
+	return result, nil
 }

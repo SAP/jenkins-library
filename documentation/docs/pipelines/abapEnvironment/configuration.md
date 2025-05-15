@@ -131,7 +131,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 
 ### Clone Repositories
 
-If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the software components and the branches that you have configured in the `respositories.yml` file in step [4. Configuration for Cloning the repositories](#4-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the software components and branches:
+If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the software components and the branches that you have configured in the `respositories.yml` file in step [3. Configuration for Cloning the repositories](#3-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the software components and branches:
 
 * `Pull`: If you have specified Pull as the strategy the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step will be used
 * `Clone`: If you have specified the Clone strategy the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step will be used

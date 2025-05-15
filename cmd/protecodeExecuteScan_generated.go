@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -26,6 +27,8 @@ type protecodeExecuteScanOptions struct {
 	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
 	ScanImage                   string `json:"scanImage,omitempty"`
 	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
+	ContainerRegistryPassword   string `json:"containerRegistryPassword,omitempty"`
+	ContainerRegistryUser       string `json:"containerRegistryUser,omitempty"`
 	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
 	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"possible-values=none binary complete"`
 	FilePath                    string `json:"filePath,omitempty"`
@@ -112,10 +115,8 @@ func (p *protecodeExecuteScanReports) persist(stepConfig protecodeExecuteScanOpt
 		{FilePattern: "**/protecodeExecuteScan.json", ParamRef: "", StepResultType: "protecode"},
 		{FilePattern: "**/protecodescan_vulns.json", ParamRef: "", StepResultType: "protecode"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -164,15 +165,20 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
+			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
@@ -183,7 +189,7 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -205,6 +211,11 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -215,21 +226,40 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
+			telemetryClient.Initialize(STEP_NAME)
 			protecodeExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -245,6 +275,8 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the step on severe vulnerabilties or not")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "The reference to the docker image to scan with Protecode. Note: If possible please also check [fetchUrl](https://www.project-piper.io/steps/protecodeExecuteScan/#fetchurl) parameter, which might help you to optimize upload time.")
 	cmd.Flags().StringVar(&stepConfig.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.CleanupMode, "cleanupMode", `binary`, "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
@@ -331,6 +363,44 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_dockerRegistryUrl"),
+					},
+					{
+						Name: "containerRegistryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryPassword",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_containerRegistryPassword"),
+					},
+					{
+						Name: "containerRegistryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/repositoryUsername",
+							},
+
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUsername",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_containerRegistryUser"),
 					},
 					{
 						Name: "dockerConfigJSON",

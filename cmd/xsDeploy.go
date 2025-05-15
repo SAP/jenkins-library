@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
 	"text/template"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 // DeployMode ...
@@ -302,9 +302,9 @@ func printStatus(XsDeployOptions xsDeployOptions, stdout io.Writer) error {
 func handleLog(logDir string) error {
 
 	if _, e := os.Stat(logDir); !os.IsNotExist(e) {
-		log.Entry().Warningf(fmt.Sprintf("Here are the logs (%s):", logDir))
+		log.Entry().Warningf("Here are the logs (%s):", logDir)
 
-		logFiles, e := ioutil.ReadDir(logDir)
+		logFiles, e := os.ReadDir(logDir)
 
 		if e != nil {
 			return e

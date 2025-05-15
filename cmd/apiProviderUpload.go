@@ -3,8 +3,8 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/apim"
 	"github.com/SAP/jenkins-library/pkg/cpi"
@@ -30,7 +30,7 @@ func runApiProviderUpload(config *apiProviderUploadOptions, telemetryData *telem
 	if err != nil {
 		return err
 	}
-	return createApiProvider(config, apimData, ioutil.ReadFile)
+	return createApiProvider(config, apimData, os.ReadFile)
 }
 
 func createApiProvider(config *apiProviderUploadOptions, apim apim.Bundle, readFile func(string) ([]byte, error)) error {

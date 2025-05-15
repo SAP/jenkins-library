@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -165,6 +167,10 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 
 	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
+
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
@@ -174,7 +180,7 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 	}
 
 	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
 	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
@@ -236,6 +242,10 @@ func (h *HelmExecute) RunHelmInstall() error {
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
 
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
+
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
@@ -250,7 +260,7 @@ func (h *HelmExecute) RunHelmInstall() error {
 	}
 
 	if len(h.config.AdditionalParameters) > 0 {
-		helmParams = append(helmParams, h.config.AdditionalParameters...)
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
 	}
 
 	if h.verbose {
@@ -259,9 +269,9 @@ func (h *HelmExecute) RunHelmInstall() error {
 
 	if h.verbose {
 		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+		helmParamsDryRun = append(helmParamsDryRun, "--dry-run", "--hide-secret")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Error("Helm install --dry-run call failed")
+			log.Entry().WithError(err).Error("Helm install --dry-run --hide-secret call failed")
 		}
 	}
 
@@ -286,6 +296,9 @@ func (h *HelmExecute) RunHelmUninstall() error {
 	if len(h.config.Namespace) <= 0 {
 		return fmt.Errorf("namespace has not been set, please configure namespace parameter")
 	}
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	if h.config.HelmDeployWaitSeconds > 0 {
 		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
@@ -296,9 +309,9 @@ func (h *HelmExecute) RunHelmUninstall() error {
 
 	if h.verbose {
 		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+		helmParamsDryRun = append(helmParamsDryRun, "--dry-run", "--hide-secret")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Error("Helm uninstall --dry-run call failed")
+			log.Entry().WithError(err).Error("Helm uninstall --dry-run --hide-secret call failed")
 		}
 	}
 
@@ -474,4 +487,19 @@ func (h *HelmExecute) runHelmCommand(helmParams []string) error {
 	}
 
 	return nil
+}
+
+// expandEnv replaces ${var} or $var in params according to the values of the current environment variables
+func expandEnv(params []string) []string {
+	expanded := []string{}
+
+	for _, param := range params {
+		if strings.Contains(param, config.VaultCredentialEnvPrefixDefault) {
+			expanded = append(expanded, os.ExpandEnv(param))
+		} else {
+			expanded = append(expanded, param)
+		}
+	}
+
+	return expanded
 }

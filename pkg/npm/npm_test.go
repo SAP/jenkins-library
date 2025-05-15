@@ -4,6 +4,7 @@
 package npm
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -40,7 +41,6 @@ func TestNpm(t *testing.T) {
 		packageJSONFiles := exec.FindPackageJSONFiles()
 
 		assert.Equal(t, []string{"package.json"}, packageJSONFiles)
-
 	})
 
 	t.Run("find package.json files with two package.json and default filter", func(t *testing.T) {
@@ -355,7 +355,7 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{Tool: "auto"}
 		runScripts := []string{"ci-lint", "ci-build"}
-		buildDescriptorList := []string{filepath.Join("src", "package.json")}
+		buildDescriptorList := []string{filepath.Join("src", "package.json"), "package.json"}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -364,8 +364,8 @@ func TestNpm(t *testing.T) {
 		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, buildDescriptorList)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[1])
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint"}}, utils.execRunner.Calls[1])
 			}
 		}
 	})
@@ -374,7 +374,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
-		utils.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry": "undefined"}}
+		utils.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry -ws=false -iwr": "undefined"}}
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "https://example.org/npm"
 
@@ -386,8 +386,8 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.Options.DefaultNpmRegistry}}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry", "-ws=false", "-iwr"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.Options.DefaultNpmRegistry, "-ws=false", "-iwr"}}, utils.execRunner.Calls[1])
 			}
 		}
 	})
@@ -417,7 +417,7 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
-	t.Run("Create BOM", func(t *testing.T) {
+	t.Run("Create BOM with cyclonedx-npm", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("package-lock.json", []byte("{}"))
@@ -432,14 +432,56 @@ func TestNpm(t *testing.T) {
 			Options: options,
 		}
 		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
+		cycloneDxNpmRunParams := []string{
+			"--output-format",
+			"XML",
+			"--spec-version",
+			cycloneDxSchemaVersion,
+			"--omit",
+			"dev",
+			"--output-file",
+		}
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "@cyclonedx/bom@^3.10.6", "--no-save"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"cyclonedx-bom", ".",
-					"--output", "bom-npm.xml"}}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"cyclonedx-bom", "src",
-					"--output", filepath.Join("src", "bom-npm.xml")}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "./tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, "bom-npm.xml", "package.json")}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "./tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src", "package.json"))}, utils.execRunner.Calls[2])
+			}
+		}
+	})
+
+	t.Run("Create BOM with fallback cyclonedx/bom", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("package-lock.json", []byte("{}"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
+		utils.execRunner.ShouldFailOnCommand = map[string]error{"npm install --no-save @cyclonedx/cyclonedx-npm@1.11.0 --prefix ./tmp": fmt.Errorf("failed to install CycloneDX BOM")}
+
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
+
+		cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
+		cycloneDxBomRunParams := []string{
+			"cyclonedx-bom",
+			"--output",
+		}
+
+		if assert.NoError(t, err) {
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxBomInstallParams}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, "bom-npm.xml", ".")}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src"))}, utils.execRunner.Calls[3])
 			}
 		}
 	})

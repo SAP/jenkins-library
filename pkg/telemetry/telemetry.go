@@ -4,22 +4,19 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"strconv"
 	"time"
 
-	"net/http"
-	"net/url"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 )
 
-// eventType
-const eventType = "library-os-ng"
-
-// actionName
-const actionName = "Piper Library OS"
+const (
+	eventType      = "library-os-ng"
+	actionName     = "Piper Library OS"
+	pipelineIDPath = ".pipeline/commonPipelineEnvironment/custom/cumulusPipelineID"
+)
 
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
@@ -27,10 +24,8 @@ var LibraryRepository string
 // Telemetry struct which holds necessary infos about telemetry
 type Telemetry struct {
 	baseData             BaseData
-	baseMetaData         BaseMetaData
 	data                 Data
-	provider             orchestrator.OrchestratorSpecificConfigProviding
-	disabled             bool
+	provider             orchestrator.ConfigProvider
 	client               *piperhttp.Client
 	CustomReportingDsn   string
 	CustomReportingToken string
@@ -41,11 +36,9 @@ type Telemetry struct {
 }
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
-func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
-	t.disabled = telemetryDisabled
-
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
-	if err != nil || provider == nil {
+func (t *Telemetry) Initialize(stepName string) {
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
 		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
@@ -57,43 +50,33 @@ func (t *Telemetry) Initialize(telemetryDisabled bool, stepName string) {
 
 	t.client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
 
-	if t.BaseURL == "" {
-		//SWA baseURL
-		t.BaseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
-	}
-	if t.Endpoint == "" {
-		// SWA endpoint
-		t.Endpoint = "/tracker/log"
-	}
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
 	}
-
 	if t.SiteID == "" {
 		t.SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 	}
 
 	t.baseData = BaseData{
-		Orchestrator:    provider.OrchestratorType(),
-		StageName:       provider.GetStageName(),
+		Orchestrator:    t.provider.OrchestratorType(),
+		StageName:       t.provider.StageName(),
 		URL:             LibraryRepository,
 		ActionName:      actionName,
 		EventType:       eventType,
 		StepName:        stepName,
 		SiteID:          t.SiteID,
-		PipelineURLHash: t.getPipelineURLHash(), // http://server:port/jenkins/job/foo/
-		BuildURLHash:    t.getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
+		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
+		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
-	t.baseMetaData = baseMetaData
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	jobURL := t.provider.GetJobURL()
+	jobURL := t.provider.JobURL()
 	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	buildURL := t.provider.GetBuildURL()
+	buildURL := t.provider.BuildURL()
 	return t.toSha1OrNA(buildURL)
 }
 
@@ -104,12 +87,11 @@ func (t *Telemetry) toSha1OrNA(input string) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(input)))
 }
 
-// SetData sets the custom telemetry data and base data into the Data object
+// SetData sets the custom telemetry and base data
 func (t *Telemetry) SetData(customData *CustomData) {
 	t.data = Data{
-		BaseData:     t.baseData,
-		BaseMetaData: t.baseMetaData,
-		CustomData:   *customData,
+		BaseData:   t.baseData,
+		CustomData: *customData,
 	}
 }
 
@@ -118,24 +100,19 @@ func (t *Telemetry) GetData() Data {
 	return t.data
 }
 
-// Send telemetry information to SWA
-func (t *Telemetry) Send() {
-	// always log step telemetry data to logfile used for internal use-case
-	t.logStepTelemetryData()
-
-	// skip if telemetry is disabled
-	if t.disabled {
-		return
+func (t *Telemetry) GetDataBytes() []byte {
+	data, err := json.Marshal(t.data)
+	if err != nil {
+		log.Entry().WithError(err).Println("Failed to marshal data")
+		return []byte{}
 	}
 
-	request, _ := url.Parse(t.BaseURL)
-	request.Path = t.Endpoint
-	request.RawQuery = t.data.toPayloadString()
-	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
-	t.client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
+	return data
 }
 
-func (t *Telemetry) logStepTelemetryData() {
+// Logs step telemetry data to logfile used for internal use-case
+func (t *Telemetry) LogStepTelemetryData() {
+	log.Entry().Debug("Logging step telemetry data")
 
 	var fatalError map[string]interface{}
 	if t.data.CustomData.ErrorCode != "0" && log.GetFatalErrorDetail() != nil {
@@ -161,7 +138,7 @@ func (t *Telemetry) logStepTelemetryData() {
 		StepDuration:    t.data.CustomData.Duration,
 		ErrorCategory:   t.data.CustomData.ErrorCategory,
 		ErrorDetail:     fatalError,
-		CorrelationID:   t.provider.GetBuildURL(),
+		CorrelationID:   t.provider.BuildURL(),
 		PiperCommitHash: t.data.CustomData.PiperCommitHash,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)

@@ -32,6 +32,7 @@ debug.test
 /piper_master.exe
 /jenkins-library
 /jenkins-library.exe
+node_modules/
 
 # piper binary outputs
 .pipeline/commonPipelineEnvironment/

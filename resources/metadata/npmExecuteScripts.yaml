@@ -160,7 +160,23 @@ spec:
       - name: packBeforePublish
         type: bool
         default: false
-        description: used for executing npm pack first, followed by npm publish. This two step maybe required when you are building a scoped packages and have npm dependencies from the same scope
+        description: used for executing npm pack first, followed by npm publish. This two step maybe required in two cases. case 1) When building multiple npm packages (multiple package.json) please keep this parameter true and also see `buildDescriptorList` or  `buildDescriptorExcludeList` to choose which package(s) to publish. case 2)when you are building a single npm (single `package.json` in your repo) / multiple npm (multiple package.json) scoped package(s) and have npm dependencies from the same scope.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: production
+        type: bool
+        default: false
+        description: used for omitting installation of dev. dependencies if true
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
         scope:
           - STEPS
           - STAGES
@@ -171,6 +187,7 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/npmBuildArtifacts
       - name: reports
         type: reports
         params:
@@ -184,4 +201,4 @@ spec:
             type: cucumber
   containers:
     - name: node
-      image: node:lts-buster
+      image: node:lts-bookworm

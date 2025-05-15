@@ -10,16 +10,19 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
-	"github.com/SAP/jenkins-library/pkg/influx"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/SAP/jenkins-library/pkg/influx"
 )
 
 func TestInfluxIntegrationWriteMetrics(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	const authToken = "influx-token"
 	const username = "username"
@@ -46,12 +49,13 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 	}
 
 	influxContainer, err := testcontainers.GenericContainer(ctx, req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer influxContainer.Terminate(ctx)
 
 	ip, err := influxContainer.Host(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	port, err := influxContainer.MappedPort(ctx, "8086")
+	require.NoError(t, err)
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
 	dataMap := map[string]map[string]interface{}{
 		"series_1": {"field_a": 11, "field_b": 12},
@@ -61,6 +65,9 @@ func TestInfluxIntegrationWriteMetrics(t *testing.T) {
 		"series_1": {"tag_a": "a", "tag_b": "b"},
 		"series_2": {"tag_c": "c", "tag_d": "d"},
 	}
+
+	time.Sleep(30 * time.Second)
+
 	influxClient := influxdb2.NewClient(host, authToken)
 	defer influxClient.Close()
 	client := influx.NewClient(influxClient, organization, bucket)

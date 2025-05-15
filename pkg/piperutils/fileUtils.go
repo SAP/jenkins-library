@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,6 +31,7 @@ type FileUtils interface {
 	FileRemove(path string) error
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
+	Chown(path string, uid, gid int) error
 	Glob(pattern string) (matches []string, err error)
 	Chdir(path string) error
 	TempDir(string, string) (string, error)
@@ -43,6 +43,9 @@ type FileUtils interface {
 	CurrentTime(format string) string
 	Open(name string) (io.ReadWriteCloser, error)
 	Create(name string) (io.ReadWriteCloser, error)
+	Readlink(name string) (string, error)
+	Stat(path string) (os.FileInfo, error)
+	Lstat(path string) (os.FileInfo, error)
 }
 
 // Files ...
@@ -57,7 +60,7 @@ func (f Files) TempDir(dir, pattern string) (name string, err error) {
 		}
 	}
 
-	return ioutil.TempDir(dir, pattern)
+	return os.MkdirTemp(dir, pattern)
 }
 
 // FileExists returns true if the file system entry for the given path exists and is not a directory.
@@ -143,6 +146,17 @@ func (f Files) Move(src, dst string) error {
 // Chmod is a wrapper for os.Chmod().
 func (f Files) Chmod(path string, mode os.FileMode) error {
 	return os.Chmod(path, mode)
+}
+
+// Chown is a recursive wrapper for os.Chown().
+func (f Files) Chown(path string, uid, gid int) error {
+	return filepath.WalkDir(path, func(name string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		return os.Chown(name, uid, gid)
+	})
 }
 
 // Unzip will decompress a zip archive, moving all files and folders
@@ -501,4 +515,14 @@ func (f Files) Open(name string) (io.ReadWriteCloser, error) {
 // Create is a wrapper for os.Create
 func (f Files) Create(name string) (io.ReadWriteCloser, error) {
 	return os.Create(name)
+}
+
+// Readlink wraps os.Readlink
+func (f Files) Readlink(name string) (string, error) {
+	return os.Readlink(name)
+}
+
+// Readlink wraps os.Readlink
+func (f Files) Lstat(path string) (os.FileInfo, error) {
+	return os.Lstat(path)
 }

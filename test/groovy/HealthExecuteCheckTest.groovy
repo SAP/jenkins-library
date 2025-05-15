@@ -32,8 +32,8 @@ class HealthExecuteCheckTest extends BasePiperTest {
     @Before
     void init() throws Exception {
         // register Jenkins commands with mock values
-        def command1 = "curl -so /dev/null -w '%{response_code}' http://testserver"
-        def command2 = "curl -so /dev/null -w '%{response_code}' http://testserver/endpoint"
+        def command1 = "curl -so /dev/null -w '%{response_code}' 'http://testserver'"
+        def command2 = "curl -so /dev/null -w '%{response_code}' 'http://testserver/endpoint'"
         helper.registerAllowedMethod('sh', [Map.class], {map ->
             return map.script == command1 || map.script == command2 ? "200" : "404"
         })

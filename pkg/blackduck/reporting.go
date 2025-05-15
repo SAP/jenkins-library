@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -35,6 +37,27 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 				isAudited = false
 			}
 
+			unifiedStatusValue := "new"
+
+			switch v.RemediationStatus {
+			case "NEW":
+				unifiedStatusValue = "new"
+			case "NEEDS_REVIEW":
+				unifiedStatusValue = "inProcess"
+			case "REMEDIATION_COMPLETE":
+				unifiedStatusValue = "notRelevant"
+			case "PATCHED":
+				unifiedStatusValue = "notRelevant"
+			case "MITIGATED":
+				unifiedStatusValue = "notRelevant"
+			case "DUPLICATE":
+				unifiedStatusValue = "notRelevant"
+			case "IGNORED":
+				unifiedStatusValue = "notRelevant"
+			case "REMEDIATION_REQUIRED":
+				unifiedStatusValue = "relevant"
+			}
+
 			log.Entry().Debugf("Transforming alert %v on Package %v Version %v into SARIF format", v.VulnerabilityWithRemediation.VulnerabilityName, v.Component.Name, v.Component.Version)
 			result := format.Results{
 				RuleID:  v.VulnerabilityWithRemediation.VulnerabilityName,
@@ -49,11 +72,17 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 					PackageURLPlusCVEHash: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID))),
 				},
 				Properties: &format.SarifProperties{
-					Audited:           isAudited,
-					ToolSeverity:      v.Severity,
-					ToolSeverityIndex: severityIndex[v.Severity],
-					ToolAuditMessage:  v.VulnerabilityWithRemediation.RemediationComment,
-					ToolState:         v.RemediationStatus,
+					Audited:               isAudited,
+					ToolSeverity:          v.Severity,
+					ToolSeverityIndex:     severityIndex[v.Severity],
+					ToolState:             v.RemediationStatus,
+					ToolAuditMessage:      v.VulnerabilityWithRemediation.RemediationComment,
+					UnifiedAuditState:     unifiedStatusValue,
+					UnifiedSeverity:       strings.ToLower(v.Severity),
+					UnifiedCriticality:    v.BaseScore,
+					UnifiedAuditUser:      v.VulnerabilityWithRemediation.RemidiatedBy,
+					AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+					AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
 				},
 			}
 
@@ -61,12 +90,12 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 			results = append(results, result)
 
 			// append taxonomies
-			if len(v.VulnerabilityWithRemediation.CweID) > 0 && !piperutils.ContainsString(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID) {
+			if len(v.VulnerabilityWithRemediation.CweID) > 0 && !slices.Contains(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID) {
 				cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 			}
 
 			// only create rule on new CVE
-			if !piperutils.ContainsString(collectedRules, result.RuleID) {
+			if !slices.Contains(collectedRules, result.RuleID) {
 				collectedRules = append(collectedRules, result.RuleID)
 
 				// set information about BlackDuck project

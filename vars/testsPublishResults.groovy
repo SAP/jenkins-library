@@ -1,4 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
@@ -73,12 +74,6 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
 
         publishJUnitReport(configuration.get('junit'))
         publishJacocoReport(configuration.get('jacoco'))
@@ -163,7 +158,8 @@ def publishJMeterReport(Map settings = [:]){
             nthBuildNumber: settings.get('nthBuildNumber'),
             configType: settings.get('configType'),
             failBuildIfNoResultFile: settings.get('failBuildIfNoResultFile'),
-            compareBuildPrevious: settings.get('compareBuildPrevious')
+            compareBuildPrevious: settings.get('compareBuildPrevious'),
+            filterRegex: settings.get('filterRegex')
         )
         archiveResults(settings.get('archive'), pattern, settings.get('allowEmptyResults'))
     }
@@ -198,7 +194,7 @@ void touchFiles(pattern){
     echo "[${STEP_NAME}] update test results"
     def patternArray = pattern.split(',')
     for(def i = 0; i < patternArray.length; i++){
-        sh "find . -wholename '${patternArray[i].trim()}' -exec touch {} \\;"
+        sh "find . -wholename ${q(patternArray[i].trim())} -exec touch {} \\;"
     }
 }
 

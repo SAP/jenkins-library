@@ -1,4 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
@@ -51,8 +52,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('testServerUrl')
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
-
         def checkUrl = config.testServerUrl
         if(config.healthEndpoint){
             if(!checkUrl.endsWith('/'))
@@ -72,6 +71,6 @@ void call(Map parameters = [:]) {
 def curl(url){
     return sh(
         returnStdout: true,
-        script: "curl -so /dev/null -w '%{response_code}' ${url}"
+        script: "curl -so /dev/null -w '%{response_code}' ${q(url)}"
     ).trim()
 }

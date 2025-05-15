@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -119,7 +119,7 @@ type Line struct {
 func ConvertCxxmlToSarif(sys System, xmlReportName string, scanID int) (format.SARIF, error) {
 	var sarif format.SARIF
 	log.Entry().Debug("Reading audit file.")
-	data, err := ioutil.ReadFile(xmlReportName)
+	data, err := os.ReadFile(xmlReportName)
 	if err != nil {
 		return sarif, err
 	}

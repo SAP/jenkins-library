@@ -17,7 +17,9 @@ type DownloadMock struct {
 	RemoteImageInfo v1.Image
 	ReturnError     string
 
-	Stub func(imageRef, targetDir string) (v1.Image, error)
+	Stub             func(imageRef, targetDir string) (v1.Image, error)
+	ImageContentStub func(imageRef, targetFile string) (v1.Image, error)
+	ImageInfoStub    func(imageRef string) (v1.Image, error)
 }
 
 // DownloadImage .
@@ -30,7 +32,7 @@ func (c *DownloadMock) DownloadImage(imageRef, targetDir string) (v1.Image, erro
 	}
 
 	if len(c.ReturnError) > 0 {
-		return nil, fmt.Errorf(c.ReturnError)
+		return nil, fmt.Errorf("%s", c.ReturnError)
 	}
 	return c.ReturnImage, nil
 }
@@ -40,8 +42,12 @@ func (c *DownloadMock) DownloadImageContent(imageRef, targetFile string) (v1.Ima
 	c.ImageRef = imageRef
 	c.FilePath = targetFile
 
+	if c.ImageContentStub != nil {
+		return c.ImageContentStub(imageRef, targetFile)
+	}
+
 	if len(c.ReturnError) > 0 {
-		return nil, fmt.Errorf(c.ReturnError)
+		return nil, fmt.Errorf("%s", c.ReturnError)
 	}
 	return c.ReturnImage, nil
 }
@@ -50,8 +56,12 @@ func (c *DownloadMock) DownloadImageContent(imageRef, targetFile string) (v1.Ima
 func (c *DownloadMock) GetRemoteImageInfo(imageRef string) (v1.Image, error) {
 	c.RemoteImageRef = imageRef
 
+	if c.ImageInfoStub != nil {
+		return c.ImageInfoStub(imageRef)
+	}
+
 	if len(c.ReturnError) > 0 {
-		return nil, fmt.Errorf(c.ReturnError)
+		return nil, fmt.Errorf("%s", c.ReturnError)
 	}
 
 	return c.RemoteImageInfo, nil

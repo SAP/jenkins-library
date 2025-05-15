@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -81,7 +81,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	repoMetadataInitState, getRepositoryErr := getRepository(config, httpClient)
 	currentBranch := repoMetadataInitState.Result.Branch
 	// If Repository does not exist in the system then Create and Clone Repository
-	if getRepositoryErr != nil {
+	if getRepositoryErr != nil || repoMetadataInitState.Result.Rid == "" {
 		// If scope is set for a new repository then creation/cloning of the repository cannot be done
 		if config.Scope != "" {
 			log.Entry().Error("Error during deploy : deploy scope cannot be provided while deploying a new repo")
@@ -558,7 +558,7 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 		return errors.New("did not retrieve a HTTP response")
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read")
@@ -824,7 +824,7 @@ type getRepositoryResponseBody struct {
 			Value    string `json:"value"`
 			Category string `json:"category"`
 		} `json:"config"`
-		Objects       int64  `json:"objects"`
+		Objects       any    `json:"objects"`
 		CurrentCommit string `json:"currentCommit"`
 		Connection    string `json:"connection"`
 	} `json:"result"`

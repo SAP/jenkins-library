@@ -148,3 +148,47 @@ func TestImageListWithFilePath(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeDockerConfigJSON(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - both files present", func(t *testing.T) {
+		sourceFile := "/tmp/source.json"
+		targetFile := "/tmp/target.json"
+		expectedContent := "{\n\t\"auths\": {\n\t\t\"bar\": {},\n\t\t\"foo\": {\n\t\t\t\"auth\": \"Zm9vOmJhcg==\"\n\t\t}\n\t}\n}"
+
+		utilsMock := mock.FilesMock{}
+		utilsMock.AddFile(targetFile, []byte("{\"auths\": {\"foo\": {\"auth\": \"dGVzdDp0ZXN0\"}}}"))
+		utilsMock.AddFile(sourceFile, []byte("{\"auths\": {\"bar\": {}, \"foo\": {\"auth\": \"Zm9vOmJhcg==\"}}}"))
+
+		err := MergeDockerConfigJSON(sourceFile, targetFile, &utilsMock)
+		assert.NoError(t, err)
+
+		content, err := utilsMock.FileRead(targetFile)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedContent, string(content))
+	})
+
+	t.Run("success - target file is missing", func(t *testing.T) {
+		sourceFile := "/tmp/source.json"
+		targetFile := "/tmp/target.json"
+		expectedContent := "{\n\t\"auths\": {\n\t\t\"bar\": {},\n\t\t\"foo\": {\n\t\t\t\"auth\": \"Zm9vOmJhcg==\"\n\t\t}\n\t}\n}"
+
+		utilsMock := mock.FilesMock{}
+		utilsMock.AddFile(sourceFile, []byte("{\"auths\": {\"bar\": {}, \"foo\": {\"auth\": \"Zm9vOmJhcg==\"}}}"))
+
+		err := MergeDockerConfigJSON(sourceFile, targetFile, &utilsMock)
+		assert.NoError(t, err)
+
+		content, err := utilsMock.FileRead(targetFile)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedContent, string(content))
+	})
+
+	t.Run("error - source file is missing", func(t *testing.T) {
+		utilsMock := mock.FilesMock{}
+		err := MergeDockerConfigJSON("missing-file", "also-missing-file", &utilsMock)
+		assert.Error(t, err)
+		assert.Equal(t, "source dockerConfigJSON file \"missing-file\" does not exist", err.Error())
+	})
+}

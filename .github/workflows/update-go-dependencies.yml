@@ -9,11 +9,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.10.0
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v1
+      - uses: styfle/cancel-workflow-action@0.11.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.18.x'
+          go-version: '1.24.0'
       - name: Perform update
         run: |
           git checkout -B gh-action-update-golang-dependencies

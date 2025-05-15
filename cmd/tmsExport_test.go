@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package cmd
 
@@ -27,7 +26,8 @@ func newTmsExportTestsUtils() tmsExportMockUtils {
 	return utils
 }
 
-func (cim *communicationInstanceMock) ExportFileToNode(nodeName, fileId, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
+func (cim *communicationInstanceMock) ExportFileToNode(fileInfo tms.FileInfo, nodeName, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
+	fileId := strconv.FormatInt(fileInfo.Id, 10)
 	var nodeUploadResponseEntity tms.NodeUploadResponseEntity
 	if description != CUSTOM_DESCRIPTION || nodeName != NODE_NAME || fileId != strconv.FormatInt(FILE_ID, 10) || namedUser != NAMED_USER {
 		return nodeUploadResponseEntity, errors.New(INVALID_INPUT_MSG)
@@ -147,5 +147,52 @@ func TestRunTmsExport(t *testing.T) {
 
 		// assert
 		assert.EqualError(t, err, "failed to export file to node: Something went wrong on exporting file to node")
+	})
+}
+
+func Test_convertExportOptions(t *testing.T) {
+	t.Parallel()
+	mockServiceKey := `no real serviceKey json necessary for these tests`
+
+	t.Run("Use of new serviceKey parameter works", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsExportOptions{ServiceKey: mockServiceKey}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertExportOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
+	})
+
+	t.Run("Use of old tmsServiceKey parameter works as well", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsExportOptions{TmsServiceKey: mockServiceKey}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertExportOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
+	})
+
+	t.Run("Use of both tmsServiceKey and serviceKey parameter favors the new serviceKey parameter", func(t *testing.T) {
+		t.Parallel()
+
+		// init
+		config := tmsExportOptions{ServiceKey: mockServiceKey, TmsServiceKey: "some other string"}
+		wantOptions := tms.Options{ServiceKey: mockServiceKey, CustomDescription: "Created by Piper"}
+
+		// test
+		gotOptions := convertExportOptions(config)
+
+		// assert
+		assert.Equal(t, wantOptions, gotOptions)
 	})
 }

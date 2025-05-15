@@ -52,7 +52,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'proxy',
     /**
-     * Toggle to activate a new Golang implementation of the step. Off by default.
+     * The new Golang implementation of the step is used now by default. Utilizing this toggle with value true is therefore redundant and can be omitted. If used with value false, the toggle deactivates the new Golang implementation and instructs the step to use the old Groovy one. Note that possibility to switch to the old Groovy implementation will be completely removed and this toggle will be deprecated after February 29th, 2024.
      * @possibleValues true, false
      */
     'useGoStep'
@@ -94,9 +94,9 @@ void call(Map parameters = [:]) {
 
         def namedUser = jenkinsUtils.getJobStartedByUserId()
 
-        if (config.useGoStep == true) {
+        if (config.useGoStep != false) {
             List credentials = [
-                [type: 'token', id: 'credentialsId', env: ['PIPER_tmsServiceKey']]
+                [type: 'token', id: 'credentialsId', env: ['PIPER_serviceKey']]
             ]
 
             if (namedUser) {
@@ -108,12 +108,8 @@ void call(Map parameters = [:]) {
             return
         }
 
-        // telemetry reporting
-        new Utils().pushToSWA([
-            step         : STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1   : parameters?.script == null
-        ], config)
+        echo "[TransportManagementService] Using deprecated Groovy implementation of '${STEP_NAME}' step instead of the default Golang one, since 'useGoStep' toggle parameter is explicitly set to 'false'."
+        echo "[TransportManagementService] WARNING: Note that the deprecated Groovy implementation will be completely removed after February 29th, 2024. Consider using the Golang implementation by not setting the 'useGoStep' toggle parameter to 'false'."
 
         def jsonUtilsObject = new JsonUtils()
 

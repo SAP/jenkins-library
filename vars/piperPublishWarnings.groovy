@@ -66,12 +66,6 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-        // report to SWA
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
 
         // add Piper Notifications parser to config if missing
         if(new JenkinsUtils().addWarningsNGParser(

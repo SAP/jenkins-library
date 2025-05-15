@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -69,7 +69,7 @@ func runIntegrationArtifactGetMplStatus(
 	}
 
 	if mplStatusResp.StatusCode == 200 {
-		bodyText, readErr := ioutil.ReadAll(mplStatusResp.Body)
+		bodyText, readErr := io.ReadAll(mplStatusResp.Body)
 		if readErr != nil {
 			return errors.Wrap(readErr, "HTTP response body could not be read")
 		}
@@ -96,7 +96,7 @@ func runIntegrationArtifactGetMplStatus(
 		}
 		return nil
 	}
-	responseBody, readErr := ioutil.ReadAll(mplStatusResp.Body)
+	responseBody, readErr := io.ReadAll(mplStatusResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", mplStatusResp.StatusCode)
@@ -126,7 +126,7 @@ func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifa
 		log.Entry().
 			WithField("MPLID", mplID).
 			Info("Successfully retrieved Integration Flow artefact message processing error")
-		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
+		responseBody, readErr := io.ReadAll(errorStatusResp.Body)
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
 		}

@@ -6,7 +6,7 @@ package command
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -44,9 +44,9 @@ func TestShellRun(t *testing.T) {
 				}
 			})
 			t.Run("stderr", func(t *testing.T) {
-				expectedErr := "Stderr: command /bin/bash\n"
-				if eStr := e.String(); eStr != expectedErr {
-					t.Errorf("expected: %v got: %v", expectedErr, eStr)
+				expectedErr := "Stderr: command /bin/bash"
+				if !strings.Contains(e.String(), expectedErr) {
+					t.Errorf("expected: %v got: %v", expectedErr, e.String())
 				}
 			})
 		})
@@ -74,9 +74,9 @@ func TestExecutableRun(t *testing.T) {
 				}
 			})
 			t.Run("stderr", func(t *testing.T) {
-				expectedErr := "Stderr: command echo\n"
-				if eStr := stderr.String(); eStr != expectedErr {
-					t.Errorf("expected: %v got: %v", expectedErr, eStr)
+				expectedErr := "Stderr: command echo"
+				if !strings.Contains(stderr.String(), expectedErr) {
+					t.Errorf("expected: %v got: %v", expectedErr, stderr.String())
 				}
 			})
 		})
@@ -260,7 +260,7 @@ func TestHelperProcess(*testing.T) {
 	cmd, args := args[0], args[1:]
 	switch cmd {
 	case "/bin/bash":
-		o, _ := ioutil.ReadAll(os.Stdin)
+		o, _ := io.ReadAll(os.Stdin)
 		fmt.Fprintf(os.Stdout, "Stdout: command %v - Stdin: %v\n", cmd, string(o))
 		fmt.Fprintf(os.Stderr, "Stderr: command %v\n", cmd)
 	case "echo":

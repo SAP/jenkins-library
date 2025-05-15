@@ -1,4 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
@@ -153,16 +154,6 @@ void call(Map parameters = [:], Closure body = null) {
         config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
             .use()
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'buildTool',
-            stepParam1: config.buildTool,
-            stepParamKey2: 'artifactType',
-            stepParam2: config.artifactType,
-            stepParamKey3: 'scriptMissing',
-            stepParam3: parameters?.script == null
-        ], config)
-
         def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
         def currentVersion = artifactVersioning.getVersion()
 
@@ -185,7 +176,7 @@ void call(Map parameters = [:], Closure body = null) {
             def gitConfig = []
 
             if(config.gitUserEMail) {
-                gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
+                gitConfig.add("-c user.email=${q(config.gitUserEMail)}")
             } else {
                 // in case there is no user.email configured on project level we might still
                 // be able to work in case there is a configuration available on plain git level.
@@ -194,7 +185,7 @@ void call(Map parameters = [:], Closure body = null) {
                 }
             }
             if(config.gitUserName) {
-                gitConfig.add("-c user.name=\"${config.gitUserName}\"")
+                gitConfig.add("-c user.name=${q(config.gitUserName)}")
             } else {
                 // in case there is no user.name configured on project level we might still
                 // be able to work in case there is a configuration available on plain git level.
@@ -209,7 +200,7 @@ void call(Map parameters = [:], Closure body = null) {
                     set -e
                     git add . --update
                     git ${gitConfig} commit -m 'update version ${newVersion}'
-                    git tag ${config.tagPrefix}${newVersion}"""
+                    git tag ${q(config.tagPrefix+newVersion)}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
             } catch (e) {
                 error "[${STEP_NAME}]git commit and tag failed: ${e}"
@@ -225,7 +216,7 @@ void call(Map parameters = [:], Closure body = null) {
                     .use()
 
                 sshagent([config.gitSshKeyCredentialsId]) {
-                    sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
+                    sh "git push ${q(config.gitSshUrl)} ${q(config.tagPrefix+newVersion)}"
                 }
 
             } else if(gitPushMode == GitPushMode.HTTPS) {
@@ -269,7 +260,7 @@ void call(Map parameters = [:], Closure body = null) {
                     gitConfig = []
 
                     if(config.gitHttpProxy) {
-                        gitConfig.add("-c http.proxy=\"${config.gitHttpProxy}\"")
+                        gitConfig.add("-c http.proxy=${q(config.gitHttpProxy)}")
                     }
 
                     if(config.gitDisableSslVerification) {
@@ -298,7 +289,7 @@ void call(Map parameters = [:], Closure body = null) {
                     gitPushFlags = gitPushFlags.join(' ')
 
                     sh script:   """|#!/bin/bash ${hashbangFlags}
-                                    |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
+                                    |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${q(config.tagPrefix+newVersion)} ${streamhandling}""".stripMargin()
                 }
             } else {
                 echo "Git push mode: ${gitPushMode.toString()}. Git push to remote has been skipped."
@@ -323,5 +314,5 @@ def isAppContainer(config){
 }
 
 def getTimestamp(pattern){
-    return sh(returnStdout: true, script: "date --utc +'${pattern}'").trim()
+    return sh(returnStdout: true, script: "date --utc +${q(pattern)}").trim()
 }

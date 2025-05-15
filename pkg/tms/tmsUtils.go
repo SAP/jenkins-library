@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
-	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -29,8 +28,13 @@ type uaa struct {
 }
 
 type serviceKey struct {
-	Uaa uaa    `json:"uaa"`
-	Uri string `json:"uri"`
+	Uaa           uaa           `json:"uaa"`
+	Uri           string        `json:"uri"`
+	CALMEndpoints cALMEndpoints `json:"endpoints"`
+}
+
+type cALMEndpoints *struct {
+	API string `json:"Api"`
 }
 
 type CommunicationInstance struct {
@@ -101,20 +105,20 @@ type CommunicationInterface interface {
 	UpdateMtaExtDescriptor(nodeId, idOfMtaExtDescriptor int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
 	UploadMtaExtDescriptorToNode(nodeId int64, file, mtaVersion, description, namedUser string) (MtaExtDescriptor, error)
 	UploadFile(file, namedUser string) (FileInfo, error)
-	UploadFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
-	ExportFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error)
+	UploadFileToNode(fileInfo FileInfo, nodeName, description, namedUser string) (NodeUploadResponseEntity, error)
+	ExportFileToNode(fileInfo FileInfo, nodeName, description, namedUser string) (NodeUploadResponseEntity, error)
 }
 
 type Options struct {
-	TmsServiceKey            string                 `json:"tmsServiceKey,omitempty"`
-	CustomDescription        string                 `json:"customDescription,omitempty"`
-	NamedUser                string                 `json:"namedUser,omitempty"`
-	NodeName                 string                 `json:"nodeName,omitempty"`
-	MtaPath                  string                 `json:"mtaPath,omitempty"`
-	MtaVersion               string                 `json:"mtaVersion,omitempty"`
-	NodeExtDescriptorMapping map[string]interface{} `json:"nodeExtDescriptorMapping,omitempty"`
-	Proxy                    string                 `json:"proxy,omitempty"`
-	StashContent             []string               `json:"stashContent,omitempty"`
+	ServiceKey               string
+	CustomDescription        string
+	NamedUser                string
+	NodeName                 string
+	MtaPath                  string
+	MtaVersion               string
+	NodeExtDescriptorMapping map[string]interface{}
+	Proxy                    string
+	StashContent             []string
 	Verbose                  bool
 }
 
@@ -124,6 +128,7 @@ type tmsUtilsBundle struct {
 }
 
 const DEFAULT_TR_DESCRIPTION = "Created by Piper"
+const CALM_REROUTING_ENDPOINT_TO_CTMS = "/imp-cdm-transport-management-api/v1"
 
 func NewTmsUtils() TmsUtils {
 	utils := tmsUtilsBundle{
@@ -140,6 +145,14 @@ func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err erro
 	err = json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
 	if err != nil {
 		return
+	}
+	if len(serviceKey.Uri) == 0 {
+		if serviceKey.CALMEndpoints != nil && len(serviceKey.CALMEndpoints.API) > 0 {
+			serviceKey.Uri = serviceKey.CALMEndpoints.API + CALM_REROUTING_ENDPOINT_TO_CTMS
+		} else {
+			err = fmt.Errorf("neither uri nor endpoints.Api is set in service key json string")
+			return
+		}
 	}
 	return
 }
@@ -238,9 +251,9 @@ func SetupCommunication(config Options) (communicationInstance CommunicationInte
 		}
 	}
 
-	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
+	serviceKey, err := unmarshalServiceKey(config.ServiceKey)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
+		log.Entry().WithError(err).Fatal("Failed to unmarshal service key")
 	}
 	log.RegisterSecret(serviceKey.Uaa.ClientSecret)
 
@@ -339,20 +352,21 @@ func UploadDescriptors(config Options, communicationInstance CommunicationInterf
 	return nil
 }
 
-func UploadFile(config Options, communicationInstance CommunicationInterface, utils TmsUtils) (string, error) {
+func UploadFile(config Options, communicationInstance CommunicationInterface, utils TmsUtils) (FileInfo, error) {
+	var fileInfo FileInfo
+
 	mtaPath := config.MtaPath
 	exists, _ := utils.FileExists(mtaPath)
 	if !exists {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("mta file %s not found", mtaPath)
+		return fileInfo, fmt.Errorf("mta file %s not found", mtaPath)
 	}
 
 	fileInfo, errUploadFile := communicationInstance.UploadFile(mtaPath, config.NamedUser)
 	if errUploadFile != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return "", fmt.Errorf("failed to upload file: %w", errUploadFile)
+		return fileInfo, fmt.Errorf("failed to upload file: %w", errUploadFile)
 	}
 
-	fileId := strconv.FormatInt(fileInfo.Id, 10)
-	return fileId, nil
+	return fileInfo, nil
 }

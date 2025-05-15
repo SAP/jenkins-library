@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -20,6 +21,8 @@ type npmExecuteLintOptions struct {
 	RunScript          string `json:"runScript,omitempty"`
 	FailOnError        bool   `json:"failOnError,omitempty"`
 	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty"`
+	OutputFormat       string `json:"outputFormat,omitempty"`
+	OutputFileName     string `json:"outputFileName,omitempty"`
 }
 
 // NpmExecuteLintCommand Execute ci-lint script on all npm packages in a project or execute default linting
@@ -45,11 +48,14 @@ either use ESLint configurations present in the project or use the provided gene
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -60,7 +66,7 @@ either use ESLint configurations present in the project or use the provided gene
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -82,6 +88,11 @@ either use ESLint configurations present in the project or use the provided gene
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -90,21 +101,40 @@ either use ESLint configurations present in the project or use the provided gene
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
+			telemetryClient.Initialize(STEP_NAME)
 			npmExecuteLint(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -120,6 +150,8 @@ func addNpmExecuteLintFlags(cmd *cobra.Command, stepConfig *npmExecuteLintOption
 	cmd.Flags().StringVar(&stepConfig.RunScript, "runScript", `ci-lint`, "List of additional run scripts to execute from package.json.")
 	cmd.Flags().BoolVar(&stepConfig.FailOnError, "failOnError", false, "Defines the behavior in case linting errors are found.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
+	cmd.Flags().StringVar(&stepConfig.OutputFormat, "outputFormat", `checkstyle`, "eslint output format, e.g. stylish, checkstyle")
+	cmd.Flags().StringVar(&stepConfig.OutputFileName, "outputFileName", `defaultlint.xml`, "name of the output file. There might be a 'N_' prefix where 'N' is a number. When the empty string is provided, we will print to console")
 
 }
 
@@ -170,10 +202,28 @@ func npmExecuteLintMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 					},
+					{
+						Name:        "outputFormat",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/outputFormat"}},
+						Default:     `checkstyle`,
+					},
+					{
+						Name:        "outputFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/outputFormat"}},
+						Default:     `defaultlint.xml`,
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-buster"},
+				{Name: "node", Image: "node:lts-bookworm"},
 			},
 		},
 	}

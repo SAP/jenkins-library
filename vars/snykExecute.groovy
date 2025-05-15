@@ -81,12 +81,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('snykCredentialsId')
             .use()
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], config)
-
         utils.unstashAll(config.stashContent)
 
         switch(config.scanType) {

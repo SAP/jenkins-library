@@ -9,17 +9,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestPythonIntegrationBuildProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	pwd, err := os.Getwd()
 	assert.NoError(t, err, "Getting current working directory failed.")
@@ -37,27 +37,28 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	testScript := fmt.Sprintf(`#!/bin/sh
 		cd /test
 		/piperbin/piper pythonBuild >test-log.txt 2>&1`)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
 		Image: "python:3.9",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(pwd, "/piperbin"),
+			testcontainers.BindMount(tempDir, "/test"),
+		),
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
+	require.NoError(t, err)
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
 		t.Fatal("Could not read test-log.txt.", err)
 	}
@@ -65,20 +66,20 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 
 	assert.Contains(t, output, "info  pythonBuild - running command: python setup.py sdist bdist_wheel")
 	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade cyclonedx-bom")
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-bom --e --output bom-pip.xml")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py --e --output bom-pip.xml")
 	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
 
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript = fmt.Sprintf(`#!/bin/sh
 		cd /test
 		ls -l . dist build >files-list.txt 2>&1`)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
-	code, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err = nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err = ioutil.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
+	content, err = os.ReadFile(filepath.Join(tempDir, "/files-list.txt"))
 	if err != nil {
 		t.Fatal("Could not read files-list.txt.", err)
 	}

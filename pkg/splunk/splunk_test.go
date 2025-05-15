@@ -5,7 +5,6 @@ package splunk
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
@@ -70,8 +69,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing Success Step - Send Telemetry Only",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "100",
 						ErrorCode:     "0",
@@ -102,8 +100,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing Success Step - Send Telemetry Only Although sendLogs Active",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "100",
 						ErrorCode:     "0",
@@ -134,8 +131,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing Failure Step - Send Telemetry Only",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "100",
 						ErrorCode:     "0",
@@ -167,8 +163,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing Failure Step - Send Telemetry and Logs",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:      "100",
 						ErrorCode:     "1",
@@ -200,8 +195,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing len(maxBatchSize)==len(logMessages)",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:  "100",
 						ErrorCode: "1",
@@ -232,8 +226,7 @@ func TestSend(t *testing.T) {
 		{name: "Testing len(maxBatchSize)<len(logMessages)",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{},
 					CustomData: telemetry.CustomData{
 						Duration:  "100",
 						ErrorCode: "1",
@@ -264,9 +257,8 @@ func TestSend(t *testing.T) {
 		{name: "Testing len(maxBatchSize)>len(logMessages)",
 			args: args{
 				telemetryData: &telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
-					CustomData:   telemetry.CustomData{},
+					BaseData:   telemetry.BaseData{},
+					CustomData: telemetry.CustomData{},
 				},
 				logCollector: &log.CollectorHook{CorrelationID: "DEBUG",
 					Messages: []log.Message{
@@ -362,8 +354,9 @@ func Test_prepareTelemetry(t *testing.T) {
 		{name: "Testing prepare telemetry information",
 			args: args{
 				telemetryData: telemetry.Data{
-					BaseData:     telemetry.BaseData{},
-					BaseMetaData: telemetry.BaseMetaData{},
+					BaseData: telemetry.BaseData{
+						Orchestrator: "Jenkins",
+					},
 					CustomData: telemetry.CustomData{
 						Duration:      "1234",
 						ErrorCode:     "0",
@@ -374,6 +367,7 @@ func Test_prepareTelemetry(t *testing.T) {
 			want: MonitoringData{
 				PipelineUrlHash: "",
 				BuildUrlHash:    "",
+				Orchestrator:    "Jenkins",
 				StageName:       "",
 				StepName:        "",
 				ExitCode:        "0",
@@ -544,7 +538,7 @@ func Test_readPipelineEnvironment(t *testing.T) {
 
 				// creating temporarily files with dummy content
 				branch := []byte("master")
-				err = ioutil.WriteFile(path+"git/branch", branch, 0644)
+				err = os.WriteFile(path+"git/branch", branch, 0644)
 				if err != nil {
 					t.Errorf("Could not create branch file: %v", err)
 				}

@@ -34,5 +34,6 @@ func TestGitOpsIntegrationUpdateDeployment(t *testing.T) {
   newName: image
   newTag: "456"
 apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization`)
+kind: Kustomization
+`)
 }

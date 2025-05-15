@@ -1,13 +1,14 @@
 package git
 
 import (
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // utilsWorkTree interface abstraction of git.Worktree to enable tests
@@ -53,13 +54,17 @@ func commitSingleFile(filePath, commitMessage, author string, worktree utilsWork
 }
 
 // PushChangesToRepository Pushes all committed changes in the repository to the remote repository
-func PushChangesToRepository(username, password string, force *bool, repository *git.Repository) error {
-	return pushChangesToRepository(username, password, force, repository)
+func PushChangesToRepository(username, password string, force *bool, repository *git.Repository, caCerts []byte) error {
+	return pushChangesToRepository(username, password, force, repository, caCerts)
 }
 
-func pushChangesToRepository(username, password string, force *bool, repository utilsRepository) error {
+func pushChangesToRepository(username, password string, force *bool, repository utilsRepository, caCerts []byte) error {
 	pushOptions := &git.PushOptions{
 		Auth: &http.BasicAuth{Username: username, Password: password},
+	}
+
+	if len(caCerts) > 0 {
+		pushOptions.CABundle = caCerts
 	}
 	if force != nil {
 		pushOptions.Force = *force
@@ -72,16 +77,23 @@ func pushChangesToRepository(username, password string, force *bool, repository 
 }
 
 // PlainClone Clones a non-bare repository to the provided directory
-func PlainClone(username, password, serverURL, directory string) (*git.Repository, error) {
+func PlainClone(username, password, serverURL, branchName, directory string, caCerts []byte) (*git.Repository, error) {
 	abstractedGit := &abstractionGit{}
-	return plainClone(username, password, serverURL, directory, abstractedGit)
+	return plainClone(username, password, serverURL, branchName, directory, abstractedGit, caCerts)
 }
 
-func plainClone(username, password, serverURL, directory string, abstractionGit utilsGit) (*git.Repository, error) {
+func plainClone(username, password, serverURL, branchName, directory string, abstractionGit utilsGit, caCerts []byte) (*git.Repository, error) {
 	gitCloneOptions := git.CloneOptions{
-		Auth: &http.BasicAuth{Username: username, Password: password},
-		URL:  serverURL,
+		Auth:          &http.BasicAuth{Username: username, Password: password},
+		URL:           serverURL,
+		ReferenceName: plumbing.NewBranchReferenceName(branchName),
+		SingleBranch:  true, // we don't need other branches, clone only branchName
 	}
+
+	if len(caCerts) > 0 {
+		gitCloneOptions.CABundle = caCerts
+	}
+
 	repository, err := abstractionGit.plainClone(directory, false, &gitCloneOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to clone git")

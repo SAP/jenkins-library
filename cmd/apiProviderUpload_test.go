@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -18,7 +17,7 @@ func TestRunApiProviderUpload(t *testing.T) {
 	t.Parallel()
 
 	t.Run("API Provider upload succesfull test", func(t *testing.T) {
-		file, tmpErr := ioutil.TempFile("", "test.json")
+		file, tmpErr := os.CreateTemp("", "test.json")
 		if tmpErr != nil {
 			t.FailNow()
 		}
@@ -44,7 +43,7 @@ func TestRunApiProviderUpload(t *testing.T) {
 	})
 
 	t.Run("API Provider upload failed test", func(t *testing.T) {
-		file, tmpErr := ioutil.TempFile("", "test.json")
+		file, tmpErr := os.CreateTemp("", "test.json")
 		if tmpErr != nil {
 			t.FailNow()
 		}

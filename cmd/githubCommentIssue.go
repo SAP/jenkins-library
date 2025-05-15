@@ -5,7 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
@@ -17,7 +17,7 @@ type githubIssueCommentService interface {
 
 func githubCommentIssue(config githubCommentIssueOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, "", []string{})
+	ctx, client, err := piperGithub.NewClientBuilder(config.Token, config.APIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
 	}

@@ -21,6 +21,9 @@ spec:
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
+      - name: golangPrivateModulesGitTokenCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.
+        type: jenkins
     params:
       - name: token
         aliases:
@@ -114,7 +117,7 @@ spec:
           - --blackduck.signature.scanner.memory=4096
           - --detect.timeout=6000
           - --blackduck.trust.cert=true
-          - --logging.level.com.synopsys.integration=DEBUG
+          - --logging.level.detect=DEBUG
           - --detect.maven.excluded.scopes=test
         scope:
           - PARAMETERS
@@ -124,6 +127,7 @@ spec:
         description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
         aliases:
           - name: detect/serverUrl
+          - name: detectServerUrl
         type: string
         mandatory: true
         scope:
@@ -200,7 +204,7 @@ spec:
         type: string
         description: "A custom version used along with the uploaded scan results."
         longDescription: |-
-          Defines a custom version for the Detect scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          Defines a custom version for the Detect scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningmodel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
           The parameter is also used by other scan steps (e.g. Fortify, Sonar, WhiteSource) and thus allows a common custom version across scan tools.
         scope: [GENERAL, STAGES, STEPS, PARAMETERS]
@@ -244,6 +248,83 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: buildMaven
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for maven multi-modules projects building"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: buildMTA
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for MTA projects building"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: installNPM
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for downloading npm dependencies"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: defaultNpmRegistry
+        type: string
+        description: "URL of the npm registry to use. Defaults to https://registry.npmjs.org/"
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        aliases:
+          - name: npm/defaultNpmRegistry
+      - name: buildDescriptorList
+        type: "[]string"
+        description: List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: enableDiagnostics
+        type: bool
+        default: false
+        description:
+          "Parameter to enable diagnostics file generation by detect script"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: generateReportsForEmptyProjects
+        type: bool
+        default: false
+        description:
+          "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: mtaPlatform
+        type: string
+        description: "The platform of the MTA project"
+        default: "CF"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: pomPath
+        type: string
+        description: Path to the pom file which should be installed including all children.
+        scope:
+          - STEPS
+        mandatory: false
+        default: pom.xml
       - name: includedPackageManagers
         description:
           "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder
@@ -296,6 +377,20 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        deprecated: true
+      - name: successOnSkip
+        description:
+          "This flag allows forces Black Duck to exit with 0 error code if any step is skipped"
+        aliases:
+          - name: detect/successOnSkip
+            deprecated: true
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+        deprecated: true
       - name: customEnvironmentVariables
         description:
           "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by
@@ -306,15 +401,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      ## --- to remove minScanInterval from parameters list ---
       - name: minScanInterval
         description:
-          "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
+          "[DEPRECATED] This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
           value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan."
         type: int
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+      ## -----------
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -335,9 +432,9 @@ spec:
             name: githubVaultSecretName
       - name: createResultIssue
         type: bool
-        description: Activate creation of a result issue in GitHub.
+        description: Activate creation of result issues in GitHub.
         longDescription: |
-          Whether the step creates a GitHub issue containing the scan results in the originating repo.
+          Whether the step creates a GitHub issues containing the scan results in the originating repo. For each vulnerability a separate issue will be created.
           Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
         resourceRef:
           - name: commonPipelineEnvironment
@@ -451,6 +548,143 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: privateModules
+        type: "string"
+        description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        alias:
+          - goprivate
+      - name: privateModulesGitToken
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: golangPrivateModulesGitTokenCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: golangPrivateModulesGitTokenVaultSecret
+            default: golang
+      - name: scanContainerDistro
+        description: To also scan your images in the CPE, choose the distro
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - ubuntu
+          - centos
+          - alpine
+      - name: imageNameTags
+        type: "[]string"
+        mandatoryIf:
+          - name: scanContainerDistro
+            value: ubuntu
+          - name: scanContainerDistro
+            value: centos
+          - name: scanContainerDistro
+            value: alpine
+        description: Images to be scanned (typically filled by CPE)
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+      - name: registryUrl
+        type: string
+        mandatoryIf:
+          - name: scanContainerDistro
+            value: ubuntu
+          - name: scanContainerDistro
+            value: centos
+          - name: scanContainerDistro
+            value: alpine
+        description: Used accessing for the images to be scanned (typically filled by CPE)
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: repositoryUsername
+        type: string
+        mandatoryIf:
+          - name: scanContainerDistro
+            value: ubuntu
+          - name: scanContainerDistro
+            value: centos
+          - name: scanContainerDistro
+            value: alpine
+        description: Used accessing for the images to be scanned (typically filled by CPE)
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+      - name: repositoryPassword
+        type: string
+        mandatoryIf:
+          - name: scanContainerDistro
+            value: ubuntu
+          - name: scanContainerDistro
+            value: centos
+          - name: scanContainerDistro
+            value: alpine
+        description: Used accessing for the images to be scanned (typically filled by CPE)
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+      - name: useDetect8
+        description:
+          "This flag enables the use of the supported version 8 of the Detect script instead of default version 10"
+        aliases:
+          - name: detect/useDetect8
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: useDetect9
+        description:
+          "This flag enables the use of the supported version 9 of the Detect script instead of default version 10"
+        aliases:
+          - name: detect/useDetect9
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: containerScan
+        description: "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images, and all other detect tools will be ignored in the scan"
+        aliases:
+          - name: detect/containerScan
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   outputs:
     resources:
       - name: influx
@@ -502,3 +736,40 @@ spec:
       options:
         - name: -u
           value: "0"
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+  sidecars:
+    - name: inspector-ubuntu
+      image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanContainerDistro
+              value: ubuntu
+    - name: inspector-alpine
+      image: blackducksoftware/blackduck-imageinspector-alpine:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanContainerDistro
+              value: alpine
+    - name: inspector-centos
+      image: blackducksoftware/blackduck-imageinspector-centos:5.1.0
+      command: ['']
+      volumeMounts:
+        - mountPath: /opt/blackduck/blackduck-imageinspector/shared
+          name: volume
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanContainerDistro
+              value: centos

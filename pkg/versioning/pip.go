@@ -2,7 +2,6 @@ package versioning
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -28,11 +27,11 @@ type Pip struct {
 
 func (p *Pip) init() error {
 	if p.readFile == nil {
-		p.readFile = ioutil.ReadFile
+		p.readFile = os.ReadFile
 	}
 
 	if p.writeFile == nil {
-		p.writeFile = ioutil.WriteFile
+		p.writeFile = os.WriteFile
 	}
 
 	if len(p.buildDescriptorContent) == 0 {

@@ -5,6 +5,8 @@ package whitesource
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +23,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile(config.ConfigFilePath, []byte("test = dummy"))
 
-		path, err := config.RewriteUAConfigurationFile(utilsMock, "")
+		path, err := config.RewriteUAConfigurationFile(utilsMock, "", false)
 		assert.NoError(t, err)
 		newUAConfig, err := utilsMock.FileRead(path)
 		assert.NoError(t, err)
@@ -36,7 +38,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		}
 		utilsMock := NewScanUtilsMock()
 
-		path, err := config.RewriteUAConfigurationFile(utilsMock, "")
+		path, err := config.RewriteUAConfigurationFile(utilsMock, "", false)
 		assert.NoError(t, err)
 
 		newUAConfig, err := utilsMock.FileRead(path)
@@ -52,7 +54,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
 
-		_, err := config.RewriteUAConfigurationFile(utilsMock, "")
+		_, err := config.RewriteUAConfigurationFile(utilsMock, "", false)
 		assert.Contains(t, fmt.Sprint(err), "failed to write file")
 	})
 }
@@ -231,7 +233,10 @@ func TestAddBuildToolDefaults(t *testing.T) {
 		}
 		utilsMock.AddFile("unit-tests/pom.xml", []byte("dummy"))
 		testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
-		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", Append: true})
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, "global-settings.xml")
+		projectSettingsPath := filepath.Join(dir, "project-settings.xml")
+		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings " + globalSettingsPath + " --settings " + projectSettingsPath + " --projects !unit-tests", Append: true})
 	})
 
 	t.Run("Docker - default", func(t *testing.T) {

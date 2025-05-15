@@ -9,11 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -22,10 +22,9 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/fortify"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -360,7 +359,7 @@ func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64
 
 type pullRequestServiceMock struct{}
 
-func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 	authorString := author
 	user := github.User{Login: &authorString}
 	if owner == "A" {
@@ -422,7 +421,7 @@ func (er *execRunnerMock) Stderr(err io.Writer) {
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	er.numExecutions++
 	er.currentExecution().executable = e
-	if len(p) > 0 && piperutils.ContainsString(p, "--failTranslate") {
+	if len(p) > 0 && slices.Contains(p, "--failTranslate") {
 		return errors.New("Translate failed")
 	}
 	er.currentExecution().parameters = p
@@ -438,7 +437,7 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 		}
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
-		err := ioutil.WriteFile(path, []byte(classpathMaven), 0o644)
+		err := os.WriteFile(path, []byte(classpathMaven), 0o644)
 		if err != nil {
 			return err
 		}
@@ -1120,4 +1119,18 @@ func TestRemoveDuplicates(t *testing.T) {
 
 func toFortifyTime(time time.Time) models.Iso8601MilliDateTime {
 	return models.Iso8601MilliDateTime(time.UTC())
+}
+
+func TestGetProxyParams(t *testing.T) {
+	t.Run("Valid Proxy URL", func(t *testing.T) {
+		proxyPort, proxyHost := getProxyParams("http://testproxy.com:8080")
+		assert.Equal(t, "8080", proxyPort)
+		assert.Equal(t, "testproxy.com", proxyHost)
+	})
+
+	t.Run("Invalid Proxy URL", func(t *testing.T) {
+		proxyPort, proxyHost := getProxyParams("testproxy.com:8080")
+		assert.Equal(t, "", proxyPort)
+		assert.Equal(t, "", proxyHost)
+	})
 }

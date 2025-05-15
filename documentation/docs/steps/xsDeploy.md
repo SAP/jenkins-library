@@ -36,5 +36,3 @@ steps:
     space: mySpace
     org: myOrg
 ```
-
-[dockerExecute]: ../dockerExecute

@@ -2,7 +2,6 @@ package versioning
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -31,7 +30,7 @@ type Gradle struct {
 
 func (g *Gradle) init() error {
 	if g.writeFile == nil {
-		g.writeFile = ioutil.WriteFile
+		g.writeFile = os.WriteFile
 	}
 
 	if g.propertiesFile == nil {

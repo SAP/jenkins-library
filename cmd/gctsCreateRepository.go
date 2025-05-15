@@ -3,7 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 
@@ -103,7 +103,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 		return errors.Errorf("creating repository on the ABAP system %v failed: %v", config.Host, httpErr)
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "creating repository on the ABAP system %v failed", config.Host)

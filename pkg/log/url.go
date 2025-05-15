@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"mvdan.cc/xurls/v2"
+	"io"
 	"os"
 	"sync"
+
+	"mvdan.cc/xurls/v2"
 )
 
 type (
@@ -51,7 +52,7 @@ func (cl *URLLogger) WriteURLsLogToJSON() error {
 			err = fmt.Errorf("can't close file: %w", dErr)
 		}
 	}()
-	fileBuf, err := ioutil.ReadAll(file)
+	fileBuf, err := io.ReadAll(file)
 	if err != nil {
 		return fmt.Errorf("can't read from gile: %w", err)
 	}
@@ -89,9 +90,26 @@ func (cl *URLLogger) WriteURLsLogToJSON() error {
 func (cl *URLLogger) Parse(buf bytes.Buffer) {
 	cl.buf.Lock()
 	defer cl.buf.Unlock()
-	cl.buf.data = append(cl.buf.data, parseURLs(buf.Bytes())...)
+	classifier := returnURLStrictClassifier(cl.stepName)
+	cl.buf.data = append(cl.buf.data, parseURLs(buf.Bytes(), classifier)...)
 }
 
-func parseURLs(src []byte) [][]byte {
-	return xurls.Strict().FindAll(src, -1)
+func parseURLs(src []byte, classifier string) [][]byte {
+	if classifier == "Strict" {
+		return xurls.Strict().FindAll(src, -1)
+	} else {
+		return xurls.Relaxed().FindAll(src, -1)
+	}
+}
+
+func returnURLStrictClassifier(stepName string) string {
+
+	switch stepName {
+	// golang cli output urls without the http protocol hence making the search less strict
+	//ToDo: other cases where the url is without protocol
+	case "golangBuild":
+		return "Relaxed"
+	default:
+		return "Strict"
+	}
 }

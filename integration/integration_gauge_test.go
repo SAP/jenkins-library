@@ -9,12 +9,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -43,36 +43,42 @@ func runTest(t *testing.T, languageRunner string) {
 cd /test
 /piperbin/piper gaugeExecuteTests --installCommand="%v" --languageRunner=%v --runCommand="run" >test-log.txt 2>&1
 `, installCommand, languageRunner)
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
 		Image: "getgauge/gocd-jdk-mvn-node",
 		Cmd:   []string{"tail", "-f"},
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(pwd, "/piperbin"),
+			testcontainers.BindMount(tempDir, "/test"),
+		),
+	}
+
+	if languageRunner == "js" {
+		reqNode.Image = "node:lts-bookworm"
 	}
 
 	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
+	require.NoError(t, err)
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
 	t.Cleanup(func() {
 		// Remove files that are created by the container. t.TempDir() will
 		// fail to remove them since it does not have the root permission
-		_, err := nodeContainer.Exec(ctx, []string{"sh", "-c", "find /test -name . -o -prune -exec rm -rf -- {} +"})
+		_, _, err := nodeContainer.Exec(ctx, []string{"sh", "-c", "find /test -name . -o -prune -exec rm -rf -- {} +"})
 		assert.NoError(t, err)
 
 		assert.NoError(t, nodeContainer.Terminate(ctx))
 	})
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
 		t.Fatal("Could not read test-log.txt.", err)
 	}
@@ -82,11 +88,11 @@ cd /test
 }
 
 func TestGaugeIntegrationJava(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	runTest(t, "java")
 }
 
 func TestGaugeIntegrationJS(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	runTest(t, "js")
 }

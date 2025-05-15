@@ -9,6 +9,7 @@ run:
   - '"TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject"'
   - '"TestCNBIntegrationNPMCustomBuildpacksFullProject"'
   - '"TestCNBIntegrationProjectDescriptor"'
+  - '"TestCNBIntegrationPrePostBuildpacks"'
 
   - '"TestGolangIntegration"'
   - '"TestGradleIntegration"'

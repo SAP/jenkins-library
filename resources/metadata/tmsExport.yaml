@@ -9,12 +9,12 @@ metadata:
 
     !!! note "Prerequisites"
     * You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of your transport landscape.
-    * A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of tmsServiceKey parameter.
+    * A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of serviceKey parameter.
 spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management service.
+        description: Jenkins 'Secret text' credentials ID containing service key for TMS (SAP Cloud Transport Management service) or CALM (SAP Cloud Application Lifecycle Management) service.
         type: jenkins
     resources:
       - name: buildResult
@@ -22,7 +22,25 @@ spec:
     params:
       - name: tmsServiceKey
         type: string
-        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.
+        description: >
+          DEPRECATION WARNING: This parameter has been deprecated, please use the serviceKey parameter instead,
+          which supports both service key for TMS (SAP Cloud Transport Management service),
+          as well as service key for CALM (SAP Cloud Application Lifecycle Management) service.
+
+          Service key JSON string to access the SAP Cloud Transport Management service instance APIs.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        mandatory: false
+        secret: true
+      - name: serviceKey
+        type: string
+        description: >
+          Service key JSON string to access TMS (SAP Cloud Transport Management service) instance APIs.
+          This can be a service key for TMS,
+          or a service key for CALM (SAP Cloud Application Lifecycle Management) service.
+          If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.
         scope:
           - PARAMETERS
           - STEPS
@@ -32,7 +50,7 @@ spec:
         resourceRef:
           - name: credentialsId
             type: secret
-            param: tmsServiceKey
+            param: serviceKey
       - name: customDescription
         type: string
         description: Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit ID.

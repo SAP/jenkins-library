@@ -2,13 +2,12 @@ package github
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -25,125 +24,86 @@ type githubCreateCommentService interface {
 	CreateComment(ctx context.Context, owner string, repo string, number int, comment *github.IssueComment) (*github.IssueComment, *github.Response, error)
 }
 
-// CreateIssueOptions to configure the creation
-type CreateIssueOptions struct {
-	APIURL         string        `json:"apiUrl,omitempty"`
-	Assignees      []string      `json:"assignees,omitempty"`
-	Body           []byte        `json:"body,omitempty"`
-	Owner          string        `json:"owner,omitempty"`
-	Repository     string        `json:"repository,omitempty"`
-	Title          string        `json:"title,omitempty"`
-	UpdateExisting bool          `json:"updateExisting,omitempty"`
-	Token          string        `json:"token,omitempty"`
-	TrustedCerts   []string      `json:"trustedCerts,omitempty"`
-	Issue          *github.Issue `json:"issue,omitempty"`
+type ClientBuilder struct {
+	token        string // GitHub token, required
+	baseURL      string // GitHub API URL, required
+	uploadURL    string // Base URL for uploading files, optional
+	timeout      time.Duration
+	maxRetries   int
+	trustedCerts []string // Trusted TLS certificates, optional
 }
 
-// NewClient creates a new GitHub client using an OAuth token for authentication
-func NewClient(token, apiURL, uploadURL string, trustedCerts []string) (context.Context, *github.Client, error) {
-	httpClient := piperhttp.Client{}
-	httpClient.SetOptions(piperhttp.ClientOptions{
-		TrustedCerts:             trustedCerts,
-		DoLogRequestBodyOnDebug:  true,
-		DoLogResponseBodyOnDebug: true,
-	})
-	stdClient := httpClient.StandardClient()
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, stdClient)
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
-	tc := oauth2.NewClient(ctx, ts)
-
-	if !strings.HasSuffix(apiURL, "/") {
-		apiURL += "/"
-	}
-	baseURL, err := url.Parse(apiURL)
-	if err != nil {
-		return ctx, nil, err
+func NewClientBuilder(token, baseURL string) *ClientBuilder {
+	if !strings.HasSuffix(baseURL, "/") {
+		baseURL += "/"
 	}
 
+	return &ClientBuilder{
+		token:        token,
+		baseURL:      baseURL,
+		uploadURL:    "",
+		timeout:      0,
+		maxRetries:   0,
+		trustedCerts: nil,
+	}
+}
+
+func (b *ClientBuilder) WithTrustedCerts(trustedCerts []string) *ClientBuilder {
+	b.trustedCerts = trustedCerts
+	return b
+}
+
+func (b *ClientBuilder) WithUploadURL(uploadURL string) *ClientBuilder {
 	if !strings.HasSuffix(uploadURL, "/") {
 		uploadURL += "/"
 	}
-	uploadTargetURL, err := url.Parse(uploadURL)
+
+	b.uploadURL = uploadURL
+	return b
+}
+
+func (b *ClientBuilder) WithTimeout(timeout time.Duration) *ClientBuilder {
+	b.timeout = timeout
+	return b
+}
+
+func (b *ClientBuilder) WithMaxRetries(maxRetries int) *ClientBuilder {
+	b.maxRetries = maxRetries
+	return b
+}
+
+func (b *ClientBuilder) Build() (context.Context, *github.Client, error) {
+	baseURL, err := url.Parse(b.baseURL)
 	if err != nil {
-		return ctx, nil, err
+		return nil, nil, errors.Wrap(err, "failed to parse baseURL")
 	}
 
-	client := github.NewClient(tc)
+	uploadURL, err := url.Parse(b.uploadURL)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to parse uploadURL")
+	}
 
+	if b.timeout == 0 {
+		b.timeout = 30 * time.Second
+	}
+
+	if b.maxRetries == 0 {
+		b.maxRetries = 5
+	}
+
+	piperHttp := piperhttp.Client{}
+	piperHttp.SetOptions(piperhttp.ClientOptions{
+		TrustedCerts:             b.trustedCerts,
+		DoLogRequestBodyOnDebug:  true,
+		DoLogResponseBodyOnDebug: true,
+		TransportTimeout:         b.timeout,
+		MaxRetries:               b.maxRetries,
+	})
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, piperHttp.StandardClient())
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: b.token, TokenType: "Bearer"})
+
+	client := github.NewClient(oauth2.NewClient(ctx, tokenSource))
 	client.BaseURL = baseURL
-	client.UploadURL = uploadTargetURL
+	client.UploadURL = uploadURL
 	return ctx, client, nil
-}
-
-func CreateIssue(ghCreateIssueOptions *CreateIssueOptions) (*github.Issue, error) {
-	ctx, client, err := NewClient(ghCreateIssueOptions.Token, ghCreateIssueOptions.APIURL, "", ghCreateIssueOptions.TrustedCerts)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get GitHub client")
-	}
-	return createIssueLocal(ctx, ghCreateIssueOptions, client.Issues, client.Search, client.Issues)
-}
-
-func createIssueLocal(ctx context.Context, ghCreateIssueOptions *CreateIssueOptions, ghCreateIssueService githubCreateIssueService, ghSearchIssuesService githubSearchIssuesService, ghCreateCommentService githubCreateCommentService) (*github.Issue, error) {
-	issue := github.IssueRequest{
-		Title: &ghCreateIssueOptions.Title,
-	}
-	var bodyString string
-	if len(ghCreateIssueOptions.Body) > 0 {
-		bodyString = string(ghCreateIssueOptions.Body)
-	} else {
-		bodyString = ""
-	}
-	issue.Body = &bodyString
-	if len(ghCreateIssueOptions.Assignees) > 0 {
-		issue.Assignees = &ghCreateIssueOptions.Assignees
-	} else {
-		issue.Assignees = &[]string{}
-	}
-
-	var existingIssue *github.Issue = nil
-
-	if ghCreateIssueOptions.UpdateExisting {
-		existingIssue = ghCreateIssueOptions.Issue
-		if existingIssue == nil {
-			queryString := fmt.Sprintf("is:open is:issue repo:%v/%v in:title %v", ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, ghCreateIssueOptions.Title)
-			searchResult, resp, err := ghSearchIssuesService.Issues(ctx, queryString, nil)
-			if err != nil {
-				if resp != nil {
-					log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
-				}
-				return nil, errors.Wrap(err, "error occurred when looking for existing issue")
-			} else {
-				for _, value := range searchResult.Issues {
-					if value != nil && *value.Title == ghCreateIssueOptions.Title {
-						existingIssue = value
-					}
-				}
-			}
-		}
-
-		if existingIssue != nil {
-			comment := &github.IssueComment{Body: issue.Body}
-			_, resp, err := ghCreateCommentService.CreateComment(ctx, ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, *existingIssue.Number, comment)
-			if err != nil {
-				if resp != nil {
-					log.Entry().Errorf("GitHub create comment returned response code %v", resp.Status)
-				}
-				return nil, errors.Wrap(err, "error occurred when adding comment to existing issue")
-			}
-		}
-	}
-
-	if existingIssue == nil {
-		newIssue, resp, err := ghCreateIssueService.Create(ctx, ghCreateIssueOptions.Owner, ghCreateIssueOptions.Repository, &issue)
-		if err != nil {
-			if resp != nil {
-				log.Entry().Errorf("GitHub create issue returned response code %v", resp.Status)
-			}
-			return nil, errors.Wrap(err, "error occurred when creating issue")
-		}
-		log.Entry().Debugf("New issue created: %v", newIssue)
-		existingIssue = newIssue
-	}
-
-	return existingIssue, nil
 }

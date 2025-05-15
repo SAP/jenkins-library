@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -46,6 +47,9 @@ type helmExecuteOptions struct {
 	Publish                   bool     `json:"publish,omitempty"`
 	Version                   string   `json:"version,omitempty"`
 	RenderSubchartNotes       bool     `json:"renderSubchartNotes,omitempty"`
+	TemplateStartDelimiter    string   `json:"templateStartDelimiter,omitempty"`
+	TemplateEndDelimiter      string   `json:"templateEndDelimiter,omitempty"`
+	RenderValuesTemplate      bool     `json:"renderValuesTemplate,omitempty"`
 }
 
 type helmExecuteCommonPipelineEnvironment struct {
@@ -96,8 +100,8 @@ func HelmExecuteCommand() *cobra.Command {
 Executes helm functionality as the package manager for Kubernetes.
 
 * [Helm](https://helm.sh/)  is the package manager for Kubernetes.
-* [Helm documentation https://helm.sh/docs/intro/using_helm/ and best practies https://helm.sh/docs/chart_best_practices/conventions/]
-* [Helm Charts] (https://artifacthub.io/)
+* [Helm documentation](https://helm.sh/docs/intro/using_helm/) and [best practices](https://helm.sh/docs/chart_best_practices/conventions/)
+* [Helm Charts](https://artifacthub.io/)
 ` + "`" + `` + "`" + `` + "`" + `
 Available Commands:
 ` + "`" + `upgrade` + "`" + `, ` + "`" + `lint` + "`" + `, ` + "`" + `install` + "`" + `, ` + "`" + `test` + "`" + `, ` + "`" + `uninstall` + "`" + `, ` + "`" + `dependency` + "`" + `, ` + "`" + `publish` + "`" + `
@@ -107,8 +111,8 @@ Available Commands:
   install       install a chart
   test          run tests for a release
   uninstall     uninstall a release
-  dependency     package a chart directory into a chart archive
-  publish       package and puslish a release
+  dependency    package a chart directory into a chart archive
+  publish       package and publish a release
 
 ` + "`" + `` + "`" + `` + "`" + `
 
@@ -120,11 +124,14 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -141,7 +148,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -163,6 +170,11 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -172,21 +184,40 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
+			telemetryClient.Initialize(STEP_NAME)
 			helmExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -226,6 +257,9 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures helm to run the deploy command to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the artifact version to use from helm package/publish commands.")
 	cmd.Flags().BoolVar(&stepConfig.RenderSubchartNotes, "renderSubchartNotes", true, "If set, render subchart notes along with the parent.")
+	cmd.Flags().StringVar(&stepConfig.TemplateStartDelimiter, "templateStartDelimiter", `{{`, "When templating value files, use this start delimiter.")
+	cmd.Flags().StringVar(&stepConfig.TemplateEndDelimiter, "templateEndDelimiter", `}}`, "When templating value files, use this end delimiter.")
+	cmd.Flags().BoolVar(&stepConfig.RenderValuesTemplate, "renderValuesTemplate", true, "A flag to turn templating value files on or off.")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -243,7 +277,8 @@ func helmExecuteMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "kubeConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).", Type: "jenkins", Aliases: []config.Alias{{Name: "kubeCredentialsId", Deprecated: true}}},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
-					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication", Type: "jenkins"},
+					{Name: "sourceRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (source repo)", Type: "jenkins"},
+					{Name: "targetRepositoryCredentialsId", Description: "Jenkins 'Username Password' credentials ID containing username and password for the Helm Repository authentication (target repo)", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
@@ -261,7 +296,7 @@ func helmExecuteMetadata() config.StepData {
 					{
 						Name:        "chartPath",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmChartPath"}},
@@ -601,6 +636,33 @@ func helmExecuteMetadata() config.StepData {
 						Name:        "renderSubchartNotes",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "templateStartDelimiter",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `{{`,
+					},
+					{
+						Name:        "templateEndDelimiter",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `}}`,
+					},
+					{
+						Name:        "renderValuesTemplate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

@@ -7,5 +7,5 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     List credentials = [[type: 'usernamePassword', id: 'checkmarxCredentialsId', env: ['PIPER_username', 'PIPER_password']], [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']]]
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, true)
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

@@ -23,7 +23,7 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.10.0
+      - uses: styfle/cancel-workflow-action@0.11.0
       - name: Get pull request URL
         id: pull_request
         run: |
@@ -42,7 +42,7 @@ jobs:
           echo "branch_name=$(curl ${{ steps.pull_request.outputs.pull_request }} |
           jq '.head.ref' |
           sed 's/\"//g')" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: ${{ steps.repository.outputs.repository }}
           ref: ${{ steps.branch_name.outputs.branch_name }}
@@ -71,10 +71,10 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
@@ -82,7 +82,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
       - name: Upload Piper binary
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: piper
           path: piper
@@ -95,10 +95,10 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
@@ -110,7 +110,7 @@ jobs:
           echo "matrix=$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)" >> "$GITHUB_OUTPUT"
       - name: Upload integration tests binary
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration_tests
           path: integration_tests
@@ -127,18 +127,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Download Piper binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: piper
       - name: Download integration tests binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: integration_tests
           path: ./integration/

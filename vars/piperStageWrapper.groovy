@@ -92,6 +92,7 @@ private void stageLocking(Map config, Closure body) {
 private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled = false) {
     boolean projectExtensions
     boolean globalExtensions
+    
     def startTime = System.currentTimeMillis()
 
     try {
@@ -103,6 +104,18 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         */
         def projectInterceptorFile = "${config.projectExtensionsDirectory}${stageName}.groovy"
         def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
+        /* due to renaming stage 'Central Build' to 'Build' need to define extension file name 'Central Build.groovy'
+        as stageName used to generate it, once all the users will 'Build' as a stageName
+        and extension filename, below renaming snippet should be removed
+        */
+        if (stageName == 'Build'){
+            if (!fileExists(projectInterceptorFile) || !fileExists(globalInterceptorFile)){
+                def centralBuildExtensionFileName = "Central Build.groovy"
+                projectInterceptorFile = "${config.projectExtensionsDirectory}${centralBuildExtensionFileName}"
+                globalInterceptorFile = "${config.globalExtensionsDirectory}${centralBuildExtensionFileName}"
+            }
+        }
+
         projectExtensions = fileExists(projectInterceptorFile)
         globalExtensions = fileExists(globalInterceptorFile)
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist
@@ -152,30 +165,6 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
     } finally {
         //Perform stashing of selected files in workspace
         utils.stashStageFiles(script, stageName)
-
-        // In general telemetry reporting is disabled by the config settings. This flag is used to disable the reporting when the config is not yet read (e.g. init stage).
-        if (!telemetryDisabled) {
-            def duration = System.currentTimeMillis() - startTime
-            utils.pushToSWA([
-                eventType       : 'library-os-stage',
-                stageName       : stageName,
-                stepParamKey1   : 'buildResult',
-                stepParam1      : "${script.currentBuild.currentResult}",
-                buildResult     : "${script.currentBuild.currentResult}",
-                stepParamKey2   : 'stageStartTime',
-                stepParam2      : "${startTime}",
-                stageStartTime  : "${startTime}",
-                stepParamKey3   : 'stageDuration',
-                stepParam3      : "${duration}",
-                stageDuration   : "${duration}",
-                stepParamKey4   : 'projectExtension',
-                stepParam4      : "${projectExtensions}",
-                projectExtension: "${projectExtensions}",
-                stepParamKey5   : 'globalExtension',
-                stepParam5      : "${globalExtensions}",
-                globalExtension : "${globalExtensions}"
-            ], config)
-        }
     }
 }
 

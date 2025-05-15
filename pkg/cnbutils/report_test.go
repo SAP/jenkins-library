@@ -46,6 +46,6 @@ digest = "sha256:52eac630560210e5ae13eb10797c4246d6f02d425f32b9430ca00bde697c79e
 
 		digest, err := cnbutils.DigestFromReport(mockUtils)
 		assert.Empty(t, digest)
-		assert.EqualError(t, err, "(1, 1): parsing error: keys cannot contain { character")
+		assert.EqualError(t, err, "toml: line 1: expected '.' or '=', but got '{' instead")
 	})
 }

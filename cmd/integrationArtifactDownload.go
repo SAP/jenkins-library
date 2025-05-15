@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
@@ -60,7 +59,7 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 	contentDisposition := downloadResp.Header.Get("Content-Disposition")
 	disposition, params, err := mime.ParseMediaType(contentDisposition)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition "+disposition)
+		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition %s", disposition)
 	}
 	filename := params["filename"]
 
@@ -72,19 +71,19 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 		workspaceRelativePath := config.DownloadPath
 		err = os.MkdirAll(workspaceRelativePath, 0755)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create workspace directory")
+			return errors.Wrap(err, "Failed to create workspace directory")
 		}
 		zipFileName := filepath.Join(workspaceRelativePath, filename)
 		file, err := os.Create(zipFileName)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create integration flow artifact file")
+			return errors.Wrap(err, "Failed to create integration flow artifact file")
 		}
 		if _, err := io.Copy(file, downloadResp.Body); err != nil {
 			return err
 		}
 		return nil
 	}
-	responseBody, readErr := ioutil.ReadAll(downloadResp.Body)
+	responseBody, readErr := io.ReadAll(downloadResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", downloadResp.StatusCode)

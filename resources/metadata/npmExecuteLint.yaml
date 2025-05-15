@@ -45,6 +45,30 @@ spec:
         mandatory: false
         aliases:
           - name: npm/defaultNpmRegistry
+      - name: outputFormat
+        type: string
+        description: eslint output format, e.g. stylish, checkstyle
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: checkstyle
+        aliases:
+          - name: npm/outputFormat
+      - name: outputFileName
+        type: string
+        description: name of the output file. There might be a 'N_' prefix where 'N' is a number. When the empty string is provided, we will print to console
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: defaultlint.xml
+        aliases:
+          - name: npm/outputFormat
   containers:
     - name: node
-      image: node:lts-buster
+      image: node:lts-bookworm

@@ -8,7 +8,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -280,7 +279,7 @@ func TestBuildAUnitRequestBody(t *testing.T) {
     branch: main
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"AUnit Test Run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:softwareComponent name=\"/DMO/REPO\"/></osl:objectSet></aunit:run>"
-		err := ioutil.WriteFile(config.Repositories, []byte(repositories), 0o644)
+		err := os.WriteFile(config.Repositories, []byte(repositories), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -311,7 +310,7 @@ objectset:
   - name: /DMO/SWC
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
-		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -344,7 +343,7 @@ objectset:
       - name: /DMO/SWC
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aunit:run title=\"My AUnit run\" context=\"ABAP Environment Pipeline\" xmlns:aunit=\"http://www.sap.com/adt/api/aunit\"><aunit:options><aunit:measurements type=\"none\"/><aunit:scope ownTests=\"true\" foreignTests=\"true\"/><aunit:riskLevel harmless=\"true\" dangerous=\"true\" critical=\"true\"/><aunit:duration short=\"true\" medium=\"true\" long=\"true\"/></aunit:options><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></aunit:run>"
-		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildAUnitRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -419,7 +418,7 @@ objectset:
   - name: Z_TEST
 `
 
-		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			_, err := triggerAUnitrun(config, con, client)
 			assert.Equal(t, nil, err)
@@ -473,7 +472,7 @@ objectset:
       - name: Z_TEST_SC
 `
 
-		err := ioutil.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.AUnitConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			_, err := triggerAUnitrun(config, con, client)
 			assert.Equal(t, nil, err)

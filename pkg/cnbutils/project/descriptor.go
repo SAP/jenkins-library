@@ -2,56 +2,40 @@
 package project
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
+	"github.com/BurntSushi/toml"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+	"github.com/SAP/jenkins-library/pkg/cnbutils/project/types"
+	v01 "github.com/SAP/jenkins-library/pkg/cnbutils/project/v01"
+	v02 "github.com/SAP/jenkins-library/pkg/cnbutils/project/v02"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/registry"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pelletier/go-toml"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
-type script struct {
-	API    string `toml:"api"`
-	Inline string `toml:"inline"`
-	Shell  string `toml:"shell"`
-}
-type buildpack struct {
-	ID      string `toml:"id"`
-	Version string `toml:"version"`
-	URI     string `toml:"uri"`
-	Script  script `toml:"script"`
-}
-
-type envVar struct {
-	Name  string `toml:"name"`
-	Value string `toml:"value"`
-}
-
-type build struct {
-	Include    []string    `toml:"include"`
-	Exclude    []string    `toml:"exclude"`
-	Buildpacks []buildpack `toml:"buildpacks"`
-	Env        []envVar    `toml:"env"`
-}
-
 type project struct {
-	ID string `toml:"id"`
+	Version string `toml:"schema-version"`
 }
 
-type projectDescriptor struct {
-	Build    build                  `toml:"build"`
-	Project  project                `toml:"project"`
-	Metadata map[string]interface{} `toml:"metadata"`
+type versionDescriptor struct {
+	Project project `toml:"_"`
+}
+
+var parsers = map[string]func(string) (types.Descriptor, error){
+	"0.1": v01.NewDescriptor,
+	"0.2": v02.NewDescriptor,
 }
 
 type Descriptor struct {
-	Exclude    *ignore.GitIgnore
-	Include    *ignore.GitIgnore
-	EnvVars    map[string]interface{}
-	Buildpacks []string
-	ProjectID  string
+	Exclude        *ignore.GitIgnore
+	Include        *ignore.GitIgnore
+	EnvVars        map[string]interface{}
+	Buildpacks     []string
+	PreBuildpacks  []string
+	PostBuildpacks []string
+	ProjectID      string
 }
 
 func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClient piperhttp.Sender) (*Descriptor, error) {
@@ -62,23 +46,45 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 		return nil, err
 	}
 
-	rawDescriptor := projectDescriptor{}
-	err = toml.Unmarshal(descriptorContent, &rawDescriptor)
+	var versionDescriptor versionDescriptor
+	_, err = toml.Decode(string(descriptorContent), &versionDescriptor)
 	if err != nil {
-		return nil, err
+		return &Descriptor{}, errors.Wrapf(err, "parsing schema version")
 	}
 
-	if rawDescriptor.Build.Buildpacks != nil && len(rawDescriptor.Build.Buildpacks) > 0 {
-		buildpacksImg, err := rawDescriptor.Build.searchBuildpacks(httpClient)
+	version := versionDescriptor.Project.Version
+	if version == "" {
+		version = "0.1"
+	}
+
+	rawDescriptor, err := parsers[version](string(descriptorContent))
+	if err != nil {
+		return &Descriptor{}, err
+	}
+
+	if len(rawDescriptor.Build.Buildpacks) > 0 {
+		descriptor.Buildpacks, err = searchBuildpacks(rawDescriptor.Build.Buildpacks, httpClient)
 		if err != nil {
 			return nil, err
 		}
-
-		descriptor.Buildpacks = buildpacksImg
 	}
 
-	if rawDescriptor.Build.Env != nil && len(rawDescriptor.Build.Env) > 0 {
-		descriptor.EnvVars = rawDescriptor.Build.envToMap()
+	if len(rawDescriptor.Build.Pre.Buildpacks) > 0 {
+		descriptor.PreBuildpacks, err = searchBuildpacks(rawDescriptor.Build.Pre.Buildpacks, httpClient)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(rawDescriptor.Build.Post.Buildpacks) > 0 {
+		descriptor.PostBuildpacks, err = searchBuildpacks(rawDescriptor.Build.Post.Buildpacks, httpClient)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(rawDescriptor.Build.Env) > 0 {
+		descriptor.EnvVars = envToMap(rawDescriptor.Build.Env)
 	}
 
 	if len(rawDescriptor.Build.Exclude) > 0 && len(rawDescriptor.Build.Include) > 0 {
@@ -100,10 +106,10 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 	return descriptor, nil
 }
 
-func (b *build) envToMap() map[string]interface{} {
+func envToMap(env []types.EnvVar) map[string]interface{} {
 	envMap := map[string]interface{}{}
 
-	for _, e := range b.Env {
+	for _, e := range env {
 		if len(e.Name) == 0 {
 			continue
 		}
@@ -114,11 +120,11 @@ func (b *build) envToMap() map[string]interface{} {
 	return envMap
 }
 
-func (b *build) searchBuildpacks(httpClient piperhttp.Sender) ([]string, error) {
+func searchBuildpacks(buildpacks []types.Buildpack, httpClient piperhttp.Sender) ([]string, error) {
 	var bpackImg []string
 
-	for _, bpack := range b.Buildpacks {
-		if bpack.Script != (script{}) {
+	for _, bpack := range buildpacks {
+		if bpack.Script != (types.Script{}) {
 			return nil, errors.New("inline buildpacks are not supported")
 		}
 

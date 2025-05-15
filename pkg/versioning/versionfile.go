@@ -1,7 +1,6 @@
 package versioning
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -21,11 +20,11 @@ func (v *Versionfile) init() {
 		v.path = "VERSION"
 	}
 	if v.readFile == nil {
-		v.readFile = ioutil.ReadFile
+		v.readFile = os.ReadFile
 	}
 
 	if v.writeFile == nil {
-		v.writeFile = ioutil.WriteFile
+		v.writeFile = os.WriteFile
 	}
 }
 

@@ -1,7 +1,7 @@
 package github
 
 import (
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 )
 
@@ -27,7 +27,7 @@ type FetchCommitResult struct {
 // FetchCommitStatistics looks up the statistics for a certain commit SHA.
 func FetchCommitStatistics(options *FetchCommitOptions) (FetchCommitResult, error) {
 	// create GitHub client
-	ctx, client, err := NewClient(options.Token, options.APIURL, "", options.TrustedCerts)
+	ctx, client, err := NewClientBuilder(options.Token, options.APIURL).WithTrustedCerts(options.TrustedCerts).Build()
 	if err != nil {
 		return FetchCommitResult{}, errors.Wrap(err, "failed to get GitHub client")
 	}

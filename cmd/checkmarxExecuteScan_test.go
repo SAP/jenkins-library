@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -22,7 +21,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 )
 
 type fileInfo struct {
@@ -321,7 +320,7 @@ func (c *checkmarxExecuteScanUtilsMock) WriteFile(filename string, data []byte, 
 	if c.errorOnWriteFile {
 		return fmt.Errorf("error on WriteFile")
 	}
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }
 
 func (c *checkmarxExecuteScanUtilsMock) MkdirAll(path string, perm os.FileMode) error {
@@ -399,17 +398,17 @@ func TestZipFolder(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 
-		err := ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0o700)
+		err := os.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd.yaml"), []byte("abcd.yaml"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abcd.yaml"), []byte("abcd.yaml"), 0o700)
 		assert.NoError(t, err)
 		err = os.Mkdir(filepath.Join(dir, "somepath"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0o700)
 		assert.NoError(t, err)
 
 		var zipFileMock bytes.Buffer
@@ -430,15 +429,15 @@ func TestZipFolder(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 
-		err := ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0o700)
+		err := os.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0o700)
 		assert.NoError(t, err)
 		err = os.Mkdir(filepath.Join(dir, "somepath"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0o700)
 		assert.NoError(t, err)
 
 		var zipFileMock bytes.Buffer
@@ -453,15 +452,15 @@ func TestZipFolder(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 
-		err := ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0o700)
+		err := os.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0o700)
 		assert.NoError(t, err)
 		err = os.Mkdir(filepath.Join(dir, "somepath"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0o700)
 		assert.NoError(t, err)
 
 		var zipFileMock bytes.Buffer
@@ -476,15 +475,15 @@ func TestZipFolder(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 
-		err := ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0o700)
+		err := os.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0o700)
 		assert.NoError(t, err)
 		err = os.Mkdir(filepath.Join(dir, "somepath"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0o700)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0o700)
+		err = os.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0o700)
 		assert.NoError(t, err)
 
 		var zipFileMock bytes.Buffer
@@ -588,7 +587,7 @@ func TestRunScan(t *testing.T) {
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -612,7 +611,7 @@ func TestRunScan_nonNumeralPreset(t *testing.T) {
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -632,7 +631,7 @@ func TestRunOptimizedScan(t *testing.T) {
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{IsOptimizedAndScheduled: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "1", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -713,7 +712,7 @@ func TestRunScanWOtherCycle(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{ProjectName: "test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -754,7 +753,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -776,7 +775,7 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -799,7 +798,7 @@ func TestRunScanForPullRequestProjectNew_nonNumeralPreset(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -838,7 +837,7 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 	</CxXMLResults>`)}
 	options := checkmarxExecuteScanOptions{ProjectName: "test", VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 
@@ -877,7 +876,7 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 		</CxXMLResults>`)}
 	options := checkmarxExecuteScanOptions{ProjectName: "test", VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace := t.TempDir()
-	err := ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
+	err := os.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0o700)
 	assert.NoError(t, err)
 	options.FilterPattern = "**/abcd.go"
 

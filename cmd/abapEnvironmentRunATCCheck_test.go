@@ -5,14 +5,33 @@ package cmd
 
 import (
 	"encoding/xml"
-	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestCLIFailure(t *testing.T) {
+	t.Run("function error leads to pipeline error", func(t *testing.T) {
+
+		execRunner := &mock.ExecMockRunner{}
+		autils := abaputils.AbapUtils{
+			Exec: execRunner,
+		}
+		options := abapEnvironmentRunATCCheckOptions{}
+		fileUtils := piperutils.Files{}
+		client := piperhttp.Client{}
+
+		err := runAbapEnvironmentRunATCCheck(autils, client, options, fileUtils)
+
+		assert.Error(t, err)
+
+	})
+}
 
 func TestHostConfig(t *testing.T) {
 	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
@@ -59,10 +78,10 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		_, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 
 		_, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 	})
 
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {
@@ -655,7 +674,7 @@ atcobjects:
     - name: /DMO/SWC
 `
 
-		err := ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -691,7 +710,7 @@ objectset:
 `
 		expectedBodyString := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><atc:runparameters xmlns:atc=\"http://www.sap.com/adt/atc\" xmlns:obj=\"http://www.sap.com/adt/objectset\" checkVariant=\"MY_TEST\" configuration=\"MY_CONFIG\"><osl:objectSet xsi:type=\"multiPropertySet\" xmlns:osl=\"http://www.sap.com/api/osl\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><osl:package name=\"Z_TEST\"/><osl:package name=\"Z_TEST_TREE\" includeSubpackages=\"true\"/><osl:softwareComponent name=\"Z_TEST\"/><osl:softwareComponent name=\"/DMO/SWC\"/></osl:objectSet></atc:runparameters>"
 
-		err := ioutil.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.AtcConfig, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)
@@ -718,7 +737,7 @@ objectset:
   - name: /DMO/SWC
 `
 
-		err := ioutil.WriteFile(config.Repositories, []byte(yamlBody), 0o644)
+		err := os.WriteFile(config.Repositories, []byte(yamlBody), 0o644)
 		if assert.Equal(t, err, nil) {
 			bodyString, err := buildATCRequestBody(config)
 			assert.Equal(t, nil, err)

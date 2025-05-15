@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"math"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,30 +18,30 @@ import (
 )
 
 type CheckmarxOneReportData struct {
-	ToolName             string         `json:"toolName"`
-	ProjectName          string         `json:"projectName"`
-	ProjectID            string         `json:"projectID"`
-	ScanID               string         `json:"scanID"`
-	GroupName            string         `json:"groupName"`
-	GroupPath            string         `json:"groupPath"`
-	DeepLink             string         `json:"deepLink"`
-	Preset               string         `json:"preset"`
-	CheckmarxVersion     string         `json:"checkmarxVersion"`
-	ScanType             string         `json:"scanType"`
-	HighTotal            int            `json:"highTotal"`
-	HighAudited          int            `json:"highAudited"`
-	MediumTotal          int            `json:"mediumTotal"`
-	MediumAudited        int            `json:"mediumAudited"`
-	LowTotal             int            `json:"lowTotal"`
-	LowAudited           int            `json:"lowAudited"`
-	InformationTotal     int            `json:"informationTotal"`
-	InformationAudited   int            `json:"informationAudited"`
-	IsLowPerQueryAudited bool           `json:"isLowPerQueryAudited"`
-	LowPerQuery          *[]LowPerQuery `json:"lowPerQuery"`
+	ToolName        string     `json:"toolName"`
+	ToolVersion     string     `json:"toolVersion"`
+	ProjectName     string     `json:"projectName"`
+	ProjectID       string     `json:"projectID"`
+	ScanID          string     `json:"scanID"`
+	ApplicationName string     `json:"applicationName"`
+	ApplicationID   string     `json:"applicationID"`
+	GroupName       string     `json:"groupName"`
+	GroupID         string     `json:"groupID"`
+	DeepLink        string     `json:"deepLink"`
+	Preset          string     `json:"preset"`
+	ScanType        string     `json:"scanType"`
+	Findings        *[]Finding `json:"findings"`
+}
+
+type Finding struct {
+	ClassificationName string         `json:"classificationName"`
+	Total              int            `json:"total,omitempty"`
+	Audited            *int           `json:"audited,omitempty"`
+	LowPerQuery        *[]LowPerQuery `json:"categories,omitempty"`
 }
 
 type LowPerQuery struct {
-	QueryName string `json:"query"`
+	QueryName string `json:"name"`
 	Audited   int    `json:"audited"`
 	Total     int    `json:"total"`
 }
@@ -66,7 +65,7 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 			{Description: "Report creation time", Details: fmt.Sprint((*data)["ReportCreationTime"])},
 			{Description: "Lines of code scanned", Details: fmt.Sprint((*data)["LinesOfCodeScanned)"])},
 			{Description: "Files scanned", Details: fmt.Sprint((*data)["FilesScanned)"])},
-			{Description: "Checkmarx version", Details: fmt.Sprint((*data)["CheckmarxVersion"])},
+			{Description: "Tool version", Details: fmt.Sprint((*data)["ToolVersion"])},
 			{Description: "Deep link", Details: deepLink},
 		},
 		Overview:   []reporting.OverviewRow{},
@@ -138,33 +137,40 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 
 func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData {
 	checkmarxReportData := CheckmarxOneReportData{
-		ToolName:         `checkmarxone`,
-		ProjectName:      fmt.Sprint((*data)["ProjectName"]),
-		GroupName:        fmt.Sprint((*data)["Group"]),
-		GroupPath:        fmt.Sprint((*data)["GroupFullPathOnReportDate"]),
-		DeepLink:         fmt.Sprint((*data)["DeepLink"]),
-		Preset:           fmt.Sprint((*data)["Preset"]),
-		CheckmarxVersion: fmt.Sprint((*data)["CheckmarxVersion"]),
-		ScanType:         fmt.Sprint((*data)["ScanType"]),
-		ProjectID:        fmt.Sprint((*data)["ProjectId"]),
-		ScanID:           fmt.Sprint((*data)["ScanId"]),
+		ToolName:        `CheckmarxOne`,
+		ProjectName:     fmt.Sprint((*data)["ProjectName"]),
+		GroupID:         fmt.Sprint((*data)["Group"]),
+		GroupName:       fmt.Sprint((*data)["GroupFullPathOnReportDate"]),
+		ApplicationID:   fmt.Sprint((*data)["Application"]),
+		ApplicationName: fmt.Sprint((*data)["ApplicationFullPathOnReportDate"]),
+		DeepLink:        fmt.Sprint((*data)["DeepLink"]),
+		Preset:          fmt.Sprint((*data)["Preset"]),
+		ToolVersion:     fmt.Sprint((*data)["ToolVersion"]),
+		ScanType:        fmt.Sprint((*data)["ScanType"]),
+		ProjectID:       fmt.Sprint((*data)["ProjectId"]),
+		ScanID:          fmt.Sprint((*data)["ScanId"]),
 	}
 
-	checkmarxReportData.HighAudited = (*data)["High"].(map[string]int)["Issues"] - (*data)["High"].(map[string]int)["NotFalsePositive"]
-	checkmarxReportData.HighTotal = (*data)["High"].(map[string]int)["Issues"]
-
-	checkmarxReportData.MediumAudited = (*data)["Medium"].(map[string]int)["Issues"] - (*data)["Medium"].(map[string]int)["NotFalsePositive"]
-	checkmarxReportData.MediumTotal = (*data)["Medium"].(map[string]int)["Issues"]
-
-	checkmarxReportData.LowAudited = (*data)["Low"].(map[string]int)["Confirmed"] + (*data)["Low"].(map[string]int)["NotExploitable"]
-	checkmarxReportData.LowTotal = (*data)["Low"].(map[string]int)["Issues"]
-
-	checkmarxReportData.InformationAudited = (*data)["Information"].(map[string]int)["Confirmed"] + (*data)["Information"].(map[string]int)["NotExploitable"]
-	checkmarxReportData.InformationTotal = (*data)["Information"].(map[string]int)["Issues"]
-
-	lowPerQueryList := []LowPerQuery{}
-	checkmarxReportData.IsLowPerQueryAudited = true
+	findings := []Finding{}
+	// High
+	highFindings := Finding{}
+	highFindings.ClassificationName = "High"
+	highFindings.Total = (*data)["High"].(map[string]int)["Issues"]
+	highAudited := (*data)["High"].(map[string]int)["Issues"] - (*data)["High"].(map[string]int)["NotFalsePositive"]
+	highFindings.Audited = &highAudited
+	findings = append(findings, highFindings)
+	// Medium
+	mediumFindings := Finding{}
+	mediumFindings.ClassificationName = "Medium"
+	mediumFindings.Total = (*data)["Medium"].(map[string]int)["Issues"]
+	mediumAudited := (*data)["Medium"].(map[string]int)["Issues"] - (*data)["Medium"].(map[string]int)["NotFalsePositive"]
+	mediumFindings.Audited = &mediumAudited
+	findings = append(findings, mediumFindings)
+	// Low
+	lowFindings := Finding{}
+	lowFindings.ClassificationName = "Low"
 	if _, ok := (*data)["LowPerQuery"]; ok {
+		lowPerQueryList := []LowPerQuery{}
 		lowPerQueryMap := (*data)["LowPerQuery"].(map[string]map[string]int)
 		for queryName, resultsLowQuery := range lowPerQueryMap {
 			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
@@ -173,14 +179,18 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 			lowPerQuery.QueryName = queryName
 			lowPerQuery.Audited = audited
 			lowPerQuery.Total = total
-			lowAuditedRequiredPerQuery := int(math.Ceil(0.10 * float64(total)))
-			if audited < lowAuditedRequiredPerQuery && audited < 10 {
-				checkmarxReportData.IsLowPerQueryAudited = false
-			}
 			lowPerQueryList = append(lowPerQueryList, lowPerQuery)
 		}
+		lowFindings.LowPerQuery = &lowPerQueryList
+		findings = append(findings, lowFindings)
+	} else {
+		lowFindings.Total = (*data)["Low"].(map[string]int)["Issues"]
+		lowAudited := (*data)["Low"].(map[string]int)["Confirmed"] + (*data)["Low"].(map[string]int)["NotExploitable"]
+		lowFindings.Audited = &lowAudited
+		findings = append(findings, lowFindings)
 	}
-	checkmarxReportData.LowPerQuery = &lowPerQueryList
+
+	checkmarxReportData.Findings = &findings
 
 	return checkmarxReportData
 }

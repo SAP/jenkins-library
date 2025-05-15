@@ -1,6 +1,7 @@
 {
     "name": "test-mta-js",
     "version": "1.0.0",
+    "main": "srv/hello.js",
     "dependencies": {
         "jest": "^26.0.1",
         "jest-jenkins-reporter": "^1.0.2"

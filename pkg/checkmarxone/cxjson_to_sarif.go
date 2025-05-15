@@ -8,7 +8,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 // ConvertCxJSONToSarif is the entrypoint for the Parse function
@@ -21,17 +20,13 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	sarif.Version = "2.1.0"
 	var checkmarxRun format.Runs
 	checkmarxRun.ColumnKind = "utf16CodeUnits"
+	checkmarxRun.Results = make([]format.Results, 0)
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
 
-	queries, err := sys.GetQueries()
-	if err != nil {
-		return sarif, errors.Wrap(err, "Failed to retrieve list of queries")
-	}
+	baseURL := serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID
 
-	baseURL := "https://" + serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID
-
-	cweIdsForTaxonomies := make(map[int64]int) //use a map to avoid duplicates
+	cweIdsForTaxonomies := make(map[int]int) //use a map to avoid duplicates
 	cweCounter := 0
 	//maxretries := 5
 
@@ -41,15 +36,10 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	log.Entry().Debug("[SARIF] Now handling results.")
 
 	for _, r := range *scanResults {
-		query := getQuery(queries, r.Data.QueryID)
-		if query == nil {
-			return sarif, errors.New(fmt.Sprintf("Unknown queryid in results: %d", r.Data.QueryID))
-		}
-
-		_, haskey := cweIdsForTaxonomies[query.CweID]
+		_, haskey := cweIdsForTaxonomies[r.VulnerabilityDetails.CweId]
 
 		if !haskey {
-			cweIdsForTaxonomies[query.CweID] = cweCounter
+			cweIdsForTaxonomies[r.VulnerabilityDetails.CweId] = cweCounter
 			cweCounter++
 		}
 
@@ -59,14 +49,14 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		result := *new(format.Results)
 
 		//General
-		result.RuleID = fmt.Sprintf("checkmarxOne-%v/%d", query.Language, query.QueryID)
-		result.RuleIndex = cweIdsForTaxonomies[query.CweID]
+		result.RuleID = fmt.Sprintf("checkmarxOne-%v/%d", r.Data.LanguageName, r.Data.QueryID)
+		result.RuleIndex = cweIdsForTaxonomies[r.VulnerabilityDetails.CweId]
 		result.Level = "none"
 		msg := new(format.Message)
 		if apiDescription != "" {
 			msg.Text = apiDescription
 		} else {
-			msg.Text = query.Name
+			msg.Text = r.Data.QueryName
 		}
 		result.Message = msg
 
@@ -77,6 +67,10 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		for k := 0; k < len(r.Data.Nodes); k++ {
 			loc := *new(format.Location)
 			loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
+			// remove absolute path of file name (coming from JSON format)
+			if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
+				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
+			}
 			loc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
 			loc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
 			loc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
@@ -101,6 +95,10 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			threadFlowLocation := *new(format.Locations)
 			tfloc := new(format.Location)
 			tfloc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
+			// remove absolute path of file name (coming from JSON format)
+			if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
+				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
+			}
 			tfloc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
 			tfloc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
 			tfloc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
@@ -199,18 +197,18 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		//handle the rules array
 		rule := *new(format.SarifRule)
 
-		rule.ID = fmt.Sprintf("checkmarxOne-%v/%d", query.Language, query.QueryID)
-		words := strings.Split(query.Name, "_")
+		rule.ID = fmt.Sprintf("checkmarxOne-%v/%d", r.Data.LanguageName, r.Data.QueryID)
+		words := strings.Split(r.Data.QueryName, "_")
 		for w := 0; w < len(words); w++ {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))
 		}
 		rule.Name = strings.Join(words, "")
 
-		rule.HelpURI = fmt.Sprintf("%v/sast/description/%v/%v", baseURL, query.QueryDescriptionID, query.QueryID)
+		rule.HelpURI = fmt.Sprintf("%v/sast/description/%v/%v", baseURL, r.VulnerabilityDetails.CweId, r.Data.QueryID)
 		rule.Help = new(format.Help)
 		rule.Help.Text = rule.HelpURI
 		rule.ShortDescription = new(format.Message)
-		rule.ShortDescription.Text = query.Name
+		rule.ShortDescription.Text = r.Data.QueryName
 		rule.Properties = new(format.SarifRuleProperties)
 
 		if len(r.VulnerabilityDetails.Compliances) > 0 {
@@ -221,7 +219,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 				rule.Properties.Tags = append(rule.Properties.Tags, r.VulnerabilityDetails.Compliances[cat])
 			}
 		}
-		switch query.Severity {
+		switch r.Severity {
 		case "INFORMATION":
 			rule.Properties.SecuritySeverity = "0.0"
 		case "LOW":
@@ -234,21 +232,31 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			rule.Properties.SecuritySeverity = "10.0"
 		}
 
-		if query.CweID != 0 {
-			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", query.CweID))
+		if r.VulnerabilityDetails.CweId != 0 {
+			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", r.VulnerabilityDetails.CweId))
 		}
-		rulesArray = append(rulesArray, rule)
+
+		match := false
+		for _, r := range rulesArray {
+			if r.ID == rule.ID {
+				match = true
+				break
+			}
+		}
+		if !match {
+			rulesArray = append(rulesArray, rule)
+		}
 	}
 
 	// Handle driver object
 	log.Entry().Debug("[SARIF] Now handling driver object.")
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
-	tool.Driver.Name = "CheckmarxOne SCA"
+	tool.Driver.Name = "Checkmarx One"
 
 	// TODO: a way to fetch/store the version
 	tool.Driver.Version = "1" //strings.Split(cxxml.CheckmarxVersion, "V ")
-	tool.Driver.InformationUri = "https://checkmarx.com/resource/documents/en/34965-68571-viewing-results.html"
+	tool.Driver.InformationUri = "https://checkmarx.com/resource/documents/en/34965-165898-results-details-per-scanner.html"
 	tool.Driver.Rules = rulesArray
 	sarif.Runs[0].Tool = tool
 
@@ -261,6 +269,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
+	taxonomy.Taxa = make([]format.Taxa, 0)
 	for key := range cweIdsForTaxonomies {
 		taxa := *new(format.Taxa)
 		taxa.Id = fmt.Sprintf("%d", key)

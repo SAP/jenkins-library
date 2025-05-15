@@ -5,10 +5,10 @@ import (
 	"encoding/xml"
 	"fmt"
 	"html"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -518,9 +518,9 @@ func executeAUnitTest(config *gctsExecuteABAPQualityChecksOptions, client piperh
 
 		switch object.Type {
 		case "CLAS":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + url.QueryEscape(object.Object) + `"/>`
 		case "DEVC":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/packages/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/repository/informationsystem/virtualfolders?selection=package%3a` + url.QueryEscape(object.Object) + `"/>`
 
 		}
 
@@ -733,7 +733,7 @@ func parseUnitResult(config *gctsExecuteABAPQualityChecksOptions, client piperht
 
 	body, _ := xml.Marshal(parsedResult)
 
-	writeErr := ioutil.WriteFile(config.AUnitResultsFileName, body, 0644)
+	writeErr := os.WriteFile(config.AUnitResultsFileName, body, 0644)
 
 	if writeErr != nil {
 		log.Entry().Error("file AUnitResults.xml could not be created")
@@ -757,7 +757,7 @@ func executeATCCheck(config *gctsExecuteABAPQualityChecksOptions, client piperht
 		switch object.Type {
 
 		case "CLAS":
-			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + object.Object + `"/>`
+			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/classes/` + url.QueryEscape(object.Object) + `"/>`
 		case "INTF":
 			innerXml = innerXml + `<adtcore:objectReference adtcore:uri="/sap/bc/adt/oo/interfaces/` + object.Object + `"/>`
 		case "DEVC":
@@ -1051,7 +1051,7 @@ func parseATCCheckResult(config *gctsExecuteABAPQualityChecksOptions, client pip
 
 	atcBody, _ := xml.Marshal(atcResults)
 
-	writeErr := ioutil.WriteFile(config.AtcResultsFileName, atcBody, 0644)
+	writeErr := os.WriteFile(config.AtcResultsFileName, atcBody, 0644)
 
 	if writeErr != nil {
 		log.Entry().Error("ATCResults.xml could not be created")
@@ -1105,7 +1105,7 @@ func findLine(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Send
 	if readableSource {
 
 		// the error line that we get from UnitTest Run or ATC Check is not aligned for the readable source, we need to calculated it
-		rawfile, err := ioutil.ReadFile(filePath)
+		rawfile, err := os.ReadFile(filePath)
 
 		if err != nil {
 
@@ -1900,7 +1900,7 @@ type repository struct {
 	CreatedBy     string       `json:"createdBy"`
 	CreatedDate   string       `json:"createdDate"`
 	Config        []repoConfig `json:"config"`
-	Objects       int          `json:"objects"`
+	Objects       any          `json:"objects"`
 	CurrentCommit string       `json:"currentCommit"`
 }
 

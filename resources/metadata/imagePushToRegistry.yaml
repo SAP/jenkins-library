@@ -1,0 +1,256 @@
+metadata:
+  name: imagePushToRegistry
+  description: Allows you to copy a Docker image from a source container registry  to a destination container registry.
+  longDescription: |-
+    In case you want to pull an existing image from a remote container registry, a source image and source registry needs to be specified.<br />
+    This makes it possible to move an image from one registry to another.
+
+    The imagePushToRegistry is not similar in functionality to containerPushToRegistry (which is currently a groovy based step and only be used in jenkins).
+    Currently the imagePushToRegistry only supports copying a local image or image from source remote registry to destination registry.
+
+spec:
+  inputs:
+    resources:
+      - name: source
+        type: stash
+    params:
+      - name: targetImages
+        type: "map[string]interface{}"
+        description: |
+          Defines the names of the images that will be pushed to the target registry. If empty, names of sourceImages will be used.
+          Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages should be mapped to the first image in the targetImages parameter.
+
+          ```yaml
+          sourceImages:
+            - image-1
+            - image-2
+          targetImages:
+            image-1: target-image-1
+            image-2: target-image-2
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceImages
+        type: "[]string"
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
+        description: |
+          Defines the names of the images that will be pulled from source registry. This is helpful for moving images from one location to another.
+          Please ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages should be mapped to the first image in the targetImages parameter.
+
+          ```yaml
+            sourceImages:
+              - image-1
+              - image-2
+            targetImages:
+              image-1: target-image-1
+              image-2: target-image-2
+          ```
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNames
+      - name: sourceImageTag
+        aliases:
+          - name: artifactVersion
+          - name: containerImageTag
+        description: Tag of the sourceImages
+        type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: sourceRegistryUrl
+        description: Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*"
+        type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: sourceRegistryUser
+        type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
+        secret: true
+        description: Username of the source registry where the image should be pulled from.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+          - type: vaultSecret
+            name: registryCredentialsVaultSecretName
+            default: docker-registry
+      - name: sourceRegistryPassword
+        type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: false
+        secret: true
+        description: Password of the source registry where the image should be pulled from.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+          - type: vaultSecret
+            name: registryCredentialsVaultSecretName
+            default: docker-registry
+      - name: targetRegistryUrl
+        description: Defines a registry url from where the image should optionally be pushed to, incl. the protocol like `https://my.registry.com`*"
+        type: string
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: targetRegistryUser
+        type: string
+        secret: true
+        mandatory: true
+        description: Username of the target registry where the image should be pushed to.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecret
+            name: registryCredentialsVaultSecretName
+            default: docker-registry
+      - name: targetRegistryPassword
+        type: string
+        secret: true
+        description: Password of the target registry where the image should be pushed to.
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecret
+            name: registryCredentialsVaultSecretName
+            default: docker-registry
+      - name: targetImageTag
+        aliases:
+          - name: artifactVersion
+          - name: containerImageTag
+        type: string
+        mandatoryIf:
+          - name: tagLatest
+            value: false
+        description: Tag of the targetImages
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: useImageNameTags
+        description: |
+          Will use the sourceImageNameTags and targetImageNameTags parameters, instead of sourceImages and targetImages.
+          sourceImageNameTags can be set by a build step, e.g. kanikoExecute, and is then available in the pipeline environment.
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sourceImageNameTags
+        type: "[]string"
+        description: "List of full names (registry and tag) of the images to be copied. Works in combination with useImageNameTags."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: targetImageNameTags
+        type: "[]string"
+        description: |
+          List of full names (registry and tag) of the images to be deployed. Works in combination with useImageNameTags.
+          If not set, the value will be the sourceImageNameTags with the targetRegistryUrl incorporated.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: tagLatest
+        description: "Defines if the image should be tagged as `latest`. The parameter is true if targetImageTag is not specified."
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dockerConfigJSON
+        type: string
+        secret: true
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecretFile
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
+      - name: pushLocalDockerImage
+        description: "Defines if the local image should be pushed to registry"
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: localDockerImagePath
+        description: "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball."
+        type: string
+        mandatoryIf:
+          - name: pushLocalDockerImage
+            value: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: targetArchitecture
+        type: string
+        description: Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter
+        scope:
+          - STEPS
+          - PARAMETERS
+  containers:
+    - image: gcr.io/go-containerregistry/crane:debug
+      command:
+        - /busybox/tail -f /dev/null
+      shell: /busybox/sh
+      options:
+        - name: -u
+          value: "0"
+        - name: --entrypoint
+          value: ""
+      env:
+        - name: container
+          value: docker

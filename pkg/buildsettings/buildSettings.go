@@ -9,15 +9,15 @@ import (
 )
 
 type BuildSettings struct {
-	GolangBuild       []BuildOptions `json:"golangBuild,omitempty"`
-	GradleBuild       []BuildOptions `json:"gradleBuild,omitempty"`
-	HelmExecute       []BuildOptions `json:"helmExecute,omitempty"`
-	KanikoExecute     []BuildOptions `json:"kanikoExecute,omitempty"`
-	MavenBuild        []BuildOptions `json:"mavenBuild,omitempty"`
-	MtaBuild          []BuildOptions `json:"mtaBuild,omitempty"`
-	PythonBuild       []BuildOptions `json:"pythonBuild,omitempty"`
-	NpmExecuteScripts []BuildOptions `json:"npmExecuteScripts,omitempty"`
-	CnbBuild          []BuildOptions `json:"cnbBuild,omitempty"`
+	GolangBuild        []BuildOptions `json:"golangBuild,omitempty"`
+	GradleExecuteBuild []BuildOptions `json:"gradleExecuteBuild,omitempty"`
+	HelmExecute        []BuildOptions `json:"helmExecute,omitempty"`
+	KanikoExecute      []BuildOptions `json:"kanikoExecute,omitempty"`
+	MavenBuild         []BuildOptions `json:"mavenBuild,omitempty"`
+	MtaBuild           []BuildOptions `json:"mtaBuild,omitempty"`
+	PythonBuild        []BuildOptions `json:"pythonBuild,omitempty"`
+	NpmExecuteScripts  []BuildOptions `json:"npmExecuteScripts,omitempty"`
+	CnbBuild           []BuildOptions `json:"cnbBuild,omitempty"`
 }
 
 type BuildOptions struct {
@@ -63,7 +63,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 
 		jsonResult, err = json.Marshal(&jsonMap)
 		if err != nil {
-			return "", errors.Wrapf(err, "Creating build settings failed with json marshalling")
+			return "", errors.Wrap(err, "Creating build settings failed with json marshalling")
 		}
 	} else {
 		var settings []BuildOptions
@@ -74,9 +74,9 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			jsonResult, err = json.Marshal(BuildSettings{
 				GolangBuild: settings,
 			})
-		case "gradleBuild":
+		case "gradleExecuteBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
-				GradleBuild: settings,
+				GradleExecuteBuild: settings,
 			})
 		case "helmExecute":
 			jsonResult, err = json.Marshal(BuildSettings{
@@ -111,7 +111,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			return "", nil
 		}
 		if err != nil {
-			return "", errors.Wrapf(err, "Creating build settings failed with json marshalling")
+			return "", errors.Wrap(err, "Creating build settings failed with json marshalling")
 		}
 	}
 

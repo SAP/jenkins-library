@@ -3,11 +3,12 @@ package xsuaa
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 const authHeaderKey = "Authorization"
@@ -128,7 +129,7 @@ func readResponseBody(response *http.Response) ([]byte, error) {
 	if response.Body != nil {
 		defer response.Body.Close()
 	}
-	bodyText, readErr := ioutil.ReadAll(response.Body)
+	bodyText, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
 	}

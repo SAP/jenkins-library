@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/SAP/jenkins-library/pkg/checkmarxone"
+	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
@@ -34,6 +35,10 @@ func (sys *checkmarxOneSystemMock) CreateApplication(appname string) (checkmarxO
 }
 
 func (sys *checkmarxOneSystemMock) GetApplicationByName(appname string) (checkmarxOne.Application, error) {
+	return checkmarxOne.Application{}, nil
+}
+
+func (sys *checkmarxOneSystemMock) GetApplicationByID(appname string) (checkmarxOne.Application, error) {
 	return checkmarxOne.Application{}, nil
 }
 
@@ -73,15 +78,15 @@ func (sys *checkmarxOneSystemMock) GetLastScansByStatus(projectID string, limit 
 	return []checkmarxOne.Scan{}, nil
 }
 
-func (sys *checkmarxOneSystemMock) ScanProject(projectID, sourceUrl, branch, scanType string, settings []checkmarxOne.ScanConfiguration) (checkmarxOne.Scan, error) {
+func (sys *checkmarxOneSystemMock) ScanProject(projectID, sourceUrl, branch, scanType string, settings []checkmarxOne.ScanConfiguration, tags map[string]string) (checkmarxOne.Scan, error) {
 	return checkmarxOne.Scan{}, nil
 }
 
-func (sys *checkmarxOneSystemMock) ScanProjectZip(projectID, sourceUrl, branch string, settings []checkmarxOne.ScanConfiguration) (checkmarxOne.Scan, error) {
+func (sys *checkmarxOneSystemMock) ScanProjectZip(projectID, sourceUrl, branch string, settings []checkmarxOne.ScanConfiguration, tags map[string]string) (checkmarxOne.Scan, error) {
 	return checkmarxOne.Scan{}, nil
 }
 
-func (sys *checkmarxOneSystemMock) ScanProjectGit(projectID, repoUrl, branch string, settings []checkmarxOne.ScanConfiguration) (checkmarxOne.Scan, error) {
+func (sys *checkmarxOneSystemMock) ScanProjectGit(projectID, repoUrl, branch string, settings []checkmarxOne.ScanConfiguration, tags map[string]string) (checkmarxOne.Scan, error) {
 	return checkmarxOne.Scan{}, nil
 }
 
@@ -90,6 +95,10 @@ func (sys *checkmarxOneSystemMock) UploadProjectSourceCode(projectID string, zip
 }
 
 func (sys *checkmarxOneSystemMock) CreateProject(projectName string, groupIDs []string) (checkmarxOne.Project, error) {
+	return checkmarxOne.Project{}, nil
+}
+
+func (sys *checkmarxOneSystemMock) CreateProjectInApplication(projectName, applicationId string, groupIDs []string) (checkmarxOne.Project, error) {
 	return checkmarxOne.Project{}, nil
 }
 
@@ -232,6 +241,14 @@ func (sys *checkmarxOneSystemMock) UpdateProjectConfiguration(projectID string, 
 	return nil
 }
 
+func (sys *checkmarxOneSystemMock) UpdateProject(project *checkmarxOne.Project) error {
+	return nil
+}
+
+func (sys *checkmarxOneSystemMock) GetVersion() (checkmarxOne.VersionInfo, error) {
+	return checkmarxOne.VersionInfo{}, nil
+}
+
 type checkmarxOneExecuteScanHelperMock struct {
 	ctx     context.Context
 	config  checkmarxOneExecuteScanOptions
@@ -285,7 +302,7 @@ func TestGetGroup(t *testing.T) {
 
 		cx1sh := checkmarxOneExecuteScanHelper{nil, options, sys, nil, nil, nil, nil, nil, nil}
 		_, err := cx1sh.GetGroup()
-		assert.Contains(t, fmt.Sprint(err), "No group ID or group name provided")
+		assert.Contains(t, fmt.Sprint(err), "No group name specified in configuration")
 	})
 
 	t.Run("group name not found", func(t *testing.T) {
@@ -310,5 +327,63 @@ func TestGetGroup(t *testing.T) {
 		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, group.GroupID, "a8009bce-c24f-4edc-a931-06eb91ace2f5")
 		assert.Equal(t, group.Name, "Group2")
+	})
+}
+
+func TestUpdateProjectTags(t *testing.T) {
+	t.Parallel()
+
+	sys := &checkmarxOneSystemMock{}
+
+	t.Run("project tags are not provided", func(t *testing.T) {
+		t.Parallel()
+
+		options := checkmarxOneExecuteScanOptions{ProjectName: "ssba", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "CheckmarxDefault" /*GroupName: "NotProvided",*/, VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, APIKey: "testAPIKey", ServerURL: "testURL", IamURL: "testIamURL", Tenant: "testTenant"}
+
+		cx1sh := checkmarxOneExecuteScanHelper{nil, options, sys, nil, nil, nil, nil, nil, nil}
+		err := cx1sh.UpdateProjectTags()
+		assert.NoError(t, err, "Error occurred but none expected")
+	})
+
+	t.Run("project tags are provided correctly", func(t *testing.T) {
+		t.Parallel()
+
+		projectJson := `{ "id": "702ba12b-ae61-48c0-9b6a-09b17666be32",
+			"name": "test-apr24-piper",
+			"tags": {
+				"key1": "value1",
+				"key2": "value2", 
+				"keywithoutvalue1": ""
+			},
+			"groups": [],
+			"criticality": 3,
+			"mainBranch": "",
+			"privatePackage": false
+		}`
+		var project checkmarxOne.Project
+		_ = json.Unmarshal([]byte(projectJson), &project)
+
+		options := checkmarxOneExecuteScanOptions{ProjectName: "ssba", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "CheckmarxDefault" /*GroupName: "NotProvided",*/, VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, APIKey: "testAPIKey", ServerURL: "testURL", IamURL: "testIamURL", Tenant: "testTenant", ProjectTags: `{"key3":"value3", "key2":"value5", "keywithoutvalue2":""}`}
+
+		cx1sh := checkmarxOneExecuteScanHelper{nil, options, sys, nil, nil, &project, nil, nil, nil}
+		err := cx1sh.UpdateProjectTags()
+		assert.NoError(t, err, "Error occurred but none expected")
+
+		oldTagsJson := `{
+			"key1": "value1",
+			"key2": "value2", 
+			"keywithoutvalue1": ""
+		}`
+		oldTags := make(map[string]string, 0)
+		_ = json.Unmarshal([]byte(oldTagsJson), &oldTags)
+
+		newTagsJson := `{"key3":"value3", "key2":"value5", "keywithoutvalue2":""}`
+		newTags := make(map[string]string, 0)
+		_ = json.Unmarshal([]byte(newTagsJson), &newTags)
+
+		// merge new tags to the existing ones
+		maps.Copy(oldTags, newTags)
+
+		assert.Equal(t, project.Tags, oldTags) // project's tags must be merged
 	})
 }

@@ -39,15 +39,6 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
-      - name: githubApiUrl
-        description: "Set the GitHub API URL."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
-        default: "https://api.github.com"
       - name: buildTool
         type: string
         description: Defines the build tool which is used for building the project.
@@ -113,6 +104,36 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: sarifCheckMaxRetries
+        type: int
+        description: "Maximum number of retries when waiting for the server to finish processing the SARIF upload."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 10
+      - name: sarifCheckRetryInterval
+        type: int
+        description: "Interval in seconds between retries when waiting for the server to finish processing the SARIF upload."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 30
+      - name: targetGithubRepoURL
+        type: string
+        description: "Target github repo url. Only relevant, if project uses a combination of Piper and non-GitHub SCM."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: targetGithubBranchName
+        type: string
+        description: "Target github branch name. Only relevant, if project uses a combination of Piper and non-GitHub SCM."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: threads
         type: string
         description: "Use this many threads for the codeql operations."
@@ -128,6 +149,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: "4000"
       - name: analyzedRef
         type: string
         description: "Name of the ref that was analyzed."
@@ -167,10 +189,89 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: projectSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as project settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/projectSettingsFile
+      - name: globalSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as global settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/globalSettingsFile
+      - name: databaseCreateFlags
+        type: string
+        description: "A space-separated string of flags for the 'codeql database create' command."
+        longDescription: |-
+          A space-separated string of flags for the 'codeql database create' command.
+
+          If both long and short forms of the same flag are provided, the long form takes precedence.
+          Example input: "--threads=1 --ram=2000"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: databaseAnalyzeFlags
+        type: string
+        description: "A space-separated string of flags for the 'codeql database analyze' command."
+        longDescription: |-
+            A space-separated string of flags for the 'codeql database analyze' command.
+
+            If both long and short forms of the same flag are provided, the long form takes precedence.
+            Example input: "--threads=1 --ram=2000"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: customCommand
+        type: string
+        description: "A custom user-defined command to run between codeql analysis and results upload."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: transformQuerySuite
+        type: string
+        description: "A transform string that will be applied to the querySuite using the sed command."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
     - image: ""
   outputs:
     resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: codeql
+                type: bool
+          - name: codeql_data
+            fields:
+              - name: repositoryUrl
+              - name: repositoryReferenceUrl
+              - name: codeScanningLink
+              - name: querySuite
+              - name: optionalTotal
+                type: int
+              - name: optionalAudited
+                type: int
+              - name: auditAllTotal
+                type: int
+              - name: auditAllAudited
+                type: int
       - name: reports
         type: reports
         params:
@@ -179,4 +280,6 @@ spec:
           - filePattern: "**/*.sarif"
             type: codeql
           - filePattern: "**/toolrun_codeql_*.json"
+            type: codeql
+          - filePattern: "**/piper_codeql_report.json"
             type: codeql

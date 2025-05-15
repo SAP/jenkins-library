@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -21,9 +22,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, _ *telemetry.CustomData) {
 	// Mapping for options
-	subOptions := convertATCOptions(&options)
 
 	c := &command.Command{}
 	c.Stdout(log.Entry().Writer())
@@ -32,42 +32,51 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	autils := abaputils.AbapUtils{
 		Exec: c,
 	}
-	var err error
 
 	client := piperhttp.Client{}
 	fileUtils := piperutils.Files{}
+
+	err := runAbapEnvironmentRunATCCheck(autils, client, options, fileUtils)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runAbapEnvironmentRunATCCheck(autils abaputils.AbapUtils, client piperhttp.Client, options abapEnvironmentRunATCCheckOptions, fileUtils piperutils.Files) error {
+
+	var details abaputils.ConnectionDetailsHTTP
 	cookieJar, _ := cookiejar.New(nil)
 	clientOptions := piperhttp.ClientOptions{
 		CookieJar: cookieJar,
 	}
 	client.SetOptions(clientOptions)
 
-	var details abaputils.ConnectionDetailsHTTP
-	// If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
-	if err == nil {
-		details, err = autils.GetAbapCommunicationArrangementInfo(subOptions, "")
+	subOptions := convertATCOptions(&options)
+	details, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "")
+	if err != nil {
+		return err
 	}
-	var resp *http.Response
-	// Fetch Xcrsf-Token
-	if err == nil {
-		credentialsOptions := piperhttp.ClientOptions{
-			Username:  details.User,
-			Password:  details.Password,
-			CookieJar: cookieJar,
-		}
-		client.SetOptions(credentialsOptions)
-		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
+
+	credentialsOptions := piperhttp.ClientOptions{
+		Username:  details.User,
+		Password:  details.Password,
+		CookieJar: cookieJar,
 	}
-	if err == nil {
-		resp, err = triggerATCRun(options, details, &client)
+	client.SetOptions(credentialsOptions)
+	details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
+	if err != nil {
+		return err
 	}
-	if err == nil {
-		if err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML, options.FailOnSeverity); err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed")
-		}
+	resp, err := triggerATCRun(options, details, &client)
+	if err != nil {
+		return err
+	}
+	if err = fetchAndPersistATCResults(resp, details, &client, &fileUtils, options.AtcResultsFileName, options.GenerateHTML, options.FailOnSeverity); err != nil {
+		return err
 	}
 
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
+	return nil
 }
 
 func fetchAndPersistATCResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, atcResultFileName string, generateHTML bool, failOnSeverityLevel string) error {
@@ -84,7 +93,7 @@ func fetchAndPersistATCResults(resp *http.Response, details abaputils.Connection
 	// Parse response
 	var body []byte
 	if err == nil {
-		body, err = ioutil.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 	}
 	if err == nil {
 		defer resp.Body.Close()
@@ -225,7 +234,7 @@ func logAndPersistAndEvaluateATCResults(utils piperutils.FileUtils, body []byte,
 		log.Entry().Info("There were no results from this run, most likely the checked Software Components are empty or contain no ATC findings")
 	}
 
-	err := ioutil.WriteFile(atcResultFileName, body, 0o644)
+	err := os.WriteFile(atcResultFileName, body, 0o644)
 	if err == nil {
 		log.Entry().Infof("Writing %s file was successful", atcResultFileName)
 		var reports []piperutils.Path
@@ -242,7 +251,7 @@ func logAndPersistAndEvaluateATCResults(utils piperutils.FileUtils, body []byte,
 			htmlString := generateHTMLDocument(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			atcResultHTMLFileName := strings.Trim(atcResultFileName, ".xml") + ".html"
-			err = ioutil.WriteFile(atcResultHTMLFileName, htmlStringByte, 0o644)
+			err = os.WriteFile(atcResultHTMLFileName, htmlStringByte, 0o644)
 			if err == nil {
 				log.Entry().Info("Writing " + atcResultHTMLFileName + " file was successful")
 				reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results HTML file", Mandatory: true})
@@ -305,7 +314,7 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 	resp, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	_ = logResponseBody(resp)
 	if err != nil || (resp != nil && resp.StatusCode == 400) { // send request does not seem to produce error with StatusCode 400!!!
-		err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
+		_, err = abaputils.HandleHTTPError(resp, err, "triggering ATC run failed with Status: "+resp.Status, details)
 		log.SetErrorCategory(log.ErrorService)
 		return resp, errors.Errorf("triggering ATC run failed: %v", err)
 	}
@@ -317,7 +326,7 @@ func logResponseBody(resp *http.Response) error {
 	var bodyText []byte
 	var readError error
 	if resp != nil {
-		bodyText, readError = ioutil.ReadAll(resp.Body)
+		bodyText, readError = io.ReadAll(resp.Body)
 		if readError != nil {
 			return readError
 		}
@@ -353,7 +362,7 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 		if err != nil {
 			return "", errors.Errorf("Getting HTTP response failed: %v", err)
 		}
-		bodyText, err := ioutil.ReadAll(resp.Body)
+		bodyText, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", errors.Errorf("Reading response body failed: %v", err)
 		}

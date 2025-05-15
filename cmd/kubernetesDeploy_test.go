@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 type kubernetesDeployMockUtils struct {
@@ -97,8 +97,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, mockUtils.Calls[2].Params, "Wrong upgrade parameters")
 
 		assert.Equal(t, &telemetry.CustomData{
-			Custom1Label: "deployTool",
-			Custom1:      "helm",
+			DeployTool: "helm",
 		}, telemetryData)
 	})
 
@@ -384,8 +383,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, mockUtils.Calls[1].Params, "Wrong upgrade parameters")
 
 		assert.Equal(t, &telemetry.CustomData{
-			Custom1Label: "deployTool",
-			Custom1:      "helm3",
+			DeployTool: "helm3",
 		}, telemetryData)
 	})
 
@@ -465,6 +463,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--kube-context",
+			"testCluster",
 			"--timeout",
 			"400s",
 		}, mockUtils.Calls[2].Params, "Wrong test parameters")
@@ -547,6 +547,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"--namespace",
 			"deploymentNamespace",
+			"--kube-context",
+			"testCluster",
 			"--timeout",
 			"400s",
 			"--logs",
@@ -722,8 +724,43 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
 
-		assert.Contains(t, mockUtils.Calls[1].Params, `image.myImage.repository=my.registry:55555/myImage,image.myImage.tag=myTag,image.myImage_sub1.repository=my.registry:55555/myImage-sub1,image.myImage_sub1.tag=myTag,image.myImage_sub2.repository=my.registry:55555/myImage-sub2,image.myImage_sub2.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret`, "Wrong upgrade parameters")
+		assert.Contains(t, mockUtils.Calls[1].Params, `image.myImage.repository=my.registry:55555/myImage,image.myImage.tag=myTag,myImage.image.repository=my.registry:55555/myImage,myImage.image.tag=myTag,myImage.image.repository=my.registry:55555/myImage,myImage.image.tag=myTag,image.myImage_sub1.repository=my.registry:55555/myImage-sub1,image.myImage_sub1.tag=myTag,myImage_sub1.image.repository=my.registry:55555/myImage-sub1,myImage_sub1.image.tag=myTag,myImage_sub1.image.repository=my.registry:55555/myImage-sub1,myImage_sub1.image.tag=myTag,image.myImage_sub2.repository=my.registry:55555/myImage-sub2,image.myImage_sub2.tag=myTag,myImage_sub2.image.repository=my.registry:55555/myImage-sub2,myImage_sub2.image.tag=myTag,myImage_sub2.image.repository=my.registry:55555/myImage-sub2,myImage_sub2.image.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret`, "Wrong upgrade parameters")
 
+	})
+
+	t.Run("test helm v3 - with one image containing - in name", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:      "https://my.registry:55555",
+			ContainerRegistryUser:     "registryUser",
+			ContainerRegistryPassword: "dummy",
+			ContainerRegistrySecret:   "testSecret",
+			ChartPath:                 "path/to/chart",
+			DeploymentName:            "deploymentName",
+			DeployTool:                "helm3",
+			ForceUpdates:              true,
+			HelmDeployWaitSeconds:     400,
+			HelmValues:                []string{"values1.yaml", "values2.yaml"},
+			ImageNames:                []string{"my-Image"},
+			ImageNameTags:             []string{"my-Image:myTag"},
+			KubeContext:               "testCluster",
+			Namespace:                 "deploymentNamespace",
+			DockerConfigJSON:          ".pipeline/docker/config.json",
+		}
+
+		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.StdoutReturn = map[string]string{
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json`: dockerConfigJSON,
+		}
+
+		var stdout bytes.Buffer
+
+		require.NoError(t, runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout))
+
+		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
+		assert.Contains(t, mockUtils.Calls[1].Params[11], "my-Image.image.tag=myTag")
+		assert.Contains(t, mockUtils.Calls[1].Params[11], "my-Image.image.repository=")
 	})
 
 	t.Run("test helm v3 - with one image in  multiple images array", func(t *testing.T) {
@@ -772,7 +809,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
 
-		assert.Contains(t, mockUtils.Calls[1].Params, `image.myImage.repository=my.registry:55555/myImage,image.myImage.tag=myTag,image.repository=my.registry:55555/myImage,image.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret`, "Wrong upgrade parameters")
+		assert.Contains(t, mockUtils.Calls[1].Params, `image.myImage.repository=my.registry:55555/myImage,image.myImage.tag=myTag,myImage.image.repository=my.registry:55555/myImage,myImage.image.tag=myTag,myImage.image.repository=my.registry:55555/myImage,myImage.image.tag=myTag,image.repository=my.registry:55555/myImage,image.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret`, "Wrong upgrade parameters")
 
 	})
 
@@ -865,7 +902,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub1.repository=my.registry:55555/myImage-sub1", "Missing update parameter")
 		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub1.tag=myTag", "Missing update parameter")
 		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub2.repository=my.registry:55555/myImage-sub2", "Missing update parameter")
-		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub2.tag=myTag,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==", "Missing update parameter")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "image.myImage_sub2.tag=myTag")
+		assert.Contains(t, mockUtils.Calls[1].Params[pos], "secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==", "Missing update parameter")
 		assert.Contains(t, mockUtils.Calls[1].Params[pos], "imagePullSecrets[0].name=testSecret", "Missing update parameter")
 		assert.Contains(t, mockUtils.Calls[1].Params[pos], "subchart.image.registry=my.registry:55555/myImage", "Missing update parameter")
 		assert.Contains(t, mockUtils.Calls[1].Params[pos], "subchart.image.tag=myTag", "Missing update parameter")

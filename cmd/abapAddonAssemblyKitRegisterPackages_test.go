@@ -47,7 +47,7 @@ func TestRegisterPackagesStep(t *testing.T) {
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-		err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
+		err := runAbapAddonAssemblyKitRegisterPackages(&config, client, &cpe, mockReader)
 
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
@@ -70,7 +70,7 @@ func TestRegisterPackagesStep(t *testing.T) {
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-		err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
+		err := runAbapAddonAssemblyKitRegisterPackages(&config, client, &cpe, mockReader)
 
 		assert.Error(t, err, "Did expect error")
 	})
@@ -90,7 +90,7 @@ func TestRegisterPackagesStep(t *testing.T) {
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-		err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
+		err := runAbapAddonAssemblyKitRegisterPackages(&config, client, &cpe, mockReader)
 		assert.Error(t, err, "Did expect error")
 	})
 	t.Run("step error - registerPackages - invalid input", func(t *testing.T) {
@@ -107,7 +107,7 @@ func TestRegisterPackagesStep(t *testing.T) {
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-		err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
+		err := runAbapAddonAssemblyKitRegisterPackages(&config, client, &cpe, mockReader)
 		assert.Error(t, err, "Did expect error")
 	})
 }

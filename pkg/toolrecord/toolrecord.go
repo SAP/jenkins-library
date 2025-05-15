@@ -62,15 +62,16 @@ func New(fileUtils fileWriteUtils, workspace, toolName, toolInstance string) *To
 
 	tr.workspace = workspace
 
-	now := time.Now().UTC()
 	reportFileName := filepath.Join(workspace,
 		"toolruns",
-		"toolrun_"+toolName+"_"+
-			now.Format("20060102150405")+
-			".json")
+		"toolrun_"+toolName+"_all.json")
 	tr.reportFileName = reportFileName
 
-	return &tr
+	// keep a timestamp inside all files
+	now := time.Now().UTC()
+	var otr = &tr
+	otr.AddContext("generatedOnUtc", now.Format("20060102150405"))
+	return otr
 }
 
 // AddKeyData - add one key to the current toolrecord

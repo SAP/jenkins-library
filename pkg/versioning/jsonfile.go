@@ -3,7 +3,6 @@ package versioning
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/iancoleman/orderedmap"
@@ -24,11 +23,11 @@ func (j *JSONfile) init() {
 		j.versionField = "version"
 	}
 	if j.readFile == nil {
-		j.readFile = ioutil.ReadFile
+		j.readFile = os.ReadFile
 	}
 
 	if j.writeFile == nil {
-		j.writeFile = ioutil.WriteFile
+		j.writeFile = os.WriteFile
 	}
 }
 

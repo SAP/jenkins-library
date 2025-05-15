@@ -3,7 +3,7 @@ package log
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -47,11 +47,11 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	Entry().Infof("fatal error: errorDetails%v", string(errDetails))
 	// Sets the fatal error details in the logging framework to be consumed in the stepTelemetryData
 	SetFatalErrorDetail(errDetails)
-	_, err := ioutil.ReadFile(filePath)
+	_, err := os.ReadFile(filePath)
 	if err != nil {
 		// do not overwrite file in case it already exists
 		// this helps to report the first error which occurred - instead of the last one
-		ioutil.WriteFile(filePath, errDetails, 0666)
+		os.WriteFile(filePath, errDetails, 0666)
 	}
 
 	return nil

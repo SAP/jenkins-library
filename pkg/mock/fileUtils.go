@@ -13,11 +13,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/bmatcuk/doublestar"
 )
 
@@ -158,13 +158,13 @@ func (f *FilesMock) HasFile(path string) bool {
 // HasRemovedFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was removed via FileRemove().
 func (f *FilesMock) HasRemovedFile(path string) bool {
-	return piperutils.ContainsString(f.removedFiles, f.toAbsPath(path))
+	return slices.Contains(f.removedFiles, f.toAbsPath(path))
 }
 
 // HasWrittenFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was written via FileWrite().
 func (f *FilesMock) HasWrittenFile(path string) bool {
-	return piperutils.ContainsString(f.writtenFiles, f.toAbsPath(path))
+	return slices.Contains(f.writtenFiles, f.toAbsPath(path))
 }
 
 // HasCopiedFile returns true if the virtual file system at one point contained an entry for the given source and destination,
@@ -486,6 +486,10 @@ func (f *FilesMock) Stat(path string) (os.FileInfo, error) {
 	}, nil
 }
 
+func (f *FilesMock) Lstat(path string) (os.FileInfo, error) {
+	return f.Stat(path)
+}
+
 // Chmod changes the file mode for the entry at the given path
 func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
 	props, exists := f.files[f.toAbsPath(path)]
@@ -508,6 +512,10 @@ func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
 		f.AddDirWithMode(path, mode)
 	}
 
+	return nil
+}
+
+func (f *FilesMock) Chown(path string, uid, gid int) error {
 	return nil
 }
 
@@ -536,8 +544,9 @@ func (f *FilesMock) Symlink(oldname, newname string) error {
 	f.init()
 
 	f.files[newname] = &fileProperties{
-		isLink: true,
-		target: oldname,
+		isLink:  true,
+		target:  oldname,
+		content: &[]byte{},
 	}
 
 	return nil
@@ -557,7 +566,7 @@ func (f *FilesMock) CreateArchive(content map[string][]byte) ([]byte, error) {
 		err := tw.WriteHeader(&tar.Header{
 			Name:     fileName,
 			Size:     int64(len(fileContent)),
-			Typeflag: tar.TypeRegA,
+			Typeflag: tar.TypeReg,
 		})
 
 		if err != nil {
@@ -670,4 +679,37 @@ func (f *FilesMock) Open(name string) (io.ReadWriteCloser, error) {
 
 func (f *FilesMock) Create(name string) (io.ReadWriteCloser, error) {
 	return f.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
+}
+
+type FilesMockRelativeGlob struct {
+	*FilesMock
+}
+
+// Glob of FilesMockRelativeGlob cuts current directory path part from files if pattern is relative
+func (f *FilesMockRelativeGlob) Glob(pattern string) ([]string, error) {
+	var matches []string
+	if f.files == nil {
+		return matches, nil
+	}
+	for path := range f.files {
+		if !filepath.IsAbs(pattern) {
+			path = strings.TrimLeft(path, f.Separator+f.CurrentDir)
+		}
+		path = strings.TrimLeft(path, f.Separator)
+		matched, _ := doublestar.PathMatch(pattern, path)
+		if matched {
+			matches = append(matches, path)
+		}
+	}
+	// The order in f.files is not deterministic, this would result in flaky tests.
+	sort.Strings(matches)
+	return matches, nil
+}
+
+func (f *FilesMock) Readlink(name string) (string, error) {
+	properties, ok := f.files[name]
+	if ok && properties.isLink {
+		return properties.target, nil
+	}
+	return "", fmt.Errorf("could not retrieve target for %s", name)
 }

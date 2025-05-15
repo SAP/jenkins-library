@@ -37,10 +37,6 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper(stageName: stageName, script: script) {
-
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
-
         if (config.mavenExecuteStaticCodeChecks) {
             mavenExecuteStaticCodeChecks(script: script)
         }

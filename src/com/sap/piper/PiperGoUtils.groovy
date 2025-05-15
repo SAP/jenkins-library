@@ -30,7 +30,7 @@ class PiperGoUtils implements Serializable {
 
         if (steps.env.REPOSITORY_UNDER_TEST && steps.env.LIBRARY_VERSION_UNDER_TEST) {
             steps.echo("Running in a consumer test, building unit-under-test binary for verification.")
-            steps.dockerExecute(script: steps, dockerImage: 'golang:1.18', dockerOptions: '-u 0', dockerEnvVars: [
+            steps.dockerExecute(script: steps, dockerImage: 'golang:1.24.0', dockerOptions: '-u 0', dockerEnvVars: [
                 REPOSITORY_UNDER_TEST: steps.env.REPOSITORY_UNDER_TEST,
                 LIBRARY_VERSION_UNDER_TEST: steps.env.LIBRARY_VERSION_UNDER_TEST
             ]) {
@@ -52,14 +52,13 @@ class PiperGoUtils implements Serializable {
                 }
             }
 
-            def fallbackUrl = 'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master'
+            def fallbackUrl = 'https://github.com/SAP/jenkins-library/releases/latest/download/piper'
             def piperBinUrl = (version == 'master') ? fallbackUrl : "https://github.com/SAP/jenkins-library/releases/download/${version}/piper"
 
             boolean downloaded = downloadGoBinary(piperBinUrl)
             if (!downloaded) {
                 //Inform that no Piper binary is available for used library branch
                 steps.echo ("Not able to download go binary of Piper for version ${version}")
-                //Fallback to master version & throw error in case this fails
                 steps.retry(12) {
                     if (!downloadGoBinary(fallbackUrl)) {
                         steps.sleep(10)
@@ -84,7 +83,7 @@ class PiperGoUtils implements Serializable {
     private boolean downloadGoBinary(url) {
 
         try {
-            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --retry 5 --retry-max-time 240 --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
+            def httpStatus = steps.sh(returnStdout: true, script: "curl --silent --retry 5 --retry-max-time 240 --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
 
             if (httpStatus == '200') {
                 steps.sh(script: "chmod +x ${piperExecutable}")

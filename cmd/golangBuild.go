@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -24,7 +23,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
-	"golang.org/x/mod/module"
 )
 
 const (
@@ -35,7 +33,7 @@ const (
 	integrationJsonReport       = "integration-report.out"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"
 	sbomFilename                = "bom-golang.xml"
 )
 
@@ -191,7 +189,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			"additionalParams": "",
 		}
 
-		if err := runGolangciLint(utils, golangciLintDir, lintSettings); err != nil {
+		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings); err != nil {
 			return err
 		}
 	}
@@ -215,14 +213,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 
 	var binaries []string
 	platforms, err := multiarch.ParsePlatformStrings(config.TargetArchitectures)
-
 	if err != nil {
 		return err
 	}
 
 	for _, platform := range platforms {
 		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
-
 		if err != nil {
 			return err
 		}
@@ -264,7 +260,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			}
 
 			artifact, err := versioning.GetArtifact("golang", "", &artifactOpts, utils)
-
 			if err != nil {
 				return err
 			}
@@ -306,7 +301,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			log.Entry().Infof("publishing artifact: %s", targetURL)
 
 			response, err := utils.UploadRequest(http.MethodPut, targetURL, binary, "", nil, nil, "binary")
-
 			if err != nil {
 				return fmt.Errorf("couldn't upload artifact: %w", err)
 			}
@@ -341,24 +335,9 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	// pass private repos to go process
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
-	repoURLs, err := lookupGolangPrivateModulesRepositories(goModFile, config.PrivateModules, utils)
-
+	err = gitConfigurationForPrivateModules(config.PrivateModules, config.PrivateModulesGitToken, utils)
 	if err != nil {
 		return err
-	}
-
-	// configure credentials git shall use for pulling repos
-	for _, repoURL := range repoURLs {
-		if match, _ := regexp.MatchString("(?i)^https?://", repoURL); !match {
-			continue
-		}
-
-		authenticatedRepoURL := strings.Replace(repoURL, "://", fmt.Sprintf("://%s@", config.PrivateModulesGitToken), 1)
-
-		err = utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoURL)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -424,7 +403,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 		}
 		utils.Stdout(log.Writer())
 
-		err = utils.FileWrite("cobertura-coverage.xml", coverageOutput.Bytes(), 0666)
+		err = utils.FileWrite("cobertura-coverage.xml", coverageOutput.Bytes(), 0o666)
 		if err != nil {
 			return fmt.Errorf("failed to create cobertura coverage file: %w", err)
 		}
@@ -453,7 +432,7 @@ func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir, golangciLintU
 	return nil
 }
 
-func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSettings map[string]string) error {
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 
 	var outputBuffer bytes.Buffer
@@ -463,14 +442,14 @@ func runGolangciLint(utils golangBuildUtils, golangciLintDir string, lintSetting
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
 
-	log.Entry().Infof("lint report: \n" + outputBuffer.String())
+	log.Entry().Infof("lint report: \n%s", outputBuffer.String())
 	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
-	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0644)
+	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0o644)
 	if err != nil {
 		return fmt.Errorf("writing golangci-lint report failed: %w", err)
 	}
 
-	if utils.GetExitCode() == 1 {
+	if utils.GetExitCode() == 1 && failOnError {
 		return fmt.Errorf("golangci-lint found issues, see report above")
 	}
 
@@ -539,38 +518,8 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	return binaryNames, nil
 }
 
-// lookupPrivateModulesRepositories returns a slice of all modules that match the given glob pattern
-func lookupGolangPrivateModulesRepositories(goModFile *modfile.File, globPattern string, utils golangBuildUtils) ([]string, error) {
-	if globPattern == "" {
-		return []string{}, nil
-	}
-
-	if goModFile == nil {
-		return nil, fmt.Errorf("couldn't find go.mod file")
-	} else if goModFile.Require == nil {
-		return []string{}, nil // no modules referenced, nothing to do
-	}
-
-	privateModules := []string{}
-
-	for _, goModule := range goModFile.Require {
-		if !module.MatchPrefixPatterns(globPattern, goModule.Mod.Path) {
-			continue
-		}
-
-		repo, err := utils.GetRepositoryURL(goModule.Mod.Path)
-
-		if err != nil {
-			return nil, err
-		}
-
-		privateModules = append(privateModules, repo)
-	}
-	return privateModules, nil
-}
-
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", "-test", "-output", outputFilename); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
@@ -621,7 +570,7 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	utils.Stderr(outBuffer)
 	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
 	}
 
 	if outBuffer.String() != "main" {
@@ -629,4 +578,21 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func gitConfigurationForPrivateModules(privateMod string, token string, utils golangBuildUtils) error {
+	privateMod = strings.ReplaceAll(privateMod, "/*", "")
+	privateMod = strings.ReplaceAll(privateMod, "*.", "")
+	modules := strings.Split(privateMod, ",")
+	for _, v := range modules {
+		authenticatedRepoURL := fmt.Sprintf("https://%s@%s", token, v)
+		repoBaseURL := fmt.Sprintf("https://%s", v)
+		err := utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }

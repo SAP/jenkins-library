@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -19,6 +20,7 @@ import (
 
 type tmsExportOptions struct {
 	TmsServiceKey            string                 `json:"tmsServiceKey,omitempty"`
+	ServiceKey               string                 `json:"serviceKey,omitempty"`
 	CustomDescription        string                 `json:"customDescription,omitempty"`
 	NamedUser                string                 `json:"namedUser,omitempty"`
 	NodeName                 string                 `json:"nodeName,omitempty"`
@@ -83,7 +85,7 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 
 !!! note "Prerequisites"
 * You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of your transport landscape.
-* A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of tmsServiceKey parameter.`,
+* A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of serviceKey parameter.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -91,23 +93,27 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.TmsServiceKey)
+			log.RegisterSecret(stepConfig.ServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -129,6 +135,11 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -138,21 +149,40 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
+			telemetryClient.Initialize(STEP_NAME)
 			tmsExport(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -164,7 +194,8 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 }
 
 func addTmsExportFlags(cmd *cobra.Command, stepConfig *tmsExportOptions) {
-	cmd.Flags().StringVar(&stepConfig.TmsServiceKey, "tmsServiceKey", os.Getenv("PIPER_tmsServiceKey"), "Service key JSON string to access the SAP Cloud Transport Management service instance APIs. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.")
+	cmd.Flags().StringVar(&stepConfig.TmsServiceKey, "tmsServiceKey", os.Getenv("PIPER_tmsServiceKey"), "DEPRECATION WARNING: This parameter has been deprecated, please use the serviceKey parameter instead, which supports both service key for TMS (SAP Cloud Transport Management service), as well as service key for CALM (SAP Cloud Application Lifecycle Management) service.\nService key JSON string to access the SAP Cloud Transport Management service instance APIs.\n")
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service key JSON string to access TMS (SAP Cloud Transport Management service) instance APIs. This can be a service key for TMS, or a service key for CALM (SAP Cloud Application Lifecycle Management) service. If not specified and if pipeline is running on Jenkins, service key, stored under ID provided with credentialsId parameter, is used.\n")
 	cmd.Flags().StringVar(&stepConfig.CustomDescription, "customDescription", os.Getenv("PIPER_customDescription"), "Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit ID.")
 	cmd.Flags().StringVar(&stepConfig.NamedUser, "namedUser", `Piper-Pipeline`, "Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'. If pipeline is running on Jenkins, the name of the user, who started the job, is tried to be used at first.")
 	cmd.Flags().StringVar(&stepConfig.NodeName, "nodeName", os.Getenv("PIPER_nodeName"), "Defines the name of the export node - starting node in TMS landscape. The transport request is added to the queues of the follow-on nodes of export node.")
@@ -173,7 +204,7 @@ func addTmsExportFlags(cmd *cobra.Command, stepConfig *tmsExportOptions) {
 
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL which should be used for communication with the SAP Cloud Transport Management service backend.")
 
-	cmd.MarkFlagRequired("tmsServiceKey")
+	cmd.MarkFlagRequired("serviceKey")
 	cmd.MarkFlagRequired("nodeName")
 }
 
@@ -188,18 +219,27 @@ func tmsExportMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport Management service.", Type: "jenkins"},
+					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for TMS (SAP Cloud Transport Management service) or CALM (SAP Cloud Application Lifecycle Management) service.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildResult", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "tmsServiceKey",
+						Name:        "tmsServiceKey",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_tmsServiceKey"),
+					},
+					{
+						Name: "serviceKey",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "credentialsId",
-								Param: "tmsServiceKey",
+								Param: "serviceKey",
 								Type:  "secret",
 							},
 						},
@@ -207,7 +247,7 @@ func tmsExportMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_tmsServiceKey"),
+						Default:   os.Getenv("PIPER_serviceKey"),
 					},
 					{
 						Name: "customDescription",

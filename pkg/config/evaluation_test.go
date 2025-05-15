@@ -4,10 +4,8 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,7 +31,7 @@ func evaluateConditionsOpenFileMock(name string, _ map[string]string) (io.ReadCl
 	var fileContent io.ReadCloser
 	switch name {
 	case "package.json":
-		fileContent = ioutil.NopCloser(strings.NewReader(`
+		fileContent = io.NopCloser(strings.NewReader(`
 		{
 			"scripts": {
 				"npmScript": "echo test",
@@ -42,207 +40,198 @@ func evaluateConditionsOpenFileMock(name string, _ map[string]string) (io.ReadCl
 		}
 		`))
 	case "_package.json":
-		fileContent = ioutil.NopCloser(strings.NewReader("wrong json format"))
+		fileContent = io.NopCloser(strings.NewReader("wrong json format"))
 	case "test/package.json":
-		fileContent = ioutil.NopCloser(strings.NewReader("{}"))
+		fileContent = io.NopCloser(strings.NewReader("{}"))
 	}
 	return fileContent, nil
 }
 
-func TestEvaluateConditionsV1(t *testing.T) {
-	filesMock := mock.FilesMock{}
-
-	runConfig := RunConfigV1{
-		PipelineConfig: PipelineDefinitionV1{
-			Spec: Spec{
-				Stages: []Stage{
-					{
-						Name:        "stage1",
-						DisplayName: "Test Stage 1",
-						Steps: []Step{
-							{
-								Name:          "step1_1",
-								Conditions:    []StepCondition{},
-								Orchestrators: []string{"Jenkins"},
-							},
-							{
-								Name: "step1_2",
-								Conditions: []StepCondition{
-									{ConfigKey: "testKey"},
-								},
-							},
-							{
-								Name:       "step1_3",
-								Conditions: []StepCondition{},
-							},
-							{
-								Name: "step1_4",
-								Conditions: []StepCondition{
-									{ConfigKey: "firstKey/nextKey"},
-								},
-							},
-						},
-					},
-					{
-						Name:        "stage2",
-						DisplayName: "Test Stage 2",
-						Steps: []Step{
-							{
-								Name: "step2_1",
-								Conditions: []StepCondition{
-									{ConfigKey: "testKeyNotExisting"},
-									{ConfigKey: "testKey"},
-								},
-							},
-							{
-								Name: "step2_2",
-							},
-						},
-					},
-					{
-						Name:        "stage3",
-						DisplayName: "Test Stage 3",
-						Steps: []Step{
-							{
-								Name: "step3_1",
-								Conditions: []StepCondition{
-									{ConfigKey: "testKeyNotExisting"},
-									{ConfigKey: "testKey"},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func TestRunConfigV1EvaluateConditionsV1(t *testing.T) {
 	config := Config{Stages: map[string]map[string]interface{}{
-		"Test Stage 1": {"step1_3": false, "testKey": "testVal", "firstKey": map[string]interface{}{"nextKey": "dummy"}},
-		"Test Stage 2": {"testKey": "testVal"},
-	}}
-
-	expectedSteps := map[string]map[string]bool{
 		"Test Stage 1": {
-			"step1_2": true,
-			"step1_3": false,
-			"step1_4": true,
+			"step1":    true,       // explicit activate
+			"step5":    true,       // explicit activate
+			"step2":    false,      // explicit deactivate
+			"testKey":  "testVal",  // some condition 1
+			"testKey2": "testVal2", // some condition 2
 		},
-		"Test Stage 2": {
-			"step2_1": true,
-			"step2_2": true,
-		},
-		"Test Stage 3": {
-			"step3_1": false,
-		},
-	}
-
-	expectedStages := map[string]bool{
-		"Test Stage 1": true,
-		"Test Stage 2": true,
-		"Test Stage 3": false,
-	}
-
-	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock, ".pipeline")
-	assert.NoError(t, err)
-	assert.Equal(t, expectedSteps, runConfig.RunSteps)
-	assert.Equal(t, expectedStages, runConfig.RunStages)
-
-}
-
-func TestNotActiveEvaluateConditionsV1(t *testing.T) {
+	}}
 	filesMock := mock.FilesMock{}
+	envRootPath := ".pipeline"
 
-	runConfig := RunConfigV1{
-		PipelineConfig: PipelineDefinitionV1{
-			Spec: Spec{
-				Stages: []Stage{
-					{
-						Name:        "stage1",
-						DisplayName: "Test Stage 1",
-						Steps: []Step{
-							{
-								Name:          "step1_1",
-								Conditions:    []StepCondition{},
-								Orchestrators: []string{"Jenkins"},
-							},
-							{
-								Name: "step1_2",
-								Conditions: []StepCondition{
-									{ConfigKey: "testKey"},
-								},
-								NotActiveConditions: []StepCondition{
-									{ConfigKey: "testKeyNotExisting"},
-								},
-							},
-							{
-								Name:       "step1_3",
-								Conditions: []StepCondition{},
-								NotActiveConditions: []StepCondition{
-									{ConfigKey: "testKeyNotExisting"},
-									{ConfigKey: "testKey"},
-								},
-							},
-						},
-					},
-					{
-						Name:        "stage2",
-						DisplayName: "Test Stage 2",
-						Steps: []Step{
-							{
-								Name: "step2_1",
-								Conditions: []StepCondition{
-									{ConfigKey: "testKeyNotExisting"},
-									{ConfigKey: "testKey"},
-								},
-							},
-						},
-					},
-					{
-						Name:        "stage3",
-						DisplayName: "Test Stage 3",
-						Steps: []Step{
-							{
-								Name: "step3_1",
-								NotActiveConditions: []StepCondition{
-									{ConfigKey: "testKey"},
-								},
-							},
-						},
-					},
-				},
+	tests := []struct {
+		name           string
+		pipelineConfig PipelineDefinitionV1
+		wantRunSteps   map[string]map[string]bool
+		wantRunStages  map[string]bool
+	}{
+		{
+			name: "all steps in stage are inactive",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
+				Steps: []Step{{
+					Name:                "step1",
+					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+				}, {
+					Name: "step2",
+				}, {
+					Name:                "step3",
+					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+				}},
 			},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"step1": false,
+					"step2": false,
+					"step3": false,
+				}},
+			wantRunStages: map[string]bool{"Test Stage 1": false},
+		},
+		{
+			name: "simple stepActive conditions",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
+				Steps: []Step{{
+					Name:       "step3",
+					Conditions: []StepCondition{{ConfigKey: "testKey"}},
+				}, {
+					Name:       "step4",
+					Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+				}},
+			},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"step3": true,
+					"step4": false,
+				}},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "explicit active/deactivate over stepActiveCondition",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
+				Steps: []Step{{
+					Name:       "step1",
+					Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+				}, {
+					Name:       "step2",
+					Conditions: []StepCondition{{ConfigKey: "testKey"}},
+				}},
+			},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"step1": true,
+					"step2": false,
+				}},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "stepNotActiveCondition over stepActiveCondition",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
+				Steps: []Step{{
+					Name:                "step3",
+					Conditions:          []StepCondition{{ConfigKey: "testKey"}},
+					NotActiveConditions: []StepCondition{{ConfigKey: "testKey2"}},
+				}, {
+					// false notActive condition
+					Name:                "step4",
+					Conditions:          []StepCondition{{ConfigKey: "testKey"}},
+					NotActiveConditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+				}},
+			},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"step3": false,
+					"step4": true,
+				}},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "stepNotActiveCondition over explicitly activated step",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
+				Steps: []Step{{
+					Name:                "step1",
+					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+				}, {
+					Name:                "step5",
+					NotActiveConditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+				}},
+			},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"step1": false,
+					"step5": true,
+				}},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "deactivate if only active step in stage",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
+				Steps: []Step{{
+					Name:                "step1",
+					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+				}, {
+					Name: "step2",
+				}, {
+					Name:                "step3",
+					NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
+				}, {
+					Name:       "step4",
+					Conditions: []StepCondition{{ConfigKey: "keyNotExist"}},
+				}},
+			},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"step1": false,
+					"step2": false,
+					"step3": false,
+					"step4": false,
+				}},
+			wantRunStages: map[string]bool{"Test Stage 1": false},
+		},
+		{
+			name: "OnlyActiveStepInStage: one of the next steps is active",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
+				Steps: []Step{{
+					Name:                "step1",
+					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+				}, {
+					Name: "step2",
+				}, {
+					Name:                "step3",
+					Conditions:          []StepCondition{{ConfigKey: "testKey"}},
+					NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
+				}, {
+					Name:       "step4",
+					Conditions: []StepCondition{{ConfigKey: "testKey2"}},
+				}},
+			},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"step1": false,
+					"step2": false,
+					"step3": true,
+					"step4": true,
+				}},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
 		},
 	}
-	config := Config{Stages: map[string]map[string]interface{}{
-		"Test Stage 1": {"testKey": "testVal"},
-		"Test Stage 2": {"testKey": "testVal"},
-		"Test Stage 3": {"testKey": "testVal"},
-	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &RunConfigV1{PipelineConfig: tt.pipelineConfig}
+			assert.NoError(t, r.evaluateConditionsV1(&config, &filesMock, envRootPath),
+				fmt.Sprintf("evaluateConditionsV1() err, pipelineConfig = %v", tt.pipelineConfig),
+			)
 
-	expectedSteps := map[string]map[string]bool{
-		"Test Stage 1": {
-			"step1_2": true,
-			"step1_3": false,
-		},
-		"Test Stage 2": {
-			"step2_1": true,
-		},
-		"Test Stage 3": {
-			"step3_1": false,
-		},
+			assert.Equal(t, tt.wantRunSteps, r.RunSteps, "RunSteps mismatch")
+			assert.Equal(t, tt.wantRunStages, r.RunStages, "RunStages mismatch")
+		})
 	}
-
-	expectedStages := map[string]bool{
-		"Test Stage 1": true,
-		"Test Stage 2": true,
-		"Test Stage 3": false,
-	}
-
-	err := runConfig.evaluateConditionsV1(&config, nil, nil, nil, nil, &filesMock, ".pipeline")
-	assert.NoError(t, err)
-	assert.Equal(t, expectedSteps, runConfig.RunSteps)
-	assert.Equal(t, expectedStages, runConfig.RunStages)
-
 }
 
 func TestEvaluateV1(t *testing.T) {
@@ -250,6 +239,7 @@ func TestEvaluateV1(t *testing.T) {
 		name          string
 		config        StepConfig
 		stepCondition StepCondition
+		runSteps      map[string]bool
 		expected      bool
 		expectedError error
 	}{
@@ -400,6 +390,20 @@ func TestEvaluateV1(t *testing.T) {
 			expected:      false,
 		},
 		{
+			name:          "NotActiveCondition: all previous steps are inactive",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{OnlyActiveStepInStage: true},
+			runSteps:      map[string]bool{"step1": false, "step2": false},
+			expected:      true,
+		},
+		{
+			name:          "NotActiveCondition: one of the previous steps is active",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{OnlyActiveStepInStage: true},
+			runSteps:      map[string]bool{"step1": false, "step2": false, "step3": true},
+			expected:      false,
+		},
+		{
 			name:     "No condition - true",
 			config:   StepConfig{Config: map[string]interface{}{}},
 			expected: true,
@@ -424,12 +428,12 @@ func TestEvaluateV1(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create sub directories")
 	}
-	ioutil.WriteFile(filepath.Join(cpeDir, "myCpeTrueFile"), []byte("myTrueValue"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "custom", "myCpeTrueFile"), []byte("myTrueValue"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "myCpeTrueFile"), []byte("myTrueValue"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "custom", "myCpeTrueFile"), []byte("myTrueValue"), 0700)
 
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
-			active, err := test.stepCondition.evaluateV1(test.config, &filesMock, "dummy", dir)
+			active, err := test.stepCondition.evaluateV1(test.config, &filesMock, "dummy", dir, test.runSteps)
 			if test.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -440,508 +444,58 @@ func TestEvaluateV1(t *testing.T) {
 	}
 }
 
-func TestEvaluateConditions(t *testing.T) {
+func TestAnyOtherStepIsActive(t *testing.T) {
+	targetStep := "step3"
+
 	tests := []struct {
-		name             string
-		customConfig     *Config
-		stageConfig      io.ReadCloser
-		runStepsExpected map[string]map[string]bool
-		globFunc         func(pattern string) ([]string, error)
-		wantErr          bool
+		name     string
+		runSteps map[string]bool
+		want     bool
 	}{
 		{
-			name: "test config condition - success",
-			customConfig: &Config{
-				General: map[string]interface{}{
-					"testGeneral": "myVal1",
-				},
-				Stages: map[string]map[string]interface{}{
-					"testStage2": {
-						"testStage": "myVal2",
-					},
-				},
-				Steps: map[string]map[string]interface{}{
-					"thirdStep": {
-						"testStep1": "myVal3",
-					},
-				},
+			name: "all steps are inactive (target active)",
+			runSteps: map[string]bool{
+				"step1": false,
+				"step2": false,
+				"step3": true,
+				"step4": false,
 			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        config: testGeneral
-  testStage2:
-    stepConditions:
-      secondStep:
-        config: testStage
-  testStage3:
-    stepConditions:
-      thirdStep:
-        config: testStep1
-      forthStep:
-        config: testStep2
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {"firstStep": true},
-				"testStage2": {"secondStep": true},
-				"testStage3": {
-					"thirdStep": true,
-					"forthStep": false,
-				},
-			},
-			wantErr: false,
+			want: false,
 		},
 		{
-			name: "test config condition - wrong usage with list",
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
+			name: "all steps are inactive (target inactive)",
+			runSteps: map[string]bool{
+				"step1": false,
+				"step2": false,
+				"step3": false,
+				"step4": false,
 			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        config: 
-         - testGeneral
-            `)),
-			runStepsExpected: map[string]map[string]bool{},
-			wantErr:          true,
+			want: false,
 		},
 		{
-			name: "test config value condition - success",
-			customConfig: &Config{
-				General: map[string]interface{}{
-					"testGeneral": "myVal1",
-				},
-				Stages: map[string]map[string]interface{}{},
-				Steps: map[string]map[string]interface{}{
-					"thirdStep": {
-						"testStep": "myVal3",
-					},
-				},
+			name: "some previous step is active",
+			runSteps: map[string]bool{
+				"step1": false,
+				"step2": true,
+				"step3": false,
+				"step4": false,
 			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        config:
-          testGeneral:
-            - myValx
-            - myVal1
-  testStage2:
-    stepConditions:
-      secondStep:
-        config:
-          testStage:
-            - maValXyz
-  testStage3:
-    stepConditions:
-      thirdStep:
-        config:
-          testStep:
-            - myVal3
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {"firstStep": true},
-				"testStage2": {"secondStep": false},
-				"testStage3": {"thirdStep": true},
-			},
-			wantErr: false,
+			want: true,
 		},
 		{
-			name: "test configKey condition - success",
-			customConfig: &Config{
-				General: map[string]interface{}{
-					"myKey1_1": "myVal1_1",
-				},
-				Stages: map[string]map[string]interface{}{},
-				Steps: map[string]map[string]interface{}{
-					"thirdStep": {
-						"myKey3_1": "myVal3_1",
-					},
-				},
+			name: "some next step is active",
+			runSteps: map[string]bool{
+				"step1": false,
+				"step2": false,
+				"step3": true,
+				"step4": true,
 			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        configKeys:
-          - myKey1_1
-          - myKey1_2
-  testStage2:
-    stepConditions:
-      secondStep:
-        configKeys:
-          - myKey2_1
-  testStage3:
-    stepConditions:
-      thirdStep:
-        configKeys:
-          - myKey3_1
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {"firstStep": true},
-				"testStage2": {"secondStep": false},
-				"testStage3": {"thirdStep": true},
-			},
-			wantErr: false,
-		},
-		{
-			name: "test configKey condition - not list",
-			customConfig: &Config{
-				General: map[string]interface{}{
-					"myKey1_1": "myVal1_1",
-				},
-				Stages: map[string]map[string]interface{}{},
-				Steps:  map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        configKeys: myKey1_1
-            `)),
-			wantErr: true,
-		},
-		{
-			name: "test configKey condition - success",
-			customConfig: &Config{
-				General: map[string]interface{}{
-					"myKey1_1": "myVal1_1",
-				},
-				Stages: map[string]map[string]interface{}{},
-				Steps: map[string]map[string]interface{}{
-					"thirdStep": {
-						"myKey3_1": "myVal3_1",
-					},
-				},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        configKeys:
-          - myKey1_1
-          - myKey1_2
-  testStage2:
-    stepConditions:
-      secondStep:
-        configKeys:
-          - myKey2_1
-  testStage3:
-    stepConditions:
-      thirdStep:
-        configKeys:
-          - myKey3_1
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {"firstStep": true},
-				"testStage2": {"secondStep": false},
-				"testStage3": {"thirdStep": true},
-			},
-			wantErr: false,
-		},
-		{
-			name:     "test filePattern condition - success",
-			globFunc: evaluateConditionsGlobMock,
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePattern: '**/conf.js'
-      secondStep:
-        filePattern: '**/conf.jsx'
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {
-					"firstStep":  true,
-					"secondStep": false,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "test filePattern condition - error while searching files by pattern",
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePattern: '**/conf.js'
-            `)),
-			runStepsExpected: map[string]map[string]bool{},
-			globFunc: func(pattern string) ([]string, error) {
-				return nil, errors.New("failed to check if file exists")
-			},
-			wantErr: true,
-		},
-		{
-			name:     "test filePattern condition with list - success",
-			globFunc: evaluateConditionsGlobMock,
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePattern:
-         - '**/conf.js'
-         - 'myCollection.json'
-      secondStep:
-        filePattern: 
-         - '**/conf.jsx'
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {
-					"firstStep":  true,
-					"secondStep": false,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "test filePattern condition with list - error while searching files by pattern",
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePattern:
-         - '**/conf.js'
-         - 'myCollection.json'
-            `)),
-			runStepsExpected: map[string]map[string]bool{},
-			globFunc: func(pattern string) ([]string, error) {
-				return nil, errors.New("failed to check if file exists")
-			},
-			wantErr: true,
-		},
-		{
-			name:     "test filePatternFromConfig condition - success",
-			globFunc: evaluateConditionsGlobMock,
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps: map[string]map[string]interface{}{
-					"firstStep": {
-						"myVal1": "**/conf.js",
-					},
-					"thirdStep": {
-						"myVal3": "**/conf.jsx",
-					},
-				},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePatternFromConfig: myVal1
-      secondStep:
-        filePatternFromConfig: myVal2
-      thirdStep:
-        filePatternFromConfig: myVal3
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {
-					"firstStep":  true,
-					"secondStep": false,
-					"thirdStep":  false,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "test filePatternFromConfig condition - error while searching files by pattern",
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps: map[string]map[string]interface{}{
-					"firstStep": {
-						"myVal1": "**/conf.js",
-					},
-				},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        filePatternFromConfig: myVal1
-            `)),
-			runStepsExpected: map[string]map[string]bool{},
-			globFunc: func(pattern string) ([]string, error) {
-				return nil, errors.New("failed to check if file exists")
-			},
-			wantErr: true,
-		},
-		{
-			name:     "test npmScripts condition - success",
-			globFunc: evaluateConditionsGlobMock,
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        npmScripts: 'npmScript'
-      secondStep:
-        npmScripts: 'npmScript1'
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {
-					"firstStep":  true,
-					"secondStep": false,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:     "test npmScripts condition with list - success",
-			globFunc: evaluateConditionsGlobMock,
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        npmScripts:
-         - 'npmScript'
-         - 'npmScript2'
-      secondStep:
-        npmScripts:
-         - 'npmScript3'
-         - 'npmScript4'
-            `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {
-					"firstStep":  true,
-					"secondStep": false,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "test npmScripts condition - json with wrong format",
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        npmScripts:
-         - 'npmScript3'
-            `)),
-			runStepsExpected: map[string]map[string]bool{},
-			globFunc: func(pattern string) ([]string, error) {
-				return []string{"_package.json"}, nil
-			},
-			wantErr: true,
-		},
-		{
-			name: "test npmScripts condition - error while searching package.json",
-			customConfig: &Config{
-				General: map[string]interface{}{},
-				Stages:  map[string]map[string]interface{}{},
-				Steps:   map[string]map[string]interface{}{},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        npmScripts:
-         - 'npmScript3'
-            `)),
-			runStepsExpected: map[string]map[string]bool{},
-			globFunc: func(pattern string) ([]string, error) {
-				return nil, errors.New("failed to check if file exists")
-			},
-			wantErr: true,
-		},
-		{
-			name: "test explicit activation / de-activation of step",
-			customConfig: &Config{
-				Stages: map[string]map[string]interface{}{
-					"testStage1": {
-						"firstStep":    true,
-						"fisecondStep": false,
-					},
-				},
-			},
-			stageConfig: ioutil.NopCloser(strings.NewReader(`
-stages:
-  testStage1:
-    stepConditions:
-      firstStep:
-        config: testGeneral
-      secondStep:
-        config: testStage
-`)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {
-					"firstStep":  true,
-					"secondStep": false,
-				},
-			},
+			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runConfig := RunConfig{
-				StageConfigFile: tt.stageConfig,
-				RunSteps:        map[string]map[string]bool{},
-				OpenFile:        evaluateConditionsOpenFileMock,
-			}
-			err := runConfig.loadConditions()
-			assert.NoError(t, err)
-			err = runConfig.evaluateConditions(tt.customConfig, nil, nil, nil, nil, tt.globFunc)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.runStepsExpected, runConfig.RunSteps)
-			}
+			assert.Equalf(t, tt.want, anyOtherStepIsActive(targetStep, tt.runSteps), "anyOtherStepIsActive(%v, %v)", targetStep, tt.runSteps)
 		})
 	}
 }

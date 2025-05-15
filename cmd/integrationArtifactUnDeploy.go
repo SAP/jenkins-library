@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
@@ -64,7 +64,7 @@ func runIntegrationArtifactUnDeploy(config *integrationArtifactUnDeployOptions, 
 			Info("successfully undeployed from integration runtime")
 		return nil
 	}
-	responseBody, readErr := ioutil.ReadAll(unDeployResp.Body)
+	responseBody, readErr := io.ReadAll(unDeployResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", unDeployResp.StatusCode)

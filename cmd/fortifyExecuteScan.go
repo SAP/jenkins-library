@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +20,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/google/uuid"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -51,7 +52,7 @@ gradle.allprojects {
 `
 
 type pullRequestService interface {
-	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.ListOptions) ([]*github.PullRequest, *github.Response, error)
 }
 
 type fortifyUtils interface {
@@ -114,12 +115,12 @@ var execInPath = exec.LookPath
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	ctx, client, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
 	auditStatus := map[string]string{}
-	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
+	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, config.Proxy, time.Minute*15)
 	utils := newFortifyUtilsBundle(client)
 
 	influx.step_data.fields.fortify = false
@@ -211,7 +212,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 		prID, prAuthor := determinePullRequestMerge(config)
 		if prID != "0" {
 			log.Entry().Debugf("Determined PR ID '%v' for merge check", prID)
-			if len(prAuthor) > 0 && !piperutils.ContainsString(config.Assignees, prAuthor) {
+			if len(prAuthor) > 0 && !slices.Contains(config.Assignees, prAuthor) {
 				log.Entry().Debugf("Determined PR Author '%v' for result assignment", prAuthor)
 				config.Assignees = append(config.Assignees, prAuthor)
 			} else {
@@ -258,10 +259,18 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	}
 
 	if config.UpdateRulePack {
-		err := utils.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
+
+		fortifyUpdateParams := []string{"-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL}
+		proxyPort, proxyHost := getProxyParams(config.Proxy)
+		if proxyHost != "" && proxyPort != "" {
+			fortifyUpdateParams = append(fortifyUpdateParams, "-proxyhost", proxyHost, "-proxyport", proxyPort)
+		}
+
+		err := utils.RunExecutable("fortifyupdate", fortifyUpdateParams...)
 		if err != nil {
 			return reports, fmt.Errorf("failed to update rule pack, serverUrl: %v", config.ServerURL)
 		}
+
 		err = utils.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-showInstalledRules")
 		if err != nil {
 			return reports, fmt.Errorf("failed to fetch details of installed rule pack, serverUrl: %v", config.ServerURL)
@@ -272,7 +281,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
 	if err != nil {
-		return reports, errors.Wrapf(err, "failed to scan project")
+		return reports, errors.Wrap(err, "failed to scan project")
 	}
 
 	var message string
@@ -342,7 +351,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID))
-		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700); err != nil {
+		if err := os.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700); err != nil {
 			log.Entry().WithError(err).Error("failed to write file")
 		}
 
@@ -350,7 +359,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 		if err != nil {
 			return reports, err
 		}
-		if err := ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700); err != nil {
+		if err := os.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0o700); err != nil {
 			log.Entry().WithError(err).Warning("failed to write file")
 		}
 	}
@@ -776,7 +785,7 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	// redirect stdout and create cp file from command output
 	outfile, err := os.Create(file)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create classpath file")
+		return "", errors.Wrap(err, "failed to create classpath file")
 	}
 	defer outfile.Close()
 	utils.Stdout(outfile)
@@ -874,7 +883,7 @@ func readAllClasspathFiles(file string) string {
 }
 
 func readClasspathFile(file string) string {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to read classpath from file '%v'", file)
 	}
@@ -1108,7 +1117,7 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string) {
 	author := ""
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	ctx, client, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 	if err == nil && ctx != nil && client != nil {
 		prID, author, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
 		if err != nil {
@@ -1132,8 +1141,7 @@ func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string
 func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, string, error) {
 	number := "0"
 	author := ""
-	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
-	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
+	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &github.ListOptions{})
 	if err == nil && prList != nil && len(prList) > 0 {
 		number = fmt.Sprintf("%v", prList[0].GetNumber())
 		if prList[0].GetUser() != nil {
@@ -1261,4 +1269,17 @@ func createToolRecordFortify(utils fortifyUtils, workspace string, config fortif
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+func getProxyParams(proxyUrl string) (string, string) {
+	if proxyUrl == "" {
+		return "", ""
+	}
+
+	urlParams, err := url.Parse(proxyUrl)
+	if err != nil {
+		log.Entry().Warningf("Failed to parse proxy url %s", proxyUrl)
+		return "", ""
+	}
+	return urlParams.Port(), urlParams.Hostname()
 }

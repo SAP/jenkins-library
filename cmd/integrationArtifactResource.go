@@ -5,7 +5,7 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -221,7 +221,7 @@ func HttpResponseHandler(resp *http.Response, httpErr error, integrationArtifact
 		return nil
 	}
 	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(resp.Body)
+		responseBody, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", resp.StatusCode)
 		}

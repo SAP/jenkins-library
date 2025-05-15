@@ -19,5 +19,5 @@ We recommend to define values of step parameters via [config.yml file](../config
 Pipeline step:
 
 ```groovy
-gatlingExecuteTests script: this, testModule: 'performance-tests/pom.xml'
+gatlingExecuteTests script: this, pomPath: 'performance-tests/pom.xml'
 ```

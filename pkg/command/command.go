@@ -43,6 +43,7 @@ type runner interface {
 type ExecRunner interface {
 	runner
 	RunExecutable(executable string, params ...string) error
+	RunExecutableWithAttrs(executable string, sysProcAttr *syscall.SysProcAttr, params ...string) error
 	RunExecutableInBackground(executable string, params ...string) (Execution, error)
 }
 
@@ -132,9 +133,18 @@ func (c *Command) RunShell(shell, script string) error {
 //
 //	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
+	return c.RunExecutableWithAttrs(executable, nil, params...)
+}
+
+// RunExecutableWithAttrs runs the specified executable with parameters and as a specified UID and GID
+// !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
+//
+//	Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+func (c *Command) RunExecutableWithAttrs(executable string, sysProcAttr *syscall.SysProcAttr, params ...string) error {
 	c.prepareOut()
 
 	cmd := ExecCommand(executable, params...)
+	cmd.SysProcAttr = sysProcAttr
 
 	if len(c.dir) > 0 {
 		cmd.Dir = c.dir

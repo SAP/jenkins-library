@@ -58,24 +58,25 @@ testsPublishResults(
 
 ### jmeter
 
-| parameter | mandatory | default | possible values |
-| ----------|-----------|---------|-----------------|
+| parameter | mandatory | default      | possible values |
+| ----------|-----------|--------------|-----------------|
 | pattern | no | `'**/*.jtl'` |  |
-| errorFailedThreshold | no | `20` |  |
-| errorUnstableThreshold | no | `10` |  |
-| errorUnstableResponseTimeThreshold | no | `` |  |
-| relativeFailedThresholdPositive | no | `0` |  |
-| relativeFailedThresholdNegative | no | `0` |  |
-| relativeUnstableThresholdPositive | no | `0` |  |
-| relativeUnstableThresholdNegative | no | `0` |  |
-| modeOfThreshold | no | `false` | true, false |
-| modeThroughput | no | `false` | true, false |
-| nthBuildNumber | no | `0` |  |
-| configType | no | `PRT` |  |
-| failBuildIfNoResultFile | no | `false` | true, false |
-| compareBuildPrevious | no | `true` | true, false |
-| archive | no | `false` | true, false |
-| allowEmptyResults | no | `true` | true, false |
+| errorFailedThreshold | no | `20`         |  |
+| errorUnstableThreshold | no | `10`         |  |
+| errorUnstableResponseTimeThreshold | no | ``           |  |
+| relativeFailedThresholdPositive | no | `0`          |  |
+| relativeFailedThresholdNegative | no | `0`          |  |
+| relativeUnstableThresholdPositive | no | `0`          |  |
+| relativeUnstableThresholdNegative | no | `0`          |  |
+| modeOfThreshold | no | `false`      | true, false |
+| modeThroughput | no | `false`      | true, false |
+| nthBuildNumber | no | `0`          |  |
+| configType | no | `PRT`        |  |
+| failBuildIfNoResultFile | no | `false`      | true, false |
+| compareBuildPrevious | no | `true`       | true, false |
+| archive | no | `false`      | true, false |
+| allowEmptyResults | no | `true`       | true, false |
+| filterRegex | no | ' '           |  |
 
 ## ${docGenConfiguration}
 

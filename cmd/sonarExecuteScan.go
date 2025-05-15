@@ -1,7 +1,9 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -82,8 +84,27 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	downloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 	// client for talking to the SonarQube API
 	apiClient := &piperhttp.Client{}
-	//TODO: implement certificate handling
-	apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
+	proxy := config.Proxy
+	if proxy != "" {
+		transportProxy, err := url.Parse(proxy)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Failed to parse proxy string %v into a URL structure", proxy)
+		}
+		host, port, err := net.SplitHostPort(transportProxy.Host)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Failed to retrieve host and port from the proxy URL")
+		}
+		// provide proxy setting for Java based Sonar scanner
+		javaToolOptions := fmt.Sprintf("-Dhttp.proxyHost=%v -Dhttp.proxyPort=%v", host, port)
+		os.Setenv("JAVA_TOOL_OPTIONS", javaToolOptions)
+
+		apiClient.SetOptions(piperhttp.ClientOptions{TransportProxy: transportProxy, TransportSkipVerification: true})
+		log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
+
+	} else {
+		//TODO: implement certificate handling
+		apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
+	}
 
 	sonar = sonarSettings{
 		workingDir:  "./",
@@ -195,6 +216,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.Entry().WithError(err).Warning("no scan report found")
 		return nil
 	}
+
+	var serverUrl string
+
+	if len(config.Proxy) > 0 {
+		serverUrl = config.ServerURL
+	} else {
+		serverUrl = taskReport.ServerURL
+	}
 	// write reports JSON
 	reports := []piperutils.Path{
 		{
@@ -215,14 +244,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		log.Entry().Warn("no measurements are fetched due to missing credentials")
 		return nil
 	}
-	taskService := SonarUtils.NewTaskService(taskReport.ServerURL, config.Token, taskReport.TaskID, apiClient)
+	taskService := SonarUtils.NewTaskService(serverUrl, config.Token, taskReport.TaskID, apiClient)
 	// wait for analysis task to complete
 	err = taskService.WaitForTask()
 	if err != nil {
 		return err
 	}
 	// fetch number of issues by severity
-	issueService := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
+	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues()
 	if err != nil {
 		return err
@@ -259,7 +288,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Info:     influx.sonarqube_data.fields.info_issues,
 		}}
 
-	componentService := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
+	componentService := SonarUtils.NewMeasuresComponentService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	cov, err := componentService.GetCoverage()
 	if err != nil {
 		log.Entry().Warnf("failed to retrieve sonar coverage data: %v", err)
@@ -276,7 +305,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 
 	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
 
-	err = SonarUtils.WriteReport(reportData, sonar.workingDir, ioutil.WriteFile)
+	err = SonarUtils.WriteReport(reportData, sonar.workingDir, os.WriteFile)
 
 	if err != nil {
 		return err
@@ -386,13 +415,23 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 	return nil
 }
 
+func addSonarScannerOpts(opts string) {
+	tmpOpts := os.Getenv("SONAR_SCANNER_OPTS")
+	if len(tmpOpts) > 0 {
+		log.Entry().Debug("SONAR_SCANNER_OPTS already set. Appending to existing value: " + tmpOpts)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + tmpOpts + " " + opts)
+	} else {
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + opts)
+	}
+}
+
 func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
 	truststorePath := filepath.Join(getWorkingDir(), ".certificates")
 	truststoreFile := filepath.Join(truststorePath, "cacerts")
 
 	if exists, _ := fileUtilsExists(truststoreFile); exists {
 		// use local existing trust store
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
+		addSonarScannerOpts(keytool.GetMavenOpts(truststoreFile))
 		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else if len(certificateList) > 0 {
 		// create download temp dir
@@ -414,7 +453,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			// download certificate
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
-				return errors.Wrapf(err, "Download of TLS certificate failed")
+				return errors.Wrap(err, "Download of TLS certificate failed")
 			}
 			// add certificate to keystore
 			if err := keytool.ImportCert(runner, truststoreFile, target); err != nil {
@@ -422,7 +461,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 				// return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
+		addSonarScannerOpts(keytool.GetMavenOpts(truststoreFile))
 		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
@@ -439,7 +478,7 @@ func getWorkingDir() string {
 }
 
 func getTempDir() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}
@@ -448,14 +487,14 @@ func getTempDir() string {
 
 // Fetches parameters from environment variables and updates the options accordingly (only if not already set)
 func detectParametersFromCI(options *sonarExecuteScanOptions) {
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 		return
 	}
 
 	if provider.IsPullRequest() {
-		config := provider.GetPullRequestConfig()
+		config := provider.PullRequestConfig()
 		if len(options.ChangeBranch) == 0 {
 			log.Entry().Info("Inferring parameter changeBranch from environment: " + config.Branch)
 			options.ChangeBranch = config.Branch
@@ -469,7 +508,7 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 			options.ChangeID = config.Key
 		}
 	} else {
-		branch := provider.GetBranch()
+		branch := provider.Branch()
 		if options.InferBranchName && len(options.BranchName) == 0 {
 			log.Entry().Info("Inferring parameter branchName from environment: " + branch)
 			options.BranchName = branch

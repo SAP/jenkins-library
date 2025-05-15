@@ -91,7 +91,7 @@ def call(Map parameters) {
         goals: ['checkstyle:checkstyle'],
     )
 
-    recordIssues blameDisabled: true,
+    recordIssues skipBlames: true,
         enabledForFailure: true,
         aggregatingResults: false,
         tool: checkStyle()

@@ -4,9 +4,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -284,9 +284,9 @@ go 1.17`
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"install", "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-test", "-output", "bom-golang.xml"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", "1.4"}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -330,7 +330,7 @@ go 1.17`
 			CreateBOM: true,
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest": fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{"go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0": fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -479,8 +479,9 @@ go 1.17`
 			CreateBOM:           true,
 			TargetArchitectures: []string{"linux,amd64"},
 		}
+		GeneralConfig.Verbose = false
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -test -output bom-golang.xml": fmt.Errorf("BOM creation failure")}
+		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version 1.4": fmt.Errorf("BOM creation failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -707,10 +708,10 @@ func TestPrepareLdflags(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 
-	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0777)
+	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0o777)
 	assert.NoError(t, err, "Error when creating folder structure")
 
-	err = ioutil.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
+	err = os.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
 	assert.NoError(t, err, "Error when creating cpe file")
 
 	t.Run("success - default", func(t *testing.T) {
@@ -869,7 +870,19 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
+}
 
+func TestIsMainPackageError(t *testing.T) {
+	utils := newGolangBuildTestsUtils()
+	utils.ShouldFailOnCommand = map[string]error{
+		"go list -f {{ .Name }} package/foo": errors.New("some error"),
+	}
+	utils.StdoutReturn = map[string]string{
+		"go list -f {{ .Name }} package/foo": "some specific error log",
+	}
+	ok, err := isMainPackage(utils, "package/foo")
+	assert.False(t, ok)
+	assert.EqualError(t, err, "some error: some specific error log")
 }
 
 func TestPrepareGolangEnvironment(t *testing.T) {
@@ -910,8 +923,7 @@ go 1.17`
 			expect: expectations{
 				envVars: []string{"GOPRIVATE=*.example.com"},
 				commandsExecuted: [][]string{
-					{"git", "config", "--global", "url.https://secret@private1.example.com/private/repo.git.insteadOf", "https://private1.example.com/private/repo.git"},
-					{"git", "config", "--global", "url.https://secret@private2.example.com/another/repo.git.insteadOf", "https://private2.example.com/another/repo.git"},
+					{"git", "config", "--global", "url.https://secret@example.com.insteadOf", "https://example.com"},
 				},
 			},
 		},
@@ -942,89 +954,6 @@ go 1.17`
 	}
 }
 
-func TestLookupGolangPrivateModulesRepositories(t *testing.T) {
-	t.Parallel()
-
-	modTestFile := `
-module private.example.com/m
-
-require (
-	example.com/public/module v1.0.0
-	private1.example.com/private/repo v0.1.0
-	private2.example.com/another/repo v0.2.0
-)
-
-go 1.17`
-
-	type expectations struct {
-		repos        []string
-		errorMessage string
-	}
-	tests := []struct {
-		name           string
-		modFileContent string
-		globPattern    string
-		expect         expectations
-	}{
-		{
-			name:           "Does nothing if glob pattern is empty",
-			modFileContent: modTestFile,
-			expect: expectations{
-				repos: []string{},
-			},
-		},
-		{
-			name:           "Does nothing if there is no go.mod file",
-			globPattern:    "private.example.com",
-			modFileContent: "",
-			expect: expectations{
-				repos: []string{},
-			},
-		},
-		{
-			name:           "Detects all private repos using a glob pattern",
-			modFileContent: modTestFile,
-			globPattern:    "*.example.com",
-			expect: expectations{
-				repos: []string{"https://private1.example.com/private/repo.git", "https://private2.example.com/another/repo.git"},
-			},
-		},
-		{
-			name:           "Detects all private repos",
-			modFileContent: modTestFile,
-			globPattern:    "private1.example.com,private2.example.com",
-			expect: expectations{
-				repos: []string{"https://private1.example.com/private/repo.git", "https://private2.example.com/another/repo.git"},
-			},
-		},
-		{
-			name:           "Detects a dedicated repo",
-			modFileContent: modTestFile,
-			globPattern:    "private2.example.com",
-			expect: expectations{
-				repos: []string{"https://private2.example.com/another/repo.git"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			utils := newGolangBuildTestsUtils()
-
-			goModFile, _ := modfile.Parse("", []byte(tt.modFileContent), nil)
-
-			repos, err := lookupGolangPrivateModulesRepositories(goModFile, tt.globPattern, utils)
-
-			if tt.expect.errorMessage == "" {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expect.repos, repos)
-			} else {
-				assert.EqualError(t, err, tt.expect.errorMessage)
-			}
-		})
-	}
-}
-
 func TestRunGolangciLint(t *testing.T) {
 	t.Parallel()
 
@@ -1045,6 +974,7 @@ func TestRunGolangciLint(t *testing.T) {
 		exitCode            int
 		expectedCommand     []string
 		expectedErr         error
+		failOnLintingError  bool
 	}{
 		{
 			name:                "success",
@@ -1076,6 +1006,15 @@ func TestRunGolangciLint(t *testing.T) {
 			exitCode:            1,
 			expectedCommand:     []string{},
 			expectedErr:         fmt.Errorf("golangci-lint found issues, see report above"),
+			failOnLintingError:  true,
+		},
+		{
+			name:                "success - ignore failed with ExitCode == 1",
+			shouldFailOnCommand: map[string]error{},
+			exitCode:            1,
+			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedErr:         nil,
+			failOnLintingError:  false,
 		},
 	}
 
@@ -1087,7 +1026,7 @@ func TestRunGolangciLint(t *testing.T) {
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
-			err := runGolangciLint(utils, golangciLintDir, lintSettings)
+			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings)
 
 			if test.expectedErr == nil {
 				assert.Equal(t, test.expectedCommand[0], utils.Calls[0].Exec)
@@ -1148,6 +1087,62 @@ func TestRetrieveGolangciLint(t *testing.T) {
 				b, err = utils.ReadFile(filepath.Join(golangciLintDir, "golangci-lint"))
 				assert.NoError(t, err)
 				assert.Equal(t, []byte("test content"), b)
+			}
+		})
+	}
+}
+
+func Test_gitConfigurationForPrivateModules(t *testing.T) {
+	type args struct {
+		privateMod string
+		token      string
+	}
+	type expectations struct {
+		commandsExecuted [][]string
+	}
+	tests := []struct {
+		name string
+		args args
+
+		expected expectations
+	}{
+		{
+			name: "with one private module",
+			args: args{
+				privateMod: "example.com/*",
+				token:      "mytoken",
+			},
+			expected: expectations{
+				commandsExecuted: [][]string{
+					{"git", "config", "--global", "url.https://mytoken@example.com.insteadOf", "https://example.com"},
+				},
+			},
+		},
+		{
+			name: "with multiple private modules",
+			args: args{
+				privateMod: "example.com/*,test.com/*",
+				token:      "mytoken",
+			},
+			expected: expectations{
+				commandsExecuted: [][]string{
+					{"git", "config", "--global", "url.https://mytoken@example.com.insteadOf", "https://example.com"},
+					{"git", "config", "--global", "url.https://mytoken@test.com.insteadOf", "https://test.com"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			utils := newGolangBuildTestsUtils()
+
+			err := gitConfigurationForPrivateModules(tt.args.privateMod, tt.args.token, utils)
+
+			if assert.NoError(t, err) {
+				for i, expectedCommand := range tt.expected.commandsExecuted {
+					assert.Equal(t, expectedCommand[0], utils.Calls[i].Exec)
+					assert.Equal(t, expectedCommand[1:], utils.Calls[i].Params)
+				}
 			}
 		})
 	}

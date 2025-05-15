@@ -75,6 +75,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
 
     private writeInfluxMap = [:]
+    def utilsMock
 
     class JenkinsUtilsMock extends JenkinsUtils {
         def isJobStartedByUser() {
@@ -108,19 +109,25 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             m ->  m.script.commonPipelineEnvironment.mtarFilePath = 'test.mtar'
         })
 
-        Utils.metaClass.echo = { def m -> }
-
         helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
             writeInfluxMap = m
         })
+
+        utilsMock = newUtilsMock()
 
         UUID.metaClass.static.randomUUID = { -> 1 }
     }
 
     @After
     public void tearDown() {
-        Utils.metaClass = null
         UUID.metaClass = null
+    }
+
+    Utils newUtilsMock() {
+        def utilsMock = new Utils()
+        utilsMock.steps = [ stash  : {  } ]
+        utilsMock.echo = { def m -> }
+        return utilsMock
     }
 
     @Test
@@ -142,7 +149,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript, utils: utilsMock)
 
         //
         // the deployable is exchanged between the involved steps via this property:
@@ -192,9 +199,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        stepRule.step.fioriOnCloudPlatformPipeline(
-          script: nullScript,
-          )
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript, utils: utilsMock)
         
         assertThat(calledStep, is('cloudFoundryDeploy'))
     }
@@ -217,7 +222,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage('Deployment failed: no valid deployment target defined')
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript, utils: utilsMock)
 
     }
     
@@ -237,6 +242,6 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage('Deployment failed: no valid deployment target defined')
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript, utils: utilsMock)
     }
 }

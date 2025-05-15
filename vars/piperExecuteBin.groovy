@@ -9,6 +9,7 @@ import com.sap.piper.analytics.InfluxData
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -34,6 +35,13 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
+            /*
+            Additional logic "?: ''" is necessary to ensure the environment
+            variable is set to an empty string if the value is null
+            Without this, the environment variable would be set to the string "null",
+            causing checks for an empty token in the Go application to fail.
+            */
+            "PIPER_systemTrustToken=${env.PIPER_systemTrustToken ?: ''}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
             String defaultConfigArgs = getCustomDefaultConfigsArg()
@@ -54,7 +62,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             config += ["ansHookServiceKeyCredentialsId": ansHookServiceKeyCredentialsId]
 
             // prepare stashes
-            // first eliminate empty stashes
+            // first eliminate non existing stashes
             config.stashContent = utils.unstashAll(config.stashContent)
             // then make sure that commonPipelineEnvironment, config, ... is also available when step stashing is active
             if (config.stashContent?.size() > 0) {
@@ -77,6 +85,11 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         try {
                             try {
                                 credentialWrapper(config, credentialInfo) {
+                                    if (config.verbose) {  // need to be set on step config
+                                        echo "[DEBUG] Current environment limits:"
+                                        sh "ulimit -a"
+                                    }
+
                                     sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                                 }
                             } finally {
@@ -87,7 +100,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         }
                     } finally {
                         InfluxData.readFromDisk(script)
-                        stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
+                        utils.stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
                     }
                 }
             }
@@ -132,7 +145,7 @@ static String getCustomDefaultConfigs() {
     // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
     List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
     for (int i = 0; i < customDefaults.size(); i++) {
-        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/${customDefaults[i]}")
+        customDefaults[i] = q(".pipeline/${customDefaults[i]}")
     }
     return customDefaults.join(',')
 }
@@ -151,7 +164,7 @@ static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
-        return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
+        return " --customConfig ${q(script.commonPipelineEnvironment.configurationFile)}"
     }
     return ''
 }

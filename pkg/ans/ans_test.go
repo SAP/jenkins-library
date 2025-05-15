@@ -9,7 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -77,7 +77,7 @@ func TestANS_Send(t *testing.T) {
 		})
 		t.Run("pass request attribute event", func(t *testing.T) {
 			examinee.initRun(func(rw http.ResponseWriter, req *http.Request) {
-				eventBody, _ := ioutil.ReadAll(req.Body)
+				eventBody, _ := io.ReadAll(req.Body)
 				event := &Event{}
 				json.Unmarshal(eventBody, event)
 				assert.Equal(t, eventDefault, *event, "Mismatch in requested event body")

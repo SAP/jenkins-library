@@ -38,6 +38,9 @@ spec:
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
+      - name: golangPrivateModulesGitTokenCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.
+        type: jenkins
     params:
       - name: agentDownloadUrl
         type: string
@@ -125,6 +128,15 @@ spec:
           - STAGES
           - STEPS
         default: ./wss-unified-agent.config
+      - name: useGlobalConfiguration
+        type: bool
+        description: "The parameter is applicable for multi-module mend projects. If set to true, the configuration file will be used for all modules. Otherwise each module will require its own configuration file in the module folder."
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: false
       - name: containerRegistryPassword
         description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
         type: string
@@ -165,7 +177,7 @@ spec:
         type: string
         description: Custom version of the WhiteSource project used as source.
         longDescription: |-
-          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningmodel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
           The parameter is also used by other scan steps (e.g. Detect, Fortify, Sonar) and thus allows a common custom version across scan tools.
         scope:
@@ -175,7 +187,7 @@ spec:
           - STEPS
       - name: cvssSeverityLimit
         type: string
-        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build."
+        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build. A negative value (like the default of -1) means that the build won't fail."
         scope:
           - PARAMETERS
           - STAGES
@@ -234,7 +246,7 @@ spec:
           - STEPS
       - name: installCommand
         type: string
-        description: "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios."
+        description: "Install command that can be used to populate the default docker image for some scenarios."
         scope:
           - PARAMETERS
           - STAGES
@@ -245,14 +257,13 @@ spec:
             deprecated: true
         type: string
         description:
-          "URL used for downloading the Java Runtime Environment (JRE) required to run the
-          WhiteSource Unified Agent."
+          "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent."
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz"
+        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.13/sapmachine-jre-17.0.13_linux-x64_bin.tar.gz"
       - name: licensingVulnerabilities
         type: bool
         description: "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment."
@@ -374,6 +385,32 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: scanImages
+        type: "[]string"
+        description: "For `buildTool: docker`: Allowing to scan multiple docker images. In case parent project will not contain any dependecies, use skipParentProjectResolution parameter"
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTags
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: skipParentProjectResolution
+        type: bool
+        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose. Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: activateMultipleImagesScan
+        type: bool
+        description: "Use this parameter to activate the scan of multiple images. Additionally you'll need to provide skipParentProjectResolution and scanImages parameters"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
@@ -494,8 +531,9 @@ spec:
       - name: installArtifacts
         type: bool
         description:
-          "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource.
-          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+          "If enabled, all artifacts will be installed to the local Maven repository to ensure availability before running WhiteSource.
+          Currently, this parameter is not honored in whitesourceExecuteScan step, as it is internally managed by UA with the 'runPreStep'.
+          In the future, this parameter will be honored based on the individual build tool."
         scope:
           - GENERAL
           - STEPS
@@ -512,6 +550,26 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
+      - name: npmIncludeDevDependencies
+        type: bool
+        description: "Enable this if you wish to include NPM DEV dependencies in the scan report"
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: false
+        aliases:
+          - name: npm/includeDevDependencies
+      - name: disableNpmSubmodulesAggregation
+        type: bool
+        description: "The default Mend behavior is to aggregate all submodules of NPM project into one project in Mend. This parameter disables this behavior, thus for each submodule a separate project is created."
+        default: false
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -597,12 +655,49 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: privateModules
+        type: "string"
+        description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        alias:
+          - goprivate
+      - name: privateModulesGitToken
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        secret: true
+        resourceRef:
+          - name: golangPrivateModulesGitTokenCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: golangPrivateModulesGitTokenVaultSecret
+            default: golang
+      - name: SkipProjectsWithEmptyTokens
+        description: Skips projects with empty tokens after scanning. This is for testing purposes only and should not be used until we roll out the new parameter
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        default: false
     resources:
       - name: buildDescriptor
         type: stash
       - name: opensourceConfiguration
         type: stash
       - name: checkmarx
+        type: stash
+      - name: checkmarxOne
         type: stash
   outputs:
     resources:
@@ -701,7 +796,7 @@ spec:
           params:
             - name: buildTool
               value: maven
-    - image: node:lts-buster
+    - image: node:lts-bookworm
       workingDir: /home/node
       env: []
       conditions:
@@ -717,7 +812,7 @@ spec:
           params:
             - name: buildTool
               value: pip
-    - image: node:lts-buster
+    - image: node:lts-bookworm
       workingDir: /home/node
       env: []
       conditions:

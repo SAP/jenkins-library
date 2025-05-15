@@ -2,7 +2,6 @@ package versioning
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,11 +24,11 @@ type Docker struct {
 
 func (d *Docker) init() {
 	if d.readFile == nil {
-		d.readFile = ioutil.ReadFile
+		d.readFile = os.ReadFile
 	}
 
 	if d.writeFile == nil {
-		d.writeFile = ioutil.WriteFile
+		d.writeFile = os.WriteFile
 	}
 }
 

@@ -3,7 +3,7 @@ package abaputils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 
@@ -26,34 +26,40 @@ import (
 // AddonDescriptor contains fields about the addonProduct
 type AddonDescriptor struct {
 	AddonProduct     string `json:"addonProduct"`
-	AddonVersionYAML string `json:"addonVersion"`
+	AddonVersionYAML string `json:"addonVersion,omitempty"`
 	AddonVersion     string `json:"addonVersionAAK"`
 	AddonSpsLevel    string
 	AddonPatchLevel  string
-	TargetVectorID   string
+	TargetVectorID   string       `json:",omitempty"`
 	Repositories     []Repository `json:"repositories"`
+	ErrorText        string       `json:",omitempty"`
 }
 
 // Repository contains fields for the repository/component version
 type Repository struct {
 	Name                string `json:"name"`
-	UseClassicCTS       bool   `json:"useClassicCTS"`
-	Tag                 string `json:"tag"`
-	Branch              string `json:"branch"`
-	CommitID            string `json:"commitID"`
-	VersionYAML         string `json:"version"`
+	UseClassicCTS       bool   `json:"useClassicCTS,omitempty"`
+	Tag                 string `json:"tag,omitempty"`
+	Branch              string `json:"branch,omitempty"`
+	CommitID            string `json:"commitID,omitempty"`
+	ByogUsername        string `json:"byogUsername"`
+	ByogPassword        string `json:"byogPassword"`
+	ByogAuthMethod      string `json:"byogAuthMethod"`
+	IsByog              bool   `json:",omitempty"`
+	VersionYAML         string `json:"version,omitempty"`
 	Version             string `json:"versionAAK"`
-	AdditionalPiecelist string `json:"additionalPiecelist"`
-	PackageName         string
-	PackageType         string
+	AdditionalPiecelist string `json:"additionalPiecelist,omitempty"`
+	PackageName         string `json:",omitempty"`
+	PackageType         string `json:",omitempty"`
 	SpLevel             string
 	PatchLevel          string
-	PredecessorCommitID string
-	Status              string
-	Namespace           string
-	SarXMLFilePath      string
-	Languages           []string `json:"languages"`
-	InBuildScope        bool
+	PredecessorCommitID string   `json:",omitempty"`
+	Status              string   `json:",omitempty"`
+	Namespace           string   `json:",omitempty"`
+	SarXMLFilePath      string   `json:",omitempty"`
+	Languages           []string `json:"languages,omitempty"`
+	InBuildScope        bool     `json:",omitempty"`
+	ErrorText           string   `json:",omitempty"`
 }
 
 // ReadAddonDescriptorType is the type for ReadAddonDescriptor for mocking
@@ -86,7 +92,7 @@ func readFile(FileName string) ([]byte, error) {
 	}
 
 	var fileContent []byte
-	fileContent, err = ioutil.ReadFile(absoluteFilename)
+	fileContent, err = os.ReadFile(absoluteFilename)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Could not read %v", FileName))
 	}
@@ -181,4 +187,23 @@ func (me *AddonDescriptor) GetRepositoriesInBuildScope() []Repository {
 		}
 	}
 	return RepositoriesInBuildScope
+}
+
+func (me *AddonDescriptor) AsReducedJson() string {
+	input := AddonDescriptor{
+		AddonProduct:    me.AddonProduct,
+		AddonVersion:    me.AddonVersion,
+		AddonSpsLevel:   me.AddonSpsLevel,
+		AddonPatchLevel: me.AddonPatchLevel,
+	}
+	for _, repo := range me.Repositories {
+		input.Repositories = append(input.Repositories, Repository{
+			Name:       repo.Name,
+			Version:    repo.Version,
+			SpLevel:    repo.SpLevel,
+			PatchLevel: repo.PatchLevel,
+		})
+	}
+
+	return input.AsJSONstring()
 }

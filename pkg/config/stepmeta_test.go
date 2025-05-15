@@ -6,7 +6,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +19,7 @@ func TestReadPipelineStepData(t *testing.T) {
 
 	t.Run("Success case", func(t *testing.T) {
 		myMeta := strings.NewReader("metadata:\n  name: testIt\nspec:\n  inputs:\n    params:\n      - name: testParamName\n    secrets:\n      - name: testSecret")
-		err := s.ReadPipelineStepData(ioutil.NopCloser(myMeta)) // NopCloser "no-ops" the closing interface since strings do not need to be closed
+		err := s.ReadPipelineStepData(io.NopCloser(myMeta)) // NopCloser "no-ops" the closing interface since strings do not need to be closed
 
 		if err != nil {
 			t.Errorf("Got error although no error expected: %v", err)
@@ -55,7 +54,7 @@ func TestReadPipelineStepData(t *testing.T) {
 
 	t.Run("Unmarshalling failure", func(t *testing.T) {
 		myMeta := strings.NewReader("metadata:\n\tname: testIt")
-		err := s.ReadPipelineStepData(ioutil.NopCloser(myMeta))
+		err := s.ReadPipelineStepData(io.NopCloser(myMeta))
 		if err == nil {
 			t.Errorf("Got no error although error expected.")
 		}
@@ -398,10 +397,10 @@ func TestGetContextDefaults(t *testing.T) {
 							{Name: "opt1", Value: "optValue1"},
 							{Name: "opt2", Value: "optValue2"},
 						},
-						//VolumeMounts: []VolumeMount{
-						//	{MountPath: "mp1", Name: "mn1"},
-						//	{MountPath: "mp2", Name: "mn2"},
-						//},
+						VolumeMounts: []VolumeMount{
+							{MountPath: "mp1", Name: "volume"},
+							{MountPath: "mp2", Name: "mn2"},
+						},
 					},
 				},
 				Sidecars: []Container{
@@ -420,10 +419,10 @@ func TestGetContextDefaults(t *testing.T) {
 							{Name: "opt3", Value: "optValue3"},
 							{Name: "opt4", Value: "optValue4"},
 						},
-						//VolumeMounts: []VolumeMount{
-						//	{MountPath: "mp3", Name: "mn3"},
-						//	{MountPath: "mp4", Name: "mn4"},
-						//},
+						VolumeMounts: []VolumeMount{
+							{MountPath: "mp3", Name: "mn3"},
+							{MountPath: "mp4", Name: "volume"},
+						},
 					},
 				},
 			},
@@ -452,7 +451,7 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, true, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
 		assert.Equal(t, "/test/dir", d.Defaults[0].Steps["testStep"]["dockerWorkspace"], "dockerWorkspace default not available")
 		assert.Equal(t, []interface{}{"opt1 optValue1", "opt2 optValue2"}, d.Defaults[0].Steps["testStep"]["dockerOptions"], "dockerOptions default not available")
-		//assert.Equal(t, []interface{}{"mn1:mp1", "mn2:mp2"}, d.Defaults[0].Steps["testStep"]["dockerVolumeBind"], "dockerVolumeBind default not available")
+		assert.Equal(t, []interface{}{"volume:mp1"}, d.Defaults[0].Steps["testStep"]["dockerVolumeBind"], "dockerVolumeBind default not available")
 
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarCommand"], "sidecarCommand default not available")
 		assert.Equal(t, map[string]interface{}{"env3": "val3", "env4": "val4"}, d.Defaults[0].Steps["testStep"]["sidecarEnvVars"], "sidecarEnvVars default not available")
@@ -462,7 +461,7 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarReadyCommand"], "sidecarReadyCommand default not available")
 		assert.Equal(t, "/sidecar/dir", d.Defaults[0].Steps["testStep"]["sidecarWorkspace"], "sidecarWorkspace default not available")
 		assert.Equal(t, []interface{}{"opt3 optValue3", "opt4 optValue4"}, d.Defaults[0].Steps["testStep"]["sidecarOptions"], "sidecarOptions default not available")
-		//assert.Equal(t, []interface{}{"mn3:mp3", "mn4:mp4"}, d.Defaults[0].Steps["testStep"]["sidecarVolumeBind"], "sidecarVolumeBind default not available")
+		assert.Equal(t, []interface{}{"volume:mp4"}, d.Defaults[0].Steps["testStep"]["sidecarVolumeBind"], "sidecarVolumeBind default not available")
 	})
 
 	t.Run("Container conditions", func(t *testing.T) {
@@ -677,11 +676,11 @@ func TestGetResourceParameters(t *testing.T) {
 		t.Fatal("Failed to create sub directory")
 	}
 
-	ioutil.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "jsonList.json"), []byte("[\"value1\",\"value2\"]"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValue.json"), []byte("{\"key\":\"value\"}"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValueString"), []byte("{\"key\":\"valueString\"}"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "jsonList.json"), []byte("[\"value1\",\"value2\"]"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "jsonKeyValue.json"), []byte("{\"key\":\"value\"}"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "jsonKeyValueString"), []byte("{\"key\":\"valueString\"}"), 0700)
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {

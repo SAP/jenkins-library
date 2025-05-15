@@ -4,6 +4,10 @@ metadata:
   longDescription: |
     Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
 
+    ### Building one container image
+
+    For building one container image the step expects that one of the containerImage, containerImageName or --destination (via buildOptions) is set.
+
     ### Building multiple container images
 
     The step allows you to build multiple container images with one run.
@@ -109,7 +113,7 @@ spec:
           - name: containerImageNameAndTag
             deprecated: true
         type: string
-        description: Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.
+        description: Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If `containerImage` is not provided, then `containerImageName` or `--destination` (via buildOptions) should be provided.
         scope:
           - PARAMETERS
           - STAGES
@@ -118,7 +122,7 @@ spec:
         aliases:
           - name: dockerImageName
         type: string
-        description: Name of the container which will be built - will be used instead of parameter `containerImage`
+        description: Name of the container which will be built - will be used instead of parameter `containerImage`. If `containerImageName` is not provided, then `containerImage` or `--destination` (via buildOptions) should be provided.
         mandatoryIf:
           - name: containerMultiImageBuild
             value: true
@@ -140,9 +144,39 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: multipleImages
+        aliases:
+          - name: images
+        type: "[]map[string]interface{}"
+        description: |
+          This parameter is only needed if `kanikoExecute` should create multiple images using the same root Dockerfile, but with different sub-contexts.
+          Otherwise it can be ignored!!!
+
+          In case of multiple images, this array contains one entry for each image.
+          Either containerImageName OR containerImage MUST be provided for each entry.
+          contextSubPath MUST be provided for each entry.
+
+          Array keys:
+            contextSubPath - Set a context subpath.
+            dockerfilePath - Dockerfile path (optional). If empty, root will be used.
+            containerImageName - Name of the container which will be built.
+            containerImageTag - Tag of the container which will be built. If empty - root containerImageTag will be used.
+            containerImage - Defines the full name of the Docker image to be created including registry.
+
+          ```yaml
+          containerRegistryUrl: docker.io
+          containerImageTag: latest
+          multipleImages:
+          - containerImageName: myImage1
+            containerImageTag: v1.0.0
+            contextSubPath: path/to/folder
+          ```
+        scope:
+          - PARAMETERS
+          - STEPS
       - name: containerMultiImageBuild
         type: bool
-        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexscludes).
+        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexcludes).
         scope:
           - GENERAL
           - PARAMETERS
@@ -235,7 +269,7 @@ spec:
         aliases:
           - name: dockerfile
         type: string
-        description: Defines the location of the Dockerfile relative to the Jenkins workspace.
+        description: Defines the location of the Dockerfile relative to the pipeline working directory.
         scope:
           - PARAMETERS
           - STAGES
@@ -271,7 +305,7 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        default: "https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz"
+        default: "https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz"
   outputs:
     resources:
       - name: commonPipelineEnvironment

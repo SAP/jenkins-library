@@ -3,7 +3,6 @@ package versioning
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/magiconair/properties"
@@ -24,7 +23,7 @@ func (p *PropertiesFile) init() error {
 		p.versionField = "version"
 	}
 	if p.writeFile == nil {
-		p.writeFile = ioutil.WriteFile
+		p.writeFile = os.WriteFile
 	}
 	if p.content == nil {
 		var err error

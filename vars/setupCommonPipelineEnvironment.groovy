@@ -57,6 +57,7 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters)
+        def utils = parameters.utils ?: new Utils()
 
         String configFile = parameters.get('configFile')
         loadConfigurationFromFile(script, configFile)
@@ -97,7 +98,7 @@ void call(Map parameters = [:]) {
         if (configFile && !configFile.startsWith('.pipeline/')) {
             stashIncludes += ", $configFile"
         }
-        stash name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
+        utils.stash name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -105,12 +106,6 @@ void call(Map parameters = [:]) {
             .use()
 
         inferBuildTool(script, config)
-
-        (parameters.utils ?: new Utils()).pushToSWA([
-            step: STEP_NAME,
-            stepParamKey4: 'customDefaults',
-            stepParam4: parameters.customDefaults?'true':'false'
-        ], config)
 
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
@@ -270,11 +265,18 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     }
 
     if(gitBranch.contains("/")){
-        gitBranch = gitBranch.split("/")[1]
+        gitBranchSplit = gitBranch.split("/")
+        if(gitBranchSplit[0] == "origin") {
+            gitBranch = gitBranchSplit[1..-1].join("/")
+        }
     }
 
     if (!gitBranch.contains("PR")) {
-        script.commonPipelineEnvironment.setGitRef("refs/heads/" + gitBranch)
+        if (gitBranch.startsWith("refs/") ){
+            script.commonPipelineEnvironment.setGitRef(gitBranch)
+        } else {
+            script.commonPipelineEnvironment.setGitRef("refs/heads/" + gitBranch)
+        }
         script.commonPipelineEnvironment.setGitRemoteCommitId(gitCommit)
         return
     }

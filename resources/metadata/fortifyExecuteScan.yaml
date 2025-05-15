@@ -86,7 +86,7 @@ spec:
         type: string
         description: Custom version of the Fortify project used as source.
         longDescription: |-
-          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningmodel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
           The parameter is also used by other scan steps (e.g. Detect, Sonar, WhiteSource) and thus allows a common custom version across scan tools.
         scope:
@@ -198,9 +198,9 @@ spec:
           - name: fortifyProjectVersion
             deprecated: true
         type: string
-        description: Version used in conjunction with [`versioningModel`](#versioningModel) to identify the Fortify project to be created and used for results aggregation.
+        description: Version used in conjunction with [`versioningModel`](#versioningmodel) to identify the Fortify project to be created and used for results aggregation.
         longDescription: |-
-          Version used in conjunction with [`versioningModel`](#versioningModel) to identify the Fortify project to be created and used for results aggregation.
+          Version used in conjunction with [`versioningModel`](#versioningmodel) to identify the Fortify project to be created and used for results aggregation.
           This is usually determined automatically based on the information in the buildTool specific build descriptor file.
         scope:
           - GENERAL
@@ -626,6 +626,13 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/projectSettingsFile
+      - name: proxy
+        type: string
+        description: Proxy URL to be used for communication with the Fortify instance.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: globalSettingsFile
         type: string
         description: Path to the mvn settings file that should be used as global settings file.

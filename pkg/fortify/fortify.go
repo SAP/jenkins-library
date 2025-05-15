@@ -5,10 +5,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -31,7 +31,6 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
@@ -84,7 +83,7 @@ type SystemInstance struct {
 }
 
 // NewSystemInstance - creates an returns a new SystemInstance
-func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Duration) *SystemInstance {
+func NewSystemInstance(serverURL, apiEndpoint, authToken, proxyUrl string, timeout time.Duration) *SystemInstance {
 	// If serverURL ends in a trailing slash, UploadResultFile() will construct a URL with two or more
 	// consecutive slashes and actually fail with a 503. https://github.com/SAP/jenkins-library/issues/1826
 	// Also, since the step outputs a lot of URLs to the log, those will look nicer without redundant slashes.
@@ -96,8 +95,17 @@ func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Du
 	encodedAuthToken := base64EndodePlainToken(authToken)
 	httpClientInstance := &piperHttp.Client{}
 	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + encodedAuthToken, TransportTimeout: timeout}
-	httpClientInstance.SetOptions(httpClientOptions)
 
+	if proxyUrl != "" {
+		transportProxy, err := url.Parse(proxyUrl)
+		if err != nil {
+			log.Entry().Warningf("Failed to parse proxy url %v", proxyUrl)
+		} else {
+			httpClientOptions.TransportProxy = transportProxy
+		}
+	}
+
+	httpClientInstance.SetOptions(httpClientOptions)
 	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, encodedAuthToken, timeout)
 }
 
@@ -521,7 +529,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 	groupingList := []*models.IssueSelector{}
 	if issueFilterSelectorSet.GroupBySet != nil {
 		for _, group := range issueFilterSelectorSet.GroupBySet {
-			if piperutils.ContainsString(names, *group.DisplayName) {
+			if slices.Contains(names, *group.DisplayName) {
 				log.Entry().Debugf("adding new grouping '%v' to reduced list", *group.DisplayName)
 				groupingList = append(groupingList, group)
 			}
@@ -530,7 +538,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 	filterList := []*models.IssueFilterSelector{}
 	if issueFilterSelectorSet.FilterBySet != nil {
 		for _, filter := range issueFilterSelectorSet.FilterBySet {
-			if piperutils.ContainsString(names, filter.DisplayName) {
+			if slices.Contains(names, filter.DisplayName) {
 				newFilter := &models.IssueFilterSelector{}
 				newFilter.DisplayName = filter.DisplayName
 				newFilter.Description = filter.Description
@@ -540,7 +548,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 				newFilter.Value = filter.Value
 				newFilter.SelectorOptions = []*models.SelectorOption{}
 				for _, option := range filter.SelectorOptions {
-					if (nil != options && piperutils.ContainsString(options, option.DisplayName)) || options == nil || len(options) == 0 {
+					if (nil != options && slices.Contains(options, option.DisplayName)) || options == nil || len(options) == 0 {
 						log.Entry().Debugf("adding selector option '%v' to list for filter selector '%v'", option.DisplayName, newFilter.DisplayName)
 						newFilter.SelectorOptions = append(newFilter.SelectorOptions, option)
 					}
@@ -758,7 +766,7 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 	if err != nil {
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	defer response.Body.Close()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error reading the response data")

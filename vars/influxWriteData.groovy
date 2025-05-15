@@ -96,12 +96,6 @@ void call(Map parameters = [:]) {
             .addIfNull('customDataMapTags', InfluxData.getInstance().getTags().findAll({ it.key != 'jenkins_custom_data' }))
             .use()
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], config)
-
         if (!config.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
             echo "[${STEP_NAME}] no artifact version available -> exiting writeInflux without writing data"

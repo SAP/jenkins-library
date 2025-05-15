@@ -12,7 +12,7 @@
 
 * **Neo Java Web SDK 3.39.10 or compatible version** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/). This step is capable of triggering the neo deploy tool provided inside a docker image. We provide docker image `ppiper/neo-cli`. `neo.sh` needs to be contained in path, e.g by adding a symbolic link to `/usr/local/bin`.
 
-* **Java 8 or compatible version** - needed by the *Neo-Java-Web-SDK*. Java environment needs to be properly configured (JAVA_HOME, java exectutable contained in path).
+* **Java 8 or compatible version** - needed by the _Neo-Java-Web-SDK_. Java environment needs to be properly configured (JAVA_HOME, java exectutable contained in path).
 
 ## ${docGenParameters}
 

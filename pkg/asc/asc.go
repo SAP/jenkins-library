@@ -4,17 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io"
-	"io/ioutil"
 	"net/http"
 	url2 "net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type App struct {
@@ -103,8 +103,8 @@ func NewSystemInstance(client *piperHttp.Client, serverURL, token string) (*Syst
 func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header) ([]byte, error) {
 	var requestBody io.Reader
 	if body != nil {
-		closer := ioutil.NopCloser(body)
-		bodyBytes, _ := ioutil.ReadAll(closer)
+		closer := io.NopCloser(body)
+		bodyBytes, _ := io.ReadAll(closer)
 		requestBody = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
 	}
@@ -114,7 +114,7 @@ func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header
 		return nil, err
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	sys.logger.Debugf("Valid response body: %v", string(data))
 	defer response.Body.Close()
 	return data, nil
@@ -161,7 +161,7 @@ func (sys *SystemInstance) CreateRelease(ascAppId int, version string, descripti
 
 	response, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("api/v1/apps/%v/releases", ascAppId), bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		return createReleaseResponse, errors.Wrapf(err, "creating release")
+		return createReleaseResponse, errors.Wrap(err, "creating release")
 	}
 
 	json.Unmarshal(response, &createReleaseResponse)

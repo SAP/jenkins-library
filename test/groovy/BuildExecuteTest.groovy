@@ -301,6 +301,51 @@ class BuildExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerWithoutCNB() {
+        boolean kanikoExecuteCalled = false
+        boolean cnbBuildCalled = false
+        binding.setVariable('docker', new DockerMock('test'))
+        def pushParams = [:]
+        helper.registerAllowedMethod('kanikoExecute', [Map.class], { m ->
+            kanikoExecuteCalled = true
+            return
+        })
+        helper.registerAllowedMethod('cnbBuild', [Map.class], { m ->
+            cnbBuildCalled = true
+            return
+        })
+        stepRule.step.buildExecute(
+                script: nullScript,
+                buildTool: 'docker',
+        )
+        assertThat(cnbBuildCalled, is(false))
+        assertThat(kanikoExecuteCalled, is(true))
+    }
+
+    @Test
+    void testDockerWithCNB() {
+        boolean kanikoExecuteCalled = false
+        boolean cnbBuildCalled = false
+        binding.setVariable('docker', new DockerMock('test'))
+        def pushParams = [:]
+        helper.registerAllowedMethod('kanikoExecute', [Map.class], { m ->
+            kanikoExecuteCalled = true
+            return
+        })
+        helper.registerAllowedMethod('cnbBuild', [Map.class], { m ->
+            cnbBuildCalled = true
+            return
+        })
+        stepRule.step.buildExecute(
+                script: nullScript,
+                buildTool: 'docker',
+                cnbBuild: true
+        )
+        assertThat(cnbBuildCalled, is(true))
+        assertThat(kanikoExecuteCalled, is(false))
+    }
+
+    @Test
     void testKaniko() {
         binding.setVariable('docker', new DockerMock('test'))
         def buildToolCalled = false
@@ -313,5 +358,85 @@ class BuildExecuteTest extends BasePiperTest {
             buildTool: 'kaniko',
         )
         assertThat(buildToolCalled, is(true))
+    }
+
+    @Test
+    void testCnbBuildCalledWhenConfigured() {
+        def cnbBuildCalled = false
+        def npmExecuteScriptsCalled = false
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+            npmExecuteScriptsCalled = true
+        })
+        helper.registerAllowedMethod('cnbBuild', [Map.class], { m ->
+            cnbBuildCalled = true
+            return
+        })
+        assertThat(nullScript.commonPipelineEnvironment.getContainerProperty('buildpacks'), nullValue())
+
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            cnbBuild: true
+        )
+
+        assertThat(npmExecuteScriptsCalled, is(true))
+        assertThat(cnbBuildCalled, is(true))
+    }
+
+    @Test
+    void testCnbBuildNotCalledWhenNotConfigured() {
+        def cnbBuildCalled = false
+        def npmExecuteScriptsCalled = false
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+            npmExecuteScriptsCalled = true
+        })
+        helper.registerAllowedMethod('cnbBuild', [Map.class], { m ->
+            cnbBuildCalled = true
+            return
+        })
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            cnbBuild: false
+        )
+        assertThat(npmExecuteScriptsCalled, is(true))
+        assertThat(cnbBuildCalled, is(false))
+    }
+
+    @Test
+    void testHelmExecuteCalledWhenConfigured() {
+        def helmExecuteCalled = false
+        helper.registerAllowedMethod('helmExecute', [Map.class], { m ->
+            helmExecuteCalled = true
+            return
+        })
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+        })
+
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            helmExecute: true
+        )
+
+        assertThat(helmExecuteCalled, is(true))
+    }
+
+    @Test
+    void testHelmExecuteNotCalledWhenNotConfigured() {
+        def helmExecuteCalled = false
+        helper.registerAllowedMethod('helmExecute', [Map.class], { m ->
+            helmExecuteCalled = true
+            return
+        })
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+        })
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            helmExecute: false
+        )
+
+        assertThat(helmExecuteCalled, is(false))
     }
 }

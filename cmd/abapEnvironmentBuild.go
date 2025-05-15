@@ -94,12 +94,15 @@ func newAbapEnvironmentBuildUtils(maxRuntime time.Duration, pollingInterval time
 
 func abapEnvironmentBuild(config abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentBuildCommonPipelineEnvironment) {
 	utils := newAbapEnvironmentBuildUtils(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
-	if err := runAbapEnvironmentBuild(&config, telemetryData, utils, cpe); err != nil {
+	telemetryData.BuildTool = "ABAP Build Framework"
+
+	if err := runAbapEnvironmentBuild(&config, utils, cpe); err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, telemetryData *telemetry.CustomData, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
+func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, utils abapEnvironmentBuildUtils, cpe *abapEnvironmentBuildCommonPipelineEnvironment) error {
 
 	log.Entry().Info("╔════════════════════════════════╗")
 	log.Entry().Info("║ abapEnvironmentBuild           ║")

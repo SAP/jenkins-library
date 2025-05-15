@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -23,7 +22,7 @@ import (
 )
 
 func TestPiperIntegrationHelp(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	piperHelpCmd := command.Command{}
 
 	var commandOutput bytes.Buffer
@@ -57,7 +56,7 @@ func getPiperExecutable() string {
 // copyDir copies a directory
 func copyDir(source string, target string) error {
 	var err error
-	var fileInfo []os.FileInfo
+	var fileInfo []os.DirEntry
 	var sourceInfo os.FileInfo
 
 	if sourceInfo, err = os.Stat(source); err != nil {
@@ -68,7 +67,7 @@ func copyDir(source string, target string) error {
 		return err
 	}
 
-	if fileInfo, err = ioutil.ReadDir(source); err != nil {
+	if fileInfo, err = os.ReadDir(source); err != nil {
 		return err
 	}
 	for _, info := range fileInfo {

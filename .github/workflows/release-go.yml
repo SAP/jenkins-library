@@ -1,40 +1,108 @@
 name: Create new Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Test integration without publishing (dry run)'
+        type: boolean
+        required: false
+        default: false
   repository_dispatch:
     types: perform-release
   schedule:
     - cron: '0 9 * * 1'
 
 jobs:
-  build:
-    name: Publish
+  run_integration_tests:
+    name: Run Integration Tests
+    uses: ./.github/workflows/integration-tests.yml
+    permissions:
+      contents: read
+      actions: read
+    secrets:
+      INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
+      PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
+      PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
+      PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
+
+  publish:
+    needs: run_integration_tests
+    if: |
+      needs.run_integration_tests.outputs.test_status == 'success' &&
+      github.event.inputs.dry_run != 'true'
+    permissions: write-all
+    name: Publish Release
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.10.0
-      - uses: actions/checkout@v1
-      # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
-      - uses: actions/setup-java@v1
-        with:
-          java-version: '8'
-      - name: Prepare Release
+      - uses: styfle/cancel-workflow-action@0.11.0
+      - uses: actions/checkout@v4
+
+      - name: Prepare assets and increment version
         run: |
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.x86_64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.x86_64
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.arm64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.arm64
-          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-win.x86_64.exe https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-win.x86_64.exe
           cp ./piper_master ./piper
           cp ./piper_master-darwin.x86_64 ./piper-darwin.x86_64
           cp ./piper_master-darwin.arm64 ./piper-darwin.arm64
-          cp ./piper_master-win.x86_64.exe ./piper-win.x86_64.exe
           npm install semver --quiet
-          echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
+          VERSION="v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))"
+          echo "PIPER_version=$VERSION" >> $GITHUB_ENV
+          echo "piper_version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - uses: SAP/project-piper-action@master
-        name: 'publish Linux master binary'
+        name: Publish prerelease
         with:
           piper-version: master
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPathList ./piper_master --assetPathList ./piper --assetPathList ./piper_master-darwin.x86_64 --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-darwin.arm64 --assetPathList ./piper-darwin.arm64 --assetPathList ./piper_master-win.x86_64.exe --assetPathList ./piper-win.x86_64.exe
+          flags: >
+            --preRelease true
+            --token ${{ secrets.GITHUB_TOKEN }}
+            --assetPathList ./piper --assetPathList ./piper_master
+            --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-darwin.x86_64
+            --assetPathList ./piper-darwin.arm64 --assetPathList ./piper_master-darwin.arm64
+
+      - name: Download Piper binary from recently published prerelease
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: ${{ env.PIPER_version }}
+          fileName: 'piper'
+
+      - name: Test binary (check output for 'commit:' substring)
+        run: |
+          chmod +x piper
+          if ./piper version | grep -Fq "commit:"; then
+              echo "piper binary test is successful"
+          else
+              echo "piper binary test failed"
+              ./piper version
+              exit 1
+          fi
+
+      - name: Get recently published prerelease id
+        id: release_id
+        run: >
+          curl -L -s -o resp.json
+          -H "Accept: application/vnd.github.raw+json"
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
+          ${{ github.api_url }}/repos/${{ github.repository }}/releases
+
+          echo "release_id=$(jq 'first(.[] | select(.tag_name == "${{ env.PIPER_version }}")).id' resp.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Convert prerelease to Release
+        run: >
+          curl --fail-with-body -L -X PATCH
+          -H "Accept: application/vnd.github+json"
+          -H "Authorization: Bearer ${{ github.token }}"
+          ${{ github.api_url }}/repos/${{ github.repository }}/releases/${{ steps.release_id.outputs.release_id }}
+          -d '{"prerelease": false, "make_latest": true}'
+
+      # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 8
+          distribution: zulu
       - name: Build and publish jar for consumption in unit tests
         run: mvn package
       - uses: SAP/project-piper-action@master
@@ -43,3 +111,42 @@ jobs:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./target/jenkins-library.jar
+
+  post:
+    name: Post Action
+    runs-on: ubuntu-latest
+    needs: [publish]
+    if: always() && github.event.inputs.dry_run != 'true'
+    steps:
+      # Check status of the workflow
+      - uses: martialonline/workflow-status@v4
+        id: check
+
+      # This step expects base64 encoded JSON object as below:
+      # {
+      #   "smtp_url": "smtp+starttls://user:password@server:port",
+      #   "smtp_mail_from": "from@mail.example",
+      #   "smtp_mail_rcpt": "to@mail.example",
+      # }
+      - name: Decode SMTP secrets and set them in GITHUB_ENV
+        id: smtp_secrets
+        if: steps.check.outputs.status == 'failure' || steps.check.outputs.status == 'cancelled'
+        run: >
+          echo "${{ secrets.SMTP_CONFIG }}" |
+          base64 --decode |
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' |
+          while read line; do
+            echo "$line" >> $GITHUB_ENV; echo "::add-mask::${line#*=}";
+          done
+      - name: Notify Piper team on failure or cancelled
+        if: steps.smtp_secrets.conclusion == 'success'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          connection_url: ${{ env.smtp_url }}
+          subject: Workflow failure in ${{ github.repository }}
+          priority: high
+          to: ${{ env.smtp_mail_rcpt }}
+          from: Piper on GitHub <${{ env.smtp_mail_from }}>
+          body: |
+            Workflow '${{ github.workflow }}' has a job with status '${{ steps.check.outputs.status }}'.
+            Workflow link: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

@@ -5,7 +5,7 @@ package piperenv
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -40,6 +40,35 @@ func TestParseTemplate(t *testing.T) {
 	}
 }
 
+func TestParseTemplateWithDelimiter(t *testing.T) {
+	tt := []struct {
+		template      string
+		cpe           CPEMap
+		expected      string
+		expectedError error
+	}{
+		{template: `version: [[index .CPE "artifactVersion"]], sha: [[git "commitId"]]`, expected: "version: 1.2.3, sha: thisIsMyTestSha"},
+		{template: "version: [[", expectedError: fmt.Errorf("failed to parse cpe template 'version: [['")},
+		{template: `version: [[index .CPE "artifactVersion"]], release: {{ .RELEASE }}`, expected: "version: 1.2.3, release: {{ .RELEASE }}"},
+	}
+
+	cpe := CPEMap{
+		"artifactVersion": "1.2.3",
+		"git/commitId":    "thisIsMyTestSha",
+	}
+
+	for _, test := range tt {
+		res, err := cpe.ParseTemplateWithDelimiter(test.template, "[[", "]]")
+		if test.expectedError != nil {
+			assert.Contains(t, fmt.Sprint(err), fmt.Sprint(test.expectedError))
+		} else {
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected, (*res).String())
+		}
+
+	}
+}
+
 func TestTemplateFunctionCpe(t *testing.T) {
 	t.Run("CPE from object", func(t *testing.T) {
 		tt := []struct {
@@ -63,7 +92,7 @@ func TestTemplateFunctionCpe(t *testing.T) {
 	t.Run("CPE from files", func(t *testing.T) {
 		theVersion := "1.2.3"
 		dir := t.TempDir()
-		assert.NoError(t, ioutil.WriteFile(filepath.Join(dir, "artifactVersion"), []byte(theVersion), 0o666))
+		assert.NoError(t, os.WriteFile(filepath.Join(dir, "artifactVersion"), []byte(theVersion), 0o666))
 		cpe := CPEMap{}
 		assert.NoError(t, cpe.LoadFromDisk(dir))
 

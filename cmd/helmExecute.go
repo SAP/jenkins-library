@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 
@@ -70,20 +71,21 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData,
 		helmConfig.PublishVersion = artifactInfo.Version
 	}
 
-	err = parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("failed to parse/render template: %v", err)
-	}
-
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmExecute(config, helmExecutor, commonPipelineEnvironment); err != nil {
+	if err := runHelmExecute(config, helmExecutor, utils, commonPipelineEnvironment); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
+func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
+	if config.RenderValuesTemplate {
+		err := parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("failed to parse/render template: %v", err)
+		}
+	}
 	switch config.HelmCommand {
 	case "upgrade":
 		if err := helmExecutor.RunHelmUpgrade(); err != nil {
@@ -125,14 +127,14 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 }
 
 func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
-	if err := helmExecutor.RunHelmLint(); err != nil {
-		return fmt.Errorf("failed to execute helm lint: %v", err)
-	}
-
 	if len(config.Dependency) > 0 {
 		if err := helmExecutor.RunHelmDependency(); err != nil {
 			return fmt.Errorf("failed to execute helm dependency: %v", err)
 		}
+	}
+
+	if err := helmExecutor.RunHelmLint(); err != nil {
+		return fmt.Errorf("failed to execute helm lint: %v", err)
 	}
 
 	if config.Publish {
@@ -147,7 +149,7 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 }
 
 // parseAndRenderCPETemplate allows to parse and render a template which contains references to the CPE
-func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils kubernetes.DeployUtils) error {
+func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils fileHandler) error {
 	cpe := piperenv.CPEMap{}
 	err := cpe.LoadFromDisk(path.Join(rootPath, "commonPipelineEnvironment"))
 	if err != nil {
@@ -175,7 +177,7 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 		if err != nil {
 			return fmt.Errorf("failed to read file: %v", err)
 		}
-		generated, err := cpe.ParseTemplate(string(cpeTemplate))
+		generated, err := cpe.ParseTemplateWithDelimiter(string(cpeTemplate), config.TemplateStartDelimiter, config.TemplateEndDelimiter)
 		if err != nil {
 			return fmt.Errorf("failed to parse template: %v", err)
 		}
@@ -186,4 +188,10 @@ func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils
 	}
 
 	return nil
+}
+
+type fileHandler interface {
+	FileExists(string) (bool, error)
+	FileRead(string) ([]byte, error)
+	FileWrite(string, []byte, os.FileMode) error
 }

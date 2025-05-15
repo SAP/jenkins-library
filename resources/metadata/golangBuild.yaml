@@ -74,6 +74,14 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: failOnLintingError
+        type: bool
+        description: "Defines if step will return an error in case linting runs into a problem"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
       - name: ldflagsTemplate
         type: string
         description: Defines the content of -ldflags option in a golang template format.
@@ -209,6 +217,7 @@ spec:
         type: "string"
         description: Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).
         scope:
+          - GENERAL
           - STEPS
           - STAGES
           - PARAMETERS

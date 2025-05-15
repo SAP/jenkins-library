@@ -12,8 +12,10 @@ import (
 )
 
 const (
-	PyBomFilename = "bom-pip.xml"
-	stepName      = "pythonBuild"
+	PyBomFilename           = "bom-pip.xml"
+	stepName                = "pythonBuild"
+	cycloneDxPackageVersion = "cyclonedx-bom==3.11.0"
+	cycloneDxSchemaVersion  = "1.4"
 )
 
 type pythonBuildUtils interface {
@@ -50,7 +52,6 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 }
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
-
 	pipInstallFlags := []string{"install", "--upgrade"}
 	virutalEnvironmentPathMap := make(map[string]string)
 
@@ -104,10 +105,11 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
-
 	var flags []string
 	flags = append(flags, config.BuildFlags...)
-	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
+	flags = append(flags, "setup.py")
+	flags = append(flags, config.SetupFlags...)
+	flags = append(flags, "sdist", "bdist_wheel")
 
 	log.Entry().Info("starting building python project:")
 	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)
@@ -144,13 +146,25 @@ func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 }
 
 func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
-	pipInstallFlags = append(pipInstallFlags, "cyclonedx-bom")
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
+	pipInstallOriginalFlags := pipInstallFlags
+	exists, _ := utils.FileExists(config.RequirementsFilePath)
+	if exists {
+		pipInstallRequirementsFlags := append(pipInstallOriginalFlags, "--requirement", config.RequirementsFilePath)
+		if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallRequirementsFlags...); err != nil {
+			return err
+		}
+	} else {
+		log.Entry().Warnf("unable to find requirements.txt file at %s , continuing SBOM generation without requirements.txt", config.RequirementsFilePath)
+	}
+
+	pipInstallCycloneDxFlags := append(pipInstallOriginalFlags, cycloneDxPackageVersion)
+
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallCycloneDxFlags...); err != nil {
 		return err
 	}
-	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-bom")
+	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-py")
 
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename); err != nil {
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename, "--format", "xml", "--schema-version", cycloneDxSchemaVersion); err != nil {
 		return err
 	}
 	return nil

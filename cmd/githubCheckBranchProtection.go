@@ -7,7 +7,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 
 	"github.com/pkg/errors"
 
@@ -20,7 +20,7 @@ type gitHubBranchProtectionRepositoriesService interface {
 
 func githubCheckBranchProtection(config githubCheckBranchProtectionOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, "", []string{})
+	ctx, client, err := piperGithub.NewClientBuilder(config.Token, config.APIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
 	}
@@ -41,8 +41,8 @@ func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBran
 	for _, check := range config.RequiredChecks {
 		var found bool
 		foundContexts := []string{}
-		if requiredStatusChecks := ghProtection.GetRequiredStatusChecks(); requiredStatusChecks != nil {
-			foundContexts = requiredStatusChecks.Contexts
+		if requiredStatusChecks := ghProtection.GetRequiredStatusChecks(); requiredStatusChecks != nil && requiredStatusChecks.Contexts != nil {
+			foundContexts = *requiredStatusChecks.Contexts
 		}
 		for _, context := range foundContexts {
 			if check == context {

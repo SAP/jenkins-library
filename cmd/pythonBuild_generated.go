@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -19,6 +20,7 @@ import (
 
 type pythonBuildOptions struct {
 	BuildFlags               []string `json:"buildFlags,omitempty"`
+	SetupFlags               []string `json:"setupFlags,omitempty"`
 	CreateBOM                bool     `json:"createBOM,omitempty"`
 	Publish                  bool     `json:"publish,omitempty"`
 	TargetRepositoryPassword string   `json:"targetRepositoryPassword,omitempty"`
@@ -26,6 +28,7 @@ type pythonBuildOptions struct {
 	TargetRepositoryURL      string   `json:"targetRepositoryURL,omitempty"`
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
 	VirutalEnvironmentName   string   `json:"virutalEnvironmentName,omitempty"`
+	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
@@ -56,7 +59,7 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 	}
 }
 
-// PythonBuildCommand Step build a python project
+// PythonBuildCommand Step builds a python project
 func PythonBuildCommand() *cobra.Command {
 	const STEP_NAME = "pythonBuild"
 
@@ -70,8 +73,18 @@ func PythonBuildCommand() *cobra.Command {
 
 	var createPythonBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Step build a python project",
-		Long:  `Step build python project with using test Vault credentials`,
+		Short: "Step builds a python project",
+		Long: `Step build python project using the setup.py manifest and builds a wheel and tarball artifact . please note that currently python build only supports setup.py
+
+### build with depedencies from a private repository
+if your build has dependencies from a private repository you can include the standard requirements.txt into the source code with ` + "`" + `--extra-index-url` + "`" + ` as the first line
+
+` + "`" + `` + "`" + `` + "`" + `
+--extra-index-url https://${PIPER_VAULTCREDENTIAL_USERNAME}:${PIPER_VAULTCREDENTIAL_PASSWORD}@<privateRepoUrl>/simple
+` + "`" + `` + "`" + `` + "`" + `
+` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD` + "`" + ` are the username and password for the private repository
+and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
+[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -79,11 +92,14 @@ func PythonBuildCommand() *cobra.Command {
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -96,7 +112,7 @@ func PythonBuildCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -118,6 +134,11 @@ func PythonBuildCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -127,21 +148,40 @@ func PythonBuildCommand() *cobra.Command {
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
+			telemetryClient.Initialize(STEP_NAME)
 			pythonBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -153,7 +193,8 @@ func PythonBuildCommand() *cobra.Command {
 }
 
 func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags to be used.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags passed to python binary.")
+	cmd.Flags().StringSliceVar(&stepConfig.SetupFlags, "setupFlags", []string{}, "Defines list of flags passed to setup.py.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
@@ -161,6 +202,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.VirutalEnvironmentName, "virutalEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
+	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
 
 }
 
@@ -170,13 +212,22 @@ func pythonBuildMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "pythonBuild",
 			Aliases:     []config.Alias{},
-			Description: "Step build a python project",
+			Description: "Step builds a python project",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
 						Name:        "buildFlags",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "setupFlags",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
@@ -266,6 +317,15 @@ func pythonBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `piperBuild-env`,
+					},
+					{
+						Name:        "requirementsFilePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `requirements.txt`,
 					},
 				},
 			},

@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const tmsTestDockerImage = "alpine:latest"
+
 var tmsServiceKey string
 
 func readEnv() {
@@ -29,10 +31,10 @@ func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
 	// success case: run cmd without nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
-		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 
@@ -55,10 +57,10 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 	// success case: run cmd without --nodeExtDescriptorMapping and --customDescription
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
-		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 
@@ -80,7 +82,7 @@ func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
 	// error case: run cmd with nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java11-node14",
+		Image:   tmsTestDockerImage,
 		User:    "root",
 		TestDir: []string{"testdata", "TestTmsIntegration"},
 	})
@@ -102,10 +104,10 @@ func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
 	// error case: run cmd with invalid description
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
-		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 
@@ -123,10 +125,10 @@ func TestTmsUploadIntegrationYaml(t *testing.T) {
 	// success case: run with custom config
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "devxci/mbtci-java11-node14",
+		Image:       tmsTestDockerImage,
 		User:        "root",
 		TestDir:     []string{"testdata", "TestTmsIntegration"},
-		Environment: map[string]string{"PIPER_tmsServiceKey": tmsServiceKey},
+		Environment: map[string]string{"PIPER_serviceKey": tmsServiceKey},
 	})
 	defer container.terminate(t)
 

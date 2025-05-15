@@ -2,10 +2,12 @@ package cts
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"strings"
 )
 
 type fileUtils interface {
@@ -60,6 +62,7 @@ const (
 	abapUserKey           = "ABAP_USER"
 	abapPasswordKey       = "ABAP_PASSWORD"
 	defaultConfigFileName = "ui5-deploy.yaml"
+	pattern               = "^(/[A-Za-z0-9_]{3,8}/)?[A-Za-z0-9_]+$"
 )
 
 // WithConnection ...
@@ -189,6 +192,10 @@ func getFioriDeployStatement(
 		log.Entry().Debug("No application package found in piper config.")
 	}
 	if len(app.Name) > 0 {
+		re := regexp.MustCompile(pattern)
+		if !re.MatchString(app.Name) {
+			return "", fmt.Errorf("application name '%s' contains spaces or special characters or invalid namespace prefix and is not according to the regex '%s'.", app.Name, pattern)
+		}
 		log.Entry().Debugf("application name '%s' used from piper config", app.Name)
 		cmd = append(cmd, "--name", app.Name)
 	} else {

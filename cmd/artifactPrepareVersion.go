@@ -10,6 +10,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -55,6 +56,7 @@ type artifactPrepareVersionUtils interface {
 	RunExecutable(e string, p ...string) error
 
 	DownloadFile(url, filename string, header netHttp.Header, cookies []*netHttp.Cookie) error
+	piperhttp.Sender
 
 	Glob(pattern string) (matches []string, err error)
 	FileExists(filename string) (bool, error)
@@ -64,7 +66,7 @@ type artifactPrepareVersionUtils interface {
 	FileRead(path string) ([]byte, error)
 	FileRemove(path string) error
 
-	NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error)
+	GetConfigProvider() (orchestrator.ConfigProvider, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
@@ -73,8 +75,8 @@ type artifactPrepareVersionUtilsBundle struct {
 	*piperhttp.Client
 }
 
-func (a *artifactPrepareVersionUtilsBundle) NewOrchestratorSpecificConfigProvider() (orchestrator.OrchestratorSpecificConfigProviding, error) {
-	return orchestrator.NewOrchestratorSpecificConfigProvider()
+func (a *artifactPrepareVersionUtilsBundle) GetConfigProvider() (orchestrator.ConfigProvider, error) {
+	return orchestrator.GetOrchestratorConfigProvider(nil)
 }
 
 func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
@@ -83,6 +85,7 @@ func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
 		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
 	}
+	utils.Client.SetOptions(piperhttp.ClientOptions{MaxRetries: 3})
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
@@ -107,20 +110,19 @@ var sshAgentAuth = ssh.NewSSHAgentAuth
 
 func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, utils artifactPrepareVersionUtils, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
 
-	telemetryData.Custom1Label = "buildTool"
-	telemetryData.Custom1 = config.BuildTool
-	telemetryData.Custom2Label = "filePath"
-	telemetryData.Custom2 = config.FilePath
+	telemetryData.BuildTool = config.BuildTool
+	telemetryData.FilePath = config.FilePath
 
 	// Options for artifact
 	artifactOpts := versioning.Options{
-		GlobalSettingsFile:  config.GlobalSettingsFile,
-		M2Path:              config.M2Path,
-		ProjectSettingsFile: config.ProjectSettingsFile,
-		VersionField:        config.CustomVersionField,
-		VersionSection:      config.CustomVersionSection,
-		VersioningScheme:    config.CustomVersioningScheme,
-		VersionSource:       config.DockerVersionSource,
+		GlobalSettingsFile:      config.GlobalSettingsFile,
+		M2Path:                  config.M2Path,
+		ProjectSettingsFile:     config.ProjectSettingsFile,
+		VersionField:            config.CustomVersionField,
+		VersionSection:          config.CustomVersionSection,
+		VersioningScheme:        config.CustomVersioningScheme,
+		VersionSource:           config.DockerVersionSource,
+		CAPVersioningPreference: config.CAPVersioningPreference,
 	}
 
 	var err error
@@ -141,6 +143,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve version")
+	} else if len(version) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("version is empty - please check versioning configuration")
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 
@@ -158,7 +163,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
 		// make sure that versioning does not create tags (when set to "cloud")
 		// for PR pipelines, optimized pipelines (= no build)
-		provider, err := utils.NewOrchestratorSpecificConfigProvider()
+		provider, err := utils.GetConfigProvider()
 		if err != nil {
 			log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 		}
@@ -203,8 +208,13 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		}
 
 		if config.VersioningType == "cloud" {
+			certs, err := certutils.CertificateDownload(config.CustomTLSCertificateLinks, utils)
+			if err != nil {
+				return err
+			}
+
 			// commit changes and push to repository (including new version tag)
-			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
+			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now, certs)
 			if err != nil {
 				if strings.Contains(fmt.Sprint(err), "reference already exists") {
 					log.SetErrorCategory(log.ErrorCustom)
@@ -227,7 +237,13 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	commonPipelineEnvironment.git.commitID = gitCommitID // this commitID changes and is not necessarily the HEAD commitID
 	commonPipelineEnvironment.artifactVersion = newVersion
 	commonPipelineEnvironment.originalArtifactVersion = version
-	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
+
+	gitCommitMessages := strings.Split(gitCommitMessage, "\n")
+	commitMessage := truncateString(gitCommitMessages[0], 50) // Github recommends to keep commit message title less than 50 chars
+
+	commonPipelineEnvironment.git.commitMessage = commitMessage
+
+	log.Entry().Debug("CPE git commitMessage:", commitMessage)
 
 	// we may replace GetVersion() above with GetCoordinates() at some point ...
 	coordinates, err := artifact.GetCoordinates()
@@ -242,6 +258,15 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	}
 
 	return nil
+}
+
+func truncateString(str string, maxLength int) string {
+	chars := []rune(str)
+
+	if len(chars) > maxLength {
+		return string(chars[:maxLength]) + "..."
+	}
+	return str
 }
 
 func openGit() (gitRepository, error) {
@@ -334,7 +359,7 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 	return nil
 }
 
-func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time) (string, error) {
+func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time, certs []byte) (string, error) {
 
 	var commitID string
 
@@ -355,6 +380,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 	pushOptions := git.PushOptions{
 		RefSpecs: []gitConfig.RefSpec{gitConfig.RefSpec(ref)},
+		CABundle: certs,
 	}
 
 	currentRemoteOrigin, err := repository.Remote("origin")
@@ -441,7 +467,11 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
-	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{All: true, Author: &object.Signature{Name: config.CommitUserName, When: t}})
+	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
+		All:               true,
+		AllowEmptyCommits: true,
+		Author:            &object.Signature{Name: config.CommitUserName, When: t}},
+	)
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}
@@ -497,10 +527,6 @@ func propagateVersion(config *artifactPrepareVersionOptions, utils artifactPrepa
 	}
 
 	for i, targetTool := range config.AdditionalTargetTools {
-		if targetTool == config.BuildTool {
-			// ignore configured build tool
-			continue
-		}
 
 		var buildDescriptors []string
 		if len(config.AdditionalTargetDescriptors) > 0 {

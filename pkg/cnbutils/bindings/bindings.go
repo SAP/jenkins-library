@@ -4,7 +4,7 @@ package bindings
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -141,7 +141,7 @@ func processBinding(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, plat
 			return errors.Wrap(err, "failed to load binding from url")
 		}
 
-		bindingContent, err = ioutil.ReadAll(response.Body)
+		bindingContent, err = io.ReadAll(response.Body)
 		defer response.Body.Close()
 		if err != nil {
 			return errors.Wrap(err, "error reading response")

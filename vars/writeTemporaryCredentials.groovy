@@ -44,13 +44,6 @@ void call(Map parameters = [:], Closure body) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        // telemetry reporting
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], config)
-
         if (config.credentials && !(config.credentials instanceof List)) {
             error "[${STEP_NAME}] The execution failed, since credentials is not a list. Please provide credentials as a list of maps. For example:\n" +
                 "credentials: \n" + "  - alias: 'ERP'\n" + "    credentialId: 'erp-credentials'"

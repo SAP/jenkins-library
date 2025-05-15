@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
@@ -23,15 +23,15 @@ func abapAddonAssemblyKitRegisterPackages(config abapAddonAssemblyKitRegisterPac
 	c.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
+	telemetryData.BuildTool = "AAKaaS"
 
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitRegisterPackages(&config, telemetryData, &client, cpe, reader)
-	if err != nil {
+	if err := runAbapAddonAssemblyKitRegisterPackages(&config, &client, cpe, reader); err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegisterPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
+func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegisterPackagesOptions, client piperhttp.Sender,
 	cpe *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment, fileReader readFile) error {
 
 	var addonDescriptor abaputils.AddonDescriptor
@@ -40,7 +40,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 	}
 
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client, config.AbapAddonAssemblyKitOriginHash, config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 
@@ -49,7 +49,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 	}
 
 	conn2 := new(abapbuild.Connector) // we need a second connector without the added Header
-	if err := conn2.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client); err != nil {
+	if err := conn2.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client, config.AbapAddonAssemblyKitOriginHash, config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 
@@ -98,7 +98,7 @@ func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, read
 type readFile func(path string) ([]byte, error)
 
 func reader(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
+	return os.ReadFile(path)
 }
 
 func registerPackages(repos []abaputils.Repository, conn abapbuild.Connector) ([]abaputils.Repository, error) {

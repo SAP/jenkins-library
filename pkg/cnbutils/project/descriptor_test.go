@@ -16,7 +16,7 @@ import (
 )
 
 func TestParseDescriptor(t *testing.T) {
-	t.Run("parses the project.toml file", func(t *testing.T) {
+	t.Run("parses the project.toml file v01", func(t *testing.T) {
 		projectToml := `[project]
 id = "io.buildpacks.my-app"
 version = "0.1"
@@ -40,6 +40,14 @@ value = "VAL2"
 [[build.env]]
 name = "EMPTY"
 value = ""
+
+[[build.pre.group]]
+id = "paketo-buildpacks/java"
+version = "5.9.1"
+
+[[build.post.group]]
+id = "paketo-buildpacks/java"
+version = "5.9.1"
 
 [[build.buildpacks]]
 id = "paketo-buildpacks/java"
@@ -77,6 +85,94 @@ id = "paketo-buildpacks/nodejs"
 
 		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-java@5.9.1")
 		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-nodejs@1.1.1")
+
+		assert.Contains(t, descriptor.PreBuildpacks, "index.docker.io/test-java@5.9.1")
+		assert.Contains(t, descriptor.PostBuildpacks, "index.docker.io/test-java@5.9.1")
+
+		assert.NotNil(t, descriptor.Include)
+
+		t3 := descriptor.Include.MatchesPath("cmd/cobra.go")
+		assert.True(t, t3)
+
+		t4 := descriptor.Include.MatchesPath("pkg/test/main.go")
+		assert.True(t, t4)
+
+		t5 := descriptor.Include.MatchesPath("Makefile")
+		assert.False(t, t5)
+	})
+
+	t.Run("parses the project.toml file v02", func(t *testing.T) {
+		projectToml := `[_]
+id = "io.buildpacks.my-app"
+version = "0.1"
+schema-version = "0.2"
+
+[io.buildpacks]
+include = [
+	"cmd/",
+	"go.mod",
+	"go.sum",
+	"*.go"
+]
+
+[[io.buildpacks.build.env]]
+name = "VAR1"
+value = "VAL1"
+
+[[io.buildpacks.build.env]]
+name = "VAR2"
+value = "VAL2"
+
+[[io.buildpacks.build.env]]
+name = "EMPTY"
+value = ""
+
+[[io.buildpacks.pre.group]]
+id = "paketo-buildpacks/java"
+version = "5.9.1"
+
+[[io.buildpacks.post.group]]
+id = "paketo-buildpacks/java"
+version = "5.9.1"
+
+[[io.buildpacks.group]]
+id = "paketo-buildpacks/java"
+version = "5.9.1"
+
+[[io.buildpacks.group]]
+id = "paketo-buildpacks/nodejs"
+`
+		utils := &cnbutils.MockUtils{
+			FilesMock: &mock.FilesMock{},
+		}
+
+		fakeJavaResponse := "{\"latest\":{\"version\":\"1.1.1\",\"namespace\":\"test\",\"name\":\"test\",\"description\":\"\",\"homepage\":\"\",\"licenses\":null,\"stacks\":[\"test\",\"test\"],\"id\":\"test\"},\"versions\":[{\"version\":\"5.9.1\",\"_link\":\"https://test-java/5.9.1\"}]}"
+		fakeNodeJsResponse := "{\"latest\":{\"version\":\"1.1.1\",\"namespace\":\"test\",\"name\":\"test\",\"description\":\"\",\"homepage\":\"\",\"licenses\":null,\"stacks\":[\"test\",\"test\"],\"id\":\"test\"},\"versions\":[{\"version\":\"1.1.1\",\"_link\":\"https://test-nodejs/1.1.1\"}]}"
+
+		utils.AddFile("project.toml", []byte(projectToml))
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, "https://registry.buildpacks.io/api/v1/buildpacks/paketo-buildpacks/java", httpmock.NewStringResponder(200, fakeJavaResponse))
+		httpmock.RegisterResponder(http.MethodGet, "https://registry.buildpacks.io/api/v1/buildpacks/paketo-buildpacks/nodejs", httpmock.NewStringResponder(200, fakeNodeJsResponse))
+
+		httpmock.RegisterResponder(http.MethodGet, "https://test-java/5.9.1", httpmock.NewStringResponder(200, "{\"addr\": \"index.docker.io/test-java@5.9.1\"}"))
+		httpmock.RegisterResponder(http.MethodGet, "https://test-nodejs/1.1.1", httpmock.NewStringResponder(200, "{\"addr\": \"index.docker.io/test-nodejs@1.1.1\"}"))
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+
+		descriptor, err := ParseDescriptor("project.toml", utils, client)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "VAL1", descriptor.EnvVars["VAR1"])
+		assert.Equal(t, "VAL2", descriptor.EnvVars["VAR2"])
+		assert.Equal(t, "", descriptor.EnvVars["EMPTY"])
+
+		assert.Equal(t, "io.buildpacks.my-app", descriptor.ProjectID)
+
+		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-java@5.9.1")
+		assert.Contains(t, descriptor.Buildpacks, "index.docker.io/test-nodejs@1.1.1")
+		assert.Contains(t, descriptor.PreBuildpacks, "index.docker.io/test-java@5.9.1")
+		assert.Contains(t, descriptor.PostBuildpacks, "index.docker.io/test-java@5.9.1")
 
 		assert.NotNil(t, descriptor.Include)
 
@@ -160,6 +256,6 @@ exclude = [
 		_, err := ParseDescriptor("project.toml", utils, &piperhttp.Client{})
 
 		assert.Error(t, err)
-		assert.Equal(t, "(1, 8): was expecting token =, but got EOF instead", err.Error())
+		assert.Equal(t, "parsing schema version: toml: line 0: unexpected EOF; expected key separator '='", err.Error())
 	})
 }

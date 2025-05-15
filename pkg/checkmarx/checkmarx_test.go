@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -49,19 +48,19 @@ func (sm *senderMock) SendRequest(method, url string, body io.Reader, header htt
 	if sm.httpStatusCode > 399 {
 		httpError = fmt.Errorf("http error %v", sm.httpStatusCode)
 	}
-	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(sm.responseBody))}, httpError
+	return &http.Response{StatusCode: sm.httpStatusCode, Body: io.NopCloser(strings.NewReader(sm.responseBody))}, httpError
 }
 func (sm *senderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
 	sm.urlCalled = url
 	sm.header = header
-	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
+	return &http.Response{StatusCode: sm.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
 }
 func (sm *senderMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
 	sm.urlCalled = url
 	sm.header = header
-	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
+	return &http.Response{StatusCode: sm.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
 }
 func (sm *senderMock) Upload(_ piperHttp.UploadRequestData) (*http.Response, error) {
 	return &http.Response{}, fmt.Errorf("not implemented")

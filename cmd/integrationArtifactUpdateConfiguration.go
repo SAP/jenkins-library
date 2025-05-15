@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/Jeffail/gabs/v2"
@@ -76,7 +76,7 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 			Info("successfully updated the integration flow configuration parameter")
 		return nil
 	}
-	response, readErr := ioutil.ReadAll(configUpdateResp.Body)
+	response, readErr := io.ReadAll(configUpdateResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", configUpdateResp.StatusCode)

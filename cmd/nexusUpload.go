@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/pkg/errors"
 
 	b64 "encoding/base64"
 

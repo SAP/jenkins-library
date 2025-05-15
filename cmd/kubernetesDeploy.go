@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -35,8 +34,7 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 }
 
 func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData, utils kubernetes.DeployUtils, stdout io.Writer) error {
-	telemetryData.Custom1Label = "deployTool"
-	telemetryData.Custom1 = config.DeployTool
+	telemetryData.DeployTool = config.DeployTool
 
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		err := runHelmDeploy(config, utils, stdout)
@@ -230,6 +228,10 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		"--namespace", config.Namespace,
 	}
 
+	if len(config.KubeContext) > 0 {
+		testParams = append(testParams, "--kube-context", config.KubeContext)
+	}
+
 	if config.DeployTool == "helm" {
 		testParams = append(testParams, "--timeout", strconv.Itoa(config.HelmTestWaitSeconds))
 	}
@@ -307,7 +309,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		tmpFolder := getTempDirForKubeCtlJSON()
 		defer os.RemoveAll(tmpFolder) // clean up
 		jsonData, _ := json.Marshal(dockerRegistrySecretData)
-		if err := ioutil.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777); err != nil {
+		if err := os.WriteFile(filepath.Join(tmpFolder, "secret.json"), jsonData, 0777); err != nil {
 			log.Entry().WithError(err).Warning("failed to write secret")
 		}
 
@@ -451,17 +453,25 @@ func (dv *deploymentValues) asHelmValues() map[string]interface{} {
 	}
 }
 
-func createKey(parts ...string) string {
+func createKey(replacer *strings.Replacer, parts ...string) string {
 	escapedParts := make([]string, 0, len(parts))
-	replacer := strings.NewReplacer(".", "_", "-", "_")
+
 	for _, part := range parts {
 		escapedParts = append(escapedParts, replacer.Replace(part))
 	}
 	return strings.Join(escapedParts, ".")
 }
 
+func createGoKey(parts ...string) string {
+	return createKey(strings.NewReplacer(".", "_", "-", "_"), parts...)
+}
+
+func createHelmKey(parts ...string) string {
+	return createKey(strings.NewReplacer(".", "_"), parts...)
+}
+
 func getTempDirForKubeCtlJSON() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := os.MkdirTemp(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("creating temp directory failed")
 	}
@@ -550,8 +560,13 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 				tag = fmt.Sprintf("%s@%s", tag, config.ImageDigests[i])
 			}
 
-			dv.add(createKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
-			dv.add(createKey("image", key, "tag"), tag)
+			dv.add(createGoKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createGoKey("image", key, "tag"), tag)
+			// usable for subcharts:
+			dv.add(createGoKey(key, "image", "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createGoKey(key, "image", "tag"), tag)
+			dv.add(createHelmKey(key, "image", "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createHelmKey(key, "image", "tag"), tag)
 
 			if len(config.ImageNames) == 1 {
 				dv.singleImage = true
@@ -579,8 +594,8 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 		dv.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
 		dv.add("image.tag", containerImageTag)
 
-		dv.add(createKey("image", containerImageName, "repository"), fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
-		dv.add(createKey("image", containerImageName, "tag"), containerImageTag)
+		dv.add(createGoKey("image", containerImageName, "repository"), fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+		dv.add(createGoKey("image", containerImageName, "tag"), containerImageTag)
 	}
 
 	return dv, nil

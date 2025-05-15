@@ -3,9 +3,12 @@ package cmd
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -23,7 +26,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 )
 
@@ -78,25 +81,48 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to get project: %s", err)
 	}
 
-	cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
-	if err != nil {
-		return fmt.Errorf("failed to get group: %s", err)
+	if len(config.GroupName) > 0 {
+		cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to get group")
+		}
 	}
 
 	if cx1sh.Project == nil {
 		cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
 		if err != nil {
-			log.Entry().WithError(err).Warnf("failed to get application")
+			log.Entry().WithError(err).Warnf("Failed to get application - will attempt to create the project on the Tenant level")
 		}
 		cx1sh.Project, err = cx1sh.CreateProject() // requires groups, repoUrl, mainBranch, origin, tags, criticality
 		if err != nil {
 			return fmt.Errorf("failed to create project: %s", err)
+		}
+	} else {
+		cx1sh.Project, err = cx1sh.GetProjectByID(cx1sh.Project.ProjectID)
+		if err != nil {
+			return fmt.Errorf("failed to get project by ID: %s", err)
+		} else {
+			if len(cx1sh.Project.Applications) > 0 {
+				appId := cx1sh.Project.Applications[0]
+				cx1sh.App, err = cx1sh.GetApplicationByID(cx1sh.Project.Applications[0])
+				if err != nil {
+					return fmt.Errorf("failed to retrieve information for project's assigned application %v", appId)
+				}
+			}
 		}
 	}
 
 	err = cx1sh.SetProjectPreset()
 	if err != nil {
 		return fmt.Errorf("failed to set preset: %s", err)
+	}
+
+	// update project's tags
+	if (len(config.ProjectTags)) > 0 {
+		err = cx1sh.UpdateProjectTags()
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to tags the project: %s", err)
+		}
 	}
 
 	scans, err := cx1sh.GetLastScans(10)
@@ -126,6 +152,10 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	incremental, err := cx1sh.IncrementalOrFull(scans) // requires: scan list
 	if err != nil {
 		return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
+	}
+
+	if config.Incremental {
+		log.Entry().Warnf("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
 	}
 
 	zipFile, err := cx1sh.ZipFiles()
@@ -168,7 +198,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) (checkmarxOneExecuteScanHelper, error) {
 	client := &piperHttp.Client{}
 
-	ctx, ghClient, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", []string{})
+	ctx, ghClient, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
@@ -202,6 +232,11 @@ func (c *checkmarxOneExecuteScanHelper) GetProjectByName() (*checkmarxOne.Projec
 	return nil, fmt.Errorf("project not found")
 }
 
+func (c *checkmarxOneExecuteScanHelper) GetProjectByID(projectId string) (*checkmarxOne.Project, error) {
+	project, err := c.sys.GetProjectByID(projectId)
+	return &project, err
+}
+
 func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) {
 	if len(c.config.GroupName) > 0 {
 		group, err := c.sys.GetGroupByName(c.config.GroupName)
@@ -210,8 +245,7 @@ func (c *checkmarxOneExecuteScanHelper) GetGroup() (*checkmarxOne.Group, error) 
 		}
 		return &group, nil
 	}
-
-	return nil, fmt.Errorf("No group ID or group name provided")
+	return nil, fmt.Errorf("No group name specified in configuration")
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetApplication() (*checkmarxOne.Application, error) {
@@ -223,7 +257,16 @@ func (c *checkmarxOneExecuteScanHelper) GetApplication() (*checkmarxOne.Applicat
 
 		return &app, nil
 	}
-	return nil, fmt.Errorf("No application named %v found", c.config.ApplicationName)
+	return nil, fmt.Errorf("No application name specified in configuration")
+}
+
+func (c *checkmarxOneExecuteScanHelper) GetApplicationByID(applicationId string) (*checkmarxOne.Application, error) {
+	app, err := c.sys.GetApplicationByID(applicationId)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Checkmarx One application by Name %v: %s", c.config.ApplicationName, err)
+	}
+
+	return &app, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, error) {
@@ -231,7 +274,19 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 		return nil, fmt.Errorf("Preset is required to create a project")
 	}
 
-	project, err := c.sys.CreateProject(c.config.ProjectName, []string{c.Group.GroupID})
+	var project checkmarxOne.Project
+	var err error
+	var groupIDs []string = []string{}
+	if c.Group != nil {
+		groupIDs = []string{c.Group.GroupID}
+	}
+
+	if c.App != nil {
+		project, err = c.sys.CreateProjectInApplication(c.config.ProjectName, c.App.ApplicationID, groupIDs)
+	} else {
+		project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("Error when trying to create project: %s", err)
 	}
@@ -256,6 +311,23 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	return &project, nil
 }
 
+func (c *checkmarxOneExecuteScanHelper) UpdateProjectTags() error {
+	if len(c.config.ProjectTags) > 0 {
+		tags := make(map[string]string, 0)
+		err := json.Unmarshal([]byte(c.config.ProjectTags), &tags)
+		if err != nil {
+			log.Entry().Infof("Failed to parse the project tags: %v", c.config.ProjectTags)
+			return err
+		}
+		// merge new tags to the existing ones
+		maps.Copy(c.Project.Tags, tags)
+
+		return c.sys.UpdateProject(c.Project)
+	}
+
+	return nil
+}
+
 func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	projectConf, err := c.sys.GetProjectConfiguration(c.Project.ProjectID)
 
@@ -264,21 +336,51 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	}
 
 	currentPreset := ""
+	currentLanguageMode := "multi" // piper default
 	for _, conf := range projectConf {
 		if conf.Key == "scan.config.sast.presetName" {
 			currentPreset = conf.Value
-			break
+		}
+		if conf.Key == "scan.config.sast.languageMode" {
+			currentLanguageMode = conf.Value
+		}
+	}
+
+	if c.config.LanguageMode == "" || strings.EqualFold(c.config.LanguageMode, "multi") { // default multi if blank
+		if currentLanguageMode != "multi" {
+			log.Entry().Info("Pipeline yaml requests multi-language scan - updating project configuration")
+			c.sys.SetProjectLanguageMode(c.Project.ProjectID, "multi", true)
+
+			if c.config.Incremental {
+				log.Entry().Warn("Pipeline yaml requests incremental scan, but switching from 'primary' to 'multi' language mode requires a full scan - switching from incremental to full")
+				c.config.Incremental = false
+			}
+		}
+	} else { // primary language mode
+		if currentLanguageMode != "primary" {
+			log.Entry().Info("Pipeline yaml requests primary-language scan - updating project configuration")
+			c.sys.SetProjectLanguageMode(c.Project.ProjectID, "primary", true)
+			// no need to switch incremental to full here (multi-language scan includes single-language scan coverage)
 		}
 	}
 
 	if c.config.Preset == "" {
-		log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		if currentPreset == "" {
+			return fmt.Errorf("must specify the preset in either the pipeline yaml or in the CheckmarxOne project configuration")
+		} else {
+			log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+		}
 		c.config.Preset = currentPreset
 	} else if currentPreset != c.config.Preset {
 		log.Entry().Infof("Project configured preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentPreset, c.config.Preset)
 		c.sys.SetProjectPreset(c.Project.ProjectID, c.config.Preset, true)
+
+		if c.config.Incremental {
+			log.Entry().Warn("Changing project settings requires a full scan to take effect - switching from incremental to full")
+			c.config.Incremental = false
+		}
 	} else {
-		log.Entry().Infof("Project is configured to use preset %v", currentPreset)
+		log.Entry().Infof("Project is already configured to use pipeline preset %v", currentPreset)
 	}
 	return nil
 }
@@ -347,6 +449,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	}
 
 	branch := c.config.Branch
+	if len(branch) == 0 && len(c.config.GitBranch) > 0 {
+		branch = c.config.GitBranch
+	}
 	if len(c.config.PullRequestName) > 0 {
 		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
 	}
@@ -356,9 +461,18 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	log.Entry().Infof("Will run a scan with the following configuration: %v", sastConfigString)
 
 	configs := []checkmarxOne.ScanConfiguration{sastConfig}
-	// add more engines
 
-	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs)
+	// add scan's tags
+	tags := make(map[string]string, 0)
+	if len(c.config.ScanTags) > 0 {
+		err := json.Unmarshal([]byte(c.config.ScanTags), &tags)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to parse the scan tags: %v", c.config.ScanTags)
+		}
+	}
+
+	// add more engines
+	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs, tags)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to run scan on project %v: %s", c.Project.Name, err)
@@ -532,12 +646,17 @@ func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (m
 		return detailedResults, fmt.Errorf("Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err)
 	}
 
+	totalResultCount := uint64(0)
+
 	scansummary, err := c.sys.GetScanSummary(scan.ScanID)
 	if err != nil {
-		return detailedResults, fmt.Errorf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+		/* TODO: scansummary throws a 404 for 0-result scans, once the bug is fixed put this code back. */
+		// return detailedResults, fmt.Errorf("Unable to fetch scan summary for scan %v: %s", scan.ScanID, err)
+	} else {
+		totalResultCount = scansummary.TotalCount()
 	}
 
-	results, err := c.sys.GetScanResults(scan.ScanID, scansummary.TotalCount())
+	results, err := c.sys.GetScanResults(scan.ScanID, totalResultCount)
 	if err != nil {
 		return detailedResults, fmt.Errorf("Unable to fetch scan results for scan %v: %s", scan.ScanID, err)
 	}
@@ -606,12 +725,15 @@ func (c *checkmarxOneExecuteScanHelper) generateAndDownloadReport(scan *checkmar
 
 		if finalStatus.Status == "completed" {
 			break
+		} else if finalStatus.Status == "failed" {
+			return []byte{}, fmt.Errorf("report generation failed")
 		}
 		time.Sleep(10 * time.Second)
 	}
 	if finalStatus.Status == "completed" {
 		return c.sys.DownloadReport(finalStatus.ReportURL)
 	}
+
 	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus.Status)
 }
 
@@ -636,8 +758,18 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	resultMap["ScanId"] = scan.ScanID
 	resultMap["ProjectId"] = c.Project.ProjectID
 	resultMap["ProjectName"] = c.Project.Name
-	resultMap["Group"] = c.Group.GroupID
-	resultMap["GroupFullPathOnReportDate"] = c.Group.Name
+
+	resultMap["Group"] = ""
+	resultMap["GroupFullPathOnReportDate"] = ""
+
+	if c.App != nil {
+		resultMap["Application"] = c.App.ApplicationID
+		resultMap["ApplicationFullPathOnReportDate"] = c.App.Name
+	} else {
+		resultMap["Application"] = ""
+		resultMap["ApplicationFullPathOnReportDate"] = ""
+	}
+
 	resultMap["ScanStart"] = scan.CreatedAt
 
 	scanCreated, err := time.Parse(time.RFC3339, scan.CreatedAt)
@@ -658,7 +790,12 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	resultMap["LinesOfCodeScanned"] = scanmeta.LOC
 	resultMap["FilesScanned"] = scanmeta.FileCount
 
-	resultMap["CheckmarxVersion"] = "Cx1 Gap: No API for this"
+	version, err := c.sys.GetVersion()
+	if err != nil {
+		resultMap["ToolVersion"] = "Error fetching current version"
+	} else {
+		resultMap["ToolVersion"] = fmt.Sprintf("CxOne: %v, SAST: %v, KICS: %v", version.CxOne, version.SAST, version.KICS)
+	}
 
 	if scanmeta.IsIncremental {
 		resultMap["ScanType"] = "Incremental"
@@ -667,7 +804,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	}
 
 	resultMap["Preset"] = scanmeta.PresetName
-	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, scan.Branch)
+	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, url.QueryEscape(scan.Branch))
 	resultMap["ReportCreationTime"] = time.Now().String()
 	resultMap["High"] = map[string]int{}
 	resultMap["Medium"] = map[string]int{}
@@ -807,12 +944,15 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 			return nil
 		}
 
+		fileName := strings.TrimPrefix(path, baseDir)
 		noMatch, err := c.isFileNotMatchingPattern(patterns, path, info, utils)
 		if err != nil || noMatch {
+			if noMatch {
+				log.Entry().Debugf("Excluded %s", fileName)
+			}
 			return err
 		}
 
-		fileName := strings.TrimPrefix(path, baseDir)
 		writer, err := archive.Create(fileName)
 		if err != nil {
 			return err
@@ -824,6 +964,9 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 		}
 		defer file.Close()
 		_, err = io.Copy(writer, file)
+		if err == nil {
+			log.Entry().Debugf("Zipped %s", fileName)
+		}
 		fileCount++
 		return err
 	})
@@ -954,8 +1097,9 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 		}
 		// if the flag is switched on, calculate the Low findings threshold per query
 		if cxLowThresholdPerQuery {
-			lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
-			if lowPerQueryMap != nil {
+			if (*results)["LowPerQuery"] != nil {
+				lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
+
 				for lowQuery, resultsLowQuery := range lowPerQueryMap {
 					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
 					lowOverallPerQuery := resultsLowQuery["Issues"]
@@ -1063,7 +1207,8 @@ func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]inter
 	c.influx.checkmarxOne_data.fields.scan_time = (*results)["ScanTime"].(string)
 	c.influx.checkmarxOne_data.fields.lines_of_code_scanned = (*results)["LinesOfCodeScanned"].(int)
 	c.influx.checkmarxOne_data.fields.files_scanned = (*results)["FilesScanned"].(int)
-	c.influx.checkmarxOne_data.fields.checkmarxOne_version = (*results)["CheckmarxVersion"].(string)
+	c.influx.checkmarxOne_data.fields.tool_version = (*results)["ToolVersion"].(string)
+
 	c.influx.checkmarxOne_data.fields.scan_type = (*results)["ScanType"].(string)
 	c.influx.checkmarxOne_data.fields.preset = (*results)["Preset"].(string)
 	c.influx.checkmarxOne_data.fields.deep_link = (*results)["DeepLink"].(string)

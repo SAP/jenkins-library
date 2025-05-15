@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -29,6 +30,7 @@ type golangBuildOptions struct {
 	CreateBOM                    bool     `json:"createBOM,omitempty"`
 	CustomTLSCertificateLinks    []string `json:"customTlsCertificateLinks,omitempty"`
 	ExcludeGeneratedFromCoverage bool     `json:"excludeGeneratedFromCoverage,omitempty"`
+	FailOnLintingError           bool     `json:"failOnLintingError,omitempty"`
 	LdflagsTemplate              string   `json:"ldflagsTemplate,omitempty"`
 	Output                       string   `json:"output,omitempty"`
 	Packages                     []string `json:"packages,omitempty"`
@@ -93,10 +95,8 @@ func (p *golangBuildReports) persist(stepConfig golangBuildOptions, gcpJsonKeyFi
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -146,11 +146,14 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -164,7 +167,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -186,6 +189,11 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -196,21 +204,40 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
+			telemetryClient.Initialize(STEP_NAME)
 			golangBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -229,6 +256,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.ExcludeGeneratedFromCoverage, "excludeGeneratedFromCoverage", true, "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode).")
+	cmd.Flags().BoolVar(&stepConfig.FailOnLintingError, "failOnLintingError", true, "Defines if step will return an error in case linting runs into a problem")
 	cmd.Flags().StringVar(&stepConfig.LdflagsTemplate, "ldflagsTemplate", os.Getenv("PIPER_ldflagsTemplate"), "Defines the content of -ldflags option in a golang template format.")
 	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "Defines the build result or output directory as per `go build` documentation.")
 	cmd.Flags().StringSliceVar(&stepConfig.Packages, "packages", []string{}, "List of packages to be build as per `go build` documentation.")
@@ -326,6 +354,15 @@ func golangBuildMetadata() config.StepData {
 					},
 					{
 						Name:        "excludeGeneratedFromCoverage",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "failOnLintingError",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
@@ -492,7 +529,7 @@ func golangBuildMetadata() config.StepData {
 					{
 						Name:        "privateModules",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

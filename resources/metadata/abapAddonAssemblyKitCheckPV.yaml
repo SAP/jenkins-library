@@ -5,6 +5,8 @@ metadata:
     This step checks by calling AAKaaS whether the Addon Product Version in the addonDescriptor configuration file specified via addonDescriptorFileName (e.g. addon.yml) does exist or is a valid successor of an existing Product Version.
     It resolves the dotted version string into version, support package stack level and patch level and writes it to the addonDescriptor structure in the Piper commonPipelineEnvironment for usage of subsequent pipeline steps.
     <br />
+    For logon you can either provide a credential with basic authorization (username and password) or two secret text credentials containing the technical s-users certificate (see note [2805811](https://me.sap.com/notes/2805811) for download) as base64 encoded string and the password to decrypt the file
+    <br />
     For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 spec:
   inputs:
@@ -12,7 +14,35 @@ spec:
       - name: abapAddonAssemblyKitCredentialsId
         description: CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
         type: jenkins
+      - name: abapAddonAssemblyKitCertificateFileCredentialsId
+        description: Jenkins secret text credential ID containing the base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)
+        type: jenkins
+      - name: abapAddonAssemblyKitCertificatePassCredentialsId
+        description: Jenkins secret text credential ID containing the password to decrypt the certificate file stored in abapAddonAssemblyKitCertificateFileCredentialsId
+        type: jenkins
     params:
+      - name: abapAddonAssemblyKitCertificateFile
+        type: string
+        description: base64 encoded certificate pfx file (PKCS12 format) see note [2805811](https://me.sap.com/notes/2805811)
+        scope:
+          - PARAMETERS
+        mandatory: false
+        secret: true
+        resourceRef:
+          - name: abapAddonAssemblyKitCertificateFileCredentialsId
+            type: secret
+            param: abapAddonAssemblyKitCertificateFile
+      - name: abapAddonAssemblyKitCertificatePass
+        type: string
+        description: password to decrypt the certificate file
+        scope:
+          - PARAMETERS
+        mandatory: false
+        secret: true
+        resourceRef:
+          - name: abapAddonAssemblyKitCertificatePassCredentialsId
+            type: secret
+            param: abapAddonAssemblyKitCertificatePass
       - name: abapAddonAssemblyKitEndpoint
         type: string
         description: Base URL to the Addon Assembly Kit as a Service (AAKaaS) system
@@ -30,14 +60,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
       - name: password
         type: string
         description: Password for the Addon Assembly Kit as a Service (AAKaaS) system
         scope:
           - PARAMETERS
-        mandatory: true
+        mandatory: false
         secret: true
       - name: addonDescriptorFileName
         type: string

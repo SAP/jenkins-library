@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -177,7 +178,9 @@ func (communicationInstance *CommunicationInstance) GetMtaExtDescriptor(nodeId i
 
 }
 
-func (communicationInstance *CommunicationInstance) UploadFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error) {
+func (communicationInstance *CommunicationInstance) UploadFileToNode(fileInfo FileInfo, nodeName, description, namedUser string) (NodeUploadResponseEntity, error) {
+	fileId := strconv.FormatInt(fileInfo.Id, 10)
+
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("Node upload started")
 		communicationInstance.logger.Infof("tmsUrl: %v, nodeName: %v, fileId: %v, description: %v, namedUser: %v", communicationInstance.tmsUrl, nodeName, fileId, description, namedUser)
@@ -200,14 +203,16 @@ func (communicationInstance *CommunicationInstance) UploadFileToNode(nodeName, f
 	}
 
 	json.Unmarshal(data, &nodeUploadResponseEntity)
-	if communicationInstance.isVerbose {
-		communicationInstance.logger.Info("Node upload executed successfully")
-	}
+	communicationInstance.logger.Info("Node upload executed successfully")
+	communicationInstance.logger.Infof("nodeName: %v, nodeId: %v, uploadedFile: %v, createdTransportRequestDescription: %v, createdTransportRequestId: %v", nodeUploadResponseEntity.QueueEntries[0].NodeName, nodeUploadResponseEntity.QueueEntries[0].NodeId, fileInfo.Name, nodeUploadResponseEntity.TransportRequestDescription, nodeUploadResponseEntity.TransportRequestId)
+
 	return nodeUploadResponseEntity, nil
 
 }
 
-func (communicationInstance *CommunicationInstance) ExportFileToNode(nodeName, fileId, description, namedUser string) (NodeUploadResponseEntity, error) {
+func (communicationInstance *CommunicationInstance) ExportFileToNode(fileInfo FileInfo, nodeName, description, namedUser string) (NodeUploadResponseEntity, error) {
+	fileId := strconv.FormatInt(fileInfo.Id, 10)
+
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Info("Node export started")
 		communicationInstance.logger.Infof("tmsUrl: %v, nodeName: %v, fileId: %v, description: %v, namedUser: %v", communicationInstance.tmsUrl, nodeName, fileId, description, namedUser)
@@ -230,9 +235,8 @@ func (communicationInstance *CommunicationInstance) ExportFileToNode(nodeName, f
 	}
 
 	json.Unmarshal(data, &nodeUploadResponseEntity)
-	if communicationInstance.isVerbose {
-		communicationInstance.logger.Info("Node export executed successfully")
-	}
+	communicationInstance.logger.Info("Node export executed successfully")
+	communicationInstance.logger.Infof("nodeName: %v, nodeId: %v, uploadedFile: %v, createdTransportRequestDescription: %v, createdTransportRequestId: %v", nodeUploadResponseEntity.QueueEntries[0].NodeName, nodeUploadResponseEntity.QueueEntries[0].NodeId, fileInfo.Name, nodeUploadResponseEntity.TransportRequestDescription, nodeUploadResponseEntity.TransportRequestId)
 	return nodeUploadResponseEntity, nil
 
 }

@@ -5,6 +5,20 @@ on:
     branches:
       - master
       - it/**
+  workflow_call:
+    secrets:
+      INTEGRATION_TEST_VOTING_TOKEN:
+        required: true
+      PIPER_INTEGRATION_GITHUB_TOKEN:
+        required: true
+      PIPER_INTEGRATION_SONAR_TOKEN:
+        required: true
+      PIPER_TMSSERVICEKEY:
+        required: true
+    outputs:
+      test_status:
+        description: "Integration test status (success/failure)"
+        value: ${{ jobs.finish.outputs.status }}
 
 jobs:
   start:
@@ -14,8 +28,8 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.10.0
-      - uses: actions/checkout@v3
+      - uses: styfle/cancel-workflow-action@0.11.0
+      - uses: actions/checkout@v4
       - name: Get GO version
         id: go_version
         run: |
@@ -42,10 +56,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
@@ -53,7 +67,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
       - name: Upload Piper binary
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: piper
           path: piper
@@ -67,10 +81,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
@@ -82,7 +96,7 @@ jobs:
           echo "matrix=$(go run .github/workflows/parse_integration_test_list.go -file ./integration/github_actions_integration_test_list.yml)" >> "$GITHUB_OUTPUT"
       - name: Upload integration tests binary
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration_tests
           path: integration_tests
@@ -99,18 +113,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Download Piper binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: piper
       - name: Download integration tests binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: integration_tests
           path: ./integration/
@@ -134,8 +148,11 @@ jobs:
       - build_integration_tests
       - run_integration_tests
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.set_status.outputs.status }}
     steps:
       - name: Update status
+        id: set_status
         run: |
           if [[ "${{ needs.run_integration_tests.result }}" == "success" ]]
           then
@@ -147,6 +164,7 @@ jobs:
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+            echo "status=success" >> "$GITHUB_OUTPUT" && \
             exit 0
           else
             curl \
@@ -157,5 +175,6 @@ jobs:
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
               -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+            echo "status=failure" >> "$GITHUB_OUTPUT" && \
             exit 1
           fi

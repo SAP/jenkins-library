@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -40,7 +41,7 @@ func CreateCustomVulnerabilityReport(productName string, scan *Scan, alerts *[]A
 			{Description: "Filtered project names", Details: strings.Join(projectNames, ", ")},
 		},
 		Overview: []reporting.OverviewRow{
-			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len((*alerts)))},
+			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len(*alerts))},
 			{Description: "Total number of high/critical vulnerabilities with CVSS score >= 7.0", Details: fmt.Sprint(severe)},
 		},
 		SuccessfulScan: severe == 0,
@@ -211,11 +212,13 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		partialFingerprints := new(format.PartialFingerprints)
 		partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", alert.Library.ToPackageUrl().ToString(), alert.Vulnerability.Name)))
 		result.PartialFingerprints = *partialFingerprints
+		result.Properties = getAuditInformation(alert)
+
 		//append the result
 		sarif.Runs[0].Results = append(sarif.Runs[0].Results, result)
 
 		// only create rule on new CVE
-		if !piperutils.ContainsString(collectedRules, ruleId) {
+		if !slices.Contains(collectedRules, ruleId) {
 			collectedRules = append(collectedRules, ruleId)
 
 			sarifRule := *new(format.SarifRule)
@@ -266,6 +269,41 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 	sarif.Runs[0].Conversion = conversion
 
 	return &sarif
+}
+
+func getAuditInformation(alert Alert) *format.SarifProperties {
+	unifiedAuditState := "new"
+	auditMessage := ""
+	isAudited := false
+
+	// unified audit state
+	switch alert.Status {
+	case "OPEN":
+		unifiedAuditState = "new"
+	case "IGNORE":
+		unifiedAuditState = "notRelevant"
+		auditMessage = alert.Comments
+	}
+
+	if alert.Assessment != nil {
+		unifiedAuditState = string(alert.Assessment.Status)
+		auditMessage = string(alert.Assessment.Analysis)
+	}
+
+	if unifiedAuditState == string(format.Relevant) ||
+		unifiedAuditState == string(format.NotRelevant) {
+		isAudited = true
+	}
+
+	return &format.SarifProperties{
+		Audited:               isAudited,
+		ToolAuditMessage:      auditMessage,
+		UnifiedAuditState:     unifiedAuditState,
+		AuditRequirement:      format.AUDIT_REQUIREMENT_GROUP_1_DESC,
+		AuditRequirementIndex: format.AUDIT_REQUIREMENT_GROUP_1_INDEX,
+		UnifiedSeverity:       alert.Vulnerability.CVSS3Severity,
+		UnifiedCriticality:    float32(alert.Vulnerability.CVSS3Score),
+	}
 }
 
 func transformToLevel(cvss2severity, cvss3severity string) string {

@@ -6,7 +6,6 @@ package apim
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -43,7 +42,7 @@ func (c *HttpMockAPIM) SendRequest(method string, url string, r io.Reader, heade
 	c.URL = url
 
 	if r != nil {
-		_, err := ioutil.ReadAll(r)
+		_, err := io.ReadAll(r)
 
 		if err != nil {
 			return nil, err
@@ -53,7 +52,7 @@ func (c *HttpMockAPIM) SendRequest(method string, url string, r io.Reader, heade
 	res := http.Response{
 		StatusCode: c.StatusCode,
 		Header:     c.Header,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(c.ResponseBody))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(c.ResponseBody))),
 	}
 
 	if c.StatusCode >= 400 {

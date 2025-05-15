@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -149,7 +148,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		  plan:   "testPlan"`
 
 		manifestFileStringBody := []byte(manifestFileString)
-		err := ioutil.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
+		err := os.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
 		assert.NoError(t, err)
 
 		var manifestVariables = []string{"name1=Test1", "name2=Test2"}
@@ -203,11 +202,11 @@ func TestCloudFoundryCreateService(t *testing.T) {
 
 		varsFileStringBody := []byte(varsFileString)
 		manifestFileStringBody := []byte(manifestFileString)
-		err := ioutil.WriteFile("varsTest.yml", varsFileStringBody, 0644)
+		err := os.WriteFile("varsTest.yml", varsFileStringBody, 0644)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile("varsTest2.yml", varsFileStringBody, 0644)
+		err = os.WriteFile("varsTest2.yml", varsFileStringBody, 0644)
 		assert.NoError(t, err)
-		err = ioutil.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
+		err = os.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
 		assert.NoError(t, err)
 
 		var manifestVariablesFiles = []string{"varsTest.yml", "varsTest2.yml"}

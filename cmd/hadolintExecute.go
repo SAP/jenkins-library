@@ -18,7 +18,6 @@ import (
 const hadolintCommand = "hadolint"
 
 // HadolintPiperFileUtils abstracts piperutils.Files
-// mock generated with: mockery --name HadolintPiperFileUtils --dir cmd --output pkg/hadolint/mocks
 type HadolintPiperFileUtils interface {
 	FileExists(filename string) (bool, error)
 	FileWrite(filename string, data []byte, perm os.FileMode) error
@@ -26,7 +25,6 @@ type HadolintPiperFileUtils interface {
 }
 
 // HadolintClient abstracts http.Client
-// mock generated with: mockery --name hadolintClient --dir cmd --output pkg/hadolint/mocks
 type HadolintClient interface {
 	SetOptions(options piperhttp.ClientOptions)
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error

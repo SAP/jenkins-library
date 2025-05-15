@@ -12,36 +12,40 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.10.0
-      - uses: actions/setup-go@v1
+      - uses: styfle/cancel-workflow-action@0.11.0
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.18.x'
+          go-version: '1.24.0'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-${{ hashFiles('go.sum') }}
           restore-keys: |
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: unit-test
-        uses: paambaati/codeclimate-action@v2.6.0
+        id: unit-test
+        run: go test -tags=unit ./... -coverprofile cover.out
+      # run code coverage upload to code climate on main branch since PR branch will not have access to secret
+      - name: unit-test-code-climate-upload
+        if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.head.repo.full_name == github.repository) }}
+        uses: paambaati/codeclimate-action@v5
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
         with:
-          coverageCommand: go test -tags=unit ./... -coverprofile cover.out
           coverageLocations: cover.out:gocov
           # truncate package name from file paths in report
           prefix: github.com/SAP/jenkins-library/
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.18.x'
+          go-version: '1.24.0'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-format${{ hashFiles('go.sum') }}
@@ -49,7 +53,7 @@ jobs:
             ${{ runner.os }}-golang-format
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: format
         run: go fmt ./...
       - name: verify
@@ -57,27 +61,26 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.19.x'
-          # action requires go@1.19
+          go-version: '1.24.0'
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: staticcheck
-        uses: dominikh/staticcheck-action@v1.2.0
+        uses: dominikh/staticcheck-action@v1.3.0
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
           install-go: false
   generate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.18.x'
+          go-version: '1.24.0'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-generate${{ hashFiles('go.sum') }}
@@ -85,7 +88,7 @@ jobs:
             ${{ runner.os }}-golang-generate
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: generate
         run: go run pkg/generator/step-metadata.go
       - name: verify
@@ -93,11 +96,11 @@ jobs:
   dependencies:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.18.x'
+          go-version: '1.24.0'
       - name: Cache Golang Packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-dependencies${{ hashFiles('go.sum') }}
@@ -105,7 +108,7 @@ jobs:
             ${{ runner.os }}-golang-dependencies
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: cleanup dependencies
         run: go mod tidy
       - name: verify

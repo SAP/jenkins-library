@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"slices"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -52,15 +54,15 @@ func runTerraformExecute(config *terraformExecuteOptions, telemetryData *telemet
 
 	args := []string{}
 
-	if piperutils.ContainsString([]string{"apply", "destroy"}, config.Command) {
+	if slices.Contains([]string{"apply", "destroy"}, config.Command) {
 		args = append(args, "-auto-approve")
 	}
 
-	if piperutils.ContainsString([]string{"apply", "plan"}, config.Command) && config.TerraformSecrets != "" {
+	if slices.Contains([]string{"apply", "plan"}, config.Command) && config.TerraformSecrets != "" {
 		args = append(args, fmt.Sprintf("-var-file=%s", config.TerraformSecrets))
 	}
 
-	if piperutils.ContainsString([]string{"init", "validate", "plan", "apply", "destroy"}, config.Command) {
+	if slices.Contains([]string{"init", "validate", "plan", "apply", "destroy"}, config.Command) {
 		args = append(args, "-no-color")
 	}
 

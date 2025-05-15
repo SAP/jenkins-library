@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -58,6 +58,7 @@ type Alert struct {
 	CreationDate     string        `json:"date,omitempty"`
 	ModifiedDate     string        `json:"modifiedDate,omitempty"`
 	Status           string        `json:"status,omitempty"`
+	Comments         string        `json:"comments,omitempty"`
 }
 
 // DependencyType returns type of dependency: direct/transitive
@@ -664,6 +665,34 @@ func (s *System) GetProjectAlertsByType(projectToken, alertType string) ([]Alert
 	return wsResponse.Alerts, nil
 }
 
+// GetProjectIgnoredAlertsByType returns all ignored alerts of a certain type for a given project
+func (s *System) GetProjectIgnoredAlertsByType(projectToken string, alertType string) ([]Alert, error) {
+	wsResponse := struct {
+		Alerts []Alert `json:"alerts"`
+	}{
+		Alerts: []Alert{},
+	}
+
+	req := Request{
+		RequestType:  "getProjectIgnoredAlerts",
+		ProjectToken: projectToken,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	alerts := make([]Alert, 0)
+	for _, alert := range wsResponse.Alerts {
+		if alert.Type == alertType {
+			alerts = append(alerts, alert)
+		}
+	}
+
+	return alerts, nil
+}
+
 // GetProjectLibraryLocations
 func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
 	wsResponse := struct {
@@ -721,8 +750,7 @@ func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result interface
 				return err
 			}
 		}
-		return fmt.Errorf("invalid request, error code %v, message '%s'",
-			errorResponse.ErrorCode, errorResponse.ErrorMessage)
+		return fmt.Errorf("invalid request, error code %v, message '%s'", errorResponse.ErrorCode, errorResponse.ErrorMessage)
 	}
 
 	if result != nil {
@@ -757,7 +785,7 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 		return responseBody, errors.Wrap(err, "failed to send request to WhiteSource")
 	}
 	defer response.Body.Close()
-	responseBody, err = ioutil.ReadAll(response.Body)
+	responseBody, err = io.ReadAll(response.Body)
 	if err != nil {
 		return responseBody, errors.Wrap(err, "failed to read WhiteSource response")
 	}

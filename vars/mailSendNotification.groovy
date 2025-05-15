@@ -1,4 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
@@ -95,8 +96,6 @@ void call(Map parameters = [:]) {
             )
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-
-        new Utils().pushToSWA([step: STEP_NAME], config)
 
         //this takes care that terminated builds due to milestone-locking do not cause an error
         if (script.commonPipelineEnvironment.getBuildResult() == 'ABORTED') return
@@ -200,8 +199,8 @@ def getCulprits(config, branch, numberOfCommits) {
                 def pullRequestID = branch.replaceAll('PR-', '')
                 def localBranchName = "pr" + pullRequestID
                 sh """git init
-    git fetch ${config.gitUrl} pull/${pullRequestID}/head:${localBranchName} > /dev/null 2>&1
-    git checkout -f ${localBranchName} > /dev/null 2>&1
+    git fetch ${q(config.gitUrl)} pull/${q(pullRequestID)}/head:${q(localBranchName)} > /dev/null 2>&1
+    git checkout -f ${q(localBranchName)} > /dev/null 2>&1
     """
             }
         } else {
@@ -212,8 +211,8 @@ def getCulprits(config, branch, numberOfCommits) {
                     credentials: [config.gitSshKeyCredentialsId],
                     ignoreMissing: true
                 ) {
-                    sh """git clone ${config.gitUrl} .
-    git checkout ${config.gitCommitId} > /dev/null 2>&1"""
+                    sh """git clone ${q(config.gitUrl)} .
+    git checkout ${q(config.gitCommitId)} > /dev/null 2>&1"""
                 }
             } else {
                 def retCode = sh(returnStatus: true, script: 'git log > /dev/null 2>&1')

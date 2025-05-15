@@ -8,6 +8,7 @@ class StageNameProvider implements Serializable {
     boolean useTechnicalStageNames = false
 
     String getStageName(Script script, Map parameters, Script step) {
+        String stageName = null
         if (parameters.stageName in CharSequence) {
             return parameters.stageName
         }

@@ -5,6 +5,7 @@ package npm
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 )
@@ -123,6 +124,6 @@ func (n *NpmExecutorMock) CreateBOM(packageJSONFiles []string) error {
 }
 
 // CreateBOM mock implementation
-func (n *NpmExecutorMock) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool) error {
+func (n *NpmExecutorMock) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
 	return nil
 }

@@ -24,14 +24,17 @@ func abapEnvironmentAssembleConfirm(config abapEnvironmentAssembleConfirmOptions
 		Exec: &c,
 	}
 
+	telemetryData.BuildTool = "ABAP Build Framework"
+
 	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssembleConfirm(&config, telemetryData, &autils, &client, cpe)
+	err := runAbapEnvironmentAssembleConfirm(&config, &autils, &client, cpe)
 	if err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOptions, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
@@ -95,7 +98,7 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 			if releasePackagesFailed == nil {
 				releasePackagesFailed = errors.New(errormessage)
 			} else {
-				releasePackagesFailed = errors.Wrapf(releasePackagesFailed, errormessage)
+				releasePackagesFailed = errors.Wrap(releasePackagesFailed, errormessage)
 			}
 		} else {
 			log.Entry().Infof("Packages %s was not assembled in this pipeline run, thus no need to confirm", repo.PackageName)

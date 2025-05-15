@@ -112,6 +112,9 @@ spec:
           - name: tmsUpload
             conditions:
               - configKey: nodeName
+          - name: tmsExport
+            conditions:
+              - configKey: nodeName
           - name: healthExecuteCheck
             conditions:
               - configKey: 'testServerUrl'

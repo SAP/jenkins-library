@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
@@ -73,13 +72,13 @@ type StepCondition struct {
 	FilePattern               string                   `json:"filePattern,omitempty"`
 	FilePatternFromConfig     string                   `json:"filePatternFromConfig,omitempty"`
 	Inactive                  bool                     `json:"inactive,omitempty"`
+	OnlyActiveStepInStage     bool                     `json:"onlyActiveStepInStage,omitempty"`
 	NpmScript                 string                   `json:"npmScript,omitempty"`
 	CommonPipelineEnvironment map[string]interface{}   `json:"commonPipelineEnvironment,omitempty"`
 	PipelineEnvironmentFilled string                   `json:"pipelineEnvironmentFilled,omitempty"`
 }
 
-func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, utils piperutils.FileUtils, envRootPath string) error {
+func (r *RunConfigV1) InitRunConfigV1(config *Config, utils piperutils.FileUtils, envRootPath string) error {
 
 	if len(r.PipelineConfig.Spec.Stages) == 0 {
 		if err := r.LoadConditionsV1(); err != nil {
@@ -87,30 +86,9 @@ func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFil
 		}
 	}
 
-	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, utils, envRootPath)
+	err := r.evaluateConditionsV1(config, utils, envRootPath)
 	if err != nil {
 		return fmt.Errorf("failed to evaluate step conditions: %w", err)
-	}
-
-	return nil
-}
-
-// InitRunConfig ...
-func (r *RunConfig) InitRunConfig(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
-	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error),
-	openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
-	r.OpenFile = openFile
-	r.RunSteps = map[string]map[string]bool{}
-
-	if len(r.StageConfig.Stages) == 0 {
-		if err := r.loadConditions(); err != nil {
-			return errors.Wrap(err, "failed to load pipeline run conditions")
-		}
-	}
-
-	err := r.evaluateConditions(config, filters, parameters, secrets, stepAliases, glob)
-	if err != nil {
-		return errors.Wrap(err, "failed to evaluate step conditions: %v")
 	}
 
 	return nil
@@ -140,24 +118,10 @@ func (r *RunConfig) getStepConfig(config *Config, stageName, stepName string, fi
 	return config.GetStepConfig(flagValues, paramJSON, nil, nil, false, filters[stepName], stepMeta, envParameters, stageName, stepName)
 }
 
-func (r *RunConfig) loadConditions() error {
-	defer r.StageConfigFile.Close()
-	content, err := ioutil.ReadAll(r.StageConfigFile)
-	if err != nil {
-		return errors.Wrapf(err, "error: failed to read the stageConfig file")
-	}
-
-	err = yaml.Unmarshal(content, &r.StageConfig)
-	if err != nil {
-		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
-	}
-	return nil
-}
-
 // LoadConditionsV1 loads stage conditions (in CRD-style) into PipelineConfig
 func (r *RunConfigV1) LoadConditionsV1() error {
 	defer r.StageConfigFile.Close()
-	content, err := ioutil.ReadAll(r.StageConfigFile)
+	content, err := io.ReadAll(r.StageConfigFile)
 	if err != nil {
 		return errors.Wrapf(err, "error: failed to read the stageConfig file")
 	}
@@ -165,47 +129,6 @@ func (r *RunConfigV1) LoadConditionsV1() error {
 	err = yaml.Unmarshal(content, &r.PipelineConfig)
 	if err != nil {
 		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
-	}
-	return nil
-}
-
-func stepConfigLookup(m map[string]interface{}, stepName, key string) interface{} {
-	// flat map: key is on top level
-	if m[key] != nil {
-		return m[key]
-	}
-	// lookup for step config with following format
-	// general:
-	//   <key>: <value>
-	// stages:
-	//   <stepName>:
-	//     <key>: <value>
-	// steps:
-	//   <stepName>:
-	//     <key>: <value>
-	if m["general"] != nil {
-		general := m["general"].(map[string]interface{})
-		if general[key] != nil {
-			return general[key]
-		}
-	}
-	if m["stages"] != nil {
-		stages := m["stages"].(map[string]interface{})
-		if stages[stepName] != nil {
-			stageStepConfig := stages[stepName].(map[string]interface{})
-			if stageStepConfig[key] != nil {
-				return stageStepConfig[key]
-			}
-		}
-	}
-	if m["steps"] != nil {
-		steps := m["steps"].(map[string]interface{})
-		if steps[stepName] != nil {
-			stepConfig := steps[stepName].(map[string]interface{})
-			if stepConfig[key] != nil {
-				return stepConfig[key]
-			}
-		}
 	}
 	return nil
 }

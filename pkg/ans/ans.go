@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/xsuaa"
-	"github.com/pkg/errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/xsuaa"
+	"github.com/pkg/errors"
 )
 
 // ANS holds the setup for the xsuaa service to retrieve a bearer token for authorization and
@@ -129,7 +129,7 @@ func readResponseBody(response *http.Response) ([]byte, error) {
 		return nil, errors.Errorf("did not retrieve an HTTP response")
 	}
 	defer response.Body.Close()
-	bodyText, readErr := ioutil.ReadAll(response.Body)
+	bodyText, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
 		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
 	}

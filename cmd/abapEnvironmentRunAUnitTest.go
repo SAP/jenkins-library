@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -148,7 +149,7 @@ func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.Connecti
 	//Parse response
 	var body []byte
 	if err == nil {
-		body, err = ioutil.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 	}
 	if err == nil {
 		defer resp.Body.Close()
@@ -293,7 +294,7 @@ func pollAUnitRun(details abaputils.ConnectionDetailsHTTP, body []byte, client p
 		if err != nil {
 			return "", fmt.Errorf("Getting HTTP response failed: %w", err)
 		}
-		bodyText, err := ioutil.ReadAll(resp.Body)
+		bodyText, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", fmt.Errorf("Reading response body failed: %w", err)
 		}
@@ -360,7 +361,7 @@ func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFile
 	}
 
 	//Write Results
-	err = ioutil.WriteFile(aunitResultFileName, body, 0644)
+	err = os.WriteFile(aunitResultFileName, body, 0644)
 	if err != nil {
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
@@ -387,7 +388,7 @@ func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFile
 			htmlString := generateHTMLDocumentAUnit(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			aUnitResultHTMLFileName := strings.Trim(aunitResultFileName, ".xml") + ".html"
-			err = ioutil.WriteFile(aUnitResultHTMLFileName, htmlStringByte, 0644)
+			err = os.WriteFile(aUnitResultHTMLFileName, htmlStringByte, 0644)
 			if err != nil {
 				return fmt.Errorf("Writing HTML document failed: %w", err)
 			}

@@ -6,13 +6,12 @@ package orchestrator
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
-
-	"net/http"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"
@@ -29,14 +28,34 @@ func TestJenkins(t *testing.T) {
 		os.Setenv("GIT_COMMIT", "abcdef42713")
 		os.Setenv("GIT_URL", "github.com/foo/bar")
 
-		p, _ := NewOrchestratorSpecificConfigProvider()
+		p := &jenkinsConfigProvider{}
 
 		assert.False(t, p.IsPullRequest())
-		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.GetBuildURL())
-		assert.Equal(t, "main", p.GetBranch())
-		assert.Equal(t, "refs/heads/main", p.GetReference())
-		assert.Equal(t, "abcdef42713", p.GetCommit())
-		assert.Equal(t, "github.com/foo/bar", p.GetRepoURL())
+		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.BuildURL())
+		assert.Equal(t, "main", p.Branch())
+		assert.Equal(t, "refs/heads/main", p.GitReference())
+		assert.Equal(t, "abcdef42713", p.CommitSHA())
+		assert.Equal(t, "github.com/foo/bar", p.RepoURL())
+		assert.Equal(t, "Jenkins", p.OrchestratorType())
+	})
+
+	t.Run("TagBuild", func(t *testing.T) {
+		defer resetEnv(os.Environ())
+		os.Clearenv()
+		os.Setenv("JENKINS_URL", "FOO BAR BAZ")
+		os.Setenv("BUILD_URL", "https://jaas.url/job/foo/job/bar/job/main/1234/")
+		os.Setenv("BRANCH_NAME", "refs/tags/rel-1.0.0")
+		os.Setenv("GIT_COMMIT", "abcdef42713")
+		os.Setenv("GIT_URL", "github.com/foo/bar")
+
+		p := &jenkinsConfigProvider{}
+
+		assert.False(t, p.IsPullRequest())
+		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.BuildURL())
+		assert.Equal(t, "refs/tags/rel-1.0.0", p.Branch())
+		assert.Equal(t, "refs/tags/rel-1.0.0", p.GitReference())
+		assert.Equal(t, "abcdef42713", p.CommitSHA())
+		assert.Equal(t, "github.com/foo/bar", p.RepoURL())
 		assert.Equal(t, "Jenkins", p.OrchestratorType())
 	})
 
@@ -48,11 +67,11 @@ func TestJenkins(t *testing.T) {
 		os.Setenv("CHANGE_TARGET", "main")
 		os.Setenv("CHANGE_ID", "42")
 
-		p := JenkinsConfigProvider{}
-		c := p.GetPullRequestConfig()
+		p := jenkinsConfigProvider{}
+		c := p.PullRequestConfig()
 
 		assert.True(t, p.IsPullRequest())
-		assert.Equal(t, "refs/pull/42/head", p.GetReference())
+		assert.Equal(t, "refs/pull/42/head", p.GitReference())
 		assert.Equal(t, "feat/test-jenkins", c.Branch)
 		assert.Equal(t, "main", c.Base)
 		assert.Equal(t, "42", c.Key)
@@ -70,16 +89,16 @@ func TestJenkins(t *testing.T) {
 		os.Setenv("BUILD_URL", "https://jaas.url/job/foo/job/bar/job/main/1234/")
 		os.Setenv("STAGE_NAME", "Promote")
 
-		p := JenkinsConfigProvider{}
+		p := jenkinsConfigProvider{}
 
 		assert.Equal(t, "/var/lib/jenkins", p.getJenkinsHome())
-		assert.Equal(t, "1234", p.GetBuildID())
-		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main", p.GetJobURL())
+		assert.Equal(t, "1234", p.BuildID())
+		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main", p.JobURL())
 		assert.Equal(t, "42", p.OrchestratorVersion())
 		assert.Equal(t, "Jenkins", p.OrchestratorType())
-		assert.Equal(t, "foo/bar/BRANCH", p.GetJobName())
-		assert.Equal(t, "Promote", p.GetStageName())
-		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.GetBuildURL())
+		assert.Equal(t, "foo/bar/BRANCH", p.JobName())
+		assert.Equal(t, "Promote", p.StageName())
+		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.BuildURL())
 
 	})
 }
@@ -130,7 +149,7 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 		},
 	}
 
-	j := &JenkinsConfigProvider{
+	j := &jenkinsConfigProvider{
 		client: piperhttp.Client{},
 	}
 	j.client.SetOptions(piperhttp.ClientOptions{
@@ -171,7 +190,7 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 				},
 			)
 
-			assert.Equalf(t, tt.want, j.GetPipelineStartTime(), "GetPipelineStartTime()")
+			assert.Equalf(t, tt.want, j.PipelineStartTime(), "PipelineStartTime()")
 		})
 	}
 }
@@ -228,10 +247,10 @@ func TestJenkinsConfigProvider_GetBuildStatus(t *testing.T) {
 			if err != nil {
 				t.Fatal("could not parse json:", err)
 			}
-			j := &JenkinsConfigProvider{
+			j := &jenkinsConfigProvider{
 				apiInformation: apiInformation,
 			}
-			assert.Equalf(t, tt.want, j.GetBuildStatus(), "GetBuildStatus()")
+			assert.Equalf(t, tt.want, j.BuildStatus(), "BuildStatus()")
 		})
 	}
 }
@@ -367,9 +386,9 @@ func TestJenkinsConfigProvider_GetBuildReason(t *testing.T) {
 			if err != nil {
 				t.Fatal("could not parse json:", err)
 			}
-			j := &JenkinsConfigProvider{apiInformation: apiInformation}
+			j := &jenkinsConfigProvider{apiInformation: apiInformation}
 
-			assert.Equalf(t, tt.want, j.GetBuildReason(), "GetBuildReason()")
+			assert.Equalf(t, tt.want, j.BuildReason(), "BuildReason()")
 		})
 	}
 }
@@ -415,7 +434,7 @@ func TestJenkinsConfigProvider_getAPIInformation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			j := &JenkinsConfigProvider{
+			j := &jenkinsConfigProvider{
 				apiInformation: tt.apiInformation,
 			}
 			j.client.SetOptions(piperhttp.ClientOptions{
@@ -487,7 +506,7 @@ func TestJenkinsConfigProvider_GetLog(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			j := &JenkinsConfigProvider{}
+			j := &jenkinsConfigProvider{}
 			j.client.SetOptions(piperhttp.ClientOptions{
 				MaxRequestDuration:        5 * time.Second,
 				Token:                     "TOKEN",
@@ -519,33 +538,11 @@ func TestJenkinsConfigProvider_GetLog(t *testing.T) {
 				},
 			)
 
-			got, err := j.GetLog()
-			if !tt.wantErr(t, err, fmt.Sprintf("GetLog()")) {
+			got, err := j.FullLogs()
+			if !tt.wantErr(t, err, fmt.Sprintf("FullLogs()")) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "GetLog()")
-		})
-	}
-}
-
-func TestJenkinsConfigProvider_InitOrchestratorProvider(t *testing.T) {
-
-	tests := []struct {
-		name           string
-		settings       *OrchestratorSettings
-		apiInformation map[string]interface{}
-	}{
-		{
-			name:     "Init, test empty apiInformation",
-			settings: &OrchestratorSettings{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			j := &JenkinsConfigProvider{}
-			j.InitOrchestratorProvider(tt.settings)
-			var expected map[string]interface{}
-			assert.Equal(t, j.apiInformation, expected)
+			assert.Equalf(t, tt.want, got, "FullLogs()")
 		})
 	}
 }
@@ -664,8 +661,8 @@ func TestJenkinsConfigProvider_GetChangeSet(t *testing.T) {
 			if err != nil {
 				t.Fatal("could not parse json:", err)
 			}
-			j := &JenkinsConfigProvider{apiInformation: apiInformation}
-			assert.Equalf(t, tt.want, j.GetChangeSet(), "GetChangeSet()")
+			j := &jenkinsConfigProvider{apiInformation: apiInformation}
+			assert.Equalf(t, tt.want, j.ChangeSets(), "ChangeSets()")
 		})
 	}
 }

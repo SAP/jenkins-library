@@ -5,16 +5,16 @@ import (
 	"bytes"
 	"path/filepath"
 
+	"github.com/BurntSushi/toml"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/buildpacks/lifecycle/platform"
-	"github.com/pelletier/go-toml"
+	"github.com/buildpacks/lifecycle/platform/files"
 )
 
 var metadataFilePath = "/layers/project-metadata.toml"
 
-func writeProjectMetadata(metadata platform.ProjectMetadata, path string, utils cnbutils.BuildUtils) error {
+func writeProjectMetadata(metadata files.ProjectMetadata, path string, utils cnbutils.BuildUtils) error {
 	var buf bytes.Buffer
 
 	err := toml.NewEncoder(&buf).Encode(metadata)
@@ -30,14 +30,13 @@ func writeProjectMetadata(metadata platform.ProjectMetadata, path string, utils 
 	return nil
 }
 
-func extractMetadataFromCPE(piperEnvRoot string, utils cnbutils.BuildUtils) platform.ProjectMetadata {
+func extractMetadataFromCPE(piperEnvRoot string, utils cnbutils.BuildUtils) files.ProjectMetadata {
 	cpePath := filepath.Join(piperEnvRoot, "commonPipelineEnvironment")
-	return platform.ProjectMetadata{
-		Source: &platform.ProjectSource{
+	return files.ProjectMetadata{
+		Source: &files.ProjectSource{
 			Type: "git",
 			Version: map[string]interface{}{
-				"commit":   piperenv.GetResourceParameter(cpePath, "git", "headCommitId"),
-				"describe": piperenv.GetResourceParameter(cpePath, "git", "commitMessage"),
+				"commit": piperenv.GetResourceParameter(cpePath, "git", "headCommitId"),
 			},
 			Metadata: map[string]interface{}{
 				"refs": []string{

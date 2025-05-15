@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -38,7 +37,7 @@ func TestMapResponse(t *testing.T) {
 	pc := makeProtecode(Options{})
 	for _, c := range cases {
 
-		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
+		r := io.NopCloser(bytes.NewReader([]byte(c.give)))
 		pc.mapResponse(r, c.input)
 		assert.Equal(t, c.want, c.input)
 	}
@@ -82,14 +81,14 @@ func TestParseResultSuccess(t *testing.T) {
 func TestParseResultViolations(t *testing.T) {
 
 	violations := filepath.Join("testdata", "protecode_result_violations.json")
-	byteContent, err := ioutil.ReadFile(violations)
+	byteContent, err := os.ReadFile(violations)
 	if err != nil {
 		t.Fatalf("failed reading %v", violations)
 	}
 	pc := makeProtecode(Options{})
 
 	resultData := new(ResultData)
-	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
+	pc.mapResponse(io.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
 	m, vulns := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
@@ -107,14 +106,14 @@ func TestParseResultViolations(t *testing.T) {
 func TestParseResultNoViolations(t *testing.T) {
 
 	noViolations := filepath.Join("testdata", "protecode_result_no_violations.json")
-	byteContent, err := ioutil.ReadFile(noViolations)
+	byteContent, err := os.ReadFile(noViolations)
 	if err != nil {
 		t.Fatalf("failed reading %v", noViolations)
 	}
 
 	pc := makeProtecode(Options{})
 	resultData := new(ResultData)
-	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
+	pc.mapResponse(io.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
 	m, vulns := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
@@ -132,14 +131,14 @@ func TestParseResultNoViolations(t *testing.T) {
 func TestParseResultTriaged(t *testing.T) {
 
 	triaged := filepath.Join("testdata", "protecode_result_triaging.json")
-	byteContent, err := ioutil.ReadFile(triaged)
+	byteContent, err := os.ReadFile(triaged)
 	if err != nil {
 		t.Fatalf("failed reading %v", triaged)
 	}
 
 	pc := makeProtecode(Options{})
 	resultData := new(ResultData)
-	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
+	pc.mapResponse(io.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
 	m, vulns := pc.ParseResultForInflux(resultData.Result, "")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
@@ -382,7 +381,7 @@ func TestUploadScanFileSuccess(t *testing.T) {
 		}
 
 		defer req.Body.Close()
-		passedFileContents, err = ioutil.ReadAll(reader)
+		passedFileContents, err = io.ReadAll(reader)
 		if err != nil {
 			t.FailNow()
 		}
@@ -413,13 +412,13 @@ func TestUploadScanFileSuccess(t *testing.T) {
 	defer server.Close()
 	pc := makeProtecode(Options{ServerURL: server.URL})
 
-	testFile, err := ioutil.TempFile("", "testFileUpload")
+	testFile, err := os.CreateTemp("", "testFileUpload")
 	if err != nil {
 		t.FailNow()
 	}
 	defer os.RemoveAll(testFile.Name()) // clean up
 
-	fileContents, err := ioutil.ReadFile(testFile.Name())
+	fileContents, err := os.ReadFile(testFile.Name())
 	if err != nil {
 		t.FailNow()
 	}

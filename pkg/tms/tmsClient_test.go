@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -469,16 +470,16 @@ func TestUploadFileToNode(t *testing.T) {
 
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
-		fileId := "111"
+		fileInfo := FileInfo{Id: 111, Name: "test.mtar"}
 		namedUser := "testUser"
-		nodeUploadResponseEntity, err := communicationInstance.UploadFileToNode(nodeName, fileId, transportRequestDescription, namedUser)
+		nodeUploadResponseEntity, err := communicationInstance.UploadFileToNode(fileInfo, nodeName, transportRequestDescription, namedUser)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes/upload", uploaderMock.urlCalled, "Called url incorrect")
 		assert.Equal(t, http.MethodPost, uploaderMock.httpMethod, "Http method incorrect")
 		assert.Equal(t, []string{"application/json"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
 
-		entryString := fmt.Sprintf(`{"uri":"%v"}`, fileId)
+		entryString := fmt.Sprintf(`{"uri":"%v"}`, strconv.FormatInt(fileInfo.Id, 10))
 		assert.Equal(t, fmt.Sprintf(`{"contentType":"MTA","storageType":"FILE","nodeName":"%v","description":"%v","namedUser":"%v","entries":[%v]}`, nodeName, transportRequestDescription, namedUser, entryString), uploaderMock.requestBody, "Request body incorrect")
 
 		assert.Equal(t, transportRequestId, nodeUploadResponseEntity.TransportRequestId, "TransportRequestId field of node upload response incorrect")
@@ -493,11 +494,11 @@ func TestUploadFileToNode(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
 		communicationInstance := CommunicationInstance{tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
+		fileInfo := FileInfo{Id: 111, Name: "test.mtar"}
 		nodeName := "TEST_NODE"
-		fileId := "111"
 		transportRequestDescription := "This is a test description"
 		namedUser := "testUser"
-		_, err := communicationInstance.UploadFileToNode(nodeName, fileId, transportRequestDescription, namedUser)
+		_, err := communicationInstance.UploadFileToNode(fileInfo, nodeName, transportRequestDescription, namedUser)
 
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "https://tms.dummy.sap.com/v2/nodes/upload", uploaderMock.urlCalled, "Called url incorrect")

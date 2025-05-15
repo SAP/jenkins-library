@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -63,7 +62,7 @@ func runApiKeyValueMapDownload(config *apiKeyValueMapDownloadOptions, telemetryD
 		csvFilePath := config.DownloadPath
 		file, err := os.Create(csvFilePath)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create api key value map CSV file")
+			return errors.Wrap(err, "Failed to create api key value map CSV file")
 		}
 		_, err = io.Copy(file, downloadResp.Body)
 		if err != nil {
@@ -71,7 +70,7 @@ func runApiKeyValueMapDownload(config *apiKeyValueMapDownloadOptions, telemetryD
 		}
 		return nil
 	}
-	responseBody, readErr := ioutil.ReadAll(downloadResp.Body)
+	responseBody, readErr := io.ReadAll(downloadResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", downloadResp.StatusCode)

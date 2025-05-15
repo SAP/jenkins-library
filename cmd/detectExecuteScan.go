@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,10 +15,13 @@ import (
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
+	"github.com/SAP/jenkins-library/pkg/golang"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -25,9 +29,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 )
+
+const NO_VERSION_SUFFIX = ""
 
 type detectUtils interface {
 	piperutils.FileUtils
@@ -45,7 +51,8 @@ type detectUtils interface {
 
 	GetIssueService() *github.IssuesService
 	GetSearchService() *github.SearchService
-	GetProvider() orchestrator.OrchestratorSpecificConfigProviding
+	GetProvider() orchestrator.ConfigProvider
+	GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download
 }
 
 type detectUtilsBundle struct {
@@ -54,7 +61,7 @@ type detectUtilsBundle struct {
 	*piperhttp.Client
 	issues   *github.IssuesService
 	search   *github.SearchService
-	provider orchestrator.OrchestratorSpecificConfigProviding
+	provider orchestrator.ConfigProvider
 }
 
 func (d *detectUtilsBundle) GetIssueService() *github.IssuesService {
@@ -65,8 +72,15 @@ func (d *detectUtilsBundle) GetSearchService() *github.SearchService {
 	return d.search
 }
 
-func (d *detectUtilsBundle) GetProvider() orchestrator.OrchestratorSpecificConfigProviding {
+func (d *detectUtilsBundle) GetProvider() orchestrator.ConfigProvider {
 	return d.provider
+}
+
+func (d *detectUtilsBundle) GetDockerClient(options piperDocker.ClientOptions) piperDocker.Download {
+	client := &piperDocker.Client{}
+	client.SetOptions(options)
+
+	return client
 }
 
 type blackduckSystem struct {
@@ -97,6 +111,11 @@ func newDetectUtils(client *github.Client) detectUtils {
 					"FAILURE_BLACKDUCK_FEATURE_ERROR - Detect encountered an error while attempting an operation on Black Duck. Ensure your Black Duck is compatible with this version of detect.",
 					"FAILURE_GENERAL_ERROR - Detect encountered a known error, details of the error are provided.",
 					"FAILURE_UNKNOWN_ERROR - Detect encountered an unknown error.",
+					"FAILURE_MINIMUM_INTERVAL_NOT_MET - Detect did not wait the minimum required scan interval.",
+					"FAILURE_IAC - Detect was unable to perform IaC Scan against your source. Please check your configuration, and see logs and IaC Scanner documentation for more information.",
+					"FAILURE_ACCURACY_NOT_MET - Detect was unable to meet the required accuracy.",
+					"FAILURE_IMAGE_NOT_AVAILABLE - Image scan attempted but no return data available.",
+					"FAILURE_COMPONENT_LOCATION_ANALYSIS => Component Location Analysis failed.",
 				},
 			},
 		},
@@ -110,7 +129,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 
-	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning(err)
 		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
@@ -128,13 +147,31 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 	return &sys
 }
 
+const configPath = ".pipeline/*"
+
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
 	influx.step_data.fields.detect = false
 
-	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "", config.CustomTLSCertificateLinks)
+	ctx, client, err := piperGithub.
+		NewClientBuilder(config.GithubToken, config.GithubAPIURL).
+		WithTrustedCerts(config.CustomTLSCertificateLinks).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
 	}
+
+	// Log config and workspace content for debug purpose
+	if log.IsVerbose() {
+		logConfigInVerboseMode(config)
+		logWorkspaceContent()
+	}
+
+	if config.PrivateModules != "" && config.PrivateModulesGitToken != "" {
+		//configuring go private packages
+		if err := golang.PrepareGolangPrivatePackages("detectExecuteStep", config.PrivateModules, config.PrivateModulesGitToken); err != nil {
+			log.Entry().Warningf("couldn't set private packages for golang, error: %s", err.Error())
+		}
+	}
+
 	utils := newDetectUtils(client)
 	if err := runDetect(ctx, config, utils, influx); err != nil {
 		log.Entry().
@@ -163,6 +200,8 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	}
 
 	if config.InstallArtifacts {
+
+		log.Entry().Infof("#### installArtifacts - start")
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -171,16 +210,52 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		if err != nil {
 			return err
 		}
+		log.Entry().Infof("#### installArtifacts - end")
+	}
+
+	if config.BuildMaven {
+		log.Entry().Infof("#### BuildMaven - start")
+		mavenConfig := setMavenConfig(config)
+		mavenUtils := maven.NewUtilsBundle()
+
+		err := runMavenBuild(&mavenConfig, nil, mavenUtils, &mavenBuildCommonPipelineEnvironment{})
+		if err != nil {
+			return err
+		}
+		log.Entry().Infof("#### BuildMaven - end")
+	}
+
+	// Install NPM dependencies
+	if config.InstallNPM {
+		log.Entry().Infof("#### InstallNPM - start")
+		npmExecutor := npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
+
+		buildDescriptorList := config.BuildDescriptorList
+		if len(buildDescriptorList) == 0 {
+			buildDescriptorList = []string{"package.json"}
+		}
+
+		err := npmExecutor.InstallAllDependencies(buildDescriptorList)
+		if err != nil {
+			return err
+		}
+		log.Entry().Infof("#### InstallNPM - end")
+	}
+
+	// for MTA
+	if config.BuildMTA {
+		log.Entry().Infof("#### BuildMTA - start")
+		mtaConfig := setMTAConfig(config)
+		mtaUtils := newMtaBuildUtilsBundle()
+
+		err := runMtaBuild(mtaConfig, &mtaBuildCommonPipelineEnvironment{}, mtaUtils)
+		if err != nil {
+			return err
+		}
+		log.Entry().Infof("#### BuildMTA - end")
 	}
 
 	blackduckSystem := newBlackduckSystem(config)
-
-	args := []string{"./detect.sh"}
-	args, err = addDetectArgs(args, config, utils, blackduckSystem)
-	if err != nil {
-		return err
-	}
-	script := strings.Join(args, " ")
 
 	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
 	envs = append(envs, config.CustomEnvironmentVariables...)
@@ -188,28 +263,38 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	err = utils.RunShell("/bin/bash", script)
+	// When containerScan is set to true, only the container scan will be executed
+	if !config.ContainerScan {
+		args := []string{"./detect.sh"}
+		args, err = addDetectArgs(args, config, utils, blackduckSystem, NO_VERSION_SUFFIX, NO_VERSION_SUFFIX)
+		if err != nil {
+			return err
+		}
+		script := strings.Join(args, " ")
+		err = mapDetectError(utils.RunShell("bash", script), config, utils)
+	}
+
+	if config.ScanContainerDistro != "" || config.ContainerScan {
+		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
+		if imageError != nil {
+			if err != nil {
+				err = errors.Wrapf(err, "error during scanning images: %q", imageError.Error())
+			} else {
+				err = imageError
+			}
+		}
+	}
+
 	reportingErr := postScanChecksAndReporting(ctx, config, influx, utils, blackduckSystem)
 	if reportingErr != nil {
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
 			log.Entry().Errorf("License Policy Violations found")
 			log.SetErrorCategory(log.ErrorCompliance)
-			if err == nil && !piperutils.ContainsStringPart(config.FailOn, "NONE") {
+			if err == nil && piperutils.ContainsStringPart(config.FailOn, "CRITICAL") {
 				err = errors.New("License Policy Violations found")
 			}
 		} else {
 			log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
-		}
-	}
-	if err != nil {
-		// Setting error category based on exit code
-		mapErrorCategory(utils.GetExitCode())
-		if log.GetErrorCategory() == log.ErrorCompliance && !config.FailOnSevereVulnerabilities {
-			err = nil
-			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
-		} else {
-			// Error code mapping with more human readable text
-			err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
 		}
 	}
 	// create Toolrecord file
@@ -218,7 +303,63 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
 	}
+
 	return err
+}
+
+func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtils) error {
+	if err != nil {
+		// Setting error category based on exit code
+		mapErrorCategory(utils.GetExitCode())
+		if log.GetErrorCategory() == log.ErrorCompliance && !config.FailOnSevereVulnerabilities {
+			err = nil
+			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
+		} else {
+			// Error code mapping with more human readable text
+			err = errors.Wrap(err, exitCodeMapping(utils.GetExitCode()))
+		}
+	}
+	return err
+}
+
+func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, influx *detectExecuteScanInflux, blackduckSystem *blackduckSystem) error {
+	log.Entry().Infof("Scanning %d images", len(config.ImageNameTags))
+	for _, image := range config.ImageNameTags {
+		// Download image to be scanned
+		log.Entry().Debugf("Scanning image: %q", image)
+
+		options := &containerSaveImageOptions{
+			ContainerRegistryURL:      config.RegistryURL,
+			ContainerImage:            image,
+			ContainerRegistryPassword: config.RepositoryPassword,
+			ContainerRegistryUser:     config.RepositoryUsername,
+			ImageFormat:               "legacy",
+		}
+
+		dClientOptions := piperDocker.ClientOptions{ImageName: options.ContainerImage, RegistryURL: options.ContainerRegistryURL, ImageFormat: options.ImageFormat}
+		dClient := utils.GetDockerClient(dClientOptions)
+
+		tarName, err := runContainerSaveImage(options, &telemetry.CustomData{}, "./cache", "", dClient, utils)
+		if err != nil {
+			return err
+		}
+
+		args := []string{"./detect.sh"}
+		args, err = addDetectArgsImages(args, config, utils, sys, tarName)
+		if err != nil {
+			return err
+		}
+		script := strings.Join(args, " ")
+
+		err = utils.RunShell("bash", script)
+		err = mapDetectError(err, config, utils)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Get proper error category
@@ -250,6 +391,16 @@ func mapErrorCategory(exitCodeKey int) {
 		log.SetErrorCategory(log.ErrorService)
 	case 12:
 		log.SetErrorCategory(log.ErrorInfrastructure)
+	case 13:
+		log.SetErrorCategory(log.ErrorService)
+	case 14:
+		log.SetErrorCategory(log.ErrorService)
+	case 15:
+		log.SetErrorCategory(log.ErrorService)
+	case 20:
+		log.SetErrorCategory(log.ErrorService)
+	case 25:
+		log.SetErrorCategory(log.ErrorService)
 	case 99:
 		log.SetErrorCategory(log.ErrorService)
 	case 100:
@@ -274,6 +425,11 @@ func exitCodeMapping(exitCodeKey int) string {
 		10:  "FAILURE_BLACKDUCK_VERSION_NOT_SUPPORTED => Detect attempted an operation that was not supported by your version of Black Duck. Ensure your Black Duck is compatible with this version of detect.",
 		11:  "FAILURE_BLACKDUCK_FEATURE_ERROR => Detect encountered an error while attempting an operation on Black Duck. Ensure your Black Duck is compatible with this version of detect.",
 		12:  "FAILURE_POLARIS_CONNECTIVITY => Detect was unable to connect to Polaris. Check your configuration and connection.",
+		13:  "FAILURE_MINIMUM_INTERVAL_NOT_MET => Detect did not wait the minimum required scan interval.",
+		14:  "FAILURE_IAC => Detect was unable to perform IaC Scan against your source. Please check your configuration, and see logs and IaC Scanner documentation for more information.",
+		15:  "FAILURE_ACCURACY_NOT_MET => Detect was unable to meet the required accuracy.",
+		20:  "FAILURE_IMAGE_NOT_AVAILABLE => Image scan attempted but no return data available.",
+		25:  "FAILURE_COMPONENT_LOCATION_ANALYSIS => Component Location Analysis failed. ",
 		99:  "FAILURE_GENERAL_ERROR => Detect encountered a known error, details of the error are provided.",
 		100: "FAILURE_UNKNOWN_ERROR => Detect encountered an unknown error.",
 	}
@@ -287,16 +443,34 @@ func exitCodeMapping(exitCodeKey int) string {
 
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	if config.ScanOnChanges {
-		log.Entry().Infof("Using Detect Rescan script")
-		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
+		log.Entry().Infof("The scanOnChanges option is deprecated")
 	}
 
-	log.Entry().Infof("Downloading Detect7")
-	return utils.DownloadFile("https://detect.synopsys.com/detect7.sh", "detect.sh", nil, nil)
+	log.Entry().Infof("Downloading Detect Script")
+
+	downloadScript := func() error {
+		if config.UseDetect8 {
+			return utils.DownloadFile("https://detect.blackduck.com/detect8.sh", "detect.sh", nil, nil)
+		} else if config.UseDetect9 {
+			return utils.DownloadFile("https://detect.blackduck.com/detect9.sh", "detect.sh", nil, nil)
+		}
+		return utils.DownloadFile("https://detect.blackduck.com/detect10.sh", "detect.sh", nil, nil)
+
+	}
+
+	if err := downloadScript(); err != nil {
+		time.Sleep(5 * time.Second)
+		return downloadScript()
+	}
+
+	return nil
 }
 
-func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem) ([]string, error) {
+func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, versionSuffix, locationSuffix string) ([]string, error) {
 	detectVersionName := getVersionName(config)
+	if versionSuffix != NO_VERSION_SUFFIX {
+		detectVersionName = fmt.Sprintf("%s-%s", detectVersionName, versionSuffix)
+	}
 	// Split on spaces, the scanPropeties, so that each property is available as a single string
 	// instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
@@ -313,23 +487,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	}
 
-	if len(config.ExcludedDirectories) != 0 && !checkIfArgumentIsInScanProperties(config, "detect.excluded.directories") {
-		args = append(args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
-	}
-
-	if config.ScanOnChanges {
-		args = append(args, "--report")
-		config.Unmap = false
-	}
-
-	if config.MinScanInterval > 0 {
-		//Unmap doesnt work well with min-scan-interval and should be removed
-		config.Unmap = false
-		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.arguments='--min-scan-interval=%d'", config.MinScanInterval))
-	}
+	// Handle excluded directories
+	handleExcludedDirectories(&args, &config)
 
 	if config.Unmap {
-		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
+		if !slices.Contains(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
 			args = append(args, "--detect.project.codelocation.unmap=true")
 		}
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
@@ -344,12 +506,36 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.Token))
 	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
 	// Hence the string need to be surrounded by \"
-	args = append(args, fmt.Sprintf("\"--detect.project.name='%v'\"", config.ProjectName))
-	args = append(args, fmt.Sprintf("\"--detect.project.version.name='%v'\"", detectVersionName))
+
+	// Moved parameters
+	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(config.M2Path) > 0 {
+		absolutePath, err := utils.Abs(config.M2Path)
+		if err != nil {
+			return nil, err
+		}
+		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
+	}
+
+	codelocation := config.CodeLocation
+	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
+		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
+
+		if locationSuffix != "" {
+			codelocation = fmt.Sprintf("%v-%v", codelocation, locationSuffix)
+		}
+	}
+
+	args = append(args, fmt.Sprintf("\"--detect.project.name=%v\"", config.ProjectName))
+	args = append(args, fmt.Sprintf("\"--detect.project.version.name=%v\"", detectVersionName))
 
 	// Groups parameter is added only when there is atleast one non-empty groupname provided
 	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
-		args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
+		args = append(args, fmt.Sprintf("\"--detect.project.user.groups=%v\"", strings.Join(config.Groups, ",")))
 	}
 
 	// Atleast 1, non-empty category to fail on must be provided
@@ -357,11 +543,13 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 	}
 
-	codelocation := config.CodeLocation
-	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
-		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
+	args = append(args, fmt.Sprintf("\"--detect.code.location.name=%v\"", codelocation))
+
+	if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
+		args = append(args, fmt.Sprintf("\"--detect.maven.build.command=%v\"", strings.Join(mavenArgs, " ")))
 	}
-	args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
+
+	args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=true\""))
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
@@ -389,6 +577,21 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
 
+	if config.EnableDiagnostics {
+		args = append(args, fmt.Sprintf("\"--detect.diagnostic=true\""))
+		args = append(args, fmt.Sprintf("\"--detect.cleanup=false\""))
+
+		err := utils.MkdirAll(".pipeline/blackduckDiagnostics", 0o755)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create diagnostics directory")
+		}
+
+		log.Entry().Info("Diagnostics enabled, output will be stored in .pipeline/blackduckDiagnostics")
+
+		args = append(args, fmt.Sprintf("\"--detect.scan.output.path=.pipeline/blackduckDiagnostics\""))
+		args = append(args, fmt.Sprintf("\"--detect.output.path=.pipeline/blackduckDiagnostics\""))
+	}
+
 	// to exclude dependency types for npm
 	if len(config.NpmDependencyTypesExcluded) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.dependency.types.excluded") {
 		args = append(args, fmt.Sprintf("--detect.npm.dependency.types.excluded=%v", strings.ToUpper(strings.Join(config.NpmDependencyTypesExcluded, ","))))
@@ -396,24 +599,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	// A space-separated list of additional arguments that Detect will add at then end of the npm ls command line
 	if len(config.NpmArguments) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.npm.arguments") {
-		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.ToUpper(strings.Join(config.NpmArguments, " "))))
-	}
-
-	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(config.M2Path) > 0 {
-		absolutePath, err := utils.Abs(config.M2Path)
-		if err != nil {
-			return nil, err
-		}
-		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
-	}
-
-	if len(mavenArgs) > 0 {
-		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
+		args = append(args, fmt.Sprintf("--detect.npm.arguments=%v", strings.Join(config.NpmArguments, " ")))
 	}
 
 	// rapid scan on pull request
@@ -426,6 +612,44 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		}
 		args = append(args, "--detect.cleanup=false")
 		args = append(args, "--detect.output.path='report'")
+	}
+
+	return args, nil
+}
+
+func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, imageTar string) ([]string, error) {
+	// suffix := strings.Split(imageTar, ".")[0]
+	// In order to preserve source scan result
+	config.Unmap = false
+	args, err := addDetectArgs(args, config, utils, sys, NO_VERSION_SUFFIX, fmt.Sprintf("image-%s", strings.Split(imageTar, ".")[0]))
+	if err != nil {
+		return []string{}, err
+	}
+	if config.ContainerScan {
+		args = append(args, "--detect.tools=CONTAINER_SCAN")
+		args = append(args, fmt.Sprintf("--detect.container.scan.file.path=./%s", imageTar))
+		return args, nil
+	}
+
+	args = append(args, fmt.Sprintf("--detect.docker.tar=./%s", imageTar))
+	args = append(args, "--detect.target.type=IMAGE")
+	// https://community.synopsys.com/s/article/Docker-image-scanning-CLI-examples-and-some-Q-As
+	args = append(args, "--detect.tools.excluded=DETECTOR")
+	args = append(args, "--detect.docker.passthrough.shared.dir.path.local=/opt/blackduck/blackduck-imageinspector/shared/")
+	args = append(args, "--detect.docker.passthrough.shared.dir.path.imageinspector=/opt/blackduck/blackduck-imageinspector/shared")
+	args = append(args, fmt.Sprintf("--detect.docker.passthrough.imageinspector.service.distro.default=%s", config.ScanContainerDistro))
+	args = append(args, "--detect.docker.passthrough.imageinspector.service.start=false")
+	args = append(args, "--detect.docker.passthrough.output.include.squashedimage=false")
+
+	switch config.ScanContainerDistro {
+	case "ubuntu":
+		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8082")
+	case "centos":
+		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8081")
+	case "alpine":
+		args = append(args, "--detect.docker.passthrough.imageinspector.service.url=http://localhost:8080")
+	default:
+		return nil, fmt.Errorf("unknown container distro %q", config.ScanContainerDistro)
 	}
 
 	return args, nil
@@ -484,7 +708,11 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 		CounterHeader: "Entry#",
 	}
 
-	vulnItems := vulns.Items
+	var vulnItems []bd.Vulnerability
+	if vulns != nil {
+		vulnItems = vulns.Items
+	}
+
 	sort.Slice(vulnItems, func(i, j int) bool {
 		return vulnItems[i].OverallScore > vulnItems[j].OverallScore
 	})
@@ -546,9 +774,9 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 }
 
 func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
-
-	if utils.GetProvider().IsPullRequest() {
-		issueNumber, err := strconv.Atoi(utils.GetProvider().GetPullRequestConfig().Key)
+	provider := utils.GetProvider()
+	if provider.IsPullRequest() {
+		issueNumber, err := strconv.Atoi(provider.PullRequestConfig().Key)
 		if err != nil {
 			log.Entry().Warning("Can not get issue number ", err)
 			return nil
@@ -576,7 +804,12 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	errorsOccured := []string{}
 	vulns, err := getVulnerabilitiesWithComponents(config, influx, sys)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch vulnerabilities")
+		if config.GenerateReportsForEmptyProjects &&
+			strings.Contains(err.Error(), "No Components found for project version") {
+			log.Entry().Debug(err.Error())
+		} else {
+			return errors.Wrap(err, "failed to fetch vulnerabilities")
+		}
 	}
 
 	if config.CreateResultIssue && len(config.GithubToken) > 0 && len(config.GithubAPIURL) > 0 && len(config.Owner) > 0 && len(config.Repository) > 0 {
@@ -642,7 +875,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 	}
 
 	if len(errorsOccured) > 0 {
-		return fmt.Errorf(strings.Join(errorsOccured, ": "))
+		return errors.New(strings.Join(errorsOccured, ": "))
 	}
 
 	return nil
@@ -747,7 +980,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	htmlReportPath := "piper_detect_policy_violation_report.html"
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0o666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, errors.Wrap(err, "failed to write html report")
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Policy Violation Report", Target: htmlReportPath})
 
@@ -759,7 +992,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_policy_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0o666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+		return reportPaths, errors.Wrap(err, "failed to write json report")
 	}
 
 	return reportPaths, nil
@@ -768,7 +1001,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) (error, int) {
 	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
 	if err != nil {
-		return errors.Wrapf(err, "failed to get License Policy Violations"), 0
+		return errors.Wrap(err, "failed to get License Policy Violations"), 0
 	}
 
 	violationCount := getActivePolicyViolations(components)
@@ -849,10 +1082,20 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	projectVersionUrl := projectVersion.Href
+	if projectVersionUrl == "" {
+		return "", fmt.Errorf("TR_DETECT: no projectversion URL")
+	}
+	// projectVersion UUID comes as last part of the URL
+	vparts := strings.Split(projectVersionUrl, "/")
+	projectVersionId := vparts[len(vparts)-1]
+	if projectVersionId == "" {
+		return "", fmt.Errorf("TR_DETECT: no projectversion id in %v", projectVersionUrl)
+	}
+
 	err = record.AddKeyData("version",
+		projectVersionId,
 		projectVersion.Name,
-		projectVersionUrl,
-		projectVersionUrl)
+		projectVersion.Href)
 	if err != nil {
 		return "", err
 	}
@@ -862,4 +1105,86 @@ func createToolRecordDetect(utils detectUtils, workspace string, config detectEx
 		return "", err
 	}
 	return record.GetFileName(), nil
+}
+
+func setMavenConfig(config detectExecuteScanOptions) mavenBuildOptions {
+	mavenConfig := mavenBuildOptions{
+		PomPath:                     config.PomPath,
+		Flatten:                     true,
+		Verify:                      false,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		M2Path:                      config.M2Path,
+		LogSuccessfulMavenTransfers: false,
+		CreateBOM:                   false,
+		CustomTLSCertificateLinks:   config.CustomTLSCertificateLinks,
+		Publish:                     false,
+	}
+
+	// Print the mavenBuildOptions configuration in verbose mode
+	log.Entry().Debugf("Maven configuration: %v", mavenConfig)
+
+	return mavenConfig
+}
+
+func setMTAConfig(config detectExecuteScanOptions) mtaBuildOptions {
+
+	if config.M2Path == "" {
+		config.M2Path = ".m2"
+	}
+
+	mtaConfig := mtaBuildOptions{
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		Platform:            config.MtaPlatform,
+		InstallArtifacts:    true,
+		CreateBOM:           false,
+	}
+
+	// Print the mtaBuildOptions configuration in verbose mode
+
+	log.Entry().Debugf("MTA configuration: %v", mtaConfig)
+
+	return mtaConfig
+
+}
+
+func logConfigInVerboseMode(config detectExecuteScanOptions) {
+	config.Token = "********"
+	config.GithubToken = "********"
+	config.PrivateModulesGitToken = "********"
+	config.RepositoryPassword = "********"
+	debugLog, _ := json.Marshal(config)
+	log.Entry().Debugf("Detect configuration: %v", string(debugLog))
+}
+
+func handleExcludedDirectories(args *[]string, config *detectExecuteScanOptions) {
+	index := findItemInStringSlice(config.ScanProperties, "--detect.excluded.directories=")
+	if index != -1 && !strings.Contains(config.ScanProperties[index], configPath) {
+		config.ScanProperties[index] += "," + configPath
+	} else {
+		config.ExcludedDirectories = excludeConfigDirectory(config.ExcludedDirectories)
+		*args = append(*args, fmt.Sprintf("--detect.excluded.directories=%s", strings.Join(config.ExcludedDirectories, ",")))
+	}
+}
+
+func excludeConfigDirectory(directories []string) []string {
+	configDirectory := configPath
+	for i := range directories {
+		if directories[i] == configDirectory {
+			return directories
+		}
+	}
+	directories = append(directories, configDirectory)
+	return directories
+}
+
+func findItemInStringSlice(slice []string, item string) int {
+	for i := range slice {
+		if strings.Contains(slice[i], item) {
+			return i
+		}
+	}
+	return -1
 }

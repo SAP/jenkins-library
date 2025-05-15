@@ -2,7 +2,6 @@ package npm
 
 import (
 	"bufio"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +14,7 @@ const (
 )
 
 var (
-	writeIgnoreFile = ioutil.WriteFile
+	writeIgnoreFile = os.WriteFile
 )
 
 func NewNPMIgnore(path string) NPMIgnore {

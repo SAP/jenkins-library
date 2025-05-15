@@ -16,7 +16,9 @@ import util.JenkinsReadYamlRule
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 public class TmsUploadTest extends BasePiperTest {
 
@@ -85,6 +87,42 @@ public class TmsUploadTest extends BasePiperTest {
     }
 
     @Test
+    public void defaultUseGoStep__callsPiperExecuteBin() {
+        String calledStep = ''
+        String usedMetadataFile = ''
+        List credInfo = []
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+                usedMetadataFile = metadataFile
+                credInfo = credentialInfo
+        })
+
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+
+        stepRule.step.tmsUpload(
+            script: nullScript,
+            jenkinsUtilsStub: jenkinsUtilsStub,
+            mtaPath: 'dummy.mtar',
+            nodeName: 'myNode',
+            credentialsId: 'TMS_ServiceKey'
+        )
+
+        assertEquals('tmsUpload', calledStep)
+        assertEquals('metadata/tmsUpload.yaml', usedMetadataFile)
+
+        // contains assertion does not work apparently when comparing a list of lists against an expected list
+        boolean found = false
+        credInfo.each { entry ->
+            if (entry == [type: 'token', id: 'credentialsId', env: ['PIPER_serviceKey']]) {
+                found = true
+            }
+        }
+        assertTrue(found)
+    }
+
+    @Test
     public void minimalConfig__isSuccessful() {
         jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
         binding.workspace = "."
@@ -97,7 +135,8 @@ public class TmsUploadTest extends BasePiperTest {
             transportManagementService: tmsStub,
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
-            credentialsId: 'TMS_ServiceKey'
+            credentialsId: 'TMS_ServiceKey',
+            useGoStep: false
         )
 
         assertThat(calledTmsMethodsWithArgs[0], is("authentication('${uaaUrl}', '${oauthClientId}', '${oauthClientSecret}')"))
@@ -123,9 +162,12 @@ public class TmsUploadTest extends BasePiperTest {
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
             credentialsId: 'TMS_ServiceKey',
-            verbose: true
+            verbose: true,
+            useGoStep: false
         )
 
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Using deprecated Groovy implementation of 'tmsUpload' step instead of the default Golang one, since 'useGoStep' toggle parameter is explicitly set to 'false'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] WARNING: Note that the deprecated Groovy implementation will be completely removed after February 29th, 2024. Consider using the Golang implementation by not setting the 'useGoStep' toggle parameter to 'false'."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] CredentialsId: 'TMS_ServiceKey'"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Node name: 'myNode'"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA path: 'dummy.mtar'"))
@@ -148,7 +190,8 @@ public class TmsUploadTest extends BasePiperTest {
             transportManagementService: tmsStub,
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
-            credentialsId: 'TMS_ServiceKey'
+            credentialsId: 'TMS_ServiceKey',
+            useGoStep: false
         )
 
         assertThat(calledTmsMethodsWithArgs[1], is("uploadFile('${uri}', 'myToken', './dummy.mtar', 'Piper-Pipeline')"))
@@ -168,7 +211,8 @@ public class TmsUploadTest extends BasePiperTest {
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
             credentialsId: 'TMS_ServiceKey',
-            customDescription: 'My custom description for testing.'
+            customDescription: 'My custom description for testing.',
+            useGoStep: false
         )
 
         assertThat(calledTmsMethodsWithArgs[2], is("uploadFileToNode('${uri}', 'myToken', 'myNode', '1234', 'My custom description for testing.')"))
@@ -193,6 +237,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '0.0.1',
+            useGoStep: false
         )
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor with ID 'com.sap.piper.tms.test.extension' successfully uploaded to Node 'testNode1'."))
@@ -219,6 +264,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '1.2.2',
+            useGoStep: false
         )
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor with ID 'com.sap.piper.tms.test.another.extension' successfully updated for Node 'testNode1'."))
@@ -249,6 +295,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '9.9.9',
+            useGoStep: false
         )
 
         assertThat(calledTmsMethodsWithArgs[2], is("getMtaExtDescriptor('${uri}', 'myToken', 1, 'com.sap.piper.tms.test', '9.9.9')"))
@@ -271,7 +318,8 @@ public class TmsUploadTest extends BasePiperTest {
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
             credentialsId: 'TMS_ServiceKey',
-            customDescription: 'My custom description for testing.'
+            customDescription: 'My custom description for testing.',
+            useGoStep: false
         )
     }
 
@@ -288,7 +336,8 @@ public class TmsUploadTest extends BasePiperTest {
             jenkinsUtilsStub: jenkinsUtilsStub,
             transportManagementService: tmsStub,
             nodeName: 'myNode',
-            credentialsId: 'TMS_ServiceKey'
+            credentialsId: 'TMS_ServiceKey',
+            useGoStep: false
         )
 
         assertThat(calledTmsMethodsWithArgs[1], is("uploadFile('${uri}', 'myToken', './dummy.mtar', 'Test User')"))
@@ -316,6 +365,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '0.0.1',
+            useGoStep: false
         )
     }
 
@@ -340,6 +390,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '0.0.1',
+            useGoStep: false
         )
     }
 
@@ -365,6 +416,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey',
             nodeExtDescriptorMapping: nodeExtDescriptorMap,
             mtaVersion: '0.0.1',
+            useGoStep: false
         )
     }
 

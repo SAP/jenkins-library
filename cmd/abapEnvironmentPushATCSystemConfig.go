@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -126,7 +127,7 @@ func checkATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigO
 	//check if parsedConfigurationJson is not initial or Configuration Name not supplied
 	if reflect.DeepEqual(parsedConfigurationJson, emptyConfigurationJson) ||
 		parsedConfigurationJson.ConfName == "" {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File does not contain required ATC System Configuration attributes (File: %s)", config.AtcSystemConfigFilePath)
 	}
 
 	return parsedConfigurationJson, atcSystemConfiguartionJsonFile, nil
@@ -144,19 +145,19 @@ func readATCSystemConfigurationFile(config *abapEnvironmentPushATCSystemConfigOp
 	}
 
 	if len(filelocation) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured Filelocation is empty (File: %s)", config.AtcSystemConfigFilePath)
 	}
 
 	filename, err = filepath.Abs(filelocation[0])
 	if err != nil {
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
-	atcSystemConfiguartionJsonFile, err = ioutil.ReadFile(filename)
+	atcSystemConfiguartionJsonFile, err = os.ReadFile(filename)
 	if err != nil {
 		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, err
 	}
 	if len(atcSystemConfiguartionJsonFile) == 0 {
-		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: " + config.AtcSystemConfigFilePath + ")")
+		return parsedConfigurationJson, atcSystemConfiguartionJsonFile, errors.Errorf("pushing ATC System Configuration failed. Reason: Configured File is empty (File: %s)", config.AtcSystemConfigFilePath)
 	}
 
 	err = json.Unmarshal(atcSystemConfiguartionJsonFile, &parsedConfigurationJson)
@@ -198,7 +199,7 @@ func fetchXcsrfTokenFromHead(connectionDetails abaputils.ConnectionDetailsHTTP, 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := abaputils.GetHTTPResponse("HEAD", connectionDetails, nil, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
+		_, err = abaputils.HandleHTTPError(resp, err, "authentication on the ABAP system failed", connectionDetails)
 		return connectionDetails.XCsrfToken, errors.Errorf("X-Csrf-Token fetch failed for Service ATC System Configuration: %v", err)
 	}
 	defer resp.Body.Close()
@@ -412,7 +413,7 @@ func checkConfigExistsInBackend(config *abapEnvironmentPushATCSystemConfigOption
 		return false, configName, configUUID, configLastChangedAt, err
 	}
 	var body []byte
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return false, configName, configUUID, configLastChangedAt, err
 	}
@@ -443,7 +444,7 @@ func HandleHttpResponse(resp *http.Response, err error, message string, connecti
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
 		log.Entry().WithField("StatusCode", resp.Status).Info(message)
-		bodyText, readError = ioutil.ReadAll(resp.Body)
+		bodyText, readError = io.ReadAll(resp.Body)
 		if readError != nil {
 			defer resp.Body.Close()
 			return readError

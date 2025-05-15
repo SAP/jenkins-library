@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // GitCommit ...

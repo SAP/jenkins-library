@@ -9,11 +9,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -43,7 +43,9 @@ type Client struct {
 	doLogResponseBodyOnDebug  bool
 	useDefaultTransport       bool
 	trustedCerts              []string
+	certificates              []tls.Certificate // contains one or more certificate chains to present to the other side of the connection (client-authentication)
 	fileUtils                 piperutils.FileUtils
+	httpClient                *http.Client
 }
 
 // ClientOptions defines the options to be set on the client
@@ -67,7 +69,8 @@ type ClientOptions struct {
 	DoLogRequestBodyOnDebug   bool
 	DoLogResponseBodyOnDebug  bool
 	UseDefaultTransport       bool
-	TrustedCerts              []string
+	TrustedCerts              []string          // defines the set of root certificate authorities that clients use when verifying server certificates
+	Certificates              []tls.Certificate // contains one or more certificate chains to present to the other side of the connection (client-authentication)
 }
 
 // TransportWrapper is a wrapper for central round trip capabilities
@@ -224,7 +227,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 
 // Send sends a http request
 func (c *Client) Send(request *http.Request) (*http.Response, error) {
-	httpClient := c.initialize()
+	httpClient := c.initializeHttpClient()
 	response, err := httpClient.Do(request)
 	if err != nil {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
@@ -260,6 +263,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.cookieJar = options.CookieJar
 	c.trustedCerts = options.TrustedCerts
 	c.fileUtils = &piperutils.Files{}
+	c.certificates = options.Certificates
 }
 
 // SetFileUtils can be used to overwrite the default file utils
@@ -269,12 +273,15 @@ func (c *Client) SetFileUtils(fileUtils piperutils.FileUtils) {
 
 // StandardClient returns a stdlib *http.Client which respects the custom settings.
 func (c *Client) StandardClient() *http.Client {
-	return c.initialize()
+	return c.initializeHttpClient()
 }
 
-func (c *Client) initialize() *http.Client {
+func (c *Client) initializeHttpClient() *http.Client {
+	if c.httpClient != nil {
+		return c.httpClient
+	}
+
 	c.applyDefaults()
-	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
 	var transport = &TransportWrapper{
 		Transport: &http.Transport{
@@ -287,6 +294,7 @@ func (c *Client) initialize() *http.Client {
 			TLSHandshakeTimeout:   c.transportTimeout,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: c.transportSkipVerification,
+				Certificates:       c.certificates,
 			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
@@ -300,18 +308,15 @@ func (c *Client) initialize() *http.Client {
 		log.Entry().Debug("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
-			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tsl config", err)
+			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tls config", err)
 		}
 	} else {
 		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
 	}
 
-	var httpClient *http.Client
 	if c.maxRetries > 0 {
 		retryClient := retryablehttp.NewClient()
-		localLogger := log.Entry()
-		localLogger.Level = logrus.DebugLevel
-		retryClient.Logger = localLogger
+		retryClient.Logger = c.logger
 		retryClient.HTTPClient.Timeout = c.maxRequestDuration
 		retryClient.HTTPClient.Jar = c.cookieJar
 		retryClient.RetryMax = c.maxRetries
@@ -333,13 +338,14 @@ func (c *Client) initialize() *http.Client {
 			}
 			return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 		}
-		httpClient = retryClient.StandardClient()
+		c.httpClient = retryClient.StandardClient()
 	} else {
-		httpClient = &http.Client{}
-		httpClient.Timeout = c.maxRequestDuration
-		httpClient.Jar = c.cookieJar
+		c.httpClient = &http.Client{
+			Timeout: c.maxRequestDuration,
+			Jar:     c.cookieJar,
+		}
 		if !c.useDefaultTransport {
-			httpClient.Transport = transport
+			c.httpClient.Transport = transport
 		}
 	}
 
@@ -349,7 +355,7 @@ func (c *Client) initialize() *http.Client {
 
 	c.logger.Debugf("Transport timeout: %v, max request duration: %v", c.transportTimeout, c.maxRequestDuration)
 
-	return httpClient
+	return c.httpClient
 }
 
 type contextKey struct {
@@ -393,12 +399,13 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
 	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
-	if t.doLogRequestBodyOnDebug && req.Body != nil {
+	if t.doLogRequestBodyOnDebug && req.Header.Get("Content-Type") == "application/octet-stream" {
+		// skip logging byte content as it's useless
+	} else if t.doLogRequestBodyOnDebug && req.Body != nil {
 		var buf bytes.Buffer
 		tee := io.TeeReader(req.Body, &buf)
 		log.Entry().Debugf("body: %v", transformBody(tee))
-		req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
-		log.Entry().Debugf("body: %v", transformBody(tee))
+		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 	}
 	log.Entry().Debug("--------------------------------")
 }
@@ -415,7 +422,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 			var buf bytes.Buffer
 			tee := io.TeeReader(resp.Body, &buf)
 			log.Entry().Debugf("body: %v", transformBody(tee))
-			resp.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+			resp.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
 	} else {
 		log.Entry().Debug("response <nil>")
@@ -546,6 +553,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: false,
 				RootCAs:            rootCAs,
+				Certificates:       c.certificates,
 			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
@@ -597,7 +605,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				}
 				log.Entry().Debugf("wrote %v bytes from response body to file", numWritten)
 
-				certs, err := ioutil.ReadFile(target)
+				certs, err := os.ReadFile(target)
 				if err != nil {
 					return errors.Wrapf(err, "failed to read cert file %v", certificate)
 				}
@@ -612,7 +620,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			}
 		} else {
 			log.Entry().Debugf("existing certificate file %v found, appending it to rootCA", target)
-			certs, err := ioutil.ReadFile(target)
+			certs, err := os.ReadFile(target)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read cert file %v", certificate)
 			}
@@ -648,7 +656,7 @@ func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 		return errors.Errorf("cannot parse HTTP response with value <nil>")
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return errors.Wrap(readErr, "HTTP response body could not be read")
 	}
@@ -667,7 +675,7 @@ func ParseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error 
 		return errors.Errorf("cannot parse HTTP response with value <nil>")
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read")
 	}

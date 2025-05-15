@@ -5,6 +5,7 @@ import com.sap.piper.DockerUtils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
@@ -81,11 +82,6 @@ void call(Map parameters = [:]) {
             config.sourceRegistry = dockerUtils.getRegistryFromUrl(config.sourceRegistryUrl)
         }
 
-        // telemetry reporting
-        new Utils().pushToSWA([
-            step: STEP_NAME
-        ], config)
-
         if (!config.dockerImage)
             config.dockerImage = config.sourceImage
 
@@ -106,7 +102,7 @@ void call(Map parameters = [:]) {
                 ) {
                     sourceBuildImage.pull()
                 }
-                sh "docker tag ${config.sourceRegistry}/${config.sourceImage} ${config.dockerImage}"
+                sh "docker tag ${q(config.sourceRegistry)}/${q(config.sourceImage)} ${q(config.dockerImage)}"
             }
 
             docker.withRegistry(

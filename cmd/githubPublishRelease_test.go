@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/cmd/mocks"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -84,6 +84,7 @@ func (g *ghRCMock) UploadReleaseAsset(ctx context.Context, owner string, repo st
 
 type ghICMock struct {
 	issues        []*github.Issue
+	response      github.Response
 	lastPublished time.Time
 	owner         string
 	repo          string
@@ -95,7 +96,7 @@ func (g *ghICMock) ListByRepo(ctx context.Context, owner string, repo string, op
 	g.repo = repo
 	g.options = opt
 	g.lastPublished = opt.Since
-	return g.issues, nil, nil
+	return g.issues, &g.response, nil
 }
 
 func TestRunGithubPublishRelease(t *testing.T) {

@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -8,23 +9,81 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
-
+	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/configfile"
 	cranecmd "github.com/google/go-containerregistry/cmd/crane/cmd"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/pkg/errors"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // AuthEntry defines base64 encoded username:password required inside a Docker config.json
 type AuthEntry struct {
 	Auth string `json:"auth,omitempty"`
+}
+
+// MergeDockerConfigJSON merges two docker config.json files.
+func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileUtils) error {
+	if exists, _ := utils.FileExists(sourcePath); !exists {
+		return fmt.Errorf("source dockerConfigJSON file %q does not exist", sourcePath)
+	}
+
+	sourceReader, err := utils.Open(sourcePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open file %q", sourcePath)
+	}
+	defer sourceReader.Close()
+
+	sourceConfig, err := config.LoadFromReader(sourceReader)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read file %q", sourcePath)
+	}
+
+	var targetConfig *configfile.ConfigFile
+	if exists, _ := utils.FileExists(targetPath); !exists {
+		log.Entry().Warnf("target dockerConfigJSON file %q does not exist, creating a new one", sourcePath)
+		targetConfig = configfile.New(targetPath)
+	} else {
+		targetReader, err := utils.Open(targetPath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to open file %q", targetReader)
+		}
+		defer targetReader.Close()
+		targetConfig, err = config.LoadFromReader(targetReader)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read file %q", targetPath)
+		}
+	}
+
+	for registry, auth := range sourceConfig.GetAuthConfigs() {
+		targetConfig.AuthConfigs[registry] = auth
+	}
+
+	buf := bytes.NewBuffer(nil)
+	err = targetConfig.SaveToWriter(buf)
+	if err != nil {
+		return errors.Wrapf(err, "failed to save file %q", targetPath)
+	}
+
+	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
+	if err != nil {
+		return fmt.Errorf("failed to create directory path for the file %q: %w", targetPath, err)
+	}
+	err = utils.FileWrite(targetPath, buf.Bytes(), 0666)
+	if err != nil {
+		return fmt.Errorf("failed to write %q: %w", targetPath, err)
+	}
+
+	return nil
 }
 
 // CreateDockerConfigJSON creates / updates a Docker config.json with registry credentials
@@ -34,9 +93,10 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		targetPath = configPath
 	}
 
+	dockerConfigContent := []byte{}
 	dockerConfig := map[string]interface{}{}
-	if exists, _ := utils.FileExists(configPath); exists {
-		dockerConfigContent, err := utils.FileRead(configPath)
+	if exists, err := utils.FileExists(configPath); exists {
+		dockerConfigContent, err = utils.FileRead(configPath)
 		if err != nil {
 			return "", fmt.Errorf("failed to read file '%v': %w", configPath, err)
 		}
@@ -45,6 +105,13 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		if err != nil {
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
 		}
+	}
+
+	if registryURL == "" || password == "" || username == "" {
+		if err := fileWrite(targetPath, dockerConfigContent, utils); err != nil {
+			return "", err
+		}
+		return targetPath, nil
 	}
 
 	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
@@ -66,17 +133,24 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
-	//always create the target path directories if any before writing
-	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
-	if err != nil {
-		return "", fmt.Errorf("failed to create directory path for the Docker config.json file %v:%w", targetPath, err)
-	}
-	err = utils.FileWrite(targetPath, jsonResult, 0666)
-	if err != nil {
-		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
+	if err := fileWrite(targetPath, jsonResult, utils); err != nil {
+		return "", err
 	}
 
 	return targetPath, nil
+}
+
+func fileWrite(path string, content []byte, utils piperutils.FileUtils) error {
+	err := utils.MkdirAll(filepath.Dir(path), 0777)
+	if err != nil {
+		return fmt.Errorf("failed to create directory path for the Docker config.json file %v:%w", path, err)
+	}
+	err = utils.FileWrite(path, content, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to write Docker config.json: %w", err)
+	}
+
+	return nil
 }
 
 // Client defines an docker client object
@@ -171,7 +245,8 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 	craneCmd := cranecmd.NewCmdPull(&noOpts)
 	craneCmd.SetOut(log.Writer())
 	craneCmd.SetErr(log.Writer())
-	craneCmd.SetArgs([]string{imageRef.Name(), tmpFile.Name(), "--format=" + c.imageFormat})
+	args := []string{imageRef.Name(), tmpFile.Name(), "--format=" + c.imageFormat}
+	craneCmd.SetArgs(args)
 
 	if err := craneCmd.Execute(); err != nil {
 		defer os.Remove(tmpFile.Name())
@@ -230,9 +305,9 @@ func ImageListWithFilePath(imageName string, excludes []string, trimDir string, 
 	for _, dockerfilePath := range matches {
 		// make sure that the path we have is relative
 		// ToDo: needs rework
-		//dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
+		// dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
 
-		if piperutils.ContainsString(excludes, dockerfilePath) {
+		if slices.Contains(excludes, dockerfilePath) {
 			log.Entry().Infof("Discard %v since it is in the exclude list %v", dockerfilePath, excludes)
 			continue
 		}

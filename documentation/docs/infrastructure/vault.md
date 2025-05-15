@@ -69,7 +69,7 @@ When Piper is configured to lookup secrets in Vault, there are some aspects that
 ### Overwriting of Parameters
 
 Whenever a parameter is provided via `config.yml` or passed to the CLI it gets overwritten when a secret is found in
-Vault. To disable overriding parameters put a `vaultDisableOverwrite: false` on `Step` `Stage` or `General` Section in
+Vault. To disable overriding parameters put a `vaultDisableOverwrite: true` on `Step` `Stage` or `General` Section in
 your config.
 
 ```yaml
@@ -109,6 +109,18 @@ steps:
     vaultCredentialKeys: ['myAppId', 'myAppSecret']
 ```
 
+In case if you want to retrieve secrets from multiple vault folders, pass several paths with keys:
+
+```yaml
+general:
+  < your Vault configuration > # see above
+...
+steps:
+  < piper go step >:
+    vaultCredentialPath: ['myStepCredentials1', 'myStepCredentials2']
+    vaultCredentialKeys: [['myAppId1', 'myAppSecret1'], ['myAppId2', 'myAppSecret2']]
+```
+
 The `vaultCredentialPath` parameter is the endpoint of your credential path in Vault. Depending on your _general_ config, the lookup for the credential IDs will be done in the following order respectively locations. The first path with found general purpose credentials will be used.
 
 1. `<vaultPath>/<vaultCredentialPath>`
@@ -117,11 +129,15 @@ The `vaultCredentialPath` parameter is the endpoint of your credential path in V
 
 The `vaultCredentialKeys`parameter is a list of credential IDs. The secret value of the credential will be exposed as an environment variable prefixed by "PIPER_VAULTCREDENTIAL_" and transformed to a valid variable name. For a credential ID named `myAppId` the forwarded environment variable to the step will be `PIPER_VAULTCREDENTIAL_MYAPPID` containing the secret. The Base64 encoded secret value will be exposed as environment variable to the step as  `PIPER_VAULTCREDENTIAL_MYAPPID_BASE64`. Hyphens will be replaced by underscores and other non-alphanumeric characters will be removed.
 
-!!! hint "Using a custom prefix for test credentials"
-    By default the prefix for test credentials is `PIPER_VAULTCREDENTIAL_`.
+!!! hint "Using a custom prefix for credentials"
+    By default the prefix for credentials is `PIPER_VAULTCREDENTIAL_`.
 
     It is possible to use a custom prefix by setting for example `vaultCredentialEnvPrefix: MY_CUSTOM_PREFIX` in your configuration.
     With this above credential ID named `myAppId` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_MYAPPID`.
+
+    In case you want to use specific prefix for secrets retrieved from different vault folders, pass multiple prefixes as
+    `vaultCredentialEnvPrefix: ['MY_CUSTOM_PREFIX_1', 'MY_CUSTOM_PREFIX_2']`.
+    With this above credential ID named `myAppId1` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_1_MYAPPID1` and `myAppId2` will be populated into an environment variable with name `MY_CUSTOM_PREFIX_2_MYAPPID2`
 
 Extended logging for Vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
 

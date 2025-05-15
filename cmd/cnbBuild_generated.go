@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -27,10 +28,14 @@ type cnbBuildOptions struct {
 	ContainerImageTag         string                   `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL      string                   `json:"containerRegistryUrl,omitempty"`
 	Buildpacks                []string                 `json:"buildpacks,omitempty"`
+	PreBuildpacks             []string                 `json:"preBuildpacks,omitempty"`
+	PostBuildpacks            []string                 `json:"postBuildpacks,omitempty"`
 	BuildEnvVars              map[string]interface{}   `json:"buildEnvVars,omitempty"`
+	ExpandBuildEnvVars        bool                     `json:"expandBuildEnvVars,omitempty"`
 	Path                      string                   `json:"path,omitempty"`
 	ProjectDescriptor         string                   `json:"projectDescriptor,omitempty"`
 	DockerConfigJSON          string                   `json:"dockerConfigJSON,omitempty"`
+	DockerConfigJSONCPE       string                   `json:"dockerConfigJSONCPE,omitempty"`
 	CustomTLSCertificateLinks []string                 `json:"customTlsCertificateLinks,omitempty"`
 	AdditionalTags            []string                 `json:"additionalTags,omitempty"`
 	Bindings                  map[string]interface{}   `json:"bindings,omitempty"`
@@ -97,10 +102,8 @@ func (p *cnbBuildReports) persist(stepConfig cnbBuildOptions, gcpJsonKeyFilePath
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/bom-*.xml", ParamRef: "", StepResultType: "sbom"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -146,23 +149,27 @@ func CnbBuildCommand() *cobra.Command {
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
+			log.RegisterSecret(stepConfig.DockerConfigJSONCPE)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
@@ -184,6 +191,11 @@ func CnbBuildCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -194,21 +206,40 @@ func CnbBuildCommand() *cobra.Command {
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.Dsn,
+						GeneralConfig.HookConfig.SplunkConfig.Token,
+						GeneralConfig.HookConfig.SplunkConfig.Index,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if len(GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize(GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+						GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+					splunkClient.Send(telemetryClient.GetData(), logCollector)
+				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-				splunkClient.Initialize(GeneralConfig.CorrelationID,
-					GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					GeneralConfig.HookConfig.SplunkConfig.Token,
-					GeneralConfig.HookConfig.SplunkConfig.Index,
-					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-			}
+			telemetryClient.Initialize(STEP_NAME)
 			cnbBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -224,19 +255,23 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImageAlias, "containerImageAlias", os.Getenv("PIPER_containerImageAlias"), "Logical name used for this image.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to.\n\n**Note**: `containerRegistryUrl` should include only the domain. If you want to publish an image under `docker.io/example/my-image`, you must set `containerRegistryUrl: \"docker.io\"` and `containerImageName: \"example/my-image\"`.\n")
-	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`.")
+	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of `$HOSTNAME/$REPO[:$TAG]`. When this property is specified, buildpacks which are part of the builder will be ignored.")
+	cmd.Flags().StringSliceVar(&stepConfig.PreBuildpacks, "preBuildpacks", []string{}, "Buildpacks to prepend to the groups in the builder's order.")
+	cmd.Flags().StringSliceVar(&stepConfig.PostBuildpacks, "postBuildpacks", []string{}, "Buildpacks to append to the groups in the builder's order.")
 
+	cmd.Flags().BoolVar(&stepConfig.ExpandBuildEnvVars, "expandBuildEnvVars", false, "Expand environment variables used in `buildEnvVars`.\nExample:\n```yaml\nexpandBuildEnvVars: true\nbuildEnvVars:\n  foo: ${BAR}\n```\n")
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "Glob that should either point to a directory with your sources or one artifact in zip format.\nThis property determines the input to the buildpack.\n")
 	cmd.Flags().StringVar(&stepConfig.ProjectDescriptor, "projectDescriptor", `project.toml`, "Relative path to the project.toml file.\nSee [buildpacks.io](https://buildpacks.io/docs/reference/config/project-descriptor/) for the reference.\nParameters passed to the cnbBuild step will take precedence over the parameters set in the project.toml file, except the `env` block.\nEnvironment variables declared in a project descriptor file, will be merged with the `buildEnvVars` property, with the `buildEnvVars` having a precedence.\n\n*Note*: The project descriptor path should be relative to what is set in the [path](#path) property. If the `path` property is pointing to a zip archive (e.g. jar file), project descriptor path will be relative to the root of the workspace.\n\n*Note*: Inline buildpacks (see [specification](https://buildpacks.io/docs/reference/config/project-descriptor/#build-_table-optional_)) are not supported yet.\n")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
+	cmd.Flags().StringVar(&stepConfig.DockerConfigJSONCPE, "dockerConfigJSONCPE", os.Getenv("PIPER_dockerConfigJSONCPE"), "This property is intended only for reading the `dockerConfigJSON` from the Common Pipeline Environment. If you want to provide your own credentials, please refer to the [dockerConfigJSON](#dockerconfigjson) property. If both properties are set, the config files will be merged, with the [dockerConfigJSON](#dockerconfigjson) having higher priority.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalTags, "additionalTags", []string{}, "List of tags which will be pushed to the registry (additionally to the provided `containerImageTag`), e.g. \"latest\".")
 
 	cmd.Flags().StringSliceVar(&stepConfig.PreserveFiles, "preserveFiles", []string{}, "List of globs, for keeping build results in the Jenkins workspace.\n\n*Note*: globs will be calculated relative to the [path](#path) property.\n")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
-	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
-	cmd.Flags().StringVar(&stepConfig.RunImage, "runImage", os.Getenv("PIPER_runImage"), "Base image from which application images are built. Will be defaulted to the image provided by the builder.")
+	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
+	cmd.Flags().StringVar(&stepConfig.RunImage, "runImage", os.Getenv("PIPER_runImage"), "Base image from which application images are built. Will be defaulted to the image provided by the builder. See also https://buildpacks.io/docs/for-app-developers/concepts/base-images/.")
 	cmd.Flags().StringVar(&stepConfig.DefaultProcess, "defaultProcess", os.Getenv("PIPER_defaultProcess"), "Process that should be started by default. See https://buildpacks.io/docs/app-developer-guide/run-an-app/")
 
 	cmd.MarkFlagRequired("containerImageTag")
@@ -323,12 +358,49 @@ func cnbBuildMetadata() config.StepData {
 						Default:   []string{},
 					},
 					{
+						Name: "preBuildpacks",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/preBuildpacks",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
+						Name: "postBuildpacks",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/postBuildpacks",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
 						Name:        "buildEnvVars",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "expandBuildEnvVars",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "path",
@@ -352,11 +424,6 @@ func cnbBuildMetadata() config.StepData {
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/dockerConfigJSON",
-							},
-
-							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
 							},
@@ -372,6 +439,20 @@ func cnbBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_dockerConfigJSON"),
+					},
+					{
+						Name: "dockerConfigJSONCPE",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/dockerConfigJSON",
+							},
+						},
+						Scope:     []string{},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerConfigJSONCPE"),
 					},
 					{
 						Name:        "customTlsCertificateLinks",
@@ -446,7 +527,7 @@ func cnbBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz`,
+						Default:     `https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz`,
 					},
 					{
 						Name:        "runImage",
@@ -469,7 +550,7 @@ func cnbBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "paketobuildpacks/builder:base"},
+				{Image: "paketobuildpacks/builder-jammy-base:latest", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

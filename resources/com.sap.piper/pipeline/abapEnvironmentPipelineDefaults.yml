@@ -10,16 +10,16 @@ stages:
     cfService: 'abap'
     cfServicePlan: 'standard'
     abapSystemIsDevelopmentAllowed: 'false'
-    abapSystemSizeOfPersistence: 4
+    abapSystemSizeOfPersistence: 2
     abapSystemSizeOfRuntime: 1
-    cfServiceKeyName: 'sap_com_0510'
     cfAsync: false
 
   'Clone Repositories':
-    cfServiceKeyName: 'sap_com_0510'
-    cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0510","type":"basic"}'
+    cfServiceKeyName: 'sap_com_0948'
+    cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0948","type":"basic"}'
     cfAsync: false
     ordinal: 30
+    logOutput: STANDARD
 
   'ATC':
     ordinal: 40
@@ -44,9 +44,10 @@ stages:
     cfService: 'abap'
     cfServicePlan: 'saas_oem'
     abapSystemIsDevelopmentAllowed: 'false'
-    abapSystemSizeOfPersistence: 4
+    abapSystemSizeOfPersistence: 2
     abapSystemSizeOfRuntime: 1
     confirmDeletion: 'true'
+    integrationTestOption: 'systemProvisioning'
     includeAddon: 'true'
     cfServiceKeyName: 'sap_com_0582'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'

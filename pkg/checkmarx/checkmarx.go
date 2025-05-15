@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -16,7 +16,6 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -295,20 +294,20 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	var requestBody io.Reader
 	var requestBodyCopy io.Reader
 	if body != nil {
-		closer := ioutil.NopCloser(body)
-		bodyBytes, _ := ioutil.ReadAll(closer)
+		closer := io.NopCloser(body)
+		bodyBytes, _ := io.ReadAll(closer)
 		requestBody = bytes.NewBuffer(bodyBytes)
 		requestBodyCopy = bytes.NewBuffer(bodyBytes)
 		defer closer.Close()
 	}
 	response, err := sys.client.SendRequest(method, fmt.Sprintf("%v/cxrestapi%v", sys.serverURL, url), requestBody, header, nil)
-	if err != nil && (response == nil || !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode)) {
+	if err != nil && (response == nil || !slices.Contains(acceptedErrorCodes, response.StatusCode)) {
 		sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
 		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return nil, err
 	}
 
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	sys.logger.Debugf("Valid response body: %v", string(data))
 	defer response.Body.Close()
 	return data, nil
@@ -316,11 +315,11 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 
 func (sys *SystemInstance) recordRequestDetailsInErrorCase(requestBody io.Reader, response *http.Response) {
 	if requestBody != nil {
-		data, _ := ioutil.ReadAll(ioutil.NopCloser(requestBody))
+		data, _ := io.ReadAll(io.NopCloser(requestBody))
 		sys.logger.Errorf("Request body: %s", data)
 	}
 	if response != nil && response.Body != nil {
-		data, _ := ioutil.ReadAll(response.Body)
+		data, _ := io.ReadAll(response.Body)
 		sys.logger.Errorf("Response body: %s", data)
 		response.Body.Close()
 	}
@@ -499,7 +498,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 		return errors.Wrap(err, "failed to uploaded zipped sources")
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
 		return errors.Wrap(err, "error reading the response data")

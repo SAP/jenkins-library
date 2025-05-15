@@ -4,13 +4,13 @@
 package cmd
 
 import (
-	"github.com/google/uuid"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
-	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -143,7 +143,7 @@ func TestRunNewmanExecute(t *testing.T) {
 		err := runNewmanExecute(&config, &utils)
 
 		// assert
-		assert.EqualError(t, err, "could not parse newman command template: template: template:1: unexpected \"}\" in operand")
+		assert.EqualError(t, err, "could not parse newman command template: template: template:1: bad character U+007D '}'")
 	})
 
 	t.Run("error on file search", func(t *testing.T) {
@@ -263,7 +263,7 @@ func TestResolveTemplate(t *testing.T) {
 		config := newmanExecuteOptions{RunOptions: []string{"this", "is", "my", "fancy", "command", "{{.collectionDisplayName}"}}
 
 		_, err := resolveTemplate(&config, "theDisplayName")
-		assert.EqualError(t, err, "could not parse newman command template: template: template:1: unexpected \"}\" in operand")
+		assert.EqualError(t, err, "could not parse newman command template: template: template:1: bad character U+007D '}'")
 	})
 }
 
@@ -317,7 +317,7 @@ func (e *newmanExecuteMockUtils) RunExecutable(executable string, params ...stri
 	if e.errorOnNewmanExecution && strings.Contains(executable, "newman") {
 		return errors.New("error on newman execution")
 	}
-	if e.errorOnNewmanInstall && sliceUtils.ContainsString(params, "install") {
+	if e.errorOnNewmanInstall && slices.Contains(params, "install") {
 		return errors.New("error on newman install")
 	}
 

@@ -13,17 +13,18 @@ import (
 
 func abapAddonAssemblyKitPublishTargetVector(config abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData) {
 	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
+	telemetryData.BuildTool = "AAKaaS"
 
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runAbapAddonAssemblyKitPublishTargetVector(&config, telemetryData, &utils); err != nil {
+	if err := runAbapAddonAssemblyKitPublishTargetVector(&config, &utils); err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils) error {
+func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPublishTargetVectorOptions, utils *aakaas.AakUtils) error {
 
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils, config.AbapAddonAssemblyKitOriginHash, config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 	conn.MaxRuntime = (*utils).GetMaxRuntime()

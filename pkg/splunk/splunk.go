@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -102,7 +101,7 @@ func (s *Splunk) Send(telemetryData telemetry.Data, logCollector *log.CollectorH
 func readCommonPipelineEnvironment(filePath string) string {
 
 	// TODO: Dependent on a groovy step, which creates the folder.
-	contentFile, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/" + filePath)
+	contentFile, err := os.ReadFile(".pipeline/commonPipelineEnvironment/" + filePath)
 	if err != nil {
 		log.Entry().Debugf("Could not read %v file. %v", filePath, err)
 		contentFile = []byte("N/A")
@@ -115,6 +114,8 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	monitoringData := MonitoringData{
 		PipelineUrlHash: telemetryData.PipelineURLHash,
 		BuildUrlHash:    telemetryData.BuildURLHash,
+		Orchestrator:    telemetryData.Orchestrator,
+		PiperCommitHash: telemetryData.PiperCommitHash,
 		StageName:       telemetryData.StageName,
 		StepName:        telemetryData.BaseData.StepName,
 		ExitCode:        telemetryData.CustomData.ErrorCode,
@@ -124,8 +125,8 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 		CorrelationID:   s.correlationID,
 		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
-		GitOwner:        readCommonPipelineEnvironment("github/owner"),
-		GitRepository:   readCommonPipelineEnvironment("github/repository"),
+		GitOwner:        readCommonPipelineEnvironment("git/organization"),
+		GitRepository:   readCommonPipelineEnvironment("git/repository"),
 	}
 	monitoringJson, err := json.Marshal(monitoringData)
 	if err != nil {
@@ -197,7 +198,7 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 		if resp.StatusCode != http.StatusOK {
 			// log it to stdout
 			rdr := io.LimitReader(resp.Body, 1000)
-			body, errRead := ioutil.ReadAll(rdr)
+			body, errRead := io.ReadAll(rdr)
 			log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
 			if errRead != nil {
 				return errors.Wrap(errRead, "Error reading response body from Splunk.")
@@ -247,7 +248,7 @@ func (s *Splunk) postLogFile(telemetryData map[string]interface{}, messages []st
 		if resp.StatusCode != http.StatusOK {
 			// log it to stdout
 			rdr := io.LimitReader(resp.Body, 1000)
-			body, errRead := ioutil.ReadAll(rdr)
+			body, errRead := io.ReadAll(rdr)
 			log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
 			if errRead != nil {
 				return errors.Wrap(errRead, "Error reading response body from Splunk.")
@@ -294,7 +295,7 @@ func (s *Splunk) tryPostMessages(telemetryData MonitoringData, messages []log.Me
 		if resp.StatusCode != http.StatusOK {
 			// log it to stdout
 			rdr := io.LimitReader(resp.Body, 1000)
-			body, errRead := ioutil.ReadAll(rdr)
+			body, errRead := io.ReadAll(rdr)
 			log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
 			if errRead != nil {
 				return errors.Wrap(errRead, "Error reading response body from Splunk.")

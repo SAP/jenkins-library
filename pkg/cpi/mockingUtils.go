@@ -5,7 +5,7 @@ package cpi
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -69,7 +69,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 	default:
 		res := http.Response{
 			StatusCode: 404,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+			Body:       io.NopCloser(bytes.NewReader([]byte(``))),
 		}
 		return &res, errors.New("Service not Found")
 	}
@@ -79,7 +79,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 	res := http.Response{
 		StatusCode: 202,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(``))),
 	}
 	return &res, nil
 }
@@ -88,7 +88,7 @@ func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 func GetParameterKeyMissingResponseBody() (*http.Response, error) {
 	res := http.Response{
 		StatusCode: 404,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		Body: io.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Not Found",
 					"message": {
 					"@lang": "en",
@@ -103,7 +103,7 @@ func GetParameterKeyMissingResponseBody() (*http.Response, error) {
 func GetNegativeCaseHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 	res := http.Response{
 		StatusCode: 400,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		Body: io.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Bad Request",
 					"message": {
 					"@lang": "en",
@@ -119,7 +119,7 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 	if testType == "Positive" {
 		res := http.Response{
 			StatusCode: 200,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			Body: io.NopCloser(bytes.NewReader([]byte(`{
 				"d": {
 					"results": [
 						{
@@ -150,7 +150,7 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 	}
 	res := http.Response{
 		StatusCode: 400,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		Body: io.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Bad Request",
 					"message": {
 					"@lang": "en",
@@ -168,7 +168,7 @@ func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testCaseType st
 	}
 	res := http.Response{
 		StatusCode: 400,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		Body: io.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Bad Request",
 					"message": {
 					"@lang": "en",
@@ -184,7 +184,7 @@ func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, er
 	if testCaseType == "Positive" {
 		return &http.Response{
 			StatusCode: 200,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			Body: io.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Good Request",
 					"message": {
 						"@lang": "en",
@@ -198,7 +198,7 @@ func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, er
 	}
 	res := http.Response{
 		StatusCode: 400,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		Body: io.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Bad Request",
 					"message": {
 					"@lang": "en",
@@ -214,7 +214,7 @@ func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Respo
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		Body: io.NopCloser(bytes.NewReader([]byte(`{
 			"d": {
 				"results": [
 					{
@@ -253,7 +253,7 @@ func GetRespBodyHTTPStatusOK() (*http.Response, error) {
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(``))),
 	}
 	return &resp, nil
 }
@@ -263,7 +263,7 @@ func GetRespBodyHTTPStatusCreated() (*http.Response, error) {
 
 	resp := http.Response{
 		StatusCode: 201,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(``))),
 	}
 	return &resp, nil
 }
@@ -273,7 +273,7 @@ func GetRespBodyHTTPStatusServiceNotFound() (*http.Response, error) {
 
 	resp := http.Response{
 		StatusCode: 404,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(``))),
 	}
 	return &resp, errors.New("Integration Package not found")
 }
@@ -283,7 +283,7 @@ func GetRespBodyHTTPStatusServiceErrorResponse() (*http.Response, error) {
 
 	resp := http.Response{
 		StatusCode: 500,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(``))),
 	}
 	return &resp, errors.New("401 Unauthorized")
 }
@@ -331,7 +331,7 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 
 			res := http.Response{
 				StatusCode: 400,
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				Body: io.NopCloser(bytes.NewReader([]byte(`{
 							"code": "Bad Request",
 							"message": {
 							"@lang": "en",
@@ -344,7 +344,7 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 		case "GetIntegrationArtifactDeployErrorDetailsMockResponse":
 			res := http.Response{
 				StatusCode: 500,
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				Body: io.NopCloser(bytes.NewReader([]byte(`{
 							"code": "Internal Server Error",
 							"message": {
 							"@lang": "en",
@@ -363,7 +363,7 @@ func NegtiveResForIntegrationArtifactGenericCommandMockResponse(message string) 
 
 	res := http.Response{
 		StatusCode: 400,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		Body: io.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Bad Request",
 					"message": {
 					"@lang": "en",
@@ -383,7 +383,7 @@ func UpdateIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Res
 
 		res := http.Response{
 			StatusCode: 400,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			Body: io.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Bad Request",
 					"message": {
 					"@lang": "en",
@@ -404,7 +404,7 @@ func IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody() (*http
 	resp := http.Response{
 		StatusCode: 200,
 		Header:     header,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(`UEsDBBQACAgIADQ2clAAAAAAAAAAAAAAAAAUAAQATU`))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(`UEsDBBQACAgIADQ2clAAAAAAAAAAAAAAAAAUAAQATU`))),
 	}
 	return &resp, nil
 }
@@ -535,7 +535,7 @@ func GetIntegrationArtifactDeployStatusMockResponseBody() (*http.Response, error
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(GetIntegrationArtifactDeployStatusPayload("STARTED")))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(GetIntegrationArtifactDeployStatusPayload("STARTED")))),
 	}
 	return &resp, nil
 }
@@ -545,7 +545,7 @@ func GetIntegrationArtifactDeployStatusErrorMockResponseBody() (*http.Response, 
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(GetIntegrationArtifactDeployStatusPayload("FAIL")))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(GetIntegrationArtifactDeployStatusPayload("FAIL")))),
 	}
 	return &resp, nil
 }
@@ -580,7 +580,7 @@ func GetIntegrationArtifactDeployErrorStatusMockResponseBody() (*http.Response, 
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"message": "java.lang.IllegalStateException: No credentials for 'smtp' found"}`))),
+		Body:       io.NopCloser(bytes.NewReader([]byte(`{"message": "java.lang.IllegalStateException: No credentials for 'smtp' found"}`))),
 	}
 	return &resp, nil
 }

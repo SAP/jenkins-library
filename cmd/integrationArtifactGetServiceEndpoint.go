@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -63,7 +63,7 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 	}
 
 	if serviceEndpointResp.StatusCode == 200 {
-		bodyText, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
+		bodyText, readErr := io.ReadAll(serviceEndpointResp.Body)
 		if readErr != nil {
 			return errors.Wrap(readErr, "HTTP response body could not be read")
 		}
@@ -84,7 +84,7 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 		return errors.Errorf("Unable to get integration flow service endpoint '%v', Response body: %v, Response Status code: %v",
 			config.IntegrationFlowID, string(bodyText), serviceEndpointResp.StatusCode)
 	}
-	responseBody, readErr := ioutil.ReadAll(serviceEndpointResp.Body)
+	responseBody, readErr := io.ReadAll(serviceEndpointResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", serviceEndpointResp.StatusCode)

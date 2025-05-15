@@ -168,8 +168,6 @@ spec:
             param: custom/mavenRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
-          - name: mtaDeploymentRepositoryPasswordId
-            type: secret
           - type: vaultSecretFile
             name: mtaDeploymentRepositoryPasswordFileVaultSecretName
             default: mta-deployment-repository-passowrd
@@ -227,6 +225,31 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: enableSetTimestamp
+        type: bool
+        description: Enables setting the timestamp in the `mta.yaml` when it contains `${timestamp}`. Disable this when you want the MTA Deploy Service to do this instead.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: true
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -236,6 +259,7 @@ spec:
           - name: custom/mtaBuildToolDesc
           - name: custom/mtarPublishedUrl
           - name: custom/buildSettingsInfo
+          - name: custom/mtaBuildArtifacts
       - name: reports
         type: reports
         params:

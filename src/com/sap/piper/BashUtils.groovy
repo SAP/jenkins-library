@@ -8,6 +8,9 @@ class BashUtils implements Serializable {
      * Put string in single quotes and escape contained single quotes by putting them into a double quoted string
      */
     static String quoteAndEscape(String str) {
+        if(str == null) {
+            return 'null'
+        }
         def escapedString = str.replace("'", ESCAPED_SINGLE_QUOTE)
         return "'${escapedString}'"
     }

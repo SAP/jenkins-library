@@ -42,10 +42,20 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        description: scriptArguments that are needed to be passed to scripts. the scriptArguments list is a flat list and has a positional relationship to the `sources` param.
-          For e.g. The scriptArguments string at position 1 will be considered as the argument(s) for script at position 1 in `sources` list. For multiple arguments for a script please add them as a comma seperated string.
+        description: "scriptArguments that need to be passed to the scripts."
+        longDescription: |-
+          The scriptArguments list is a flat list and has a positional relationship to the `sources` parameter.
+
+          For example, the `scriptArguments` string at position 0 will be considered as the argument(s) for script at position 0 in `sources` list.
+          `--sources ".pipeline/firstScript.sh" --sources ".pipeline/secondScript.sh" --scriptArguments "$(first_script_arg)" --scriptArguments "$(second_script_arg)"`
+
+          For multiple arguments for a particular script, please add them as a comma-separated string enclosed in additional quotes, e.g.:
+          `--sources ".pipeline/yourScript.sh" --scriptArguments "\"$(first_arg),$(second_arg)\""`
+
+          For multiple scripts with multiple arguments per each script your command would look like:
+          `--sources ".pipeline/firstScript.sh" --sources ".pipeline/secondScript.sh" --scriptArguments "\"$(first_script_arg1),$(first_script_arg2)\"" --scriptArguments "\"$(second_script_arg1),$(second_script_arg2)\""`
         mandatory: false
   containers:
     - name: shell
-      image: node:lts-buster
+      image: node:lts-bookworm
       workingDir: /home/node

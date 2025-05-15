@@ -29,5 +29,5 @@ tasks.named('test') {
 cyclonedxBom {
     outputName = "bom-gradle"
 	outputFormat = "xml"
-	schemaVersion = "1.2"
+	schemaVersion = "1.4"
 }

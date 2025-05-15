@@ -1,0 +1,88 @@
+metadata:
+  name: gcpPublishEvent
+  description: Publishes an event to GCP using OIDC authentication (beta)
+  longDescription: |
+    This step is in beta.
+    Authentication to GCP is handled by an OIDC token received from, for example, Vault.
+spec:
+  inputs:
+    params:
+      - name: vaultNamespace
+        type: "string"
+        description:
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: vaultServerUrl
+        type: "string"
+        description:
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: OIDCToken
+        description:
+        type: "string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: gcpProjectNumber
+        description:
+        type: "string"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: gcpWorkloadIdentityPool
+        description: A workload identity pool is an entity that lets you manage external identities.
+        type: "string"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: gcpWorkloadIdentityPoolProvider
+        description: A workload identity pool provider is an entity that describes a relationship between Google Cloud and your IdP.
+        type: "string"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: topic
+        description: The pubsub topic to which the message is published.
+        type: "string"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: eventSource
+        description: The events source as defined by CDEvents.
+        type: "string"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: eventType
+        description:
+        type: "string"
+        scope:
+          - PARAMETERS
+      - name: eventData
+        type: string
+        description: Data to be merged with the generated data for the cloud event data field (JSON)
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/eventData
+      - name: additionalEventData
+        description: Data (formatted as JSON string) to add to eventData. This can be used to enrich eventData that comes from the pipeline environment.
+        type: string
+        scope:
+          - PARAMETERS
