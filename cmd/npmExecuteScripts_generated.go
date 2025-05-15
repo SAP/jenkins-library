@@ -23,6 +23,7 @@ import (
 )
 
 type npmExecuteScriptsOptions struct {
+	Tool                         string   `json:"tool,omitempty"`
 	Install                      bool     `json:"install,omitempty"`
 	RunScripts                   []string `json:"runScripts,omitempty"`
 	DefaultNpmRegistry           string   `json:"defaultNpmRegistry,omitempty"`
@@ -39,7 +40,6 @@ type npmExecuteScriptsOptions struct {
 	PackBeforePublish            bool     `json:"packBeforePublish,omitempty"`
 	Production                   bool     `json:"production,omitempty"`
 	CreateBuildArtifactsMetadata bool     `json:"createBuildArtifactsMetadata,omitempty"`
-	Tool                         string   `json:"tool,omitempty"`
 }
 
 type npmExecuteScriptsCommonPipelineEnvironment struct {
